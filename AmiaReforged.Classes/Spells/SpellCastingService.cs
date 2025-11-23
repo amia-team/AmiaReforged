@@ -30,6 +30,25 @@ public class SpellCastingService
 
         NwModule.Instance.OnSpellCast += PreventRestrictedCasting;
         NwModule.Instance.OnSpellCast += CraftSpell;
+        NwModule.Instance.OnClientEnter += FixCasterLevel;
+        NwModule.Instance.OnLevelUp += FixCasterLevelOnLevelUp;
+        NwModule.Instance.OnLevelDown += FixCasterLevelOnLevelDown;
+    }
+
+    private void FixCasterLevelOnLevelDown(OnLevelDown obj)
+    {
+        DoCasterLevelOverride(obj.Creature);
+    }
+
+    private void FixCasterLevelOnLevelUp(OnLevelUp obj)
+    {
+        DoCasterLevelOverride(obj.Creature);
+    }
+
+    private void FixCasterLevel(ModuleEvents.OnClientEnter obj)
+    {
+        if (obj.Player.LoginCreature is null) return;
+        DoCasterLevelOverride(obj.Player.LoginCreature);
     }
 
     private void CraftSpell(OnSpellCast eventData)
@@ -86,13 +105,11 @@ public class SpellCastingService
 
         if (caster is not NwCreature casterCreature) return ScriptHandleResult.Handled;
 
-        DoCasterLevelOverride(casterCreature, eventData);
 
         if (target is null)
         {
             spell.OnSpellImpact(eventData);
 
-            RevertCasterLevelOverride(casterCreature);
             return ScriptHandleResult.Handled;
         }
 
@@ -109,40 +126,40 @@ public class SpellCastingService
             }
         }
 
-        DoCasterLevelOverride(casterCreature, eventData);
-
         spell.OnSpellImpact(eventData);
-
-        RevertCasterLevelOverride(casterCreature);
 
         spell.CheckedSpellResistance = false;
 
         return ScriptHandleResult.Handled;
     }
 
-    private void DoCasterLevelOverride(NwCreature casterCreature, SpellEvents.OnSpellCast eventData)
+    private void DoCasterLevelOverride(NwCreature casterCreature)
     {
         CreatureClassInfo? paleMaster =
             casterCreature.Classes.FirstOrDefault(c => c.Class.ClassType == ClassType.PaleMaster);
         if (paleMaster is null) return;
 
         int baseClassLevels = 0;
+        List<int> baseClasses = [];
         foreach (CreatureClassInfo charClass in casterCreature.Classes)
         {
             if (charClass.Class.ClassType is ClassType.Bard or ClassType.Assassin or ClassType.Wizard
                 or ClassType.Sorcerer)
+            {
                 baseClassLevels += charClass.Level;
+                baseClasses.Add((int)charClass.Class.ClassType);
+            }
         }
 
-        int pmLevelMod = eventData.Spell.SpellSchool == SpellSchool.Necromancy
-            ? paleMaster.Level
-            : Math.Clamp(paleMaster.Level - 5, 0, paleMaster.Level); // Prevent negative integers
+        int pmLevelMod = paleMaster.Level;
 
         int levels = pmLevelMod + baseClassLevels;
-        CreaturePlugin.SetCasterLevelOverride(casterCreature, NWScript.CLASS_TYPE_PALE_MASTER, levels);
-    }
 
-    private void RevertCasterLevelOverride(NwCreature casterCreature)
-    {
+        CreaturePlugin.SetCasterLevelOverride(casterCreature, NWScript.CLASS_TYPE_PALE_MASTER, levels);
+
+        foreach (int classConst in baseClasses)
+        {
+            CreaturePlugin.SetCasterLevelOverride(casterCreature, classConst, levels);
+        }
     }
 }
