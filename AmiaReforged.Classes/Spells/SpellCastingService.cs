@@ -139,27 +139,24 @@ public class SpellCastingService
             casterCreature.Classes.FirstOrDefault(c => c.Class.ClassType == ClassType.PaleMaster);
         if (paleMaster is null) return;
 
-        int baseClassLevels = 0;
-        List<int> baseClasses = [];
+        List<(int levels, int classConst)> baseClasses = [];
         foreach (CreatureClassInfo charClass in casterCreature.Classes)
         {
             if (charClass.Class.ClassType is ClassType.Bard or ClassType.Assassin or ClassType.Wizard
                 or ClassType.Sorcerer)
             {
-                baseClassLevels += charClass.Level;
-                baseClasses.Add((int)charClass.Class.ClassType);
+                baseClasses.Add((charClass.Level, (int)charClass.Class.ClassType));
             }
         }
 
         int pmLevelMod = paleMaster.Level;
 
-        int levels = pmLevelMod + baseClassLevels;
 
-        CreaturePlugin.SetCasterLevelOverride(casterCreature, NWScript.CLASS_TYPE_PALE_MASTER, levels);
+        (int levels, int classConst) largestBase = baseClasses.OrderByDescending(c => c.Item1).FirstOrDefault();
 
-        foreach (int classConst in baseClasses)
-        {
-            CreaturePlugin.SetCasterLevelOverride(casterCreature, classConst, levels);
-        }
+        int levels = pmLevelMod + largestBase.levels;
+
+
+        CreaturePlugin.SetCasterLevelOverride(casterCreature, largestBase.classConst, levels);
     }
 }
