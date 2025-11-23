@@ -36,7 +36,6 @@ public class CasterLevelOverrideService
     {
         NwModule.Instance.OnClientLeave += RemoveSetup;
 
-        NwModule.Instance.OnClientEnter += FixCasterLevel;
         NwModule.Instance.OnLevelUp += FixCasterLevelOnLevelUp;
         NwModule.Instance.OnLevelDown += FixCasterLevelOnLevelDown;
         NwModule.Instance.OnSpellCast += FixCasterLevelOverride;
