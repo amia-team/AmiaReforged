@@ -24,6 +24,8 @@ public class InfiniteCantripService
         if (!obj.Caster.IsPlayerControlled(out NwPlayer? player)) return;
         if (obj.Spell is null) return;
 
+
         if (obj.Spell.InnateSpellLevel == 0) player.LoginCreature?.RestoreSpells(0);
+        if(obj.Spell.InnateSpellLevel == 1 && player.LoginCreature is not null && player.LoginCreature.CasterLevel > 20) player.LoginCreature?.RestoreSpells(1);
     }
 }
