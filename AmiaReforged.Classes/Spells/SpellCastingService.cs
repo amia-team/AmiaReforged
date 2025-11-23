@@ -126,6 +126,7 @@ public class SpellCastingService
             }
         }
 
+        casterCreature.SpeakString($"{casterCreature.CasterLevel}");
         spell.OnSpellImpact(eventData);
 
         spell.CheckedSpellResistance = false;
