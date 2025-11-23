@@ -1,0 +1,36 @@
+{
+  "Tag": "sp_woodworker",
+  "DisplayName": "Woodworker's Shop",
+  "ShopkeeperTag": "southport_woodworker_shopkeep",
+  "Description": "A quaint little shop of fine wooden furniture and decor, crafted by the skilled artisans of Southport.",
+  "Restock": {
+    "MinMinutes": 2,
+    "MaxMinutes": 12
+  },
+  "Products": [
+    {
+      "ItemTag": "blueprint_furniture_table",
+      "Price": 125,
+      "InitialStock": 12,
+      "MaxStock": 20,
+      "RestockAmount": 3
+    },
+    {
+      "ItemTag": "mirror_ornate_round",
+      "Price": 400,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "mirror_ornate_tall",
+      "Price": 400,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    }
+  ],
+  "AcceptCategories": [
+  ],
+  "MarkupPercent": 25
+}

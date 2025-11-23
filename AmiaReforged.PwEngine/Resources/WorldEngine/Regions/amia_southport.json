@@ -73,6 +73,43 @@
           "Name": "Thespian's Rest",
           "Type": "House",
           "Description": "A small apartment built specifically for the actors and performers of Southport's theater district."
+        },
+        {
+          "ResRef": "sp_c_woodworker",
+          "Tag": "southport_central_woodworker",
+          "Name": "Woodworker's Shop",
+          "Type": "Shop",
+          "Description": "A workshop where skilled artisans craft furniture, tools, and other wooden goods for the residents of Southport."
+        }
+      ]
+    },
+    {
+      "ResRef": "cordor_west",
+      "DefinitionTags": [
+      ],
+      "LinkedSettlement": 35,
+      "Environment": {
+        "Climate": "Temperate",
+        "SoilQuality": "Good",
+        "MineralQualityRange": {
+          "Min": "BelowAverage",
+          "Max": "Excellent"
+        }
+      },
+      "PlacesOfInterest": [
+        {
+          "ResRef": "sp_w_house1",
+          "Tag": "southport_west_house1",
+          "Name": "Plaza View",
+          "Type": "House",
+          "Description": "A quaint, small home near the West Southport Plaza."
+        },
+        {
+          "ResRef": "sp_w_house2",
+          "Tag": "southport_west_house2",
+          "Name": "Alley Dwelling",
+          "Type": "House",
+          "Description": "A cheap apartment built in the back alleys of Southport, often rented by the less fortunate residents of the city."
         }
       ]
     }
