@@ -2,18 +2,21 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core.NWNX;
+using NLog;
 
 namespace AmiaReforged.Classes.Spells;
 
 [ServiceBinding(typeof(CasterLevelOverrideService))]
 public class CasterLevelOverrideService
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
     // Dictionary mapping prestige classes to their caster level modifier formulas
-    // Formula takes prestige class level and returns the modifier (minimum 1)
+    // Formula takes prestige class level and returns the modifier (minimum 0, prevents negative)
     private readonly Dictionary<ClassType, Func<int, int>> _prestigeClassModifiers = new()
     {
-        { ClassType.PaleMaster, prcLevel => Math.Max(1, prcLevel - 5) },
-        { ClassType.DragonDisciple, prcLevel => Math.Max(1, prcLevel - 6) }
+        { ClassType.PaleMaster, prcLevel => Math.Max(0, prcLevel - 5) },
+        { ClassType.DragonDisciple, prcLevel => Math.Max(0, prcLevel - 6) }
     };
 
     // Base caster classes that can receive prestige class bonuses
@@ -76,7 +79,11 @@ public class CasterLevelOverrideService
         }
 
         // If no base caster class, can't apply prestige bonuses
-        if (baseClasses.Count == 0) return;
+        if (baseClasses.Count == 0)
+        {
+            Log.Warn($"Creature {casterCreature.Name} has prestige caster class but no base caster class");
+            return;
+        }
 
         // Get the highest level base caster class (dominant caster)
         (int baseLevel, int baseClassConst) = baseClasses.OrderByDescending(c => c.level).First();
@@ -85,11 +92,15 @@ public class CasterLevelOverrideService
         int totalModifier = 0;
         foreach ((ClassType prcType, int prcLevel) in prestigeClasses)
         {
-            totalModifier += _prestigeClassModifiers[prcType](prcLevel);
+            int modifier = _prestigeClassModifiers[prcType](prcLevel);
+            totalModifier += modifier;
+            Log.Debug($"{casterCreature.Name}: Prestige class {prcType} level {prcLevel} adds modifier {modifier}");
         }
 
-        // Calculate final caster level: base plus all prestige modifiers
-        int finalCasterLevel = baseLevel + totalModifier;
+        // Calculate final caster level: base plus all prestige modifiers (minimum 1)
+        int finalCasterLevel = Math.Max(1, baseLevel + totalModifier);
+
+        Log.Info($"{casterCreature.Name}: Setting caster level override - Base {baseLevel} + Modifier {totalModifier} = {finalCasterLevel} for class {baseClassConst}");
 
         // Apply the override to the dominant base caster class
         CreaturePlugin.SetCasterLevelOverride(casterCreature, baseClassConst, finalCasterLevel);
