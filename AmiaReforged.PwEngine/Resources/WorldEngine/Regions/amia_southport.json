@@ -9,7 +9,7 @@
       "LinkedSettlement": 35,
       "Environment": {
         "Climate": "Temperate",
-        "SoilQuality": "Good",
+        "SoilQuality": "Poor",
         "MineralQualityRange": {
           "Min": "BelowAverage",
           "Max": "Excellent"
@@ -53,7 +53,7 @@
       "LinkedSettlement": 35,
       "Environment": {
         "Climate": "Temperate",
-        "SoilQuality": "Good",
+        "SoilQuality": "Poor",
         "MineralQualityRange": {
           "Min": "BelowAverage",
           "Max": "Excellent"
@@ -90,7 +90,7 @@
       "LinkedSettlement": 35,
       "Environment": {
         "Climate": "Temperate",
-        "SoilQuality": "Good",
+        "SoilQuality": "Poor",
         "MineralQualityRange": {
           "Min": "BelowAverage",
           "Max": "Excellent"
@@ -110,6 +110,36 @@
           "Name": "Alley Dwelling",
           "Type": "House",
           "Description": "A cheap apartment built in the back alleys of Southport, often rented by the less fortunate residents of the city."
+        }
+      ]
+    },
+    {
+      "ResRef": "cordor_noutskirt",
+      "DefinitionTags": [
+      ],
+      "LinkedSettlement": 35,
+      "Environment": {
+        "Climate": "Temperate",
+        "SoilQuality": "Good",
+        "MineralQualityRange": {
+          "Min": "Average",
+          "Max": "Excellent"
+        }
+      },
+      "PlacesOfInterest": [
+        {
+          "ResRef": "tr_house1",
+          "Tag": "travellers_house1",
+          "Name": "Frontier House",
+          "Type": "House",
+          "Description": "A spacious house overlooking the Northern gates."
+        },
+        {
+          "ResRef": "tr_house2",
+          "Tag": "travellers_house2",
+          "Name": "Chauntea's Refuge",
+          "Type": "House",
+          "Description": "A farm with a small house. Perfect for sharecroppers or those who want to live off the land."
         }
       ]
     }
