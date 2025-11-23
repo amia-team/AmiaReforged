@@ -109,7 +109,7 @@ public class CasterLevelOverrideService
         }
 
         // Get the highest level base caster class (dominant caster)
-        (int baseLevel, int baseClassConst) classThing = baseClasses.OrderByDescending(c => c.level).First();
+        (int baseLevel, int baseClassConst) baseClassTuple = baseClasses.OrderByDescending(c => c.level).First();
 
         // Calculate total modifier from all prestige classes
         int totalModifier = 0;
@@ -121,13 +121,13 @@ public class CasterLevelOverrideService
         }
 
         // Calculate final caster level: base plus all prestige modifiers (minimum 1)
-        int finalCasterLevel = Math.Max(1, classThing.baseLevel + totalModifier);
+        int finalCasterLevel = Math.Max(1, baseClassTuple.baseLevel + totalModifier);
 
         Log.Info(
-            $"{casterCreature.Name}: Setting caster level override - Base {classThing.baseLevel} + Modifier {totalModifier} = {finalCasterLevel} for class {classThing.baseClassConst}");
+            $"{casterCreature.Name}: Setting caster level override - Base {baseClassTuple.baseLevel} + Modifier {totalModifier} = {finalCasterLevel} for class {baseClassTuple.baseClassConst}");
 
         // Apply the override to the dominant base caster class
-        CreaturePlugin.SetCasterLevelOverride(casterCreature, classThing.baseClassConst, finalCasterLevel);
+        CreaturePlugin.SetCasterLevelOverride(casterCreature, baseClassTuple.baseClassConst, finalCasterLevel);
         _casterLevelOverridesApplied[casterCreature] = true;
     }
 }
