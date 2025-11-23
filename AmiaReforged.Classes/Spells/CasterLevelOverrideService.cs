@@ -19,6 +19,8 @@ public class CasterLevelOverrideService
         { ClassType.DragonDisciple, prcLevel => Math.Max(0, prcLevel - 6) }
     };
 
+    private readonly Dictionary<NwCreature, bool> _casterLevelOverridesApplied = new();
+
     // Base caster classes that can receive prestige class bonuses
     private static readonly HashSet<ClassType> BaseCasterClasses = new()
     {
@@ -32,9 +34,29 @@ public class CasterLevelOverrideService
 
     public CasterLevelOverrideService()
     {
+        NwModule.Instance.OnClientLeave += RemoveSetup;
+
         NwModule.Instance.OnClientEnter += FixCasterLevel;
         NwModule.Instance.OnLevelUp += FixCasterLevelOnLevelUp;
         NwModule.Instance.OnLevelDown += FixCasterLevelOnLevelDown;
+        NwModule.Instance.OnSpellCast += FixCasterLevelOverride;
+    }
+
+    private void RemoveSetup(ModuleEvents.OnClientLeave obj)
+    {
+        NwCreature? playerLoginCreature = obj.Player.LoginCreature;
+        if (playerLoginCreature is null) return;
+
+        _casterLevelOverridesApplied[playerLoginCreature] = false;
+
+        _casterLevelOverridesApplied.Remove(playerLoginCreature);
+    }
+
+    private void FixCasterLevelOverride(OnSpellCast obj)
+    {
+        if (!obj.Caster.IsPlayerControlled(out NwPlayer? player)) return;
+        if (player.LoginCreature is null) return;
+        DoCasterLevelOverride(player.LoginCreature);
     }
 
     private void FixCasterLevelOnLevelDown(OnLevelDown obj)
@@ -55,6 +77,7 @@ public class CasterLevelOverrideService
 
     private void DoCasterLevelOverride(NwCreature casterCreature)
     {
+        if (_casterLevelOverridesApplied[casterCreature]) return;
         // Find all prestige classes that have caster level modifiers
         List<(ClassType classType, int level)> prestigeClasses = [];
         foreach (CreatureClassInfo charClass in casterCreature.Classes)
@@ -100,9 +123,11 @@ public class CasterLevelOverrideService
         // Calculate final caster level: base plus all prestige modifiers (minimum 1)
         int finalCasterLevel = Math.Max(1, classThing.baseLevel + totalModifier);
 
-        Log.Info($"{casterCreature.Name}: Setting caster level override - Base {classThing.baseLevel} + Modifier {totalModifier} = {finalCasterLevel} for class {classThing.baseClassConst}");
+        Log.Info(
+            $"{casterCreature.Name}: Setting caster level override - Base {classThing.baseLevel} + Modifier {totalModifier} = {finalCasterLevel} for class {classThing.baseClassConst}");
 
         // Apply the override to the dominant base caster class
         CreaturePlugin.SetCasterLevelOverride(casterCreature, classThing.baseClassConst, finalCasterLevel);
+        _casterLevelOverridesApplied[casterCreature] = true;
     }
 }
