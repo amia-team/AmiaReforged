@@ -17,6 +17,7 @@ public class SpellCastingService
     private readonly SpellDecoratorFactory _decoratorFactory;
     private readonly Dictionary<string, ISpell> _spellImpactHandlers = new();
 
+
     public SpellCastingService(ScriptHandleFactory scriptHandleFactory, SpellDecoratorFactory decoratorFactory,
         IEnumerable<ISpell> spells)
     {
@@ -30,25 +31,6 @@ public class SpellCastingService
 
         NwModule.Instance.OnSpellCast += PreventRestrictedCasting;
         NwModule.Instance.OnSpellCast += CraftSpell;
-        NwModule.Instance.OnClientEnter += FixCasterLevel;
-        NwModule.Instance.OnLevelUp += FixCasterLevelOnLevelUp;
-        NwModule.Instance.OnLevelDown += FixCasterLevelOnLevelDown;
-    }
-
-    private void FixCasterLevelOnLevelDown(OnLevelDown obj)
-    {
-        DoCasterLevelOverride(obj.Creature);
-    }
-
-    private void FixCasterLevelOnLevelUp(OnLevelUp obj)
-    {
-        DoCasterLevelOverride(obj.Creature);
-    }
-
-    private void FixCasterLevel(ModuleEvents.OnClientEnter obj)
-    {
-        if (obj.Player.LoginCreature is null) return;
-        DoCasterLevelOverride(obj.Player.LoginCreature);
     }
 
     private void CraftSpell(OnSpellCast eventData)
@@ -131,32 +113,5 @@ public class SpellCastingService
         spell.CheckedSpellResistance = false;
 
         return ScriptHandleResult.Handled;
-    }
-
-    private void DoCasterLevelOverride(NwCreature casterCreature)
-    {
-        CreatureClassInfo? paleMaster =
-            casterCreature.Classes.FirstOrDefault(c => c.Class.ClassType == ClassType.PaleMaster);
-        if (paleMaster is null) return;
-
-        List<(int levels, int classConst)> baseClasses = [];
-        foreach (CreatureClassInfo charClass in casterCreature.Classes)
-        {
-            if (charClass.Class.ClassType is ClassType.Bard or ClassType.Assassin or ClassType.Wizard
-                or ClassType.Sorcerer)
-            {
-                baseClasses.Add((charClass.Level, (int)charClass.Class.ClassType));
-            }
-        }
-
-        int pmLevelMod = paleMaster.Level;
-
-
-        (int levels, int classConst) largestBase = baseClasses.OrderByDescending(c => c.Item1).FirstOrDefault();
-
-        int levels = pmLevelMod + largestBase.levels;
-
-
-        CreaturePlugin.SetCasterLevelOverride(casterCreature, largestBase.classConst, levels);
     }
 }
