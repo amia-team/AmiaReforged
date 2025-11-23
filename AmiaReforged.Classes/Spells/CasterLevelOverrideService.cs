@@ -94,7 +94,7 @@ public class CasterLevelOverrideService
         {
             int modifier = _prestigeClassModifiers[prcType](prcLevel);
             totalModifier += modifier;
-            Log.Debug($"{casterCreature.Name}: Prestige class {prcType} level {prcLevel} adds modifier {modifier}");
+            Log.Info($"{casterCreature.Name}: Prestige class {prcType} level {prcLevel} adds modifier {modifier}");
         }
 
         // Calculate final caster level: base plus all prestige modifiers (minimum 1)
