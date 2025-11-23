@@ -86,10 +86,10 @@ public class SpellCastingService
 
         if (caster is not NwCreature casterCreature) return ScriptHandleResult.Handled;
 
+        DoCasterLevelOverride(casterCreature, eventData);
+
         if (target is null)
         {
-            DoCasterLevelOverride(casterCreature, eventData);
-
             spell.OnSpellImpact(eventData);
 
             RevertCasterLevelOverride(casterCreature);
@@ -136,9 +136,9 @@ public class SpellCastingService
 
         int pmLevelMod = eventData.Spell.SpellSchool == SpellSchool.Necromancy
             ? paleMaster.Level
-            : Math.Clamp(paleMaster.Level - 6, 0, paleMaster.Level); // Prevent negative integers
+            : Math.Clamp(paleMaster.Level - 5, 0, paleMaster.Level); // Prevent negative integers
 
-        int levels = paleMaster.Level + baseClassLevels;
+        int levels = pmLevelMod + baseClassLevels;
         CreaturePlugin.SetCasterLevelOverride(casterCreature, NWScript.CLASS_TYPE_PALE_MASTER, levels);
     }
 
