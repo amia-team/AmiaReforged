@@ -27,7 +27,10 @@ public sealed class ReleasePlayerStallCommandHandler : ICommandHandler<ReleasePl
         ReleasePlayerStallRequest request = new(
             command.StallId,
             command.Requestor,
-            command.Force);
+            command.Force,
+            ReleasedUtc: null,
+            command.AreaResRef,
+            command.PlaceableTag);
 
         return _stallService.ReleaseAsync(request, cancellationToken)
             .ContinueWith(task => MapToCommandResult(task.Result), cancellationToken, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);

@@ -11,11 +11,18 @@ public sealed record ReleasePlayerStallCommand : ICommand
     public required long StallId { get; init; }
     public required PersonaId Requestor { get; init; }
     public bool Force { get; init; }
+    public string? AreaResRef { get; init; }
+    public string? PlaceableTag { get; init; }
 
     /// <summary>
     /// Factory helper that enforces basic validation.
     /// </summary>
-    public static ReleasePlayerStallCommand Create(long stallId, PersonaId requestor, bool force = false)
+    public static ReleasePlayerStallCommand Create(
+        long stallId,
+        PersonaId requestor,
+        bool force = false,
+        string? areaResRef = null,
+        string? placeableTag = null)
     {
         if (stallId <= 0)
         {
@@ -26,7 +33,9 @@ public sealed record ReleasePlayerStallCommand : ICommand
         {
             StallId = stallId,
             Requestor = requestor,
-            Force = force
+            Force = force,
+            AreaResRef = areaResRef,
+            PlaceableTag = placeableTag
         };
     }
 }

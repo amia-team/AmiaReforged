@@ -12,6 +12,7 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops.PlayerStalls;
 
@@ -111,6 +112,11 @@ public sealed class PlayerStallInitializer
         {
             Log.Warn("Player stall placeable {Tag} in area {AreaResRef} registered with state {State}.",
                 placeable.Tag ?? "<no-tag>", registration.AreaResRef ?? "<unknown>", registration.State);
+        }
+        else
+        {
+            // Sync placeable name with ownership status
+            UpdateStallPlaceableName(placeable, registration.StallId!.Value);
         }
     }
 
@@ -673,6 +679,40 @@ public sealed class PlayerStallInitializer
         DuplicateTag,
         AreaMismatch,
         SeedingFailed
+    }
+
+    private void UpdateStallPlaceableName(NwPlaceable placeable, long stallId)
+    {
+        try
+        {
+            PlayerStall? stall = _shops.GetShopById(stallId);
+            if (stall == null)
+            {
+                Log.Warn("Could not find stall {StallId} to update placeable name.", stallId);
+                return;
+            }
+
+            string newName;
+            if (!string.IsNullOrWhiteSpace(stall.OwnerDisplayName))
+            {
+                newName = $"{stall.OwnerDisplayName}'s Stall";
+            }
+            else
+            {
+                newName = "Unclaimed Stall";
+            }
+
+            if (placeable.IsValid)
+            {
+                NWScript.SetName(placeable, newName);
+                Log.Debug("Updated stall placeable {Tag} (ID {StallId}) name to '{NewName}'.",
+                    placeable.Tag ?? stall.Tag, stallId, newName);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to update stall placeable name for stall {StallId}.", stallId);
+        }
     }
 
     private sealed record StallRegistration(long? StallId, string? DbTag, string? AreaResRef, StallRegistrationState State)

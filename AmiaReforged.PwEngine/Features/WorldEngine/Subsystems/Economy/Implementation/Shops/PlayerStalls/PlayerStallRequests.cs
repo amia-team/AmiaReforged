@@ -25,7 +25,9 @@ public sealed record ReleasePlayerStallRequest(
     long StallId,
     PersonaId Requestor,
     bool Force,
-    DateTime? ReleasedUtc = null);
+    DateTime? ReleasedUtc = null,
+    string? AreaResRef = null,
+    string? PlaceableTag = null);
 
 /// <summary>
 /// Request to list a product on a player stall.

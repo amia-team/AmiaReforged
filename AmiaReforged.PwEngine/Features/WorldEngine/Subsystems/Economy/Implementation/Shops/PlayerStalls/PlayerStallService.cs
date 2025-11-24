@@ -3,7 +3,10 @@ using System.Text.Json;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
+using Anvil.API;
 using Anvil.Services;
+using NLog;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops.PlayerStalls;
 
@@ -13,6 +16,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 [ServiceBinding(typeof(IPlayerStallService))]
 public sealed class PlayerStallService : IPlayerStallService
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly IPlayerShopRepository _shops;
 
     public PlayerStallService(IPlayerShopRepository shops)
@@ -77,6 +81,10 @@ public sealed class PlayerStallService : IPlayerStallService
                 PlayerStallError.PersistenceFailure,
                 "Failed to persist stall ownership changes."));
         }
+
+        // Rename placeable to show owner's name
+        string stallName = $"{request.OwnerDisplayName}'s Stall";
+        TryRenameStallPlaceable(request.AreaResRef, request.PlaceableTag, stall.Tag, stallName);
 
         IReadOnlyDictionary<string, object> data = new Dictionary<string, object>
         {
@@ -180,6 +188,12 @@ public sealed class PlayerStallService : IPlayerStallService
             return Task.FromResult(PlayerStallServiceResult.Fail(
                 PlayerStallError.PersistenceFailure,
                 "Failed to release stall ownership."));
+        }
+
+        // Rename placeable to "Unclaimed Stall" if location info provided
+        if (!string.IsNullOrWhiteSpace(request.AreaResRef) && !string.IsNullOrWhiteSpace(request.PlaceableTag))
+        {
+            TryRenameStallPlaceable(request.AreaResRef, request.PlaceableTag, stall.Tag, "Unclaimed Stall");
         }
 
         IReadOnlyDictionary<string, object> data = new Dictionary<string, object>
@@ -492,5 +506,42 @@ public sealed class PlayerStallService : IPlayerStallService
         };
 
         return JsonSerializer.Serialize(metadata);
+    }
+
+    private static void TryRenameStallPlaceable(string areaResRef, string placeableTag, string dbTag, string newName)
+    {
+        try
+        {
+            const string nwnStallTag = "engine_player_stall";
+            const string dbTagLocalVar = "engine_player_stall_dbtag";
+
+            // Search by the actual NWN object tag, then filter by area and local variable
+            NwPlaceable? placeable = NwObject.FindObjectsWithTag<NwPlaceable>(nwnStallTag)
+                .FirstOrDefault(p =>
+                {
+                    if (p.Area == null || !string.Equals(p.Area.ResRef, areaResRef, StringComparison.OrdinalIgnoreCase))
+                        return false;
+
+                    LocalVariableString dbTagVar = p.GetObjectVariable<LocalVariableString>(dbTagLocalVar);
+                    return string.Equals(dbTagVar.Value, dbTag, StringComparison.OrdinalIgnoreCase);
+                });
+
+            if (placeable != null && placeable.IsValid)
+            {
+                NWScript.SetName(placeable, newName);
+                Log.Info("Renamed stall placeable (NWN tag: {NwnTag}, DB tag: {DbTag}) in area {AreaResRef} to '{NewName}'.",
+                    nwnStallTag, dbTag, areaResRef, newName);
+            }
+            else
+            {
+                Log.Warn("Could not find stall placeable (NWN tag: {NwnTag}, DB tag: {DbTag}) in area {AreaResRef} to rename.",
+                    nwnStallTag, dbTag, areaResRef);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to rename stall placeable (DB tag: {DbTag}) in area {AreaResRef}.",
+                dbTag, areaResRef);
+        }
     }
 }

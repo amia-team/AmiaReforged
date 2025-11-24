@@ -13,6 +13,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementati
 using Anvil.API;
 using Anvil.Services;
 using NLog;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.Chat.Commands.DM;
 
@@ -315,6 +316,9 @@ public class PlayerStallCommand : IChatCommand
                 return;
             }
 
+            // Rename placeable back to "Unclaimed Stall"
+            RenameStallPlaceable(areaResRef, stall.Tag, "Unclaimed Stall");
+
             // Publish ownership released event
             StallOwnershipReleasedEvent releaseEvent = new StallOwnershipReleasedEvent
             {
@@ -427,5 +431,47 @@ public class PlayerStallCommand : IChatCommand
         _windowDirector.OpenWindow(view.Presenter);
 
         player.SendServerMessage($"Opening seller view for stall: {stall.Tag}", ColorConstants.Cyan);
+    }
+
+    private static void RenameStallPlaceable(string? areaResRef, string? dbTag, string newName)
+    {
+        if (string.IsNullOrWhiteSpace(areaResRef) || string.IsNullOrWhiteSpace(dbTag))
+        {
+            return;
+        }
+
+        try
+        {
+            const string nwnStallTag = "engine_player_stall";
+            const string dbTagLocalVar = "engine_player_stall_dbtag";
+
+            // Search by the actual NWN object tag, then filter by area and local variable
+            NwPlaceable? placeable = NwObject.FindObjectsWithTag<NwPlaceable>(nwnStallTag)
+                .FirstOrDefault(p =>
+                {
+                    if (p.Area == null || !string.Equals(p.Area.ResRef, areaResRef, StringComparison.OrdinalIgnoreCase))
+                        return false;
+
+                    LocalVariableString dbTagVar = p.GetObjectVariable<LocalVariableString>(dbTagLocalVar);
+                    return string.Equals(dbTagVar.Value, dbTag, StringComparison.OrdinalIgnoreCase);
+                });
+
+            if (placeable != null && placeable.IsValid)
+            {
+                NWScript.SetName(placeable, newName);
+                Log.Info("Renamed stall placeable (DB tag: {DbTag}) in area {AreaResRef} to '{NewName}' via DM command.",
+                    dbTag, areaResRef, newName);
+            }
+            else
+            {
+                Log.Warn("Could not find stall placeable (DB tag: {DbTag}) in area {AreaResRef} to rename via DM command.",
+                    dbTag, areaResRef);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to rename stall placeable (DB tag: {DbTag}) in area {AreaResRef} via DM command.",
+                dbTag, areaResRef);
+        }
     }
 }
