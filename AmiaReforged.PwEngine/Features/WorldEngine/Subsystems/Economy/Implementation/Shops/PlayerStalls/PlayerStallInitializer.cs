@@ -714,7 +714,7 @@ public sealed class PlayerStallInitializer
                 // Apply VFX if claimed
                 if (isClaimed)
                 {
-                    Effect vfx = Effect.VisualEffect(VfxType.DurAuraCyan, false);
+                    Effect vfx = Effect.VisualEffect(VfxType.DurAuraCyan);
                     vfx.Tag = claimedVfxTag;
                     vfx.DurationType = EffectDuration.Permanent;
                     NWScript.ApplyEffectToObject(NWScript.DURATION_TYPE_PERMANENT, vfx, placeable);
