@@ -4,8 +4,8 @@
   "ShopkeeperTag": "southport_woodworker_shopkeep",
   "Description": "A quaint little shop of fine wooden furniture and decor, crafted by the skilled artisans of Southport.",
   "Restock": {
-    "MinMinutes": 2,
-    "MaxMinutes": 12
+    "MinMinutes": 15,
+    "MaxMinutes": 30
   },
   "Products": [
     {
@@ -24,6 +24,34 @@
     },
     {
       "ItemTag": "mirror_ornate_tall",
+      "Price": 400,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "chair_highback_armchair",
+      "Price": 400,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "chair_plain",
+      "Price": 400,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "chair_spindleback",
+      "Price": 400,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "chair_windsor",
       "Price": 400,
       "InitialStock": 5,
       "MaxStock": 10,

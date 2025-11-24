@@ -1,0 +1,53 @@
+{
+  "ResRef": "furniturespawn",
+  "ItemTag": "plc_track_hulg",
+  "Name": "Track_HuLg",
+  "Description": "",
+  "Materials": [
+    "Bronze"
+  ],
+  "JobSystemType": "Furniture",
+  "BaseItemType": 74,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 12
+  },
+  "BaseValue": 400,
+  "LocalVariables": [
+    {
+      "Name": "is_plc",
+      "Type": "Int",
+      "Value": 1
+    },
+    {
+      "Name": "health_override",
+      "Type": "Int",
+      "Value": 120
+    },
+    {
+      "Name": "is_plot",
+      "Type": "Int",
+      "Value": 0
+    },
+    {
+      "Name": "is_static",
+      "Type": "Int",
+      "Value": 0
+    },
+    {
+      "Name": "plc_resref",
+      "Type": "String",
+      "Value": "generic_plc1"
+    },
+    {
+      "Name": "plc_name",
+      "Type": "String",
+      "Value": "Track_HuLg"
+    },
+    {
+      "Name": "plc_appearance",
+      "Type": "Int",
+      "Value": 1451
+    }
+  ]
+}
