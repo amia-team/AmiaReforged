@@ -24,7 +24,8 @@ public sealed class PlayerStallService : IPlayerStallService
         _shops = shops ?? throw new ArgumentNullException(nameof(shops));
     }
 
-    public Task<PlayerStallServiceResult> ClaimAsync(ClaimPlayerStallRequest request, CancellationToken cancellationToken = default)
+    public Task<PlayerStallServiceResult> ClaimAsync(ClaimPlayerStallRequest request,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
@@ -32,7 +33,8 @@ public sealed class PlayerStallService : IPlayerStallService
         PlayerStall? stall = _shops.GetShopById(request.StallId);
         if (stall is null)
         {
-            return Task.FromResult(PlayerStallServiceResult.Fail(PlayerStallError.StallNotFound, $"Stall {request.StallId} was not found."));
+            return Task.FromResult(PlayerStallServiceResult.Fail(PlayerStallError.StallNotFound,
+                $"Stall {request.StallId} was not found."));
         }
 
         if (!string.Equals(stall.AreaResRef, request.AreaResRef, StringComparison.OrdinalIgnoreCase) ||
@@ -70,7 +72,8 @@ public sealed class PlayerStallService : IPlayerStallService
         PlayerStallDomainResult<Action<PlayerStall>> domainResult = aggregate.TryClaim(ownerGuid, options);
         if (!domainResult.Success)
         {
-            return Task.FromResult(PlayerStallServiceResult.Fail(domainResult.Error, domainResult.ErrorMessage ?? "Failed to update stall rent settings."));
+            return Task.FromResult(PlayerStallServiceResult.Fail(domainResult.Error,
+                domainResult.ErrorMessage ?? "Failed to update stall rent settings."));
         }
 
         IEnumerable<PlayerStallMember> members = BuildMembers(request);
@@ -84,7 +87,7 @@ public sealed class PlayerStallService : IPlayerStallService
 
         // Rename placeable to show owner's name
         string stallName = $"{request.OwnerDisplayName}'s Stall";
-        TryRenameStallPlaceable(request.AreaResRef, request.PlaceableTag, stall.Tag, stallName);
+        UpdateStallPlaceableAppearance(request.AreaResRef, request.PlaceableTag, stall.Tag, stallName, true);
 
         IReadOnlyDictionary<string, object> data = new Dictionary<string, object>
         {
@@ -142,7 +145,8 @@ public sealed class PlayerStallService : IPlayerStallService
         return members;
     }
 
-    public Task<PlayerStallServiceResult> ReleaseAsync(ReleasePlayerStallRequest request, CancellationToken cancellationToken = default)
+    public Task<PlayerStallServiceResult> ReleaseAsync(ReleasePlayerStallRequest request,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
@@ -150,21 +154,24 @@ public sealed class PlayerStallService : IPlayerStallService
         PlayerStall? stall = _shops.GetShopById(request.StallId);
         if (stall is null)
         {
-            return Task.FromResult(PlayerStallServiceResult.Fail(PlayerStallError.StallNotFound, $"Stall {request.StallId} was not found."));
+            return Task.FromResult(PlayerStallServiceResult.Fail(PlayerStallError.StallNotFound,
+                $"Stall {request.StallId} was not found."));
         }
 
         PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
         DateTime releasedUtc = (request.ReleasedUtc ?? DateTime.UtcNow).ToUniversalTime();
         string personaId = request.Requestor.ToString();
 
-        PlayerStallDomainResult<Action<PlayerStall>> domainResult = aggregate.TryRelease(personaId, request.Force, releasedUtc);
+        PlayerStallDomainResult<Action<PlayerStall>> domainResult =
+            aggregate.TryRelease(personaId, request.Force, releasedUtc);
         if (!domainResult.Success)
         {
             PlayerStallError error = domainResult.Error;
             string message = domainResult.ErrorMessage ?? "Failed to update stall rent settings.";
 
             if (error == PlayerStallError.Unauthorized &&
-                (!string.IsNullOrWhiteSpace(stall.OwnerPersonaId) || !string.IsNullOrWhiteSpace(stall.OwnerPlayerPersonaId)))
+                (!string.IsNullOrWhiteSpace(stall.OwnerPersonaId) ||
+                 !string.IsNullOrWhiteSpace(stall.OwnerPlayerPersonaId)))
             {
                 bool isOwner = MatchesOwnerPersona(stall, personaId);
                 bool isActiveMember = stall.Members?.Any(member =>
@@ -193,7 +200,8 @@ public sealed class PlayerStallService : IPlayerStallService
         // Rename placeable to "Unclaimed Stall" if location info provided
         if (!string.IsNullOrWhiteSpace(request.AreaResRef) && !string.IsNullOrWhiteSpace(request.PlaceableTag))
         {
-            TryRenameStallPlaceable(request.AreaResRef, request.PlaceableTag, stall.Tag, "Unclaimed Stall");
+            UpdateStallPlaceableAppearance(request.AreaResRef, request.PlaceableTag, stall.Tag, "Unclaimed Stall",
+                false);
         }
 
         IReadOnlyDictionary<string, object> data = new Dictionary<string, object>
@@ -205,7 +213,8 @@ public sealed class PlayerStallService : IPlayerStallService
         return Task.FromResult(PlayerStallServiceResult.Ok(data));
     }
 
-    public Task<PlayerStallServiceResult> ListProductAsync(ListStallProductRequest request, CancellationToken cancellationToken = default)
+    public Task<PlayerStallServiceResult> ListProductAsync(ListStallProductRequest request,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
@@ -213,7 +222,8 @@ public sealed class PlayerStallService : IPlayerStallService
         PlayerStall? stall = _shops.GetShopById(request.StallId);
         if (stall is null)
         {
-            return Task.FromResult(PlayerStallServiceResult.Fail(PlayerStallError.StallNotFound, $"Stall {request.StallId} was not found."));
+            return Task.FromResult(PlayerStallServiceResult.Fail(PlayerStallError.StallNotFound,
+                $"Stall {request.StallId} was not found."));
         }
 
         PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
@@ -252,7 +262,8 @@ public sealed class PlayerStallService : IPlayerStallService
         return Task.FromResult(PlayerStallServiceResult.Ok(data));
     }
 
-    public Task<PlayerStallServiceResult> UpdateProductPriceAsync(UpdateStallProductPriceRequest request, CancellationToken cancellationToken = default)
+    public Task<PlayerStallServiceResult> UpdateProductPriceAsync(UpdateStallProductPriceRequest request,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
@@ -304,7 +315,8 @@ public sealed class PlayerStallService : IPlayerStallService
         return Task.FromResult(PlayerStallServiceResult.Ok(data));
     }
 
-    public Task<PlayerStallServiceResult> UpdateRentSettingsAsync(UpdateStallRentSettingsRequest request, CancellationToken cancellationToken = default)
+    public Task<PlayerStallServiceResult> UpdateRentSettingsAsync(UpdateStallRentSettingsRequest request,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
@@ -331,7 +343,8 @@ public sealed class PlayerStallService : IPlayerStallService
             string message = domainResult.ErrorMessage ?? "Failed to update stall rent settings.";
 
             if (error == PlayerStallError.Unauthorized &&
-                (!string.IsNullOrWhiteSpace(stall.OwnerPersonaId) || !string.IsNullOrWhiteSpace(stall.OwnerPlayerPersonaId)))
+                (!string.IsNullOrWhiteSpace(stall.OwnerPersonaId) ||
+                 !string.IsNullOrWhiteSpace(stall.OwnerPlayerPersonaId)))
             {
                 bool isOwner = MatchesOwnerPersona(stall, personaId);
                 bool isActiveMember = stall.Members?.Any(member =>
@@ -366,7 +379,8 @@ public sealed class PlayerStallService : IPlayerStallService
         return Task.FromResult(PlayerStallServiceResult.Ok(data));
     }
 
-    public Task<PlayerStallServiceResult> WithdrawEarningsAsync(WithdrawStallEarningsRequest request, CancellationToken cancellationToken = default)
+    public Task<PlayerStallServiceResult> WithdrawEarningsAsync(WithdrawStallEarningsRequest request,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
@@ -464,7 +478,8 @@ public sealed class PlayerStallService : IPlayerStallService
         return false;
     }
 
-    private void RecordWithdrawalLedgerEntry(PlayerStall stall, WithdrawStallEarningsRequest request, PlayerStallWithdrawal withdrawal)
+    private void RecordWithdrawalLedgerEntry(PlayerStall stall, WithdrawStallEarningsRequest request,
+        PlayerStallWithdrawal withdrawal)
     {
         PlayerStallLedgerEntry entry = new()
         {
@@ -495,7 +510,8 @@ public sealed class PlayerStallService : IPlayerStallService
             string.IsNullOrWhiteSpace(personaLabel) ? "unknown persona" : personaLabel);
     }
 
-    private static string BuildWithdrawalMetadata(WithdrawStallEarningsRequest request, PlayerStallWithdrawal withdrawal)
+    private static string BuildWithdrawalMetadata(WithdrawStallEarningsRequest request,
+        PlayerStallWithdrawal withdrawal)
     {
         var metadata = new
         {
@@ -508,12 +524,14 @@ public sealed class PlayerStallService : IPlayerStallService
         return JsonSerializer.Serialize(metadata);
     }
 
-    private static void TryRenameStallPlaceable(string areaResRef, string placeableTag, string dbTag, string newName)
+    private static void UpdateStallPlaceableAppearance(string areaResRef, string placeableTag, string dbTag,
+        string newName, bool isClaimed)
     {
         try
         {
             const string nwnStallTag = "engine_player_stall";
             const string dbTagLocalVar = "engine_player_stall_dbtag";
+            const string claimedVfxTag = "stall_claimed_vfx";
 
             // Search by the actual NWN object tag, then filter by area and local variable
             NwPlaceable? placeable = NwObject.FindObjectsWithTag<NwPlaceable>(nwnStallTag)
@@ -528,19 +546,47 @@ public sealed class PlayerStallService : IPlayerStallService
 
             if (placeable != null && placeable.IsValid)
             {
+                // Rename the placeable
                 NWScript.SetName(placeable, newName);
-                Log.Info("Renamed stall placeable (NWN tag: {NwnTag}, DB tag: {DbTag}) in area {AreaResRef} to '{NewName}'.",
-                    nwnStallTag, dbTag, areaResRef, newName);
+
+                // Remove existing VFX with the claimed tag
+                foreach (Effect effect in placeable.ActiveEffects)
+                {
+                    if (effect.Tag == claimedVfxTag)
+                    {
+                        placeable.RemoveEffect(effect);
+                    }
+                }
+
+                // Apply VFX if claimed
+                if (isClaimed)
+                {
+                    Effect vfx = Effect.VisualEffect(VfxType.DurAuraCyan);
+                    vfx.Tag = claimedVfxTag;
+                    vfx.DurationType = EffectDuration.Permanent;
+                    NWScript.ApplyEffectToObject(NWScript.DURATION_TYPE_PERMANENT, vfx, placeable);
+
+                    Log.Info(
+                        "Applied claimed VFX to stall placeable (NWN tag: {NwnTag}, DB tag: {DbTag}) in area {AreaResRef}, renamed to '{NewName}'.",
+                        nwnStallTag, dbTag, areaResRef, newName);
+                }
+                else
+                {
+                    Log.Info(
+                        "Removed claimed VFX from stall placeable (NWN tag: {NwnTag}, DB tag: {DbTag}) in area {AreaResRef}, renamed to '{NewName}'.",
+                        nwnStallTag, dbTag, areaResRef, newName);
+                }
             }
             else
             {
-                Log.Warn("Could not find stall placeable (NWN tag: {NwnTag}, DB tag: {DbTag}) in area {AreaResRef} to rename.",
+                Log.Warn(
+                    "Could not find stall placeable (NWN tag: {NwnTag}, DB tag: {DbTag}) in area {AreaResRef} to update appearance.",
                     nwnStallTag, dbTag, areaResRef);
             }
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Failed to rename stall placeable (DB tag: {DbTag}) in area {AreaResRef}.",
+            Log.Error(ex, "Failed to update stall placeable appearance (DB tag: {DbTag}) in area {AreaResRef}.",
                 dbTag, areaResRef);
         }
     }

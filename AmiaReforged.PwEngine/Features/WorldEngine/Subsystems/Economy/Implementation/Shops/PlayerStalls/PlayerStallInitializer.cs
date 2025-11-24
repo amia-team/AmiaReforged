@@ -685,33 +685,48 @@ public sealed class PlayerStallInitializer
     {
         try
         {
+            const string claimedVfxTag = "stall_claimed_vfx";
+
             PlayerStall? stall = _shops.GetShopById(stallId);
             if (stall == null)
             {
-                Log.Warn("Could not find stall {StallId} to update placeable name.", stallId);
+                Log.Warn("Could not find stall {StallId} to update placeable appearance.", stallId);
                 return;
             }
 
-            string newName;
-            if (!string.IsNullOrWhiteSpace(stall.OwnerDisplayName))
-            {
-                newName = $"{stall.OwnerDisplayName}'s Stall";
-            }
-            else
-            {
-                newName = "Unclaimed Stall";
-            }
+            bool isClaimed = !string.IsNullOrWhiteSpace(stall.OwnerDisplayName);
+            string newName = isClaimed ? $"{stall.OwnerDisplayName}'s Stall" : "Unclaimed Stall";
 
             if (placeable.IsValid)
             {
+                // Update name
                 NWScript.SetName(placeable, newName);
-                Log.Debug("Updated stall placeable {Tag} (ID {StallId}) name to '{NewName}'.",
-                    placeable.Tag ?? stall.Tag, stallId, newName);
+
+                // Remove existing VFX with the claimed tag
+                foreach (Effect effect in placeable.ActiveEffects)
+                {
+                    if (effect.Tag == claimedVfxTag)
+                    {
+                        placeable.RemoveEffect(effect);
+                    }
+                }
+
+                // Apply VFX if claimed
+                if (isClaimed)
+                {
+                    Effect vfx = Effect.VisualEffect(VfxType.DurAuraCyan, false);
+                    vfx.Tag = claimedVfxTag;
+                    vfx.DurationType = EffectDuration.Permanent;
+                    NWScript.ApplyEffectToObject(NWScript.DURATION_TYPE_PERMANENT, vfx, placeable);
+                }
+
+                Log.Debug("Updated stall placeable {Tag} (ID {StallId}) to '{NewName}' with claimed status: {IsClaimed}.",
+                    placeable.Tag ?? stall.Tag, stallId, newName, isClaimed);
             }
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Failed to update stall placeable name for stall {StallId}.", stallId);
+            Log.Error(ex, "Failed to update stall placeable appearance for stall {StallId}.", stallId);
         }
     }
 

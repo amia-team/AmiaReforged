@@ -130,9 +130,9 @@
         {
           "ResRef": "tr_house1",
           "Tag": "travellers_house1",
-          "Name": "Frontier House",
+          "Name": "Lakeside Manor",
           "Type": "House",
-          "Description": "A spacious house overlooking the Northern gates."
+          "Description": "A spacious house by the lake."
         },
         {
           "ResRef": "tr_house2",

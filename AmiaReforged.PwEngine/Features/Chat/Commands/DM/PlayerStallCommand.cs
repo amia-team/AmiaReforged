@@ -444,6 +444,7 @@ public class PlayerStallCommand : IChatCommand
         {
             const string nwnStallTag = "engine_player_stall";
             const string dbTagLocalVar = "engine_player_stall_dbtag";
+            const string claimedVfxTag = "stall_claimed_vfx";
 
             // Search by the actual NWN object tag, then filter by area and local variable
             NwPlaceable? placeable = NwObject.FindObjectsWithTag<NwPlaceable>(nwnStallTag)
@@ -458,19 +459,30 @@ public class PlayerStallCommand : IChatCommand
 
             if (placeable != null && placeable.IsValid)
             {
+                // Rename the placeable
                 NWScript.SetName(placeable, newName);
-                Log.Info("Renamed stall placeable (DB tag: {DbTag}) in area {AreaResRef} to '{NewName}' via DM command.",
+
+                // Remove existing VFX with the claimed tag
+                foreach (Effect effect in placeable.ActiveEffects)
+                {
+                    if (effect.Tag == claimedVfxTag)
+                    {
+                        placeable.RemoveEffect(effect);
+                    }
+                }
+
+                Log.Info("Updated stall placeable (DB tag: {DbTag}) in area {AreaResRef} to '{NewName}' and removed claimed VFX via DM command.",
                     dbTag, areaResRef, newName);
             }
             else
             {
-                Log.Warn("Could not find stall placeable (DB tag: {DbTag}) in area {AreaResRef} to rename via DM command.",
+                Log.Warn("Could not find stall placeable (DB tag: {DbTag}) in area {AreaResRef} to update via DM command.",
                     dbTag, areaResRef);
             }
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Failed to rename stall placeable (DB tag: {DbTag}) in area {AreaResRef} via DM command.",
+            Log.Error(ex, "Failed to update stall placeable (DB tag: {DbTag}) in area {AreaResRef} via DM command.",
                 dbTag, areaResRef);
         }
     }
