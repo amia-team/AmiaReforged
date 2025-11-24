@@ -1,0 +1,38 @@
+{
+  "ResRef": "furniturespawn",
+  "ItemTag": "chair_hin1",
+  "Name": "Chair, Halfling",
+  "Description": "A chair made in the style of hin woodworkers, featuring simple lines and legendarily sturdy construction.",
+  "Materials": [
+    "WoodOak"
+  ],
+  "JobSystemType": "Furniture",
+  "BaseItemType": 74,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 12
+  },
+  "BaseValue": 400,
+  "LocalVariables": [
+    {
+      "Name": "is_plc",
+      "Type": "Int",
+      "Value": 1
+    },
+    {
+      "Name": "plc_resref",
+      "Type": "String",
+      "Value": "chair7"
+    },
+    {
+      "Name": "plc_name",
+      "Type": "String",
+      "Value": "Chair, Hin Style"
+    },
+    {
+      "Name": "plc_appearance",
+      "Type": "Int",
+      "Value": 2581
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "ResRef": "furniturespawn",
+  "ItemTag": "chair_hin2",
+  "Name": "Chair, Halfling High Back",
+  "Description": "Don't let the name fool you; this high-backed chair is adequately sized for halflings, but offers extra support and comfort with its tall backrest. Crafted in the traditional hin style, it is legendary for its heirloom quality and sturdy construction.",
+  "Materials": [
+    "WoodOak"
+  ],
+  "JobSystemType": "Furniture",
+  "BaseItemType": 74,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 12
+  },
+  "BaseValue": 400,
+  "LocalVariables": [
+    {
+      "Name": "is_plc",
+      "Type": "Int",
+      "Value": 1
+    },
+    {
+      "Name": "plc_resref",
+      "Type": "String",
+      "Value": "chair7"
+    },
+    {
+      "Name": "plc_name",
+      "Type": "String",
+      "Value": "Chair, Hin High Back"
+    },
+    {
+      "Name": "plc_appearance",
+      "Type": "Int",
+      "Value": 2580
+    }
+  ]
+}
