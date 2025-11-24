@@ -6,4 +6,7 @@ internal sealed record PlaceableBlueprint(
     NwItem SourceItem,
     string ResRef,
     string DisplayName,
-    int Appearance);
+    int Appearance,
+    int HealthOverride = -1,
+    bool IsPlot = false,
+    bool IsStatic = false);

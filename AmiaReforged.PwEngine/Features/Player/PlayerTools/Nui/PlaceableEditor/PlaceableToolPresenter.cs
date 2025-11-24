@@ -282,6 +282,9 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             return;
         }
 
+        placeable.HP = blueprint.HealthOverride > 0 ? blueprint.HealthOverride : placeable.HP;
+        placeable.IsStatic = blueprint.IsStatic;
+        placeable.PlotFlag = blueprint.IsPlot;
         placeable.Name = blueprint.DisplayName;
         EnsureCharacterAssociation(placeable);
 

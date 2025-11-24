@@ -20,9 +20,24 @@
       "Value": 1
     },
     {
+      "Name": "health_override",
+      "Type": "Int",
+      "Value": 120
+    },
+    {
+      "Name": "is_plot",
+      "Type": "Int",
+      "Value": 0
+    },
+    {
+      "Name": "is_static",
+      "Type": "Int",
+      "Value": 0
+    },
+    {
       "Name": "plc_resref",
       "Type": "String",
-      "Value": "ds_spear"
+      "Value": "generic_plc1"
     },
     {
       "Name": "plc_name",
