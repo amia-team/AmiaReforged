@@ -5,148 +5,141 @@
   "Description": "A quaint little shop of fine wooden furniture and decor, crafted by the skilled artisans of Southport.",
   "Products": [
     {
-      "ItemTag": "blueprint_furniture_table",
-      "Price": 125,
-      "InitialStock": 12,
-      "MaxStock": 12,
-      "RestockAmount": 12
-    },
-    {
       "ItemTag": "mirror_ornate_round",
-      "Price": 400,
+      "Price": 250,
       "InitialStock": 5,
       "MaxStock": 5,
       "RestockAmount": 5
     },
     {
       "ItemTag": "mirror_ornate_tall",
-      "Price": 400,
+      "Price": 500,
       "InitialStock": 5,
       "MaxStock": 5,
       "RestockAmount": 5
     },
     {
       "ItemTag": "chair_highback_armchair",
-      "Price": 400,
+      "Price": 200,
       "InitialStock": 5,
       "MaxStock": 5,
       "RestockAmount": 5
     },
     {
       "ItemTag": "chair_plain",
-      "Price": 400,
+      "Price": 75,
       "InitialStock": 5,
       "MaxStock": 5,
       "RestockAmount": 5
     },
     {
       "ItemTag": "chair_spindleback",
-      "Price": 400,
+      "Price": 130,
       "InitialStock": 5,
       "MaxStock": 5,
       "RestockAmount": 5
     },
     {
       "ItemTag": "chair_windsor",
-      "Price": 400,
+      "Price": 150,
       "InitialStock": 5,
       "MaxStock": 5,
       "RestockAmount": 5
     },
     {
       "ItemTag": "plc_bed",
-      "Price": 0,
-      "InitialStock": 1,
-      "MaxStock": 1,
-      "RestockAmount": 1
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 4,
+      "RestockAmount": 4
     },
     {
       "ItemTag": "plc_bed1",
-      "Price": 0,
-      "InitialStock": 1,
-      "MaxStock": 1,
-      "RestockAmount": 1
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 4,
+      "RestockAmount": 4
     },
     {
       "ItemTag": "plc_bed2",
-      "Price": 0,
-      "InitialStock": 1,
-      "MaxStock": 1,
-      "RestockAmount": 1
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 4,
+      "RestockAmount": 4
     },
     {
       "ItemTag": "plc_bed3",
-      "Price": 0,
-      "InitialStock": 1,
-      "MaxStock": 1,
-      "RestockAmount": 1
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 4,
+      "RestockAmount": 4
     },
     {
       "ItemTag": "plc_bed4",
-      "Price": 0,
-      "InitialStock": 1,
-      "MaxStock": 1,
-      "RestockAmount": 1
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 4,
+      "RestockAmount": 4
     },
     {
       "ItemTag": "plc_bed_double_brown",
-      "Price": 0,
-      "InitialStock": 1,
-      "MaxStock": 1,
-      "RestockAmount": 1
+      "Price": 250,
+      "InitialStock": 4,
+      "MaxStock": 4,
+      "RestockAmount": 4
     },
     {
       "ItemTag": "plc_bed_double_red",
-      "Price": 0,
-      "InitialStock": 1,
-      "MaxStock": 1,
-      "RestockAmount": 1
+      "Price": 250,
+      "InitialStock": 4,
+      "MaxStock": 4,
+      "RestockAmount": 4
     },
     {
       "ItemTag": "plc_bed_halfling_double",
-      "Price": 0,
-      "InitialStock": 1,
-      "MaxStock": 1,
-      "RestockAmount": 1
+      "Price": 75,
+      "InitialStock": 4,
+      "MaxStock": 4,
+      "RestockAmount": 4
     },
     {
       "ItemTag": "plc_bed_halfling_single",
-      "Price": 0,
-      "InitialStock": 1,
-      "MaxStock": 1,
-      "RestockAmount": 1
+      "Price": 75,
+      "InitialStock": 4,
+      "MaxStock": 4,
+      "RestockAmount": 4
     },
     {
       "ItemTag": "plc_bed_poster",
       "Price": 0,
-      "InitialStock": 1,
-      "MaxStock": 1,
-      "RestockAmount": 1
+      "InitialStock": 4,
+      "MaxStock": 4,
+      "RestockAmount": 4
     },
     {
       "ItemTag": "plc_bed_single_brown",
-      "Price": 0,
-      "InitialStock": 1,
-      "MaxStock": 1,
-      "RestockAmount": 1
+      "Price": 150,
+      "InitialStock": 4,
+      "MaxStock": 4,
+      "RestockAmount": 4
     },
     {
       "ItemTag": "plc_beddouble",
-      "Price": 0,
-      "InitialStock": 1,
-      "MaxStock": 1,
-      "RestockAmount": 1
+      "Price": 200,
+      "InitialStock": 4,
+      "MaxStock": 4,
+      "RestockAmount": 4
     },
     {
       "ItemTag": "plc_bedfancy",
-      "Price": 0,
-      "InitialStock": 1,
-      "MaxStock": 1,
-      "RestockAmount": 1
+      "Price": 300,
+      "InitialStock": 4,
+      "MaxStock": 4,
+      "RestockAmount": 4
     }
   ],
   "AcceptCategories": [],
-  "MarkupPercent": 25.0,
+  "MarkupPercent": 25,
   "Restock": {
     "MinMinutes": 15,
     "MaxMinutes": 30

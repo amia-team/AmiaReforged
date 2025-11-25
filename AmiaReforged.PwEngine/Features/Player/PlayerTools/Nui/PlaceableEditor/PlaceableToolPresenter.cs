@@ -397,7 +397,8 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             _selectionEditable = false;
             return;
         }
-        Effect vfx = Effect.VisualEffect(VfxType.DurProtectionEvilMinor, false, 2f);
+
+        Effect vfx = Effect.VisualEffect(VfxType.DurAuraCyan);
         vfx.Tag = SelectionVfxTag;
         vfx.DurationType = EffectDuration.Permanent;
 
@@ -519,7 +520,8 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         string areaResRef = creature.Area.ResRef;
 
         // Query how many placeables the player has in this area
-        List<PersistentObject> placeables = ObjectRepository.Value.GetPlaceablesForCharacterInArea(characterId, areaResRef);
+        List<PersistentObject> placeables =
+            ObjectRepository.Value.GetPlaceablesForCharacterInArea(characterId, areaResRef);
 
         if (placeables.Count == 0)
         {
@@ -565,7 +567,8 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             int skippedNoFit = 0;
             int failedCount = 0;
 
-            List<PersistentObject> placeables = ObjectRepository.Value.GetPlaceablesForCharacterInArea(characterId, areaResRef);
+            List<PersistentObject> placeables =
+                ObjectRepository.Value.GetPlaceablesForCharacterInArea(characterId, areaResRef);
 
             await NwTask.SwitchToMainThread();
 
@@ -575,6 +578,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
                 {
                     Token().SetBindValue(View.StatusMessage, "No placeables found to recover.");
                 }
+
                 return;
             }
 
@@ -607,7 +611,8 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
                     // Check if it fits in player's inventory
                     if (!_player.LoginCreature.Inventory.CheckFit(item))
                     {
-                        Log.Info($"Item from placeable {persistentObject.Id} does not fit in player inventory, destroying.");
+                        Log.Info(
+                            $"Item from placeable {persistentObject.Id} does not fit in player inventory, destroying.");
                         item.Destroy();
                         skippedNoFit++;
                         continue;

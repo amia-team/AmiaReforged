@@ -6,13 +6,13 @@ namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.PlaceableEditor;
 internal enum PlaceablePersistenceMode
 {
     None = 0,
-    JobSystemOnly = 1,
-    All = 2
+    All = 1,
+    JobSystemOnly = 2
 }
 
 internal static class PlaceablePersistenceModeExtensions
 {
-    private const string SaveModeVariable = "saved_mode";
+    private const string SaveModeVariable = "persist_plc";
 
     public static PlaceablePersistenceMode GetPlaceablePersistenceMode(this NwArea area)
     {
