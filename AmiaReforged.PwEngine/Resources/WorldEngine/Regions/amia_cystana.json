@@ -1,0 +1,71 @@
+{
+  "Tag": "amia_cystana",
+  "Name": "Northern Sea",
+  "Areas": [
+    {
+      "ResRef": "cystana_central",
+      "DefinitionTags": [],
+      "Environment": {
+        "Climate": "Temperate",
+        "SoilQuality": "Poor",
+        "MineralQualityRange": {
+          "Min": "Average",
+          "Max": "Average"
+        }
+      },
+      "LinkedSettlement": 6
+    },
+    {
+      "ResRef": "cystana_south",
+      "DefinitionTags": [],
+      "Environment": {
+        "Climate": "Temperate",
+        "SoilQuality": "BelowAverage",
+        "MineralQualityRange": {
+          "Min": "Average",
+          "Max": "Average"
+        }
+      },
+      "LinkedSettlement": 6
+    },
+    {
+      "ResRef": "cystana_north",
+      "DefinitionTags": [],
+      "Environment": {
+        "Climate": "Temperate",
+        "SoilQuality": "Good",
+        "MineralQualityRange": {
+          "Min": "Average",
+          "Max": "Average"
+        }
+      },
+      "LinkedSettlement": 6
+    },
+    {
+      "ResRef": "kohl_tradeway",
+      "DefinitionTags": [],
+      "Environment": {
+        "Climate": "Temperate",
+        "SoilQuality": "Average",
+        "MineralQualityRange": {
+          "Min": "Average",
+          "Max": "Average"
+        }
+      },
+      "LinkedSettlement": 6
+    },
+    {
+      "ResRef": "cystana_glanding",
+      "DefinitionTags": [],
+      "Environment": {
+        "Climate": "Temperate",
+        "SoilQuality": "Average",
+        "MineralQualityRange": {
+          "Min": "Average",
+          "Max": "Average"
+        }
+      },
+      "LinkedSettlement": 8
+    }
+  ]
+}
