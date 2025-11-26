@@ -39,6 +39,7 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
     public NuiButton SpawnButton = null!;
     public NuiButton SaveButton = null!;
     public NuiButton DiscardButton = null!;
+    public NuiButton ApplyTransformButton = null!;
 
     public readonly NuiBind<int> BlueprintCount = new("player_plc_bp_count");
     public readonly NuiBind<string> BlueprintNames = new("player_plc_bp_names");
@@ -347,24 +348,36 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
 
     private NuiRow BuildActionRow()
     {
+        const float buttonWidth = (ContentWidth - 16f) / 3f;
         return new NuiRow
         {
             Height = 42f,
             Children =
             {
-                new NuiButton("Save Changes")
+                new NuiButton("Save")
                 {
                     Id = "btn_save",
                     Height = 32f,
-                    Width = (ContentWidth / 2f) - 4f
+                    Width = buttonWidth,
+                    Tooltip = "Save changes to persistence"
                 }.Assign(out SaveButton),
                 new NuiSpacer { Width = 8f },
-                new NuiButton("Discard Changes")
+                new NuiButton("Discard")
                 {
                     Id = "btn_discard",
                     Height = 32f,
-                    Width = (ContentWidth / 2f) - 4f
-                }.Assign(out DiscardButton)
+                    Width = buttonWidth,
+                    Tooltip = "Discard unsaved changes"
+                }.Assign(out DiscardButton),
+                new NuiSpacer { Width = 8f },
+                new NuiButton("Apply Transform")
+                {
+                    Id = "btn_apply_transform",
+                    Height = 32f,
+                    Width = buttonWidth,
+                    Tooltip = "Add visual translation to position and reset translation to zero",
+                    Enabled = SelectionAvailable
+                }.Assign(out ApplyTransformButton)
             }
         };
     }

@@ -197,6 +197,13 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             return;
         }
 
+        if (eventData.ElementId == View.ApplyTransformButton.Id)
+        {
+            Trace("HandleClick dispatching ApplyTransformToPosition().");
+            ApplyTransformToPosition();
+            return;
+        }
+
         if (eventData.ElementId == View.RecoverButton.Id)
         {
             Trace("HandleClick dispatching RecoverSelectedPlaceable().");
@@ -1047,8 +1054,9 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             Token().SetBindValue(View.PositionY, data.Position.Position.Y);
             Token().SetBindValue(View.PositionZ, data.Position.Position.Z);
 
-            Token().SetBindValue(View.TransformX, data.Transform.Translation.X);
-            Token().SetBindValue(View.TransformY, data.Transform.Translation.Y);
+            // Swap X/Y: UI X shows Translation.Y (east/west), UI Y shows Translation.X (north/south)
+            Token().SetBindValue(View.TransformX, data.Transform.Translation.Y);
+            Token().SetBindValue(View.TransformY, data.Transform.Translation.X);
             Token().SetBindValue(View.TransformZ, data.Transform.Translation.Z);
 
             Token().SetBindValue(View.RotationX, data.Transform.Rotation.X);
@@ -1068,10 +1076,11 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             Token().SetBindValue(View.PositionZString,
                 data.Position.Position.Z.ToString(CultureInfo.InvariantCulture));
 
+            // Swap X/Y for string binds to match float binds
             Token().SetBindValue(View.TransformXString,
-                data.Transform.Translation.X.ToString(CultureInfo.InvariantCulture));
-            Token().SetBindValue(View.TransformYString,
                 data.Transform.Translation.Y.ToString(CultureInfo.InvariantCulture));
+            Token().SetBindValue(View.TransformYString,
+                data.Transform.Translation.X.ToString(CultureInfo.InvariantCulture));
             Token().SetBindValue(View.TransformZString,
                 data.Transform.Translation.Z.ToString(CultureInfo.InvariantCulture));
 
@@ -1117,9 +1126,10 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             Token().GetBindValue(View.PositionY),
             Token().GetBindValue(View.PositionZ));
 
+        // Swap X/Y: UI TransformX is engine Y, UI TransformY is engine X
         Vector3 translation = new(
-            Token().GetBindValue(View.TransformX),
             Token().GetBindValue(View.TransformY),
+            Token().GetBindValue(View.TransformX),
             Token().GetBindValue(View.TransformZ));
 
         Vector3 rotation = new(
@@ -1150,6 +1160,95 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             Token().SetBindValue(View.StatusMessage,
                 $"Previewing changes to '{_lastSelection.Name}'. Save to persist or Discard to revert.");
         }
+    }
+
+    private void ApplyTransformToPosition()
+    {
+        if (_lastSelection is null || !_lastSelection.IsValid)
+        {
+            Token().SetBindValue(View.StatusMessage, "No placeable selected.");
+            return;
+        }
+
+        if (!EnsureSelectionEditable("apply transform to"))
+        {
+            return;
+        }
+
+        // Get current position (engine coordinates)
+        Vector3 currentPosition = new(
+            Token().GetBindValue(View.PositionX),
+            Token().GetBindValue(View.PositionY),
+            Token().GetBindValue(View.PositionZ));
+
+        // Read translation directly from UI (negate Y to correct direction)
+        float uiTranslationX = Token().GetBindValue(View.TransformX);
+        float uiTranslationY = -Token().GetBindValue(View.TransformY);
+        float uiTranslationZ = Token().GetBindValue(View.TransformZ);
+
+        // Get orientation in degrees and convert to radians (negate for clockwise rotation)
+        float orientationDegrees = Token().GetBindValue(View.Orientation);
+        float orientationRadians = -orientationDegrees * (float)(Math.PI / 180.0);
+
+        // Rotate local translation by orientation to get world-space delta
+        float cos = (float)Math.Cos(orientationRadians);
+        float sin = (float)Math.Sin(orientationRadians);
+
+        // At 0°: UI X should map to Position X, UI Y should map to Position Y (direct add)
+        // Rotation handles non-zero orientations
+        float worldDeltaX = uiTranslationX * cos - uiTranslationY * sin;
+        float worldDeltaY = uiTranslationX * sin + uiTranslationY * cos;
+
+        // Apply to position
+        Vector3 newPosition = new(
+            currentPosition.X + worldDeltaX,
+            currentPosition.Y + worldDeltaY,
+            currentPosition.Z + uiTranslationZ);
+
+        // Update the bindings - position gets the combined value, translation resets to zero
+        WithWatchDisabled(() =>
+        {
+            // Update position
+            Token().SetBindValue(View.PositionX, newPosition.X);
+            Token().SetBindValue(View.PositionY, newPosition.Y);
+            Token().SetBindValue(View.PositionZ, newPosition.Z);
+            Token().SetBindValue(View.PositionXString, newPosition.X.ToString(CultureInfo.InvariantCulture));
+            Token().SetBindValue(View.PositionYString, newPosition.Y.ToString(CultureInfo.InvariantCulture));
+            Token().SetBindValue(View.PositionZString, newPosition.Z.ToString(CultureInfo.InvariantCulture));
+
+            // Reset translation to zero
+            Token().SetBindValue(View.TransformX, 0f);
+            Token().SetBindValue(View.TransformY, 0f);
+            Token().SetBindValue(View.TransformZ, 0f);
+            Token().SetBindValue(View.TransformXString, "0");
+            Token().SetBindValue(View.TransformYString, "0");
+            Token().SetBindValue(View.TransformZString, "0");
+        });
+
+        // Update the pending snapshot and apply to placeable
+        Vector3 rotation = new(
+            Token().GetBindValue(View.RotationX),
+            Token().GetBindValue(View.RotationY),
+            Token().GetBindValue(View.RotationZ));
+        float scale = Token().GetBindValue(View.Scale);
+
+        PlaceableData baseline = _pendingSnapshot ?? PlaceableDataFactory.From(_lastSelection);
+        PlaceableData updated = baseline with
+        {
+            Transform = new PlaceableTransformData(Vector3.Zero, rotation, scale),
+            Position = new PlaceableAreaPositionData(newPosition)
+        };
+
+        _pendingSnapshot = updated;
+        ApplyDataToPlaceable(_lastSelection, updated, _pendingOrientation);
+
+        if (!_hasUnsavedChanges)
+        {
+            _hasUnsavedChanges = true;
+        }
+
+        Token().SetBindValue(View.StatusMessage,
+            $"Applied transform to position for '{_lastSelection.Name}'. Save to persist.");
     }
 
     private static void ApplyDataToPlaceable(NwPlaceable placeable, PlaceableData data, float? orientation)
