@@ -4,9 +4,7 @@
   "Areas": [
     {
       "ResRef": "moonpier",
-      "DefinitionTags": [
-      ],
-      "LinkedSettlement": 27,
+      "DefinitionTags": [],
       "Environment": {
         "Climate": "Temperate",
         "SoilQuality": "VeryGood",
@@ -22,22 +20,9 @@
           "Name": "Moonpier Counting House",
           "Type": "Bank",
           "Description": "A quaint banking hall where the residents of Moonvale can store their wealth and conduct business transactions."
-        },
-        {
-          "ResRef": "mp_house_1",
-          "Tag": "moonpier_house1",
-          "Name": "Harborside",
-          "Type": "House",
-          "Description": "A cozy harbor-side hovel with a fireplace."
-        },
-        {
-          "ResRef": "mp_house_2",
-          "Tag": "moonpier_house2",
-          "Name": "Sea Breeze",
-          "Type": "House",
-          "Description": "A well built sea-side townhome."
         }
-      ]
+      ],
+      "LinkedSettlement": 27
     }
   ]
 }
