@@ -42,7 +42,7 @@
     {
       "Name": "is_static",
       "Type": "Int",
-      "Value": "0"
+      "Value": 0
     },
     {
       "Name": "plc_resref",

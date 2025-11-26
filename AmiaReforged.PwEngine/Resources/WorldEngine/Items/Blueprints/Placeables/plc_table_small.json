@@ -57,7 +57,7 @@
     {
       "Name": "plc_appearance",
       "Type": "Int",
-      "Value": "6137"
+      "Value": 6137
     }
   ]
 }
