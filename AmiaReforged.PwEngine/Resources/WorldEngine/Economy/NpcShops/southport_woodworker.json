@@ -374,6 +374,181 @@
       "InitialStock": 4,
       "MaxStock": 10,
       "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_chair",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_chair1",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_chair2",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_chair2_1368",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_chair3",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_chair4",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_chair_1",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_chair_1_cushion",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_chair_7",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_chair_8",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_chair_9",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_chair_bench_18",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_chair_bench_curved_2",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_chair_bench_large_g",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_chair_castle",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_witcher_chair_1",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_witcher_chair_2",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_witcher_chair_3",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_witcher_chair_4",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_witcher_chair_5",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_witcher_chair_6",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_witcher_chair_7",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_witcher_chair_8",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_witcher_chair_9",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_witcher_rocking_chair",
+      "Price": 0,
+      "InitialStock": 1,
+      "MaxStock": 1,
+      "RestockAmount": 1
     }
   ],
   "AcceptCategories": [],
