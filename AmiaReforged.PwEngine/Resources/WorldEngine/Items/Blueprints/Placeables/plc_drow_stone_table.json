@@ -6,13 +6,23 @@
   "Materials": [
     "Bronze"
   ],
+  "BaseValue": 400,
   "JobSystemType": "Furniture",
   "BaseItemType": 74,
   "Appearance": {
-    "ModelType": 0,
-    "SimpleModelNumber": 12
+    "ModelPart1": 0,
+    "ModelPart2": 0,
+    "ModelPart3": 0,
+    "ArmorVisualType": 0,
+    "WeaponAppearance": {
+      "TopPartModel": 0,
+      "MiddlePartModel": 0,
+      "BottomPartModel": 0,
+      "TopPartColor": 0,
+      "MiddlePartColor": 0,
+      "BottomPartColor": 0
+    }
   },
-  "BaseValue": 400,
   "LocalVariables": [
     {
       "Name": "is_plc",
@@ -42,7 +52,7 @@
     {
       "Name": "plc_name",
       "Type": "String",
-      "Value": "Drow Stone Table"
+      "Value": "Table, Drow Stone"
     },
     {
       "Name": "plc_appearance",
