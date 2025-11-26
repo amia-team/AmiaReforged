@@ -30,6 +30,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
     private readonly NwPlayer _player;
     private readonly PlaceableToolModel _model;
     private List<PlaceableBlueprint> _blueprints = [];
+    private List<PlaceableBlueprint> _filteredBlueprints = [];
 
     private NuiWindowToken _token;
     private NuiWindow? _window;
@@ -147,6 +148,8 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         Token().SetBindValue(View.BlueprintCount, 0);
         Token().SetBindValues(View.BlueprintNames, []);
         Token().SetBindValues(View.BlueprintResRefs, []);
+        Token().SetBindValue(View.BlueprintSearch, string.Empty);
+        Token().SetBindWatch(View.BlueprintSearch, true);
 
         ResetEditFields();
 
@@ -172,11 +175,11 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         }
 
         if (eventData.ElementId == View.SpawnButton.Id && eventData.ArrayIndex >= 0 &&
-            eventData.ArrayIndex < _blueprints.Count)
+            eventData.ArrayIndex < _filteredBlueprints.Count)
         {
             Trace(
-                $"HandleClick dispatching BeginSpawn() for index={eventData.ArrayIndex} resref={_blueprints[eventData.ArrayIndex].ResRef}.");
-            BeginSpawn(_blueprints[eventData.ArrayIndex]);
+                $"HandleClick dispatching BeginSpawn() for index={eventData.ArrayIndex} resref={_filteredBlueprints[eventData.ArrayIndex].ResRef}.");
+            BeginSpawn(_filteredBlueprints[eventData.ArrayIndex]);
             return;
         }
 
@@ -211,15 +214,30 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
     private void RefreshBlueprints()
     {
         _blueprints = _model.CollectBlueprints().ToList();
+        ApplyBlueprintFilter();
+    }
 
-        Token().SetBindValues(View.BlueprintNames, _blueprints.Select(bp => bp.DisplayName).ToArray());
-        Token().SetBindValues(View.BlueprintResRefs, _blueprints.Select(bp => bp.ResRef).ToArray());
-        Token().SetBindValue(View.BlueprintCount, _blueprints.Count);
+    private void ApplyBlueprintFilter()
+    {
+        string search = Token().GetBindValue(View.BlueprintSearch) ?? string.Empty;
+
+        _filteredBlueprints = string.IsNullOrWhiteSpace(search)
+            ? _blueprints.ToList()
+            : _blueprints.Where(bp =>
+                bp.DisplayName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                bp.ResRef.Contains(search, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+        Token().SetBindValues(View.BlueprintNames, _filteredBlueprints.Select(bp => bp.DisplayName).ToArray());
+        Token().SetBindValues(View.BlueprintResRefs, _filteredBlueprints.Select(bp => bp.ResRef).ToArray());
+        Token().SetBindValue(View.BlueprintCount, _filteredBlueprints.Count);
 
         Token().SetBindValue(View.StatusMessage,
             _blueprints.Count == 0
                 ? "No placeable blueprints found in your inventory."
-                : "Use a Target Spawn button to pick where the placeable should appear.");
+                : _filteredBlueprints.Count == 0
+                    ? "No blueprints match your search."
+                    : "Use a Target Spawn button to pick where the placeable should appear.");
     }
 
     private void BeginSpawn(PlaceableBlueprint blueprint)
@@ -684,6 +702,14 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
     private void HandleWatch(ModuleEvents.OnNuiEvent eventData)
     {
+        // Handle search filter changes
+        if (eventData.ElementId == View.BlueprintSearch.Key)
+        {
+            Trace("HandleWatch detected search filter change.");
+            ApplyBlueprintFilter();
+            return;
+        }
+
         if (_lastSelection is null || !_lastSelection.IsValid)
         {
             Trace($"HandleWatch ignored; selection invalid. element={eventData.ElementId ?? "<null>"}");

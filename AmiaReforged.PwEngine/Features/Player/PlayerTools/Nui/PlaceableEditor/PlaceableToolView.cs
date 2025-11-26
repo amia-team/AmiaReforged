@@ -44,6 +44,8 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
     public readonly NuiBind<string> BlueprintNames = new("player_plc_bp_names");
     public readonly NuiBind<string> BlueprintResRefs = new("player_plc_bp_resrefs");
 
+    public readonly NuiBind<string> BlueprintSearch = new("player_plc_bp_search");
+
     public readonly NuiBind<bool> SelectionAvailable = new("player_plc_selected_available");
     public readonly NuiBind<string> SelectedName = new("player_plc_selected_name");
     public readonly NuiBind<string> SelectedLocation = new("player_plc_selected_location");
@@ -104,6 +106,8 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
             {
                 BuildToolbarRow(),
                 new NuiSpacer { Height = SectionSpacing },
+                BuildSearchRow(),
+                new NuiSpacer { Height = SectionSpacing },
                 BuildBlueprintList(),
                 new NuiSpacer { Height = SectionSpacing },
                 BuildTransformSection(),
@@ -151,6 +155,21 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                     Id = "btn_select",
                     Width = (ContentWidth / 2f) - 4f
                 }.Assign(out SelectExistingButton)
+            }
+        };
+    }
+
+    private NuiRow BuildSearchRow()
+    {
+        return new NuiRow
+        {
+            Height = 36f,
+            Children =
+            {
+                new NuiTextEdit("Search blueprints...", BlueprintSearch, 255, false)
+                {
+                    Width = ContentWidth
+                }
             }
         };
     }
