@@ -7,6 +7,12 @@ namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.PlaceableEditor;
 
 internal sealed class PlaceableToolModel
 {
+    /// <summary>
+    /// Tag applied to the selection VFX effect on placeables being edited.
+    /// Used to identify and remove the effect when deselecting or restoring from persistence.
+    /// </summary>
+    public const string SelectionVfxTag = "plc_selection_vfx";
+
     private readonly NwPlayer _player;
 
     public PlaceableToolModel(NwPlayer player)

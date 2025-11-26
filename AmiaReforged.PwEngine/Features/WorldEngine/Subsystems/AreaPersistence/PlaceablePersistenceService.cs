@@ -1,5 +1,7 @@
+using System.Linq;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
+using AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.PlaceableEditor;
 using Anvil.API;
 using Anvil.Services;
 using NLog;
@@ -49,6 +51,13 @@ public class PlaceablePersistenceService
             {
                 Log.Error("Failed to deserialize placeable persistent object with ID {0}", obj.Id);
                 continue;
+            }
+
+            // Strip any selection VFX that may have been serialized with the placeable
+            Effect? selectionVfx = plc.ActiveEffects.FirstOrDefault(e => e.Tag == PlaceableToolModel.SelectionVfxTag);
+            if (selectionVfx is not null)
+            {
+                plc.RemoveEffect(selectionVfx);
             }
 
             NWScript.SetLocalInt(plc, DatabaseIdLocalInt, (int)obj.Id);

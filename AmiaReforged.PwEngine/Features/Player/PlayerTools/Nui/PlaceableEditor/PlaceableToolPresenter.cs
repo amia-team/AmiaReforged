@@ -27,8 +27,6 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
     private const string CharacterIdLocalString = "character_id";
     private const string SourceItemDataLocalString = "source_item_data";
 
-    private const string SelectionVfxTag = "plc_selection_vfx";
-
     private readonly NwPlayer _player;
     private readonly PlaceableToolModel _model;
     private List<PlaceableBlueprint> _blueprints = [];
@@ -119,7 +117,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
     {
         if (_lastSelection != null && _lastSelection.IsValid)
         {
-            Effect? selectionEffect = _lastSelection.ActiveEffects.FirstOrDefault(e => e.Tag == SelectionVfxTag);
+            Effect? selectionEffect = _lastSelection.ActiveEffects.FirstOrDefault(e => e.Tag == PlaceableToolModel.SelectionVfxTag);
             if (selectionEffect != null)
             {
                 _lastSelection.RemoveEffect(selectionEffect);
@@ -374,7 +372,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
     {
         if (_lastSelection is not null)
         {
-            Effect? selectionEffect = _lastSelection.ActiveEffects.FirstOrDefault(e => e.Tag == SelectionVfxTag);
+            Effect? selectionEffect = _lastSelection.ActiveEffects.FirstOrDefault(e => e.Tag == PlaceableToolModel.SelectionVfxTag);
             if (selectionEffect is not null)
             {
                 _lastSelection.RemoveEffect(selectionEffect);
@@ -399,7 +397,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         }
 
         Effect vfx = Effect.VisualEffect(VfxType.DurAuraCyan);
-        vfx.Tag = SelectionVfxTag;
+        vfx.Tag = PlaceableToolModel.SelectionVfxTag;
         vfx.DurationType = EffectDuration.Permanent;
 
         NWScript.ApplyEffectToObject(NWScript.DURATION_TYPE_PERMANENT, vfx, placeable);

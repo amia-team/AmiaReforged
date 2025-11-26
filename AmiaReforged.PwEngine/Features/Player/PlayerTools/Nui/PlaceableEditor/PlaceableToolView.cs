@@ -290,7 +290,7 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                 },
                 new NuiSliderFloat(Scale, 0.001f, 3.0f)
                 {
-                    Width = ContentWidth - 160f,
+                    Width = ContentWidth - 250f,
                     Enabled = SelectionAvailable,
                     Id = "player_plc_scale_slider"
                 }
@@ -318,7 +318,7 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                 },
                 new NuiSliderFloat(Orientation, 0, 360)
                 {
-                    Width = ContentWidth - 160f,
+                    Width = ContentWidth - 250f,
                     Enabled = SelectionAvailable,
                     Id = "player_plc_orientation_slider"
                 }
@@ -371,7 +371,7 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                 },
                 new NuiSliderFloat(floatBind, minimum, maximum)
                 {
-                    Width = ContentWidth - 144f,
+                    Width = ContentWidth - 250f,
                     Enabled = SelectionAvailable,
                     Id = sliderId
                 }
