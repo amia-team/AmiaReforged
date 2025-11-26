@@ -7,135 +7,373 @@
     {
       "ItemTag": "mirror_ornate_round",
       "Price": 250,
-      "InitialStock": 5,
-      "MaxStock": 5,
-      "RestockAmount": 5
+      "InitialStock": 4,
+      "MaxStock": 12,
+      "RestockAmount": 2
     },
     {
       "ItemTag": "mirror_ornate_tall",
       "Price": 500,
-      "InitialStock": 5,
-      "MaxStock": 5,
-      "RestockAmount": 5
+      "InitialStock": 4,
+      "MaxStock": 12,
+      "RestockAmount": 2
     },
     {
       "ItemTag": "chair_highback_armchair",
       "Price": 200,
-      "InitialStock": 5,
-      "MaxStock": 5,
-      "RestockAmount": 5
+      "InitialStock": 4,
+      "MaxStock": 12,
+      "RestockAmount": 2
     },
     {
       "ItemTag": "chair_plain",
       "Price": 75,
-      "InitialStock": 5,
-      "MaxStock": 5,
-      "RestockAmount": 5
+      "InitialStock": 4,
+      "MaxStock": 12,
+      "RestockAmount": 2
     },
     {
       "ItemTag": "chair_spindleback",
       "Price": 130,
-      "InitialStock": 5,
-      "MaxStock": 5,
-      "RestockAmount": 5
+      "InitialStock": 4,
+      "MaxStock": 12,
+      "RestockAmount": 2
     },
     {
       "ItemTag": "chair_windsor",
       "Price": 150,
-      "InitialStock": 5,
-      "MaxStock": 5,
-      "RestockAmount": 5
+      "InitialStock": 4,
+      "MaxStock": 12,
+      "RestockAmount": 2
     },
     {
       "ItemTag": "plc_bed",
       "Price": 100,
       "InitialStock": 4,
-      "MaxStock": 4,
-      "RestockAmount": 4
+      "MaxStock": 12,
+      "RestockAmount": 2
     },
     {
       "ItemTag": "plc_bed1",
       "Price": 100,
       "InitialStock": 4,
-      "MaxStock": 4,
-      "RestockAmount": 4
+      "MaxStock": 12,
+      "RestockAmount": 2
     },
     {
       "ItemTag": "plc_bed2",
       "Price": 100,
       "InitialStock": 4,
-      "MaxStock": 4,
-      "RestockAmount": 4
+      "MaxStock": 12,
+      "RestockAmount": 2
     },
     {
       "ItemTag": "plc_bed3",
       "Price": 100,
       "InitialStock": 4,
-      "MaxStock": 4,
-      "RestockAmount": 4
+      "MaxStock": 12,
+      "RestockAmount": 2
     },
     {
       "ItemTag": "plc_bed4",
       "Price": 100,
       "InitialStock": 4,
-      "MaxStock": 4,
-      "RestockAmount": 4
+      "MaxStock": 12,
+      "RestockAmount": 2
     },
     {
       "ItemTag": "plc_bed_double_brown",
       "Price": 250,
       "InitialStock": 4,
-      "MaxStock": 4,
-      "RestockAmount": 4
+      "MaxStock": 12,
+      "RestockAmount": 2
     },
     {
       "ItemTag": "plc_bed_double_red",
       "Price": 250,
       "InitialStock": 4,
-      "MaxStock": 4,
-      "RestockAmount": 4
+      "MaxStock": 12,
+      "RestockAmount": 2
     },
     {
       "ItemTag": "plc_bed_halfling_double",
       "Price": 75,
       "InitialStock": 4,
-      "MaxStock": 4,
-      "RestockAmount": 4
+      "MaxStock": 12,
+      "RestockAmount": 2
     },
     {
       "ItemTag": "plc_bed_halfling_single",
       "Price": 75,
       "InitialStock": 4,
-      "MaxStock": 4,
-      "RestockAmount": 4
+      "MaxStock": 12,
+      "RestockAmount": 2
     },
     {
       "ItemTag": "plc_bed_poster",
       "Price": 0,
       "InitialStock": 4,
-      "MaxStock": 4,
-      "RestockAmount": 4
+      "MaxStock": 12,
+      "RestockAmount": 2
     },
     {
       "ItemTag": "plc_bed_single_brown",
       "Price": 150,
       "InitialStock": 4,
-      "MaxStock": 4,
-      "RestockAmount": 4
+      "MaxStock": 12,
+      "RestockAmount": 2
     },
     {
       "ItemTag": "plc_beddouble",
       "Price": 200,
       "InitialStock": 4,
-      "MaxStock": 4,
-      "RestockAmount": 4
+      "MaxStock": 12,
+      "RestockAmount": 2
     },
     {
       "ItemTag": "plc_bedfancy",
       "Price": 300,
       "InitialStock": 4,
-      "MaxStock": 4,
-      "RestockAmount": 4
+      "MaxStock": 12,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_banquet_table",
+      "Price": 0,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_endtable",
+      "Price": 0,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_fancy_table",
+      "Price": 0,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_gaming_card_table",
+      "Price": 0,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_gaming_dice_table",
+      "Price": 0,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_gaming_dominos_table",
+      "Price": 0,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_inn_table",
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_inn_table_long",
+      "Price": 350,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_roundwoodtable",
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_shell_game_table",
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_sturdy_table",
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_table",
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_table1",
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_table2",
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_table3",
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_table4",
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_table5",
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_table6",
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_table7",
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_table_01",
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_table_1",
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_table_long",
+      "Price": 300,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_table_low_medium_1",
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_table_low_medium_2",
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_table_round_fancy",
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_table_round_poor",
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_table_round_standard",
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_table_round_stone",
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_table_round_wood",
+      "Price": 100,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_table_small",
+      "Price": 60,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_witcher_table_1",
+      "Price": 230,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_witcher_table_2",
+      "Price": 230,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_witcher_table_3",
+      "Price": 230,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ItemTag": "plc_witcher_table_4",
+      "Price": 230,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 2
     }
   ],
   "AcceptCategories": [],
