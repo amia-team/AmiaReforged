@@ -322,6 +322,9 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
                 placeable.GetObjectVariable<LocalVariableString>(SourceItemDataLocalString).Value = base64Data;
                 Trace($"Stored source item data ({itemSerialized.Length} bytes) for placeable {placeable.Name}");
             }
+
+            // Remove the source item from the player's inventory now that it's placed
+            blueprint.SourceItem.Destroy();
         }
 
         try

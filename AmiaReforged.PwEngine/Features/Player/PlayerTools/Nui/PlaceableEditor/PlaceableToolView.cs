@@ -10,7 +10,7 @@ namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.PlaceableEditor;
 public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolWindow
 {
     public const float WindowWidth = 590f;
-    public const float WindowHeight = 820f;
+    public const float WindowHeight = 920f;
 
     private const float ContentWidth = WindowWidth - 100f;
     private const float SectionSpacing = 6f;
@@ -82,20 +82,7 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
 
     public override NuiLayout RootLayout()
     {
-        return new NuiColumn
-        {
-            Width = WindowWidth,
-            Children =
-            {
-                new NuiGroup
-                {
-                    Border = true,
-                    Width = WindowWidth,
-                    Padding = 6f,
-                    Element = BuildContent()
-                }
-            }
-        };
+        return BuildContent();
     }
 
     private NuiColumn BuildContent()
@@ -202,7 +189,8 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
         {
             RowHeight = 36f,
             Width = ContentWidth,
-            Height = 180f
+            Height = 250f,
+            Scrollbars = NuiScrollbars.Auto
         };
     }
 
