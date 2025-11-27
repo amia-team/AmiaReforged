@@ -390,20 +390,6 @@
       "RestockAmount": 2
     },
     {
-      "ItemTag": "plc_chair2",
-      "Price": 0,
-      "InitialStock": 4,
-      "MaxStock": 10,
-      "RestockAmount": 2
-    },
-    {
-      "ItemTag": "plc_chair2_1368",
-      "Price": 0,
-      "InitialStock": 4,
-      "MaxStock": 10,
-      "RestockAmount": 2
-    },
-    {
       "ItemTag": "plc_chair3",
       "Price": 0,
       "InitialStock": 4,
