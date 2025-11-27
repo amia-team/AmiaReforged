@@ -89,13 +89,16 @@ public class RuntimeNodeService(
         );
 
         // Fire and forget - command handler will publish events
-        _ = Task.Run(async () =>
+        _ = NwTask.Run(async () =>
         {
             try
             {
+                // Ensure we're on the main thread for NWN VM calls in the command handler
+                await NwTask.SwitchToMainThread();
+                
                 CommandResult result = await harvestCommandHandler.HandleAsync(command);
 
-                // Switch back to main thread for NWN API calls
+                // Ensure we're still on main thread for NWN API calls
                 await NwTask.SwitchToMainThread();
 
                 if (!result.Success)
