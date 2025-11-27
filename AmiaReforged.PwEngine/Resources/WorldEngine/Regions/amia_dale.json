@@ -1,0 +1,39 @@
+{
+  "Tag": "amia_dale",
+  "Name": "The Dale",
+  "Areas": [
+    {
+      "ResRef": "dale_town",
+      "DefinitionTags": [],
+      "Environment": {
+        "Climate": "Temperate",
+        "SoilQuality": "VeryGood",
+        "MineralQualityRange": {
+          "Min": "Average",
+          "Max": "Average"
+        }
+      },
+      "PlacesOfInterest": [
+        {
+          "ResRef": "dale_rental_1",
+          "Tag": "dale_rental_1",
+          "Name": "Hillside Farm",
+          "Type": "House"
+        },
+        {
+          "ResRef": "dale_rental_2",
+          "Tag": "dale_rental_2",
+          "Name": "Little Burrow",
+          "Type": "House"
+        },
+        {
+          "ResRef": "dale_rental_3",
+          "Tag": "dale_rental_3",
+          "Name": "Great Burrow",
+          "Type": "House"
+        }
+      ],
+      "LinkedSettlement": 21
+    }
+  ]
+}

@@ -1,8 +1,8 @@
 {
-  "Tag": "sp_woodworker",
+  "Tag": "dale_wworker",
   "DisplayName": "Woodworker's Shop",
-  "ShopkeeperTag": "southport_woodworker_shopkeep",
-  "Description": "A quaint little shop of fine wooden furniture and decor, crafted by the skilled artisans of Southport.",
+  "ShopkeeperTag": "dale_woodworker_shopkeep",
+  "Description": "A quaint little shop of fine wooden furniture and decor, crafted by the skilled artisans of the Dale.",
   "Products": [
     {
       "ItemTag": "mirror_ornate_round",
@@ -713,7 +713,7 @@
     }
   ],
   "AcceptCategories": [],
-  "MarkupPercent": 25,
+  "MarkupPercent": 20,
   "Restock": {
     "MinMinutes": 15,
     "MaxMinutes": 30
