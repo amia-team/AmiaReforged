@@ -6,13 +6,14 @@
   "Materials": [
     "Bronze"
   ],
+  "BaseValue": 400,
   "JobSystemType": "Furniture",
-  "BaseItemType": 74,
+  "BaseItemType": 24,
+  "WeightIncreaseConstant": "WEIGHT_INCREASE_SMALL",
   "Appearance": {
     "ModelType": 0,
     "SimpleModelNumber": 242
   },
-  "BaseValue": 400,
   "LocalVariables": [
     {
       "Name": "is_plc",

@@ -1,18 +1,18 @@
 {
   "ResRef": "furniturespawn",
   "ItemTag": "plc_marbleelveninteriors_vase6",
-  "Name": "*MarbleElvenInteriors - Vase6",
+  "Name": "Vase, Elven 6",
   "Description": "",
   "Materials": [
     "Bronze"
   ],
+  "BaseValue": 400,
   "JobSystemType": "Furniture",
   "BaseItemType": 74,
   "Appearance": {
     "ModelType": 0,
     "SimpleModelNumber": 242
   },
-  "BaseValue": 400,
   "LocalVariables": [
     {
       "Name": "is_plc",
@@ -42,7 +42,7 @@
     {
       "Name": "plc_name",
       "Type": "String",
-      "Value": "*MarbleElvenInteriors - Vase6"
+      "Value": "Vase, Elven 6"
     },
     {
       "Name": "plc_appearance",

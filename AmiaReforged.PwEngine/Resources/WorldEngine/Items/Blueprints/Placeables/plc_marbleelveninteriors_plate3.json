@@ -1,18 +1,18 @@
 {
   "ResRef": "furniturespawn",
   "ItemTag": "plc_marbleelveninteriors_plate3",
-  "Name": "*MarbleElvenInteriors - Plate3",
+  "Name": "Plate, Elven 3",
   "Description": "",
   "Materials": [
     "Bronze"
   ],
+  "BaseValue": 400,
   "JobSystemType": "Furniture",
   "BaseItemType": 74,
   "Appearance": {
     "ModelType": 0,
     "SimpleModelNumber": 242
   },
-  "BaseValue": 400,
   "LocalVariables": [
     {
       "Name": "is_plc",
@@ -42,7 +42,7 @@
     {
       "Name": "plc_name",
       "Type": "String",
-      "Value": "*MarbleElvenInteriors - Plate3"
+      "Value": "Plate, Elven 3"
     },
     {
       "Name": "plc_appearance",
