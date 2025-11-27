@@ -1,0 +1,343 @@
+{
+  "Tag": "tr_potter_store",
+  "DisplayName": "Potter's Store",
+  "ShopkeeperTag": "tr_potter_seller",
+  "Description": "",
+  "Products": [
+    {
+      "ItemTag": "plc_pottery_urn_1",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_pottery_urn_1_group",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_pottery_urn_2",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_pottery_urn_3",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_pottery_urn_4",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_urn",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_urn_777",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_urn_fancy",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_urn_w_flowers_1",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_urn_w_flowers_2",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_witcher_urn_1",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_witcher_urn_2",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_pottery_vase_1",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_pottery_vase_2",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_vase",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_vase_1420",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_vase_elven",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_vase_fern_blue",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_vase_fern_green",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_vase_fern_peach",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_vase_flowers_blue",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_vase_flowers_green",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_vase_flowers_peach",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_vasebig",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_vaseflower",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_witcher_vase",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_witcher_vase_empty",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_pottery_bowl",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_pottery_clay_blue",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_pottery_clay_tan",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_pottery_clay_white",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_pottery_clay_white_s",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_pottery_flask_1",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_pottery_flask_2",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_pottery_lizardfolk_1",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_pottery_lizardfolk_2",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_pottery_lizardfolk_3",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_pottery_plate",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_marbleelveninteriors_vase1",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_marbleelveninteriors_vase2",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_marbleelveninteriors_vase3",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_marbleelveninteriors_vase4",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_marbleelveninteriors_vase5",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_marbleelveninteriors_vase6",
+      "Price": 150,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_marbleelveninteriors_plate1",
+      "Price": 100,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_marbleelveninteriors_plate2",
+      "Price": 100,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "plc_marbleelveninteriors_plate3",
+      "Price": 100,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    }
+  ],
+  "AcceptCategories": [],
+  "MarkupPercent": 15,
+  "Restock": {
+    "MinMinutes": 15,
+    "MaxMinutes": 30
+  }
+}

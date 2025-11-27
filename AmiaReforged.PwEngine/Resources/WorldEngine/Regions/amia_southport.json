@@ -4,9 +4,7 @@
   "Areas": [
     {
       "ResRef": "cordor_east",
-      "DefinitionTags": [
-      ],
-      "LinkedSettlement": 35,
+      "DefinitionTags": [],
       "Environment": {
         "Climate": "Temperate",
         "SoilQuality": "Poor",
@@ -44,13 +42,12 @@
           "Type": "House",
           "Description": "A newer style home built right near the city beacon."
         }
-      ]
+      ],
+      "LinkedSettlement": 35
     },
     {
       "ResRef": "cordor_central",
-      "DefinitionTags": [
-      ],
-      "LinkedSettlement": 35,
+      "DefinitionTags": [],
       "Environment": {
         "Climate": "Temperate",
         "SoilQuality": "Poor",
@@ -81,13 +78,12 @@
           "Type": "Shop",
           "Description": "A workshop where skilled artisans craft furniture, tools, and other wooden goods for the residents of Southport."
         }
-      ]
+      ],
+      "LinkedSettlement": 35
     },
     {
       "ResRef": "cordor_west",
-      "DefinitionTags": [
-      ],
-      "LinkedSettlement": 35,
+      "DefinitionTags": [],
       "Environment": {
         "Climate": "Temperate",
         "SoilQuality": "Poor",
@@ -111,13 +107,12 @@
           "Type": "House",
           "Description": "A cheap apartment built in the back alleys of Southport, often rented by the less fortunate residents of the city."
         }
-      ]
+      ],
+      "LinkedSettlement": 35
     },
     {
       "ResRef": "cordor_noutskirt",
-      "DefinitionTags": [
-      ],
-      "LinkedSettlement": 35,
+      "DefinitionTags": [],
       "Environment": {
         "Climate": "Temperate",
         "SoilQuality": "Good",
@@ -140,8 +135,16 @@
           "Name": "Chauntea's Refuge",
           "Type": "House",
           "Description": "A farm with a small house. Perfect for sharecroppers or those who want to live off the land."
+        },
+        {
+          "ResRef": "tr_potter_store",
+          "Tag": "tr_potter_Store",
+          "Name": "Potter's Store",
+          "Type": "Shop",
+          "Description": "A tiny shop in the outskirts of Southport hawking domestic pottery."
         }
-      ]
+      ],
+      "LinkedSettlement": 35
     }
   ]
 }
