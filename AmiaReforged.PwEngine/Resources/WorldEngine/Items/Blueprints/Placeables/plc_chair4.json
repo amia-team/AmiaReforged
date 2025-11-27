@@ -1,7 +1,7 @@
 {
   "ResRef": "furniturespawn",
   "ItemTag": "plc_chair4",
-  "Name": "Chair4",
+  "Name": "Chair, Wooden Throne",
   "Description": "",
   "Materials": [
     "Bronze"
@@ -42,7 +42,7 @@
     {
       "Name": "plc_name",
       "Type": "String",
-      "Value": "Chair4"
+      "Value": "Chair, Wooden Throne"
     },
     {
       "Name": "plc_appearance",

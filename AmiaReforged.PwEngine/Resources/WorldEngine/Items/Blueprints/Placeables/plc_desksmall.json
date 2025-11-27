@@ -1,18 +1,18 @@
 {
   "ResRef": "furniturespawn",
   "ItemTag": "plc_desksmall",
-  "Name": "DeskSmall",
+  "Name": "Table, Heavy Side",
   "Description": "",
   "Materials": [
     "Bronze"
   ],
+  "BaseValue": 400,
   "JobSystemType": "Furniture",
   "BaseItemType": 74,
   "Appearance": {
     "ModelType": 0,
     "SimpleModelNumber": 242
   },
-  "BaseValue": 400,
   "LocalVariables": [
     {
       "Name": "is_plc",
@@ -42,7 +42,7 @@
     {
       "Name": "plc_name",
       "Type": "String",
-      "Value": "DeskSmall"
+      "Value": "Table, Heavy Side"
     },
     {
       "Name": "plc_appearance",

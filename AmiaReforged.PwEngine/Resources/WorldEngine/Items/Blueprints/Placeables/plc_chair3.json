@@ -1,7 +1,7 @@
 {
   "ResRef": "furniturespawn",
   "ItemTag": "plc_chair3",
-  "Name": "Chair3",
+  "Name": "Chair, Desk",
   "Description": "",
   "Materials": [
     "Bronze"
@@ -42,7 +42,7 @@
     {
       "Name": "plc_name",
       "Type": "String",
-      "Value": "Chair3"
+      "Value": "Chair, Desk"
     },
     {
       "Name": "plc_appearance",

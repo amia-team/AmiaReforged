@@ -1,7 +1,7 @@
 {
   "ResRef": "furniturespawn",
   "ItemTag": "plc_chair1",
-  "Name": "Chair1",
+  "Name": "Chair, Sturdy Armchair",
   "Description": "",
   "Materials": [
     "Bronze"
@@ -42,7 +42,7 @@
     {
       "Name": "plc_name",
       "Type": "String",
-      "Value": "Chair"
+      "Value": "Chair, Sturdy Armchair"
     },
     {
       "Name": "plc_appearance",

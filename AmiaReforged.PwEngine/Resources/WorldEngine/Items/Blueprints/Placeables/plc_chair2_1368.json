@@ -1,7 +1,7 @@
 {
   "ResRef": "furniturespawn",
   "ItemTag": "plc_chair2_1368",
-  "Name": "Chair2",
+  "Name": "Chair, Simple",
   "Description": "",
   "Materials": [
     "Bronze"
@@ -42,7 +42,7 @@
     {
       "Name": "plc_name",
       "Type": "String",
-      "Value": "Chair2"
+      "Value": "Chair, Simple"
     },
     {
       "Name": "plc_appearance",
