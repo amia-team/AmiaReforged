@@ -343,7 +343,8 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         _player.SendServerMessage($"Spawned placeable '{placeable.Name}'.", ColorConstants.Green);
         UpdateSelection(placeable);
         Token().SetBindValue(View.StatusMessage,
-            $"Spawned '{placeable.Name}'. Use Target Spawn again to place another copy.");
+            $"Spawned '{placeable.Name}'.");
+        RefreshBlueprints();
     }
 
     private void BeginSelectExisting()
