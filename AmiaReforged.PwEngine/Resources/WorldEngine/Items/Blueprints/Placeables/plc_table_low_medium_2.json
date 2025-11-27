@@ -1,18 +1,18 @@
 {
   "ResRef": "furniturespawn",
   "ItemTag": "plc_table_low_medium_2",
-  "Name": "Table: Low, Medium 2",
+  "Name": "Table, Karaturan Low w/ Bowls",
   "Description": "",
   "Materials": [
     "Bronze"
   ],
+  "BaseValue": 400,
   "JobSystemType": "Furniture",
   "BaseItemType": 74,
   "Appearance": {
     "ModelType": 0,
     "SimpleModelNumber": 242
   },
-  "BaseValue": 400,
   "LocalVariables": [
     {
       "Name": "is_plc",
@@ -42,7 +42,7 @@
     {
       "Name": "plc_name",
       "Type": "String",
-      "Value": "Table: Low, Medium 2"
+      "Value": "Table, Karaturan Low w/ Bowls"
     },
     {
       "Name": "plc_appearance",
