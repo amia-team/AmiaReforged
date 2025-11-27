@@ -297,6 +297,8 @@ public class PlayerHouseService
 
                 // STATE 4: Player has no rental and house is vacant -> Present rental option
                 // Try to find the associated door (optional - only needed for unlocking after rental)
+                // Must switch to main thread before accessing NWN VM objects
+                await NwTask.SwitchToMainThread();
                 NwDoor? door = FindHouseDoorForArea(targetAreaTag);
 
                 PropertyRentFlow.RentOfferPresentation presentation = ResolvePropertyPresentation(metadata);

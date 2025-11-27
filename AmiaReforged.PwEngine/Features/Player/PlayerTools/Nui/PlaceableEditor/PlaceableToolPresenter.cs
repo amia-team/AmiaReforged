@@ -312,7 +312,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         EnsureCharacterAssociation(placeable);
 
         // Store serialized source item data on the placeable for later persistence
-        if (blueprint.SourceItem is not null && blueprint.SourceItem.IsValid)
+        if (blueprint.SourceItem.IsValid)
         {
             byte[]? itemSerialized = blueprint.SourceItem.Serialize();
             if (itemSerialized is not null && itemSerialized.Length > 0)
