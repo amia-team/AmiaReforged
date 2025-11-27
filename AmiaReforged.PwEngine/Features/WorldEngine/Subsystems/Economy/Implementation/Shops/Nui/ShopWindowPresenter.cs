@@ -24,10 +24,12 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
     private readonly List<NpcShopProduct?> _inventoryProducts = new();
     private readonly List<int> _inventoryBuyPrices = new();
     private readonly List<NwItem> _identifyTargets = new();
+    private readonly List<NpcShopProduct> _filteredProducts = new();
     private int _identifyAllCost;
     private bool _shopkeeperResolved;
     private NwCreature? _shopkeeper;
     private bool _listeningForUpdates;
+    private string _searchTerm = string.Empty;
 
     private const int IdentifyCostPerItem = 100;
 
@@ -81,6 +83,8 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
 
         try
         {
+            Token().SetBindWatch(View.Search, true);
+            Token().SetBindValue(View.Search, string.Empty);
             UpdateView();
             RegisterForRepositoryUpdates();
         }
@@ -125,8 +129,23 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
     {
+        if (eventData.EventType == NuiEventType.Watch && eventData.ElementId == View.Search.Key)
+        {
+            _searchTerm = (Token().GetBindValue(View.Search) ?? string.Empty).Trim();
+            UpdateView();
+            return;
+        }
+
         if (eventData.EventType != NuiEventType.Click)
         {
+            return;
+        }
+
+        if (eventData.ElementId == View.ClearSearchButton.Id)
+        {
+            _searchTerm = string.Empty;
+            Token().SetBindValue(View.Search, string.Empty);
+            UpdateView();
             return;
         }
 
@@ -227,6 +246,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
     {
         purchasable = new List<bool>();
         tooltips = new List<string>();
+        _filteredProducts.Clear();
 
         if (_shop.Products.Count == 0)
         {
@@ -237,8 +257,18 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
 
         List<string> entries = new(_shop.Products.Count);
 
-        foreach (NpcShopProduct product in _shop.Products)
+        IEnumerable<NpcShopProduct> filteredProducts = _shop.Products;
+        if (!string.IsNullOrEmpty(_searchTerm))
         {
+            filteredProducts = _shop.Products.Where(p =>
+                p.DisplayName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                p.ResRef.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrEmpty(p.Description) && p.Description.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        foreach (NpcShopProduct product in filteredProducts)
+        {
+            _filteredProducts.Add(product);
             string displayName = product.DisplayName;
             string stockLabel = product.IsOutOfStock
                 ? "Sold out"
@@ -265,17 +295,24 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
             tooltips.Add(tooltip);
         }
 
+        if (entries.Count == 0 && !string.IsNullOrEmpty(_searchTerm))
+        {
+            purchasable.Add(false);
+            tooltips.Add("No products match your search.");
+            return new List<string> { "No matching products found." };
+        }
+
         return entries;
     }
 
     private async Task HandlePurchaseAsync(int productIndex)
     {
-        if (productIndex < 0 || productIndex >= _shop.Products.Count)
+        if (productIndex < 0 || productIndex >= _filteredProducts.Count)
         {
             return;
         }
 
-        NpcShopProduct product = _shop.Products[productIndex];
+        NpcShopProduct product = _filteredProducts[productIndex];
 
         if (product.IsOutOfStock)
         {
@@ -623,7 +660,18 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
         List<string> entries = new();
         HashSet<int> acceptedTypes = BuildAcceptedBaseItemSet();
 
-        foreach (NwItem item in creature.Inventory.Items)
+        IEnumerable<NwItem> inventoryItems = creature.Inventory.Items;
+        if (!string.IsNullOrEmpty(_searchTerm))
+        {
+            inventoryItems = inventoryItems.Where(item =>
+            {
+                string itemName = string.IsNullOrWhiteSpace(item.Name) ? item.ResRef : item.Name;
+                return itemName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                       item.ResRef.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase);
+            });
+        }
+
+        foreach (NwItem item in inventoryItems)
         {
             Log.Info(item.BaseItem.ItemType);
             _inventoryItems.Add(item);
@@ -660,7 +708,10 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
 
         if (entries.Count == 0)
         {
-            entries.Add("No items in your inventory may be sold here.");
+            string emptyMessage = string.IsNullOrEmpty(_searchTerm)
+                ? "No items in your inventory may be sold here."
+                : "No matching items found.";
+            entries.Add(emptyMessage);
             itemIds.Add(string.Empty);
             sellable.Add(false);
         }

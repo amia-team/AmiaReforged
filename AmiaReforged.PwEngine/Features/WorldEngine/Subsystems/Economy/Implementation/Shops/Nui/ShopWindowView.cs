@@ -27,7 +27,9 @@ public sealed class ShopWindowView : ScryView<ShopWindowPresenter>
     public readonly NuiBind<bool> InventorySellable = new("shop_inventory_sellable");
     public readonly NuiBind<string> IdentifyButtonLabel = new("shop_identify_label");
     public readonly NuiBind<bool> IdentifyButtonEnabled = new("shop_identify_enabled");
+    public readonly NuiBind<string> Search = new("shop_search");
 
+    public NuiButtonImage ClearSearchButton = null!;
     public NuiButton CloseButton = null!;
     public NuiButton BuyButton = null!;
     public NuiButton SellButton = null!;
@@ -150,6 +152,27 @@ public sealed class ShopWindowView : ScryView<ShopWindowPresenter>
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
                         }
+                    ]
+                },
+                spacer6,
+                new NuiRow
+                {
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiTextEdit("Filter goods...", Search, 64, false)
+                        {
+                            Width = 440f,
+                            Height = 26f
+                        },
+                        new NuiButtonImage("ir_abort")
+                        {
+                            Id = "shop_clear_search",
+                            Aspect = 1f,
+                            Width = 26f,
+                            Height = 26f,
+                            Tooltip = "Clear search"
+                        }.Assign(out ClearSearchButton)
                     ]
                 },
                 spacer6,
