@@ -1,0 +1,190 @@
+{
+  "Tag": "dale_grocery",
+  "DisplayName": "Dale Grocery Store",
+  "ShopkeeperTag": "dale_grocer",
+  "Description": "",
+  "Products": [
+    {
+      "ItemTag": "js_che_chee",
+      "Price": 700,
+      "InitialStock": 10,
+      "MaxStock": 10,
+      "RestockAmount": 2,
+      "Name": "Cheese"
+    },
+    {
+      "ItemTag": "js_che_flour",
+      "Price": 700,
+      "InitialStock": 10,
+      "MaxStock": 10,
+      "RestockAmount": 2,
+      "Name": "Flour"
+    },
+    {
+      "ItemTag": "js_farm_appl",
+      "Price": 400,
+      "InitialStock": 10,
+      "MaxStock": 30,
+      "RestockAmount": 4,
+      "Name": "Apples"
+    },
+    {
+      "ItemTag": "js_farm_blac",
+      "Price": 400,
+      "InitialStock": 4,
+      "MaxStock": 20,
+      "RestockAmount": 1,
+      "Name": "Black Mushrooms"
+    },
+    {
+      "ItemTag": "js_che_suga",
+      "Price": 1250,
+      "InitialStock": 10,
+      "MaxStock": 15,
+      "RestockAmount": 2,
+      "Name": "Sugar"
+    },
+    {
+      "ItemTag": "js_farm_carr",
+      "Price": 400,
+      "InitialStock": 15,
+      "MaxStock": 50,
+      "RestockAmount": 5,
+      "Name": "Carrots"
+    },
+    {
+      "ItemTag": "js_che_brea",
+      "Price": 400,
+      "InitialStock": 10,
+      "MaxStock": 30,
+      "RestockAmount": 4,
+      "Name": "Bread"
+    },
+    {
+      "ItemTag": "js_farm_deep",
+      "Price": 400,
+      "InitialStock": 10,
+      "MaxStock": 20,
+      "RestockAmount": 2,
+      "Name": "Deep Truffle"
+    },
+    {
+      "ItemTag": "js_farm_pota",
+      "Price": 400,
+      "InitialStock": 10,
+      "MaxStock": 70,
+      "RestockAmount": 6,
+      "Name": "Potatoes"
+    },
+    {
+      "ItemTag": "js_farm_grap",
+      "Price": 400,
+      "InitialStock": 12,
+      "MaxStock": 50,
+      "RestockAmount": 6,
+      "Name": "Grapes"
+    },
+    {
+      "ItemTag": "js_farm_hon",
+      "Price": 600,
+      "InitialStock": 5,
+      "MaxStock": 20,
+      "RestockAmount": 1,
+      "Name": "Honey"
+    },
+    {
+      "ItemTag": "js_farm_oats",
+      "Price": 400,
+      "InitialStock": 5,
+      "MaxStock": 25,
+      "RestockAmount": 4,
+      "Name": "Oats"
+    },
+    {
+      "ItemTag": "js_farm_toba",
+      "Price": 600,
+      "InitialStock": 5,
+      "MaxStock": 25,
+      "RestockAmount": 2,
+      "Name": "Tobacco"
+    },
+    {
+      "ItemTag": "js_bre_ale",
+      "Price": 700,
+      "InitialStock": 10,
+      "MaxStock": 40,
+      "RestockAmount": 2,
+      "Name": "Bronzebeard Ale"
+    },
+    {
+      "ItemTag": "js_bre_mead",
+      "Price": 760,
+      "InitialStock": 5,
+      "MaxStock": 40,
+      "RestockAmount": 12,
+      "Name": "Oldfur Mead"
+    },
+    {
+      "ItemTag": "js_bre_wine",
+      "Price": 700,
+      "InitialStock": 6,
+      "MaxStock": 40,
+      "RestockAmount": 1,
+      "Name": "Table Wine"
+    },
+    {
+      "ItemTag": "js_ran_chme",
+      "Price": 600,
+      "InitialStock": 12,
+      "MaxStock": 13,
+      "RestockAmount": 2,
+      "Name": "Chicken Breast"
+    },
+    {
+      "ItemTag": "js_ran_beef",
+      "Price": 790,
+      "InitialStock": 8,
+      "MaxStock": 25,
+      "RestockAmount": 2,
+      "Name": "Beef"
+    },
+    {
+      "ItemTag": "js_ran_cheg",
+      "Price": 500,
+      "InitialStock": 15,
+      "MaxStock": 60,
+      "RestockAmount": 12,
+      "Name": "Eggs"
+    },
+    {
+      "ItemTag": "js_ran_mil",
+      "Price": 600,
+      "InitialStock": 8,
+      "MaxStock": 25,
+      "RestockAmount": 3,
+      "Name": "Milk"
+    },
+    {
+      "ItemTag": "js_ran_pork",
+      "Price": 600,
+      "InitialStock": 9,
+      "MaxStock": 35,
+      "RestockAmount": 3,
+      "Name": "Pork"
+    },
+    {
+      "ItemTag": "js_ran_mutt",
+      "Price": 650,
+      "InitialStock": 6,
+      "MaxStock": 20,
+      "RestockAmount": 2,
+      "Name": "Mutton"
+    }
+  ],
+  "AcceptCategories": [],
+  "MarkupPercent": 0,
+  "Restock": {
+    "MinMinutes": 15,
+    "MaxMinutes": 30
+  }
+}

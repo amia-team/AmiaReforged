@@ -1,0 +1,21 @@
+{
+  "ResRef": "js_che_chee",
+  "ItemTag": "js_che_chee",
+  "Name": "<c~\u00ce\u00eb>Cheese</c>",
+  "Description": "Cheese is a popular diary product sourced from any number of milk-producing animals. Several varieties exist, ranging from soft to hard, and from mild to pungent.",
+  "Materials": [],
+  "BaseValue": 1,
+  "JobSystemType": "None",
+  "BaseItemType": 24,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 234
+  },
+  "LocalVariables": [
+    {
+      "Name": "tag_override",
+      "Type": "String",
+      "Value": "js_effects"
+    }
+  ]
+}

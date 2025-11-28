@@ -31,6 +31,12 @@
           "Tag": "dale_rental_3",
           "Name": "Great Burrow",
           "Type": "House"
+        },
+        {
+          "ResRef": "dale_grocery",
+          "Tag": "dale_grocery",
+          "Name": "Bronzebeard Grocery",
+          "Type": "Shop"
         }
       ],
       "LinkedSettlement": 21

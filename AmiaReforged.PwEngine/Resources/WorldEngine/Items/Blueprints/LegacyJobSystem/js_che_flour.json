@@ -1,0 +1,21 @@
+{
+  "ResRef": "js_che_flou",
+  "ItemTag": "js_che_flour",
+  "Name": "<c~\u00ce\u00eb>Flour</c>",
+  "Description": "",
+  "Materials": [],
+  "BaseValue": 150,
+  "JobSystemType": "None",
+  "BaseItemType": 24,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 237
+  },
+  "LocalVariables": [
+    {
+      "Name": "tag_override",
+      "Type": "String",
+      "Value": "js_effects"
+    }
+  ]
+}

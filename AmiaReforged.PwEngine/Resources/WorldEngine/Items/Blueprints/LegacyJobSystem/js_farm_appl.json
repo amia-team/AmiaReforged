@@ -1,0 +1,19 @@
+{
+  "ResRef": "js_farm_appl",
+  "ItemTag": "js_farm_appl",
+  "Name": "Apples",
+  "Description": "",
+  "Materials": [],
+  "BaseValue": 1,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 234
+  },
+  "LocalVariables": [
+    {
+      "Name": "tag_override",
+      "Type": "String",
+      "Value": "js_effects"
+    }
+  ]
+}
