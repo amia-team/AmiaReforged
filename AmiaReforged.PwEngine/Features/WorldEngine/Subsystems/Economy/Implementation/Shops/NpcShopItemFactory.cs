@@ -1,6 +1,8 @@
 using System.Text;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 using Anvil.API;
 using Anvil.Services;
+using Microsoft.IdentityModel.Tokens;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops;
 
@@ -44,10 +46,22 @@ public sealed class NpcShopItemFactory : INpcShopItemFactory
             return restored;
         }
 
+        string tagOverride = "";
+        if (product.LocalVariables.Any(v => v is { Name: "tag_override", Type: JsonLocalVariableType.String }))
+        {
+            tagOverride = product.LocalVariables
+                .First(v => v is { Name: "tag_override", Type: JsonLocalVariableType.String }).StringValue ?? "";
+        }
+
         NwItem? item = NwItem.Create(product.ResRef, location);
         if (item is null)
         {
             return null;
+        }
+
+        if (!tagOverride.IsNullOrEmpty())
+        {
+            item.Tag = tagOverride;
         }
 
         if (!string.IsNullOrWhiteSpace(product.DisplayName))
