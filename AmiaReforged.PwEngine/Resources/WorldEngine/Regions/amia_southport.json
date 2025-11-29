@@ -106,6 +106,12 @@
           "Name": "Alley Dwelling",
           "Type": "House",
           "Description": "A cheap apartment built in the back alleys of Southport, often rented by the less fortunate residents of the city."
+        },
+        {
+          "ResRef": "sp_w_grocer",
+          "Tag": "sp_w_grocer",
+          "Name": "Grocer",
+          "Type": "Shop"
         }
       ],
       "LinkedSettlement": 35
