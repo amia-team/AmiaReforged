@@ -1,0 +1,45 @@
+{
+  "Tag": "obsidian_isle",
+  "Name": "Obsidian Isle",
+  "Areas": [
+    {
+      "ResRef": "lj_oi_port",
+      "DefinitionTags": [],
+      "Environment": {
+        "Climate": "Tropical",
+        "SoilQuality": "Good",
+        "MineralQualityRange": {
+          "Min": "Average",
+          "Max": "Average"
+        }
+      },
+      "PlacesOfInterest": [
+        {
+          "ResRef": "lj_oi_bank",
+          "Tag": "oi_bank",
+          "Name": "Calderis Counting House",
+          "Type": "Bank"
+        },
+        {
+          "ResRef": "oi_home1",
+          "Tag": "oi_home1",
+          "Name": "Marketside Manor",
+          "Type": "House"
+        },
+        {
+          "ResRef": "oi_home2",
+          "Tag": "oi_home2",
+          "Name": "Bridgeview",
+          "Type": "House"
+        },
+        {
+          "ResRef": "oi_home3",
+          "Tag": "oi_home3",
+          "Name": "Riverbank Manor",
+          "Type": "House"
+        }
+      ],
+      "LinkedSettlement": 10
+    }
+  ]
+}
