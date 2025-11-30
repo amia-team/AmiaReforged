@@ -11,7 +11,8 @@ public class RenderDistanceService
 
     public RenderDistanceService()
     {
-        foreach (NwPlaceable nwPlaceable in NwObject.FindObjectsWithTag<NwPlaceable>(RenderFarTag))
+        List<NwPlaceable> plcs = NwObject.FindObjectsOfType<NwPlaceable>().Where(p => p.Tag.Equals(RenderFarTag, StringComparison.InvariantCultureIgnoreCase)).ToList();
+        foreach (NwPlaceable nwPlaceable in plcs)
         {
             NWScript.SetObjectVisibleDistance(nwPlaceable, 1000f);
         }
