@@ -1,6 +1,7 @@
 ﻿using Anvil.API;
 using Newtonsoft.Json;
 using NWN.Core;
+using AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.ItemTool;
 
 namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.CharacterCustomization;
 
@@ -8,14 +9,18 @@ public enum EquipmentType
 {
     None,
     Weapon,
+    OffHand,
     Boots,
     Helmet,
     Cloak
 }
 
+public enum IconAdjustResult { Success, NotAllowedType, NoSelection, NoValidModel }
+
 public sealed class EquipmentCustomizationModel(NwPlayer player)
 {
     private const string WeaponBackupKey = "EQUIPMENT_CUSTOMIZATION_WEAPON_BACKUP";
+    private const string OffHandBackupKey = "EQUIPMENT_CUSTOMIZATION_OFFHAND_BACKUP";
     private const string BootsBackupKey = "EQUIPMENT_CUSTOMIZATION_BOOTS_BACKUP";
     private const string HelmetBackupKey = "EQUIPMENT_CUSTOMIZATION_HELMET_BACKUP";
     private const string CloakBackupKey = "EQUIPMENT_CUSTOMIZATION_CLOAK_BACKUP";
@@ -23,6 +28,7 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
     public EquipmentType CurrentEquipmentType { get; private set; } = EquipmentType.None;
 
     private NwItem? _currentWeapon;
+    private NwItem? _currentOffHand;
     private NwItem? _currentBoots;
     private NwItem? _currentHelmet;
     private NwItem? _currentCloak;
@@ -36,10 +42,25 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
     private const int MaxWeaponScale = 120;
 
     private bool _onlyScaleChanged;
+    private bool _weaponIsSimple;
+    public bool WeaponIsSimple => _weaponIsSimple;
 
     private int _weaponTopModelMax = 255;
     private int _weaponMidModelMax = 255;
     private int _weaponBotModelMax = 255;
+
+    public int OffHandTopModel { get; private set; } = 1;
+    public int OffHandMidModel { get; private set; } = 1;
+    public int OffHandBotModel { get; private set; } = 1;
+    public int OffHandScale { get; private set; } = 100;
+
+    private bool _offHandOnlyScaleChanged;
+    private bool _offHandIsSimple;
+    public bool OffHandIsSimple => _offHandIsSimple;
+
+    private int _offHandTopModelMax = 255;
+    private int _offHandMidModelMax = 255;
+    private int _offHandBotModelMax = 255;
 
     public int BootsTopModel { get; private set; } = 1;
     public int BootsMidModel { get; private set; } = 1;
@@ -71,19 +92,64 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
                 _currentWeapon = creature.GetItemInSlot(InventorySlot.RightHand);
                 if (_currentWeapon != null && _currentWeapon.IsValid)
                 {
+                    // Check if it's a simple item
+                    _weaponIsSimple = _currentWeapon.BaseItem.ModelType == BaseItemModelType.Simple;
+
                     int modelRange = (int)_currentWeapon.BaseItem.ModelRangeMax;
                     _weaponTopModelMax = modelRange;
                     _weaponMidModelMax = modelRange;
                     _weaponBotModelMax = modelRange;
 
-                    WeaponTopModel = _currentWeapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top);
-                    WeaponMidModel = _currentWeapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle);
-                    WeaponBotModel = _currentWeapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom);
+                    if (_weaponIsSimple)
+                    {
+                        // For simple items, use simple model appearance
+                        WeaponTopModel = NWScript.GetItemAppearance(_currentWeapon, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0);
+                        WeaponMidModel = 1;
+                        WeaponBotModel = 1;
+                    }
+                    else
+                    {
+                        WeaponTopModel = _currentWeapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top);
+                        WeaponMidModel = _currentWeapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle);
+                        WeaponBotModel = _currentWeapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom);
+                    }
 
                     VisualTransform transform = _currentWeapon.VisualTransform;
                     WeaponScale = (int)(transform.Scale * 100);
                 }
                 LoadWeaponData();
+                break;
+            case EquipmentType.OffHand:
+                _currentOffHand = creature.GetItemInSlot(InventorySlot.LeftHand);
+                if (_currentOffHand != null && _currentOffHand.IsValid)
+                {
+                    // Check if it's a simple item
+                    _offHandIsSimple = _currentOffHand.BaseItem.ModelType == BaseItemModelType.Simple;
+
+                    int modelRange = (int)_currentOffHand.BaseItem.ModelRangeMax;
+                    _offHandTopModelMax = modelRange;
+                    _offHandMidModelMax = modelRange;
+                    _offHandBotModelMax = modelRange;
+
+                    if (_offHandIsSimple)
+                    {
+                        // For simple items, use simple model appearance
+                        OffHandTopModel = NWScript.GetItemAppearance(_currentOffHand, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0);
+                        OffHandMidModel = 1;
+                        OffHandBotModel = 1;
+                    }
+                    else
+                    {
+                        // For complex items, use weapon model parts
+                        OffHandTopModel = _currentOffHand.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top);
+                        OffHandMidModel = _currentOffHand.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle);
+                        OffHandBotModel = _currentOffHand.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom);
+                    }
+
+                    VisualTransform transform = _currentOffHand.VisualTransform;
+                    OffHandScale = (int)(transform.Scale * 100);
+                }
+                LoadOffHandData();
                 break;
             case EquipmentType.Boots:
                 _currentBoots = creature.GetItemInSlot(InventorySlot.Boots);
@@ -129,6 +195,7 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
 
         // Load all equipment references
         _currentWeapon = creature.GetItemInSlot(InventorySlot.RightHand);
+        _currentOffHand = creature.GetItemInSlot(InventorySlot.LeftHand);
         _currentBoots = creature.GetItemInSlot(InventorySlot.Boots);
         _currentHelmet = creature.GetItemInSlot(InventorySlot.Head);
         _currentCloak = creature.GetItemInSlot(InventorySlot.Cloak);
@@ -136,17 +203,56 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         // Load current values for all equipped items
         if (_currentWeapon != null && _currentWeapon.IsValid)
         {
+            _weaponIsSimple = _currentWeapon.BaseItem.ModelType == BaseItemModelType.Simple;
+
             int modelRange = (int)_currentWeapon.BaseItem.ModelRangeMax;
             _weaponTopModelMax = modelRange;
             _weaponMidModelMax = modelRange;
             _weaponBotModelMax = modelRange;
 
-            WeaponTopModel = _currentWeapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top);
-            WeaponMidModel = _currentWeapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle);
-            WeaponBotModel = _currentWeapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom);
+            if (_weaponIsSimple)
+            {
+                // Simple weapons (shurikens, darts) only use top model
+                WeaponTopModel = NWScript.GetItemAppearance(_currentWeapon, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0);
+                WeaponMidModel = 0; // Blank out for simple models
+                WeaponBotModel = 0; // Blank out for simple models
+            }
+            else
+            {
+                // Complex weapons use all three model parts
+                WeaponTopModel = _currentWeapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top);
+                WeaponMidModel = _currentWeapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle);
+                WeaponBotModel = _currentWeapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom);
+            }
 
             VisualTransform transform = _currentWeapon.VisualTransform;
             WeaponScale = (int)(transform.Scale * 100);
+        }
+
+        if (_currentOffHand != null && _currentOffHand.IsValid)
+        {
+            _offHandIsSimple = _currentOffHand.BaseItem.ModelType == BaseItemModelType.Simple;
+
+            int modelRange = (int)_currentOffHand.BaseItem.ModelRangeMax;
+            _offHandTopModelMax = modelRange;
+            _offHandMidModelMax = modelRange;
+            _offHandBotModelMax = modelRange;
+
+            if (_offHandIsSimple)
+            {
+                OffHandTopModel = NWScript.GetItemAppearance(_currentOffHand, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0);
+                OffHandMidModel = 1;
+                OffHandBotModel = 1;
+            }
+            else
+            {
+                OffHandTopModel = _currentOffHand.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top);
+                OffHandMidModel = _currentOffHand.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle);
+                OffHandBotModel = _currentOffHand.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom);
+            }
+
+            VisualTransform transform = _currentOffHand.VisualTransform;
+            OffHandScale = (int)(transform.Scale * 100);
         }
 
         if (_currentBoots != null && _currentBoots.IsValid)
@@ -186,6 +292,19 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         else
         {
             player.SendServerMessage("Nothing equipped in main hand.", ColorConstants.Orange);
+        }
+    }
+
+    private void LoadOffHandData()
+    {
+        if (_currentOffHand != null && _currentOffHand.IsValid)
+        {
+            string itemType = _offHandIsSimple ? "simple item" : "weapon/shield";
+            player.SendServerMessage($"Selected off-hand item ({itemType}): {_currentOffHand.Name}", ColorConstants.Cyan);
+        }
+        else
+        {
+            player.SendServerMessage("Nothing equipped in off-hand.", ColorConstants.Orange);
         }
     }
 
@@ -234,6 +353,32 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         }
 
         _onlyScaleChanged = false;
+
+        // Use ItemToolModel logic for shurikens and darts
+        if (IsShurikenOrDart())
+        {
+            IconAdjustResult result = TryAdjustIcon(delta, out int newValue, out int maxValue);
+
+            switch (result)
+            {
+                case IconAdjustResult.Success:
+                    WeaponTopModel = newValue;
+                    player.SendServerMessage($"Weapon model set to {WeaponTopModel} (max: {maxValue}).", ColorConstants.Green);
+                    break;
+                case IconAdjustResult.NotAllowedType:
+                    player.SendServerMessage("This weapon type does not support model changes.", ColorConstants.Orange);
+                    break;
+                case IconAdjustResult.NoValidModel:
+                    player.SendServerMessage("No other valid models found.", ColorConstants.Orange);
+                    break;
+                default:
+                    player.SendServerMessage("Failed to adjust weapon model.", ColorConstants.Orange);
+                    break;
+            }
+            return;
+        }
+
+        // Use standard parts-based logic for other weapons
         WeaponTopModel = GetNextValidWeaponModel(ItemAppearanceWeaponModel.Top, WeaponTopModel, delta, _weaponTopModelMax);
         ApplyWeaponChanges();
         player.SendServerMessage($"Weapon top model set to {WeaponTopModel}.", ColorConstants.Green);
@@ -244,6 +389,12 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         if (_currentWeapon == null || !_currentWeapon.IsValid)
         {
             player.SendServerMessage("No weapon selected.", ColorConstants.Orange);
+            return;
+        }
+
+        if (_weaponIsSimple)
+        {
+            player.SendServerMessage("Middle and bottom models are disabled for simple weapons.", ColorConstants.Orange);
             return;
         }
 
@@ -258,6 +409,12 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         if (_currentWeapon == null || !_currentWeapon.IsValid)
         {
             player.SendServerMessage("No weapon selected.", ColorConstants.Orange);
+            return;
+        }
+
+        if (_weaponIsSimple)
+        {
+            player.SendServerMessage("Middle and bottom models are disabled for simple weapons.", ColorConstants.Orange);
             return;
         }
 
@@ -373,13 +530,155 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         return !string.IsNullOrEmpty(alias);
     }
 
+    // Helper methods for shurikens/darts (simple model items in main hand)
+    private bool IsShurikenOrDart()
+    {
+        if (_currentWeapon == null || !_currentWeapon.IsValid) return false;
+        string itemClass = _currentWeapon.BaseItem.ItemClass;
+        return itemClass == "WThDt" || itemClass == "WThSh";
+    }
+
+    private bool IsIconAllowed(out int current, out int max)
+    {
+        current = 0; max = 0;
+        if (_currentWeapon is null) return false;
+
+        if (!ItemModelValidation.SupportsModelChanges(_currentWeapon))
+            return false;
+
+        max = ItemModelValidation.GetMaxModelIndex(_currentWeapon);
+        if (max == 0) return false;
+
+        current = NWScript.GetItemAppearance(_currentWeapon, (int)ItemAppearanceType.SimpleModel, 0);
+        return true;
+    }
+
+    private IconAdjustResult TryAdjustIcon(int delta, out int newValue, out int maxValue)
+    {
+        newValue = 0; maxValue = 0;
+        if (_currentWeapon is null) return IconAdjustResult.NoSelection;
+
+        if (!ItemModelValidation.SupportsModelChanges(_currentWeapon))
+            return IconAdjustResult.NotAllowedType;
+
+        maxValue = ItemModelValidation.GetMaxModelIndex(_currentWeapon);
+        if (maxValue == 0)
+            return IconAdjustResult.NotAllowedType;
+
+        int current = NWScript.GetItemAppearance(_currentWeapon, (int)ItemAppearanceType.SimpleModel, 0);
+        if (delta == 0)
+        {
+            newValue = current;
+            return IconAdjustResult.Success;
+        }
+
+        int candidate = GetNextValidItemModel(current, delta, maxValue);
+
+        if (candidate == current)
+        {
+            return IconAdjustResult.NoValidModel;
+        }
+
+        NwCreature? creature = player.ControlledCreature;
+        InventorySlot? equippedSlot = null;
+
+        if (creature != null)
+        {
+            foreach (InventorySlot slot in Enum.GetValues<InventorySlot>())
+            {
+                if (creature.GetItemInSlot(slot) == _currentWeapon)
+                {
+                    equippedSlot = slot;
+                    break;
+                }
+            }
+
+            if (equippedSlot.HasValue)
+            {
+                creature.RunUnequip(_currentWeapon);
+            }
+        }
+
+        uint copy = NWScript.CopyItemAndModify(_currentWeapon, (int)ItemAppearanceType.SimpleModel, 0, candidate, 1);
+        if (NWScript.GetIsObjectValid(copy) == 1)
+        {
+            NWScript.DestroyObject(_currentWeapon);
+            _currentWeapon = copy.ToNwObject<NwItem>();
+
+            if (creature != null && equippedSlot.HasValue && _currentWeapon != null)
+            {
+                creature.RunEquip(_currentWeapon, equippedSlot.Value);
+            }
+
+            newValue = candidate;
+            return IconAdjustResult.Success;
+        }
+
+        if (creature != null && equippedSlot.HasValue && _currentWeapon != null)
+        {
+            creature.RunEquip(_currentWeapon, equippedSlot.Value);
+        }
+
+        newValue = current;
+        return IconAdjustResult.NoValidModel;
+    }
+
+    private int GetNextValidItemModel(int currentModel, int delta, int maxModel)
+    {
+        if (_currentWeapon == null || !_currentWeapon.IsValid) return currentModel;
+        if (maxModel <= 0) return currentModel;
+
+        int direction = Math.Sign(delta);
+        int step = Math.Abs(delta);
+        int searchModel = currentModel;
+        int attemptsRemaining = maxModel + 1;
+
+        while (attemptsRemaining > 0)
+        {
+            if (step == 1)
+            {
+                searchModel += direction;
+            }
+            else
+            {
+                searchModel += delta;
+                step = 1;
+            }
+
+            if (searchModel > maxModel)
+            {
+                searchModel = 1;
+            }
+            else if (searchModel < 1)
+            {
+                searchModel = maxModel;
+            }
+
+            if (searchModel == currentModel && attemptsRemaining < maxModel)
+            {
+                return currentModel;
+            }
+
+            if (ItemModelValidation.IsValidModelIndex(_currentWeapon, searchModel))
+            {
+                return searchModel;
+            }
+
+            attemptsRemaining--;
+        }
+
+        return currentModel;
+    }
+
     private void ApplyWeaponChanges()
     {
         if (_currentWeapon == null || !_currentWeapon.IsValid) return;
 
         NwCreature? creature = player.ControlledCreature;
         if (creature == null) return;
+
         NwItem currentWeapon = _currentWeapon;
+
         float scaleValue = WeaponScale / 100f;
         NWScript.SetObjectVisualTransform(currentWeapon, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
 
@@ -388,24 +687,666 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
             return;
         }
 
-        currentWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, (byte)WeaponTopModel);
-        currentWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, (byte)WeaponMidModel);
-        currentWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, (byte)WeaponBotModel);
+        // Check if weapon uses simple or complex model type
+        bool isStackable = currentWeapon.StackSize > 1;
+        bool isSimpleModel = currentWeapon.BaseItem.ModelType == BaseItemModelType.Simple;
 
-        creature.RunUnequip(currentWeapon);
-        NwItem newWeapon = currentWeapon.Clone(creature);
-
-        if (!newWeapon.IsValid)
+        if (isStackable)
         {
-            player.SendServerMessage("Failed to refresh weapon.", ColorConstants.Red);
-            creature.RunEquip(currentWeapon, InventorySlot.RightHand);
+            // Use CopyItemAndModify for stackable items - it preserves stack size automatically
+            // IMPORTANT: Call CopyItemAndModify WHILE item is still equipped!
+            player.SendServerMessage($"[DEBUG] Stackable weapon detected. Stack: {currentWeapon.StackSize}, Models: {WeaponTopModel}/{WeaponMidModel}/{WeaponBotModel}", ColorConstants.Yellow);
+            player.SendServerMessage($"[DEBUG] Item valid: {currentWeapon.IsValid}, Possessor: {currentWeapon.Possessor?.Name ?? "none"}", ColorConstants.Yellow);
+            player.SendServerMessage($"[DEBUG] Item equipped: {creature.GetItemInSlot(InventorySlot.RightHand) == currentWeapon}", ColorConstants.Yellow);
+            player.SendServerMessage($"[DEBUG] Item ObjectId: {currentWeapon.ObjectId}", ColorConstants.Yellow);
+            player.SendServerMessage($"[DEBUG] Item ModelType: {currentWeapon.BaseItem.ModelType}", ColorConstants.Yellow);
+
+            if (isSimpleModel)
+            {
+                // Simple model stackable - use EXACT ItemTool pattern
+                player.SendServerMessage($"[DEBUG] Simple stackable: Using EXACT ItemTool pattern", ColorConstants.Yellow);
+
+                // Unequip if equipped
+                creature.RunUnequip(currentWeapon);
+
+                // EXACT ItemTool: CopyItemAndModify directly
+                uint copy = NWScript.CopyItemAndModify(currentWeapon, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, WeaponTopModel, 1);
+                player.SendServerMessage($"[DEBUG] CopyItemAndModify result: {copy}, valid: {NWScript.GetIsObjectValid(copy)}", ColorConstants.Yellow);
+
+                if (NWScript.GetIsObjectValid(copy) == 1)
+                {
+                    // EXACT ItemTool: Destroy using NWScript.DestroyObject on the ORIGINAL
+                    player.SendServerMessage($"[DEBUG] Destroying original ObjectId: {currentWeapon.ObjectId}", ColorConstants.Yellow);
+                    NWScript.DestroyObject(currentWeapon);
+
+                    // EXACT ItemTool: Update reference to the copy IMMEDIATELY
+                    _currentWeapon = copy.ToNwObject<NwItem>();
+
+                    if (_currentWeapon != null && _currentWeapon.IsValid)
+                    {
+                        player.SendServerMessage($"[DEBUG] Updated reference. New ObjectId: {_currentWeapon.ObjectId}, Stack: {_currentWeapon.StackSize}", ColorConstants.Yellow);
+
+                        // Apply scale
+                        NWScript.SetObjectVisualTransform(_currentWeapon, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
+
+                        // Re-equip
+                        creature.RunEquip(_currentWeapon, InventorySlot.RightHand);
+
+                        player.SendServerMessage($"[DEBUG] ItemTool pattern complete! Final stack: {_currentWeapon.StackSize}", ColorConstants.Green);
+                        return;
+                    }
+                    else
+                    {
+                        player.SendServerMessage("Failed to convert copy to NwItem.", ColorConstants.Red);
+                        return;
+                    }
+                }
+                else
+                {
+                    player.SendServerMessage("Failed to create modified copy.", ColorConstants.Red);
+                    creature.RunEquip(currentWeapon, InventorySlot.RightHand);
+                    return;
+                }
+            }
+            else
+            {
+                // Complex/Composite weapons - CopyItemAndModify doesn't work for stackable WEAPON_MODEL types
+                // Workaround: Create copy at remote waypoint to prevent stack merging, then move to player
+                player.SendServerMessage($"[DEBUG] Using waypoint workaround for composite stackable weapon", ColorConstants.Yellow);
+
+            // Store original stack size
+            int originalStackSize = currentWeapon.StackSize;
+
+            // Find the ds_copy waypoint in core_atr area
+            NwArea? targetArea = NwModule.Instance.Areas.FirstOrDefault(a => a.ResRef == "core_atr");
+            if (targetArea == null)
+            {
+                player.SendServerMessage("Failed to find copy area.", ColorConstants.Red);
+                return;
+            }
+
+            NwWaypoint? copyWaypoint = targetArea.FindObjectsOfTypeInArea<NwWaypoint>().FirstOrDefault(w => w.Tag == "ds_copy");
+            if (copyWaypoint == null)
+            {
+                player.SendServerMessage("Failed to find copy waypoint.", ColorConstants.Red);
+                return;
+            }
+
+            player.SendServerMessage($"[DEBUG] Found waypoint at {copyWaypoint.Area.Name}", ColorConstants.Yellow);
+
+            // Unequip the weapon
+            creature.RunUnequip(currentWeapon);
+
+            // Create copy at the waypoint (prevents stack merging with original)
+            uint copyId = NWScript.CopyItem(currentWeapon, copyWaypoint, 1);
+            player.SendServerMessage($"[DEBUG] CopyItem to waypoint result: {copyId}, valid: {NWScript.GetIsObjectValid(copyId)}", ColorConstants.Yellow);
+
+            if (NWScript.GetIsObjectValid(copyId) == 0)
+            {
+                player.SendServerMessage("Failed to copy weapon.", ColorConstants.Red);
+                creature.RunEquip(currentWeapon, InventorySlot.RightHand);
+                return;
+            }
+
+            NwItem? copiedWeapon = copyId.ToNwObject<NwItem>();
+            if (copiedWeapon == null || !copiedWeapon.IsValid)
+            {
+                NWScript.DestroyObject(copyId);
+                player.SendServerMessage("Failed to convert weapon.", ColorConstants.Red);
+                creature.RunEquip(currentWeapon, InventorySlot.RightHand);
+                return;
+            }
+
+            // Manually set the stack size on the copy
+            copiedWeapon.StackSize = originalStackSize;
+            player.SendServerMessage($"[DEBUG] Set stack size to {originalStackSize}, actual: {copiedWeapon.StackSize}", ColorConstants.Yellow);
+
+            // Manually modify the weapon appearance
+            copiedWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, (byte)WeaponTopModel);
+            copiedWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, (byte)WeaponMidModel);
+            copiedWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, (byte)WeaponBotModel);
+
+            // Apply scale
+            NWScript.SetObjectVisualTransform(copiedWeapon, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
+
+            // NOW destroy the original (copy is safe at waypoint)
+            currentWeapon.Destroy();
+            player.SendServerMessage($"[DEBUG] Original destroyed", ColorConstants.Yellow);
+
+            // Move the copy from waypoint to player
+            NwItem? newWeapon = copiedWeapon.Clone(creature);
+            if (newWeapon == null || !newWeapon.IsValid)
+            {
+                player.SendServerMessage("Failed to move weapon to player.", ColorConstants.Red);
+                return;
+            }
+
+            // Destroy the waypoint copy
+            copiedWeapon.Destroy();
+            player.SendServerMessage($"[DEBUG] Moved copy to player, waypoint copy destroyed", ColorConstants.Yellow);
+
+            // Equip the new weapon
+            creature.RunEquip(newWeapon, InventorySlot.RightHand);
+            _currentWeapon = newWeapon;
+
+            player.SendServerMessage($"[DEBUG] Weapon changes applied successfully! Final stack: {newWeapon.StackSize}", ColorConstants.Green);
+            }
+        }
+        else
+        {
+            // For non-stackable items, use the normal clone/destroy method
+            currentWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, (byte)WeaponTopModel);
+            currentWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, (byte)WeaponMidModel);
+            currentWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, (byte)WeaponBotModel);
+
+            creature.RunUnequip(currentWeapon);
+            NwItem newWeapon = currentWeapon.Clone(creature);
+
+            if (!newWeapon.IsValid)
+            {
+                player.SendServerMessage("Failed to refresh weapon.", ColorConstants.Red);
+                creature.RunEquip(currentWeapon, InventorySlot.RightHand);
+                return;
+            }
+
+            creature.RunEquip(newWeapon, InventorySlot.RightHand);
+            NWScript.SetObjectVisualTransform(newWeapon, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
+            _currentWeapon = newWeapon;
+            currentWeapon.Destroy();
+        }
+    }
+
+    // Off-Hand Methods
+    public void AdjustOffHandTopModel(int delta)
+    {
+        if (_currentOffHand == null || !_currentOffHand.IsValid)
+        {
+            player.SendServerMessage("No off-hand item selected.", ColorConstants.Orange);
             return;
         }
 
-        creature.RunEquip(newWeapon, InventorySlot.RightHand);
-        NWScript.SetObjectVisualTransform(newWeapon, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
-        _currentWeapon = newWeapon;
-        currentWeapon.Destroy();
+        _offHandOnlyScaleChanged = false;
+
+        if (_offHandIsSimple)
+        {
+            OffHandTopModel = GetNextValidOffHandSimpleModel(OffHandTopModel, delta, _offHandTopModelMax);
+            ApplyOffHandChanges();
+            player.SendServerMessage($"Off-hand model set to {OffHandTopModel}.", ColorConstants.Green);
+        }
+        else
+        {
+            OffHandTopModel = GetNextValidOffHandWeaponModel(ItemAppearanceWeaponModel.Top, OffHandTopModel, delta, _offHandTopModelMax);
+            ApplyOffHandChanges();
+            player.SendServerMessage($"Off-hand top model set to {OffHandTopModel}.", ColorConstants.Green);
+        }
+    }
+
+    public void AdjustOffHandMidModel(int delta)
+    {
+        if (_currentOffHand == null || !_currentOffHand.IsValid)
+        {
+            player.SendServerMessage("No off-hand item selected.", ColorConstants.Orange);
+            return;
+        }
+
+        if (_offHandIsSimple)
+        {
+            player.SendServerMessage("Middle and bottom models are disabled for simple items.", ColorConstants.Orange);
+            return;
+        }
+
+        _offHandOnlyScaleChanged = false;
+        OffHandMidModel = GetNextValidOffHandWeaponModel(ItemAppearanceWeaponModel.Middle, OffHandMidModel, delta, _offHandMidModelMax);
+        ApplyOffHandChanges();
+        player.SendServerMessage($"Off-hand middle model set to {OffHandMidModel}.", ColorConstants.Green);
+    }
+
+    public void AdjustOffHandBotModel(int delta)
+    {
+        if (_currentOffHand == null || !_currentOffHand.IsValid)
+        {
+            player.SendServerMessage("No off-hand item selected.", ColorConstants.Orange);
+            return;
+        }
+
+        if (_offHandIsSimple)
+        {
+            player.SendServerMessage("Middle and bottom models are disabled for simple items.", ColorConstants.Orange);
+            return;
+        }
+
+        _offHandOnlyScaleChanged = false;
+        OffHandBotModel = GetNextValidOffHandWeaponModel(ItemAppearanceWeaponModel.Bottom, OffHandBotModel, delta, _offHandBotModelMax);
+        ApplyOffHandChanges();
+        player.SendServerMessage($"Off-hand bottom model set to {OffHandBotModel}.", ColorConstants.Green);
+    }
+
+    public void AdjustOffHandScale(int delta)
+    {
+        if (_currentOffHand == null || !_currentOffHand.IsValid)
+        {
+            player.SendServerMessage("No off-hand item selected.", ColorConstants.Orange);
+            return;
+        }
+
+        int newScale = OffHandScale + delta;
+
+        if (newScale < MinWeaponScale)
+        {
+            player.SendServerMessage($"This item cannot be scaled lower than {MinWeaponScale}%.", ColorConstants.Orange);
+            return;
+        }
+
+        if (newScale > MaxWeaponScale)
+        {
+            player.SendServerMessage($"This item cannot be scaled higher than {MaxWeaponScale}%.", ColorConstants.Orange);
+            return;
+        }
+
+        _offHandOnlyScaleChanged = true;
+        OffHandScale = newScale;
+        ApplyOffHandChanges();
+
+        int percentDiff = OffHandScale - 100;
+        string sign = percentDiff > 0 ? "+" : "";
+        player.SendServerMessage($"Off-hand scale set to {OffHandScale}% ({sign}{percentDiff}%).", ColorConstants.Green);
+    }
+
+    private int GetNextValidOffHandSimpleModel(int currentModel, int delta, int maxModel)
+    {
+        if (_currentOffHand == null || !_currentOffHand.IsValid) return currentModel;
+        if (maxModel <= 0) return currentModel;
+
+        int direction = Math.Sign(delta);
+        int step = Math.Abs(delta);
+        int searchModel = currentModel;
+        int attemptsRemaining = maxModel + 1;
+
+        while (attemptsRemaining > 0)
+        {
+            if (step == 1)
+            {
+                searchModel += direction;
+            }
+            else
+            {
+                searchModel += delta;
+                step = 1;
+            }
+
+            if (searchModel > maxModel)
+            {
+                searchModel = 1;
+            }
+            else if (searchModel < 1)
+            {
+                searchModel = maxModel;
+            }
+
+            if (searchModel == currentModel && attemptsRemaining < maxModel)
+            {
+                player.SendServerMessage("No other valid models found.", ColorConstants.Orange);
+                return currentModel;
+            }
+
+            if (IsValidOffHandSimpleModel(searchModel))
+            {
+                return searchModel;
+            }
+
+            attemptsRemaining--;
+        }
+
+        player.SendServerMessage("Could not find a valid off-hand model.", ColorConstants.Orange);
+        return currentModel;
+    }
+
+    private bool IsValidOffHandSimpleModel(int modelIndex)
+    {
+        if (_currentOffHand == null || !_currentOffHand.IsValid) return false;
+        if (modelIndex < 0) return false;
+
+        string itemClass = _currentOffHand.BaseItem.ItemClass;
+        if (string.IsNullOrEmpty(itemClass)) return false;
+
+        uint baseItemId = _currentOffHand.BaseItem.Id;
+        bool usesMdlWithoutPrefix = _currentOffHand.BaseItem.ItemType == BaseItemType.SmallShield
+                                     || _currentOffHand.BaseItem.ItemType == BaseItemType.LargeShield
+                                     || _currentOffHand.BaseItem.ItemType == BaseItemType.TowerShield
+                                     || baseItemId == 213
+                                     || baseItemId == 214
+                                     || baseItemId == 215;
+
+        string modelResRef;
+        int resType;
+
+        if (usesMdlWithoutPrefix)
+        {
+            modelResRef = $"{itemClass}_{modelIndex:D3}";
+            resType = NWScript.RESTYPE_MDL;
+        }
+        else
+        {
+            modelResRef = $"i{itemClass}_{modelIndex:D3}";
+            resType = NWScript.RESTYPE_TGA;
+        }
+
+        string alias = NWScript.ResManGetAliasFor(modelResRef, resType);
+        return !string.IsNullOrEmpty(alias);
+    }
+
+    private int GetNextValidOffHandWeaponModel(ItemAppearanceWeaponModel modelPart, int currentModel, int delta, int maxModel)
+    {
+        if (_currentOffHand == null || !_currentOffHand.IsValid) return currentModel;
+        if (maxModel <= 0) return currentModel;
+
+        NwCreature? creature = player.ControlledCreature;
+        if (creature == null) return currentModel;
+
+        int direction = Math.Sign(delta);
+        int step = Math.Abs(delta);
+        int searchModel = currentModel;
+        int attemptsRemaining = maxModel + 1;
+
+        while (attemptsRemaining > 0)
+        {
+            if (step == 1)
+            {
+                searchModel += direction;
+            }
+            else
+            {
+                searchModel += delta;
+                step = 1;
+            }
+
+            if (searchModel > maxModel)
+            {
+                searchModel = 1;
+            }
+            else if (searchModel < 1)
+            {
+                searchModel = maxModel;
+            }
+
+            if (searchModel == currentModel && attemptsRemaining < maxModel)
+            {
+                player.SendServerMessage("No other valid models found.", ColorConstants.Orange);
+                return currentModel;
+            }
+
+            if (IsValidOffHandWeaponModel(modelPart, searchModel))
+            {
+                return searchModel;
+            }
+
+            attemptsRemaining--;
+        }
+
+        player.SendServerMessage("Could not find a valid off-hand model.", ColorConstants.Orange);
+        return currentModel;
+    }
+
+    private bool IsValidOffHandWeaponModel(ItemAppearanceWeaponModel modelPart, int modelNumber)
+    {
+        if (_currentOffHand == null || !_currentOffHand.IsValid) return false;
+        if (modelNumber == 0) return false;
+
+        string itemClass = _currentOffHand.BaseItem.ItemClass;
+        if (string.IsNullOrEmpty(itemClass)) return false;
+
+        string partLetter = modelPart switch
+        {
+            ItemAppearanceWeaponModel.Top => "t",
+            ItemAppearanceWeaponModel.Middle => "m",
+            ItemAppearanceWeaponModel.Bottom => "b",
+            _ => ""
+        };
+
+        string modelResRef = $"{itemClass}_{partLetter}_{modelNumber:D3}";
+        string alias = NWScript.ResManGetAliasFor(modelResRef, NWScript.RESTYPE_MDL);
+        return !string.IsNullOrEmpty(alias);
+    }
+
+    private void ApplyOffHandChanges()
+    {
+        if (_currentOffHand == null || !_currentOffHand.IsValid) return;
+
+        NwCreature? creature = player.ControlledCreature;
+        if (creature == null) return;
+
+        NwItem currentOffHand = _currentOffHand;
+        float scaleValue = OffHandScale / 100f;
+        NWScript.SetObjectVisualTransform(currentOffHand, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
+
+        if (_offHandOnlyScaleChanged)
+        {
+            return;
+        }
+
+        if (_offHandIsSimple)
+        {
+            // For simple items, use CopyItemAndModify with simple model
+            // Note: CopyItemAndModify preserves stack size automatically
+            creature.RunUnequip(currentOffHand);
+            uint copy = NWScript.CopyItemAndModify(currentOffHand, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, OffHandTopModel, 1);
+
+            if (NWScript.GetIsObjectValid(copy) == 1)
+            {
+                NWScript.DestroyObject(currentOffHand);
+                _currentOffHand = copy.ToNwObject<NwItem>();
+
+                if (_currentOffHand != null && _currentOffHand.IsValid)
+                {
+                    creature.RunEquip(_currentOffHand, InventorySlot.LeftHand);
+                    NWScript.SetObjectVisualTransform(_currentOffHand, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
+                }
+            }
+            else
+            {
+                player.SendServerMessage("Failed to refresh off-hand item.", ColorConstants.Red);
+                creature.RunEquip(currentOffHand, InventorySlot.LeftHand);
+            }
+        }
+        else
+        {
+            // For complex items (weapons)
+            bool isStackable = currentOffHand.StackSize > 1;
+            bool isSimpleModel = currentOffHand.BaseItem.ModelType == BaseItemModelType.Simple;
+
+            if (isStackable && !isSimpleModel)
+            {
+                // Composite/Complex stackable off-hand - use waypoint workaround
+                player.SendServerMessage($"[DEBUG] Using waypoint workaround for composite stackable off-hand", ColorConstants.Yellow);
+
+                int originalStackSize = currentOffHand.StackSize;
+
+                // Find the ds_copy waypoint in core_atr area
+                NwArea? targetArea = NwModule.Instance.Areas.FirstOrDefault(a => a.ResRef == "core_atr");
+                if (targetArea == null)
+                {
+                    player.SendServerMessage("Failed to find copy area.", ColorConstants.Red);
+                    return;
+                }
+
+                NwWaypoint? copyWaypoint = targetArea.FindObjectsOfTypeInArea<NwWaypoint>().FirstOrDefault(w => w.Tag == "ds_copy");
+                if (copyWaypoint == null)
+                {
+                    player.SendServerMessage("Failed to find copy waypoint.", ColorConstants.Red);
+                    return;
+                }
+
+                // Unequip the weapon
+                creature.RunUnequip(currentOffHand);
+
+                // Create copy at the waypoint (prevents stack merging with original)
+                uint copyId = NWScript.CopyItem(currentOffHand, copyWaypoint, 1);
+
+                if (NWScript.GetIsObjectValid(copyId) == 0)
+                {
+                    player.SendServerMessage("Failed to copy off-hand weapon.", ColorConstants.Red);
+                    creature.RunEquip(currentOffHand, InventorySlot.LeftHand);
+                    return;
+                }
+
+                NwItem? copiedWeapon = copyId.ToNwObject<NwItem>();
+                if (copiedWeapon == null || !copiedWeapon.IsValid)
+                {
+                    NWScript.DestroyObject(copyId);
+                    player.SendServerMessage("Failed to convert off-hand weapon.", ColorConstants.Red);
+                    creature.RunEquip(currentOffHand, InventorySlot.LeftHand);
+                    return;
+                }
+
+                // Manually set the stack size on the copy
+                copiedWeapon.StackSize = originalStackSize;
+
+                // Manually modify the weapon appearance
+                copiedWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, (byte)OffHandTopModel);
+                copiedWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, (byte)OffHandMidModel);
+                copiedWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, (byte)OffHandBotModel);
+
+                // Apply scale
+                NWScript.SetObjectVisualTransform(copiedWeapon, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
+
+                // NOW destroy the original (copy is safe at waypoint)
+                currentOffHand.Destroy();
+
+                // Move the copy from waypoint to player
+                NwItem? newOffHand = copiedWeapon.Clone(creature);
+                if (newOffHand == null || !newOffHand.IsValid)
+                {
+                    player.SendServerMessage("Failed to move off-hand weapon to player.", ColorConstants.Red);
+                    return;
+                }
+
+                // Destroy the waypoint copy
+                copiedWeapon.Destroy();
+
+                // Equip the new weapon
+                creature.RunEquip(newOffHand, InventorySlot.LeftHand);
+                _currentOffHand = newOffHand;
+
+                player.SendServerMessage($"[DEBUG] Off-hand weapon changes applied successfully! Final stack: {newOffHand.StackSize}", ColorConstants.Green);
+            }
+            else if (isStackable && isSimpleModel)
+            {
+                // Simple stackable off-hand - MUST use waypoint workaround
+                player.SendServerMessage($"[DEBUG] Simple stackable off-hand: Using waypoint workaround", ColorConstants.Yellow);
+
+                int originalStackSize = currentOffHand.StackSize;
+
+                // Find waypoint
+                NwArea? targetArea = NwModule.Instance.Areas.FirstOrDefault(a => a.ResRef == "core_atr");
+                if (targetArea == null)
+                {
+                    player.SendServerMessage("Failed to find copy area.", ColorConstants.Red);
+                    return;
+                }
+
+                NwWaypoint? copyWaypoint = targetArea.FindObjectsOfTypeInArea<NwWaypoint>().FirstOrDefault(w => w.Tag == "ds_copy");
+                if (copyWaypoint == null)
+                {
+                    player.SendServerMessage("Failed to find copy waypoint.", ColorConstants.Red);
+                    return;
+                }
+
+                // Unequip
+                creature.RunUnequip(currentOffHand);
+
+                // Copy to waypoint
+                uint copyId = NWScript.CopyItem(currentOffHand, copyWaypoint, 1);
+
+                if (NWScript.GetIsObjectValid(copyId) == 0)
+                {
+                    player.SendServerMessage("Failed to copy off-hand.", ColorConstants.Red);
+                    creature.RunEquip(currentOffHand, InventorySlot.LeftHand);
+                    return;
+                }
+
+                NwItem? waypointCopy = copyId.ToNwObject<NwItem>();
+                if (waypointCopy == null || !waypointCopy.IsValid)
+                {
+                    NWScript.DestroyObject(copyId);
+                    player.SendServerMessage("Failed to convert off-hand.", ColorConstants.Red);
+                    creature.RunEquip(currentOffHand, InventorySlot.LeftHand);
+                    return;
+                }
+
+                // Set stack size
+                waypointCopy.StackSize = originalStackSize;
+
+                // Modify appearance at waypoint
+                uint modifiedId = NWScript.CopyItemAndModify(waypointCopy, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, OffHandTopModel, 1);
+
+                // Destroy unmodified copy
+                waypointCopy.Destroy();
+
+                if (NWScript.GetIsObjectValid(modifiedId) == 0)
+                {
+                    player.SendServerMessage("Failed to modify off-hand appearance.", ColorConstants.Red);
+                    creature.RunEquip(currentOffHand, InventorySlot.LeftHand);
+                    return;
+                }
+
+                NwItem? modifiedCopy = modifiedId.ToNwObject<NwItem>();
+                if (modifiedCopy == null || !modifiedCopy.IsValid)
+                {
+                    NWScript.DestroyObject(modifiedId);
+                    player.SendServerMessage("Failed to convert modified off-hand.", ColorConstants.Red);
+                    creature.RunEquip(currentOffHand, InventorySlot.LeftHand);
+                    return;
+                }
+
+                // Ensure stack size
+                modifiedCopy.StackSize = originalStackSize;
+
+                // Apply scale
+                NWScript.SetObjectVisualTransform(modifiedCopy, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
+
+                // Destroy original
+                currentOffHand.Destroy();
+
+                // Clone to player
+                NwItem? newOffHand = modifiedCopy.Clone(creature);
+                if (newOffHand == null || !newOffHand.IsValid)
+                {
+                    player.SendServerMessage("Failed to move off-hand to player.", ColorConstants.Red);
+                    return;
+                }
+
+                // Destroy waypoint copy
+                modifiedCopy.Destroy();
+
+                // Equip
+                creature.RunEquip(newOffHand, InventorySlot.LeftHand);
+                _currentOffHand = newOffHand;
+
+                player.SendServerMessage($"[DEBUG] Off-hand waypoint workaround complete! Final stack: {newOffHand.StackSize}", ColorConstants.Green);
+            }
+            else
+            {
+                // For non-stackable items, use the normal clone/destroy method
+                currentOffHand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, (byte)OffHandTopModel);
+                currentOffHand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, (byte)OffHandMidModel);
+                currentOffHand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, (byte)OffHandBotModel);
+
+                creature.RunUnequip(currentOffHand);
+                NwItem newOffHand = currentOffHand.Clone(creature);
+
+                if (!newOffHand.IsValid)
+                {
+                    player.SendServerMessage("Failed to refresh off-hand item.", ColorConstants.Red);
+                    creature.RunEquip(currentOffHand, InventorySlot.LeftHand);
+                    return;
+                }
+
+                creature.RunEquip(newOffHand, InventorySlot.LeftHand);
+                NWScript.SetObjectVisualTransform(newOffHand, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
+                _currentOffHand = newOffHand;
+                currentOffHand.Destroy();
+            }
+        }
     }
 
     private int GetNextValidBootsModel(ItemAppearanceWeaponModel modelPart, int currentModel, int delta, int maxModel)
@@ -836,6 +1777,7 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
 
         // Reload current items from inventory in case player swapped items
         _currentWeapon = creature.GetItemInSlot(InventorySlot.RightHand);
+        _currentOffHand = creature.GetItemInSlot(InventorySlot.LeftHand);
         _currentBoots = creature.GetItemInSlot(InventorySlot.Boots);
         _currentHelmet = creature.GetItemInSlot(InventorySlot.Head);
         _currentCloak = creature.GetItemInSlot(InventorySlot.Cloak);
@@ -844,26 +1786,207 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         WeaponBackupData? weaponBackup = LoadWeaponBackupFromPcKey();
         if (_currentWeapon != null && _currentWeapon.IsValid && weaponBackup != null)
         {
-            creature.RunUnequip(_currentWeapon);
-            NwItem newWeapon = _currentWeapon.Clone(creature);
+            bool isStackable = _currentWeapon.StackSize > 1;
 
-            if (newWeapon.IsValid)
+            if (isStackable)
             {
-                weaponBackup.ApplyToItem(newWeapon);
-                creature.RunEquip(newWeapon, InventorySlot.RightHand);
-                _currentWeapon.Destroy();
-                _currentWeapon = newWeapon;
+                // Use CopyItemAndModify for stackable items - call while equipped!
+                uint copy1 = NWScript.CopyItemAndModify(_currentWeapon, NWScript.ITEM_APPR_TYPE_WEAPON_MODEL, NWScript.ITEM_APPR_WEAPON_MODEL_TOP, weaponBackup.TopModel, 1);
+                if (NWScript.GetIsObjectValid(copy1) == 1)
+                {
+                    uint copy2 = NWScript.CopyItemAndModify(copy1, NWScript.ITEM_APPR_TYPE_WEAPON_MODEL, NWScript.ITEM_APPR_WEAPON_MODEL_MIDDLE, weaponBackup.MidModel, 1);
 
-                WeaponTopModel = weaponBackup.TopModel;
-                WeaponMidModel = weaponBackup.MidModel;
-                WeaponBotModel = weaponBackup.BotModel;
-                WeaponScale = weaponBackup.Scale;
+                    if (NWScript.GetIsObjectValid(copy2) == 1)
+                    {
+                        uint copy3 = NWScript.CopyItemAndModify(copy2, NWScript.ITEM_APPR_TYPE_WEAPON_MODEL, NWScript.ITEM_APPR_WEAPON_MODEL_BOTTOM, weaponBackup.BotModel, 1);
 
-                anyReverted = true;
+                        if (NWScript.GetIsObjectValid(copy3) == 1)
+                        {
+                            NwItem? newWeapon = copy3.ToNwObject<NwItem>();
+                            if (newWeapon != null && newWeapon.IsValid)
+                            {
+                                float scaleValue = weaponBackup.Scale / 100f;
+                                NWScript.SetObjectVisualTransform(newWeapon, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
+
+                                // Unequip and destroy original
+                                creature.RunUnequip(_currentWeapon);
+                                _currentWeapon.Destroy();
+
+                                // Cleanup intermediate copies
+                                NWScript.DestroyObject(copy1);
+                                NWScript.DestroyObject(copy2);
+
+                                creature.RunEquip(newWeapon, InventorySlot.RightHand);
+                                _currentWeapon = newWeapon;
+
+                                WeaponTopModel = weaponBackup.TopModel;
+                                WeaponMidModel = weaponBackup.MidModel;
+                                WeaponBotModel = weaponBackup.BotModel;
+                                WeaponScale = weaponBackup.Scale;
+
+                                anyReverted = true;
+                            }
+                            else
+                            {
+                                NWScript.DestroyObject(copy1);
+                                NWScript.DestroyObject(copy2);
+                                NWScript.DestroyObject(copy3);
+                            }
+                        }
+                        else
+                        {
+                            NWScript.DestroyObject(copy1);
+                            NWScript.DestroyObject(copy2);
+                        }
+                    }
+                    else
+                    {
+                        NWScript.DestroyObject(copy1);
+                    }
+                }
             }
             else
             {
-                creature.RunEquip(_currentWeapon, InventorySlot.RightHand);
+                // For non-stackable items, use clone/destroy
+                creature.RunUnequip(_currentWeapon);
+                NwItem newWeapon = _currentWeapon.Clone(creature);
+
+                if (newWeapon.IsValid)
+                {
+                    weaponBackup.ApplyToItem(newWeapon);
+                    creature.RunEquip(newWeapon, InventorySlot.RightHand);
+                    _currentWeapon.Destroy();
+                    _currentWeapon = newWeapon;
+
+                    WeaponTopModel = weaponBackup.TopModel;
+                    WeaponMidModel = weaponBackup.MidModel;
+                    WeaponBotModel = weaponBackup.BotModel;
+                    WeaponScale = weaponBackup.Scale;
+
+                    anyReverted = true;
+                }
+                else
+                {
+                    creature.RunEquip(_currentWeapon, InventorySlot.RightHand);
+                }
+            }
+        }
+
+        // Revert off-hand if backup exists and item is equipped
+        OffHandBackupData? offHandBackup = LoadOffHandBackupFromPcKey();
+        if (_currentOffHand != null && _currentOffHand.IsValid && offHandBackup != null)
+        {
+            if (offHandBackup.IsSimple)
+            {
+                // For simple items - CopyItemAndModify preserves stack size automatically
+                uint copy = NWScript.CopyItemAndModify(_currentOffHand, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, offHandBackup.TopModel, 1);
+                if (NWScript.GetIsObjectValid(copy) == 1)
+                {
+                    NwItem? offHandCopy = copy.ToNwObject<NwItem>();
+                    creature.RunUnequip(_currentOffHand);
+                    NWScript.DestroyObject(_currentOffHand);
+                    _currentOffHand = offHandCopy;
+                    if (_currentOffHand != null)
+                    {
+                        creature.RunEquip(_currentOffHand, InventorySlot.LeftHand);
+                        offHandBackup.ApplyToItem(_currentOffHand);
+                    }
+
+                    OffHandTopModel = offHandBackup.TopModel;
+                    OffHandMidModel = offHandBackup.MidModel;
+                    OffHandBotModel = offHandBackup.BotModel;
+                    OffHandScale = offHandBackup.Scale;
+
+                    anyReverted = true;
+                }
+            }
+            else
+            {
+                // For complex items (weapons/shields)
+                bool isStackable = _currentOffHand.StackSize > 1;
+
+                if (isStackable)
+                {
+                    // Use CopyItemAndModify for stackable items - call while equipped!
+                    uint copy1 = NWScript.CopyItemAndModify(_currentOffHand, NWScript.ITEM_APPR_TYPE_WEAPON_MODEL, NWScript.ITEM_APPR_WEAPON_MODEL_TOP, offHandBackup.TopModel, 1);
+                    if (NWScript.GetIsObjectValid(copy1) == 1)
+                    {
+                        uint copy2 = NWScript.CopyItemAndModify(copy1, NWScript.ITEM_APPR_TYPE_WEAPON_MODEL, NWScript.ITEM_APPR_WEAPON_MODEL_MIDDLE, offHandBackup.MidModel, 1);
+
+                        if (NWScript.GetIsObjectValid(copy2) == 1)
+                        {
+                            uint copy3 = NWScript.CopyItemAndModify(copy2, NWScript.ITEM_APPR_TYPE_WEAPON_MODEL, NWScript.ITEM_APPR_WEAPON_MODEL_BOTTOM, offHandBackup.BotModel, 1);
+
+                            if (NWScript.GetIsObjectValid(copy3) == 1)
+                            {
+                                NwItem? newOffHand = copy3.ToNwObject<NwItem>();
+                                if (newOffHand != null && newOffHand.IsValid)
+                                {
+                                    float scaleValue = offHandBackup.Scale / 100f;
+                                    NWScript.SetObjectVisualTransform(newOffHand, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
+
+                                    // Unequip and destroy original
+                                    creature.RunUnequip(_currentOffHand);
+                                    _currentOffHand.Destroy();
+
+                                    // Cleanup intermediate copies
+                                    NWScript.DestroyObject(copy1);
+                                    NWScript.DestroyObject(copy2);
+
+                                    creature.RunEquip(newOffHand, InventorySlot.LeftHand);
+                                    _currentOffHand = newOffHand;
+
+                                    OffHandTopModel = offHandBackup.TopModel;
+                                    OffHandMidModel = offHandBackup.MidModel;
+                                    OffHandBotModel = offHandBackup.BotModel;
+                                    OffHandScale = offHandBackup.Scale;
+
+                                    anyReverted = true;
+                                }
+                                else
+                                {
+                                    NWScript.DestroyObject(copy1);
+                                    NWScript.DestroyObject(copy2);
+                                    NWScript.DestroyObject(copy3);
+                                }
+                            }
+                            else
+                            {
+                                NWScript.DestroyObject(copy1);
+                                NWScript.DestroyObject(copy2);
+                            }
+                        }
+                        else
+                        {
+                            NWScript.DestroyObject(copy1);
+                        }
+                    }
+                }
+                else
+                {
+                    // For non-stackable items, use clone/destroy
+                    creature.RunUnequip(_currentOffHand);
+                    NwItem newOffHand = _currentOffHand.Clone(creature);
+
+                    if (newOffHand.IsValid)
+                    {
+                        offHandBackup.ApplyToItem(newOffHand);
+                        creature.RunEquip(newOffHand, InventorySlot.LeftHand);
+                        _currentOffHand.Destroy();
+                        _currentOffHand = newOffHand;
+
+                        OffHandTopModel = offHandBackup.TopModel;
+                        OffHandMidModel = offHandBackup.MidModel;
+                        OffHandBotModel = offHandBackup.BotModel;
+                        OffHandScale = offHandBackup.Scale;
+
+                        anyReverted = true;
+                    }
+                    else
+                    {
+                        creature.RunEquip(_currentOffHand, InventorySlot.LeftHand);
+                    }
+                }
             }
         }
 
@@ -987,6 +2110,9 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
             case EquipmentType.Weapon:
                 CopyWeaponAppearance(targetItem, creature);
                 break;
+            case EquipmentType.OffHand:
+                CopyOffHandAppearance(targetItem, creature);
+                break;
             case EquipmentType.Boots:
                 CopyBootsAppearance(targetItem, creature);
                 break;
@@ -1033,22 +2159,247 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
             return;
         }
 
-        // Clone the target item and apply the backup appearance to the clone
-        NwItem weaponClone = targetItem.Clone(creature);
+        bool isStackable = targetItem.StackSize > 1;
+        bool isSimpleModel = targetItem.BaseItem.ModelType == BaseItemModelType.Simple;
 
-        if (weaponClone.IsValid)
+        if (isStackable)
         {
-            // Apply the backup appearance to the cloned item
-            weaponBackup.ApplyToItem(weaponClone);
+            if (isSimpleModel)
+            {
+                // For simple model stackable items (e.g., shurikens, darts, custom simple weapons)
+                // Use ITEM_APPR_TYPE_SIMPLE_MODEL
+                uint copy = NWScript.CopyItemAndModify(targetItem, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, weaponBackup.TopModel, 1);
+                if (NWScript.GetIsObjectValid(copy) == 1)
+                {
+                    NwItem? weaponCopy = copy.ToNwObject<NwItem>();
+                    if (weaponCopy != null && weaponCopy.IsValid)
+                    {
+                        float scaleValue = weaponBackup.Scale / 100f;
+                        NWScript.SetObjectVisualTransform(weaponCopy, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
 
-            // Destroy the original item
-            targetItem.Destroy();
+                        targetItem.Destroy();
+                        player.SendServerMessage($"Copied weapon appearance to {weaponCopy.Name}.", ColorConstants.Green);
+                    }
+                    else
+                    {
+                        player.SendServerMessage("Failed to copy weapon appearance.", ColorConstants.Red);
+                    }
+                }
+                else
+                {
+                    player.SendServerMessage("Failed to copy weapon appearance.", ColorConstants.Red);
+                }
+            }
+            else
+            {
+                // Composite/Complex stackable weapons (e.g., throwing axes)
+                // CopyItemAndModify doesn't work for stackable WEAPON_MODEL types
+                // Use waypoint workaround to prevent stack merging
 
-            player.SendServerMessage($"Copied weapon appearance to {weaponClone.Name}.", ColorConstants.Green);
+                // Store original stack size
+                int originalStackSize = targetItem.StackSize;
+
+                // Find the ds_copy waypoint in core_atr area
+                NwArea? targetArea = NwModule.Instance.Areas.FirstOrDefault(a => a.ResRef == "core_atr");
+                if (targetArea == null)
+                {
+                    player.SendServerMessage("Failed to find copy area.", ColorConstants.Red);
+                    return;
+                }
+
+                NwWaypoint? copyWaypoint = targetArea.FindObjectsOfTypeInArea<NwWaypoint>().FirstOrDefault(w => w.Tag == "ds_copy");
+                if (copyWaypoint == null)
+                {
+                    player.SendServerMessage("Failed to find copy waypoint.", ColorConstants.Red);
+                    return;
+                }
+
+                // Create copy at the waypoint (prevents stack merging with original)
+                uint copyId = NWScript.CopyItem(targetItem, copyWaypoint, 1);
+
+                if (NWScript.GetIsObjectValid(copyId) == 0)
+                {
+                    player.SendServerMessage("Failed to copy weapon appearance.", ColorConstants.Red);
+                    return;
+                }
+
+                NwItem? copiedWeapon = copyId.ToNwObject<NwItem>();
+                if (copiedWeapon == null || !copiedWeapon.IsValid)
+                {
+                    NWScript.DestroyObject(copyId);
+                    player.SendServerMessage("Failed to copy weapon appearance.", ColorConstants.Red);
+                    return;
+                }
+
+                // Set the stack size on the copy
+                copiedWeapon.StackSize = originalStackSize;
+
+                // Apply the weapon appearance from backup
+                copiedWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, (byte)weaponBackup.TopModel);
+                copiedWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, (byte)weaponBackup.MidModel);
+                copiedWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, (byte)weaponBackup.BotModel);
+
+                // Apply scale
+                float scaleValue = weaponBackup.Scale / 100f;
+                NWScript.SetObjectVisualTransform(copiedWeapon, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
+
+                // Destroy the original
+                targetItem.Destroy();
+
+                // Move the copy from waypoint to player
+                NwItem? newWeapon = copiedWeapon.Clone(creature);
+                if (newWeapon == null || !newWeapon.IsValid)
+                {
+                    player.SendServerMessage("Failed to copy weapon appearance.", ColorConstants.Red);
+                    return;
+                }
+
+                // Destroy the waypoint copy
+                copiedWeapon.Destroy();
+
+                player.SendServerMessage($"Copied weapon appearance to {newWeapon.Name}.", ColorConstants.Green);
+            }
         }
         else
         {
-            player.SendServerMessage("Failed to copy weapon appearance.", ColorConstants.Red);
+            // For non-stackable items, use clone
+            NwItem weaponClone = targetItem.Clone(creature);
+
+            if (weaponClone.IsValid)
+            {
+                weaponBackup.ApplyToItem(weaponClone);
+                targetItem.Destroy();
+                player.SendServerMessage($"Copied weapon appearance to {weaponClone.Name}.", ColorConstants.Green);
+            }
+            else
+            {
+                player.SendServerMessage("Failed to copy weapon appearance.", ColorConstants.Red);
+            }
+        }
+    }
+
+    private void CopyOffHandAppearance(NwItem targetItem, NwCreature creature)
+    {
+        OffHandBackupData? offHandBackup = LoadOffHandBackupFromPcKey();
+        if (offHandBackup == null)
+        {
+            player.SendServerMessage("No off-hand appearance backup found.", ColorConstants.Orange);
+            return;
+        }
+
+        // Check if the player owns the target item
+        if (targetItem.Possessor != null && targetItem.Possessor.ObjectId != player.ControlledCreature?.ObjectId)
+        {
+            player.SendServerMessage("That item doesn't belong to you. Select an item from your inventory.", ColorConstants.Orange);
+            return;
+        }
+
+        // Get the currently equipped off-hand item
+        NwItem? currentOffHand = creature.GetItemInSlot(InventorySlot.LeftHand);
+        if (currentOffHand == null || !currentOffHand.IsValid)
+        {
+            player.SendServerMessage("No off-hand item currently equipped.", ColorConstants.Orange);
+            return;
+        }
+
+        string currentItemClass = currentOffHand.BaseItem.ItemClass;
+        string targetItemClass = targetItem.BaseItem.ItemClass;
+
+        // Check if the target item class matches the current item class
+        if (currentItemClass != targetItemClass)
+        {
+            player.SendServerMessage($"Selected item type ({targetItemClass}) does not match equipped off-hand type ({currentItemClass}).", ColorConstants.Orange);
+            return;
+        }
+
+        if (offHandBackup.IsSimple)
+        {
+            // For simple items, use CopyItemAndModify (preserves stack size automatically)
+            uint copy = NWScript.CopyItemAndModify(targetItem, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, offHandBackup.TopModel, 1);
+            if (NWScript.GetIsObjectValid(copy) == 1)
+            {
+                NwItem? copiedItem = copy.ToNwObject<NwItem>();
+                if (copiedItem != null && copiedItem.IsValid)
+                {
+                    // Apply scale
+                    float scaleValue = offHandBackup.Scale / 100f;
+                    NWScript.SetObjectVisualTransform(copiedItem, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
+
+                    targetItem.Destroy();
+                    player.SendServerMessage($"Copied off-hand appearance to {copiedItem.Name}.", ColorConstants.Green);
+                }
+            }
+            else
+            {
+                player.SendServerMessage("Failed to copy off-hand appearance.", ColorConstants.Red);
+            }
+        }
+        else
+        {
+            // For complex items (weapons/shields)
+            bool isStackable = targetItem.StackSize > 1;
+
+            if (isStackable)
+            {
+                // Use CopyItemAndModify for stackable items
+                uint copy1 = NWScript.CopyItemAndModify(targetItem, NWScript.ITEM_APPR_TYPE_WEAPON_MODEL, NWScript.ITEM_APPR_WEAPON_MODEL_TOP, offHandBackup.TopModel, 1);
+                if (NWScript.GetIsObjectValid(copy1) == 1)
+                {
+                    uint copy2 = NWScript.CopyItemAndModify(copy1, NWScript.ITEM_APPR_TYPE_WEAPON_MODEL, NWScript.ITEM_APPR_WEAPON_MODEL_MIDDLE, offHandBackup.MidModel, 1);
+                    NWScript.DestroyObject(copy1);
+
+                    if (NWScript.GetIsObjectValid(copy2) == 1)
+                    {
+                        uint copy3 = NWScript.CopyItemAndModify(copy2, NWScript.ITEM_APPR_TYPE_WEAPON_MODEL, NWScript.ITEM_APPR_WEAPON_MODEL_BOTTOM, offHandBackup.BotModel, 1);
+                        NWScript.DestroyObject(copy2);
+
+                        if (NWScript.GetIsObjectValid(copy3) == 1)
+                        {
+                            NwItem? offHandCopy = copy3.ToNwObject<NwItem>();
+                            if (offHandCopy != null && offHandCopy.IsValid)
+                            {
+                                float scaleValue = offHandBackup.Scale / 100f;
+                                NWScript.SetObjectVisualTransform(offHandCopy, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
+
+                                targetItem.Destroy();
+                                player.SendServerMessage($"Copied off-hand appearance to {offHandCopy.Name}.", ColorConstants.Green);
+                            }
+                            else
+                            {
+                                player.SendServerMessage("Failed to copy off-hand appearance.", ColorConstants.Red);
+                            }
+                        }
+                        else
+                        {
+                            player.SendServerMessage("Failed to copy off-hand appearance.", ColorConstants.Red);
+                        }
+                    }
+                    else
+                    {
+                        player.SendServerMessage("Failed to copy off-hand appearance.", ColorConstants.Red);
+                    }
+                }
+                else
+                {
+                    player.SendServerMessage("Failed to copy off-hand appearance.", ColorConstants.Red);
+                }
+            }
+            else
+            {
+                // For non-stackable items, use clone
+                NwItem offHandClone = targetItem.Clone(creature);
+
+                if (offHandClone.IsValid)
+                {
+                    offHandBackup.ApplyToItem(offHandClone);
+                    targetItem.Destroy();
+                    player.SendServerMessage($"Copied off-hand appearance to {offHandClone.Name}.", ColorConstants.Green);
+                }
+                else
+                {
+                    player.SendServerMessage("Failed to copy off-hand appearance.", ColorConstants.Red);
+                }
+            }
         }
     }
 
@@ -1214,6 +2565,14 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
             NWScript.SetLocalString(pcKey, WeaponBackupKey, json);
         }
 
+        // Save off-hand backup
+        if (_currentOffHand != null && _currentOffHand.IsValid)
+        {
+            OffHandBackupData offHandBackup = OffHandBackupData.FromItem(_currentOffHand);
+            string json = JsonConvert.SerializeObject(offHandBackup);
+            NWScript.SetLocalString(pcKey, OffHandBackupKey, json);
+        }
+
         // Save boots backup
         if (_currentBoots != null && _currentBoots.IsValid)
         {
@@ -1250,6 +2609,24 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         try
         {
             return JsonConvert.DeserializeObject<WeaponBackupData>(json);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private OffHandBackupData? LoadOffHandBackupFromPcKey()
+    {
+        NwItem? pcKey = player.LoginCreature?.FindItemWithTag("ds_pckey");
+        if (pcKey == null || !pcKey.IsValid) return null;
+
+        string json = NWScript.GetLocalString(pcKey, OffHandBackupKey);
+        if (string.IsNullOrEmpty(json)) return null;
+
+        try
+        {
+            return JsonConvert.DeserializeObject<OffHandBackupData>(json);
         }
         catch
         {
@@ -1317,6 +2694,7 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         if (pcKey != null && pcKey.IsValid)
         {
             NWScript.DeleteLocalString(pcKey, WeaponBackupKey);
+            NWScript.DeleteLocalString(pcKey, OffHandBackupKey);
             NWScript.DeleteLocalString(pcKey, BootsBackupKey);
             NWScript.DeleteLocalString(pcKey, HelmetBackupKey);
             NWScript.DeleteLocalString(pcKey, CloakBackupKey);
@@ -1330,29 +2708,109 @@ public class WeaponBackupData
     public int MidModel { get; set; }
     public int BotModel { get; set; }
     public int Scale { get; set; } = 100;
+    public bool IsSimpleModel { get; set; }
 
     public static WeaponBackupData FromItem(NwItem weapon)
     {
         VisualTransform transform = weapon.VisualTransform;
         int scale = (int)(transform.Scale * 100);
+        bool isSimple = weapon.BaseItem.ModelType == BaseItemModelType.Simple;
 
-        return new WeaponBackupData
+        if (isSimple)
         {
-            TopModel = weapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top),
-            MidModel = weapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle),
-            BotModel = weapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom),
-            Scale = scale
-        };
+            // For simple model items (e.g., shurikens, darts, custom simple weapons), get the simple model appearance
+            return new WeaponBackupData
+            {
+                TopModel = NWScript.GetItemAppearance(weapon, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0),
+                MidModel = 0,
+                BotModel = 0,
+                Scale = scale,
+                IsSimpleModel = true
+            };
+        }
+        else
+        {
+            // For parts-based weapons, get the weapon model parts
+            return new WeaponBackupData
+            {
+                TopModel = weapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top),
+                MidModel = weapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle),
+                BotModel = weapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom),
+                Scale = scale,
+                IsSimpleModel = false
+            };
+        }
     }
 
     public void ApplyToItem(NwItem weapon)
     {
-        weapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, (byte)TopModel);
-        weapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, (byte)MidModel);
-        weapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, (byte)BotModel);
+        if (IsSimpleModel)
+        {
+            // For simple model items, we can't use SetWeaponModel - the caller must use CopyItemAndModify
+            // This method is only used for non-stackable items in CopyWeaponAppearance
+            // Just apply the scale
+            float scaleValue = Scale / 100f;
+            NWScript.SetObjectVisualTransform(weapon, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
+        }
+        else
+        {
+            weapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, (byte)TopModel);
+            weapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, (byte)MidModel);
+            weapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, (byte)BotModel);
+
+            float scaleValue = Scale / 100f;
+            NWScript.SetObjectVisualTransform(weapon, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
+        }
+    }
+}
+
+public class OffHandBackupData
+{
+    public int TopModel { get; set; }
+    public int MidModel { get; set; }
+    public int BotModel { get; set; }
+    public int Scale { get; set; } = 100;
+    public bool IsSimple { get; set; }
+
+    public static OffHandBackupData FromItem(NwItem offHand)
+    {
+        VisualTransform transform = offHand.VisualTransform;
+        int scale = (int)(transform.Scale * 100);
+        bool isSimple = offHand.BaseItem.ModelType == BaseItemModelType.Simple;
+
+        var backup = new OffHandBackupData
+        {
+            Scale = scale,
+            IsSimple = isSimple
+        };
+
+        if (isSimple)
+        {
+            backup.TopModel = NWScript.GetItemAppearance(offHand, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0);
+            backup.MidModel = 1;
+            backup.BotModel = 1;
+        }
+        else
+        {
+            backup.TopModel = offHand.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top);
+            backup.MidModel = offHand.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle);
+            backup.BotModel = offHand.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom);
+        }
+
+        return backup;
+    }
+
+    public void ApplyToItem(NwItem offHand)
+    {
+        if (!IsSimple)
+        {
+            offHand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, (byte)TopModel);
+            offHand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, (byte)MidModel);
+            offHand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, (byte)BotModel);
+        }
 
         float scaleValue = Scale / 100f;
-        NWScript.SetObjectVisualTransform(weapon, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
+        NWScript.SetObjectVisualTransform(offHand, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
     }
 }
 

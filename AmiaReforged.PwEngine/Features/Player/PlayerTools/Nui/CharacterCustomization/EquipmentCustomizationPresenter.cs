@@ -1,4 +1,4 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 using NLog;
@@ -56,11 +56,14 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
         Token().SetBindValue(View.AlwaysEnabled, true);
 
         Token().SetBindValue(View.WeaponSelected, false);
+        Token().SetBindValue(View.OffHandSelected, false);
         Token().SetBindValue(View.BootsSelected, false);
         Token().SetBindValue(View.HelmetSelected, false);
         Token().SetBindValue(View.CloakSelected, false);
 
         Token().SetBindValue(View.WeaponControlsEnabled, false);
+        Token().SetBindValue(View.OffHandControlsEnabled, false);
+        Token().SetBindValue(View.OffHandMidBotEnabled, false);
         Token().SetBindValue(View.BootsControlsEnabled, false);
         Token().SetBindValue(View.HelmetControlsEnabled, false);
         Token().SetBindValue(View.CloakControlsEnabled, false);
@@ -70,6 +73,11 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
         Token().SetBindValue(View.WeaponMidModelText, "1");
         Token().SetBindValue(View.WeaponBotModelText, "1");
         Token().SetBindValue(View.WeaponScaleText, "100%");
+
+        Token().SetBindValue(View.OffHandTopModelText, "1");
+        Token().SetBindValue(View.OffHandMidModelText, "1");
+        Token().SetBindValue(View.OffHandBotModelText, "1");
+        Token().SetBindValue(View.OffHandScaleText, "100%");
 
         Token().SetBindValue(View.BootsTopModelText, "1");
         Token().SetBindValue(View.BootsMidModelText, "1");
@@ -114,6 +122,15 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
             return;
         }
 
+        if (ev.ElementId == View.OffHandButton.Id)
+        {
+            Log.Info("Off-Hand button clicked");
+            _model.SelectEquipmentType(EquipmentType.OffHand);
+            UpdateEquipmentTypeDisplay();
+            UpdateOffHandDisplay();
+            return;
+        }
+
         if (ev.ElementId == View.BootsButton.Id)
         {
             Log.Info("Boots button clicked");
@@ -146,6 +163,13 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
         {
             player.SendServerMessage("Select an item in your inventory to copy the weapon appearance to.", ColorConstants.Cyan);
             player.EnterTargetMode(OnWeaponCopyTargetSelected);
+            return;
+        }
+
+        if (ev.ElementId == View.OffHandCopyButton.Id)
+        {
+            player.SendServerMessage("Select an item in your inventory to copy the off-hand appearance to.", ColorConstants.Cyan);
+            player.EnterTargetMode(OnOffHandCopyTargetSelected);
             return;
         }
 
@@ -265,6 +289,105 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
         {
             _model.AdjustWeaponScale(5);
             UpdateWeaponDisplay();
+            return;
+        }
+
+        // Off-Hand button handlers
+        if (ev.ElementId == View.OffHandTopModelLeftButton.Id)
+        {
+            _model.AdjustOffHandTopModel(-1);
+            UpdateOffHandDisplay();
+            return;
+        }
+
+        if (ev.ElementId == View.OffHandTopModelRightButton.Id)
+        {
+            _model.AdjustOffHandTopModel(1);
+            UpdateOffHandDisplay();
+            return;
+        }
+
+        if (ev.ElementId == View.OffHandMidModelLeftButton.Id)
+        {
+            _model.AdjustOffHandMidModel(-1);
+            UpdateOffHandDisplay();
+            return;
+        }
+
+        if (ev.ElementId == View.OffHandMidModelRightButton.Id)
+        {
+            _model.AdjustOffHandMidModel(1);
+            UpdateOffHandDisplay();
+            return;
+        }
+
+        if (ev.ElementId == View.OffHandBotModelLeftButton.Id)
+        {
+            _model.AdjustOffHandBotModel(-1);
+            UpdateOffHandDisplay();
+            return;
+        }
+
+        if (ev.ElementId == View.OffHandBotModelRightButton.Id)
+        {
+            _model.AdjustOffHandBotModel(1);
+            UpdateOffHandDisplay();
+            return;
+        }
+
+        if (ev.ElementId == View.OffHandTopModelLeft10Button.Id)
+        {
+            _model.AdjustOffHandTopModel(-10);
+            UpdateOffHandDisplay();
+            return;
+        }
+
+        if (ev.ElementId == View.OffHandTopModelRight10Button.Id)
+        {
+            _model.AdjustOffHandTopModel(10);
+            UpdateOffHandDisplay();
+            return;
+        }
+
+        if (ev.ElementId == View.OffHandMidModelLeft10Button.Id)
+        {
+            _model.AdjustOffHandMidModel(-10);
+            UpdateOffHandDisplay();
+            return;
+        }
+
+        if (ev.ElementId == View.OffHandMidModelRight10Button.Id)
+        {
+            _model.AdjustOffHandMidModel(10);
+            UpdateOffHandDisplay();
+            return;
+        }
+
+        if (ev.ElementId == View.OffHandBotModelLeft10Button.Id)
+        {
+            _model.AdjustOffHandBotModel(-10);
+            UpdateOffHandDisplay();
+            return;
+        }
+
+        if (ev.ElementId == View.OffHandBotModelRight10Button.Id)
+        {
+            _model.AdjustOffHandBotModel(10);
+            UpdateOffHandDisplay();
+            return;
+        }
+
+        if (ev.ElementId == View.OffHandScaleMinusButton.Id)
+        {
+            _model.AdjustOffHandScale(-5);
+            UpdateOffHandDisplay();
+            return;
+        }
+
+        if (ev.ElementId == View.OffHandScalePlusButton.Id)
+        {
+            _model.AdjustOffHandScale(5);
+            UpdateOffHandDisplay();
             return;
         }
 
@@ -461,11 +584,14 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
     private void UpdateEquipmentTypeDisplay()
     {
         Token().SetBindValue(View.WeaponSelected, _model.CurrentEquipmentType == EquipmentType.Weapon);
+        Token().SetBindValue(View.OffHandSelected, _model.CurrentEquipmentType == EquipmentType.OffHand);
         Token().SetBindValue(View.BootsSelected, _model.CurrentEquipmentType == EquipmentType.Boots);
         Token().SetBindValue(View.HelmetSelected, _model.CurrentEquipmentType == EquipmentType.Helmet);
         Token().SetBindValue(View.CloakSelected, _model.CurrentEquipmentType == EquipmentType.Cloak);
 
         Token().SetBindValue(View.WeaponControlsEnabled, _model.CurrentEquipmentType == EquipmentType.Weapon);
+        Token().SetBindValue(View.OffHandControlsEnabled, _model.CurrentEquipmentType == EquipmentType.OffHand);
+        Token().SetBindValue(View.OffHandMidBotEnabled, _model.CurrentEquipmentType == EquipmentType.OffHand && !_model.OffHandIsSimple);
         Token().SetBindValue(View.BootsControlsEnabled, _model.CurrentEquipmentType == EquipmentType.Boots);
         Token().SetBindValue(View.HelmetControlsEnabled, _model.CurrentEquipmentType == EquipmentType.Helmet);
         Token().SetBindValue(View.CloakControlsEnabled, _model.CurrentEquipmentType == EquipmentType.Cloak);
@@ -481,6 +607,16 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
         Token().SetBindValue(View.WeaponMidModelText, _model.WeaponMidModel.ToString());
         Token().SetBindValue(View.WeaponBotModelText, _model.WeaponBotModel.ToString());
         Token().SetBindValue(View.WeaponScaleText, $"{_model.WeaponScale}%");
+        Token().SetBindValue(View.WeaponMidBotEnabled, _model.CurrentEquipmentType == EquipmentType.Weapon && !_model.WeaponIsSimple);
+    }
+
+    private void UpdateOffHandDisplay()
+    {
+        Token().SetBindValue(View.OffHandTopModelText, _model.OffHandTopModel.ToString());
+        Token().SetBindValue(View.OffHandMidModelText, _model.OffHandMidModel.ToString());
+        Token().SetBindValue(View.OffHandBotModelText, _model.OffHandBotModel.ToString());
+        Token().SetBindValue(View.OffHandScaleText, $"{_model.OffHandScale}%");
+        Token().SetBindValue(View.OffHandMidBotEnabled, _model.CurrentEquipmentType == EquipmentType.OffHand && !_model.OffHandIsSimple);
     }
 
     private void UpdateBootsDisplay()
@@ -503,6 +639,7 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
     private void UpdateDisplays()
     {
         UpdateWeaponDisplay();
+        UpdateOffHandDisplay();
         UpdateBootsDisplay();
         UpdateHelmetDisplay();
         UpdateCloakDisplay();
@@ -527,6 +664,14 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
         if (target.TargetObject is NwItem targetItem)
         {
             _model.CopyAppearanceToItem(targetItem, EquipmentType.Weapon);
+        }
+    }
+
+    private void OnOffHandCopyTargetSelected(ModuleEvents.OnPlayerTarget target)
+    {
+        if (target.TargetObject is NwItem targetItem)
+        {
+            _model.CopyAppearanceToItem(targetItem, EquipmentType.OffHand);
         }
     }
 
