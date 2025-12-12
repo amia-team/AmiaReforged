@@ -1,7 +1,6 @@
 ﻿using AmiaReforged.PwEngine.Features.Crafting.Models;
 using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 using Anvil.API;
-using NLog;
 
 namespace AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.ChangeList;
 
@@ -179,6 +178,7 @@ public class ChangeListModel
         /// required to apply or remove the property.
         /// </remarks>
         public int GpCost { get; set; }
+
 
         /// <summary>
         /// Represents the current state of a change in the crafting process.

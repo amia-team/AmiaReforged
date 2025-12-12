@@ -158,11 +158,9 @@ public class MythalForgeModel
     {
         get
         {
-            int remaining = MaxBudget;
             // Only count visible properties (which already excludes hidden/removed ones)
             // But we need the original state, so we add back removed and subtract added from current RemainingPowers
-            remaining = RemainingPowers + NetPowerChange;
-            return remaining;
+            return RemainingPowers + NetPowerChange;
         }
     }
 
@@ -222,21 +220,19 @@ public class MythalForgeModel
     /// </returns>
     public int GetCraftingDifficulty()
     {
-        if (ChangeListModel.ChangeList().Count == 0) return 0;
+        List<CraftingProperty> addedProperties = ChangeListModel.ChangeList()
+            .Where(e => e.State != ChangeListModel.ChangeState.Removed)
+            .Select(e => e.Property)
+            .ToList();
+
+        if (addedProperties.Count == 0) return 0;
 
         int craftingDifficulty = 0;
 
-        List<CraftingProperty> changelistProperties =
-            ChangeListModel.ChangeList()
-                .Where(e => e.State != ChangeListModel.ChangeState.Removed)
-                .Select(p => p.Property)
-                .ToList();
-
-
-        foreach (CraftingProperty craftingProperty in changelistProperties)
+        foreach (CraftingProperty property in addedProperties)
         {
-            int newDifficulty = _dcCalculator.ComputeDifficulty(craftingProperty);
-            craftingDifficulty = Math.Max(craftingDifficulty, newDifficulty);
+            int dc = _dcCalculator.ComputeDifficulty(property);
+            craftingDifficulty = Math.Max(craftingDifficulty, dc);
         }
 
         return craftingDifficulty;
