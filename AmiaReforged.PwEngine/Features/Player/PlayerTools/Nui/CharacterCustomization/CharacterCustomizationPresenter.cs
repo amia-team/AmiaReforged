@@ -1,4 +1,4 @@
-﻿﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil;
 using Anvil.API;
 using Anvil.API.Events;
@@ -38,6 +38,9 @@ public sealed class CharacterCustomizationPresenter(CharacterCustomizationView v
 
         if (!player.TryCreateNuiWindow(window, out _token))
             return;
+
+        // Send warning about ACP animation compatibility
+        player.SendServerMessage("If you are using an ACP animation, this may not function correctly. Return to Default if you have problems crafting.", ColorConstants.Orange);
 
         _initializing = true;
         try
