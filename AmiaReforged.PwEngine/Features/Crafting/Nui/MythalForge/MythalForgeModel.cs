@@ -131,6 +131,42 @@ public class MythalForgeModel
     public int MaxBudget => _budget.MythalBudgetForNwItem(Item);
 
     /// <summary>
+    /// Gets the net power cost change from the current changelist.
+    /// Positive values indicate power being added, negative values indicate power being freed up.
+    /// </summary>
+    public int NetPowerChange
+    {
+        get
+        {
+            int netChange = 0;
+            foreach (ChangeListModel.ChangelistEntry entry in ChangeListModel.ChangeList())
+            {
+                if (entry.State == ChangeListModel.ChangeState.Added)
+                    netChange += entry.Property.PowerCost;
+                else if (entry.State == ChangeListModel.ChangeState.Removed)
+                    netChange -= entry.Property.PowerCost;
+            }
+            return netChange;
+        }
+    }
+
+    /// <summary>
+    /// Gets the remaining powers before any changelist modifications are applied.
+    /// This represents the item's current state power budget.
+    /// </summary>
+    public int InitialRemainingPowers
+    {
+        get
+        {
+            int remaining = MaxBudget;
+            // Only count visible properties (which already excludes hidden/removed ones)
+            // But we need the original state, so we add back removed and subtract added from current RemainingPowers
+            remaining = RemainingPowers + NetPowerChange;
+            return remaining;
+        }
+    }
+
+    /// <summary>
     /// Gets the remaining number of available powers in the crafting budget after accounting for the power costs
     /// of active properties and pending additions in the change list.
     /// </summary>

@@ -618,7 +618,10 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         SetIfChanged(View.GoldCostTooltip, canAfford ? "" : "You cannot afford this.");
 
         bool hasChanges = Model.ChangeListModel.ChangeList().Count > 0;
-        bool validAction = hasChanges && canAfford && Model.CanMakeCheck() && Model.RemainingPowers >= 0;
+        // Allow apply if: within budget, OR if item started over budget and we're not making it worse
+        int budgetFloor = Math.Min(0, Model.InitialRemainingPowers);
+        bool withinBudget = Model.RemainingPowers >= budgetFloor;
+        bool validAction = hasChanges && canAfford && Model.CanMakeCheck() && withinBudget;
         SetIfChanged(View.ApplyEnabled, validAction);
         SetIfChanged(View.EncourageGold, !canAfford);
     }
