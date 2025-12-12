@@ -23,7 +23,7 @@ pipeline{
 
                 script {
                     if (params.resources_dest_test?.trim()) {
-                        sh "sudo rsync -av --delete AmiaReforged.PwEngine/Resources/WorldEngine/ ${params.resources_dest_test}/"
+                        sh "sudo rsync -av --delete AmiaReforged.PwEngine/Resources/WorldEngine ${params.resources_dest_test}/"
                     } else {
                         echo 'WARNING: resources_dest_test parameter is empty. Skipping WorldEngine resource deployment.'
                     }
@@ -55,7 +55,7 @@ pipeline{
 
                 script {
                     if (params.resources_dest_prod?.trim()) {
-                        sh "sudo rsync -av --delete AmiaReforged.PwEngine/Resources/WorldEngine/ ${params.resources_dest_prod}/"
+                        sh "sudo rsync -av --delete AmiaReforged.PwEngine/Resources/WorldEngine ${params.resources_dest_prod}/"
                     } else {
                         echo 'WARNING: resources_dest_prod parameter is empty. Skipping WorldEngine resource deployment.'
                     }
