@@ -20,6 +20,18 @@
           "Name": "Moonpier Counting House",
           "Type": "Bank",
           "Description": "A quaint banking hall where the residents of Moonvale can store their wealth and conduct business transactions."
+        },
+        {
+          "ResRef": "moon_rental_1",
+          "Tag": "moon_rental_1",
+          "Name": "Moonlit Home",
+          "Type": "House"
+        },
+        {
+          "ResRef": "moon_rental_2",
+          "Tag": "moon_rental_2",
+          "Name": "Lunar Villa",
+          "Type": "House"
         }
       ],
       "LinkedSettlement": 27
