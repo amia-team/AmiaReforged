@@ -93,6 +93,7 @@ public class CitizenGenerator
         int randomizeGender = NWScript.GetLocalInt(npc, "gender");
         int randomizeRace = NWScript.GetLocalInt(npc, "race");
         int noHeadChange = NWScript.GetLocalInt(npc, "no_headchange");
+        int noPortraitChange = NWScript.GetLocalInt(npc, "no_portraitchange");
         int randomizeRobe = NWScript.GetLocalInt(npc, "robe");
         int randomizeRobeColors = NWScript.GetLocalInt(npc, "robe_colors");
 
@@ -105,7 +106,12 @@ public class CitizenGenerator
             int randomGender = Random.Next(2);
             gender = randomGender == 0 ? Gender.Male : Gender.Female;
             npc.Gender = gender;
-            npc.PortraitResRef = gender == Gender.Male ? "po_clsrogue_" : "po_clsroguef_";
+
+            // Only change portrait if not disabled
+            if (noPortraitChange != 1)
+            {
+                npc.PortraitResRef = gender == Gender.Male ? "po_clsrogue_" : "po_clsroguef_";
+            }
         }
 
         // Randomize race if requested
