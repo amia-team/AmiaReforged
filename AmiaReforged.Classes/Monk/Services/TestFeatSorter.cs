@@ -48,6 +48,9 @@ public class TestFeatSorter
     {
         if (!eventData.Creature.IsLoginPlayerCharacter(out NwPlayer? player)) return;
         if (!eventData.Creature.Name.Contains("testmonk")) return;
+        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
+
+        if (environment == "live") return;
 
         AdjustFeats(eventData.Creature, player);
     }
@@ -56,6 +59,11 @@ public class TestFeatSorter
     {
         if (!eventData.Creature.IsLoginPlayerCharacter(out NwPlayer? player)) return;
         if (!eventData.Creature.Name.Contains("testmonk")) return;
+
+        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
+
+        if (environment == "live") return;
+
 
         AdjustFeats(eventData.Creature, player);
     }
