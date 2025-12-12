@@ -200,6 +200,7 @@ public class MythalForgeModel
         foreach (CraftingProperty craftingProperty in changelistProperties)
         {
             int newDifficulty = _dcCalculator.ComputeDifficulty(craftingProperty);
+            craftingDifficulty = Math.Max(craftingDifficulty, newDifficulty);
         }
 
         return craftingDifficulty;

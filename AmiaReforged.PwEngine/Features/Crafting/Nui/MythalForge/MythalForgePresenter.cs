@@ -617,7 +617,8 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         SetIfChanged(View.GoldCostColor, canAfford ? ColorConstants.White : ColorConstants.Red);
         SetIfChanged(View.GoldCostTooltip, canAfford ? "" : "You cannot afford this.");
 
-        bool validAction = canAfford && Model.CanMakeCheck() && Model.RemainingPowers <= Model.MaxBudget;
+        bool hasChanges = Model.ChangeListModel.ChangeList().Count > 0;
+        bool validAction = hasChanges && canAfford && Model.CanMakeCheck() && Model.RemainingPowers >= 0;
         SetIfChanged(View.ApplyEnabled, validAction);
         SetIfChanged(View.EncourageGold, !canAfford);
     }
