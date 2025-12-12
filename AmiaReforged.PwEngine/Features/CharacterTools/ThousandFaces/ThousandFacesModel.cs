@@ -11,7 +11,7 @@ public sealed class ThousandFacesModel(NwPlayer player, PlayerNameOverrideServic
     private const string BackupDataKey = "THOUSAND_FACES_BACKUP";
 
     // Allowed racial types for appearance changes
-    private static readonly HashSet<int> AllowedRacialTypes = [0, 1, 2, 3, 4, 5, 6, 8, 12, 13, 14, 15, 19, 25];
+    private static readonly HashSet<int> AllowedRacialTypes = [0, 1, 2, 3, 4, 5, 6, 8, 12, 13, 14, 15, 25];
 
     public int HeadModel { get; private set; } = 1;
     private readonly int _headModelMax = 255;
