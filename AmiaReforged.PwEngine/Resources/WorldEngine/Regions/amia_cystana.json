@@ -13,6 +13,20 @@
           "Max": "Average"
         }
       },
+      "PlacesOfInterest": [
+        {
+          "ResRef": "cystana_c_rent1",
+          "Tag": "cystana_c_rent1",
+          "Name": "Ruby Estate",
+          "Type": "House"
+        },
+        {
+          "ResRef": "cystana_bank",
+          "Tag": "cystana_bank",
+          "Name": "Mithral Counting House",
+          "Type": "Bank"
+        }
+      ],
       "LinkedSettlement": 6
     },
     {
