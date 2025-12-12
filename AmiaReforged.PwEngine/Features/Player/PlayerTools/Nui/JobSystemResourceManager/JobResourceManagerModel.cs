@@ -1,4 +1,4 @@
-﻿using Anvil.API;
+﻿﻿using Anvil.API;
 
 namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.JobSystemResourceManager;
 
@@ -15,9 +15,82 @@ internal sealed class JobResourceManagerModel
     private const string MiniatureStorageBoxTag = "js_merc_2_targ";
     private const string JobResourcePrefix = "js_";
 
+    // Blacklist for inventory items that should not be displayed as loose resources
+    private static readonly HashSet<string> InventoryBlacklist = new()
+    {
+        // Specific items to exclude
+        "js_sch_embo",
+        "js_sch_emto",
+        "js_arca_zom_e",
+        "js_arca_zom_f",
+        "js_arca_zom_w",
+        "js_arca_gol_c",
+        "js_arca_zom",
+        "js_arca_gol",
+        "js_arca_gol_h",
+        "js_arca_gol_g",
+        "js_arca_gmpo",
+        "js_arca_mytu",
+        "js_arca_scbx",
+        "js_arca_trca",
+        "js_arca_wdca",
+        "js_plcspawner",
+        "js_tailorkit"
+    };
+
+    // Exceptions for js_bla_ prefix (allowed items)
+    private static readonly HashSet<string> BlacksmithingExceptions = new()
+    {
+        "js_bla_adin",
+        "js_bla_carb",
+        "js_bla_goin",
+        "js_bla_miin",
+        "js_bla_plin",
+        "js_bla_siin",
+        "js_bla_stin"
+    };
+
+    // Exceptions for js_tai_ prefix (allowed items)
+    private static readonly HashSet<string> TailoringExceptions = new()
+    {
+        "js_tai_bpack1",
+        "js_tai_boco",
+        "js_tai_brwo",
+        "js_tai_bosi",
+        "js_tai_bowo",
+        "js_tai_quiver1",
+        "js_tai_scbrd1",
+        "js_tai_scbrd2",
+        "js_tai_scbrd3"
+    };
+
     public JobResourceManagerModel(NwPlayer player)
     {
         _player = player;
+    }
+
+    /// <summary>
+    /// Checks if an inventory item should be blacklisted from the resource list
+    /// </summary>
+    private static bool IsInventoryItemBlacklisted(string resref)
+    {
+        // Check specific blacklist
+        if (InventoryBlacklist.Contains(resref))
+            return true;
+
+        // Check prefix patterns
+        if (resref.StartsWith("js_arch_"))
+            return true;
+
+        // Check js_bla_ pattern (exclude all except exceptions)
+        if (resref.StartsWith("js_bla_"))
+            return !BlacksmithingExceptions.Contains(resref);
+
+        // Check js_tai_ pattern (exclude all except exceptions)
+        if (resref.StartsWith("js_tai_"))
+            return !TailoringExceptions.Contains(resref);
+
+        return false;
     }
 
     /// <summary>
@@ -167,6 +240,11 @@ internal sealed class JobResourceManagerModel
             if (item.ResRef.StartsWith(JobResourcePrefix) && item.Tag != MiniatureStorageBoxTag)
             {
                 string resref = item.ResRef;
+
+                // Skip blacklisted items
+                if (IsInventoryItemBlacklisted(resref))
+                    continue;
+
                 if (groupedResources.ContainsKey(resref))
                 {
                     var current = groupedResources[resref];
