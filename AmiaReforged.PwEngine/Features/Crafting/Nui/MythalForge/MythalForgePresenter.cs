@@ -613,7 +613,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         int total = Model.ChangeListModel.TotalGpCost();
         SetIfChanged(View.GoldCost, total.ToString());
 
-        bool canAfford = total < (_player.LoginCreature?.Gold ?? 0);
+        bool canAfford = total <= (_player.LoginCreature?.Gold ?? 0);
         SetIfChanged(View.GoldCostColor, canAfford ? ColorConstants.White : ColorConstants.Red);
         SetIfChanged(View.GoldCostTooltip, canAfford ? "" : "You cannot afford this.");
 
