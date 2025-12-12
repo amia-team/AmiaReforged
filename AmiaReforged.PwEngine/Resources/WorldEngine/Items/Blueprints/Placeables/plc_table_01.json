@@ -1,18 +1,18 @@
 {
   "ResRef": "furniturespawn",
   "ItemTag": "plc_table_01",
-  "Name": "Table 01",
+  "Name": "Table, Fishing",
   "Description": "",
   "Materials": [
     "Bronze"
   ],
+  "BaseValue": 400,
   "JobSystemType": "Furniture",
   "BaseItemType": 74,
   "Appearance": {
     "ModelType": 0,
     "SimpleModelNumber": 242
   },
-  "BaseValue": 400,
   "LocalVariables": [
     {
       "Name": "is_plc",
@@ -42,7 +42,7 @@
     {
       "Name": "plc_name",
       "Type": "String",
-      "Value": "Table 01"
+      "Value": "Table, Fishing"
     },
     {
       "Name": "plc_appearance",

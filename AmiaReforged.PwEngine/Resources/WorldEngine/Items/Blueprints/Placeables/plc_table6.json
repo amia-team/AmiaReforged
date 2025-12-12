@@ -1,18 +1,18 @@
 {
   "ResRef": "furniturespawn",
   "ItemTag": "plc_table6",
-  "Name": "Table6",
+  "Name": "Table, Pedestal",
   "Description": "",
   "Materials": [
     "Bronze"
   ],
+  "BaseValue": 400,
   "JobSystemType": "Furniture",
   "BaseItemType": 74,
   "Appearance": {
     "ModelType": 0,
     "SimpleModelNumber": 242
   },
-  "BaseValue": 400,
   "LocalVariables": [
     {
       "Name": "is_plc",
@@ -42,7 +42,7 @@
     {
       "Name": "plc_name",
       "Type": "String",
-      "Value": "Table6"
+      "Value": "Table, Pedestal"
     },
     {
       "Name": "plc_appearance",

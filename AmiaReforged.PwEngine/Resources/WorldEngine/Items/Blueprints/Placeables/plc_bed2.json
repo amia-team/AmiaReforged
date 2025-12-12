@@ -1,7 +1,7 @@
 {
   "ResRef": "furniturespawn",
   "ItemTag": "plc_bed2",
-  "Name": "Bed2",
+  "Name": "Bed, Wide Railed (Red)",
   "Description": "",
   "Materials": [
     "Bronze"
@@ -42,7 +42,7 @@
     {
       "Name": "plc_name",
       "Type": "String",
-      "Value": "Bed, Large Frame"
+      "Value": "Bed, Wide Railed (Red)"
     },
     {
       "Name": "plc_appearance",

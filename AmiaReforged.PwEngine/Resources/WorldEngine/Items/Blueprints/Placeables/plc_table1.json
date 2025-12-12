@@ -1,18 +1,18 @@
 {
   "ResRef": "furniturespawn",
   "ItemTag": "plc_table1",
-  "Name": "Table1",
+  "Name": "Table, Round w/ Canvas Topper",
   "Description": "",
   "Materials": [
     "Bronze"
   ],
+  "BaseValue": 400,
   "JobSystemType": "Furniture",
   "BaseItemType": 74,
   "Appearance": {
     "ModelType": 0,
     "SimpleModelNumber": 242
   },
-  "BaseValue": 400,
   "LocalVariables": [
     {
       "Name": "is_plc",
@@ -42,7 +42,7 @@
     {
       "Name": "plc_name",
       "Type": "String",
-      "Value": "Table1"
+      "Value": "Table, Round w/ Canvas Topper"
     },
     {
       "Name": "plc_appearance",

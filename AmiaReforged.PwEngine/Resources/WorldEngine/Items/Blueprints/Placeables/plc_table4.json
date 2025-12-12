@@ -1,18 +1,18 @@
 {
   "ResRef": "furniturespawn",
   "ItemTag": "plc_table4",
-  "Name": "Table4",
+  "Name": "Table, Tavern (Small)",
   "Description": "",
   "Materials": [
     "Bronze"
   ],
+  "BaseValue": 400,
   "JobSystemType": "Furniture",
   "BaseItemType": 74,
   "Appearance": {
     "ModelType": 0,
     "SimpleModelNumber": 242
   },
-  "BaseValue": 400,
   "LocalVariables": [
     {
       "Name": "is_plc",
@@ -42,7 +42,7 @@
     {
       "Name": "plc_name",
       "Type": "String",
-      "Value": "Table4"
+      "Value": "Table, Tavern (Small)"
     },
     {
       "Name": "plc_appearance",
