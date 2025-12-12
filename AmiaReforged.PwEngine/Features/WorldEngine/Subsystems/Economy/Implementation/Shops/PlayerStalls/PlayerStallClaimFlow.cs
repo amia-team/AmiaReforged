@@ -592,7 +592,7 @@ public sealed class PlayerStallClaimFlow
         if (!TryResolveCoinhouseTag(stall, out tag))
         {
             string status = string.IsNullOrWhiteSpace(stall.SettlementTag)
-                ? "This stall is not linked to a coinhouse yet. Please notify a DM."
+                ? "This stall is not linked to a coinhouse yet."
                 : "We couldn't locate the settlement's coinhouse configuration. Please notify a DM.";
 
             RentStallPaymentOptionViewModel option = CreateCoinhouseOptionModel(
