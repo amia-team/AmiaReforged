@@ -1786,62 +1786,117 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         WeaponBackupData? weaponBackup = LoadWeaponBackupFromPcKey();
         if (_currentWeapon != null && _currentWeapon.IsValid && weaponBackup != null)
         {
-            bool isStackable = _currentWeapon.StackSize > 1;
+            // Check if base item type is stackable (from baseitems.2da "Stacking" column)
+            int maxStackSize = NWScript.StringToInt(NWScript.Get2DAString("baseitems", "Stacking", (int)_currentWeapon.BaseItem.ItemType));
+            bool isBaseItemStackable = maxStackSize > 1;
 
-            if (isStackable)
+            if (weaponBackup.IsSimpleModel)
             {
-                // Use CopyItemAndModify for stackable items - call while equipped!
-                uint copy1 = NWScript.CopyItemAndModify(_currentWeapon, NWScript.ITEM_APPR_TYPE_WEAPON_MODEL, NWScript.ITEM_APPR_WEAPON_MODEL_TOP, weaponBackup.TopModel, 1);
-                if (NWScript.GetIsObjectValid(copy1) == 1)
+                // For simple model weapons - CopyItemAndModify preserves stack size automatically
+                uint copy = NWScript.CopyItemAndModify(_currentWeapon, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, weaponBackup.TopModel, 1);
+                if (NWScript.GetIsObjectValid(copy) == 1)
                 {
-                    uint copy2 = NWScript.CopyItemAndModify(copy1, NWScript.ITEM_APPR_TYPE_WEAPON_MODEL, NWScript.ITEM_APPR_WEAPON_MODEL_MIDDLE, weaponBackup.MidModel, 1);
-
-                    if (NWScript.GetIsObjectValid(copy2) == 1)
+                    NwItem? weaponCopy = copy.ToNwObject<NwItem>();
+                    creature.RunUnequip(_currentWeapon);
+                    NWScript.DestroyObject(_currentWeapon);
+                    _currentWeapon = weaponCopy;
+                    if (_currentWeapon != null)
                     {
-                        uint copy3 = NWScript.CopyItemAndModify(copy2, NWScript.ITEM_APPR_TYPE_WEAPON_MODEL, NWScript.ITEM_APPR_WEAPON_MODEL_BOTTOM, weaponBackup.BotModel, 1);
+                        creature.RunEquip(_currentWeapon, InventorySlot.RightHand);
+                        weaponBackup.ApplyToItem(_currentWeapon);
+                    }
 
-                        if (NWScript.GetIsObjectValid(copy3) == 1)
+                    WeaponTopModel = weaponBackup.TopModel;
+                    WeaponMidModel = weaponBackup.MidModel;
+                    WeaponBotModel = weaponBackup.BotModel;
+                    WeaponScale = weaponBackup.Scale;
+
+                    anyReverted = true;
+                }
+            }
+            else if (isBaseItemStackable)
+            {
+                // For complex stackable weapons (e.g., throwing axes, bouquets)
+                // CopyItemAndModify doesn't work - use waypoint workaround
+
+                // Store original stack size
+                int originalStackSize = _currentWeapon.StackSize;
+
+                // Find the ds_copy waypoint in core_atr area
+                NwArea? targetArea = NwModule.Instance.Areas.FirstOrDefault(a => a.ResRef == "core_atr");
+                if (targetArea == null)
+                {
+                    player.SendServerMessage("Failed to revert: copy area not found.", ColorConstants.Red);
+                }
+                else
+                {
+                    NwWaypoint? copyWaypoint = targetArea.FindObjectsOfTypeInArea<NwWaypoint>().FirstOrDefault(w => w.Tag == "ds_copy");
+                    if (copyWaypoint == null)
+                    {
+                        player.SendServerMessage("Failed to revert: copy waypoint not found.", ColorConstants.Red);
+                    }
+                    else
+                    {
+                        // Unequip first
+                        creature.RunUnequip(_currentWeapon);
+
+                        // Create copy at waypoint (prevents stack merging)
+                        uint copyId = NWScript.CopyItem(_currentWeapon, copyWaypoint, 1);
+
+                        if (NWScript.GetIsObjectValid(copyId) == 1)
                         {
-                            NwItem? newWeapon = copy3.ToNwObject<NwItem>();
-                            if (newWeapon != null && newWeapon.IsValid)
+                            NwItem? waypointCopy = copyId.ToNwObject<NwItem>();
+                            if (waypointCopy != null && waypointCopy.IsValid)
                             {
-                                float scaleValue = weaponBackup.Scale / 100f;
-                                NWScript.SetObjectVisualTransform(newWeapon, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
+                                // Set stack size on waypoint copy
+                                waypointCopy.StackSize = originalStackSize;
 
-                                // Unequip and destroy original
-                                creature.RunUnequip(_currentWeapon);
+                                // Apply the backup appearance
+                                waypointCopy.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, (byte)weaponBackup.TopModel);
+                                waypointCopy.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, (byte)weaponBackup.MidModel);
+                                waypointCopy.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, (byte)weaponBackup.BotModel);
+
+                                // Apply scale
+                                float scaleValue = weaponBackup.Scale / 100f;
+                                NWScript.SetObjectVisualTransform(waypointCopy, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
+
+                                // Destroy original
                                 _currentWeapon.Destroy();
 
-                                // Cleanup intermediate copies
-                                NWScript.DestroyObject(copy1);
-                                NWScript.DestroyObject(copy2);
+                                // Clone from waypoint to player
+                                NwItem? newWeapon = waypointCopy.Clone(creature);
+                                if (newWeapon != null && newWeapon.IsValid)
+                                {
+                                    // Destroy waypoint copy
+                                    waypointCopy.Destroy();
 
-                                creature.RunEquip(newWeapon, InventorySlot.RightHand);
-                                _currentWeapon = newWeapon;
+                                    // Equip the new weapon
+                                    creature.RunEquip(newWeapon, InventorySlot.RightHand);
+                                    _currentWeapon = newWeapon;
 
-                                WeaponTopModel = weaponBackup.TopModel;
-                                WeaponMidModel = weaponBackup.MidModel;
-                                WeaponBotModel = weaponBackup.BotModel;
-                                WeaponScale = weaponBackup.Scale;
+                                    WeaponTopModel = weaponBackup.TopModel;
+                                    WeaponMidModel = weaponBackup.MidModel;
+                                    WeaponBotModel = weaponBackup.BotModel;
+                                    WeaponScale = weaponBackup.Scale;
 
-                                anyReverted = true;
+                                    anyReverted = true;
+                                }
+                                else
+                                {
+                                    waypointCopy.Destroy();
+                                    creature.RunEquip(_currentWeapon, InventorySlot.RightHand);
+                                }
                             }
                             else
                             {
-                                NWScript.DestroyObject(copy1);
-                                NWScript.DestroyObject(copy2);
-                                NWScript.DestroyObject(copy3);
+                                NWScript.DestroyObject(copyId);
+                                creature.RunEquip(_currentWeapon, InventorySlot.RightHand);
                             }
                         }
                         else
                         {
-                            NWScript.DestroyObject(copy1);
-                            NWScript.DestroyObject(copy2);
+                            creature.RunEquip(_currentWeapon, InventorySlot.RightHand);
                         }
-                    }
-                    else
-                    {
-                        NWScript.DestroyObject(copy1);
                     }
                 }
             }
