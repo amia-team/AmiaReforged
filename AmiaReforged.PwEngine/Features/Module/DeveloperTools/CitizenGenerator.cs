@@ -85,6 +85,9 @@ public class CitizenGenerator
         {
             npc.Name = firstName;
         }
+
+        // Heal to full health to prevent injury from CON changes
+        npc.HP = npc.MaxHP;
     }
 
     private void RandomizeNamedNpc(NwCreature npc)
@@ -150,6 +153,9 @@ public class CitizenGenerator
 
         // Always add a random last name based on current race
         AddRandomSurname(npc, currentRaceId);
+
+        // Heal to full health to prevent injury from CON changes
+        npc.HP = npc.MaxHP;
     }
 
     private void RandomizeColors(NwCreature npc, int racialTypeId = -1)
