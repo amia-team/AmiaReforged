@@ -412,7 +412,8 @@ public class CitizenGenerator
         int startHead = Random.Next(minHead, maxHead + 1);
         int headNumber = FindValidHead(npc, startHead, minHead, maxHead);
 
-        if (headNumber > 0)
+        // Validate the head is within the expected range before applying
+        if (headNumber > 0 && headNumber >= minHead && headNumber <= maxHead)
         {
             npc.SetCreatureBodyPart(CreaturePart.Head, headNumber);
         }
@@ -468,7 +469,14 @@ public class CitizenGenerator
         if (modelNumber < 1) return false;
 
         string prefix = GetHeadPrefix(npc);
-        int phenotype = GetPhenotype(npc);
+        int phenotype = GetPhenotype(npc); // This normalizes to 0 or 2
+
+        // Get the valid range for this race/gender and reject heads outside it
+        (int minHead, int maxHead) = GetHeadRange(npc);
+        if (modelNumber < minHead || modelNumber > maxHead)
+        {
+            return false;
+        }
 
         // Check if head is in the primary blocked list for this race/gender
         if (BlockedHeads.TryGetValue(prefix, out HashSet<int>? blockedSet))
@@ -498,6 +506,7 @@ public class CitizenGenerator
         }
 
         // Check if the head model file exists using ResourceManager
+        // Use the normalized phenotype (0 or 2) for the model reference
         string modelResRef = $"{prefix}{phenotype}_head{modelNumber:D3}";
         string alias = NWScript.ResManGetAliasFor(modelResRef, NWScript.RESTYPE_MDL);
 
@@ -507,9 +516,30 @@ public class CitizenGenerator
     private string GetHeadPrefix(NwCreature npc)
     {
         string genderLetter = npc.Gender == Gender.Female ? "f" : "m";
-        int appearanceId = npc.Appearance.RowIndex;
 
-        string raceLetter = appearanceId switch
+        // First, try to determine race from racial type (handles mounted creatures correctly)
+        int racialType = npc.Race.Id;
+
+        string raceLetter = racialType switch
+        {
+            NWScript.RACIAL_TYPE_DWARF => "d",
+            NWScript.RACIAL_TYPE_ELF => "e",
+            33 => "e", // Drow use elf heads
+            NWScript.RACIAL_TYPE_GNOME => "a",
+            NWScript.RACIAL_TYPE_HALFLING => "a",
+            NWScript.RACIAL_TYPE_HALFELF => "h",
+            NWScript.RACIAL_TYPE_HALFORC => "o",
+            NWScript.RACIAL_TYPE_HUMAN => "h",
+            _ => GetRaceLetterFromAppearance(npc.Appearance.RowIndex)
+        };
+
+        return $"p{genderLetter}{raceLetter}";
+    }
+
+    private string GetRaceLetterFromAppearance(int appearanceId)
+    {
+        // Fallback to appearance-based detection for creatures without standard racial types
+        return appearanceId switch
         {
             0 => "d",    // Dwarf
             1 => "e",    // Elf (also Drow)
@@ -520,8 +550,6 @@ public class CitizenGenerator
             6 => "h",    // Human
             _ => "h"     // Default to human for unknown appearances
         };
-
-        return $"p{genderLetter}{raceLetter}";
     }
 
     private int GetPhenotype(NwCreature npc)
