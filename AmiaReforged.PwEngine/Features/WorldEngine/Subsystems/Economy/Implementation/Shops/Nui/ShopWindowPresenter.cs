@@ -673,7 +673,6 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
 
         foreach (NwItem item in inventoryItems)
         {
-            Log.Info(item.BaseItem.ItemType);
             _inventoryItems.Add(item);
 
             string itemName = string.IsNullOrWhiteSpace(item.Name) ? item.ResRef : item.Name;
@@ -834,7 +833,6 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
             return false;
         }
 
-        Log.Info($"{item.Name} is valid? {item.IsValid}, plot? {item.PlotFlag}");
 
         if (item.StackSize < 0)
         {
@@ -843,7 +841,6 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
 
         if (acceptedTypes.Count == 0)
         {
-            Log.Info("This shop isn't accepting anything");
             return false;
         }
 
@@ -858,7 +855,6 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
 
         if (!acceptedTypes.Contains(baseTypeId))
         {
-            Log.Info($"Base type was {baseTypeId} and the shop does not accept it");
             return false;
         }
 
