@@ -379,9 +379,15 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         }
 
         // Use standard parts-based logic for other weapons
+        int previousModel = WeaponTopModel;
         WeaponTopModel = GetNextValidWeaponModel(ItemAppearanceWeaponModel.Top, WeaponTopModel, delta, _weaponTopModelMax);
-        ApplyWeaponChanges();
-        player.SendServerMessage($"Weapon top model set to {WeaponTopModel}.", ColorConstants.Green);
+
+        // Only apply changes if the model actually changed
+        if (WeaponTopModel != previousModel)
+        {
+            ApplyWeaponChanges();
+            player.SendServerMessage($"Weapon top model set to {WeaponTopModel}.", ColorConstants.Green);
+        }
     }
 
     public void AdjustWeaponMidModel(int delta)
@@ -399,9 +405,15 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         }
 
         _onlyScaleChanged = false;
+        int previousModel = WeaponMidModel;
         WeaponMidModel = GetNextValidWeaponModel(ItemAppearanceWeaponModel.Middle, WeaponMidModel, delta, _weaponMidModelMax);
-        ApplyWeaponChanges();
-        player.SendServerMessage($"Weapon middle model set to {WeaponMidModel}.", ColorConstants.Green);
+
+        // Only apply changes if the model actually changed
+        if (WeaponMidModel != previousModel)
+        {
+            ApplyWeaponChanges();
+            player.SendServerMessage($"Weapon middle model set to {WeaponMidModel}.", ColorConstants.Green);
+        }
     }
 
     public void AdjustWeaponBotModel(int delta)
@@ -694,71 +706,64 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         }
 
         // Check if weapon uses simple or complex model type
-        bool isStackable = currentWeapon.StackSize > 1;
+        // Check if base item type is stackable (from baseitems.2da "Stacking" column)
+        int maxStackSize = NWScript.StringToInt(NWScript.Get2DAString("baseitems", "Stacking", (int)currentWeapon.BaseItem.ItemType));
+        bool isBaseItemStackable = maxStackSize > 1;
         bool isSimpleModel = currentWeapon.BaseItem.ModelType == BaseItemModelType.Simple;
 
-        if (isStackable)
+        if (isSimpleModel && isBaseItemStackable)
         {
-            // Use CopyItemAndModify for stackable items - it preserves stack size automatically
-            // IMPORTANT: Call CopyItemAndModify WHILE item is still equipped!
-            player.SendServerMessage($"[DEBUG] Stackable weapon detected. Stack: {currentWeapon.StackSize}, Models: {WeaponTopModel}/{WeaponMidModel}/{WeaponBotModel}", ColorConstants.Yellow);
-            player.SendServerMessage($"[DEBUG] Item valid: {currentWeapon.IsValid}, Possessor: {currentWeapon.Possessor?.Name ?? "none"}", ColorConstants.Yellow);
-            player.SendServerMessage($"[DEBUG] Item equipped: {creature.GetItemInSlot(InventorySlot.RightHand) == currentWeapon}", ColorConstants.Yellow);
-            player.SendServerMessage($"[DEBUG] Item ObjectId: {currentWeapon.ObjectId}", ColorConstants.Yellow);
-            player.SendServerMessage($"[DEBUG] Item ModelType: {currentWeapon.BaseItem.ModelType}", ColorConstants.Yellow);
+            // Simple model stackable - use CopyItemAndModify which preserves stack size automatically
+            player.SendServerMessage($"[DEBUG] Simple stackable: Using EXACT ItemTool pattern", ColorConstants.Yellow);
 
-            if (isSimpleModel)
+            // Unequip if equipped
+            creature.RunUnequip(currentWeapon);
+
+            // EXACT ItemTool: CopyItemAndModify directly
+            uint copy = NWScript.CopyItemAndModify(currentWeapon, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, WeaponTopModel, 1);
+            player.SendServerMessage($"[DEBUG] CopyItemAndModify result: {copy}, valid: {NWScript.GetIsObjectValid(copy)}", ColorConstants.Yellow);
+
+            if (NWScript.GetIsObjectValid(copy) == 1)
             {
-                // Simple model stackable - use EXACT ItemTool pattern
-                player.SendServerMessage($"[DEBUG] Simple stackable: Using EXACT ItemTool pattern", ColorConstants.Yellow);
+                // EXACT ItemTool: Destroy using NWScript.DestroyObject on the ORIGINAL
+                player.SendServerMessage($"[DEBUG] Destroying original ObjectId: {currentWeapon.ObjectId}", ColorConstants.Yellow);
+                NWScript.DestroyObject(currentWeapon);
 
-                // Unequip if equipped
-                creature.RunUnequip(currentWeapon);
+                // EXACT ItemTool: Update reference to the copy IMMEDIATELY
+                _currentWeapon = copy.ToNwObject<NwItem>();
 
-                // EXACT ItemTool: CopyItemAndModify directly
-                uint copy = NWScript.CopyItemAndModify(currentWeapon, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, WeaponTopModel, 1);
-                player.SendServerMessage($"[DEBUG] CopyItemAndModify result: {copy}, valid: {NWScript.GetIsObjectValid(copy)}", ColorConstants.Yellow);
-
-                if (NWScript.GetIsObjectValid(copy) == 1)
+                if (_currentWeapon != null && _currentWeapon.IsValid)
                 {
-                    // EXACT ItemTool: Destroy using NWScript.DestroyObject on the ORIGINAL
-                    player.SendServerMessage($"[DEBUG] Destroying original ObjectId: {currentWeapon.ObjectId}", ColorConstants.Yellow);
-                    NWScript.DestroyObject(currentWeapon);
+                    player.SendServerMessage($"[DEBUG] Updated reference. New ObjectId: {_currentWeapon.ObjectId}, Stack: {_currentWeapon.StackSize}", ColorConstants.Yellow);
 
-                    // EXACT ItemTool: Update reference to the copy IMMEDIATELY
-                    _currentWeapon = copy.ToNwObject<NwItem>();
+                    // Apply scale
+                    NWScript.SetObjectVisualTransform(_currentWeapon, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
 
-                    if (_currentWeapon != null && _currentWeapon.IsValid)
-                    {
-                        player.SendServerMessage($"[DEBUG] Updated reference. New ObjectId: {_currentWeapon.ObjectId}, Stack: {_currentWeapon.StackSize}", ColorConstants.Yellow);
+                    // Re-equip
+                    creature.RunEquip(_currentWeapon, InventorySlot.RightHand);
 
-                        // Apply scale
-                        NWScript.SetObjectVisualTransform(_currentWeapon, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
-
-                        // Re-equip
-                        creature.RunEquip(_currentWeapon, InventorySlot.RightHand);
-
-                        player.SendServerMessage($"[DEBUG] ItemTool pattern complete! Final stack: {_currentWeapon.StackSize}", ColorConstants.Green);
-                        return;
-                    }
-                    else
-                    {
-                        player.SendServerMessage("Failed to convert copy to NwItem.", ColorConstants.Red);
-                        return;
-                    }
+                    player.SendServerMessage($"[DEBUG] ItemTool pattern complete! Final stack: {_currentWeapon.StackSize}", ColorConstants.Green);
+                    return;
                 }
                 else
                 {
-                    player.SendServerMessage("Failed to create modified copy.", ColorConstants.Red);
-                    creature.RunEquip(currentWeapon, InventorySlot.RightHand);
+                    player.SendServerMessage("Failed to convert copy to NwItem.", ColorConstants.Red);
                     return;
                 }
             }
             else
             {
-                // Complex/Composite weapons - CopyItemAndModify doesn't work for stackable WEAPON_MODEL types
-                // Workaround: Create copy at remote waypoint to prevent stack merging, then move to player
-                player.SendServerMessage($"[DEBUG] Using waypoint workaround for composite stackable weapon", ColorConstants.Yellow);
+                player.SendServerMessage("Failed to create modified copy.", ColorConstants.Red);
+                creature.RunEquip(currentWeapon, InventorySlot.RightHand);
+                return;
+            }
+        }
+        else if (isBaseItemStackable)
+        {
+            // Complex stackable weapons (e.g., throwing axes, bouquets)
+            // CopyItemAndModify doesn't work for stackable WEAPON_MODEL types
+            // Workaround: Create copy at remote waypoint to prevent stack merging, then move to player
+            player.SendServerMessage($"[DEBUG] Using waypoint workaround for composite stackable weapon", ColorConstants.Yellow);
 
             // Store original stack size
             int originalStackSize = currentWeapon.StackSize;
@@ -836,7 +841,6 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
             _currentWeapon = newWeapon;
 
             player.SendServerMessage($"[DEBUG] Weapon changes applied successfully! Final stack: {newWeapon.StackSize}", ColorConstants.Green);
-            }
         }
         else
         {
@@ -1810,6 +1814,21 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         WeaponBackupData? weaponBackup = LoadWeaponBackupFromPcKey();
         if (_currentWeapon != null && _currentWeapon.IsValid && weaponBackup != null)
         {
+            // Get current weapon state
+            WeaponBackupData currentState = WeaponBackupData.FromItem(_currentWeapon);
+
+            // Only revert if the backup is different from current state
+            bool needsRevert = currentState.TopModel != weaponBackup.TopModel ||
+                              currentState.MidModel != weaponBackup.MidModel ||
+                              currentState.BotModel != weaponBackup.BotModel ||
+                              currentState.Scale != weaponBackup.Scale;
+
+            if (!needsRevert)
+            {
+                // Already at backup state, skip revert
+                goto SkipWeaponRevert;
+            }
+
             // Check if base item type is stackable (from baseitems.2da "Stacking" column)
             int maxStackSize = NWScript.StringToInt(NWScript.Get2DAString("baseitems", "Stacking", (int)_currentWeapon.BaseItem.ItemType));
             bool isBaseItemStackable = maxStackSize > 1;
@@ -1884,42 +1903,54 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
                                 float scaleValue = weaponBackup.Scale / 100f;
                                 NWScript.SetObjectVisualTransform(waypointCopy, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
 
-                                // Destroy original
+                                // Destroy original weapon
                                 _currentWeapon.Destroy();
 
-                                // Clone from waypoint to player
-                                NwItem? newWeapon = waypointCopy.Clone(creature);
-                                if (newWeapon != null && newWeapon.IsValid)
+                                // Copy from waypoint directly to player (don't use Clone as it can merge stacks)
+                                uint newWeaponId = NWScript.CopyItem(waypointCopy, creature, 1);
+
+                                // Destroy waypoint copy
+                                waypointCopy.Destroy();
+
+                                if (NWScript.GetIsObjectValid(newWeaponId) == 1)
                                 {
-                                    // Destroy waypoint copy
-                                    waypointCopy.Destroy();
+                                    NwItem? newWeapon = newWeaponId.ToNwObject<NwItem>();
+                                    if (newWeapon != null && newWeapon.IsValid)
+                                    {
+                                        // Equip the new weapon
+                                        creature.RunEquip(newWeapon, InventorySlot.RightHand);
+                                        _currentWeapon = newWeapon;
 
-                                    // Equip the new weapon
-                                    creature.RunEquip(newWeapon, InventorySlot.RightHand);
-                                    _currentWeapon = newWeapon;
+                                        WeaponTopModel = weaponBackup.TopModel;
+                                        WeaponMidModel = weaponBackup.MidModel;
+                                        WeaponBotModel = weaponBackup.BotModel;
+                                        WeaponScale = weaponBackup.Scale;
 
-                                    WeaponTopModel = weaponBackup.TopModel;
-                                    WeaponMidModel = weaponBackup.MidModel;
-                                    WeaponBotModel = weaponBackup.BotModel;
-                                    WeaponScale = weaponBackup.Scale;
-
-                                    anyReverted = true;
+                                        anyReverted = true;
+                                    }
+                                    else
+                                    {
+                                        player.SendServerMessage("Failed to convert copied weapon. Original item was destroyed.", ColorConstants.Red);
+                                        _currentWeapon = null;
+                                    }
                                 }
                                 else
                                 {
-                                    waypointCopy.Destroy();
-                                    creature.RunEquip(_currentWeapon, InventorySlot.RightHand);
+                                    player.SendServerMessage("Failed to copy weapon from waypoint. Original item was destroyed.", ColorConstants.Red);
+                                    _currentWeapon = null;
                                 }
                             }
                             else
                             {
                                 NWScript.DestroyObject(copyId);
-                                creature.RunEquip(_currentWeapon, InventorySlot.RightHand);
+                                player.SendServerMessage("Failed to convert waypoint copy. Original item was destroyed.", ColorConstants.Red);
+                                _currentWeapon = null;
                             }
                         }
                         else
                         {
-                            creature.RunEquip(_currentWeapon, InventorySlot.RightHand);
+                            player.SendServerMessage("Failed to copy weapon to waypoint. Original item was destroyed.", ColorConstants.Red);
+                            _currentWeapon = null;
                         }
                     }
                 }
@@ -1951,10 +1982,27 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
             }
         }
 
+        SkipWeaponRevert:
+
         // Revert off-hand if backup exists and item is equipped
         OffHandBackupData? offHandBackup = LoadOffHandBackupFromPcKey();
         if (_currentOffHand != null && _currentOffHand.IsValid && offHandBackup != null)
         {
+            // Get current off-hand state
+            OffHandBackupData currentState = OffHandBackupData.FromItem(_currentOffHand);
+
+            // Only revert if the backup is different from current state
+            bool needsRevert = currentState.TopModel != offHandBackup.TopModel ||
+                              currentState.MidModel != offHandBackup.MidModel ||
+                              currentState.BotModel != offHandBackup.BotModel ||
+                              currentState.Scale != offHandBackup.Scale;
+
+            if (!needsRevert)
+            {
+                // Already at backup state, skip revert
+                goto SkipOffHandRevert;
+            }
+
             if (offHandBackup.IsSimple)
             {
                 // For simple items - CopyItemAndModify preserves stack size automatically
@@ -2069,10 +2117,26 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
             }
         }
 
+        SkipOffHandRevert:
+
         // Revert boots if backup exists and item is equipped
         BootsBackupData? bootsBackup = LoadBootsBackupFromPcKey();
         if (_currentBoots != null && _currentBoots.IsValid && bootsBackup != null)
         {
+            // Get current boots state
+            BootsBackupData currentState = BootsBackupData.FromItem(_currentBoots);
+
+            // Only revert if the backup is different from current state
+            bool needsRevert = currentState.TopModel != bootsBackup.TopModel ||
+                              currentState.MidModel != bootsBackup.MidModel ||
+                              currentState.BotModel != bootsBackup.BotModel;
+
+            if (!needsRevert)
+            {
+                // Already at backup state, skip revert
+                goto SkipBootsRevert;
+            }
+
             creature.RunUnequip(_currentBoots);
             NwItem newBoots = _currentBoots.Clone(creature);
 
@@ -2095,10 +2159,22 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
             }
         }
 
+        SkipBootsRevert:
+
         // Revert helmet if backup exists and item is equipped
         HelmetBackupData? helmetBackup = LoadHelmetBackupFromPcKey();
         if (_currentHelmet != null && _currentHelmet.IsValid && helmetBackup != null)
         {
+            // Get current helmet state
+            HelmetBackupData currentState = HelmetBackupData.FromItem(_currentHelmet);
+
+            // Only revert if the backup is different from current state
+            if (currentState.Appearance == helmetBackup.Appearance)
+            {
+                // Already at backup state, skip revert
+                goto SkipHelmetRevert;
+            }
+
             uint copy = NWScript.CopyItemAndModify(_currentHelmet, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, helmetBackup.Appearance, 1);
             if (NWScript.GetIsObjectValid(copy) == 1)
             {
@@ -2126,10 +2202,22 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
             }
         }
 
+        SkipHelmetRevert:
+
         // Revert cloak if backup exists and item is equipped
         CloakBackupData? cloakBackup = LoadCloakBackupFromPcKey();
         if (_currentCloak != null && _currentCloak.IsValid && cloakBackup != null)
         {
+            // Get current cloak state
+            CloakBackupData currentState = CloakBackupData.FromItem(_currentCloak);
+
+            // Only revert if the backup is different from current state
+            if (currentState.Appearance == cloakBackup.Appearance)
+            {
+                // Already at backup state, skip revert
+                goto SkipCloakRevert;
+            }
+
             uint copy = NWScript.CopyItemAndModify(_currentCloak, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, cloakBackup.Appearance, 1);
             if (NWScript.GetIsObjectValid(copy) == 1)
             {
@@ -2156,6 +2244,8 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
                 anyReverted = true;
             }
         }
+
+        SkipCloakRevert:
 
         if (anyReverted)
         {
