@@ -40,6 +40,12 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
     public readonly NuiBind<string> PreviewItemCost = new("player_stall_preview_item_cost");
     public readonly NuiBind<bool> PreviewBuyEnabled = new("player_stall_preview_buy_enabled");
 
+    // Quantity input bindings
+    public readonly NuiBind<bool> QuantityRowVisible = new("player_stall_quantity_row_visible");
+    public readonly NuiBind<string> QuantityValue = new("player_stall_quantity_value");
+    public readonly NuiBind<string> QuantityMaxLabel = new("player_stall_quantity_max_label");
+    public readonly NuiBind<string> TotalCostLabel = new("player_stall_total_cost_label");
+
     public NuiButton SelectButton = null!;
     public NuiButton BuyFromPreviewButton = null!;
     public NuiButton LeaveButton = null!;
@@ -146,6 +152,51 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
                                 Visible = PreviewDescriptionVisible
                             },
                             new NuiSpacer { Height = 12f },
+                            // Quantity input row (visible only for stackable items)
+                            new NuiRow
+                            {
+                                Visible = QuantityRowVisible,
+                                Children =
+                                [
+                                    new NuiLabel("Qty:")
+                                    {
+                                        Width = 35f,
+                                        Height = 26f,
+                                        HorizontalAlign = NuiHAlign.Left,
+                                        VerticalAlign = NuiVAlign.Middle,
+                                        ForegroundColor = new Color(30, 20, 12)
+                                    },
+                                    new NuiTextEdit(string.Empty, QuantityValue, 5, false)
+                                    {
+                                        Width = 50f,
+                                        Height = 26f
+                                    },
+                                    new NuiLabel(QuantityMaxLabel)
+                                    {
+                                        Width = 80f,
+                                        Height = 26f,
+                                        HorizontalAlign = NuiHAlign.Left,
+                                        VerticalAlign = NuiVAlign.Middle,
+                                        ForegroundColor = new Color(80, 80, 80)
+                                    }
+                                ]
+                            },
+                            new NuiRow
+                            {
+                                Visible = QuantityRowVisible,
+                                Children =
+                                [
+                                    new NuiLabel(TotalCostLabel)
+                                    {
+                                        Width = 260f,
+                                        Height = 22f,
+                                        HorizontalAlign = NuiHAlign.Left,
+                                        VerticalAlign = NuiVAlign.Middle,
+                                        ForegroundColor = new Color(30, 20, 12)
+                                    }
+                                ]
+                            },
+                            new NuiSpacer { Height = 8f },
                             new NuiButton("Purchase Item")
                             {
                                 Id = "player_stall_buy_from_preview",

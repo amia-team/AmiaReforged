@@ -21,6 +21,9 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 	private bool _isProcessing;
 	private bool _isClosing;
 	private int _selectedProductIndex = -1;
+	private int _selectedProductQuantityAvailable;
+	private int _selectedProductUnitPrice;
+	private int _currentGoldOnHand;
 
 	public PlayerBuyerPresenter(PlayerBuyerView view, NwPlayer player, PlayerStallBuyerWindowConfig config)
 	{
@@ -139,6 +142,9 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 
 		_productRows.Clear();
 		_selectedProductIndex = -1;
+		_selectedProductQuantityAvailable = 0;
+		_selectedProductUnitPrice = 0;
+		_currentGoldOnHand = snapshot.Buyer.GoldOnHand;
 
 		Token().SetBindValue(View.StallTitle, snapshot.Summary.StallName);
 
@@ -157,6 +163,7 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 		// Initialize preview as hidden
 		Token().SetBindValue(View.PreviewVisible, false);
 		Token().SetBindValue(View.PreviewPlaceholderVisible, true);
+		Token().SetBindValue(View.QuantityRowVisible, false);
 
 	List<string> entries = new(snapshot.Products.Count);
 	List<string> tooltips = new(snapshot.Products.Count);
@@ -229,11 +236,26 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 
 		try
 		{
+			// Parse quantity from the text field, defaulting to 1 if invalid
+			int quantity = 1;
+			string quantityText = Token().GetBindValue(View.QuantityValue);
+			if (!string.IsNullOrWhiteSpace(quantityText) && int.TryParse(quantityText.Trim(), out int parsedQuantity))
+			{
+				quantity = Math.Max(1, parsedQuantity);
+			}
+
+			// Clamp to available quantity
+			if (quantity > _selectedProductQuantityAvailable)
+			{
+				quantity = _selectedProductQuantityAvailable;
+			}
+
 			PlayerStallPurchaseRequest request = new(
 				sessionId,
 				_config.StallId,
 				row.ProductId,
-				_config.BuyerPersona);
+				_config.BuyerPersona,
+				quantity);
 
 			PlayerStallPurchaseResult result = await EventManager
 				.RequestPurchaseAsync(request)
@@ -303,6 +325,10 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 		ProductRow row = _productRows[rowIndex];
 		PlayerStallProductView product = row.Product;
 
+		// Track selected product details for quantity calculations
+		_selectedProductQuantityAvailable = product.QuantityAvailable;
+		_selectedProductUnitPrice = product.Price;
+
 		Log.Debug("Selected product: {ProductName} (ID: {ProductId}, Purchasable: {CanPurchase})",
 			product.DisplayName, product.ProductId, row.CanPurchase);
 
@@ -312,7 +338,7 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 
 		// Set preview content
 		Token().SetBindValue(View.PreviewItemName, product.DisplayName);
-		Token().SetBindValue(View.PreviewItemCost, string.Format(CultureInfo.InvariantCulture, "Cost: {0}", FormatPrice(product.Price)));
+		Token().SetBindValue(View.PreviewItemCost, string.Format(CultureInfo.InvariantCulture, "Unit Price: {0}", FormatPrice(product.Price)));
 
 		bool hasDescription = !string.IsNullOrWhiteSpace(product.Tooltip);
 		Token().SetBindValue(View.PreviewDescriptionVisible, hasDescription);
@@ -321,6 +347,13 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 
 		Log.Debug("Preview set - HasDescription: {HasDescription}, Description: {Description}",
 			hasDescription, hasDescription ? product.Tooltip : "(none)");
+
+		// Show quantity row for stackable items (quantity > 1 available)
+		bool isStackable = product.QuantityAvailable > 1;
+		Token().SetBindValue(View.QuantityRowVisible, isStackable);
+		Token().SetBindValue(View.QuantityValue, "1");
+		Token().SetBindValue(View.QuantityMaxLabel, string.Format(CultureInfo.InvariantCulture, "/ {0} max", product.QuantityAvailable));
+		Token().SetBindValue(View.TotalCostLabel, string.Format(CultureInfo.InvariantCulture, "Total: {0}", FormatPrice(product.Price)));
 
 		// Enable buy button only if purchasable
 		Token().SetBindValue(View.PreviewBuyEnabled, row.CanPurchase);

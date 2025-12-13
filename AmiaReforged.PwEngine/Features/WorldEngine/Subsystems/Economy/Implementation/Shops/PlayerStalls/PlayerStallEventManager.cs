@@ -257,10 +257,6 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             return PlayerStallPurchaseResult.Fail("Another buyer just claimed the last one.", ColorConstants.Orange);
         }
 
-        if (quantity > 1)
-        {
-            return PlayerStallPurchaseResult.Fail("Bulk purchases are not yet supported.", ColorConstants.Orange);
-        }
 
         int unitPrice = Math.Max(product.Price, 0);
         int totalPrice = unitPrice * quantity;
@@ -282,7 +278,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 
         try
         {
-            deliveredItem = await StallProductRestorer.RestoreItemAsync(product, buyerCreature).ConfigureAwait(false);
+            deliveredItem = await StallProductRestorer.RestoreItemAsync(product, buyerCreature, quantity).ConfigureAwait(false);
             if (deliveredItem is null)
             {
                 if (paymentCaptured)
@@ -1447,6 +1443,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         string consignorDisplayName = ResolveSellerDisplayName(stall, request.SellerPersona);
         DateTime timestamp = DateTime.UtcNow;
 
+
         ListStallProductRequest serviceRequest = new(
             request.StallId,
             resRef,
@@ -1672,7 +1669,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         product.IsActive = false;
 
         NwItem? restoredItem =
-            await StallProductRestorer.RestoreItemAsync(product, sellerCreature).ConfigureAwait(false);
+            await StallProductRestorer.RestoreItemAsync(product, sellerCreature, product.Quantity).ConfigureAwait(false);
         if (restoredItem is null)
         {
             bool reverted = _shops.UpdateStallAndProduct(request.StallId, product.Id,

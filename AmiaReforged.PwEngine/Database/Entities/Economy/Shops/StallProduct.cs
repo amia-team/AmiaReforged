@@ -63,4 +63,8 @@ public class StallProduct
     public DateTime UpdatedUtc { get; set; } = DateTime.UtcNow;
 
     public DateTime? SoldOutUtc { get; set; }
+
+    public bool HasStacks { get; set; }
+
+    public int? StackSize { get; set; }
 }

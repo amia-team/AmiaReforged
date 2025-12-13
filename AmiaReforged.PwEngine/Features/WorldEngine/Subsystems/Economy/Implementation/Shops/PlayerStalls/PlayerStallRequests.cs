@@ -48,7 +48,9 @@ public sealed record ListStallProductRequest(
     bool IsActive,
     DateTime ListedUtc,
     DateTime UpdatedUtc,
-    string? OriginalName = null);
+    string? OriginalName = null,
+    bool HasStacks = false,
+    int StackSize = 1);
 
 /// <summary>
 /// Request to update the configured price for a stall product.
@@ -81,17 +83,23 @@ public sealed record WithdrawStallEarningsRequest(
 /// </summary>
 public interface IPlayerStallService
 {
-    Task<PlayerStallServiceResult> ClaimAsync(ClaimPlayerStallRequest request, CancellationToken cancellationToken = default);
+    Task<PlayerStallServiceResult> ClaimAsync(ClaimPlayerStallRequest request,
+        CancellationToken cancellationToken = default);
 
-    Task<PlayerStallServiceResult> ReleaseAsync(ReleasePlayerStallRequest request, CancellationToken cancellationToken = default);
+    Task<PlayerStallServiceResult> ReleaseAsync(ReleasePlayerStallRequest request,
+        CancellationToken cancellationToken = default);
 
-    Task<PlayerStallServiceResult> ListProductAsync(ListStallProductRequest request, CancellationToken cancellationToken = default);
+    Task<PlayerStallServiceResult> ListProductAsync(ListStallProductRequest request,
+        CancellationToken cancellationToken = default);
 
-    Task<PlayerStallServiceResult> UpdateProductPriceAsync(UpdateStallProductPriceRequest request, CancellationToken cancellationToken = default);
+    Task<PlayerStallServiceResult> UpdateProductPriceAsync(UpdateStallProductPriceRequest request,
+        CancellationToken cancellationToken = default);
 
-    Task<PlayerStallServiceResult> UpdateRentSettingsAsync(UpdateStallRentSettingsRequest request, CancellationToken cancellationToken = default);
+    Task<PlayerStallServiceResult> UpdateRentSettingsAsync(UpdateStallRentSettingsRequest request,
+        CancellationToken cancellationToken = default);
 
-    Task<PlayerStallServiceResult> WithdrawEarningsAsync(WithdrawStallEarningsRequest request, CancellationToken cancellationToken = default);
+    Task<PlayerStallServiceResult> WithdrawEarningsAsync(WithdrawStallEarningsRequest request,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>
