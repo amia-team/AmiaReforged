@@ -419,9 +419,15 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         }
 
         _onlyScaleChanged = false;
+        int previousModel = WeaponBotModel;
         WeaponBotModel = GetNextValidWeaponModel(ItemAppearanceWeaponModel.Bottom, WeaponBotModel, delta, _weaponBotModelMax);
-        ApplyWeaponChanges();
-        player.SendServerMessage($"Weapon bottom model set to {WeaponBotModel}.", ColorConstants.Green);
+
+        // Only apply changes if the model actually changed
+        if (WeaponBotModel != previousModel)
+        {
+            ApplyWeaponChanges();
+            player.SendServerMessage($"Weapon bottom model set to {WeaponBotModel}.", ColorConstants.Green);
+        }
     }
 
     public void AdjustWeaponScale(int delta)
@@ -916,9 +922,15 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         }
 
         _offHandOnlyScaleChanged = false;
+        int previousModel = OffHandBotModel;
         OffHandBotModel = GetNextValidOffHandWeaponModel(ItemAppearanceWeaponModel.Bottom, OffHandBotModel, delta, _offHandBotModelMax);
-        ApplyOffHandChanges();
-        player.SendServerMessage($"Off-hand bottom model set to {OffHandBotModel}.", ColorConstants.Green);
+
+        // Only apply changes if the model actually changed
+        if (OffHandBotModel != previousModel)
+        {
+            ApplyOffHandChanges();
+            player.SendServerMessage($"Off-hand bottom model set to {OffHandBotModel}.", ColorConstants.Green);
+        }
     }
 
     public void AdjustOffHandScale(int delta)
@@ -1497,9 +1509,15 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
             return;
         }
 
+        int previousAppearance = HelmetAppearance;
         HelmetAppearance = GetNextValidHelmetAppearance(HelmetAppearance, delta, _helmetAppearanceMax);
-        ApplyHelmetChanges();
-        player.SendServerMessage($"Helmet appearance set to {HelmetAppearance}.", ColorConstants.Green);
+
+        // Only apply changes if the appearance actually changed
+        if (HelmetAppearance != previousAppearance)
+        {
+            ApplyHelmetChanges();
+            player.SendServerMessage($"Helmet appearance set to {HelmetAppearance}.", ColorConstants.Green);
+        }
     }
 
     private int GetNextValidHelmetAppearance(int currentAppearance, int delta, int maxAppearance)
@@ -1581,9 +1599,15 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
             return;
         }
 
+        int previousAppearance = CloakAppearance;
         CloakAppearance = GetNextValidCloakAppearance(CloakAppearance, delta, _cloakAppearanceMax);
-        ApplyCloakChanges();
-        player.SendServerMessage($"Cloak appearance set to {CloakAppearance}.", ColorConstants.Green);
+
+        // Only apply changes if the appearance actually changed
+        if (CloakAppearance != previousAppearance)
+        {
+            ApplyCloakChanges();
+            player.SendServerMessage($"Cloak appearance set to {CloakAppearance}.", ColorConstants.Green);
+        }
     }
 
     private int GetNextValidCloakAppearance(int currentAppearance, int delta, int maxAppearance)
