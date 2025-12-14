@@ -44,12 +44,19 @@ internal static class PlayerStallInventoryPolicy
             return false;
         }
 
+        // Plot items are never for sale
+        if (item.PlotFlag)
+        {
+            return false;
+        }
+
         string resRef = item.ResRef?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(resRef))
         {
             return false;
         }
 
-        return !ResRefBlacklist.Contains(resRef) || item.PlotFlag;
+        // Blacklisted resrefs cannot be sold
+        return !ResRefBlacklist.Contains(resRef);
     }
 }
