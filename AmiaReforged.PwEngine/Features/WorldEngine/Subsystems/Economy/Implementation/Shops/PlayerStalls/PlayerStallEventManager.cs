@@ -1375,7 +1375,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             return failure;
         }
 
-        if (item.Possessor != sellerCreature)
+        if (!IsItemOwnedByCreature(item, sellerCreature))
         {
             PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
                 "You must hold the item to list it for sale.",
@@ -2613,6 +2613,42 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 
         foreach (NwItem item in creature.Inventory.Items)
         {
+            // Check if this item is a container with inventory
+            if (item.HasInventory)
+            {
+                string containerName = string.IsNullOrWhiteSpace(item.Name) ? "Bag" : item.Name.Trim();
+
+                foreach (NwItem containedItem in item.Inventory.Items)
+                {
+                    if (!PlayerStallInventoryPolicy.IsItemAllowed(containedItem))
+                    {
+                        continue;
+                    }
+
+                    string containedObjectId = NWScript.ObjectToString(containedItem);
+                    string containedItemName = string.IsNullOrWhiteSpace(containedItem.Name)
+                        ? containedItem.ResRef
+                        : containedItem.Name.Trim();
+                    string containedDisplayName = string.Format(CultureInfo.InvariantCulture, "{0} (in {1})", containedItemName, containerName);
+                    string containedResRef = containedItem.ResRef;
+                    int containedQuantity = Math.Max(containedItem.StackSize, 1);
+                    bool containedStackable = containedQuantity > 1;
+                    string? containedDescription = string.IsNullOrWhiteSpace(containedItem.Description)
+                        ? null
+                        : containedItem.Description.Trim();
+                    int? containedBaseItemType = containedItem.BaseItem is null ? null : (int)containedItem.BaseItem.ItemType;
+
+                    items.Add(new PlayerStallSellerInventoryItemView(
+                        containedObjectId,
+                        containedDisplayName,
+                        containedResRef,
+                        containedQuantity,
+                        containedStackable,
+                        containedDescription,
+                        containedBaseItemType));
+                }
+            }
+
             if (!PlayerStallInventoryPolicy.IsItemAllowed(item))
             {
                 continue;
@@ -2676,6 +2712,41 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         }
 
         return string.Format(CultureInfo.InvariantCulture, "You purchased {0} for {1:n0} gp.", name, totalPrice);
+    }
+
+    /// <summary>
+    /// Checks if an item is ultimately owned by the specified creature,
+    /// traversing through container chains (e.g., bags of holding).
+    /// </summary>
+    private static bool IsItemOwnedByCreature(NwItem item, NwCreature creature)
+    {
+        if (item is null || creature is null || !item.IsValid || !creature.IsValid)
+        {
+            return false;
+        }
+
+        NwGameObject? current = item.Possessor;
+
+        // Traverse up the possessor chain (item in bag -> bag in creature)
+        while (current is not null)
+        {
+            if (current == creature)
+            {
+                return true;
+            }
+
+            // If possessor is an item (container), get its possessor
+            if (current is NwItem container)
+            {
+                current = container.Possessor;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return false;
     }
 
     private sealed record BuyerSubscription(long StallId, PersonaId Persona, PlayerStallBuyerEventCallbacks Callbacks);
