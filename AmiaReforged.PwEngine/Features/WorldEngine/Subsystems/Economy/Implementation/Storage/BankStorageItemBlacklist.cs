@@ -1,4 +1,5 @@
 using Anvil.Services;
+using Anvil.API;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Storage;
 
@@ -32,5 +33,21 @@ public sealed class BankStorageItemBlacklist : IBankStorageItemBlacklist
         }
 
         return _blockedResrefs.Contains(resref);
+    }
+
+    public bool IsBlockedFromStorage(NwItem? item)
+    {
+        if (item == null || !item.IsValid)
+        {
+            return false;
+        }
+
+        // Plot items should never be stored
+        if (item.PlotFlag)
+        {
+            return true;
+        }
+
+        return IsBlacklisted(item.ResRef);
     }
 }

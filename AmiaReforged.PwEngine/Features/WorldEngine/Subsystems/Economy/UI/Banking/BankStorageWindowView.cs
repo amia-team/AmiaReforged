@@ -299,7 +299,7 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
 
                 IBankStorageItemBlacklist blacklist = StorageBlacklist.Value;
                 _inventoryItems = inventoryItems
-                    .Where(i => !blacklist.IsBlacklisted(i.ResRef))
+                    .Where(i => !blacklist.IsBlockedFromStorage(i))
                     .ToList();
 
                 int filteredCount = inventoryItems.Count - _inventoryItems.Count;
@@ -412,7 +412,7 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
                 return;
             }
 
-            if (StorageBlacklist.Value.IsBlacklisted(item.ResRef))
+            if (StorageBlacklist.Value.IsBlockedFromStorage(item))
             {
                 await NwTask.SwitchToMainThread();
                 Token().Player.SendServerMessage("That item cannot be stored in the bank.", ColorConstants.Orange);

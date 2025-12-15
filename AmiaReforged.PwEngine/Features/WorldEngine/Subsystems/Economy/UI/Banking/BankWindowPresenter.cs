@@ -71,6 +71,8 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
 
     [Inject] private Lazy<IPersonalStorageService> PersonalStorageService { get; init; } = null!;
 
+    [Inject] private Lazy<IBankStorageItemBlacklist> StorageBlacklist { get; init; } = null!;
+
     [Inject] private WindowDirector WindowDirector { get; init; } = null!;
 
     private BankAccountModel Model => _model ??= new BankAccountModel(
@@ -1260,7 +1262,26 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
                 continue;
             }
 
+            // Skip items blocked from storage (plot items, blacklisted resrefs)
+            if (StorageBlacklist.Value.IsBlockedFromStorage(item))
+            {
+                continue;
+            }
+
             _inventoryItems.Add(item);
+        }
+
+        // Populate model labels for depositable items
+        Model.DepositInventoryItems.Clear();
+        foreach (NwItem it in _inventoryItems)
+        {
+            string label = string.IsNullOrWhiteSpace(it.Name) ? it.ResRef : it.Name;
+            Model.DepositInventoryItems.Add(label);
+        }
+
+        if (Model.DepositInventoryItems.Count == 0)
+        {
+            Model.DepositInventoryItems.Add("No items are ready for deposit.");
         }
     }
 
@@ -1392,6 +1413,17 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
         {
             Token().Player.SendServerMessage(
                 message: "Selected item is no longer valid.",
+                ColorConstants.Orange);
+            await LoadInventoryItemsAsync();
+            UpdateView();
+            return;
+        }
+
+        // Double-check blocked items (defense in depth)
+        if (StorageBlacklist.Value.IsBlockedFromStorage(item))
+        {
+            Token().Player.SendServerMessage(
+                message: "That item cannot be stored in the bank.",
                 ColorConstants.Orange);
             await LoadInventoryItemsAsync();
             UpdateView();

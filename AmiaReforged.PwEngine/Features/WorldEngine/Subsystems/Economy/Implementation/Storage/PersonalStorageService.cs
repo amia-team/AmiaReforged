@@ -91,6 +91,21 @@ public class PersonalStorageService : IPersonalStorageService
                 $"Storage is full ({currentItemCount}/{storage.Capacity} slots). Purchase additional capacity to store more items.");
         }
 
+        // Defensive server-side check: try to detect plot items by deserializing on the main thread.
+        try
+        {
+            await Anvil.API.NwTask.SwitchToMainThread();
+            Anvil.API.NwItem? runtimeItem = Anvil.API.NwItem.Deserialize(itemData);
+            if (runtimeItem != null && runtimeItem.PlotFlag)
+            {
+                return new StorageResult(false, "Plot items cannot be stored in personal storage.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Failed to inspect item data for plot flag during storage check.");
+        }
+
         StoredItem item = new()
         {
             ItemData = itemData,
