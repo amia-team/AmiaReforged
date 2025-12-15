@@ -2,6 +2,28 @@ pipeline{
     agent any
 
     stages {
+        stage('Build BackupService Docker Image') {
+            when {
+                changeset "AmiaReforged.BackupService/**"
+            }
+            steps {
+                script {
+                    echo 'Changes detected in BackupService, building Docker image...'
+                    discordSend description: "Changes detected in BackupService, building Docker image...", footer: "New version detected", link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: params.webhookURL
+
+                    dir('AmiaReforged.BackupService') {
+                        // Read version from version.txt
+                        def version = readFile('version.txt').trim()
+                        echo "Building BackupService version ${version}"
+
+                        // Build Docker image with version tag
+                        sh "docker build -t amia-backup-service:${version} -t amia-backup-service:latest ."
+
+                        echo "Docker image built successfully: amia-backup-service:${version}"
+                    }
+                }
+            }
+        }
         stage('Deploy Test') {
             when {
                     expression {

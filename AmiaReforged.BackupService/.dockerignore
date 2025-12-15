@@ -23,4 +23,9 @@
 **/values.dev.yaml
 LICENSE
 README.md
+DOCKER_BUILD_FIX.md
+
+# Include version tracking files
+!version.txt
+!CHANGELOG.md
 
