@@ -2,16 +2,15 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Copy project file
-COPY ["AmiaReforged.BackupService/AmiaReforged.BackupService.csproj", "AmiaReforged.BackupService/"]
+COPY ["AmiaReforged.BackupService.csproj", "./"]
 
 # Restore dependencies
-RUN dotnet restore "AmiaReforged.BackupService/AmiaReforged.BackupService.csproj"
+RUN dotnet restore "AmiaReforged.BackupService.csproj"
 
 # Copy source code
-COPY AmiaReforged.BackupService/ AmiaReforged.BackupService/
+COPY . .
 
 # Build and publish
-WORKDIR /src/AmiaReforged.BackupService
 RUN dotnet publish -c Release -o /app/publish --no-restore
 
 # Runtime image
