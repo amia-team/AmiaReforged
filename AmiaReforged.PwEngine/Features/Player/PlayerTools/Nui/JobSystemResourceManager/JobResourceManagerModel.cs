@@ -247,7 +247,7 @@ internal sealed class JobResourceManagerModel
 
                 if (groupedResources.ContainsKey(resref))
                 {
-                    var current = groupedResources[resref];
+                    (string name, int count) current = groupedResources[resref];
                     groupedResources[resref] = (current.name, current.count + item.StackSize);
                 }
                 else
@@ -257,7 +257,7 @@ internal sealed class JobResourceManagerModel
             }
         }
 
-        foreach (var kvp in groupedResources)
+        foreach (KeyValuePair<string, (string name, int count)> kvp in groupedResources)
         {
             resources.Add(new ResourceDataRecord(
                 kvp.Value.name,

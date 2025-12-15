@@ -9,8 +9,8 @@
 
     <ItemGroup>
       <PackageReference Include="JetBrains.Annotations" Version="2022.1.0" />
-      <PackageReference Include="NWN.Anvil" Version="8193.37.2" />
-      <PackageReference Include="NWN.Core" Version="8193.37.3" />
+      <PackageReference Include="NWN.Anvil" Version="8193.37.3" />
+      <PackageReference Include="NWN.Core" Version="8193.37.4" />
     </ItemGroup>
 
 </Project>

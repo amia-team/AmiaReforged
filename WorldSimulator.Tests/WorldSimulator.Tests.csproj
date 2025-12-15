@@ -19,6 +19,7 @@
 
         <!-- JUnit XML Logger for Jenkins -->
         <PackageReference Include="JunitXml.TestLogger" Version="4.1.0" />
+        <PackageReference Include="NWN.Core" Version="8193.37.4" />
 
         <!-- BDD Framework - Reqnroll (SpecFlow successor) -->
         <PackageReference Include="Reqnroll" Version="2.0.3" />

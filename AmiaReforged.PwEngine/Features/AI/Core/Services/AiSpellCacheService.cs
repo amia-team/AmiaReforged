@@ -28,7 +28,7 @@ public class AiSpellCacheService
     {
         if (!_isEnabled) return CreatureSpellCache.Empty;
 
-        if (!_spellCaches.TryGetValue(creature, out var cache))
+        if (!_spellCaches.TryGetValue(creature, out CreatureSpellCache? cache))
         {
             cache = BuildSpellCache(creature);
             _spellCaches[creature] = cache;
@@ -51,20 +51,20 @@ public class AiSpellCacheService
     /// </summary>
     private CreatureSpellCache BuildSpellCache(NwCreature creature)
     {
-        var spellsByCasterLevel = new Dictionary<int, List<Spell>>();
-        var attackSpells = new List<Spell>();
-        var buffSpells = new List<Spell>();
-        var healingSpells = new List<Spell>();
-        var summonSpells = new List<Spell>();
-        var dispelSpells = new List<Spell>();
-        var persistentAoeSpells = new List<Spell>();
+        Dictionary<int, List<Spell>> spellsByCasterLevel = new Dictionary<int, List<Spell>>();
+        List<Spell> attackSpells = new List<Spell>();
+        List<Spell> buffSpells = new List<Spell>();
+        List<Spell> healingSpells = new List<Spell>();
+        List<Spell> summonSpells = new List<Spell>();
+        List<Spell> dispelSpells = new List<Spell>();
+        List<Spell> persistentAoeSpells = new List<Spell>();
 
         int maxCasterLevel = 0;
 
         // Scan all possible spells (0-802 in spells.2da)
         for (int i = 0; i < 803; i++)
         {
-            var spell = (Spell)i;
+            Spell spell = (Spell)i;
 
             if (!creature.HasSpellUse(NwSpell.FromSpellId(i))) continue;
 

@@ -2,6 +2,7 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using AmiaReforged.PwEngine.Features.AI.Behaviors;
+using AmiaReforged.PwEngine.Features.AI.Core.Models;
 using AmiaReforged.PwEngine.Features.AI.Core.Services;
 using NWN.Core.NWNX;
 
@@ -29,18 +30,18 @@ public class GenericAiPerception : IOnPerceptionBehavior
     {
         if (!_isEnabled) return;
 
-        var creature = eventData.Creature;
+        NwCreature creature = eventData.Creature;
 
         // Skip player-controlled creatures
         if (creature.IsPlayerControlled || creature.IsDMAvatar) return;
 
-        var perceived = eventData.PerceivedCreature;
+        NwCreature? perceived = eventData.PerceivedCreature;
         if (perceived == null) return;
 
         // Only react to enemies
         if (!perceived.IsEnemy(creature)) return;
 
-        var state = _stateManager.GetState(creature);
+        AiState? state = _stateManager.GetState(creature);
         if (state == null) return;
 
         // Wake creature from sleep mode by marking as active

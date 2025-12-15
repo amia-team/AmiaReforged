@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.AI.Core.Models;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -36,15 +37,15 @@ public class GenericAiDamaged : IOnDamagedBehavior
     {
         if (!_isEnabled) return;
 
-        var creature = eventData.Creature;
+        NwCreature creature = eventData.Creature;
 
         // Skip player-controlled creatures
         if (creature.IsPlayerControlled || creature.IsDMAvatar) return;
 
-        var damager = eventData.Damager;
+        NwGameObject damager = eventData.Damager;
         if (damager is not NwCreature damagerCreature) return;
 
-        var state = _stateManager.GetState(creature);
+        AiState? state = _stateManager.GetState(creature);
         if (state == null) return;
 
         // Track last damager

@@ -38,7 +38,7 @@ public class AiStateManager
     {
         if (!_isEnabled) return CreateEmptyState(creature);
 
-        if (!_states.TryGetValue(creature, out var state))
+        if (!_states.TryGetValue(creature, out AiState? state))
         {
             state = CreateStateFromCreature(creature);
             _states[creature] = state;
@@ -67,19 +67,19 @@ public class AiStateManager
     private AiState CreateStateFromCreature(NwCreature creature)
     {
         // Create new state, optionally migrating from legacy local variables
-        var state = new AiState
+        AiState state = new AiState
         {
             CreatureId = creature
         };
 
         // Migrate from legacy local variables if they exist (for backward compatibility)
-        var legacyArchetype = creature.GetObjectVariable<LocalVariableString>("ds_ai_archetype").Value;
+        string? legacyArchetype = creature.GetObjectVariable<LocalVariableString>("ds_ai_archetype").Value;
         if (!string.IsNullOrEmpty(legacyArchetype))
         {
             state.ArchetypeId = legacyArchetype;
         }
 
-        var legacyInactive = creature.GetObjectVariable<LocalVariableInt>("ds_ai_i").Value;
+        int legacyInactive = creature.GetObjectVariable<LocalVariableInt>("ds_ai_i").Value;
         if (legacyInactive > 0)
         {
             state.InactiveHeartbeats = legacyInactive;

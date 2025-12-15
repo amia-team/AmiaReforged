@@ -2947,7 +2947,7 @@ public class OffHandBackupData
         int scale = (int)(transform.Scale * 100);
         bool isSimple = offHand.BaseItem.ModelType == BaseItemModelType.Simple;
 
-        var backup = new OffHandBackupData
+        OffHandBackupData backup = new OffHandBackupData
         {
             Scale = scale,
             IsSimple = isSimple

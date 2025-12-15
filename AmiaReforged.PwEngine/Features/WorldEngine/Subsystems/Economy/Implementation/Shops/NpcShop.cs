@@ -91,17 +91,17 @@ public sealed class NpcShop
                     continue;
                 }
 
-                var blueprint = _itemDefinitions?.GetByTag(productRecord.ResRef);
+                ItemBlueprint? blueprint = _itemDefinitions?.GetByTag(productRecord.ResRef);
                 IReadOnlyList<NpcShopLocalVariable> locals = BuildLocalVariables(productRecord.LocalVariablesJson);
                 // Merge blueprint locals if available
                 if (blueprint?.LocalVariables is { Count: > 0 })
                 {
                     Dictionary<string, NpcShopLocalVariable> merged = new(StringComparer.OrdinalIgnoreCase);
-                    foreach (var bpLocal in blueprint.LocalVariables)
+                    foreach (JsonLocalVariableDefinition bpLocal in blueprint.LocalVariables)
                     {
                         try { merged[bpLocal.Name] = NpcShopLocalVariable.FromDefinition(bpLocal); } catch { }
                     }
-                    foreach (var shopLocal in locals)
+                    foreach (NpcShopLocalVariable shopLocal in locals)
                     {
                         merged[shopLocal.Name] = shopLocal; // override
                     }
@@ -270,16 +270,16 @@ public sealed class NpcShop
                 return existing;
             }
 
-            var blueprint = _itemDefinitions?.GetByTag(record.ResRef);
+            ItemBlueprint? blueprint = _itemDefinitions?.GetByTag(record.ResRef);
             IReadOnlyList<NpcShopLocalVariable> locals = BuildLocalVariables(record.LocalVariablesJson);
             if (blueprint?.LocalVariables is { Count: > 0 })
             {
                 Dictionary<string, NpcShopLocalVariable> merged = new(StringComparer.OrdinalIgnoreCase);
-                foreach (var bpLocal in blueprint.LocalVariables)
+                foreach (JsonLocalVariableDefinition bpLocal in blueprint.LocalVariables)
                 {
                     try { merged[bpLocal.Name] = NpcShopLocalVariable.FromDefinition(bpLocal); } catch { }
                 }
-                foreach (var shopLocal in locals)
+                foreach (NpcShopLocalVariable shopLocal in locals)
                 {
                     merged[shopLocal.Name] = shopLocal;
                 }

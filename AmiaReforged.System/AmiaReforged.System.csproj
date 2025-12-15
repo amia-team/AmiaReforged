@@ -11,8 +11,8 @@
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.2"/>
         <PackageReference Include="Moq" Version="4.18.2"/>
         <PackageReference Include="NUnit" Version="4.3.2"/>
-        <PackageReference Include="NWN.Anvil" Version="8193.37.2" />
-        <PackageReference Include="NWN.Core" Version="8193.37.3" />
+        <PackageReference Include="NWN.Anvil" Version="8193.37.3" />
+        <PackageReference Include="NWN.Core" Version="8193.37.4" />
     </ItemGroup>
 
     <ItemGroup>

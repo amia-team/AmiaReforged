@@ -224,7 +224,7 @@ public class CitizenGenerator
             (22, 132), (126, 124), (21, 83), (22, 77),
             (125, 64), (81, 77), (65, 74)
         };
-        var randomColors = colorCombos[Random.Next(colorCombos.Length)];
+        (int cloth, int leather) randomColors = colorCombos[Random.Next(colorCombos.Length)];
 
         // Set robe colors using Anvil API
         armor.Appearance.SetArmorPieceColor(CreaturePart.Robe, ItemAppearanceArmorColor.Cloth1, (byte)randomColors.cloth);

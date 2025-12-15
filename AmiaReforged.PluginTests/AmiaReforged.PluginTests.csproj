@@ -9,8 +9,9 @@
 
     <ItemGroup>
       <PackageReference Include="DotNetEnv" Version="3.1.1" />
-      <PackageReference Include="NWN.Anvil" Version="8193.37.2" />
+      <PackageReference Include="NWN.Anvil" Version="8193.37.3" />
       <PackageReference Include="NWN.Anvil.TestRunner" Version="8193.36.1" />
+      <PackageReference Include="NWN.Core" Version="8193.37.4" />
     </ItemGroup>
 
 </Project>

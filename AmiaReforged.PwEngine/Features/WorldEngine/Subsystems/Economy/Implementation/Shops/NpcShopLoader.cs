@@ -172,7 +172,7 @@ public sealed class NpcShopLoader : IDefinitionLoader
                 return false;
             }
 
-            var blueprint = _itemDefinitions.GetByTag(product.ItemTag);
+            ItemBlueprint? blueprint = _itemDefinitions.GetByTag(product.ItemTag);
             if (string.IsNullOrWhiteSpace(product.Name) && blueprint is null)
             {
                 _failures.Add(new FileLoadResult(ResultType.Fail,

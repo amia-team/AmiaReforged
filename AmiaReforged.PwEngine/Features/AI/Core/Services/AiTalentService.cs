@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.AI.Core.Models;
 using Anvil.API;
 using Anvil.Services;
 using NWN.Core.NWNX;
@@ -28,7 +29,7 @@ public class AiTalentService
     {
         if (!_isEnabled) return false;
 
-        var state = _stateManager.GetOrCreateState(creature);
+        AiState state = _stateManager.GetOrCreateState(creature);
         if (state.HasFeatBuffed) return false;
 
         // Try feats in priority order

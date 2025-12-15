@@ -16,8 +16,8 @@
       <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.15" />
       <PackageReference Include="NLog" Version="5.4.0" />
       <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
-      <PackageReference Include="NWN.Anvil" Version="8193.37.2" />
-      <PackageReference Include="NWN.Core" Version="8193.37.3" />
+      <PackageReference Include="NWN.Anvil" Version="8193.37.3" />
+      <PackageReference Include="NWN.Core" Version="8193.37.4" />
     </ItemGroup>
 
     <ItemGroup>

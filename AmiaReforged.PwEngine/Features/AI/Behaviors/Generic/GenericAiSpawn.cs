@@ -2,6 +2,7 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using AmiaReforged.PwEngine.Features.AI.Behaviors;
+using AmiaReforged.PwEngine.Features.AI.Core.Models;
 using AmiaReforged.PwEngine.Features.AI.Core.Services;
 using NWN.Core;
 using NWN.Core.NWNX;
@@ -40,13 +41,13 @@ public class GenericAiSpawn : IOnSpawnBehavior
     {
         if (!_isEnabled) return;
 
-        var creature = eventData.Creature;
+        NwCreature creature = eventData.Creature;
 
         // Skip player-controlled creatures
         if (creature.IsPlayerControlled || creature.IsDMAvatar) return;
 
         // Initialize AI state
-        var state = _stateManager.GetOrCreateState(creature);
+        AiState state = _stateManager.GetOrCreateState(creature);
 
         // Delayed initialization (1 second) to allow creature to fully spawn
         NWScript.DelayCommand(1.0f, () =>

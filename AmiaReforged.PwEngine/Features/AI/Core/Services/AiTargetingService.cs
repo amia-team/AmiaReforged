@@ -159,10 +159,10 @@ public class AiTargetingService
     {
         if (!_isEnabled) return null;
 
-        var nearbyTargets = new List<NwCreature>();
+        List<NwCreature> nearbyTargets = new List<NwCreature>();
 
         // Find up to 3 valid hostile targets
-        foreach (var nearby in creature.GetNearestCreatures())
+        foreach (NwCreature nearby in creature.GetNearestCreatures())
         {
             if (nearbyTargets.Count >= 3) break;
 

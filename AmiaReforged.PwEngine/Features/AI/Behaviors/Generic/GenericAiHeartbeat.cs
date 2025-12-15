@@ -3,6 +3,8 @@ using Anvil.API.Events;
 using Anvil.Services;
 using AmiaReforged.PwEngine.Features.AI.Behaviors;
 using AmiaReforged.PwEngine.Features.AI.Core.Extensions;
+using AmiaReforged.PwEngine.Features.AI.Core.Interfaces;
+using AmiaReforged.PwEngine.Features.AI.Core.Models;
 using AmiaReforged.PwEngine.Features.AI.Core.Services;
 using NWN.Core.NWNX;
 
@@ -43,12 +45,12 @@ public class GenericAiHeartbeat : IOnHeartbeatBehavior
     {
         if (!_isEnabled) return;
 
-        var creature = eventData.Creature;
+        NwCreature creature = eventData.Creature;
 
         // Skip player-controlled creatures
         if (creature.IsPlayerControlled || creature.IsDMAvatar) return;
 
-        var state = _stateManager.GetState(creature);
+        AiState? state = _stateManager.GetState(creature);
         if (state == null) return;
 
         // Check for sleep mode (>5 inactive heartbeats)
@@ -60,7 +62,7 @@ public class GenericAiHeartbeat : IOnHeartbeatBehavior
             if (state.InactiveHeartbeats == 100)
             {
                 string message = $"DS AI message: {creature.Name} in {creature.Area?.Name ?? "unknown area"} has been inactive for 10 minutes now.";
-                foreach (var dm in NwModule.Instance.Players.Where(p => p.IsDM))
+                foreach (NwPlayer dm in NwModule.Instance.Players.Where(p => p.IsDM))
                 {
                     dm.SendServerMessage(message);
                 }
@@ -90,7 +92,7 @@ public class GenericAiHeartbeat : IOnHeartbeatBehavior
     private bool PerformAction(NwCreature creature, Core.Models.AiState state)
     {
         // Get or acquire target
-        var target = _targetingService.GetValidTarget(creature, state.CurrentTarget);
+        NwGameObject? target = _targetingService.GetValidTarget(creature, state.CurrentTarget);
 
         if (target == null)
         {
@@ -103,7 +105,7 @@ public class GenericAiHeartbeat : IOnHeartbeatBehavior
         state.CurrentTarget = target;
 
         // Get archetype to determine behavior
-        var archetype = _archetypeService.GetArchetype(creature);
+        IAiArchetype? archetype = _archetypeService.GetArchetype(creature);
         int archetypeValue = archetype != null ?
             _archetypeService.GetArchetype(creature) != null ? 5 : 5 : 5; // Default to hybrid
 
@@ -114,7 +116,7 @@ public class GenericAiHeartbeat : IOnHeartbeatBehavior
         }
 
         // Get spell cache
-        var spellCache = _spellCacheService.GetOrCreateCache(creature);
+        CreatureSpellCache spellCache = _spellCacheService.GetOrCreateCache(creature);
 
         // Casters (archetype 7-10) prioritize spells
         if (archetypeValue >= 7 && spellCache.MaxCasterLevel > 0)
@@ -176,17 +178,17 @@ public class GenericAiHeartbeat : IOnHeartbeatBehavior
         // Start with highest caster level and work down
         for (int cl = spellCache.MaxCasterLevel; cl > 0; cl--)
         {
-            if (!spellCache.SpellsByCasterLevel.TryGetValue(cl, out var spells))
+            if (!spellCache.SpellsByCasterLevel.TryGetValue(cl, out List<Spell>? spells))
                 continue;
 
-            foreach (var spell in spells)
+            foreach (Spell spell in spells)
             {
                 // Check spam limit
                 if (spellCache.HasReachedSpamLimit(spell))
                     continue;
 
                 // Check if we have spell uses
-                var nwSpell = NwSpell.FromSpellId((int)spell);
+                NwSpell? nwSpell = NwSpell.FromSpellId((int)spell);
                 if (nwSpell == null || !creature.HasSpellUse(nwSpell))
                     continue;
 

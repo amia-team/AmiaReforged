@@ -457,7 +457,7 @@ public sealed class NpcShopRepository : INpcShopRepository
             foreach (NpcShopProductDefinition product in definition.Products)
             {
                 // Get blueprint by ItemTag (domain identifier)
-                var blueprint = _itemDefinitions.GetByTag(product.ItemTag);
+                ItemBlueprint? blueprint = _itemDefinitions.GetByTag(product.ItemTag);
 
                 // Get actual NWN ResRef from blueprint, or fall back to ItemTag if no blueprint
                 string nwnResRef = blueprint?.ResRef ?? product.ItemTag;
@@ -482,7 +482,7 @@ public sealed class NpcShopRepository : INpcShopRepository
                 if (product.LocalVariables != null)
                 {
                     // Shop locals override blueprint locals by name
-                    foreach (var shopLocal in product.LocalVariables)
+                    foreach (JsonLocalVariableDefinition shopLocal in product.LocalVariables)
                     {
                         int existingIndex = mergedLocals.FindIndex(l => l.Name == shopLocal.Name);
                         if (existingIndex >= 0)

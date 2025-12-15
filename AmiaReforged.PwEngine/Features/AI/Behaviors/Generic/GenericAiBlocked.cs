@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.AI.Core.Models;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -29,7 +30,7 @@ public class GenericAiBlocked : IOnBlockedBehavior
     {
         if (!_isEnabled) return;
 
-        var creature = eventData.Creature;
+        NwCreature creature = eventData.Creature;
 
         // Skip player-controlled creatures
         if (creature.IsPlayerControlled || creature.IsDMAvatar) return;
@@ -40,7 +41,7 @@ public class GenericAiBlocked : IOnBlockedBehavior
 
         if (blocker == null) return;
 
-        var state = _stateManager.GetState(creature);
+        AiState? state = _stateManager.GetState(creature);
         if (state == null) return;
 
         // Handle door blocking

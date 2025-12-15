@@ -26,7 +26,7 @@ public sealed class HeightChangerModel
         // Option 1+: Associates
         if (_player.ControlledCreature != null)
         {
-            foreach (var associate in _player.ControlledCreature.Associates)
+            foreach (NwCreature associate in _player.ControlledCreature.Associates)
             {
                 string associateTypeLabel = GetAssociateTypeLabel(associate.AssociateType);
                 options.Add(new NuiComboEntry($"{associate.Name} ({associateTypeLabel})", options.Count));
@@ -35,7 +35,7 @@ public sealed class HeightChangerModel
 
         // Option N+: Custom NPCs
         List<NwCreature> customNpcs = GetCustomNpcs();
-        foreach (var npc in customNpcs)
+        foreach (NwCreature npc in customNpcs)
         {
             options.Add(new NuiComboEntry($"{npc.Name} (Bottled Companion)", options.Count));
         }
@@ -123,7 +123,7 @@ public sealed class HeightChangerModel
         // Search for custom NPCs in the area
         if (_player.ControlledCreature.Area != null)
         {
-            foreach (var creature in _player.ControlledCreature.Area.Objects
+            foreach (NwCreature? creature in _player.ControlledCreature.Area.Objects
                 .Where(obj => obj is NwCreature)
                 .Cast<NwCreature>())
             {

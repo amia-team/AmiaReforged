@@ -1,6 +1,7 @@
 using Anvil.API;
 using Anvil.Services;
 using AmiaReforged.PwEngine.Features.AI.Core.Interfaces;
+using AmiaReforged.PwEngine.Features.AI.Core.Models;
 using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Features.AI.Core.Services;
@@ -26,7 +27,7 @@ public class AiArchetypeService
         if (!_isEnabled) return;
 
         // Register all archetype implementations
-        foreach (var archetype in archetypes)
+        foreach (IAiArchetype archetype in archetypes)
         {
             _archetypes[archetype.ArchetypeId] = archetype;
         }
@@ -39,7 +40,7 @@ public class AiArchetypeService
     {
         if (!_isEnabled) return null;
 
-        var state = _stateManager.GetOrCreateState(creature);
+        AiState state = _stateManager.GetOrCreateState(creature);
 
         // Check if archetype already assigned
         if (!string.IsNullOrEmpty(state.ArchetypeId))
@@ -72,7 +73,7 @@ public class AiArchetypeService
         // Process up to 3 classes
         for (int i = 0; i < 3; i++)
         {
-            var classInfo = creature.Classes.ElementAtOrDefault(i);
+            CreatureClassInfo? classInfo = creature.Classes.ElementAtOrDefault(i);
             if (classInfo == null) break;
 
             int levels = classInfo.Level;

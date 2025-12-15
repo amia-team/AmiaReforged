@@ -1,5 +1,6 @@
 using System.Text.Json;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items;
@@ -85,7 +86,7 @@ public sealed class ItemBlueprintLoadingService(IItemDefinitionRepository defini
         }
         if (def.LocalVariables is { Count: > 0 })
         {
-            foreach (var local in def.LocalVariables)
+            foreach (JsonLocalVariableDefinition local in def.LocalVariables)
             {
                 if (string.IsNullOrWhiteSpace(local.Name))
                 {

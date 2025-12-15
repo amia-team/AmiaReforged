@@ -9,34 +9,18 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 public sealed class PropertyRentalPolicy
 {
     private readonly IRentablePropertyRepository _propertyRepository;
-    private readonly IPropertyRentalLimitsProvider? _limitsProvider;
-    private readonly PropertyRentalLimitsConfig? _staticLimitsConfig;
+    private readonly PropertyRentalLimitsConfig _limitsConfig;
 
-    public PropertyRentalPolicy(IRentablePropertyRepository propertyRepository, IPropertyRentalLimitsProvider limitsProvider)
-    {
-        _propertyRepository = propertyRepository;
-        _limitsProvider = limitsProvider;
-    }
-
-    /// <summary>
-    /// Constructor for testing with static configuration.
-    /// </summary>
-    public PropertyRentalPolicy(IRentablePropertyRepository propertyRepository, PropertyRentalLimitsConfig limitsConfig)
-    {
-        _propertyRepository = propertyRepository;
-        _staticLimitsConfig = limitsConfig;
-    }
-
-    /// <summary>
-    /// Constructor for testing with default configuration.
-    /// </summary>
     public PropertyRentalPolicy(IRentablePropertyRepository propertyRepository)
         : this(propertyRepository, PropertyRentalLimitsConfig.Default)
     {
     }
 
-    private PropertyRentalLimitsConfig GetLimitsConfig() =>
-        _limitsProvider?.GetLimits() ?? _staticLimitsConfig ?? PropertyRentalLimitsConfig.Default;
+    public PropertyRentalPolicy(IRentablePropertyRepository propertyRepository, PropertyRentalLimitsConfig limitsConfig)
+    {
+        _propertyRepository = propertyRepository;
+        _limitsConfig = limitsConfig;
+    }
 
     public async Task<RentalDecision> EvaluateAsync(RentPropertyRequest request, RentablePropertySnapshot property,
         PaymentCapabilitySnapshot capabilities, CancellationToken cancellationToken = default)
@@ -49,8 +33,7 @@ public sealed class PropertyRentalPolicy
 
         // Check if tenant already has reached the rental limit for this property category
         PropertyCategory category = property.Definition.Category;
-        PropertyRentalLimitsConfig limitsConfig = GetLimitsConfig();
-        int categoryLimit = limitsConfig.GetLimitForCategory(category);
+        int categoryLimit = _limitsConfig.GetLimitForCategory(category);
 
         if (categoryLimit > 0)
         {
