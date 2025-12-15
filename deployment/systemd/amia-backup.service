@@ -1,0 +1,35 @@
+[Unit]
+Description=Amia Database Backup Service
+Documentation=https://github.com/amia/amia-reforged
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=amia
+Group=amia
+WorkingDirectory=/opt/amia/backup-service
+ExecStart=/opt/amia/backup-service/AmiaReforged.BackupService
+
+# Environment configuration
+EnvironmentFile=-/opt/amia/backup-service/.env
+
+# Restart policy
+Restart=on-failure
+RestartSec=30
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+# Allow write access to backup directory
+ReadWritePaths=/var/backups/amia
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=amia-backup
+
+[Install]
+WantedBy=multi-user.target
