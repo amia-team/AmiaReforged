@@ -9,11 +9,34 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 public sealed class PropertyRentalPolicy
 {
     private readonly IRentablePropertyRepository _propertyRepository;
+    private readonly IPropertyRentalLimitsProvider? _limitsProvider;
+    private readonly PropertyRentalLimitsConfig? _staticLimitsConfig;
 
-    public PropertyRentalPolicy(IRentablePropertyRepository propertyRepository)
+    public PropertyRentalPolicy(IRentablePropertyRepository propertyRepository, IPropertyRentalLimitsProvider limitsProvider)
     {
         _propertyRepository = propertyRepository;
+        _limitsProvider = limitsProvider;
     }
+
+    /// <summary>
+    /// Constructor for testing with static configuration.
+    /// </summary>
+    public PropertyRentalPolicy(IRentablePropertyRepository propertyRepository, PropertyRentalLimitsConfig limitsConfig)
+    {
+        _propertyRepository = propertyRepository;
+        _staticLimitsConfig = limitsConfig;
+    }
+
+    /// <summary>
+    /// Constructor for testing with default configuration.
+    /// </summary>
+    public PropertyRentalPolicy(IRentablePropertyRepository propertyRepository)
+        : this(propertyRepository, PropertyRentalLimitsConfig.Default)
+    {
+    }
+
+    private PropertyRentalLimitsConfig GetLimitsConfig() =>
+        _limitsProvider?.GetLimits() ?? _staticLimitsConfig ?? PropertyRentalLimitsConfig.Default;
 
     public async Task<RentalDecision> EvaluateAsync(RentPropertyRequest request, RentablePropertySnapshot property,
         PaymentCapabilitySnapshot capabilities, CancellationToken cancellationToken = default)
@@ -24,14 +47,26 @@ public sealed class PropertyRentalPolicy
                 "The property is not currently available for rent.");
         }
 
-        // Check if tenant already has an active rental
-        List<RentablePropertySnapshot> existingRentals =
-            await _propertyRepository.GetPropertiesRentedByTenantAsync(request.Tenant, cancellationToken);
+        // Check if tenant already has reached the rental limit for this property category
+        PropertyCategory category = property.Definition.Category;
+        PropertyRentalLimitsConfig limitsConfig = GetLimitsConfig();
+        int categoryLimit = limitsConfig.GetLimitForCategory(category);
 
-        if (existingRentals.Any())
+        if (categoryLimit > 0)
         {
-            return RentalDecision.Denied(RentalDecisionReason.TenantAlreadyHasActiveRental,
-                "You already have an active rental. You can only rent one property at a time.");
+            List<RentablePropertySnapshot> existingRentalsInCategory =
+                await _propertyRepository.GetPropertiesRentedByTenantInCategoryAsync(
+                    request.Tenant, category, cancellationToken);
+
+            if (existingRentalsInCategory.Count >= categoryLimit)
+            {
+                string categoryName = GetCategoryDisplayName(category);
+                string message = categoryLimit == 1
+                    ? $"You already have a {categoryName} property rented. You can only rent one {categoryName} property at a time."
+                    : $"You have reached the maximum number of {categoryName} properties you can rent ({categoryLimit}).";
+
+                return RentalDecision.Denied(RentalDecisionReason.TenantAlreadyHasActiveRentalInCategory, message);
+            }
         }
 
         return request.PaymentMethod switch
@@ -41,6 +76,15 @@ public sealed class PropertyRentalPolicy
             _ => RentalDecision.Denied(RentalDecisionReason.PaymentMethodNotAllowed, "Unsupported payment method.")
         };
     }
+
+    private static string GetCategoryDisplayName(PropertyCategory category) => category switch
+    {
+        PropertyCategory.Residential => "residential",
+        PropertyCategory.Commercial => "commercial",
+        PropertyCategory.GuildHall => "guild hall",
+        PropertyCategory.Industrial => "industrial",
+        _ => "property"
+    };
 
     /// <summary>
     /// Validates that a rent payment is allowed.

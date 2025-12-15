@@ -19,4 +19,12 @@ public interface IRentablePropertyRepository
     /// Gets all properties currently rented by the specified tenant.
     /// </summary>
     Task<List<RentablePropertySnapshot>> GetPropertiesRentedByTenantAsync(PersonaId tenantId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all properties of a specific category currently rented by the specified tenant.
+    /// </summary>
+    Task<List<RentablePropertySnapshot>> GetPropertiesRentedByTenantInCategoryAsync(
+        PersonaId tenantId,
+        PropertyCategory category,
+        CancellationToken cancellationToken = default);
 }

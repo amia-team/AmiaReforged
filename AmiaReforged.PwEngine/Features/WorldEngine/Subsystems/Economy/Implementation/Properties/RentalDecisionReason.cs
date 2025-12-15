@@ -12,5 +12,6 @@ public enum RentalDecisionReason
     CoinhouseAccountRequired,
     InsufficientDirectFunds,
     TenantAlreadyHasActiveRental,
+    TenantAlreadyHasActiveRentalInCategory,
     ExcessivePrepayment
 }

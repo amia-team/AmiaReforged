@@ -79,6 +79,8 @@ public sealed class RentPropertyCommandHandler : ICommandHandler<RentPropertyCom
             "You do not have enough gold on hand to rent this property.",
         RentalDecisionReason.TenantAlreadyHasActiveRental =>
             "You already have an active rental. You can only rent one property at a time.",
+        RentalDecisionReason.TenantAlreadyHasActiveRentalInCategory =>
+            "You have reached the rental limit for this property type.",
         _ => "Unable to process the property rental request."
     };
 }

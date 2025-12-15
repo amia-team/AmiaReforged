@@ -21,8 +21,9 @@ public class PropertyRentalPolicyTests
         _repositoryMock = new Mock<IRentablePropertyRepository>();
         _policy = new PropertyRentalPolicy(_repositoryMock.Object);
 
-        // By default, return empty list (no existing rentals)
-        _repositoryMock.Setup(r => r.GetPropertiesRentedByTenantAsync(It.IsAny<PersonaId>(), It.IsAny<CancellationToken>()))
+        // By default, return empty list (no existing rentals in any category)
+        _repositoryMock.Setup(r => r.GetPropertiesRentedByTenantInCategoryAsync(
+                It.IsAny<PersonaId>(), It.IsAny<PropertyCategory>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<RentablePropertySnapshot>());
     }
 
@@ -120,16 +121,164 @@ public class PropertyRentalPolicyTests
         Assert.That(evict, Is.False);
     }
 
+    [Test]
+    public async Task Evaluate_DeniesRental_WhenTenantAlreadyHasPropertyInSameCategory()
+    {
+        RentablePropertySnapshot existingResidential = CreateSnapshot(
+            status: PropertyOccupancyStatus.Rented,
+            category: PropertyCategory.Residential);
+
+        _repositoryMock.Setup(r => r.GetPropertiesRentedByTenantInCategoryAsync(
+                _tenant, PropertyCategory.Residential, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<RentablePropertySnapshot> { existingResidential });
+
+        RentablePropertySnapshot newProperty = CreateSnapshot(
+            status: PropertyOccupancyStatus.Vacant,
+            category: PropertyCategory.Residential);
+
+        RentPropertyRequest request = new(_tenant, newProperty.Definition.Id, RentalPaymentMethod.OutOfPocket,
+            DateOnly.FromDateTime(DateTime.UtcNow));
+        PaymentCapabilitySnapshot capabilities = new(true, true);
+
+        RentalDecision decision = await _policy.EvaluateAsync(request, newProperty, capabilities);
+
+        Assert.That(decision.Success, Is.False);
+        Assert.That(decision.Reason, Is.EqualTo(RentalDecisionReason.TenantAlreadyHasActiveRentalInCategory));
+    }
+
+    [Test]
+    public async Task Evaluate_AllowsRental_WhenTenantHasPropertyInDifferentCategory()
+    {
+        RentablePropertySnapshot existingResidential = CreateSnapshot(
+            status: PropertyOccupancyStatus.Rented,
+            category: PropertyCategory.Residential);
+
+        // Has a residential property
+        _repositoryMock.Setup(r => r.GetPropertiesRentedByTenantInCategoryAsync(
+                _tenant, PropertyCategory.Residential, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<RentablePropertySnapshot> { existingResidential });
+
+        // No commercial property
+        _repositoryMock.Setup(r => r.GetPropertiesRentedByTenantInCategoryAsync(
+                _tenant, PropertyCategory.Commercial, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<RentablePropertySnapshot>());
+
+        RentablePropertySnapshot newCommercialProperty = CreateSnapshot(
+            status: PropertyOccupancyStatus.Vacant,
+            category: PropertyCategory.Commercial);
+
+        RentPropertyRequest request = new(_tenant, newCommercialProperty.Definition.Id, RentalPaymentMethod.OutOfPocket,
+            DateOnly.FromDateTime(DateTime.UtcNow));
+        PaymentCapabilitySnapshot capabilities = new(true, true);
+
+        RentalDecision decision = await _policy.EvaluateAsync(request, newCommercialProperty, capabilities);
+
+        Assert.That(decision.Success, Is.True);
+    }
+
+    [Test]
+    public async Task Evaluate_AllowsUnlimitedRentals_WhenCategoryLimitIsZero()
+    {
+        PropertyRentalLimitsConfig unlimitedConfig = new() { ResidentialLimit = 0 };
+        PropertyRentalPolicy unlimitedPolicy = new(_repositoryMock.Object, unlimitedConfig);
+
+        // Already has 5 residential properties
+        List<RentablePropertySnapshot> existingProperties = Enumerable.Range(0, 5)
+            .Select(_ => CreateSnapshot(status: PropertyOccupancyStatus.Rented, category: PropertyCategory.Residential))
+            .ToList();
+
+        _repositoryMock.Setup(r => r.GetPropertiesRentedByTenantInCategoryAsync(
+                _tenant, PropertyCategory.Residential, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingProperties);
+
+        RentablePropertySnapshot newProperty = CreateSnapshot(
+            status: PropertyOccupancyStatus.Vacant,
+            category: PropertyCategory.Residential);
+
+        RentPropertyRequest request = new(_tenant, newProperty.Definition.Id, RentalPaymentMethod.OutOfPocket,
+            DateOnly.FromDateTime(DateTime.UtcNow));
+        PaymentCapabilitySnapshot capabilities = new(true, true);
+
+        RentalDecision decision = await unlimitedPolicy.EvaluateAsync(request, newProperty, capabilities);
+
+        Assert.That(decision.Success, Is.True);
+    }
+
+    [Test]
+    public async Task Evaluate_RespectsCustomCategoryLimits()
+    {
+        PropertyRentalLimitsConfig customConfig = new()
+        {
+            ResidentialLimit = 2,
+            CommercialLimit = 3
+        };
+        PropertyRentalPolicy customPolicy = new(_repositoryMock.Object, customConfig);
+
+        // Already has 1 residential property (limit is 2)
+        _repositoryMock.Setup(r => r.GetPropertiesRentedByTenantInCategoryAsync(
+                _tenant, PropertyCategory.Residential, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<RentablePropertySnapshot>
+            {
+                CreateSnapshot(status: PropertyOccupancyStatus.Rented, category: PropertyCategory.Residential)
+            });
+
+        RentablePropertySnapshot newProperty = CreateSnapshot(
+            status: PropertyOccupancyStatus.Vacant,
+            category: PropertyCategory.Residential);
+
+        RentPropertyRequest request = new(_tenant, newProperty.Definition.Id, RentalPaymentMethod.OutOfPocket,
+            DateOnly.FromDateTime(DateTime.UtcNow));
+        PaymentCapabilitySnapshot capabilities = new(true, true);
+
+        RentalDecision decision = await customPolicy.EvaluateAsync(request, newProperty, capabilities);
+
+        // Should succeed because tenant has 1/2 residential properties
+        Assert.That(decision.Success, Is.True);
+    }
+
+    [Test]
+    public async Task Evaluate_DeniesRental_WhenCustomLimitReached()
+    {
+        PropertyRentalLimitsConfig customConfig = new()
+        {
+            ResidentialLimit = 2
+        };
+        PropertyRentalPolicy customPolicy = new(_repositoryMock.Object, customConfig);
+
+        // Already has 2 residential properties (at limit)
+        _repositoryMock.Setup(r => r.GetPropertiesRentedByTenantInCategoryAsync(
+                _tenant, PropertyCategory.Residential, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<RentablePropertySnapshot>
+            {
+                CreateSnapshot(status: PropertyOccupancyStatus.Rented, category: PropertyCategory.Residential),
+                CreateSnapshot(status: PropertyOccupancyStatus.Rented, category: PropertyCategory.Residential)
+            });
+
+        RentablePropertySnapshot newProperty = CreateSnapshot(
+            status: PropertyOccupancyStatus.Vacant,
+            category: PropertyCategory.Residential);
+
+        RentPropertyRequest request = new(_tenant, newProperty.Definition.Id, RentalPaymentMethod.OutOfPocket,
+            DateOnly.FromDateTime(DateTime.UtcNow));
+        PaymentCapabilitySnapshot capabilities = new(true, true);
+
+        RentalDecision decision = await customPolicy.EvaluateAsync(request, newProperty, capabilities);
+
+        Assert.That(decision.Success, Is.False);
+        Assert.That(decision.Reason, Is.EqualTo(RentalDecisionReason.TenantAlreadyHasActiveRentalInCategory));
+    }
+
     private static RentablePropertySnapshot CreateSnapshot(
         PropertyOccupancyStatus status = PropertyOccupancyStatus.Vacant,
         bool allowsCoinhouse = true,
-        bool allowsDirect = true)
+        bool allowsDirect = true,
+        PropertyCategory category = PropertyCategory.Residential)
     {
         RentablePropertyDefinition definition = new(
             PropertyId.New(),
             "cordor_townhouse",
             new SettlementTag("cordor"),
-            PropertyCategory.Residential,
+            category,
             GoldAmount.Parse(500),
             allowsCoinhouse,
             allowsDirect,
