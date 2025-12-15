@@ -17,9 +17,13 @@ RUN dotnet publish -c Release -o /app/publish --no-restore
 FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
 WORKDIR /app
 
-# Install PostgreSQL client for pg_dump
+# Install PostgreSQL 18 client for pg_dump (must match server version)
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends postgresql-client git && \
+    apt-get install -y --no-install-recommends gnupg curl ca-certificates && \
+    curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-keyring.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends postgresql-client-18 git && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy published application
