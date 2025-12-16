@@ -38,7 +38,7 @@ public class BackupWorker : BackgroundService
 
         foreach (DatabaseConfig db in _backupConfig.Databases)
         {
-            _logger.LogInformation("  - {Name}: {Database} on {Host}:{Port}", 
+            _logger.LogInformation("  - {Name}: {Database} on {Host}:{Port}",
                 db.Name, db.GetDatabase(), db.GetHost(), db.GetPort());
         }
 
@@ -52,7 +52,7 @@ public class BackupWorker : BackgroundService
             {
                 TimeSpan delay = TimeSpan.FromMinutes(_backupConfig.IntervalMinutes);
                 _logger.LogInformation("Next backup scheduled in {Minutes} minutes", _backupConfig.IntervalMinutes);
-                
+
                 await Task.Delay(delay, stoppingToken);
                 await RunBackupCycleAsync(stoppingToken);
             }
@@ -75,7 +75,7 @@ public class BackupWorker : BackgroundService
     private async Task RunBackupCycleAsync(CancellationToken cancellationToken)
     {
         _logger.LogInformation("Starting backup cycle at {Time}", DateTime.UtcNow);
-        
+
         DateTime backupTime = DateTime.UtcNow;
         string timestamp = backupTime.ToString("yyyy-MM-dd_HH-mm-ss");
         int successCount = 0;
@@ -88,13 +88,13 @@ public class BackupWorker : BackgroundService
                 break;
             }
 
-            string fileName = $"{dbConfig.Name}_{timestamp}.sql";
+            string fileName = $"{dbConfig.Name}.sql";
             string outputPath = Path.Combine(_backupConfig.BackupDirectory, fileName);
 
             try
             {
                 bool success = await _backupService.BackupDatabaseAsync(dbConfig, outputPath, cancellationToken);
-                
+
                 if (success)
                 {
                     successCount++;
@@ -118,7 +118,7 @@ public class BackupWorker : BackgroundService
             // Commit and push to git
             _logger.LogInformation("Committing backups to git");
             bool pushSuccess = await _gitService.CommitAndPushAsync(cancellationToken);
-            
+
             if (pushSuccess)
             {
                 _logger.LogInformation("Backup cycle completed successfully");

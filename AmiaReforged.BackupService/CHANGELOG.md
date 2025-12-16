@@ -1,5 +1,21 @@
 # AmiaReforged.BackupService Changelog
 
+## [1.0.2] - 2025-12-15
+
+### Added
+- Docker Compose configuration file (`docker-compose.yml`)
+- Environment variable template file (`.env.example`)
+- Comprehensive documentation for Docker deployment
+
+### Documentation
+- Updated README with correct environment variable names (`GIT_USER` and `GIT_TOKEN`)
+- Added documentation for environment variable overrides (e.g., `Backup__IntervalMinutes=30`)
+- Added instructions for initializing the backup git repository
+
+### Notes
+- LibGit2Sharp requires explicit git credentials - it does NOT use system git credential helpers
+- The backup volume must contain an initialized git repository with a configured remote
+
 ## [1.0.0] - 2025-12-15
 
 ### Added

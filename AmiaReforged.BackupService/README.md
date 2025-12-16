@@ -80,23 +80,68 @@ Configure the service using `appsettings.json` or environment variables:
 
 ## Running the Container
 
+### Using Docker Compose (Recommended)
+
+A `docker-compose.yml` is provided. Create a `.env` file from `.env.example` and run:
+
+```bash
+# Initialize the backup directory with a git repository first
+mkdir -p /var/backups/amia/sql
+cd /var/backups/amia
+git init
+git remote add origin https://github.com/your-org/your-backup-repo.git
+
+# Start the service
+docker-compose up -d
+```
+
+### Using Docker Run
+
 ```bash
 docker run -d \
   --name amia-backup \
-  -v /path/to/backups:/var/backups/amia \
-  -v /path/to/.env:/app/.env:ro \
+  -v /var/backups/amia:/var/backups/amia \
+  -e POSTGRES_HOST=your-db-host \
+  -e POSTGRES_PASSWORD=your-password \
+  -e GIT_USER=your-git-username \
+  -e GIT_TOKEN=your-personal-access-token \
   --restart unless-stopped \
   amia-backup-service:latest
 ```
 
+**Important:** The backup volume (`/var/backups/amia`) must contain an initialized git repository with a configured remote for push to work.
+
 ## Environment Variables
 
-Create a `.env` file with sensitive configuration:
+Create a `.env` file with sensitive configuration (see `.env.example` for a full template):
 
 ```env
-DB_PASSWORD=your_secure_password
-GIT_USERNAME=backup-bot
-GIT_TOKEN=your_git_token
+# Database credentials
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+POSTGRES_DB=amia
+POSTGRES_USER=amia
+POSTGRES_PASSWORD=your_secure_password
+
+# Git authentication (REQUIRED for push)
+# LibGit2Sharp does NOT use system git credential helpers!
+GIT_USER=backup-bot
+GIT_TOKEN=your_personal_access_token
+```
+
+### Environment Variable Overrides for JSON Config
+
+The service supports .NET's standard environment variable configuration overrides. Use double underscore (`__`) as the hierarchy separator:
+
+```env
+# Override backup interval to 30 minutes
+Backup__IntervalMinutes=30
+
+# Override git branch
+Backup__GitBranch=develop
+
+# Override database-specific settings (0-indexed array)
+Backup__Databases__0__DefaultHost=custom-db-host
 ```
 
 ## Development
