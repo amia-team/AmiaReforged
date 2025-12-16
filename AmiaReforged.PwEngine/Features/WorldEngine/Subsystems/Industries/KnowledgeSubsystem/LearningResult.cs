@@ -1,4 +1,4 @@
-namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
+namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
 
 public enum LearningResult
 {

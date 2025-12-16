@@ -1,9 +1,9 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.KnowledgeSubsystem;
 using Anvil.API;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Helpers;

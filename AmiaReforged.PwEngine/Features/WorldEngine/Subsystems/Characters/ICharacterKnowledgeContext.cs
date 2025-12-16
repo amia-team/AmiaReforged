@@ -1,5 +1,5 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.KnowledgeSubsystem;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
 

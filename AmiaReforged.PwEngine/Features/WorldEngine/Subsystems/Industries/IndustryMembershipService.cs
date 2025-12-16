@@ -2,7 +2,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.Events;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.KnowledgeSubsystem;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
 using Anvil.Services;
 using NLog;
 

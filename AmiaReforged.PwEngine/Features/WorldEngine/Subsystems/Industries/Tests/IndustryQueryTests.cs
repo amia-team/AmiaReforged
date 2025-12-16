@@ -2,7 +2,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.KnowledgeSubsystem;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.Tests;

@@ -1,8 +1,8 @@
 using System.Numerics;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.KnowledgeSubsystem;
 using Anvil.API;
 using NLog;
 

@@ -5,8 +5,8 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Character
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.KnowledgeSubsystem;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Integration;

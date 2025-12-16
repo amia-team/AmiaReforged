@@ -1,7 +1,7 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.KnowledgeSubsystem;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
