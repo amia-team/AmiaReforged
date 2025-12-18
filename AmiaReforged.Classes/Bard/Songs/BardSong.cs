@@ -43,11 +43,8 @@ public class BardSong : ISpell
 
         bard.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(FnfBardSong));
 
-        IEnumerable<NwCreature> friendlyCreatures =
-            bard.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal, false)
-            .Where(bard.IsReactionTypeFriendly);
-
-        foreach (NwCreature ally in friendlyCreatures)
+        foreach (NwCreature ally in bard.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal, false)
+                     .Where(bard.IsReactionTypeFriendly))
         {
             if (ally.ActiveEffects.Any(e => e.EffectType is EffectType.Silence or EffectType.Deaf)) continue;
 
