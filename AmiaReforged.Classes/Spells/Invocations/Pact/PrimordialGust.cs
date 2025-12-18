@@ -64,7 +64,7 @@ public class PrimordialGust
             {
                 ApplyEffectToObject(DURATION_TYPE_INSTANT, primordialDamage, currentTarget);
                 ApplyEffectToObject(DURATION_TYPE_INSTANT, primordialVfx, currentTarget);
-                currentTarget = GetNextObjectInShape(SHAPE_SPELLCONE, 11f, location, TRUE);
+                currentTarget = GetNextObjectInShape(SHAPE_SPELLCONE, 11f, location, TRUE, validObjectTypes);
                 continue;
             }
 
@@ -72,7 +72,7 @@ public class PrimordialGust
             {
                 ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_HEAD_FIRE), currentTarget);
                 ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectHeal(damage), currentTarget);
-                currentTarget = GetNextObjectInShape(SHAPE_SPELLCONE, 11f, location, TRUE);
+                currentTarget = GetNextObjectInShape(SHAPE_SPELLCONE, 11f, location, TRUE, validObjectTypes);
                 continue;
             }
 
