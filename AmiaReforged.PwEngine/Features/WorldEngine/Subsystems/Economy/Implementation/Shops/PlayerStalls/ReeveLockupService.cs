@@ -15,7 +15,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 
 public interface IReeveLockupRecipient
 {
-    Task<bool> ReceiveItemAsync(byte[] rawItemData, PersonaId persona, CancellationToken cancellationToken);
+    Task<bool> ReceiveItemAsync(byte[] rawItemData, PersonaId persona, CancellationToken cancellationToken, int quantity = 1);
 }
 
 public sealed record ReeveLockupItemSummary(long ItemId, string DisplayName, string? ResRef);
@@ -522,7 +522,7 @@ internal sealed class NwReeveLockupRecipient : IReeveLockupRecipient
         _creature = creature ?? throw new ArgumentNullException(nameof(creature));
     }
 
-    public async Task<bool> ReceiveItemAsync(byte[] rawItemData, PersonaId persona, CancellationToken cancellationToken)
+    public async Task<bool> ReceiveItemAsync(byte[] rawItemData, PersonaId persona, CancellationToken cancellationToken, int quantity = 1)
     {
         ArgumentNullException.ThrowIfNull(rawItemData);
 
@@ -545,11 +545,20 @@ internal sealed class NwReeveLockupRecipient : IReeveLockupRecipient
 
             string jsonText = Encoding.UTF8.GetString(rawItemData);
             Json json = Json.Parse(jsonText);
-            NwItem? item = json.ToNwObject<NwItem>(location, _creature);
+
+            // Create the item on the ground first (not directly in inventory).
+            // This prevents auto-stacking with existing inventory items before
+            // we can set the correct stack size.
+            NwItem? item = json.ToNwObject<NwItem>(location);
             if (item is null)
             {
                 return false;
             }
+
+            // Set the stack size before transferring to inventory.
+            // Each StoredItem entry represents a single unit, so default quantity is 1.
+            item.StackSize = Math.Max(1, quantity);
+            _creature.AcquireItem(item);
 
             NWScript.SetLocalString(item, PlayerStallItemLocals.ConsignorPersonaId, persona.ToString());
             return true;

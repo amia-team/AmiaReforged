@@ -49,14 +49,18 @@ internal static class StallProductRestorer
         {
             string jsonText = Encoding.UTF8.GetString(product.ItemData);
             Json json = Json.Parse(jsonText);
-            NwItem? item = json.ToNwObject<NwItem>(location, owner);
+
+            // Create the item on the ground first (not directly in inventory).
+            // This prevents auto-stacking with existing inventory items before
+            // we can set the correct stack size for partial purchases.
+            NwItem? item = json.ToNwObject<NwItem>(location);
 
             if (item is not null && item.IsValid)
             {
-                // Set the stack size to the purchased quantity.
-                // This prevents buyers from receiving the entire original stack
-                // when purchasing partial quantities from stacked items.
+                // Set the stack size to the purchased quantity while the item
+                // is still on the ground, before transferring to inventory.
                 item.StackSize = quantity;
+                owner.AcquireItem(item);
             }
 
             return item;

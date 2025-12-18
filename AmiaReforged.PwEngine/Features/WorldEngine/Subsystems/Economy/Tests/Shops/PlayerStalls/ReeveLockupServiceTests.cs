@@ -345,7 +345,7 @@ public sealed class ReeveLockupServiceTests
 
         public Func<byte[], bool>? ShouldAccept { get; set; }
 
-        public Task<bool> ReceiveItemAsync(byte[] rawItemData, PersonaId persona, CancellationToken cancellationToken)
+        public Task<bool> ReceiveItemAsync(byte[] rawItemData, PersonaId persona, CancellationToken cancellationToken, int quantity = 1)
         {
             Invocations++;
             bool result = ShouldAccept?.Invoke(rawItemData) ?? true;
