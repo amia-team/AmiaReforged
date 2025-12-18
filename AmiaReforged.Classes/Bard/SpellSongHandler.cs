@@ -84,6 +84,9 @@ public class SpellSongHandler
             return;
         }
 
+        // Return early for normal Bard Song, since that one spends a charge on its own
+        if (eventData.Spell == NwSpell.FromSpellType(SongConstants.BardSong)) return;
+
         bard.DecrementRemainingFeatUses(_bardSongFeat);
     }
 }
