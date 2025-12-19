@@ -259,9 +259,9 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                         Height = 18f,
                         HorizontalAlign = NuiHAlign.Center
                     },
-                    BuildVectorRow("X", TransformXString, TransformX, -100f, 100f, "player_plc_trans_x_slider"),
-                    BuildVectorRow("Y", TransformYString, TransformY, -100f, 100f, "player_plc_trans_y_slider"),
-                    BuildVectorRow("Z", TransformZString, TransformZ, -100f, 100f, "player_plc_trans_z_slider"),
+                    BuildVectorRow("X", TransformXString, TransformX, -10f, 10f, "player_plc_trans_x_slider"),
+                    BuildVectorRow("Y", TransformYString, TransformY, -10f, 10f, "player_plc_trans_y_slider"),
+                    BuildVectorRow("Z", TransformZString, TransformZ, -10f, 10f, "player_plc_trans_z_slider"),
                     new NuiSpacer { Height = SectionSpacing },
                     new NuiLabel("Visual Rotation")
                     {

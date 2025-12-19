@@ -1642,7 +1642,19 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             }
         }
 
-        if (buffer.Count == 0 || (buffer.Count == 1 && (buffer[0] == '-' || buffer[0] == '+')))
+        if (buffer.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        // Allow a standalone '-' so users can continue typing negative numbers
+        if (buffer.Count == 1 && buffer[0] == '-')
+        {
+            return "-";
+        }
+
+        // Strip standalone '+' since it's redundant
+        if (buffer.Count == 1 && buffer[0] == '+')
         {
             return string.Empty;
         }
