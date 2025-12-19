@@ -243,9 +243,9 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                         Height = 18f,
                         HorizontalAlign = NuiHAlign.Center
                     },
-                    BuildVectorRow("X", PositionXString, PositionX, -100f, 100f, "player_plc_pos_x_slider"),
-                    BuildVectorRow("Y", PositionYString, PositionY, -100f, 100f, "player_plc_pos_y_slider"),
-                    BuildVectorRow("Z", PositionZString, PositionZ, -100f, 100f, "player_plc_pos_z_slider"),
+                    BuildVectorRow("X", PositionXString, PositionX, -10000f, 10000f, "player_plc_pos_x_slider"),
+                    BuildVectorRow("Y", PositionYString, PositionY, -10000f, 10000f, "player_plc_pos_y_slider"),
+                    BuildVectorRow("Z", PositionZString, PositionZ, -10000f, 10000f, "player_plc_pos_z_slider"),
                     new NuiSpacer { Height = SectionSpacing },
                     new NuiLabel("Orientation")
                     {
@@ -259,9 +259,9 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                         Height = 18f,
                         HorizontalAlign = NuiHAlign.Center
                     },
-                    BuildVectorRow("X", TransformXString, TransformX, -10f, 10f, "player_plc_trans_x_slider"),
-                    BuildVectorRow("Y", TransformYString, TransformY, -10f, 10f, "player_plc_trans_y_slider"),
-                    BuildVectorRow("Z", TransformZString, TransformZ, -10f, 10f, "player_plc_trans_z_slider"),
+                    BuildVectorRow("X", TransformXString, TransformX, -100f, 100f, "player_plc_trans_x_slider"),
+                    BuildVectorRow("Y", TransformYString, TransformY, -100f, 100f, "player_plc_trans_y_slider"),
+                    BuildVectorRow("Z", TransformZString, TransformZ, -100f, 100f, "player_plc_trans_z_slider"),
                     new NuiSpacer { Height = SectionSpacing },
                     new NuiLabel("Visual Rotation")
                     {
