@@ -516,6 +516,8 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             Token().SetBindValue(View.StatusMessage, $"Recovered '{placeable.Name}'.");
             UpdateSelection(null);
         });
+
+        RefreshBlueprints();
     }
 
     private void HandleRecoverAllClick()
@@ -698,6 +700,8 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             Token().SetBindValue(View.StatusMessage, statusMessage);
             _player.SendServerMessage(statusMessage, ColorConstants.Green);
         });
+        RefreshBlueprints();
+
     }
 
     private NwPlaceable? FindPlaceableByDatabaseId(NwArea area, long databaseId)
