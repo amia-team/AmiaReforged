@@ -45,13 +45,15 @@ internal sealed class PlaceableToolModel
             }
             LocalVariableInt healthOverrideVar = item.GetObjectVariable<LocalVariableInt>("health_override");
 
-
             string displayName = item.Name;
             int appearance = ResolveAppearance(item);
             bool isPlot = item.GetObjectVariable<LocalVariableBool>("is_plot").HasValue && item.GetObjectVariable<LocalVariableBool>("is_plot").Value;
             bool isStatic = item.GetObjectVariable<LocalVariableBool>("is_static").HasValue && item.GetObjectVariable<LocalVariableBool>("is_static").Value;
 
-            results.Add(new PlaceableBlueprint(item, resrefVar.Value!, displayName, appearance, healthOverrideVar, isPlot, isStatic));
+            // Serialize item data now while the item reference is still valid
+            byte[]? serializedItemData = item.Serialize();
+
+            results.Add(new PlaceableBlueprint(item, resrefVar.Value!, displayName, appearance, serializedItemData, healthOverrideVar, isPlot, isStatic));
         }
 
         return results

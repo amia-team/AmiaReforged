@@ -7,6 +7,7 @@ internal sealed record PlaceableBlueprint(
     string ResRef,
     string DisplayName,
     int Appearance,
+    byte[]? SerializedItemData = null,
     int HealthOverride = -1,
     bool IsPlot = false,
     bool IsStatic = false);

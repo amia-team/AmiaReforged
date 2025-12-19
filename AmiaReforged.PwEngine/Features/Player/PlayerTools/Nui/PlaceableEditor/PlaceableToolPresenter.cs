@@ -312,18 +312,23 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         EnsureCharacterAssociation(placeable);
 
         // Store serialized source item data on the placeable for later persistence
+        // Use the pre-serialized data from blueprint collection time since the item reference
+        // may become invalid after previous spawns destroy their source items
+        if (blueprint.SerializedItemData is not null && blueprint.SerializedItemData.Length > 0)
+        {
+            // Store as base64 string in local variable so it persists with the placeable
+            string base64Data = Convert.ToBase64String(blueprint.SerializedItemData);
+            placeable.GetObjectVariable<LocalVariableString>(SourceItemDataLocalString).Value = base64Data;
+            Trace($"Stored source item data ({blueprint.SerializedItemData.Length} bytes) for placeable {placeable.Name}");
+        }
+        else
+        {
+            Log.Warn($"Blueprint '{blueprint.DisplayName}' has no serialized item data, placeable will not be recoverable.");
+        }
+
+        // Remove the source item from the player's inventory now that it's placed
         if (blueprint.SourceItem.IsValid)
         {
-            byte[]? itemSerialized = blueprint.SourceItem.Serialize();
-            if (itemSerialized is not null && itemSerialized.Length > 0)
-            {
-                // Store as base64 string in local variable so it persists with the placeable
-                string base64Data = Convert.ToBase64String(itemSerialized);
-                placeable.GetObjectVariable<LocalVariableString>(SourceItemDataLocalString).Value = base64Data;
-                Trace($"Stored source item data ({itemSerialized.Length} bytes) for placeable {placeable.Name}");
-            }
-
-            // Remove the source item from the player's inventory now that it's placed
             blueprint.SourceItem.Destroy();
         }
 
