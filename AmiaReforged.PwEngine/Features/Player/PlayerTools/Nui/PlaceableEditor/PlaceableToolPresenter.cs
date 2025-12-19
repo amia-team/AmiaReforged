@@ -326,7 +326,12 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             Log.Warn($"Blueprint '{blueprint.DisplayName}' has no serialized item data, placeable will not be recoverable.");
         }
 
-        // Remove the source item from the player's inventory now that it's placed
+
+        // Remove the placed blueprint from our local list immediately since Destroy() is deferred
+        _blueprints.RemoveAll(bp => bp.SourceItem == blueprint.SourceItem);
+        ApplyBlueprintFilter();
+
+
         if (blueprint.SourceItem.IsValid)
         {
             blueprint.SourceItem.Destroy();
@@ -349,7 +354,6 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         UpdateSelection(placeable);
         Token().SetBindValue(View.StatusMessage,
             $"Spawned '{placeable.Name}'.");
-        RefreshBlueprints();
     }
 
     private void BeginSelectExisting()
@@ -699,8 +703,9 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
             Token().SetBindValue(View.StatusMessage, statusMessage);
             _player.SendServerMessage(statusMessage, ColorConstants.Green);
+            RefreshBlueprints();
+
         });
-        RefreshBlueprints();
 
     }
 
