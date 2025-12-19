@@ -485,7 +485,51 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         }
 
         NwPlaceable placeable = _lastSelection;
-        Token().SetBindValue(View.StatusMessage, $"Recovering '{placeable.Name}'...");
+        string placeableName = placeable.Name;
+
+        // Get the source item data from the placeable's local variable
+        string? base64ItemData = placeable.GetObjectVariable<LocalVariableString>(SourceItemDataLocalString).Value;
+        if (string.IsNullOrEmpty(base64ItemData))
+        {
+            Token().SetBindValue(View.StatusMessage, $"'{placeableName}' has no source item data, cannot recover.");
+            Log.Warn($"Placeable {placeableName} has no source item data stored, cannot recover item.");
+            return;
+        }
+
+        byte[] itemData;
+        try
+        {
+            itemData = Convert.FromBase64String(base64ItemData);
+        }
+        catch (FormatException ex)
+        {
+            Token().SetBindValue(View.StatusMessage, $"'{placeableName}' has invalid item data, cannot recover.");
+            Log.Error(ex, $"Failed to decode base64 item data for placeable {placeableName}");
+            return;
+        }
+
+        // Deserialize the item
+        NwItem? item = NwItem.Deserialize(itemData);
+        if (item == null)
+        {
+            Token().SetBindValue(View.StatusMessage, $"Failed to deserialize item for '{placeableName}'.");
+            Log.Error($"Failed to deserialize item for placeable {placeableName}");
+            return;
+        }
+
+        // Move item to starting location temporarily
+        item.Location = NwModule.Instance.StartingLocation;
+
+        // Check if it fits in player's inventory
+        NwCreature? loginCreature = _player.LoginCreature;
+        if (loginCreature == null || !loginCreature.Inventory.CheckFit(item))
+        {
+            Token().SetBindValue(View.StatusMessage, $"'{placeableName}' item does not fit in your inventory.");
+            item.Destroy();
+            return;
+        }
+
+        Token().SetBindValue(View.StatusMessage, $"Recovering '{placeableName}'...");
 
         _ = NwTask.Run(async () =>
         {
@@ -499,13 +543,25 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
                 if (Token().Player.IsValid)
                 {
                     Token().SetBindValue(View.StatusMessage,
-                        $"Failed to recover '{placeable.Name}': {ex.Message}");
+                        $"Failed to recover '{placeableName}': {ex.Message}");
+                }
+
+                // Destroy the deserialized item since recovery failed
+                if (item.IsValid)
+                {
+                    item.Destroy();
                 }
 
                 return;
             }
 
             await NwTask.SwitchToMainThread();
+
+            // Give the item to the player
+            if (item.IsValid && loginCreature != null && loginCreature.IsValid)
+            {
+                loginCreature.AcquireItem(item);
+            }
 
             if (placeable.IsValid)
             {
@@ -517,11 +573,10 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
                 return;
             }
 
-            Token().SetBindValue(View.StatusMessage, $"Recovered '{placeable.Name}'.");
+            Token().SetBindValue(View.StatusMessage, $"Recovered '{placeableName}' and returned item to inventory.");
             UpdateSelection(null);
+            RefreshBlueprints();
         });
-
-        RefreshBlueprints();
     }
 
     private void HandleRecoverAllClick()
