@@ -1035,7 +1035,7 @@ public static class DamageProperties
             new CraftingProperty
             {
                 PowerCost = 2,
-                ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_1d12)!,
+                ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_2d12)!,
                 GuiLabel = "2d12 Massive Criticals",
                 CraftingTier = CraftingTier.Flawless
             },
