@@ -203,7 +203,6 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                     Visible = CharacterSelected,
                     Children =
                     [
-                        new NuiSpacer { Width = 180f },
                         new NuiLabel("Add or Remove Feats:")
                         {
                             VerticalAlign = NuiVAlign.Middle,

@@ -196,7 +196,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         UpdateLevelupInfo();
     }
 
-    private void HandleRemoveFeat()
+    private async void HandleRemoveFeat()
     {
         string featIdStr = Token().GetBindValue(View.FeatId);
 
@@ -207,6 +207,9 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         }
 
         _model.RemoveFeatFromCharacter(featId);
+
+        // Small delay to allow the game engine to update
+        await NwTask.Delay(TimeSpan.FromMilliseconds(100));
 
         // Refresh the display
         UpdateLevelupInfo();

@@ -84,7 +84,7 @@ public sealed class RebuildToolModel
             return;
         }
 
-        SelectedCharacter.RemoveFeat(feat);
+        SelectedCharacter.RemoveFeat(feat, true); // true = remove from level list
         _player.SendServerMessage($"Removed feat {feat.Name} from {SelectedCharacter.Name}.");
     }
 }
