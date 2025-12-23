@@ -39,15 +39,9 @@ public class CoinhouseService
 
     private void OpenBankWindow(CreatureEvents.OnConversation obj)
     {
-        // Player is never speaking so we need to get nearest player controlled creature
-        NwCreature? playerCreature = obj.Creature
-            .GetNearestCreatures(CreatureTypeFilter.Perception(PerceptionType.Seen)).FirstOrDefault();
-        if (playerCreature is null)
-        {
-            return;
-        }
-
-        if (!playerCreature.IsLoginPlayerCharacter(out NwPlayer? player))
+        // Get the player who clicked on the banker
+        NwPlayer? player = obj.PlayerSpeaker;
+        if (player is null || !player.IsValid)
         {
             return;
         }
