@@ -30,7 +30,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(0f, 100f, 630f, 730f),
+            Geometry = new NuiRect(0f, 100f, 630f, 780f),
             Resizable = false
         };
     }
@@ -54,10 +54,21 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         Token().SetBindValue(View.LevelupInfo, "");
         Token().SetBindValue(View.FeatId, "");
         Token().SetBindValue(View.Level, "1");
+        Token().SetBindValue(View.LevelFilter, 0); // 0 = All Levels
+
+        // Watch for level filter changes
+        Token().SetBindWatch(View.LevelFilter, true);
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent ev)
     {
+        if (ev.EventType == NuiEventType.Watch && ev.ElementId == View.LevelFilter.Key)
+        {
+            // Level filter changed, update the display
+            UpdateLevelupInfo();
+            return;
+        }
+
         if (ev.EventType != NuiEventType.Click) return;
 
         switch (ev.ElementId)
@@ -92,10 +103,22 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
 
         StringBuilder sb = new();
         int totalLevels = _model.SelectedCharacter.Level;
+        int levelFilter = Token().GetBindValue(View.LevelFilter);
 
-        sb.AppendLine($"=== Level-up Information for {_model.SelectedCharacter.Name} ===\n");
+        // Determine which levels to display
+        int startLevel = levelFilter == 0 ? 1 : levelFilter;
+        int endLevel = levelFilter == 0 ? totalLevels : levelFilter;
 
-        for (int level = 1; level <= totalLevels; level++)
+        if (levelFilter == 0)
+        {
+            sb.AppendLine($"=== Level-up Information for {_model.SelectedCharacter.Name} ===\n");
+        }
+        else
+        {
+            sb.AppendLine($"=== Level {levelFilter} Information for {_model.SelectedCharacter.Name} ===\n");
+        }
+
+        for (int level = startLevel; level <= endLevel; level++)
         {
             CreatureLevelInfo levelInfo = _model.SelectedCharacter.GetLevelStats(level);
 

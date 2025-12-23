@@ -9,7 +9,7 @@ namespace AmiaReforged.PwEngine.Features.DungeonMaster.RebuildTool;
 public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
 {
     private const float WindowW = 630f;
-    private const float WindowH = 730f;
+    private const float WindowH = 780f;
     private const float HeaderW = 600f;
     private const float HeaderH = 100f;
     private const float HeaderTopPad = 8f;
@@ -23,6 +23,7 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
     public readonly NuiBind<string> LevelupInfo = new("levelup_info");
     public readonly NuiBind<string> FeatId = new("feat_id");
     public readonly NuiBind<string> Level = new("level");
+    public readonly NuiBind<int> LevelFilter = new("level_filter");
 
     // Buttons
     public NuiButtonImage SelectCharacterButton = null!;
@@ -120,12 +121,67 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                     ]
                 },
 
+                // Level filter dropdown
+                new NuiRow
+                {
+                    Height = 35f,
+                    Visible = CharacterSelected,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 10f },
+                        new NuiLabel("View Level:")
+                        {
+                            Width = 90f,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiCombo
+                        {
+                            Width = 150f,
+                            Selected = LevelFilter,
+                            Entries = new NuiValue<List<NuiComboEntry>>([
+                                new NuiComboEntry("All Levels", 0),
+                                new NuiComboEntry("Level 1", 1),
+                                new NuiComboEntry("Level 2", 2),
+                                new NuiComboEntry("Level 3", 3),
+                                new NuiComboEntry("Level 4", 4),
+                                new NuiComboEntry("Level 5", 5),
+                                new NuiComboEntry("Level 6", 6),
+                                new NuiComboEntry("Level 7", 7),
+                                new NuiComboEntry("Level 8", 8),
+                                new NuiComboEntry("Level 9", 9),
+                                new NuiComboEntry("Level 10", 10),
+                                new NuiComboEntry("Level 11", 11),
+                                new NuiComboEntry("Level 12", 12),
+                                new NuiComboEntry("Level 13", 13),
+                                new NuiComboEntry("Level 14", 14),
+                                new NuiComboEntry("Level 15", 15),
+                                new NuiComboEntry("Level 16", 16),
+                                new NuiComboEntry("Level 17", 17),
+                                new NuiComboEntry("Level 18", 18),
+                                new NuiComboEntry("Level 19", 19),
+                                new NuiComboEntry("Level 20", 20),
+                                new NuiComboEntry("Level 21", 21),
+                                new NuiComboEntry("Level 22", 22),
+                                new NuiComboEntry("Level 23", 23),
+                                new NuiComboEntry("Level 24", 24),
+                                new NuiComboEntry("Level 25", 25),
+                                new NuiComboEntry("Level 26", 26),
+                                new NuiComboEntry("Level 27", 27),
+                                new NuiComboEntry("Level 28", 28),
+                                new NuiComboEntry("Level 29", 29),
+                                new NuiComboEntry("Level 30", 30)
+                            ])
+                        }
+                    ]
+                },
+
                 Divider(),
 
                 // Levelup information display
                 new NuiRow
                 {
-                    Height = 400f,
+                    Height = 370f,
                     Width = 500f,
                     Visible = CharacterSelected,
                     Children =
@@ -139,6 +195,23 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                 },
 
                 Divider(),
+
+                // Feat management label
+                new NuiRow
+                {
+                    Height = 25f,
+                    Visible = CharacterSelected,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 180f },
+                        new NuiLabel("Add or Remove Feats:")
+                        {
+                            VerticalAlign = NuiVAlign.Middle,
+                            HorizontalAlign = NuiHAlign.Center,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
+                },
 
                 // Feat management section
                 new NuiRow
