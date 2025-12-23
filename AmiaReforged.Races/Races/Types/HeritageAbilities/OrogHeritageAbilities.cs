@@ -1,4 +1,4 @@
-﻿using Anvil.API;
+﻿﻿using Anvil.API;
 using NWN.Core;
 using NWN.Core.NWNX;
 
@@ -10,5 +10,11 @@ public class OrogHeritageAbilities : IHeritageAbilities
     {
         CreaturePlugin.ModifyRawAbilityScore(player.LoginCreature, NWScript.ABILITY_STRENGTH, 1);
         CreaturePlugin.ModifyRawAbilityScore(player.LoginCreature, NWScript.ABILITY_CHARISMA, 1);
+    }
+
+    public void RemoveStats(NwPlayer player)
+    {
+        CreaturePlugin.ModifyRawAbilityScore(player.LoginCreature, NWScript.ABILITY_STRENGTH, -1);
+        CreaturePlugin.ModifyRawAbilityScore(player.LoginCreature, NWScript.ABILITY_CHARISMA, -1);
     }
 }

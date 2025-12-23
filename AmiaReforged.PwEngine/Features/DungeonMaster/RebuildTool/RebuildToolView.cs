@@ -24,11 +24,13 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
     public readonly NuiBind<string> FeatId = new("feat_id");
     public readonly NuiBind<string> Level = new("level");
     public readonly NuiBind<int> LevelFilter = new("level_filter");
+    public readonly NuiBind<string> RebuildLevel = new("rebuild_level");
 
     // Buttons
     public NuiButtonImage SelectCharacterButton = null!;
     public NuiButtonImage AddFeatButton = null!;
     public NuiButtonImage RemoveFeatButton = null!;
+    public NuiButtonImage InitiateRebuildButton = null!;
 
     public string Title => "Character Rebuild Tool";
     public bool ListInDmTools => true;
@@ -190,6 +192,32 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                         new NuiText(LevelupInfo)
                         {
                             Scrollbars = NuiScrollbars.Y
+                        },
+                        new NuiSpacer { Width = 20f },
+                        new NuiColumn
+                        {
+                            Children =
+                            [
+                                new NuiButtonImage("app_roll")
+                                {
+                                    Id = "btn_initiate_rebuild",
+                                    Width = 50f,
+                                    Height = 50f,
+                                    Tooltip = "Initiate Rebuild"
+                                }.Assign(out InitiateRebuildButton),
+                                new NuiLabel("Initiate")
+                                {
+                                    Height = 25f,
+                                    HorizontalAlign = NuiHAlign.Center,
+                                    ForegroundColor = new Color(30, 20, 12)
+                                },
+                                new NuiLabel("Rebuild")
+                                {
+                                    Height = 25f,
+                                    HorizontalAlign = NuiHAlign.Center,
+                                    ForegroundColor = new Color(30, 20, 12)
+                                }
+                            ]
                         }
                     ]
                 },
@@ -280,5 +308,141 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
             }
         };
     }
-}
 
+    public NuiWindow BuildRebuildModal()
+    {
+        const float modalW = 370f;
+        const float modalH = 390f;
+
+        NuiColumn layout = new NuiColumn
+        {
+            Width = modalW,
+            Height = modalH,
+            Children =
+            [
+                // Background
+                new NuiRow
+                {
+                    Width = 0f,
+                    Height = 0f,
+                    DrawList = new()
+                    {
+                        new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, modalW, modalH))
+                    }
+                },
+
+                new NuiSpacer { Height = 20f },
+
+                // Title
+                new NuiRow
+                {
+                    Height = 30f,
+                    Children =
+                    [
+                        new NuiLabel("Choose a Rebuild Type:")
+                        {
+                            HorizontalAlign = NuiHAlign.Center,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 20f },
+
+                // Rebuild type buttons
+                new NuiRow
+                {
+                    Height = 50f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 10f },
+                        new NuiButton("Full Rebuild")
+                        {
+                            Id = "btn_full_rebuild",
+                            Width = 150f,
+                            Height = 40f
+                        },
+                        new NuiSpacer { Width = 20f },
+                        new NuiButton("Partial Rebuild")
+                        {
+                            Id = "btn_partial_rebuild",
+                            Width = 150f,
+                            Height = 40f
+                        },
+                        new NuiSpacer()
+                    ]
+                },
+
+                new NuiSpacer { Height = 20f },
+
+                // Level input for partial rebuild
+                new NuiRow
+                {
+                    Height = 40f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 50f },
+                        new NuiLabel("Starting Level (1-29):")
+                        {
+                            Width = 150f,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiTextEdit("", new NuiBind<string>("rebuild_level"), 2, false)
+                        {
+                            Width = 80f
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 10f },
+
+                // Return All XP button
+                new NuiRow
+                {
+                    Height = 40f,
+                    Children =
+                    [
+                        new NuiSpacer(),
+                        new NuiButton("Return All XP")
+                        {
+                            Id = "btn_return_all_xp",
+                            Width = 200f,
+                            Height = 35f,
+                            Tooltip = "Return all removed XP to the player"
+                        },
+                        new NuiSpacer()
+                    ]
+                },
+
+                new NuiSpacer { Height = 20f },
+
+                // Cancel button
+                new NuiRow
+                {
+                    Height = 50f,
+                    Children =
+                    [
+                        new NuiSpacer(),
+                        new NuiButtonImage("ui_btn_cancel")
+                        {
+                            Id = "btn_rebuild_cancel",
+                            Width = 150f,
+                            Height = 38f,
+                            Tooltip = "Cancel"
+                        },
+                        new NuiSpacer()
+                    ]
+                }
+            ]
+        };
+
+        return new NuiWindow(layout, "Character Rebuild")
+        {
+            Geometry = new NuiRect(450f, 250f, modalW, modalH),
+            Resizable = false,
+            Closable = true
+        };
+    }
+}

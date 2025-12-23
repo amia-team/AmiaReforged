@@ -43,6 +43,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\AmiaReforged.Core\AmiaReforged.Core.csproj" />
+        <ProjectReference Include="..\AmiaReforged.Races\AmiaReforged.Races.csproj" />
     </ItemGroup>
 
     <ItemGroup>

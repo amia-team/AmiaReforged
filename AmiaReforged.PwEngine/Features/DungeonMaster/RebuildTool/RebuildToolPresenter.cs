@@ -13,6 +13,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
     private readonly RebuildToolModel _model;
     private NuiWindowToken _token;
     private NuiWindow? _window;
+    private NuiWindowToken? _rebuildModalToken;
 
     public override NuiWindowToken Token() => _token;
 
@@ -84,10 +85,14 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
             case var id when id == View.RemoveFeatButton.Id:
                 HandleRemoveFeat();
                 break;
+
+            case var id when id == View.InitiateRebuildButton.Id:
+                OpenRebuildModal();
+                break;
         }
     }
 
-    private void OnCharacterSelected(RebuildToolModel sender, EventArgs e)
+    private void OnCharacterSelected(object? sender, EventArgs e)
     {
         if (_model.SelectedCharacter == null) return;
 
@@ -215,8 +220,127 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         UpdateLevelupInfo();
     }
 
+    private void OpenRebuildModal()
+    {
+        // Prevent opening if modal already exists
+        if (_rebuildModalToken.HasValue)
+            return;
+
+        if (_model.SelectedCharacter == null)
+        {
+            _player.SendServerMessage("Please select a character first.");
+            return;
+        }
+
+        NuiWindow modal = View.BuildRebuildModal();
+        if (_player.TryCreateNuiWindow(modal, out NuiWindowToken modalToken))
+        {
+            _rebuildModalToken = modalToken;
+            modalToken.SetBindValue(View.RebuildLevel, "1");
+            _rebuildModalToken.Value.OnNuiEvent += HandleRebuildModalEvent;
+        }
+    }
+
+    private void HandleRebuildModalEvent(ModuleEvents.OnNuiEvent ev)
+    {
+        if (ev.EventType != NuiEventType.Click) return;
+
+        switch (ev.ElementId)
+        {
+            case "btn_full_rebuild":
+                _player.SendServerMessage("Full Rebuild selected (functionality to be implemented)");
+                CloseRebuildModal();
+                break;
+
+            case "btn_partial_rebuild":
+                HandlePartialRebuild();
+                // Keep modal open so DM can return XP if needed
+                break;
+
+            case "btn_return_all_xp":
+                HandleReturnAllXP();
+                // Keep modal open in case DM wants to do more
+                break;
+
+            case "btn_rebuild_cancel":
+                CloseRebuildModal();
+                break;
+        }
+    }
+
+    private void HandlePartialRebuild()
+    {
+        if (_model.SelectedCharacter == null)
+        {
+            _player.SendServerMessage("No character selected.");
+            return;
+        }
+
+        string levelStr = _rebuildModalToken!.Value.GetBindValue(View.RebuildLevel);
+
+        if (!int.TryParse(levelStr, out int targetLevel))
+        {
+            _player.SendServerMessage("Invalid level. Please enter a valid number between 1 and 29.");
+            return;
+        }
+
+        // Find the player who owns this character
+        NwPlayer? targetPlayer = _model.SelectedCharacter.ControllingPlayer;
+        if (targetPlayer == null)
+        {
+            _player.SendServerMessage("Could not find the player controlling this character.");
+            return;
+        }
+
+        _model.PartialRebuild(targetLevel, targetPlayer);
+
+        // Refresh the display after rebuild
+        UpdateLevelupInfo();
+    }
+
+    private void HandleReturnAllXP()
+    {
+        if (_model.SelectedCharacter == null)
+        {
+            _player.SendServerMessage("No character selected.");
+            return;
+        }
+
+        // Find the player who owns this character
+        NwPlayer? targetPlayer = _model.SelectedCharacter.ControllingPlayer;
+        if (targetPlayer == null)
+        {
+            _player.SendServerMessage("Could not find the player controlling this character.");
+            return;
+        }
+
+        _model.ReturnAllXP(targetPlayer);
+
+        // Refresh the display after XP return
+        UpdateLevelupInfo();
+    }
+
+    private void CloseRebuildModal()
+    {
+        if (_rebuildModalToken.HasValue)
+        {
+            _rebuildModalToken.Value.OnNuiEvent -= HandleRebuildModalEvent;
+            try
+            {
+                _rebuildModalToken.Value.Close();
+            }
+            catch
+            {
+                // ignore
+            }
+            _rebuildModalToken = null;
+        }
+    }
+
     public override void Close()
     {
+        CloseRebuildModal();
+
         try
         {
             _token.Close();

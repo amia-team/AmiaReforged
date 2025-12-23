@@ -1,4 +1,4 @@
-﻿using Anvil.API;
+﻿﻿using Anvil.API;
 using NWN.Core;
 using NWN.Core.NWNX;
 
@@ -10,5 +10,11 @@ public class AvarielHeritageAbilities : IHeritageAbilities
     {
         CreaturePlugin.ModifyRawAbilityScore(player.LoginCreature, NWScript.ABILITY_WISDOM, 1);
         CreaturePlugin.ModifyRawAbilityScore(player.LoginCreature, NWScript.ABILITY_INTELLIGENCE, 1);
+    }
+
+    public void RemoveStats(NwPlayer player)
+    {
+        CreaturePlugin.ModifyRawAbilityScore(player.LoginCreature, NWScript.ABILITY_WISDOM, -1);
+        CreaturePlugin.ModifyRawAbilityScore(player.LoginCreature, NWScript.ABILITY_INTELLIGENCE, -1);
     }
 }

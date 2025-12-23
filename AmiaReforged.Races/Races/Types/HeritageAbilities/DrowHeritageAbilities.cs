@@ -1,4 +1,4 @@
-﻿using Anvil.API;
+﻿﻿using Anvil.API;
 using NWN.Core;
 using NWN.Core.NWNX;
 
@@ -10,5 +10,11 @@ public class DrowHeritageAbilities : IHeritageAbilities
     {
         CreaturePlugin.ModifyRawAbilityScore(player.LoginCreature, NWScript.ABILITY_DEXTERITY, 2);
         CreaturePlugin.ModifyRawAbilityScore(player.LoginCreature, NWScript.ABILITY_CHARISMA, 2);
+    }
+
+    public void RemoveStats(NwPlayer player)
+    {
+        CreaturePlugin.ModifyRawAbilityScore(player.LoginCreature, NWScript.ABILITY_DEXTERITY, -2);
+        CreaturePlugin.ModifyRawAbilityScore(player.LoginCreature, NWScript.ABILITY_CHARISMA, -2);
     }
 }
