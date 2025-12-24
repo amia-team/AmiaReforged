@@ -5,6 +5,7 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops;
 
@@ -95,48 +96,25 @@ public sealed class ShopkeeperService
             return;
         }
 
-        NwPlayer? player = ResolvePlayer(eventData, npc, shop);
-        if (player is null)
+        // Get the player who clicked on the shopkeeper using GetLastSpeaker
+        // This reliably returns the creature that initiated the conversation
+        NwCreature? speaker = NWScript.GetLastSpeaker().ToNwObject<NwCreature>();
+
+        if (speaker is null || !speaker.IsValid)
         {
+            Log.Warn("GetLastSpeaker returned null or invalid creature for shop {Tag}", tag);
+            return;
+        }
+
+        if (!speaker.IsPlayerControlled(out NwPlayer? player))
+        {
+            Log.Warn("Last speaker is not a player-controlled character for shop {Tag}", tag);
             return;
         }
 
         OpenShopWindow(player, shop, npc);
     }
 
-    private NwPlayer? ResolvePlayer(CreatureEvents.OnConversation eventData, NwCreature npc, NpcShop shop)
-    {
-        string flagKey = BuildShopWindowFlagKey(shop.Tag);
-
-        NwPlayer? speaker = eventData.PlayerSpeaker;
-        if (IsEligibleSpeaker(speaker, flagKey))
-        {
-            return speaker;
-        }
-
-        NwPlayer? fallback = speaker;
-
-        foreach (NwCreature candidate in npc.GetNearestCreatures(CreatureTypeFilter.Perception(PerceptionType.Seen)))
-        {
-            if (candidate.IsLoginPlayerCharacter(out NwPlayer? player))
-            {
-                fallback ??= player;
-
-                NwCreature? windowCreature = ResolveWindowCreature(player);
-                if (windowCreature is null)
-                {
-                    return player;
-                }
-
-                if (!HasActiveShopWindow(windowCreature, flagKey))
-                {
-                    return player;
-                }
-            }
-        }
-
-        return fallback;
-    }
 
     private void OpenShopWindow(NwPlayer player, NpcShop shop, NwCreature shopkeeper)
     {
@@ -222,21 +200,6 @@ public sealed class ShopkeeperService
         return player.ControlledCreature ?? player.LoginCreature;
     }
 
-    private static bool IsEligibleSpeaker(NwPlayer? player, string flagKey)
-    {
-        if (player is null || !player.IsValid)
-        {
-            return false;
-        }
-
-        NwCreature? creature = ResolveWindowCreature(player);
-        if (creature is null)
-        {
-            return true;
-        }
-
-        return !HasActiveShopWindow(creature, flagKey);
-    }
 
     private static bool HasActiveShopWindow(NwCreature creature, string flagKey)
     {
