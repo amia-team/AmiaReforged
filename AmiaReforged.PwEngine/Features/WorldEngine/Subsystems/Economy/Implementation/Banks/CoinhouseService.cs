@@ -8,6 +8,7 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Banks;
 
@@ -41,11 +42,19 @@ public class CoinhouseService
     {
         Log.Info("OpenBankWindow triggered");
 
-        // Get the player who clicked on the banker
-        NwPlayer? player = obj.PlayerSpeaker;
-        if (player is null || !player.IsValid)
+        // Get the player who clicked on the banker using GetLastSpeaker
+        // This reliably returns the creature that initiated the conversation
+        NwCreature? speaker = NWScript.GetLastSpeaker().ToNwObject<NwCreature>();
+
+        if (speaker is null || !speaker.IsValid)
         {
-            Log.Warn("No valid player speaker found");
+            Log.Warn("GetLastSpeaker returned null or invalid creature");
+            return;
+        }
+
+        if (!speaker.IsPlayerControlled(out NwPlayer? player))
+        {
+            Log.Warn("Last speaker is not a player-controlled character");
             return;
         }
 
