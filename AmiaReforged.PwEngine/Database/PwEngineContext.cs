@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.PwEngine.Database.Entities;
+using AmiaReforged.PwEngine.Database.Entities.Admin;
 using AmiaReforged.PwEngine.Database.Entities.Economy;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Properties;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
@@ -76,6 +77,9 @@ public class PwEngineContext : DbContext
     public DbSet<RentablePropertyRecord> RentableProperties { get; set; } = null!;
     public DbSet<RentablePropertyResidentRecord> RentablePropertyResidents { get; set; } = null!;
 
+    public DbSet<CharacterRebuild> CharacterRebuilds { get; set; } = null!;
+    public DbSet<RebuildItemRecord> RebuildItemRecords { get; set; } = null!;
+
 
     public PwEngineContext()
     {
@@ -141,5 +145,7 @@ public class PwEngineContext : DbContext
         modelBuilder.ApplyConfiguration(new StallTransactionConfiguration());
         modelBuilder.ApplyConfiguration(new PlayerPersonaRecordConfiguration());
         modelBuilder.ApplyConfiguration(new VaultConfiguration());
+        modelBuilder.ApplyConfiguration(new CharacterRebuildConfiguration());
+        modelBuilder.ApplyConfiguration(new RebuildItemRecordConfiguration());
     }
 }
