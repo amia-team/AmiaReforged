@@ -39,16 +39,22 @@ public class CoinhouseService
 
     private void OpenBankWindow(CreatureEvents.OnConversation obj)
     {
+        Log.Info("OpenBankWindow triggered");
+
         // Get the player who clicked on the banker
         NwPlayer? player = obj.PlayerSpeaker;
         if (player is null || !player.IsValid)
         {
+            Log.Warn("No valid player speaker found");
             return;
         }
+
+        Log.Info("Player {0} is interacting with banker", player.ControlledCreature?.Name ?? "Unknown");
 
         NwArea? area = obj.Creature.Area;
         if (area is null)
         {
+            Log.Warn("Banker creature has no area");
             return;
         }
 
@@ -70,20 +76,26 @@ public class CoinhouseService
 
         if (!settlementFound)
         {
+            Log.Warn("No settlement found for area {0}", area.ResRef);
             player.SendServerMessage(
                 message: $"Banking service unavailable: location '{area.ResRef}' is not linked to a settlement.",
                 ColorConstants.Red);
             return;
         }
 
+        Log.Info("Settlement found: {0}", settlementId);
+
         Database.Entities.Economy.Treasuries.CoinHouse? coinhouse = _coinHouses.GetSettlementCoinhouse(settlementId);
         if (coinhouse is null)
         {
+            Log.Warn("No coinhouse found for settlement {0}", settlementId);
             player.SendServerMessage(
                 message: "Banking service unavailable: no coinhouse is registered for this settlement.",
                 ColorConstants.Red);
             return;
         }
+
+        Log.Info("Coinhouse found: {0}", coinhouse.Tag);
 
         IReadOnlyList<PlaceOfInterest> pois = _regions.GetPointsOfInterestForSettlement(settlementId);
         string creatureTag = obj.Creature.Tag ?? string.Empty;
@@ -96,11 +108,14 @@ public class CoinhouseService
              || (!string.IsNullOrWhiteSpace(creatureTag) && string.Equals(p.Tag, creatureTag, StringComparison.OrdinalIgnoreCase))));
         if (bankPoi is null)
         {
+            Log.Warn("No bank POI found for area {0}, creature tag {1}, creature resref {2}", area.ResRef, creatureTag, creatureResRef);
             player.SendServerMessage(
                 message: "Banking service unavailable: this location is not configured as a bank.",
                 ColorConstants.Red);
             return;
         }
+
+        Log.Info("Bank POI found: {0}", bankPoi.Name ?? bankPoi.ResRef);
 
         player.SendServerMessage("Opening an account window");
         CoinhouseTag coinhouseTag = new(coinhouse.Tag);
