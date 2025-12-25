@@ -18,6 +18,11 @@ public sealed class BuildCheckerView : ScryView<BuildCheckerPresenter>, IToolWin
     public readonly NuiBind<string> CharacterInfo = new("char_info");
     public readonly NuiBind<string> LevelupInfo = new("levelup_info");
     public readonly NuiBind<int> LevelFilter = new("level_filter");
+    public readonly NuiBind<bool> RedoButtonsEnabled = new("redo_buttons_enabled");
+
+    // Button IDs
+    public readonly NuiButton RedoLastLevelButton = new("Redo Last Level") { Id = "btn_redo_last_level" };
+    public readonly NuiButton RedoLast2LevelsButton = new("Redo Last 2 Levels") { Id = "btn_redo_last_2_levels" };
 
     public string Id => "playertools.buildchecker";
     public bool ListInPlayerTools => true;
@@ -144,17 +149,44 @@ public sealed class BuildCheckerView : ScryView<BuildCheckerPresenter>, IToolWin
 
                 Divider(),
 
-                // Levelup information display
+                // Levelup information display with redo buttons on the right
                 new NuiRow
                 {
                     Height = 400f,
-                    Width = 500f,
                     Children =
                     [
                         new NuiSpacer { Width = 10f },
                         new NuiText(LevelupInfo)
                         {
+                            Width = 500f,
                             Scrollbars = NuiScrollbars.Y
+                        },
+                        new NuiSpacer { Width = 10f },
+                        // Button column on the right
+                        new NuiColumn
+                        {
+                            Width = 50f,
+                            Children =
+                            [
+                                new NuiSpacer { Height = 10f },
+                                new NuiButtonImage("ui_btn_redo1")
+                                {
+                                    Id = "btn_redo_last_level",
+                                    Width = 40f,
+                                    Height = 40f,
+                                    Tooltip = "Redo Last Level",
+                                    Enabled = RedoButtonsEnabled
+                                },
+                                new NuiSpacer { Height = 10f },
+                                new NuiButtonImage("ui_btn_redo2")
+                                {
+                                    Id = "btn_redo_last_2_levels",
+                                    Width = 40f,
+                                    Height = 40f,
+                                    Tooltip = "Redo Last 2 Levels",
+                                    Enabled = RedoButtonsEnabled
+                                }
+                            ]
                         }
                     ]
                 }

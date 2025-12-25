@@ -1,4 +1,4 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 using System.Text;
@@ -54,6 +54,7 @@ public sealed class BuildCheckerPresenter : ScryPresenter<BuildCheckerView>
         Token().SetBindValue(View.CharacterInfo, $"Character: {_player.LoginCreature.Name} (Level {_player.LoginCreature.Level})");
         Token().SetBindValue(View.LevelupInfo, "");
         Token().SetBindValue(View.LevelFilter, 0); // 0 = All Levels
+        Token().SetBindValue(View.RedoButtonsEnabled, true); // Buttons enabled by default
 
         // Watch for level filter changes
         Token().SetBindWatch(View.LevelFilter, true);
@@ -69,6 +70,19 @@ public sealed class BuildCheckerPresenter : ScryPresenter<BuildCheckerView>
             // Level filter changed, update the display
             UpdateLevelupInfo();
             return;
+        }
+
+        if (ev.EventType != NuiEventType.Click) return;
+
+        switch (ev.ElementId)
+        {
+            case "btn_redo_last_level":
+                HandleRedoLastLevel();
+                break;
+
+            case "btn_redo_last_2_levels":
+                HandleRedoLast2Levels();
+                break;
         }
     }
 
@@ -146,6 +160,96 @@ public sealed class BuildCheckerPresenter : ScryPresenter<BuildCheckerView>
         }
 
         Token().SetBindValue(View.LevelupInfo, sb.ToString());
+    }
+
+    private void HandleRedoLastLevel()
+    {
+        if (_player.LoginCreature == null)
+        {
+            _player.SendServerMessage("No character available.");
+            return;
+        }
+
+        RedoLevels(1);
+    }
+
+    private void HandleRedoLast2Levels()
+    {
+        if (_player.LoginCreature == null)
+        {
+            _player.SendServerMessage("No character available.");
+            return;
+        }
+
+        RedoLevels(2);
+    }
+
+    private void RedoLevels(int levelCount)
+    {
+        if (_player.LoginCreature == null) return;
+
+        const int MAX_LEVEL = 30;
+        const int MAX_LEVEL_XP = 435000; // XP required for level 30
+
+        int currentLevel = _player.LoginCreature.Level;
+        int currentXp = _player.LoginCreature.Xp;
+
+        // Validate level count
+        if (levelCount < 1 || levelCount > 2)
+        {
+            _player.SendServerMessage("Invalid level count. Must be 1 or 2.");
+            return;
+        }
+
+        // Check if character has enough levels
+        if (currentLevel <= levelCount)
+        {
+            _player.SendServerMessage($"You need to be at least level {levelCount + 1} to redo {levelCount} level(s).");
+            return;
+        }
+
+        // Calculate XP thresholds
+        int currentLevelMinXp = currentLevel * (currentLevel - 1) * 500;
+        int nextLevelMinXp = (currentLevel + 1) * currentLevel * 500;
+
+        // Check if player has enough XP to reach the next level (they're already leveling up)
+        // Exception: Max level characters can have any amount of XP
+        if (currentLevel < MAX_LEVEL && currentXp >= nextLevelMinXp)
+        {
+            _player.SendServerMessage("You cannot use this feature while you have enough experience to level up. Please finish leveling up first.", ColorConstants.Orange);
+            return;
+        }
+
+        // DISABLE BUTTONS IMMEDIATELY to prevent spam clicking
+        Token().SetBindValue(View.RedoButtonsEnabled, false);
+
+        // Calculate target level and XP
+        int targetLevel = currentLevel - levelCount;
+        int targetXp = targetLevel * (targetLevel - 1) * 500;
+        int xpToRemove = currentXp - targetXp;
+
+        // Remove XP
+        NWN.Core.NWScript.SetXP((uint)_player.LoginCreature, targetXp);
+        _player.SendServerMessage($"Removed {xpToRemove:N0} XP. You are now level {targetLevel}.", ColorConstants.Cyan);
+
+        // Wait a moment for the game to process the level change, then return XP
+        NwTask.Run(async () =>
+        {
+            await NwTask.Delay(TimeSpan.FromMilliseconds(500));
+
+            // Give XP back (same amount that was removed)
+            NWN.Core.NWScript.SetXP((uint)_player.LoginCreature, currentXp);
+            _player.SendServerMessage($"Returned {xpToRemove:N0} XP. You can now relevel your last {levelCount} level(s)!", ColorConstants.Green);
+
+            // Refresh the display
+            UpdateLevelupInfo();
+
+            // Wait 6 seconds total before re-enabling buttons (500ms already passed, so wait 5500ms more)
+            await NwTask.Delay(TimeSpan.FromMilliseconds(5500));
+
+            // Re-enable buttons
+            Token().SetBindValue(View.RedoButtonsEnabled, true);
+        });
     }
 
     public override void Close()
