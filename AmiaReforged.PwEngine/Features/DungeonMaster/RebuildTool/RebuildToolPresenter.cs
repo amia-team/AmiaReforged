@@ -571,7 +571,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
                 break;
 
             case "btn_return_inventory":
-                HandleReturnInventory();
+                EnterReturnInventoryTargetMode();
                 break;
 
             case "btn_full_rebuild_return_xp":
@@ -636,6 +636,60 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
             return;
         }
 
+        await _model.ReturnInventory(_currentRebuildId.Value, targetPlayer);
+    }
+
+    private void EnterReturnInventoryTargetMode()
+    {
+        if (!_currentRebuildId.HasValue)
+        {
+            _player.SendServerMessage("No active rebuild. Use Find Rebuild to load a pending rebuild.");
+            return;
+        }
+
+        _player.SendServerMessage("Select the NEW character that the player created.", ColorConstants.Cyan);
+
+        _player.EnterTargetMode(OnReturnInventoryTargetSelected, new TargetModeSettings
+        {
+            CursorType = MouseCursor.Action,
+            ValidTargets = ObjectTypes.Creature
+        });
+    }
+
+    private async void OnReturnInventoryTargetSelected(ModuleEvents.OnPlayerTarget obj)
+    {
+        if (!_currentRebuildId.HasValue)
+        {
+            _player.SendServerMessage("No active rebuild.");
+            return;
+        }
+
+        if (obj.TargetObject is not NwCreature targetCreature)
+        {
+            _player.SendServerMessage("Invalid target. Please select a player character.");
+            return;
+        }
+
+        NwPlayer? targetPlayer = targetCreature.ControllingPlayer;
+        if (targetPlayer == null)
+        {
+            _player.SendServerMessage("Selected creature is not a player character.");
+            return;
+        }
+
+        // Verify PC Key match
+        bool keyMatches = await _model.VerifyPCKeyMatch(_currentRebuildId.Value, targetCreature, _player.ControlledCreature);
+
+        if (!keyMatches)
+        {
+            _player.SendServerMessage("PC Key verification failed! The PC Key in this character's inventory doesn't match the rebuild record.", ColorConstants.Red);
+            return;
+        }
+
+        // Update the selected character to the new one
+        _model.SetSelectedCharacter(targetCreature);
+
+        // Now proceed with returning inventory
         await _model.ReturnInventory(_currentRebuildId.Value, targetPlayer);
     }
 
@@ -717,7 +771,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
             return;
         }
 
-        _model.FinishFullRebuild(_currentRebuildId.Value);
+        _model.FinishFullRebuild(_currentRebuildId.Value, creature);
         _currentRebuildId = null;
 
         CloseFullRebuildModal();
@@ -742,8 +796,9 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
             return;
         }
 
+        // Create combo entries with index as value (0, 1, 2, etc.)
         List<NuiComboEntry> rebuildEntries = pendingRebuilds
-            .Select(r => new NuiComboEntry($"{r.firstName} {r.lastName}", r.rebuildId))
+            .Select((r, index) => new NuiComboEntry($"{r.firstName} {r.lastName}", index))
             .ToList();
 
         NuiWindow modal = View.BuildFindRebuildModal(rebuildEntries);
@@ -776,19 +831,29 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         if (!_findRebuildModalToken.HasValue)
             return;
 
+        // Get the selected index from the combo box
         int selectedIndex = _findRebuildModalToken.Value.GetBindValue(View.SelectedPendingRebuild);
 
-        var pendingRebuilds = _model.GetPendingRebuilds();
-        var rebuildsArray = pendingRebuilds.ToArray();
+        // Get the pending rebuilds list again
+        var pendingRebuilds = _model.GetPendingRebuilds().ToList();
 
-        if (selectedIndex >= 0 && selectedIndex < rebuildsArray.Length)
+        // Validate the selected index
+        if (selectedIndex < 0 || selectedIndex >= pendingRebuilds.Count)
         {
-            _currentRebuildId = rebuildsArray[selectedIndex].rebuildId;
-            _model.LoadPendingRebuild(_currentRebuildId.Value);
-            _player.SendServerMessage($"Loaded rebuild: {rebuildsArray[selectedIndex].firstName} {rebuildsArray[selectedIndex].lastName}", ColorConstants.Green);
-
-            CloseFindRebuildModal();
+            _player.SendServerMessage("Invalid rebuild selection.", ColorConstants.Red);
+            return;
         }
+
+        // Get the rebuild ID from the selected entry
+        var selectedRebuild = pendingRebuilds[selectedIndex];
+        _currentRebuildId = selectedRebuild.rebuildId;
+
+        // Load the rebuild (recreates PC Key in DM inventory)
+        _model.LoadPendingRebuild(_currentRebuildId.Value);
+
+        _player.SendServerMessage($"Loaded rebuild for: {selectedRebuild.firstName} {selectedRebuild.lastName}", ColorConstants.Green);
+
+        CloseFindRebuildModal();
     }
 
     private void CloseFindRebuildModal()

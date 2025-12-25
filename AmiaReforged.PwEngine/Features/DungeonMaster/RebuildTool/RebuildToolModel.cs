@@ -4,7 +4,6 @@ using Anvil.Services;
 using AmiaReforged.Races.Races;
 using NWN.Core.NWNX;
 using AmiaReforged.PwEngine.Database.Entities.Admin;
-using AmiaReforged.PwEngine.Database.Entities.Admin;
 
 namespace AmiaReforged.PwEngine.Features.DungeonMaster.RebuildTool;
 
@@ -48,6 +47,86 @@ public sealed class RebuildToolModel
 
         SelectedCharacter = creature;
         OnCharacterSelected?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void SetSelectedCharacter(NwCreature character)
+    {
+        SelectedCharacter = character;
+        OnCharacterSelected?.Invoke(this, EventArgs.Empty);
+    }
+
+    public Task<bool> VerifyPCKeyMatch(int rebuildId, NwCreature newCharacter, NwCreature? dmCreature)
+    {
+        try
+        {
+            var rebuild = _repository.GetById(rebuildId);
+            if (rebuild == null)
+            {
+                _player.SendServerMessage($"Rebuild ID {rebuildId} not found!", ColorConstants.Red);
+                return Task.FromResult(false);
+            }
+
+            // Check if we have PC Key data in the database
+            if (rebuild.PcKeyData == null || rebuild.PcKeyData.Length == 0)
+            {
+                _player.SendServerMessage("No PC Key data found in rebuild record!", ColorConstants.Red);
+                return Task.FromResult(false);
+            }
+
+            // Verify DM has the PC Key in their inventory
+            if (dmCreature == null)
+            {
+                _player.SendServerMessage("DM controlled creature not found!", ColorConstants.Red);
+                return Task.FromResult(false);
+            }
+
+            NwItem? pcKeyInDm = null;
+            foreach (NwItem item in dmCreature.Inventory.Items)
+            {
+                if (item.Tag == "ds_pckey")
+                {
+                    pcKeyInDm = item;
+                    break;
+                }
+            }
+
+            if (pcKeyInDm == null)
+            {
+                _player.SendServerMessage("PC Key not found in your inventory! Did you start the rebuild?", ColorConstants.Red);
+                return Task.FromResult(false);
+            }
+
+            // Compare the PC Key name with the stored PC Key from database
+            // The PC Key name should be unique per character
+            string currentKeyName = pcKeyInDm.Name;
+
+            // Deserialize the stored PC Key to get its name
+            NwItem? storedKey = DeserializeItem(rebuild.PcKeyData, dmCreature);
+            if (storedKey == null)
+            {
+                _player.SendServerMessage("Failed to deserialize stored PC Key data!", ColorConstants.Red);
+                return Task.FromResult(false);
+            }
+
+            string storedKeyName = storedKey.Name;
+            storedKey.Destroy(); // Clean up the temporary deserialized key
+
+            if (currentKeyName == storedKeyName)
+            {
+                _player.SendServerMessage("PC Key verified successfully!", ColorConstants.Green);
+                return Task.FromResult(true);
+            }
+            else
+            {
+                _player.SendServerMessage($"PC Key mismatch! DM has '{currentKeyName}' but rebuild expects '{storedKeyName}'", ColorConstants.Red);
+                return Task.FromResult(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            _player.SendServerMessage($"Error verifying PC Key: {ex.Message}", ColorConstants.Red);
+            return Task.FromResult(false);
+        }
     }
 
     public void AddFeatToCharacter(int featId, int level)
@@ -431,6 +510,43 @@ public sealed class RebuildToolModel
 
             _player.SendServerMessage("PC Key copied to your inventory.", ColorConstants.Green);
 
+            // Unequip all items first to ensure we capture everything
+            _player.SendServerMessage("Unequipping all items...", ColorConstants.Cyan);
+
+            List<InventorySlot> equipmentSlots = new List<InventorySlot>
+            {
+                InventorySlot.Head,
+                InventorySlot.Chest,
+                InventorySlot.Boots,
+                InventorySlot.Arms,
+                InventorySlot.RightHand,
+                InventorySlot.LeftHand,
+                InventorySlot.Cloak,
+                InventorySlot.LeftRing,
+                InventorySlot.RightRing,
+                InventorySlot.Neck,
+                InventorySlot.Belt,
+                InventorySlot.Arrows,
+                InventorySlot.Bullets,
+                InventorySlot.Bolts
+            };
+
+            int unequippedCount = 0;
+            foreach (var slot in equipmentSlots)
+            {
+                NwItem? equippedItem = SelectedCharacter.GetItemInSlot(slot);
+                if (equippedItem != null)
+                {
+                    SelectedCharacter.RunUnequip(equippedItem);
+                    unequippedCount++;
+                }
+            }
+
+            if (unequippedCount > 0)
+            {
+                _player.SendServerMessage($"Unequipped {unequippedCount} items.", ColorConstants.Green);
+            }
+
             // Create rebuild record
             var rebuild = new CharacterRebuild
             {
@@ -441,7 +557,10 @@ public sealed class RebuildToolModel
                 StoredGold = (int)SelectedCharacter.Gold,
                 OriginalFirstName = SelectedCharacter.OriginalFirstName,
                 OriginalLastName = SelectedCharacter.OriginalLastName,
-                PcKeyData = SerializeItem(pcKeyCopy)
+                PcKeyData = SerializeItem(pcKeyCopy),
+                // Explicitly set navigation properties to null to avoid EF tracking issues
+                Player = null,
+                Character = null
             };
 
             _repository.Add(rebuild);
@@ -449,25 +568,41 @@ public sealed class RebuildToolModel
 
             _player.SendServerMessage($"Rebuild record created. ID: {rebuild.Id}", ColorConstants.Green);
 
-            // Save all items to database
+            // Save all items to database and then destroy them
+            // IMPORTANT: Only save root-level items (items directly in inventory, not inside containers)
+            // The serialization will automatically include items inside containers
             int itemCount = 0;
+            List<NwItem> itemsToDestroy = new List<NwItem>();
+
             foreach (NwItem item in SelectedCharacter.Inventory.Items)
             {
                 if (item.Tag == "ds_pckey") continue; // Skip PC Key
 
-                byte[] itemData = SerializeItem(item);
-                var itemRecord = new RebuildItemRecord
+                // Check if this item is at the root level (possessed directly by the character, not by another item)
+                if (item.Possessor == SelectedCharacter)
                 {
-                    CharacterRebuildId = rebuild.Id,
-                    ItemData = itemData
-                };
+                    byte[] itemData = SerializeItem(item);
+                    var itemRecord = new RebuildItemRecord
+                    {
+                        CharacterRebuildId = rebuild.Id,
+                        ItemData = itemData
+                    };
 
-                _repository.AddItemRecord(itemRecord);
-                itemCount++;
+                    _repository.AddItemRecord(itemRecord);
+                    itemsToDestroy.Add(item);
+                    itemCount++;
+                }
             }
 
             _repository.SaveChanges();
-            _player.SendServerMessage($"Saved {itemCount} items to database.", ColorConstants.Green);
+            _player.SendServerMessage($"Saved {itemCount} root-level items to database (contents preserved in containers).", ColorConstants.Green);
+
+            // Now destroy all the items that were saved
+            foreach (NwItem item in itemsToDestroy)
+            {
+                item.Destroy();
+            }
+            _player.SendServerMessage($"Destroyed {itemsToDestroy.Count} items from character inventory.", ColorConstants.Orange);
 
             // Take all XP
             NWN.Core.NWScript.SetXP((uint)SelectedCharacter, 0);
@@ -480,7 +615,15 @@ public sealed class RebuildToolModel
             // Add "zzz" prefix to character name
             string newFirstName = "zzz" + SelectedCharacter.OriginalFirstName;
             SelectedCharacter.OriginalFirstName = newFirstName;
-            _player.SendServerMessage($"Character name changed to: {newFirstName} {SelectedCharacter.OriginalLastName}", ColorConstants.Orange);
+
+            // Update the display name immediately using NWScript
+            string fullName = $"{newFirstName} {SelectedCharacter.OriginalLastName}";
+            NWN.Core.NWScript.SetName(SelectedCharacter, fullName);
+
+            // Force update the character sheet to show the new name
+            PlayerPlugin.UpdateCharacterSheet((uint)SelectedCharacter);
+
+            _player.SendServerMessage($"Character name changed to: {fullName}", ColorConstants.Orange);
 
             targetPlayer.SendServerMessage("Your character has been prepared for full rebuild. Please log off and create your new character.", ColorConstants.Yellow);
             _player.SendServerMessage("Full rebuild started successfully. Player should log off now.", ColorConstants.Green);
@@ -498,7 +641,7 @@ public sealed class RebuildToolModel
     {
         if (SelectedCharacter == null)
         {
-            _player.SendServerMessage("No character selected.");
+            _player.SendServerMessage("No character selected. Please select the NEW character that the player created.", ColorConstants.Red);
             return Task.CompletedTask;
         }
 
@@ -511,25 +654,105 @@ public sealed class RebuildToolModel
                 return Task.CompletedTask;
             }
 
-            // Find PC Key in new character's inventory and move to DM
-            NwItem? pcKey = null;
-            foreach (NwItem item in SelectedCharacter.Inventory.Items)
+            // Verify the DM has a controlled creature
+            if (_player.ControlledCreature == null)
             {
-                if (item.Tag == "ds_pckey")
+                _player.SendServerMessage("DM controlled creature not found!", ColorConstants.Red);
+                return Task.CompletedTask;
+            }
+
+            // Unequip all items first to ensure we can destroy equipped items too
+            List<InventorySlot> equipmentSlots = new List<InventorySlot>
+            {
+                InventorySlot.Head,
+                InventorySlot.Chest,
+                InventorySlot.Boots,
+                InventorySlot.Arms,
+                InventorySlot.RightHand,
+                InventorySlot.LeftHand,
+                InventorySlot.Cloak,
+                InventorySlot.LeftRing,
+                InventorySlot.RightRing,
+                InventorySlot.Neck,
+                InventorySlot.Belt,
+                InventorySlot.Arrows,
+                InventorySlot.Bullets,
+                InventorySlot.Bolts
+            };
+
+            int unequippedCount = 0;
+            foreach (var slot in equipmentSlots)
+            {
+                NwItem? equippedItem = SelectedCharacter.GetItemInSlot(slot);
+                if (equippedItem != null)
                 {
-                    pcKey = item;
-                    break;
+                    SelectedCharacter.RunUnequip(equippedItem);
+                    unequippedCount++;
                 }
             }
 
-            if (pcKey != null && _player.ControlledCreature != null)
+            if (unequippedCount > 0)
             {
-                pcKey.Clone(_player.ControlledCreature);
-                pcKey.Destroy();
-                _player.SendServerMessage("PC Key moved to your inventory.", ColorConstants.Green);
+                _player.SendServerMessage($"Unequipped {unequippedCount} items from new character.", ColorConstants.Cyan);
             }
 
-            // Restore items
+            // Destroy all existing items in character inventory to prevent duplicates
+            List<NwItem> existingItems = SelectedCharacter.Inventory.Items.ToList();
+
+            foreach (NwItem item in existingItems)
+            {
+                item.Destroy();
+            }
+            _player.SendServerMessage($"Cleared {existingItems.Count} starting items from character.", ColorConstants.Orange);
+
+            // Restore PC Key first from database
+            if (rebuild.PcKeyData != null && rebuild.PcKeyData.Length > 0)
+            {
+                NwItem? pcKey = DeserializeItem(rebuild.PcKeyData, SelectedCharacter);
+                if (pcKey != null)
+                {
+                    _player.SendServerMessage("PC Key restored to player from database.", ColorConstants.Green);
+                }
+                else
+                {
+                    _player.SendServerMessage("Warning: Failed to restore PC Key from database!", ColorConstants.Yellow);
+                }
+            }
+
+            // Destroy the DM's backup copy of the PC Key
+            if (_player.ControlledCreature != null)
+            {
+                NwItem? pcKeyInDm = null;
+                foreach (NwItem item in _player.ControlledCreature.Inventory.Items)
+                {
+                    if (item.Tag == "ds_pckey")
+                    {
+                        // Verify it's the right PC Key by comparing names
+                        if (rebuild.PcKeyData != null && rebuild.PcKeyData.Length > 0)
+                        {
+                            NwItem? storedKey = DeserializeItem(rebuild.PcKeyData, _player.ControlledCreature);
+                            if (storedKey != null)
+                            {
+                                if (item.Name == storedKey.Name)
+                                {
+                                    pcKeyInDm = item;
+                                    storedKey.Destroy(); // Clean up temp key
+                                    break;
+                                }
+                                storedKey.Destroy(); // Clean up temp key
+                            }
+                        }
+                    }
+                }
+
+                if (pcKeyInDm != null)
+                {
+                    pcKeyInDm.Destroy();
+                    _player.SendServerMessage("Destroyed DM's backup copy of PC Key.", ColorConstants.Cyan);
+                }
+            }
+
+            // Restore all other items
             var itemRecords = _repository.GetItemRecords(rebuildId);
             int restoredCount = 0;
 
@@ -557,7 +780,15 @@ public sealed class RebuildToolModel
             {
                 SelectedCharacter.OriginalLastName = rebuild.OriginalLastName;
             }
-            _player.SendServerMessage($"Character name set to: {rebuild.OriginalFirstName} {rebuild.OriginalLastName}", ColorConstants.Green);
+
+            // Update the character's display name immediately using NWScript
+            string fullName = $"{rebuild.OriginalFirstName} {rebuild.OriginalLastName}";
+            NWN.Core.NWScript.SetName(SelectedCharacter, fullName);
+
+            // Force update the character sheet to show the new name
+            PlayerPlugin.UpdateCharacterSheet((uint)SelectedCharacter);
+
+            _player.SendServerMessage($"Character name set to: {fullName}", ColorConstants.Green);
 
             // Remove heritage feat if present
             RemoveHeritageFeat(targetPlayer);
@@ -627,9 +858,20 @@ public sealed class RebuildToolModel
             else
             {
                 xpToReturn = rebuild.StoredXp;
-                NWN.Core.NWScript.SetXP((uint)SelectedCharacter, currentXp + xpToReturn);
+
+                // Subtract starting XP (4000) since the new character already has it
+                int currentCharacterXp = SelectedCharacter.Xp;
+                int finalXp = currentCharacterXp + xpToReturn - 4000;
+
+                // Make sure we don't go negative
+                if (finalXp < 0)
+                {
+                    finalXp = 0;
+                }
+
+                NWN.Core.NWScript.SetXP((uint)SelectedCharacter, finalXp);
                 rebuild.StoredXp = 0;
-                message = $"Return All XP: {SelectedCharacter.Name} gained {xpToReturn:N0} XP.";
+                message = $"Return All XP: {SelectedCharacter.Name} set to {finalXp:N0} XP (stored XP minus 4,000 starting XP).";
             }
 
             _repository.Update(rebuild);
@@ -644,7 +886,7 @@ public sealed class RebuildToolModel
         }
     }
 
-    public void FinishFullRebuild(int rebuildId)
+    public void FinishFullRebuild(int rebuildId, NwCreature targetCharacter)
     {
         try
         {
@@ -654,6 +896,7 @@ public sealed class RebuildToolModel
                 _player.SendServerMessage($"Rebuild ID {rebuildId} not found!", ColorConstants.Red);
                 return;
             }
+
 
             _repository.CompleteRebuild(rebuildId);
             _repository.DeleteItemRecordsByRebuildId(rebuildId);
@@ -720,21 +963,21 @@ public sealed class RebuildToolModel
     {
         try
         {
-            Location? targetLocation = owner?.Location ?? _player.ControlledCreature?.Location;
-            if (targetLocation == null)
+            // Deserialize the item with its full contents
+            NwItem? item = NwItem.Deserialize(itemData);
+
+            if (item == null)
             {
-                _player.SendServerMessage("Could not determine target location for item deserialization.", ColorConstants.Yellow);
+                _player.SendServerMessage("Failed to deserialize an item.", ColorConstants.Yellow);
                 return null;
             }
 
-            // Use NwItem.Deserialize with byte array
-            NwItem? item = NwItem.Deserialize(itemData);
-            if (item != null && owner != null)
+            // If we have an owner (creature), use AcquireItem to properly transfer the item
+            // This preserves container contents, unlike Clone
+            if (owner is NwCreature creature)
             {
-                // Clone to the target owner's inventory
-                NwItem? ownedItem = item.Clone(owner);
-                item.Destroy(); // Clean up the temporary item
-                return ownedItem;
+                creature.AcquireItem(item);
+                return item;
             }
 
             return item;

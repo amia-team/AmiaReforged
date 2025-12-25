@@ -1,4 +1,4 @@
-﻿using AmiaReforged.Core.UserInterface;
+﻿﻿using AmiaReforged.Core.UserInterface;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil;
 using Anvil.API;
@@ -363,9 +363,9 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                 {
                     Children =
                     [
+                        new NuiSpacer { Width = 80f },
                         new NuiLabel("Choose a Rebuild Type:")
                         {
-                            HorizontalAlign = NuiHAlign.Center,
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
                         }
@@ -476,7 +476,7 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                         {
                             Id = "btn_rebuild_cancel",
                             Width = 150f,
-                            Height = 38f,
+                            Height = 35f,
                             Tooltip = "Cancel"
                         },
                     ]
@@ -494,7 +494,7 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
 
     public NuiWindow BuildRaceOptionsModal(List<NuiComboEntry> raceEntries)
     {
-        const float modalW = 400f;
+        const float modalW = 390f;
         const float modalH = 420f;
 
         NuiColumn layout = new NuiColumn
@@ -604,7 +604,7 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                 // Clear Subrace button
                 new NuiRow
                 {
-                    Height = 35f,
+                    Height = 40f,
                     Children =
                     [
                         new NuiSpacer { Width = 155f },
@@ -612,7 +612,7 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                         {
                             Id = "btn_clear_subrace",
                             Width = 200f,
-                            Height = 40f,
+                            Height = 35f,
                             Tooltip = "Clear the character's subrace field"
                         }
                     ]
@@ -657,7 +657,7 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
 
     public NuiWindow BuildFullRebuildModal()
     {
-        const float modalW = 450f;
+        const float modalW = 340f;
         const float modalH = 550f;
 
         NuiColumn layout = new NuiColumn
@@ -683,16 +683,16 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                     Height = 40f,
                     Children =
                     [
+                        new NuiSpacer { Width = 80f },
                         new NuiLabel("Full Character Rebuild")
                         {
-                            HorizontalAlign = NuiHAlign.Center,
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
                         }
                     ]
                 },
 
-                new NuiSpacer { Height = 20f },
+                new NuiSpacer { Height = 10f },
 
                 // Start Rebuild button
                 new NuiRow
@@ -700,18 +700,18 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                     Height = 45f,
                     Children =
                     [
-                        new NuiSpacer { Width = 100f },
+                        new NuiSpacer { Width = 80f },
                         new NuiButton("Start Rebuild")
                         {
                             Id = "btn_start_full_rebuild",
-                            Width = 250f,
+                            Width = 150f,
                             Height = 40f,
                             Tooltip = "Begin the full rebuild process"
                         }
                     ]
                 },
 
-                new NuiSpacer { Height = 15f },
+                new NuiSpacer { Height = 5f },
 
                 // Return Inventory button
                 new NuiRow
@@ -719,18 +719,18 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                     Height = 45f,
                     Children =
                     [
-                        new NuiSpacer { Width = 100f },
+                        new NuiSpacer { Width = 80f },
                         new NuiButton("Return Inventory")
                         {
                             Id = "btn_return_inventory",
-                            Width = 250f,
+                            Width = 150f,
                             Height = 40f,
                             Tooltip = "Restore items and gold to the new character"
                         }
                     ]
                 },
 
-                new NuiSpacer { Height = 15f },
+                new NuiSpacer { Height = 5f },
 
                 // Return XP section
                 new NuiRow
@@ -738,38 +738,45 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                     Height = 40f,
                     Children =
                     [
-                        new NuiSpacer { Width = 50f },
+                        new NuiSpacer { Width = 75f },
                         new NuiLabel("Return to Level (2-30):")
                         {
                             Width = 165f,
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
-                        },
-                        new NuiTextEdit("", FullRebuildReturnLevel, 2, false)
-                        {
-                            Width = 80f,
-                            Tooltip = "Leave empty to return all XP"
                         }
                     ]
                 },
-
+                new NuiRow
+                {
+                    Height = 45f,
+                    Children =
+                    {
+                        new NuiSpacer { Width = 125f },
+                        new NuiTextEdit("", FullRebuildReturnLevel, 2, false)
+                        {
+                            Width = 60f,
+                            Tooltip = "Leave empty to return all XP"
+                        }
+                    }
+                },
                 new NuiRow
                 {
                     Height = 45f,
                     Children =
                     [
-                        new NuiSpacer { Width = 100f },
+                        new NuiSpacer { Width = 80f },
                         new NuiButton("Return XP")
                         {
                             Id = "btn_full_rebuild_return_xp",
-                            Width = 250f,
+                            Width = 150f,
                             Height = 40f,
                             Tooltip = "Return XP to the character"
                         }
                     ]
                 },
 
-                new NuiSpacer { Height = 15f },
+                new NuiSpacer { Height = 5f },
 
                 // Finish button
                 new NuiRow
@@ -777,18 +784,18 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                     Height = 45f,
                     Children =
                     [
-                        new NuiSpacer { Width = 100f },
+                        new NuiSpacer { Width = 80f },
                         new NuiButton("Finish")
                         {
                             Id = "btn_finish_full_rebuild",
-                            Width = 250f,
+                            Width = 150f,
                             Height = 40f,
                             Tooltip = "Complete and finalize the rebuild (cannot be undone)"
                         }
                     ]
                 },
 
-                new NuiSpacer { Height = 15f },
+                new NuiSpacer { Height = 5f },
 
                 // Find Rebuild button
                 new NuiRow
@@ -796,18 +803,18 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                     Height = 45f,
                     Children =
                     [
-                        new NuiSpacer { Width = 100f },
+                        new NuiSpacer { Width = 80f },
                         new NuiButton("Find Rebuild")
                         {
                             Id = "btn_find_rebuild",
-                            Width = 250f,
+                            Width = 150f,
                             Height = 40f,
                             Tooltip = "Find a pending rebuild"
                         }
                     ]
                 },
 
-                new NuiSpacer { Height = 15f },
+                new NuiSpacer { Height = 5f },
 
                 // Cancel button
                 new NuiRow
@@ -815,12 +822,12 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                     Height = 45f,
                     Children =
                     [
-                        new NuiSpacer { Width = 100f },
+                        new NuiSpacer { Width = 80f },
                         new NuiButtonImage("ui_btn_cancel")
                         {
                             Id = "btn_full_rebuild_cancel",
-                            Width = 250f,
-                            Height = 38f,
+                            Width = 150f,
+                            Height = 35f,
                             Tooltip = "Close window"
                         }
                     ]
@@ -917,7 +924,7 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                         new NuiButtonImage("ui_btn_cancel")
                         {
                             Id = "btn_find_rebuild_cancel",
-                            Width = 120f,
+                            Width = 128f,
                             Height = 32f,
                             Tooltip = "Cancel"
                         }
