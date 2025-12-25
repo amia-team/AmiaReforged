@@ -23,9 +23,9 @@ public sealed class CustomSummonDmView : ScryView<CustomSummonDmPresenter>
     public readonly NuiBind<string> SummonNames = new("csdm_summon_names");
     public readonly NuiBind<int> SelectedSummonIndex = new("csdm_selected_summon");
 
-    public CustomSummonDmView(NwPlayer player, NwItem widget)
+    public CustomSummonDmView(NwPlayer player, NwItem widget, WindowDirector windowDirector)
     {
-        Presenter = new CustomSummonDmPresenter(this, player, widget);
+        Presenter = new CustomSummonDmPresenter(this, player, widget, windowDirector);
     }
 
     public override NuiLayout RootLayout()
@@ -85,28 +85,26 @@ public sealed class CustomSummonDmView : ScryView<CustomSummonDmPresenter>
                         }
                     }
                 },
-                new NuiSpacer { Height = 10f },
 
                 // Instructions
                 new NuiRow
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 60f },
+                        new NuiSpacer { Width = 20f },
                         new NuiLabel("Add summons by clicking 'Add' and targeting a cust_summon template creature.")
                         {
                             Height = 35f,
-                            Width = 500f,
+                            Width = 580f,
                             ForegroundColor = new Color(50, 40, 30)
                         }
                     }
                 },
-                new NuiSpacer { Height = 10f },
 
                 // Summon list
                 BuildSummonList(),
 
-                new NuiSpacer { Height = 15f },
+                new NuiSpacer { Height = 5f },
 
                 // Action buttons
                 BuildActionButtons()
@@ -130,6 +128,30 @@ public sealed class CustomSummonDmView : ScryView<CustomSummonDmPresenter>
         {
             Children =
             {
+                // Weapon change button row
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 180f },
+                        new NuiLabel("Change Summon Weapon Type:")
+                        {
+                            Width = 225f,
+                            Height = 35f,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiButtonImage("app_sword")
+                        {
+                            Id = "csdm_btn_change_weapon",
+                            Width = 35f,
+                            Height = 35f,
+                            Tooltip = "Change a summon's weapon before adding"
+                        },
+                    }
+                },
+                new NuiSpacer { Height = 5f },
+                // Summon list
                 new NuiRow
                 {
                     Children =

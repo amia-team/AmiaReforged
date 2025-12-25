@@ -1,12 +1,14 @@
 ﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using Anvil;
 using Anvil.API;
 using Anvil.API.Events;
+using Anvil.Services;
 using NLog;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.CharacterTools.CustomSummon;
 
-public sealed class CustomSummonDmPresenter(CustomSummonDmView view, NwPlayer player, NwItem widget)
+public sealed class CustomSummonDmPresenter(CustomSummonDmView view, NwPlayer player, NwItem widget, WindowDirector windowDirector)
     : ScryPresenter<CustomSummonDmView>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
@@ -81,6 +83,10 @@ public sealed class CustomSummonDmPresenter(CustomSummonDmView view, NwPlayer pl
                 player.SendServerMessage($"Selected summon {selectedIndex + 1}. Click 'Remove' to delete it.", ColorConstants.Cyan);
                 break;
 
+            case "csdm_btn_change_weapon":
+                StartChangingWeapon();
+                break;
+
             case "csdm_btn_add":
                 StartAddingSummon();
                 break;
@@ -93,6 +99,53 @@ public sealed class CustomSummonDmPresenter(CustomSummonDmView view, NwPlayer pl
                 Close();
                 break;
         }
+    }
+
+    private void StartChangingWeapon()
+    {
+        player.EnterTargetMode(OnWeaponChangeTargetSelected);
+        player.SendServerMessage("Select a cust_summon creature to change its weapon type.", ColorConstants.Cyan);
+    }
+
+    private void OnWeaponChangeTargetSelected(ModuleEvents.OnPlayerTarget targetEvent)
+    {
+        if (targetEvent.TargetObject is not NwCreature targetCreature)
+        {
+            player.SendServerMessage("You must target a creature.", ColorConstants.Orange);
+            return;
+        }
+
+        if (targetCreature.Tag != "cust_summon")
+        {
+            player.SendServerMessage("You must select a cust_summon template creature.", ColorConstants.Orange);
+            return;
+        }
+
+        // Check if creature has a weapon
+        NwItem? weapon = targetCreature.GetItemInSlot(InventorySlot.RightHand);
+        if (weapon == null || !weapon.IsValid)
+        {
+            player.SendServerMessage("The selected creature has no weapon equipped.", ColorConstants.Orange);
+            return;
+        }
+
+        Log.Info($"DM {player.PlayerName} opening weapon change modal for creature {targetCreature.Name}");
+
+        // Open the weapon change modal
+        OpenWeaponChangeModal(targetCreature);
+    }
+
+    private void OpenWeaponChangeModal(NwCreature targetCreature)
+    {
+        WeaponChangeView weaponView = new WeaponChangeView(player, targetCreature, widget);
+
+        InjectionService? injector = AnvilCore.GetService<InjectionService>();
+        if (injector != null)
+        {
+            injector.Inject(weaponView.Presenter);
+        }
+
+        windowDirector.OpenWindow(weaponView.Presenter);
     }
 
     private void StartAddingSummon()

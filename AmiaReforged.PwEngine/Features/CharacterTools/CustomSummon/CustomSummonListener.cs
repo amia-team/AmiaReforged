@@ -148,7 +148,7 @@ public class CustomSummonListener
         // Restore the widget's single use so the DM (or player) can use it after configuration
         RestoreWidgetUse(widget);
 
-        CustomSummonDmView view = new CustomSummonDmView(player, widget);
+        CustomSummonDmView view = new CustomSummonDmView(player, widget, _windowDirector);
 
         InjectionService? injector = AnvilCore.GetService<InjectionService>();
         if (injector != null)
