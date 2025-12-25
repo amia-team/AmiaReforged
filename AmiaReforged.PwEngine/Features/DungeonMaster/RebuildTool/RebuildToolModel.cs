@@ -1,7 +1,8 @@
-﻿using Anvil.API;
+﻿﻿using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using AmiaReforged.Races.Races;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Features.DungeonMaster.RebuildTool;
 
@@ -163,8 +164,8 @@ public sealed class RebuildToolModel
         // Store the removed XP so we can return it later if needed
         _lastRemovedXp = xpRemoved;
 
-        // Set character to target level
-        SelectedCharacter.Xp = targetXp;
+        // Set character to target level using NWScript
+        NWN.Core.NWScript.SetXP((uint)SelectedCharacter, targetXp);
 
         // Send messages to both DM and player
         string message = $"Partial Rebuild: {SelectedCharacter.Name} set to level {targetLevel}. Removed {xpRemoved:N0} XP.";
@@ -172,7 +173,7 @@ public sealed class RebuildToolModel
         targetPlayer.SendServerMessage(message, ColorConstants.Orange);
     }
 
-    public void ReturnAllXP(NwPlayer targetPlayer)
+    public void ReturnAllXP(NwPlayer targetPlayer, int? returnToLevel = null)
     {
         if (SelectedCharacter == null)
         {
@@ -188,21 +189,60 @@ public sealed class RebuildToolModel
 
         int currentLevel = SelectedCharacter.Level;
         int currentXp = SelectedCharacter.Xp;
+        int xpToReturn;
+        string message;
 
-        // Return exactly the amount that was removed
-        int newXp = currentXp + _lastRemovedXp;
-        SelectedCharacter.Xp = newXp;
+        if (returnToLevel.HasValue)
+        {
+            // Validate the return to level
+            int targetLevel = returnToLevel.Value;
+
+            if (targetLevel < 2 || targetLevel > 30)
+            {
+                _player.SendServerMessage("Return to level must be between 2 and 30.");
+                return;
+            }
+
+            if (targetLevel <= currentLevel)
+            {
+                _player.SendServerMessage($"Return to level ({targetLevel}) must be higher than current level ({currentLevel}).");
+                return;
+            }
+
+            // Calculate XP needed to reach target level
+            int targetXp = targetLevel * (targetLevel - 1) * 500;
+            xpToReturn = targetXp - currentXp;
+
+            // Make sure we don't return more than what was removed
+            if (xpToReturn > _lastRemovedXp)
+            {
+                xpToReturn = _lastRemovedXp;
+                _player.SendServerMessage($"Warning: Requested level requires more XP than was removed. Returning all {_lastRemovedXp:N0} XP instead.", ColorConstants.Yellow);
+            }
+
+            // Set character to target XP using NWScript
+            NWN.Core.NWScript.SetXP((uint)SelectedCharacter, currentXp + xpToReturn);
+
+            // Reduce the tracked removed XP
+            _lastRemovedXp -= xpToReturn;
+
+            message = $"Return XP to Level {targetLevel}: {SelectedCharacter.Name} gained {xpToReturn:N0} XP.";
+        }
+        else
+        {
+            // Return all removed XP
+            xpToReturn = _lastRemovedXp;
+            NWN.Core.NWScript.SetXP((uint)SelectedCharacter, currentXp + xpToReturn);
+
+            message = $"Return All XP: {SelectedCharacter.Name} gained {xpToReturn:N0} XP.";
+
+            // Reset the tracked XP since we've returned it all
+            _lastRemovedXp = 0;
+        }
 
         // Send messages to both DM and player
-        string message = $"Return All XP: {SelectedCharacter.Name} gained {_lastRemovedXp:N0} XP (returned to level {currentLevel}).";
         _player.SendServerMessage(message, ColorConstants.Green);
         targetPlayer.SendServerMessage(message, ColorConstants.Green);
-
-        _player.SendServerMessage($"Character will need to relog to properly update.", ColorConstants.Yellow);
-        targetPlayer.SendServerMessage($"You will need to relog to properly update your character.", ColorConstants.Yellow);
-
-        // Reset the tracked XP since we've returned it
-        _lastRemovedXp = 0;
     }
 
     private int ResolvePlayerRace(NwPlayer player) =>
@@ -227,4 +267,120 @@ public sealed class RebuildToolModel
             "drow" => (int)ManagedRaces.RacialType.Drow,
             _ => NWN.Core.NWScript.GetRacialType(SelectedCharacter)
         };
+
+    public List<(int id, string label, int nameStrRef)> LoadRacialTypes()
+    {
+        List<(int id, string label, int nameStrRef)> races = new();
+
+        // Read racialtypes.2da - iterate through rows until we hit an invalid entry
+        for (int i = 0; i < 200; i++) // Reasonable upper limit
+        {
+            string label = NWN.Core.NWScript.Get2DAString("racialtypes", "Label", i);
+
+            // If label is empty or "****", we've reached the end
+            if (string.IsNullOrEmpty(label) || label == "****")
+                break;
+
+            // Skip races marked as DELETED or INVALID_RACE
+            if (label.Contains("DELETED", StringComparison.OrdinalIgnoreCase) ||
+                label.Contains("INVALID_RACE", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            string nameStr = NWN.Core.NWScript.Get2DAString("racialtypes", "Name", i);
+
+            // Try to parse the Name column as a strref number
+            if (int.TryParse(nameStr, out int nameStrRef))
+            {
+                races.Add((i, label, nameStrRef));
+            }
+            else
+            {
+                // If Name isn't a number, just use the label
+                races.Add((i, label, 0));
+            }
+        }
+
+        return races;
+    }
+
+    public string GetCurrentRaceInfo()
+    {
+        if (SelectedCharacter == null)
+            return "No character selected";
+
+        int racialType = NWN.Core.NWScript.GetRacialType((uint)SelectedCharacter);
+        string label = NWN.Core.NWScript.Get2DAString("racialtypes", "Label", racialType);
+
+        return $"{label} (ID: {racialType})";
+    }
+
+    public void ChangeCharacterRace(int newRacialType, NwPlayer targetPlayer, string? optionalSubrace = null)
+    {
+        if (SelectedCharacter == null)
+        {
+            _player.SendServerMessage("No character selected.");
+            return;
+        }
+
+        // Get the race label
+        string label = NWN.Core.NWScript.Get2DAString("racialtypes", "Label", newRacialType);
+
+        int currentRace = NWN.Core.NWScript.GetRacialType((uint)SelectedCharacter);
+
+        // Use NWNX to set the racial type
+        CreaturePlugin.SetRacialType((uint)SelectedCharacter, newRacialType);
+
+        // Verify the change
+        int verifyRace = NWN.Core.NWScript.GetRacialType((uint)SelectedCharacter);
+
+        if (verifyRace == newRacialType)
+        {
+            _player.SendServerMessage($"Successfully changed race from {currentRace} to {newRacialType} ({label})", ColorConstants.Green);
+            targetPlayer.SendServerMessage($"Your racial type has been changed to {label} by a DM.", ColorConstants.Orange);
+
+            // Only set subrace if the DM provided a value
+            if (!string.IsNullOrWhiteSpace(optionalSubrace))
+            {
+                try
+                {
+                    SelectedCharacter.SubRace = optionalSubrace;
+                    _player.SendServerMessage($"Subrace field set to: {optionalSubrace}", ColorConstants.Green);
+                    targetPlayer.SendServerMessage($"Your subrace has been set to: {optionalSubrace}", ColorConstants.Orange);
+                }
+                catch (Exception ex)
+                {
+                    _player.SendServerMessage($"Could not set subrace field: {ex.Message}", ColorConstants.Yellow);
+                }
+            }
+            else
+            {
+                _player.SendServerMessage($"Subrace field was not changed.", ColorConstants.Gray);
+            }
+        }
+        else
+        {
+            _player.SendServerMessage($"Failed to change race. Current race is still: {verifyRace}", ColorConstants.Red);
+        }
+    }
+
+    public void ClearCharacterSubrace(NwPlayer targetPlayer)
+    {
+        if (SelectedCharacter == null)
+        {
+            _player.SendServerMessage("No character selected.");
+            return;
+        }
+
+        try
+        {
+            SelectedCharacter.SubRace = "";
+            _player.SendServerMessage($"Cleared subrace field for {SelectedCharacter.Name}.", ColorConstants.Green);
+            targetPlayer.SendServerMessage($"Your subrace has been cleared by a DM.", ColorConstants.Orange);
+        }
+        catch (Exception ex)
+        {
+            _player.SendServerMessage($"Could not clear subrace field: {ex.Message}", ColorConstants.Red);
+        }
+    }
 }
+

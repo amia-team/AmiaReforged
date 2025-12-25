@@ -25,12 +25,18 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
     public readonly NuiBind<string> Level = new("level");
     public readonly NuiBind<int> LevelFilter = new("level_filter");
     public readonly NuiBind<string> RebuildLevel = new("rebuild_level");
+    public readonly NuiBind<string> ReturnToLevel = new("return_to_level");
+    public readonly NuiBind<string> CurrentRaceInfo = new("current_race_info");
+    public readonly NuiBind<int> SelectedRaceIndex = new("selected_race_index");
+    public readonly NuiBind<string> SubRaceInput = new("subrace_input");
 
     // Buttons
     public NuiButtonImage SelectCharacterButton = null!;
     public NuiButtonImage AddFeatButton = null!;
     public NuiButtonImage RemoveFeatButton = null!;
     public NuiButtonImage InitiateRebuildButton = null!;
+    public NuiButton ViewAllFeatsButton = null!;
+    public NuiButtonImage RaceOptionsButton = null!;
 
     public string Title => "Character Rebuild Tool";
     public bool ListInDmTools => true;
@@ -174,7 +180,15 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                                 new NuiComboEntry("Level 29", 29),
                                 new NuiComboEntry("Level 30", 30)
                             ])
-                        }
+                        },
+                        new NuiSpacer { Width = 20f },
+                        new NuiButton("View All Feats")
+                        {
+                            Id = "btn_view_all_feats",
+                            Width = 130f,
+                            Height = 30f,
+                            Tooltip = "Display all feats the character has"
+                        }.Assign(out ViewAllFeatsButton)
                     ]
                 },
 
@@ -205,13 +219,21 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                                     Height = 50f,
                                     Tooltip = "Initiate Rebuild"
                                 }.Assign(out InitiateRebuildButton),
-                                new NuiLabel("Initiate")
+                                new NuiLabel("Rebuild")
                                 {
                                     Height = 25f,
                                     HorizontalAlign = NuiHAlign.Center,
                                     ForegroundColor = new Color(30, 20, 12)
                                 },
-                                new NuiLabel("Rebuild")
+                                new NuiSpacer { Height = 10f },
+                                new NuiButtonImage("app_save")
+                                {
+                                    Id = "btn_race_options",
+                                    Width = 50f,
+                                    Height = 50f,
+                                    Tooltip = "Race Options"
+                                }.Assign(out RaceOptionsButton),
+                                new NuiLabel("Race")
                                 {
                                     Height = 25f,
                                     HorizontalAlign = NuiHAlign.Center,
@@ -312,7 +334,7 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
     public NuiWindow BuildRebuildModal()
     {
         const float modalW = 370f;
-        const float modalH = 390f;
+        const float modalH = 430f;
 
         NuiColumn layout = new NuiColumn
         {
@@ -331,12 +353,9 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                     }
                 },
 
-                new NuiSpacer { Height = 20f },
-
                 // Title
                 new NuiRow
                 {
-                    Height = 30f,
                     Children =
                     [
                         new NuiLabel("Choose a Rebuild Type:")
@@ -382,16 +401,40 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                     Height = 40f,
                     Children =
                     [
-                        new NuiSpacer { Width = 50f },
-                        new NuiLabel("Starting Level (1-29):")
+                        new NuiSpacer { Width = 70f },
+                        new NuiLabel("Delevel To (1-29):")
                         {
-                            Width = 150f,
+                            Width = 130f,
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
                         },
                         new NuiTextEdit("", new NuiBind<string>("rebuild_level"), 2, false)
                         {
-                            Width = 80f
+                            Width = 80f,
+                            Tooltip = "Input a number to delevel to a specific level"
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 10f },
+
+                // Return to Level input
+                new NuiRow
+                {
+                    Height = 40f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 35f },
+                        new NuiLabel("Return to Level (2-30):")
+                        {
+                            Width = 165f,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiTextEdit("", new NuiBind<string>("return_to_level"), 2, false)
+                        {
+                            Width = 80f,
+                            Tooltip = "Leave empty to return all XP"
                         }
                     ]
                 },
@@ -404,15 +447,14 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                     Height = 40f,
                     Children =
                     [
-                        new NuiSpacer(),
-                        new NuiButton("Return All XP")
+                        new NuiSpacer {Width = 100f},
+                        new NuiButton("Return XP")
                         {
                             Id = "btn_return_all_xp",
-                            Width = 200f,
+                            Width = 150f,
                             Height = 35f,
-                            Tooltip = "Return all removed XP to the player"
+                            Tooltip = "Return an amount of removed XP to the player"
                         },
-                        new NuiSpacer()
                     ]
                 },
 
@@ -424,7 +466,7 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                     Height = 50f,
                     Children =
                     [
-                        new NuiSpacer(),
+                        new NuiSpacer{Width = 100f},
                         new NuiButtonImage("ui_btn_cancel")
                         {
                             Id = "btn_rebuild_cancel",
@@ -432,7 +474,6 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                             Height = 38f,
                             Tooltip = "Cancel"
                         },
-                        new NuiSpacer()
                     ]
                 }
             ]
@@ -445,4 +486,169 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
             Closable = true
         };
     }
+
+    public NuiWindow BuildRaceOptionsModal(List<NuiComboEntry> raceEntries)
+    {
+        const float modalW = 400f;
+        const float modalH = 420f;
+
+        NuiColumn layout = new NuiColumn
+        {
+            Width = modalW,
+            Height = modalH,
+            Children =
+            [
+                // Background
+                new NuiRow
+                {
+                    Width = 0f,
+                    Height = 0f,
+                    DrawList = new()
+                    {
+                        new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, modalW, modalH))
+                    }
+                },
+
+                // Title
+                new NuiRow
+                {
+                    Height = 40f,
+                    Children =
+                    [
+                        new NuiLabel("Race Options")
+                        {
+                            HorizontalAlign = NuiHAlign.Center,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 10f },
+
+                // Current Race Display
+                new NuiRow
+                {
+                    Height = 40f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel("Current Race:")
+                        {
+                            Width = 110f,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiLabel(CurrentRaceInfo)
+                        {
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 20f },
+
+                // Race Selection Dropdown
+                new NuiRow
+                {
+                    Height = 40f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel("Select New Race:")
+                        {
+                            Width = 130f,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiCombo
+                        {
+                            Width = 200f,
+                            Selected = SelectedRaceIndex,
+                            Entries = new NuiValue<List<NuiComboEntry>>(raceEntries)
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 20f },
+
+                // Optional Subrace Input
+                new NuiRow
+                {
+                    Height = 40f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel("Subrace (Optional):")
+                        {
+                            Width = 130f,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiTextEdit("", SubRaceInput, 32, false)
+                        {
+                            Width = 200f,
+                            Tooltip = "Leave empty to not change subrace"
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 5f },
+
+                // Clear Subrace button
+                new NuiRow
+                {
+                    Height = 35f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 155f },
+                        new NuiButton("Clear Subrace")
+                        {
+                            Id = "btn_clear_subrace",
+                            Width = 200f,
+                            Height = 40f,
+                            Tooltip = "Clear the character's subrace field"
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 15f },
+
+                // Save and Cancel buttons
+                new NuiRow
+                {
+                    Height = 50f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 60f },
+                        new NuiButtonImage("ui_btn_save")
+                        {
+                            Id = "btn_race_save",
+                            Width = 128f,
+                            Height = 32f,
+                            Tooltip = "Save race change"
+                        },
+                        new NuiSpacer { Width = 20f },
+                        new NuiButtonImage("ui_btn_cancel")
+                        {
+                            Id = "btn_race_cancel",
+                            Width = 128f,
+                            Height = 32f,
+                            Tooltip = "Cancel"
+                        }
+                    ]
+                }
+            ]
+        };
+
+        return new NuiWindow(layout, "Race Options")
+        {
+            Geometry = new NuiRect(450f, 250f, modalW, modalH),
+            Resizable = false,
+            Closable = true
+        };
+    }
 }
+
+

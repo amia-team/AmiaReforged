@@ -1,4 +1,4 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 using System.Text;
@@ -14,6 +14,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
     private NuiWindowToken _token;
     private NuiWindow? _window;
     private NuiWindowToken? _rebuildModalToken;
+    private NuiWindowToken? _raceOptionsModalToken;
 
     public override NuiWindowToken Token() => _token;
 
@@ -88,6 +89,14 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
 
             case var id when id == View.InitiateRebuildButton.Id:
                 OpenRebuildModal();
+                break;
+
+            case var id when id == View.ViewAllFeatsButton.Id:
+                DisplayAllFeats();
+                break;
+
+            case var id when id == View.RaceOptionsButton.Id:
+                OpenRaceOptionsModal();
                 break;
         }
     }
@@ -178,6 +187,53 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         Token().SetBindValue(View.LevelupInfo, sb.ToString());
     }
 
+    private void DisplayAllFeats()
+    {
+        if (_model.SelectedCharacter == null) return;
+
+        StringBuilder sb = new();
+        int totalLevels = _model.SelectedCharacter.Level;
+
+        sb.AppendLine($"=== All Feats for {_model.SelectedCharacter.Name} ===\n");
+
+        // Collect all feats from all levels
+        Dictionary<NwFeat, List<int>> featsWithLevels = new();
+
+        for (int level = 1; level <= totalLevels; level++)
+        {
+            CreatureLevelInfo levelInfo = _model.SelectedCharacter.GetLevelStats(level);
+
+            foreach (var feat in levelInfo.Feats)
+            {
+                if (!featsWithLevels.ContainsKey(feat))
+                {
+                    featsWithLevels[feat] = new List<int>();
+                }
+                featsWithLevels[feat].Add(level);
+            }
+        }
+
+        // Sort feats alphabetically by name
+        var sortedFeats = featsWithLevels.OrderBy(kvp => kvp.Key.Name.ToString());
+
+        sb.AppendLine($"Total Feats: {featsWithLevels.Count}\n");
+
+        foreach (var kvp in sortedFeats)
+        {
+            NwFeat feat = kvp.Key;
+            List<int> levels = kvp.Value;
+
+            // Show feat name, ID, and the level(s) it was acquired at
+            string levelStr = levels.Count > 1
+                ? $"Levels {string.Join(", ", levels)}"
+                : $"Level {levels[0]}";
+
+            sb.AppendLine($"- {feat.Name} (ID: {feat.Id}) - {levelStr}");
+        }
+
+        Token().SetBindValue(View.LevelupInfo, sb.ToString());
+    }
+
     private void HandleAddFeat()
     {
         string featIdStr = Token().GetBindValue(View.FeatId);
@@ -237,6 +293,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         {
             _rebuildModalToken = modalToken;
             modalToken.SetBindValue(View.RebuildLevel, "1");
+            modalToken.SetBindValue(View.ReturnToLevel, "");
             _rebuildModalToken.Value.OnNuiEvent += HandleRebuildModalEvent;
         }
     }
@@ -314,7 +371,24 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
             return;
         }
 
-        _model.ReturnAllXP(targetPlayer);
+        // Check if a return to level was specified
+        string returnToLevelStr = _rebuildModalToken!.Value.GetBindValue(View.ReturnToLevel);
+        int? returnToLevel = null;
+
+        if (!string.IsNullOrWhiteSpace(returnToLevelStr))
+        {
+            if (int.TryParse(returnToLevelStr, out int parsedLevel))
+            {
+                returnToLevel = parsedLevel;
+            }
+            else
+            {
+                _player.SendServerMessage("Invalid return to level. Please enter a valid number between 2 and 30, or leave empty to return all XP.");
+                return;
+            }
+        }
+
+        _model.ReturnAllXP(targetPlayer, returnToLevel);
 
         // Refresh the display after XP return
         UpdateLevelupInfo();
@@ -337,9 +411,133 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         }
     }
 
+    private void OpenRaceOptionsModal()
+    {
+        // Prevent opening if modal already exists
+        if (_raceOptionsModalToken.HasValue)
+            return;
+
+        if (_model.SelectedCharacter == null)
+        {
+            _player.SendServerMessage("Please select a character first.");
+            return;
+        }
+
+        // Load all races from racialtypes.2da
+        List<(int id, string label, int nameStrRef)> races = _model.LoadRacialTypes();
+
+        // Convert to NuiComboEntry list
+        List<NuiComboEntry> raceEntries = races.Select(r => new NuiComboEntry(r.label, r.id)).ToList();
+
+        NuiWindow modal = View.BuildRaceOptionsModal(raceEntries);
+        if (_player.TryCreateNuiWindow(modal, out NuiWindowToken modalToken))
+        {
+            _raceOptionsModalToken = modalToken;
+
+            // Set initial values
+            string currentRaceInfo = _model.GetCurrentRaceInfo();
+            modalToken.SetBindValue(View.CurrentRaceInfo, currentRaceInfo);
+            modalToken.SetBindValue(View.SelectedRaceIndex, 0);
+            modalToken.SetBindValue(View.SubRaceInput, "");
+
+            _raceOptionsModalToken.Value.OnNuiEvent += HandleRaceOptionsModalEvent;
+        }
+    }
+
+    private void HandleRaceOptionsModalEvent(ModuleEvents.OnNuiEvent ev)
+    {
+        if (ev.EventType != NuiEventType.Click) return;
+
+        switch (ev.ElementId)
+        {
+            case "btn_race_save":
+                HandleRaceSave();
+                break;
+
+            case "btn_clear_subrace":
+                HandleClearSubrace();
+                break;
+
+            case "btn_race_cancel":
+                CloseRaceOptionsModal();
+                break;
+        }
+    }
+
+    private void HandleRaceSave()
+    {
+        if (_model.SelectedCharacter == null)
+        {
+            _player.SendServerMessage("No character selected.");
+            return;
+        }
+
+        if (!_raceOptionsModalToken.HasValue)
+            return;
+
+        // Get the selected race index
+        int selectedRaceIndex = _raceOptionsModalToken.Value.GetBindValue(View.SelectedRaceIndex);
+
+        // Get the optional subrace input
+        string subraceInput = _raceOptionsModalToken.Value.GetBindValue(View.SubRaceInput);
+
+        // Find the player who owns this character
+        NwPlayer? targetPlayer = _model.SelectedCharacter.ControllingPlayer;
+        if (targetPlayer == null)
+        {
+            _player.SendServerMessage("Could not find the player controlling this character.");
+            return;
+        }
+
+        // Change the character's race
+        _model.ChangeCharacterRace(selectedRaceIndex, targetPlayer, subraceInput);
+
+        // Update the current race info display
+        string newRaceInfo = _model.GetCurrentRaceInfo();
+        _raceOptionsModalToken.Value.SetBindValue(View.CurrentRaceInfo, newRaceInfo);
+    }
+
+    private void HandleClearSubrace()
+    {
+        if (_model.SelectedCharacter == null)
+        {
+            _player.SendServerMessage("No character selected.");
+            return;
+        }
+
+        // Find the player who owns this character
+        NwPlayer? targetPlayer = _model.SelectedCharacter.ControllingPlayer;
+        if (targetPlayer == null)
+        {
+            _player.SendServerMessage("Could not find the player controlling this character.");
+            return;
+        }
+
+        // Clear the subrace
+        _model.ClearCharacterSubrace(targetPlayer);
+    }
+
+    private void CloseRaceOptionsModal()
+    {
+        if (_raceOptionsModalToken.HasValue)
+        {
+            _raceOptionsModalToken.Value.OnNuiEvent -= HandleRaceOptionsModalEvent;
+            try
+            {
+                _raceOptionsModalToken.Value.Close();
+            }
+            catch
+            {
+                // ignore
+            }
+            _raceOptionsModalToken = null;
+        }
+    }
+
     public override void Close()
     {
         CloseRebuildModal();
+        CloseRaceOptionsModal();
 
         try
         {
