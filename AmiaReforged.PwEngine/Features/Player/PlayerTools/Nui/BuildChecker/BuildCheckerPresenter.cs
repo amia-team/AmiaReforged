@@ -1,4 +1,5 @@
-﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using AmiaReforged.Races.Races;
 using Anvil.API;
 using Anvil.API.Events;
 using System.Text;
@@ -12,6 +13,7 @@ public sealed class BuildCheckerPresenter : ScryPresenter<BuildCheckerView>
     private readonly NwPlayer _player;
     private NuiWindowToken _token;
     private NuiWindow? _window;
+    private NuiWindowToken? _autoRebuildModalToken;
 
     public override NuiWindowToken Token() => _token;
 
@@ -82,6 +84,10 @@ public sealed class BuildCheckerPresenter : ScryPresenter<BuildCheckerView>
 
             case "btn_redo_last_2_levels":
                 HandleRedoLast2Levels();
+                break;
+
+            case "btn_auto_rebuild":
+                OpenAutoRebuildModal();
                 break;
         }
     }
@@ -225,6 +231,16 @@ public sealed class BuildCheckerPresenter : ScryPresenter<BuildCheckerView>
 
         // Calculate target level and XP
         int targetLevel = currentLevel - levelCount;
+
+        // Check for Pale Master or Dragon Disciple restrictions
+        int? minAllowedLevel = CheckPrestigeClassRestrictions();
+        if (minAllowedLevel.HasValue && targetLevel < minAllowedLevel.Value)
+        {
+            Token().SetBindValue(View.RedoButtonsEnabled, true); // Re-enable buttons since we're not proceeding
+            _player.SendServerMessage($"You cannot delevel below level {minAllowedLevel.Value} due to having 10+ levels of Pale Master or Dragon Disciple. These classes have roleplay ramifications that prevent further deleveling.", ColorConstants.Orange);
+            return;
+        }
+
         int targetXp = targetLevel * (targetLevel - 1) * 500;
         int xpToRemove = currentXp - targetXp;
 
@@ -250,6 +266,298 @@ public sealed class BuildCheckerPresenter : ScryPresenter<BuildCheckerView>
             // Re-enable buttons
             Token().SetBindValue(View.RedoButtonsEnabled, true);
         });
+    }
+
+    private void OpenAutoRebuildModal()
+    {
+        // Prevent opening if modal already exists
+        if (_autoRebuildModalToken.HasValue)
+            return;
+
+        NuiWindow modal = View.BuildAutoRebuildModal();
+        if (_player.TryCreateNuiWindow(modal, out NuiWindowToken modalToken))
+        {
+            _autoRebuildModalToken = modalToken;
+            modalToken.SetBindValue(View.AutoRebuildLevel, "");
+            _autoRebuildModalToken.Value.OnNuiEvent += HandleAutoRebuildModalEvent;
+        }
+    }
+
+    private void HandleAutoRebuildModalEvent(ModuleEvents.OnNuiEvent ev)
+    {
+        if (ev.EventType != NuiEventType.Click) return;
+
+        switch (ev.ElementId)
+        {
+            case "btn_auto_rebuild_confirm":
+                HandleAutoRebuildConfirm();
+                break;
+
+            case "btn_auto_rebuild_cancel":
+                CloseAutoRebuildModal();
+                break;
+        }
+    }
+
+    private void HandleAutoRebuildConfirm()
+    {
+        if (_player.LoginCreature == null)
+        {
+            _player.SendServerMessage("No character available.");
+            return;
+        }
+
+        if (!_autoRebuildModalToken.HasValue)
+            return;
+
+        // Get the target level input
+        string targetLevelStr = _autoRebuildModalToken.Value.GetBindValue(View.AutoRebuildLevel);
+
+        if (!int.TryParse(targetLevelStr, out int targetLevel))
+        {
+            _player.SendServerMessage("Invalid level. Please enter a number between 1 and 27.", ColorConstants.Red);
+            return;
+        }
+
+        int currentLevel = _player.LoginCreature.Level;
+
+        // Validate target level
+        if (targetLevel < 1 || targetLevel > 27)
+        {
+            _player.SendServerMessage("Target level must be between 1 and 27.", ColorConstants.Red);
+            return;
+        }
+
+        if (targetLevel >= currentLevel)
+        {
+            _player.SendServerMessage("Target level must be lower than your current level.", ColorConstants.Red);
+            return;
+        }
+
+        // Check for Pale Master or Dragon Disciple restrictions
+        int? minAllowedLevel = CheckPrestigeClassRestrictions();
+        if (minAllowedLevel.HasValue && targetLevel < minAllowedLevel.Value)
+        {
+            _player.SendServerMessage($"You cannot delevel below level {minAllowedLevel.Value} due to having 10+ levels of Pale Master or Dragon Disciple. These classes have roleplay ramifications that prevent further deleveling.", ColorConstants.Orange);
+            return;
+        }
+
+        // Find PC Key
+        NwItem? pcKey = null;
+        foreach (NwItem item in _player.LoginCreature.Inventory.Items)
+        {
+            if (item.Tag == "ds_pckey")
+            {
+                pcKey = item;
+                break;
+            }
+        }
+
+        if (pcKey == null)
+        {
+            _player.SendServerMessage("PC Key (ds_pckey) not found in your inventory!", ColorConstants.Red);
+            return;
+        }
+
+        // Check if they've used this feature within the last 6 months
+        int lastRebuildTimestamp = NWN.Core.NWScript.GetLocalInt(pcKey, "last_auto_rebuild");
+        int currentTimestamp = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        int sixMonthsInSeconds = 60 * 60 * 24 * 30 * 6; // ~6 months
+
+        if (lastRebuildTimestamp > 0)
+        {
+            int timeSinceLastRebuild = currentTimestamp - lastRebuildTimestamp;
+            if (timeSinceLastRebuild < sixMonthsInSeconds)
+            {
+                // Calculate remaining time
+                int remainingSeconds = sixMonthsInSeconds - timeSinceLastRebuild;
+                int remainingDays = remainingSeconds / (60 * 60 * 24);
+                _player.SendServerMessage($"You must wait {remainingDays} more days before using Auto-Rebuild again.", ColorConstants.Orange);
+                return;
+            }
+        }
+
+        // Disable the redo buttons to prevent any interaction during the rebuild
+        Token().SetBindValue(View.RedoButtonsEnabled, false);
+
+        // Check for Heritage Feat and remove if necessary
+        CheckAndRemoveHeritageFeat(targetLevel, currentLevel);
+
+        // Close the modal
+        CloseAutoRebuildModal();
+
+        // Perform the auto-rebuild
+        int currentXp = _player.LoginCreature.Xp;
+        int targetXp = targetLevel * (targetLevel - 1) * 500;
+        int xpToRemove = currentXp - targetXp;
+
+        // Remove XP to target level
+        NWN.Core.NWScript.SetXP((uint)_player.LoginCreature, targetXp);
+        _player.SendServerMessage($"Auto-Rebuild: Removed {xpToRemove:N0} XP. You are now level {targetLevel}.", ColorConstants.Cyan);
+
+        // Wait for the game to process
+        NwTask.Run(async () =>
+        {
+            await NwTask.Delay(TimeSpan.FromMilliseconds(500));
+
+            // Give XP back
+            NWN.Core.NWScript.SetXP((uint)_player.LoginCreature, currentXp);
+            _player.SendServerMessage($"Returned {xpToRemove:N0} XP. You can now relevel your character!", ColorConstants.Green);
+
+            // Update the PC Key with the current timestamp
+            NWN.Core.NWScript.SetLocalInt(pcKey, "last_auto_rebuild", currentTimestamp);
+            _player.SendServerMessage("Auto-Rebuild timestamp recorded. You can use this again in 6 months.", ColorConstants.Cyan);
+
+            // Refresh the display
+            UpdateLevelupInfo();
+
+            // Wait 6 seconds total before re-enabling buttons
+            await NwTask.Delay(TimeSpan.FromMilliseconds(5500));
+
+            // Re-enable buttons
+            Token().SetBindValue(View.RedoButtonsEnabled, true);
+        });
+    }
+
+    private void CloseAutoRebuildModal()
+    {
+        if (_autoRebuildModalToken.HasValue)
+        {
+            _autoRebuildModalToken.Value.OnNuiEvent -= HandleAutoRebuildModalEvent;
+            try
+            {
+                _autoRebuildModalToken.Value.Close();
+            }
+            catch
+            {
+                // ignore
+            }
+            _autoRebuildModalToken = null;
+        }
+    }
+
+    private void CheckAndRemoveHeritageFeat(int targetLevel, int currentLevel)
+    {
+        if (_player.LoginCreature == null) return;
+
+        // Check for Heritage Feat (feat 1238)
+        NwFeat? heritageFeat = NwFeat.FromFeatId(1238);
+        bool hasHeritageFeat = heritageFeat != null && _player.LoginCreature.KnowsFeat(heritageFeat);
+
+        if (!hasHeritageFeat) return;
+
+        // Find which level they took the heritage feat
+        int heritageFeatLevel = -1;
+        for (int level = 1; level <= currentLevel; level++)
+        {
+            CreatureLevelInfo levelInfo = _player.LoginCreature.GetLevelStats(level);
+            if (levelInfo.Feats.Any(f => f.Id == 1238))
+            {
+                heritageFeatLevel = level;
+                break;
+            }
+        }
+
+        // If heritage feat was taken at a level higher than target, remove heritage bonuses
+        if (heritageFeatLevel > targetLevel)
+        {
+            int playerRace = ResolvePlayerRace();
+
+            // Remove heritage abilities if the race is supported
+            if (ManagedRaces.RaceHeritageAbilities.ContainsKey(playerRace))
+            {
+                ManagedRaces.RaceHeritageAbilities[playerRace].RemoveStats(_player);
+                _player.SendServerMessage("Removed heritage abilities.", ColorConstants.Green);
+            }
+
+            // Remove the heritage feat
+            _player.LoginCreature.RemoveFeat(heritageFeat!, true);
+
+            // Delete heritage_setup variable from PC Key
+            uint pcKey = NWN.Core.NWScript.GetItemPossessedBy(_player.LoginCreature, "ds_pckey");
+            if (NWN.Core.NWScript.GetIsObjectValid(pcKey) == NWN.Core.NWScript.TRUE)
+            {
+                NWN.Core.NWScript.DeleteLocalInt(pcKey, "heritage_setup");
+                _player.SendServerMessage("Removed heritage_setup variable from PC Key.", ColorConstants.Green);
+            }
+
+            _player.SendServerMessage("Removed heritage feat.", ColorConstants.Green);
+        }
+    }
+
+    private int ResolvePlayerRace() =>
+        _player.LoginCreature?.SubRace.ToLower() switch
+        {
+            "aasimar" => (int)ManagedRaces.RacialType.Aasimar,
+            "tiefling" => (int)ManagedRaces.RacialType.Tiefling,
+            "feytouched" => (int)ManagedRaces.RacialType.Feytouched,
+            "feyri" => (int)ManagedRaces.RacialType.Feyri,
+            "air genasi" => (int)ManagedRaces.RacialType.AirGenasi,
+            "earth genasi" => (int)ManagedRaces.RacialType.EarthGenasi,
+            "fire genasi" => (int)ManagedRaces.RacialType.FireGenasi,
+            "water genasi" => (int)ManagedRaces.RacialType.WaterGenasi,
+            "avariel" => (int)ManagedRaces.RacialType.Avariel,
+            "lizardfolk" => (int)ManagedRaces.RacialType.Lizardfolk,
+            "half dragon" => (int)ManagedRaces.RacialType.Halfdragon,
+            "dragon" => (int)ManagedRaces.RacialType.Halfdragon,
+            "centaur" => (int)ManagedRaces.RacialType.Centaur,
+            "aquatic elf" => (int)ManagedRaces.RacialType.AquaticElf,
+            "elfling" => (int)ManagedRaces.RacialType.Elfling,
+            "shadovar" => (int)ManagedRaces.RacialType.Shadovar,
+            "drow" => (int)ManagedRaces.RacialType.Drow,
+            _ => NWN.Core.NWScript.GetRacialType(_player.LoginCreature)
+        };
+
+    private int? CheckPrestigeClassRestrictions()
+    {
+        if (_player.LoginCreature == null) return null;
+
+        // Class type constants from NWN
+        const int CLASS_TYPE_PALEMASTER = 34;
+        const int CLASS_TYPE_DRAGON_DISCIPLE = 37;
+
+        int totalLevels = _player.LoginCreature.Level;
+        int paleMasterLevels = 0;
+        int dragonDiscipleLevels = 0;
+        int? paleMasterLevel10At = null;
+        int? dragonDiscipleLevel10At = null;
+
+        // Count levels in each prestige class and find when they reached level 10
+        for (int level = 1; level <= totalLevels; level++)
+        {
+            CreatureLevelInfo levelInfo = _player.LoginCreature.GetLevelStats(level);
+            int classType = (int)levelInfo.ClassInfo.Class.ClassType;
+
+            if (classType == CLASS_TYPE_PALEMASTER)
+            {
+                paleMasterLevels++;
+                if (paleMasterLevels == 10)
+                {
+                    paleMasterLevel10At = level;
+                }
+            }
+            else if (classType == CLASS_TYPE_DRAGON_DISCIPLE)
+            {
+                dragonDiscipleLevels++;
+                if (dragonDiscipleLevels == 10)
+                {
+                    dragonDiscipleLevel10At = level;
+                }
+            }
+        }
+
+        // If they have 10+ levels in either class, return the level at which they reached 10
+        if (paleMasterLevels >= 10 && paleMasterLevel10At.HasValue)
+        {
+            return paleMasterLevel10At.Value;
+        }
+
+        if (dragonDiscipleLevels >= 10 && dragonDiscipleLevel10At.HasValue)
+        {
+            return dragonDiscipleLevel10At.Value;
+        }
+
+        return null; // No restrictions
     }
 
     public override void Close()

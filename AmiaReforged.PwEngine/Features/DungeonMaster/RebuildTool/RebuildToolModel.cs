@@ -1,4 +1,4 @@
-﻿﻿using Anvil.API;
+﻿using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using AmiaReforged.Races.Races;
@@ -712,6 +712,14 @@ public sealed class RebuildToolModel
                 if (pcKey != null)
                 {
                     _player.SendServerMessage("PC Key restored to player from database.", ColorConstants.Green);
+
+                    // Remove heritage_setup variable since this is a new character
+                    // They will need to reselect their heritage on the new character
+                    if (NWN.Core.NWScript.GetLocalInt((uint)pcKey, "heritage_setup") > 0)
+                    {
+                        NWN.Core.NWScript.DeleteLocalInt((uint)pcKey, "heritage_setup");
+                        _player.SendServerMessage("Cleared heritage_setup from PC Key. Player will need to reselect heritage on new character.", ColorConstants.Cyan);
+                    }
                 }
                 else
                 {

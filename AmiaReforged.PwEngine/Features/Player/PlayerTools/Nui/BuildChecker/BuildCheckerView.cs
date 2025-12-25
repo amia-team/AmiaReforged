@@ -19,10 +19,12 @@ public sealed class BuildCheckerView : ScryView<BuildCheckerPresenter>, IToolWin
     public readonly NuiBind<string> LevelupInfo = new("levelup_info");
     public readonly NuiBind<int> LevelFilter = new("level_filter");
     public readonly NuiBind<bool> RedoButtonsEnabled = new("redo_buttons_enabled");
+    public readonly NuiBind<string> AutoRebuildLevel = new("auto_rebuild_level");
 
     // Button IDs
     public readonly NuiButton RedoLastLevelButton = new("Redo Last Level") { Id = "btn_redo_last_level" };
     public readonly NuiButton RedoLast2LevelsButton = new("Redo Last 2 Levels") { Id = "btn_redo_last_2_levels" };
+    public readonly NuiButton AutoRebuildButton = new("Auto-Rebuild") { Id = "btn_auto_rebuild" };
 
     public string Id => "playertools.buildchecker";
     public bool ListInPlayerTools => true;
@@ -185,6 +187,14 @@ public sealed class BuildCheckerView : ScryView<BuildCheckerPresenter>, IToolWin
                                     Height = 40f,
                                     Tooltip = "Redo Last 2 Levels",
                                     Enabled = RedoButtonsEnabled
+                                },
+                                new NuiSpacer { Height = 10f },
+                                new NuiButtonImage("cc_turn_right")
+                                {
+                                    Id = "btn_auto_rebuild",
+                                    Width = 40f,
+                                    Height = 40f,
+                                    Tooltip = "Auto-Rebuild Character"
                                 }
                             ]
                         }
@@ -209,6 +219,135 @@ public sealed class BuildCheckerView : ScryView<BuildCheckerPresenter>, IToolWin
                     new NuiVector(0.0f, 100.0f),
                     new NuiVector(0.0f, 400.0f))
             }
+        };
+    }
+
+    public NuiWindow BuildAutoRebuildModal()
+    {
+        const float modalW = 400f;
+        const float modalH = 350f;
+
+        NuiColumn layout = new NuiColumn
+        {
+            Width = modalW,
+            Height = modalH,
+            Children =
+            [
+                // Background
+                new NuiRow
+                {
+                    Width = 0f,
+                    Height = 0f,
+                    DrawList = new()
+                    {
+                        new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, modalW, modalH))
+                    }
+                },
+
+                // Title
+                new NuiRow
+                {
+                    Height = 40f,
+                    Children =
+                    [
+                        new NuiLabel("Auto-Rebuild")
+                        {
+                            HorizontalAlign = NuiHAlign.Center,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 10f },
+
+                // Description line 1
+                new NuiRow
+                {
+                    Height = 30f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel("Auto-Rebuild your character.")
+                        {
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
+                },
+
+                // Description line 2
+                new NuiRow
+                {
+                    Height = 30f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel("You can use this once every 6 months.")
+                        {
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 20f },
+
+                // Delevel to input
+                new NuiRow
+                {
+                    Height = 40f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel("Delevel to:")
+                        {
+                            Width = 100f,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiTextEdit("", AutoRebuildLevel, 2, false)
+                        {
+                            Width = 100f,
+                            Tooltip = "Enter level 1-27 (must be lower than current level)"
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 30f },
+
+                // Confirm and Cancel buttons
+                new NuiRow
+                {
+                    Height = 50f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 60f },
+                        new NuiButtonImage("ui_btn_save")
+                        {
+                            Id = "btn_auto_rebuild_confirm",
+                            Width = 128f,
+                            Height = 32f,
+                            Tooltip = "Confirm Auto-Rebuild"
+                        },
+                        new NuiSpacer { Width = 20f },
+                        new NuiButtonImage("ui_btn_cancel")
+                        {
+                            Id = "btn_auto_rebuild_cancel",
+                            Width = 128f,
+                            Height = 32f,
+                            Tooltip = "Cancel"
+                        }
+                    ]
+                }
+            ]
+        };
+
+        return new NuiWindow(layout, "Auto-Rebuild")
+        {
+            Geometry = new NuiRect(450f, 250f, modalW, modalH),
+            Resizable = false,
+            Closable = true
         };
     }
 }
