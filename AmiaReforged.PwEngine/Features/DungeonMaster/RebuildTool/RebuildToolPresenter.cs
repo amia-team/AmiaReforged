@@ -20,6 +20,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
     private NuiWindowToken? _fullRebuildModalToken;
     private NuiWindowToken? _findRebuildModalToken;
     private int? _currentRebuildId;
+    private bool _isViewingAllFeats = false; // Track if user is viewing "View All Feats"
 
     public override NuiWindowToken Token() => _token;
 
@@ -73,6 +74,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         if (ev.EventType == NuiEventType.Watch && ev.ElementId == View.LevelFilter.Key)
         {
             // Level filter changed, update the display
+            _isViewingAllFeats = false; // User switched to level view
             UpdateLevelupInfo();
             return;
         }
@@ -98,6 +100,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
                 break;
 
             case var id when id == View.ViewAllFeatsButton.Id:
+                _isViewingAllFeats = true; // User is now viewing all feats
                 DisplayAllFeats();
                 break;
 
@@ -219,11 +222,29 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
             }
         }
 
+        // Check for unassigned feats (feats the character has but weren't gained at any level)
+        List<NwFeat> unassignedFeats = new();
+        foreach (var feat in _model.SelectedCharacter.Feats)
+        {
+            if (!featsWithLevels.ContainsKey(feat))
+            {
+                unassignedFeats.Add(feat);
+            }
+        }
+
         // Sort feats alphabetically by name
         var sortedFeats = featsWithLevels.OrderBy(kvp => kvp.Key.Name.ToString());
+        var sortedUnassignedFeats = unassignedFeats.OrderBy(f => f.Name.ToString());
 
-        sb.AppendLine($"Total Feats: {featsWithLevels.Count}\n");
+        int totalFeatCount = featsWithLevels.Count + unassignedFeats.Count;
+        sb.AppendLine($"Total Feats: {totalFeatCount}");
+        if (unassignedFeats.Count > 0)
+        {
+            sb.AppendLine($"(Including {unassignedFeats.Count} unassigned feat(s))");
+        }
+        sb.AppendLine();
 
+        // Display feats with assigned levels
         foreach (var kvp in sortedFeats)
         {
             NwFeat feat = kvp.Key;
@@ -235,6 +256,16 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
                 : $"Level {levels[0]}";
 
             sb.AppendLine($"- {feat.Name} (ID: {feat.Id}) - {levelStr}");
+        }
+
+        // Display unassigned feats
+        if (unassignedFeats.Count > 0)
+        {
+            sb.AppendLine("\n--- UNASSIGNED FEATS ---");
+            foreach (var feat in sortedUnassignedFeats)
+            {
+                sb.AppendLine($"- {feat.Name} (ID: {feat.Id}) - (UNASSIGNED)");
+            }
         }
 
         Token().SetBindValue(View.LevelupInfo, sb.ToString());
@@ -259,8 +290,15 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
 
         _model.AddFeatToCharacter(featId, level);
 
-        // Refresh the display
-        UpdateLevelupInfo();
+        // Refresh the current view (all feats or level-up info)
+        if (_isViewingAllFeats)
+        {
+            DisplayAllFeats();
+        }
+        else
+        {
+            UpdateLevelupInfo();
+        }
     }
 
     private async void HandleRemoveFeat()
@@ -278,8 +316,15 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         // Small delay to allow the game engine to update
         await NwTask.Delay(TimeSpan.FromMilliseconds(100));
 
-        // Refresh the display
-        UpdateLevelupInfo();
+        // Refresh the current view (all feats or level-up info)
+        if (_isViewingAllFeats)
+        {
+            DisplayAllFeats();
+        }
+        else
+        {
+            UpdateLevelupInfo();
+        }
     }
 
     private void OpenRebuildModal()
