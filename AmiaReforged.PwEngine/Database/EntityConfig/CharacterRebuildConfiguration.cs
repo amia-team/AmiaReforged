@@ -36,15 +36,9 @@ public sealed class CharacterRebuildConfiguration : IEntityTypeConfiguration<Cha
         builder.Property(r => r.CompletedUtc)
             .HasColumnName("completed_utc");
 
-        builder.HasOne(r => r.Player)
-            .WithMany()
-            .HasForeignKey(r => r.PlayerCdKey)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder.HasOne(r => r.Character)
-            .WithMany()
-            .HasForeignKey(r => r.CharacterId)
-            .OnDelete(DeleteBehavior.Cascade);
+        // Navigation properties are ignored - no foreign key constraints needed
+        builder.Ignore(r => r.Player);
+        builder.Ignore(r => r.Character);
 
         builder.HasIndex(r => r.PlayerCdKey)
             .HasDatabaseName("character_rebuilds_player_cd_key_idx");
