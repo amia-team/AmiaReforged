@@ -39,6 +39,15 @@ namespace AmiaReforged.PwEngine.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("completed_utc");
 
+                    b.Property<string>("OriginalFirstName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("OriginalLastName")
+                        .HasColumnType("text");
+
+                    b.Property<byte[]>("PcKeyData")
+                        .HasColumnType("bytea");
+
                     b.Property<string>("PlayerCdKey")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -50,6 +59,12 @@ namespace AmiaReforged.PwEngine.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("requested_utc")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int>("StoredGold")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("StoredXp")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id")
                         .HasName("character_rebuilds_pkey");

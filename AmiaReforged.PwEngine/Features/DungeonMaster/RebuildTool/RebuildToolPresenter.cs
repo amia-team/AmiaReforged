@@ -1,7 +1,8 @@
-﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 using System.Text;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.DungeonMaster.RebuildTool;
 
@@ -11,18 +12,23 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
 
     private readonly NwPlayer _player;
     private readonly RebuildToolModel _model;
+    private readonly IRebuildRepository _repository;
     private NuiWindowToken _token;
     private NuiWindow? _window;
     private NuiWindowToken? _rebuildModalToken;
     private NuiWindowToken? _raceOptionsModalToken;
+    private NuiWindowToken? _fullRebuildModalToken;
+    private NuiWindowToken? _findRebuildModalToken;
+    private int? _currentRebuildId;
 
     public override NuiWindowToken Token() => _token;
 
-    public RebuildToolPresenter(RebuildToolView view, NwPlayer player)
+    public RebuildToolPresenter(RebuildToolView view, NwPlayer player, IRebuildRepository repository)
     {
         View = view;
         _player = player;
-        _model = new RebuildToolModel(player);
+        _repository = repository;
+        _model = new RebuildToolModel(player, repository);
 
         // Subscribe to model events
         _model.OnCharacterSelected += OnCharacterSelected;
@@ -305,8 +311,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         switch (ev.ElementId)
         {
             case "btn_full_rebuild":
-                _player.SendServerMessage("Full Rebuild selected (functionality to be implemented)");
-                CloseRebuildModal();
+                OpenFullRebuildModal();
                 break;
 
             case "btn_partial_rebuild":
@@ -534,10 +539,298 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         }
     }
 
+    private void OpenFullRebuildModal()
+    {
+        // Prevent opening if modal already exists
+        if (_fullRebuildModalToken.HasValue)
+            return;
+
+        if (_model.SelectedCharacter == null)
+        {
+            _player.SendServerMessage("Please select a character first.");
+            return;
+        }
+
+        NuiWindow modal = View.BuildFullRebuildModal();
+        if (_player.TryCreateNuiWindow(modal, out NuiWindowToken modalToken))
+        {
+            _fullRebuildModalToken = modalToken;
+            modalToken.SetBindValue(View.FullRebuildReturnLevel, "");
+            _fullRebuildModalToken.Value.OnNuiEvent += HandleFullRebuildModalEvent;
+        }
+    }
+
+    private void HandleFullRebuildModalEvent(ModuleEvents.OnNuiEvent ev)
+    {
+        if (ev.EventType != NuiEventType.Click) return;
+
+        switch (ev.ElementId)
+        {
+            case "btn_start_full_rebuild":
+                HandleStartFullRebuild();
+                break;
+
+            case "btn_return_inventory":
+                HandleReturnInventory();
+                break;
+
+            case "btn_full_rebuild_return_xp":
+                HandleFullRebuildReturnXP();
+                break;
+
+            case "btn_finish_full_rebuild":
+                HandleFinishFullRebuild();
+                break;
+
+            case "btn_find_rebuild":
+                HandleFindRebuild();
+                break;
+
+            case "btn_full_rebuild_cancel":
+                CloseFullRebuildModal();
+                break;
+        }
+    }
+
+    private async void HandleStartFullRebuild()
+    {
+        if (_model.SelectedCharacter == null)
+        {
+            _player.SendServerMessage("No character selected.");
+            return;
+        }
+
+        NwPlayer? targetPlayer = _model.SelectedCharacter.ControllingPlayer;
+        if (targetPlayer == null)
+        {
+            _player.SendServerMessage("Could not find the player controlling this character.");
+            return;
+        }
+
+        _currentRebuildId = await _model.StartFullRebuild(targetPlayer);
+
+        if (_currentRebuildId.HasValue)
+        {
+            _player.SendServerMessage($"Full rebuild started. Rebuild ID: {_currentRebuildId.Value}", ColorConstants.Green);
+        }
+    }
+
+    private async void HandleReturnInventory()
+    {
+        if (!_currentRebuildId.HasValue)
+        {
+            _player.SendServerMessage("No active rebuild. Use Find Rebuild to load a pending rebuild.");
+            return;
+        }
+
+        if (_model.SelectedCharacter == null)
+        {
+            _player.SendServerMessage("No character selected.");
+            return;
+        }
+
+        NwPlayer? targetPlayer = _model.SelectedCharacter.ControllingPlayer;
+        if (targetPlayer == null)
+        {
+            _player.SendServerMessage("Could not find the player controlling this character.");
+            return;
+        }
+
+        await _model.ReturnInventory(_currentRebuildId.Value, targetPlayer);
+    }
+
+    private void HandleFullRebuildReturnXP()
+    {
+        if (!_currentRebuildId.HasValue)
+        {
+            _player.SendServerMessage("No active rebuild. Use Find Rebuild to load a pending rebuild.");
+            return;
+        }
+
+        if (_model.SelectedCharacter == null)
+        {
+            _player.SendServerMessage("No character selected.");
+            return;
+        }
+
+        NwPlayer? targetPlayer = _model.SelectedCharacter.ControllingPlayer;
+        if (targetPlayer == null)
+        {
+            _player.SendServerMessage("Could not find the player controlling this character.");
+            return;
+        }
+
+        // Get the optional return to level input
+        string returnToLevelStr = _fullRebuildModalToken!.Value.GetBindValue(View.FullRebuildReturnLevel);
+        int? returnToLevel = null;
+
+        if (!string.IsNullOrWhiteSpace(returnToLevelStr))
+        {
+            if (int.TryParse(returnToLevelStr, out int parsedLevel))
+            {
+                returnToLevel = parsedLevel;
+            }
+            else
+            {
+                _player.SendServerMessage("Invalid return to level. Please enter a valid number between 2 and 30, or leave empty to return all XP.");
+                return;
+            }
+        }
+
+        _model.ReturnFullRebuildXP(_currentRebuildId.Value, targetPlayer, returnToLevel);
+    }
+
+    private void HandleFinishFullRebuild()
+    {
+        if (!_currentRebuildId.HasValue)
+        {
+            _player.SendServerMessage("No active rebuild to finish.");
+            return;
+        }
+
+        _player.SendServerMessage("Click on the rebuilt character to finalize this rebuild. THIS CANNOT BE UNDONE!", ColorConstants.Yellow);
+
+        _player.EnterTargetMode(OnFinishRebuildTargetSelected, new TargetModeSettings
+        {
+            CursorType = MouseCursor.Action,
+            ValidTargets = ObjectTypes.Creature
+        });
+    }
+
+    private void OnFinishRebuildTargetSelected(ModuleEvents.OnPlayerTarget obj)
+    {
+        if (obj.TargetObject is not NwCreature creature)
+        {
+            _player.SendServerMessage("Invalid target. Please select the rebuilt character.");
+            return;
+        }
+
+        if (!creature.IsPlayerControlled)
+        {
+            _player.SendServerMessage("Target must be a player character.");
+            return;
+        }
+
+        if (!_currentRebuildId.HasValue)
+        {
+            _player.SendServerMessage("No active rebuild to finish.");
+            return;
+        }
+
+        _model.FinishFullRebuild(_currentRebuildId.Value);
+        _currentRebuildId = null;
+
+        CloseFullRebuildModal();
+    }
+
+    private void HandleFindRebuild()
+    {
+        OpenFindRebuildModal();
+    }
+
+    private void OpenFindRebuildModal()
+    {
+        // Prevent opening if modal already exists
+        if (_findRebuildModalToken.HasValue)
+            return;
+
+        var pendingRebuilds = _model.GetPendingRebuilds().ToList();
+
+        if (!pendingRebuilds.Any())
+        {
+            _player.SendServerMessage("No pending rebuilds found.");
+            return;
+        }
+
+        List<NuiComboEntry> rebuildEntries = pendingRebuilds
+            .Select(r => new NuiComboEntry($"{r.firstName} {r.lastName}", r.rebuildId))
+            .ToList();
+
+        NuiWindow modal = View.BuildFindRebuildModal(rebuildEntries);
+        if (_player.TryCreateNuiWindow(modal, out NuiWindowToken modalToken))
+        {
+            _findRebuildModalToken = modalToken;
+            modalToken.SetBindValue(View.SelectedPendingRebuild, 0);
+            _findRebuildModalToken.Value.OnNuiEvent += HandleFindRebuildModalEvent;
+        }
+    }
+
+    private void HandleFindRebuildModalEvent(ModuleEvents.OnNuiEvent ev)
+    {
+        if (ev.EventType != NuiEventType.Click) return;
+
+        switch (ev.ElementId)
+        {
+            case "btn_select_pending_rebuild":
+                HandleSelectPendingRebuild();
+                break;
+
+            case "btn_find_rebuild_cancel":
+                CloseFindRebuildModal();
+                break;
+        }
+    }
+
+    private void HandleSelectPendingRebuild()
+    {
+        if (!_findRebuildModalToken.HasValue)
+            return;
+
+        int selectedIndex = _findRebuildModalToken.Value.GetBindValue(View.SelectedPendingRebuild);
+
+        var pendingRebuilds = _model.GetPendingRebuilds();
+        var rebuildsArray = pendingRebuilds.ToArray();
+
+        if (selectedIndex >= 0 && selectedIndex < rebuildsArray.Length)
+        {
+            _currentRebuildId = rebuildsArray[selectedIndex].rebuildId;
+            _model.LoadPendingRebuild(_currentRebuildId.Value);
+            _player.SendServerMessage($"Loaded rebuild: {rebuildsArray[selectedIndex].firstName} {rebuildsArray[selectedIndex].lastName}", ColorConstants.Green);
+
+            CloseFindRebuildModal();
+        }
+    }
+
+    private void CloseFindRebuildModal()
+    {
+        if (_findRebuildModalToken.HasValue)
+        {
+            _findRebuildModalToken.Value.OnNuiEvent -= HandleFindRebuildModalEvent;
+            try
+            {
+                _findRebuildModalToken.Value.Close();
+            }
+            catch
+            {
+                // ignore
+            }
+            _findRebuildModalToken = null;
+        }
+    }
+
+    private void CloseFullRebuildModal()
+    {
+        if (_fullRebuildModalToken.HasValue)
+        {
+            _fullRebuildModalToken.Value.OnNuiEvent -= HandleFullRebuildModalEvent;
+            try
+            {
+                _fullRebuildModalToken.Value.Close();
+            }
+            catch
+            {
+                // ignore
+            }
+            _fullRebuildModalToken = null;
+        }
+    }
+
     public override void Close()
     {
         CloseRebuildModal();
         CloseRaceOptionsModal();
+        CloseFullRebuildModal();
+        CloseFindRebuildModal();
 
         try
         {

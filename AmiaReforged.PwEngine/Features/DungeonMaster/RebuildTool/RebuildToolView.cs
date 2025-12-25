@@ -29,6 +29,8 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
     public readonly NuiBind<string> CurrentRaceInfo = new("current_race_info");
     public readonly NuiBind<int> SelectedRaceIndex = new("selected_race_index");
     public readonly NuiBind<string> SubRaceInput = new("subrace_input");
+    public readonly NuiBind<string> FullRebuildReturnLevel = new("full_rebuild_return_level");
+    public readonly NuiBind<int> SelectedPendingRebuild = new("selected_pending_rebuild");
 
     // Buttons
     public NuiButtonImage SelectCharacterButton = null!;
@@ -44,7 +46,10 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
 
     public RebuildToolView(NwPlayer player)
     {
-        Presenter = new RebuildToolPresenter(this, player);
+        // Resolve IRebuildRepository from the service container
+        IRebuildRepository repository = AnvilCore.GetService<IRebuildRepository>()!;
+
+        Presenter = new RebuildToolPresenter(this, player, repository);
         InjectionService injector = AnvilCore.GetService<InjectionService>()!;
         injector.Inject(Presenter);
     }
@@ -649,6 +654,288 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
             Closable = true
         };
     }
+
+    public NuiWindow BuildFullRebuildModal()
+    {
+        const float modalW = 450f;
+        const float modalH = 550f;
+
+        NuiColumn layout = new NuiColumn
+        {
+            Width = modalW,
+            Height = modalH,
+            Children =
+            [
+                // Background
+                new NuiRow
+                {
+                    Width = 0f,
+                    Height = 0f,
+                    DrawList = new()
+                    {
+                        new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, modalW, modalH))
+                    }
+                },
+
+                // Title
+                new NuiRow
+                {
+                    Height = 40f,
+                    Children =
+                    [
+                        new NuiLabel("Full Character Rebuild")
+                        {
+                            HorizontalAlign = NuiHAlign.Center,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 20f },
+
+                // Start Rebuild button
+                new NuiRow
+                {
+                    Height = 45f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 100f },
+                        new NuiButton("Start Rebuild")
+                        {
+                            Id = "btn_start_full_rebuild",
+                            Width = 250f,
+                            Height = 40f,
+                            Tooltip = "Begin the full rebuild process"
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 15f },
+
+                // Return Inventory button
+                new NuiRow
+                {
+                    Height = 45f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 100f },
+                        new NuiButton("Return Inventory")
+                        {
+                            Id = "btn_return_inventory",
+                            Width = 250f,
+                            Height = 40f,
+                            Tooltip = "Restore items and gold to the new character"
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 15f },
+
+                // Return XP section
+                new NuiRow
+                {
+                    Height = 40f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 50f },
+                        new NuiLabel("Return to Level (2-30):")
+                        {
+                            Width = 165f,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiTextEdit("", FullRebuildReturnLevel, 2, false)
+                        {
+                            Width = 80f,
+                            Tooltip = "Leave empty to return all XP"
+                        }
+                    ]
+                },
+
+                new NuiRow
+                {
+                    Height = 45f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 100f },
+                        new NuiButton("Return XP")
+                        {
+                            Id = "btn_full_rebuild_return_xp",
+                            Width = 250f,
+                            Height = 40f,
+                            Tooltip = "Return XP to the character"
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 15f },
+
+                // Finish button
+                new NuiRow
+                {
+                    Height = 45f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 100f },
+                        new NuiButton("Finish")
+                        {
+                            Id = "btn_finish_full_rebuild",
+                            Width = 250f,
+                            Height = 40f,
+                            Tooltip = "Complete and finalize the rebuild (cannot be undone)"
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 15f },
+
+                // Find Rebuild button
+                new NuiRow
+                {
+                    Height = 45f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 100f },
+                        new NuiButton("Find Rebuild")
+                        {
+                            Id = "btn_find_rebuild",
+                            Width = 250f,
+                            Height = 40f,
+                            Tooltip = "Find a pending rebuild"
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 15f },
+
+                // Cancel button
+                new NuiRow
+                {
+                    Height = 45f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 100f },
+                        new NuiButtonImage("ui_btn_cancel")
+                        {
+                            Id = "btn_full_rebuild_cancel",
+                            Width = 250f,
+                            Height = 38f,
+                            Tooltip = "Close window"
+                        }
+                    ]
+                }
+            ]
+        };
+
+        return new NuiWindow(layout, "Full Rebuild")
+        {
+            Geometry = new NuiRect(400f, 200f, modalW, modalH),
+            Resizable = false,
+            Closable = true
+        };
+    }
+
+    public NuiWindow BuildFindRebuildModal(List<NuiComboEntry> rebuildEntries)
+    {
+        const float modalW = 400f;
+        const float modalH = 300f;
+
+        NuiColumn layout = new NuiColumn
+        {
+            Width = modalW,
+            Height = modalH,
+            Children =
+            [
+                // Background
+                new NuiRow
+                {
+                    Width = 0f,
+                    Height = 0f,
+                    DrawList = new()
+                    {
+                        new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, modalW, modalH))
+                    }
+                },
+
+                // Title
+                new NuiRow
+                {
+                    Height = 40f,
+                    Children =
+                    [
+                        new NuiLabel("Find Pending Rebuild")
+                        {
+                            HorizontalAlign = NuiHAlign.Center,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 20f },
+
+                // Rebuild Selection Dropdown
+                new NuiRow
+                {
+                    Height = 40f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel("Character:")
+                        {
+                            Width = 100f,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiCombo
+                        {
+                            Width = 250f,
+                            Selected = SelectedPendingRebuild,
+                            Entries = new NuiValue<List<NuiComboEntry>>(rebuildEntries)
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 40f },
+
+                // Select and Cancel buttons
+                new NuiRow
+                {
+                    Height = 50f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 60f },
+                        new NuiButton("Select")
+                        {
+                            Id = "btn_select_pending_rebuild",
+                            Width = 120f,
+                            Height = 35f,
+                            Tooltip = "Load this rebuild"
+                        },
+                        new NuiSpacer { Width = 20f },
+                        new NuiButtonImage("ui_btn_cancel")
+                        {
+                            Id = "btn_find_rebuild_cancel",
+                            Width = 120f,
+                            Height = 32f,
+                            Tooltip = "Cancel"
+                        }
+                    ]
+                }
+            ]
+        };
+
+        return new NuiWindow(layout, "Find Rebuild")
+        {
+            Geometry = new NuiRect(450f, 300f, modalW, modalH),
+            Resizable = false,
+            Closable = true
+        };
+    }
 }
+
+
+
 
 

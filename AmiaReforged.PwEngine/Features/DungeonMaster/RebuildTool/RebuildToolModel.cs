@@ -3,20 +3,24 @@ using Anvil.API.Events;
 using Anvil.Services;
 using AmiaReforged.Races.Races;
 using NWN.Core.NWNX;
+using AmiaReforged.PwEngine.Database.Entities.Admin;
+using AmiaReforged.PwEngine.Database.Entities.Admin;
 
 namespace AmiaReforged.PwEngine.Features.DungeonMaster.RebuildTool;
 
 public sealed class RebuildToolModel
 {
     private readonly NwPlayer _player;
+    private readonly IRebuildRepository _repository;
     public NwCreature? SelectedCharacter { get; private set; }
-    private int _lastRemovedXp = 0;
+    private int _lastRemovedXp;
 
     public event EventHandler? OnCharacterSelected;
 
-    public RebuildToolModel(NwPlayer player)
+    public RebuildToolModel(NwPlayer player, IRebuildRepository repository)
     {
         _player = player;
+        _repository = repository;
     }
 
     public void EnterTargetingMode()
@@ -381,6 +385,396 @@ public sealed class RebuildToolModel
         {
             _player.SendServerMessage($"Could not clear subrace field: {ex.Message}", ColorConstants.Red);
         }
+    }
+
+    // Full Rebuild Methods
+    public Task<int?> StartFullRebuild(NwPlayer targetPlayer)
+    {
+        if (SelectedCharacter == null)
+        {
+            _player.SendServerMessage("No character selected.");
+            return Task.FromResult<int?>(null);
+        }
+
+        try
+        {
+            // Find PC Key
+            NwItem? pcKey = null;
+            foreach (NwItem item in SelectedCharacter.Inventory.Items)
+            {
+                if (item.Tag == "ds_pckey")
+                {
+                    pcKey = item;
+                    break;
+                }
+            }
+
+            if (pcKey == null)
+            {
+                _player.SendServerMessage("PC Key (ds_pckey) not found in character inventory!", ColorConstants.Red);
+                return Task.FromResult<int?>(null);
+            }
+
+            // Copy PC Key to DM inventory
+            if (_player.ControlledCreature == null)
+            {
+                _player.SendServerMessage("DM controlled creature not found!", ColorConstants.Red);
+                return Task.FromResult<int?>(null);
+            }
+
+            NwItem? pcKeyCopy = pcKey.Clone(_player.ControlledCreature);
+            if (pcKeyCopy == null)
+            {
+                _player.SendServerMessage("Failed to copy PC Key to DM inventory!", ColorConstants.Red);
+                return Task.FromResult<int?>(null);
+            }
+
+            _player.SendServerMessage("PC Key copied to your inventory.", ColorConstants.Green);
+
+            // Create rebuild record
+            var rebuild = new CharacterRebuild
+            {
+                PlayerCdKey = targetPlayer.CDKey,
+                CharacterId = SelectedCharacter.UUID,
+                RequestedUtc = DateTime.UtcNow,
+                StoredXp = SelectedCharacter.Xp,
+                StoredGold = (int)SelectedCharacter.Gold,
+                OriginalFirstName = SelectedCharacter.OriginalFirstName,
+                OriginalLastName = SelectedCharacter.OriginalLastName,
+                PcKeyData = SerializeItem(pcKeyCopy)
+            };
+
+            _repository.Add(rebuild);
+            _repository.SaveChanges();
+
+            _player.SendServerMessage($"Rebuild record created. ID: {rebuild.Id}", ColorConstants.Green);
+
+            // Save all items to database
+            int itemCount = 0;
+            foreach (NwItem item in SelectedCharacter.Inventory.Items)
+            {
+                if (item.Tag == "ds_pckey") continue; // Skip PC Key
+
+                byte[] itemData = SerializeItem(item);
+                var itemRecord = new RebuildItemRecord
+                {
+                    CharacterRebuildId = rebuild.Id,
+                    ItemData = itemData
+                };
+
+                _repository.AddItemRecord(itemRecord);
+                itemCount++;
+            }
+
+            _repository.SaveChanges();
+            _player.SendServerMessage($"Saved {itemCount} items to database.", ColorConstants.Green);
+
+            // Take all XP
+            NWN.Core.NWScript.SetXP((uint)SelectedCharacter, 0);
+            _player.SendServerMessage($"Removed {rebuild.StoredXp:N0} XP from character.", ColorConstants.Orange);
+
+            // Take all gold
+            SelectedCharacter.Gold = 0;
+            _player.SendServerMessage($"Removed {rebuild.StoredGold:N0} gold from character.", ColorConstants.Orange);
+
+            // Add "zzz" prefix to character name
+            string newFirstName = "zzz" + SelectedCharacter.OriginalFirstName;
+            SelectedCharacter.OriginalFirstName = newFirstName;
+            _player.SendServerMessage($"Character name changed to: {newFirstName} {SelectedCharacter.OriginalLastName}", ColorConstants.Orange);
+
+            targetPlayer.SendServerMessage("Your character has been prepared for full rebuild. Please log off and create your new character.", ColorConstants.Yellow);
+            _player.SendServerMessage("Full rebuild started successfully. Player should log off now.", ColorConstants.Green);
+
+            return Task.FromResult<int?>(rebuild.Id);
+        }
+        catch (Exception ex)
+        {
+            _player.SendServerMessage($"Error starting full rebuild: {ex.Message}", ColorConstants.Red);
+            return Task.FromResult<int?>(null);
+        }
+    }
+
+    public Task ReturnInventory(int rebuildId, NwPlayer targetPlayer)
+    {
+        if (SelectedCharacter == null)
+        {
+            _player.SendServerMessage("No character selected.");
+            return Task.CompletedTask;
+        }
+
+        try
+        {
+            var rebuild = _repository.GetById(rebuildId);
+            if (rebuild == null)
+            {
+                _player.SendServerMessage($"Rebuild ID {rebuildId} not found!", ColorConstants.Red);
+                return Task.CompletedTask;
+            }
+
+            // Find PC Key in new character's inventory and move to DM
+            NwItem? pcKey = null;
+            foreach (NwItem item in SelectedCharacter.Inventory.Items)
+            {
+                if (item.Tag == "ds_pckey")
+                {
+                    pcKey = item;
+                    break;
+                }
+            }
+
+            if (pcKey != null && _player.ControlledCreature != null)
+            {
+                pcKey.Clone(_player.ControlledCreature);
+                pcKey.Destroy();
+                _player.SendServerMessage("PC Key moved to your inventory.", ColorConstants.Green);
+            }
+
+            // Restore items
+            var itemRecords = _repository.GetItemRecords(rebuildId);
+            int restoredCount = 0;
+
+            foreach (var itemRecord in itemRecords)
+            {
+                NwItem? item = DeserializeItem(itemRecord.ItemData, SelectedCharacter);
+                if (item != null)
+                {
+                    restoredCount++;
+                }
+            }
+
+            _player.SendServerMessage($"Restored {restoredCount} items.", ColorConstants.Green);
+
+            // Restore gold
+            SelectedCharacter.Gold = (uint)rebuild.StoredGold;
+            _player.SendServerMessage($"Restored {rebuild.StoredGold:N0} gold.", ColorConstants.Green);
+
+            // Restore character name
+            if (!string.IsNullOrEmpty(rebuild.OriginalFirstName))
+            {
+                SelectedCharacter.OriginalFirstName = rebuild.OriginalFirstName;
+            }
+            if (!string.IsNullOrEmpty(rebuild.OriginalLastName))
+            {
+                SelectedCharacter.OriginalLastName = rebuild.OriginalLastName;
+            }
+            _player.SendServerMessage($"Character name set to: {rebuild.OriginalFirstName} {rebuild.OriginalLastName}", ColorConstants.Green);
+
+            // Remove heritage feat if present
+            RemoveHeritageFeat(targetPlayer);
+
+            targetPlayer.SendServerMessage("Your inventory and gold have been restored by a DM.", ColorConstants.Green);
+
+            return Task.CompletedTask;
+        }
+        catch (Exception ex)
+        {
+            _player.SendServerMessage($"Error returning inventory: {ex.Message}", ColorConstants.Red);
+            return Task.CompletedTask;
+        }
+    }
+
+    public void ReturnFullRebuildXP(int rebuildId, NwPlayer targetPlayer, int? returnToLevel = null)
+    {
+        if (SelectedCharacter == null)
+        {
+            _player.SendServerMessage("No character selected.");
+            return;
+        }
+
+        try
+        {
+            var rebuild = _repository.GetById(rebuildId);
+            if (rebuild == null)
+            {
+                _player.SendServerMessage($"Rebuild ID {rebuildId} not found!", ColorConstants.Red);
+                return;
+            }
+
+            int currentXp = SelectedCharacter.Xp;
+            int xpToReturn;
+            string message;
+
+            if (returnToLevel.HasValue)
+            {
+                int targetLevel = returnToLevel.Value;
+
+                if (targetLevel < 2 || targetLevel > 30)
+                {
+                    _player.SendServerMessage("Return to level must be between 2 and 30.");
+                    return;
+                }
+
+                int currentLevel = SelectedCharacter.Level;
+                if (targetLevel <= currentLevel)
+                {
+                    _player.SendServerMessage($"Return to level ({targetLevel}) must be higher than current level ({currentLevel}).");
+                    return;
+                }
+
+                int targetXp = targetLevel * (targetLevel - 1) * 500;
+                xpToReturn = targetXp - currentXp;
+
+                if (xpToReturn > rebuild.StoredXp)
+                {
+                    xpToReturn = rebuild.StoredXp;
+                    _player.SendServerMessage($"Warning: Requested level requires more XP than was stored. Returning all {rebuild.StoredXp:N0} XP instead.", ColorConstants.Yellow);
+                }
+
+                NWN.Core.NWScript.SetXP((uint)SelectedCharacter, currentXp + xpToReturn);
+                rebuild.StoredXp -= xpToReturn;
+                message = $"Return XP to Level {targetLevel}: {SelectedCharacter.Name} gained {xpToReturn:N0} XP.";
+            }
+            else
+            {
+                xpToReturn = rebuild.StoredXp;
+                NWN.Core.NWScript.SetXP((uint)SelectedCharacter, currentXp + xpToReturn);
+                rebuild.StoredXp = 0;
+                message = $"Return All XP: {SelectedCharacter.Name} gained {xpToReturn:N0} XP.";
+            }
+
+            _repository.Update(rebuild);
+            _repository.SaveChanges();
+
+            _player.SendServerMessage(message, ColorConstants.Green);
+            targetPlayer.SendServerMessage(message, ColorConstants.Green);
+        }
+        catch (Exception ex)
+        {
+            _player.SendServerMessage($"Error returning XP: {ex.Message}", ColorConstants.Red);
+        }
+    }
+
+    public void FinishFullRebuild(int rebuildId)
+    {
+        try
+        {
+            var rebuild = _repository.GetById(rebuildId);
+            if (rebuild == null)
+            {
+                _player.SendServerMessage($"Rebuild ID {rebuildId} not found!", ColorConstants.Red);
+                return;
+            }
+
+            _repository.CompleteRebuild(rebuildId);
+            _repository.DeleteItemRecordsByRebuildId(rebuildId);
+            _repository.Delete(rebuildId);
+            _repository.SaveChanges();
+
+            _player.SendServerMessage("Full rebuild finalized and cleared from database.", ColorConstants.Green);
+        }
+        catch (Exception ex)
+        {
+            _player.SendServerMessage($"Error finishing rebuild: {ex.Message}", ColorConstants.Red);
+        }
+    }
+
+    public IEnumerable<(int rebuildId, string firstName, string lastName)> GetPendingRebuilds()
+    {
+        try
+        {
+            return _repository.GetPendingRebuilds()
+                .Select(r => (r.Id, r.OriginalFirstName ?? "Unknown", r.OriginalLastName ?? ""))
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            _player.SendServerMessage($"Error loading pending rebuilds: {ex.Message}", ColorConstants.Red);
+            return Enumerable.Empty<(int, string, string)>();
+        }
+    }
+
+    public void LoadPendingRebuild(int rebuildId)
+    {
+        try
+        {
+            var rebuild = _repository.GetById(rebuildId);
+            if (rebuild == null)
+            {
+                _player.SendServerMessage($"Rebuild ID {rebuildId} not found!", ColorConstants.Red);
+                return;
+            }
+
+            // Recreate PC Key in DM inventory
+            if (rebuild.PcKeyData != null && rebuild.PcKeyData.Length > 0)
+            {
+                NwItem? pcKey = DeserializeItem(rebuild.PcKeyData, _player.ControlledCreature);
+                if (pcKey != null)
+                {
+                    _player.SendServerMessage("PC Key recreated in your inventory.", ColorConstants.Green);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _player.SendServerMessage($"Error loading rebuild: {ex.Message}", ColorConstants.Red);
+        }
+    }
+
+    private byte[] SerializeItem(NwItem item)
+    {
+        byte[]? serialized = item.Serialize();
+        return serialized ?? Array.Empty<byte>();
+    }
+
+    private NwItem? DeserializeItem(byte[] itemData, NwGameObject? owner = null)
+    {
+        try
+        {
+            Location? targetLocation = owner?.Location ?? _player.ControlledCreature?.Location;
+            if (targetLocation == null)
+            {
+                _player.SendServerMessage("Could not determine target location for item deserialization.", ColorConstants.Yellow);
+                return null;
+            }
+
+            // Use NwItem.Deserialize with byte array
+            NwItem? item = NwItem.Deserialize(itemData);
+            if (item != null && owner != null)
+            {
+                // Clone to the target owner's inventory
+                NwItem? ownedItem = item.Clone(owner);
+                item.Destroy(); // Clean up the temporary item
+                return ownedItem;
+            }
+
+            return item;
+        }
+        catch (Exception ex)
+        {
+            _player.SendServerMessage($"Error deserializing item: {ex.Message}", ColorConstants.Yellow);
+            return null;
+        }
+    }
+
+    private void RemoveHeritageFeat(NwPlayer targetPlayer)
+    {
+        if (SelectedCharacter == null) return;
+
+        // Check for Heritage Feat (feat 1238)
+        NwFeat? heritageFeat = NwFeat.FromFeatId(1238);
+        bool hasHeritageFeat = heritageFeat != null && SelectedCharacter.KnowsFeat(heritageFeat);
+
+        if (!hasHeritageFeat) return;
+
+        // Find PC Key
+        uint pcKeyId = NWN.Core.NWScript.GetItemPossessedBy((uint)SelectedCharacter, "ds_pckey");
+
+        if (NWN.Core.NWScript.GetIsObjectValid(pcKeyId) == NWN.Core.NWScript.TRUE)
+        {
+            NWN.Core.NWScript.DeleteLocalInt(pcKeyId, "heritage_setup");
+            _player.SendServerMessage("Removed heritage_setup variable from PC Key.", ColorConstants.Green);
+        }
+
+        int playerRace = ResolvePlayerRace(targetPlayer);
+
+        if (ManagedRaces.RaceHeritageAbilities.ContainsKey(playerRace))
+        {
+            ManagedRaces.RaceHeritageAbilities[playerRace].RemoveStats(targetPlayer);
+            _player.SendServerMessage($"Removed heritage abilities.", ColorConstants.Green);
+        }
+
+        SelectedCharacter.RemoveFeat(heritageFeat!, true);
+        _player.SendServerMessage($"Removed heritage feat.", ColorConstants.Green);
     }
 }
 

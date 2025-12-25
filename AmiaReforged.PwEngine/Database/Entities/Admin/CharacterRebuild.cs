@@ -15,4 +15,11 @@ public class CharacterRebuild
 
     public DateTime RequestedUtc { get; set; }
     public DateTime CompletedUtc { get; set; }
+
+    // Full Rebuild specific fields
+    public int StoredXp { get; set; }
+    public int StoredGold { get; set; }
+    public string? OriginalFirstName { get; set; }
+    public string? OriginalLastName { get; set; }
+    public byte[]? PcKeyData { get; set; }
 }
