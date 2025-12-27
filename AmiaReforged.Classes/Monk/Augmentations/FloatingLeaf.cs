@@ -11,6 +11,7 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 public class FloatingLeaf : IAugmentation
 {
     private const string FloatingEagleStrikeTag = nameof(PathType.FloatingLeaf) +  nameof(TechniqueType.EagleStrike);
+    private const string FloatingEmptyBodyTag = nameof(PathType.FloatingLeaf) + nameof(TechniqueType.EmptyBody);
     public PathType PathType => PathType.FloatingLeaf;
 
     public void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData)
@@ -138,28 +139,73 @@ public class FloatingLeaf : IAugmentation
     }
 
     /// <summary>
-    /// Empty Body gives +2 to fortitude and reflex saving throws. Each Ki Focus gives an additional +2 to
-    /// a maximum of +8 to fortitude and reflex saving throws.
+    /// While affected by Empty Body, Ki Focus I grants the ability to take weightless leaps.
+    /// Ki Focus II grants haste. Ki Focus III grants Epic Dodge.
     /// </summary>
     private static void AugmentEmptyBody(NwCreature monk)
     {
         EmptyBody.DoEmptyBody(monk);
 
+        KiFocus? kiFocus = MonkUtils.GetKiFocus(monk);
+        if (kiFocus == null) return;
+
         byte monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
 
-        byte bonusAmount = MonkUtils.GetKiFocus(monk) switch
-        {
-            KiFocus.KiFocus1 => 4,
-            KiFocus.KiFocus2 => 6,
-            KiFocus.KiFocus3 => 8,
-            _ => 2
-        };
+        Effect? emptyBodyEffect = null;
 
-        Effect emptyBodyEffect = Effect.LinkEffects(
-            Effect.SavingThrowIncrease(SavingThrow.Fortitude, bonusAmount),
-            Effect.SavingThrowIncrease(SavingThrow.Reflex, bonusAmount)
-        );
+        switch (kiFocus)
+        {
+            case KiFocus.KiFocus1:
+                emptyBodyEffect = Effect.VisualEffect(VfxType.None);
+                break;
+            case KiFocus.KiFocus2:
+                emptyBodyEffect = Effect.Haste();
+                break;
+            case KiFocus.KiFocus3:
+                emptyBodyEffect = Effect.LinkEffects(Effect.Haste(), Effect.BonusFeat(Feat.EpicDodge!));
+                break;
+        }
+
+        if (emptyBodyEffect == null) return;
+        emptyBodyEffect.Tag = FloatingEmptyBodyTag;
 
         monk.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect, NwTimeSpan.FromRounds(monkLevel));
+    }
+
+    /// <summary>
+    /// Does the weightless leap for Floating Leaf monk, intercepts the CastServiceTechnique
+    /// </summary>
+    /// <param name="monk"></param>
+    /// <returns>True if the leap was successful, false if not</returns>
+    public static bool TryWeightlessLeap(NwCreature monk)
+    {
+        bool hasEmptyBody = monk.ActiveEffects.Any(e => e.Tag == FloatingEmptyBodyTag);
+        if (!hasEmptyBody || IsNoFlyArea(monk)) return false;
+
+        monk.ControllingPlayer?.EnterTargetMode(Leap, new TargetModeSettings
+        {
+            ValidTargets = ObjectTypes.Placeable | ObjectTypes.Creature | ObjectTypes.Door | ObjectTypes.Tile
+        });
+
+        return true;
+
+        void Leap(ModuleEvents.OnPlayerTarget targetingData)
+        {
+            NwGameObject? targetObject = targetingData.TargetObject as NwGameObject;
+            if (targetObject == null || targetObject.Location == null) return;
+
+            Effect flyEffect = Effect.DisappearAppear(targetObject.Location);
+            monk.ApplyEffect(EffectDuration.Temporary, flyEffect, TimeSpan.FromSeconds(4));
+        }
+    }
+
+    private static bool IsNoFlyArea(NwCreature monk)
+    {
+        if (monk.Area != null && monk.Area.GetObjectVariable<LocalVariableInt>("CS_NO_FLY").Value != 1) return false;
+
+        monk.ControllingPlayer?.FloatingTextString("- You are unable to fly in this area! -",
+            false, false);
+
+        return true;
     }
 }

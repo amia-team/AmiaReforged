@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.Monk.Augmentations;
 using AmiaReforged.Classes.Monk.Techniques;
 using AmiaReforged.Classes.Monk.Types;
 using AmiaReforged.Classes.Spells;
@@ -46,6 +47,13 @@ public class CastTechniqueService
 
         string techniqueName = castData.Spell.FeatReference.Name.ToString();
         TechniqueType castTechnique = (TechniqueType)castData.Spell.FeatReference.Id;
+
+        if (castTechnique == TechniqueType.EmptyBody && MonkUtils.GetMonkPath(monk) == PathType.FloatingLeaf)
+        {
+            FloatingLeaf.TryWeightlessLeap(monk);
+            return;
+        }
+
         string techniqueCdTag = GetCooldownTag(castTechnique);
 
         if (TechniqueOnCooldown(monk, techniqueCdTag, techniqueName)) return;
@@ -80,18 +88,14 @@ public class CastTechniqueService
     {
         bool hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
         bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category == BaseItemCategory.Shield;
-        bool hasFocusWithoutUnarmed
-            = monk.GetItemInSlot(InventorySlot.RightHand) != null
-              && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category == BaseItemCategory.Torches;
 
         if (!monk.IsPlayerControlled(out NwPlayer? player))
-            return hasArmor || hasShield || hasFocusWithoutUnarmed;
+            return hasArmor || hasShield;
 
-        if (hasArmor || hasShield || hasFocusWithoutUnarmed)
+        if (hasArmor || hasShield)
         {
             string reason = hasArmor ? "wearing armor"
-                : hasShield ? "wielding a shield"
-                : "wielding a focus without being unarmed";
+                : "wielding a shield";
 
             player.SendServerMessage($"Cannot use {techniqueName} because you are {reason}.");
             return true;
