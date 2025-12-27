@@ -120,16 +120,12 @@ public static class MonkUtils
         return baseMultiplier;
     }
 
-    public static bool IsMonkLevel(this NwCreature monk, int minLevel) =>
-        NWScript.GetLevelByClass((int)ClassType.Monk, monk) >= minLevel;
-
     public static bool AbilityRestricted(NwCreature monk, string disabledWhat)
     {
         bool hasArmor = monk.HasArmor();
         bool hasShield = monk.HasShield();
-        bool hasFocusWithWeapon = monk.HasFocusWithWeapon();
 
-        if (!monk.IsPlayerControlled(out NwPlayer? player)) return hasArmor || hasShield || hasFocusWithWeapon;
+        if (!monk.IsPlayerControlled(out NwPlayer? player)) return hasArmor || hasShield;
 
         if (hasArmor)
         {
@@ -143,25 +139,20 @@ public static class MonkUtils
             return hasShield;
         }
 
-        if (hasFocusWithWeapon)
-        {
-            player.SendServerMessage($"Equipping a focus while wielding a weapon has disabled your {disabledWhat}.");
-            return hasFocusWithWeapon;
-        }
-
         return false;
     }
 
-    private static bool HasArmor(this NwCreature monk) =>
-        monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
+    extension(NwCreature monk)
+    {
+        private bool HasArmor() =>
+            monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
 
-    private static bool HasShield(this NwCreature monk) =>
-        monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category == BaseItemCategory.Shield;
+        private bool HasShield() =>
+            monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category == BaseItemCategory.Shield;
 
-    private static bool HasFocusWithWeapon(this NwCreature monk) =>
-        monk.GetItemInSlot(InventorySlot.RightHand) is not null
-        && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is
-            BaseItemCategory.Torches;
+        public bool IsMonkLevel(int minLevel) =>
+            NWScript.GetLevelByClass((int)ClassType.Monk, monk) >= minLevel;
+    }
 
     public static double GetRandomDoubleInRange(double min, double max)
     {
@@ -173,5 +164,11 @@ public static class MonkUtils
         Random random = new();
         double randomDouble = random.NextDouble();
         return min + randomDouble * (max - min);
+    }
+
+    public static async Task GetObjectContext(NwCreature monk, Effect effect)
+    {
+        await monk.WaitForObjectContext();
+        Effect awaitedEffect = effect;
     }
 }
