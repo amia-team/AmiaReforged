@@ -1,5 +1,6 @@
 ﻿using Anvil.API;
 using Anvil.API.Events;
+using NWN.Core;
 
 namespace AmiaReforged.Classes.Spells;
 
@@ -166,6 +167,31 @@ public class SpellUtils
         int shifterLevel = creature.GetClassInfo(ClassType.Shifter)?.Level ?? 0;
         int druidLevel =  creature.GetClassInfo(ClassType.Druid)?.Level ?? 0;
         return 10 + (shifterLevel + druidLevel) / 2 + creature.GetAbilityModifier(Ability.Wisdom);
+    }
+
+    /// <summary>
+    /// Performs a spell resistance check against the target.
+    /// Returns true if the spell was resisted.
+    /// </summary>
+    public static bool MyResistSpell(NwCreature caster, NwCreature target)
+    {
+        // MyResistSpell returns:
+        // 0 = not resisted
+        // 1 = resisted by spell resistance
+        // 2 = resisted by globe/mantle
+        int result = NWScript.ResistSpell(caster, target);
+        return result != 0;
+    }
+
+    /// <summary>
+    /// Checks if a target is valid for a hostile spell.
+    /// Returns true if the target is a valid hostile target.
+    /// </summary>
+    public static bool IsValidHostileTarget(NwCreature target, NwCreature caster)
+    {
+        if (target.IsDMAvatar) return false;
+        if (target.IsReactionTypeFriendly(caster)) return false;
+        return true;
     }
 
 }

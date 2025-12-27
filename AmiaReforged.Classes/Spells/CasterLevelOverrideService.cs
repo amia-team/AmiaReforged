@@ -1,6 +1,7 @@
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NWN.Core;
 using NWN.Core.NWNX;
 using NLog;
 
@@ -10,6 +11,7 @@ namespace AmiaReforged.Classes.Spells;
 public class CasterLevelOverrideService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+    private readonly ShifterDcService _shifterDcService;
 
     // Dictionary mapping prestige classes to their caster level modifier formulas
     // Formula takes prestige class level and returns the modifier (minimum 0, prevents negative)
@@ -32,13 +34,27 @@ public class CasterLevelOverrideService
         ClassType.Cleric
     };
 
-    public CasterLevelOverrideService()
+    public CasterLevelOverrideService(ShifterDcService shifterDcService)
     {
+        _shifterDcService = shifterDcService;
+        
         NwModule.Instance.OnClientLeave += RemoveSetup;
 
         NwModule.Instance.OnLevelUp += FixCasterLevelOnLevelUp;
         NwModule.Instance.OnLevelDown += FixCasterLevelOnLevelDown;
         NwModule.Instance.OnSpellCast += FixCasterLevelOverride;
+    }
+    
+    /// <summary>
+    /// Gets the effective caster level for a creature, accounting for Shifter forms.
+    /// Use this method when calculating spell durations or effects for polymorphed Shifters.
+    /// </summary>
+    /// <param name="creature">The creature to check</param>
+    /// <param name="fallbackCasterLevel">Optional fallback (0 means use creature's normal caster level)</param>
+    /// <returns>The effective caster level</returns>
+    public int GetEffectiveCasterLevel(NwCreature creature, int fallbackCasterLevel = 0)
+    {
+        return _shifterDcService.GetShifterCasterLevel(creature, fallbackCasterLevel);
     }
 
     private void RemoveSetup(ModuleEvents.OnClientLeave obj)
