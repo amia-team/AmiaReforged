@@ -142,17 +142,14 @@ public static class MonkUtils
         return false;
     }
 
-    extension(NwCreature monk)
-    {
-        private bool HasArmor() =>
-            monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
+    private static bool HasArmor(this NwCreature monk) =>
+        monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
 
-        private bool HasShield() =>
-            monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category == BaseItemCategory.Shield;
+    private static bool HasShield(this NwCreature monk) =>
+        monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category == BaseItemCategory.Shield;
 
-        public bool IsMonkLevel(int minLevel) =>
-            NWScript.GetLevelByClass((int)ClassType.Monk, monk) >= minLevel;
-    }
+    public static bool IsMonkLevel(this NwCreature monk, int minLevel) =>
+        NWScript.GetLevelByClass((int)ClassType.Monk, monk) >= minLevel;
 
     public static double GetRandomDoubleInRange(double min, double max)
     {
