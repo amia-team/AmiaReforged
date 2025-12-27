@@ -226,22 +226,17 @@ public class AttackTechniqueService
     {
         bool hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
         bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category == BaseItemCategory.Shield;
-        bool hasFocusWithoutUnarmed =
-            monk.GetItemInSlot(InventorySlot.RightHand) != null
-            && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category == BaseItemCategory.Torches;
         bool hasRangedWeapon = MonkUtils.GetMonkPath(monk) != PathType.FloatingLeaf && monk.IsRangedWeaponEquipped;
 
         if (!monk.IsPlayerControlled(out NwPlayer? player))
-            return hasArmor || hasShield || hasFocusWithoutUnarmed || hasRangedWeapon;
+            return hasArmor || hasShield || hasRangedWeapon;
 
-        if (hasArmor || hasShield || hasFocusWithoutUnarmed || hasRangedWeapon)
+        if (hasArmor || hasShield || hasRangedWeapon)
         {
             string reason = hasArmor
                 ? "Wearing an armor"
                 : hasShield
                     ? "Wielding a shield"
-                    : hasFocusWithoutUnarmed
-                        ? "Wielding a focus without being unarmed"
                         : "Wielding a ranged weapon";
             player.SendServerMessage($"{reason} has prevented your {techniqueName}.");
             return true;
