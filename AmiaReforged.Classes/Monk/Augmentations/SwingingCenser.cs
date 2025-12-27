@@ -78,18 +78,15 @@ public sealed class SwingingCenser(ScriptHandleFactory scriptHandleFactory) : IA
             _ => 1
         };
 
-        Effect healVfx = Effect.VisualEffect(VfxType.ImpHeadHeal, fScale: 0.7f);
-
         Effect healPulseVfx = MonkUtils.ResizedVfx(MonkVfx.ImpPulseHolyChest, RadiusSize.Medium);
         targetCreature.ApplyEffect(EffectDuration.Instant, healPulseVfx);
 
-        foreach (NwCreature ally in allies)
-        {
-            int healAmount = Random.Shared.Roll(6, healDice);
+        Effect healVfx = Effect.VisualEffect(VfxType.ImpHeadHeal, fScale: 0.7f);
+        Effect healEffect = Effect.LinkEffects(Effect.Damage(healDice), healVfx);
+        _ = MonkUtils.GetObjectContext(monk, healEffect);
 
-            ally.ApplyEffect(EffectDuration.Instant, healVfx);
-            ally.ApplyEffect(EffectDuration.Instant, Effect.Heal(healAmount));
-        }
+        foreach (NwCreature ally in allies)
+            ally.ApplyEffect(EffectDuration.Instant, healEffect);
     }
 
     /// <summary>
@@ -157,6 +154,8 @@ public sealed class SwingingCenser(ScriptHandleFactory scriptHandleFactory) : IA
         Effect wholenessEffect = Effect.LinkEffects(Effect.Heal(healAmount),
             Effect.VisualEffect(VfxType.ImpHealingL, false, 0.7f));
 
+        _ = MonkUtils.GetObjectContext(monk, wholenessEffect);
+
         Effect pulseVfx = MonkUtils.ResizedVfx(VfxType.FnfLosHoly30, RadiusSize.Large);
 
         ScriptCallbackHandle doPulse
@@ -193,7 +192,7 @@ public sealed class SwingingCenser(ScriptHandleFactory scriptHandleFactory) : IA
     }
 
     /// <summary>
-    /// Empty Body creates a soothing winds in a large area around the monk, granting allies 50% concealment and
+    /// Empty Body creates soothing winds in a large area around the monk, granting allies 50% concealment and
     /// 2 regeneration. Each Ki Focus increases the regeneration by 2, to a maximum of 8 regeneration.
     /// </summary>
     private static void AugmentEmptyBody(NwCreature monk)

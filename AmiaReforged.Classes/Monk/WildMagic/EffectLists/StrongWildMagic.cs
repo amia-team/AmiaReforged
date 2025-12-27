@@ -138,7 +138,7 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
 
         Effect damageEffect = Effect.LinkEffects(Effect.VisualEffect(VfxType.ImpNegativeEnergy),
             Effect.Damage(damage, DamageType.Negative));
-        _ = wildMagicUtils.GetObjectContext(monk, damageEffect);
+        _ = MonkUtils.GetObjectContext(monk, damageEffect);
 
         target.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpPulseNegative));
 
@@ -186,7 +186,7 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
                 damage /= 2;
 
             Effect damageEffect = Effect.Damage(damage, DamageType.Electrical);
-            _ = wildMagicUtils.GetObjectContext(monk, damageEffect);
+            _ = MonkUtils.GetObjectContext(monk, damageEffect);
 
             enemy.ApplyEffect(EffectDuration.Instant, damageEffect);
             enemy.ApplyEffect(EffectDuration.Instant, lightningVfx);
@@ -226,7 +226,7 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
                 damage /= 2;
 
             Effect damageEffect = Effect.Damage(damage, DamageType.Electrical);
-            _ = wildMagicUtils.GetObjectContext(monk, damageEffect);
+            _ = MonkUtils.GetObjectContext(monk, damageEffect);
 
             enemy.ApplyEffect(EffectDuration.Instant, damageEffect);
             enemy.ApplyEffect(EffectDuration.Instant, fireVfx);
@@ -305,7 +305,7 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
         string planarResRef = prefix + suffix;
 
         Effect summonPlanar = Effect.SummonCreature(planarResRef, summonVfx!, TimeSpan.FromSeconds(1));
-        _ = wildMagicUtils.GetObjectContext(monk, summonPlanar);
+        _ = MonkUtils.GetObjectContext(monk, summonPlanar);
 
         monk.ApplyEffect(EffectDuration.Temporary, summonPlanar, WildMagicUtils.LongDuration);
     }

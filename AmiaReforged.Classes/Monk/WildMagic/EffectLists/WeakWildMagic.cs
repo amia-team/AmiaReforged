@@ -34,7 +34,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
         Effect flare = Effect.Damage(damage, DamageType.Fire);
         flare.SubType = EffectSubType.Magical;
 
-        _ = wildMagicUtils.GetObjectContext(monk, flare);
+        _ = MonkUtils.GetObjectContext(monk, flare);
 
         target.ApplyEffect(EffectDuration.Instant, flare);
         target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpFlameS));
@@ -125,7 +125,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
         Effect electricJolt = Effect.Damage(damage, DamageType.Electrical);
         electricJolt.SubType = EffectSubType.Magical;
 
-        _ = wildMagicUtils.GetObjectContext(monk, electricJolt);
+        _ = MonkUtils.GetObjectContext(monk, electricJolt);
 
         target.ApplyEffect(EffectDuration.Instant, electricJolt);
         target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpLightningS));
@@ -235,7 +235,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
         Effect summonBlade = Effect.SummonCreature("shelgarns_blade", VfxType.DurDeathArmor!);
         summonBlade.SubType = EffectSubType.Magical;
 
-        _ = wildMagicUtils.GetObjectContext(monk, summonBlade);
+        _ = MonkUtils.GetObjectContext(monk, summonBlade);
 
         monk.ApplyEffect(EffectDuration.Temporary, summonBlade, WildMagicUtils.LongDuration);
     }

@@ -87,12 +87,12 @@ public class EpicWildMagic(WildMagicUtils wildMagicUtils)
                 case SavingThrowResult.Success:
                     damage /= 2;
                     damageEffect = Effect.Damage(damage, DamageType.Divine);
-                    _ = wildMagicUtils.GetObjectContext(monk, damageEffect);
+                    _ = MonkUtils.GetObjectContext(monk, damageEffect);
                     enemy.ApplyEffect(EffectDuration.Instant, damageEffect);
                     continue;
                 case SavingThrowResult.Failure:
                     damageEffect = Effect.Damage(damage, DamageType.Divine);
-                    _ = wildMagicUtils.GetObjectContext(monk, damageEffect);
+                    _ = MonkUtils.GetObjectContext(monk, damageEffect);
                     enemy.ApplyEffect(EffectDuration.Instant, damageEffect);
                     enemy.ApplyEffect(EffectDuration.Temporary, daze, WildMagicUtils.ShortDuration);
                     continue;
@@ -222,7 +222,7 @@ public class EpicWildMagic(WildMagicUtils wildMagicUtils)
         Effect summonBlackBlade = Effect.SummonCreature("the_black_blade", VfxType.DurDeathArmor!);
         summonBlackBlade.SubType = EffectSubType.Magical;
 
-        _ = wildMagicUtils.GetObjectContext(monk, summonBlackBlade);
+        _ = MonkUtils.GetObjectContext(monk, summonBlackBlade);
 
         monk.ApplyEffect(EffectDuration.Temporary, summonBlackBlade, WildMagicUtils.LongDuration);
 

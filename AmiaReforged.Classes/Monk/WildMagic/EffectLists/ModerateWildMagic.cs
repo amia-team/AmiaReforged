@@ -58,7 +58,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
         }
 
         Effect inflict = Effect.Damage(damage, DamageType.Negative);
-        _ = wildMagicUtils.GetObjectContext(monk, inflict);
+        _ = MonkUtils.GetObjectContext(monk, inflict);
 
         target.ApplyEffect(EffectDuration.Instant, inflict);
         target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpHarm));
@@ -163,7 +163,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
                 continue;
 
             Effect damage = Effect.Damage(Random.Shared.Roll(8), DamageType.Sonic);
-            _ = wildMagicUtils.GetObjectContext(monk, damage);
+            _ = MonkUtils.GetObjectContext(monk, damage);
 
             enemy.ApplyEffect(EffectDuration.Instant, damage);
 
@@ -185,7 +185,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
         Effect summonHelmHorror = Effect.SummonCreature("NW_S_HelmHorr", VfxType.FnfSummonMonster3!);
         summonHelmHorror.SubType = EffectSubType.Magical;
 
-        _ = wildMagicUtils.GetObjectContext(monk, summonHelmHorror);
+        _ = MonkUtils.GetObjectContext(monk, summonHelmHorror);
 
         monk.ApplyEffect(EffectDuration.Temporary, summonHelmHorror, WildMagicUtils.LongDuration);
     }
@@ -222,7 +222,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
                 damage /= 2;
 
             Effect damageEffect = Effect.Damage(damage, DamageType.Electrical);
-            _ = wildMagicUtils.GetObjectContext(monk, damageEffect);
+            _ = MonkUtils.GetObjectContext(monk, damageEffect);
 
             enemy.ApplyEffect(EffectDuration.Instant, damageEffect);
             enemy.ApplyEffect(EffectDuration.Instant, lightningVfx);

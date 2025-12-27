@@ -12,12 +12,6 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
         || monk.SpellAbsorptionUnlimitedCheck(target, spell, school, spellLevel)
         || monk.SpellResistanceCheck(target, spell, monkLevel);
 
-    public async Task GetObjectContext(NwCreature monk, Effect effect)
-    {
-        await monk.WaitForObjectContext();
-        Effect awaitedEffect = effect;
-    }
-
     public Effect RandomPolymorphEffect()
     {
         int randomRoll = Random.Shared.Roll(6);
@@ -63,7 +57,7 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
         );
         combustEffect.SubType = EffectSubType.Magical;
 
-        _ = GetObjectContext(monk, combustEffect);
+        _ = MonkUtils.GetObjectContext(monk, combustEffect);
 
         return combustEffect;
     }
@@ -99,7 +93,7 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
         );
         deathArmor.SubType = EffectSubType.Magical;
 
-        _ = GetObjectContext(monk, deathArmor);
+        _ = MonkUtils.GetObjectContext(monk, deathArmor);
 
         return deathArmor;
     }
@@ -116,7 +110,7 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
         );
         inflictLightWounds.SubType = EffectSubType.Magical;
 
-        _ = GetObjectContext(monk, inflictLightWounds);
+        _ = MonkUtils.GetObjectContext(monk, inflictLightWounds);
 
         return inflictLightWounds;
     }
