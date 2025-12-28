@@ -39,59 +39,7 @@ public class BoxOfHats
     public BoxOfHats(BoxOfStyle masksAndHats)
     {
         NwModule.Instance.OnItemUse += HandleBoxOfMasks;
-        NwModule.Instance.OnClientEnter += ApplyVfx;
         _masksAndHats = masksAndHats;
-    }
-
-    private void ApplyVfx(ModuleEvents.OnClientEnter obj)
-    {
-        NwCreature? creature = obj.Player.LoginCreature;
-
-        if (creature is null)
-        {
-            return;
-        }
-
-        Effect? existingMask = creature.ActiveEffects.FirstOrDefault(e => e.Tag == MaskVfxTag);
-        if (existingMask is not null)
-        {
-            creature.RemoveEffect(existingMask);
-        }
-
-        Effect? existingHat = creature.ActiveEffects.FirstOrDefault(e => e.Tag == HatVfxTag);
-        if (existingHat is not null)
-        {
-            creature.RemoveEffect(existingHat);
-        }
-
-        NwItem? pcKey = creature.Inventory.Items.FirstOrDefault(i => i.ResRef == PcKeyResRef);
-
-        if (pcKey is null)
-        {
-            return;
-        }
-
-        int maskVfx = NWScript.GetLocalInt(pcKey, MaskVfxLocalInt);
-        int hatVfx = NWScript.GetLocalInt(pcKey, HatVfxLocalInt);
-
-        if (maskVfx != 0)
-        {
-            VisualEffectTableEntry mask = NwGameTables.VisualEffectTable.GetRow(maskVfx);
-            Effect maskEffect = Effect.VisualEffect(mask);
-            maskEffect.Tag = HatVfxTag;
-
-            creature.ApplyEffect(EffectDuration.Permanent, maskEffect);
-        }
-
-        if (hatVfx != 0)
-        {
-            VisualEffectTableEntry hat = NwGameTables.VisualEffectTable.GetRow(hatVfx);
-
-            Effect hatEffect = Effect.VisualEffect(hat);
-            hatEffect.Tag = HatVfxTag;
-
-            creature.ApplyEffect(EffectDuration.Permanent, hatEffect);
-        }
     }
 
     private void HandleBoxOfMasks(OnItemUse obj)
@@ -223,8 +171,8 @@ public class BoxOfHats
         int gender = NWScript.GetGender(player);
 
         int? vfx = gender == NWScript.GENDER_MALE
-            ? _masksAndHats.HatsForRace[selectedRace].maleHats.GetValueOrDefault(hatEnum)
-            : _masksAndHats.HatsForRace[selectedRace].femaleHats.GetValueOrDefault(hatEnum);
+            ? _masksAndHats.HatsForRace[selectedRace].MaleHats.GetValueOrDefault(hatEnum)
+            : _masksAndHats.HatsForRace[selectedRace].FemaleHats.GetValueOrDefault(hatEnum);
 
         if (vfx is null)
         {
@@ -239,6 +187,8 @@ public class BoxOfHats
 
         VisualEffectTableEntry hatEntry = NwGameTables.VisualEffectTable.GetRow((int)vfx);
         Effect hatVfx = Effect.VisualEffect(hatEntry);
+        // PersistentVfxService controls persistence for permanently applied unyielding visual effects
+        hatVfx.SubType = EffectSubType.Unyielding;
         hatVfx.Tag = HatVfxTag;
 
         playerCreature.ApplyEffect(EffectDuration.Permanent, hatVfx);
@@ -300,6 +250,8 @@ public class BoxOfHats
 
         VisualEffectTableEntry maskEntry = NwGameTables.VisualEffectTable.GetRow((int)vfx);
         Effect maskVfx = Effect.VisualEffect(maskEntry);
+        // PersistentVfxService controls persistence for permanently applied unyielding visual effects
+        maskVfx.SubType = EffectSubType.Unyielding;
         maskVfx.Tag = MaskVfxTag;
 
         playerCreature.ApplyEffect(EffectDuration.Permanent, maskVfx);
@@ -1132,7 +1084,7 @@ public sealed class BoxOfStyle
     );
 }
 
-public record RaceHats(Dictionary<WearableHat, int> maleHats, Dictionary<WearableHat, int> femaleHats);
+public record RaceHats(Dictionary<WearableHat, int> MaleHats, Dictionary<WearableHat, int> FemaleHats);
 
 public record RaceMasks(Dictionary<WearableMask, int> MaleMasks, Dictionary<WearableMask, int> FemaleMasks);
 
