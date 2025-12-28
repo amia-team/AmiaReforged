@@ -114,7 +114,15 @@ public class CraftingPropertyData
             AbilityProperties.Abilities,
             CastSpellProperties.FluffSpells,
             CastSpellProperties.BeneficialSpells,
-            CastSpellProperties.DMSpellCasting
+            CastSpellProperties.DMSpellCasting,
+
+            SpecialItemProperties.LightProperties,
+            SpecialItemProperties.AdditionalProperties,
+            SpecialItemProperties.AlignmentProperties,
+            SpecialItemProperties.UseLimitationAlignmentGroup,
+            SpecialItemProperties.UseLimitationClass,
+            SpecialItemProperties.UseLimitationRace,
+            SpecialItemProperties.QualityProperties
 
         ];
 
@@ -176,6 +184,14 @@ public class CraftingPropertyData
         properties.Add(CastSpellProperties.FluffSpells);
         properties.Add(CastSpellProperties.BeneficialSpells);
         properties.Add(CastSpellProperties.DMSpellCasting);
+
+        properties.Add(SpecialItemProperties.LightProperties);
+        properties.Add(SpecialItemProperties.AdditionalProperties);
+        properties.Add(SpecialItemProperties.AlignmentProperties);
+        properties.Add(SpecialItemProperties.UseLimitationAlignmentGroup);
+        properties.Add(SpecialItemProperties.UseLimitationClass);
+        properties.Add(SpecialItemProperties.UseLimitationRace);
+        properties.Add(SpecialItemProperties.QualityProperties);
 
         properties.Add(BonusSpellSlotProperties.AssassinBonusSpells);
         properties.Add(BonusSpellSlotProperties.BardBonusSpells);
