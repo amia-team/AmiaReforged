@@ -4,6 +4,7 @@ using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NWN.Core;
 
 namespace AmiaReforged.Classes.Monk.Augmentations;
 
@@ -191,10 +192,17 @@ public class FloatingLeaf : IAugmentation
 
         void Leap(ModuleEvents.OnPlayerTarget targetingData)
         {
-            NwGameObject? targetObject = targetingData.TargetObject as NwGameObject;
-            if (targetObject == null || targetObject.Location == null) return;
+            if (monk.Area == null || monk.Location == null) return;
 
-            Effect flyEffect = Effect.DisappearAppear(targetObject.Location);
+            Location targetLocation = Location.Create(monk.Area, targetingData.TargetPosition, monk.Location.Rotation);
+
+            if (monk.Location.Distance(targetLocation) > 20)
+            {
+                monk.ControllingPlayer?.FloatingTextString("You can only jump within 20 meters", false, false);
+                return;
+            }
+
+            Effect flyEffect = Effect.DisappearAppear(targetLocation);
             monk.ApplyEffect(EffectDuration.Temporary, flyEffect, TimeSpan.FromSeconds(4));
         }
     }
