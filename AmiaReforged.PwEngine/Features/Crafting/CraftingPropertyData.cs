@@ -113,7 +113,8 @@ public class CraftingPropertyData
             SkillProperties.Advantageous,
             AbilityProperties.Abilities,
             CastSpellProperties.FluffSpells,
-            CastSpellProperties.BeneficialSpells
+            CastSpellProperties.BeneficialSpells,
+            CastSpellProperties.DMSpellCasting
 
         ];
 
@@ -174,6 +175,7 @@ public class CraftingPropertyData
 
         properties.Add(CastSpellProperties.FluffSpells);
         properties.Add(CastSpellProperties.BeneficialSpells);
+        properties.Add(CastSpellProperties.DMSpellCasting);
 
         properties.Add(BonusSpellSlotProperties.AssassinBonusSpells);
         properties.Add(BonusSpellSlotProperties.BardBonusSpells);
