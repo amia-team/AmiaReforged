@@ -80,7 +80,7 @@ public static class WondrousDmProperties
             new CraftingProperty
             {
                 PowerCost = 2,
-                ItemProperty = NWScript.ItemPropertyBonusFeat(NWScript.FEAT_BLACKGUARD_SNEAK_ATTACK_1D6)!,
+                ItemProperty = NWScript.ItemPropertyBonusFeat(440)!,  // Blackguard Sneak Attack 1d6 feat index from iprp_feats.2da
                 GuiLabel = "Blackguard Sneak Attack 1d6",
                 GoldCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
@@ -116,7 +116,7 @@ public static class WondrousDmProperties
             new CraftingProperty
             {
                 PowerCost = 2,
-                ItemProperty = NWScript.ItemPropertyBonusFeat(NWScript.FEAT_IMMUNITY_TO_SLEEP)!,
+                ItemProperty = NWScript.ItemPropertyBonusFeat(251)!,  // Immunity to Sleep feat index from iprp_feats.2da
                 GuiLabel = "Immunity: Sleep",
                 GoldCost = 0,
                 CraftingTier = CraftingTier.Wondrous,

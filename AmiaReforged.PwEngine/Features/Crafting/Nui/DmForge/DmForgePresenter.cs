@@ -145,8 +145,11 @@ public sealed class DmForgePresenter : ScryPresenter<DmForgeView>
         if (isCasterWeapon)
             baseItemType = isTwoHander ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
 
+        IReadOnlyList<CraftingCategory>? availableCategories = null;
         if (_propertyData.Properties.TryGetValue(baseItemType, out IReadOnlyList<CraftingCategory>? categories))
         {
+            availableCategories = categories; // Store for use when converting existing properties
+
             foreach (CraftingCategory cat in categories)
             {
                 foreach (CraftingProperty p in cat.Properties)
@@ -169,7 +172,7 @@ public sealed class DmForgePresenter : ScryPresenter<DmForgeView>
         foreach (ItemProperty ip in _item.ItemProperties)
         {
             bool removable = ItemPropertyHelper.CanBeRemoved(ip) || ip.DurationType == EffectDuration.Permanent;
-            CraftingProperty cp = ItemPropertyHelper.ToCraftingProperty(ip);
+            CraftingProperty cp = ItemPropertyHelper.ToCraftingProperty(ip, availableCategories);
 
             _current.Add((ip, cp, removable));
         }

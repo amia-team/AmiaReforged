@@ -58,19 +58,38 @@ public static class ItemPropertyHelper
             List<CraftingProperty> allProperties = categories.SelectMany(c => c.Properties).ToList();
             LogManager.GetCurrentClassLogger().Info($"Total properties in categories: {allProperties.Count}");
 
-            // Try to find matching property
+            // Try to find matching property using PropertiesAreSame (string comparison)
             CraftingProperty? matchingProperty = allProperties.FirstOrDefault(p => PropertiesAreSame(p.ItemProperty, ip));
+
+            if (matchingProperty == null)
+            {
+                // Try alternative matching: same property type and same game label
+                LogManager.GetCurrentClassLogger().Info($"First match attempt failed, trying game label matching...");
+                string ipGameLabel = GameLabel(ip);
+                matchingProperty = allProperties.FirstOrDefault(p =>
+                    p.ItemProperty.Property.PropertyType == ip.Property.PropertyType &&
+                    GameLabel(p.ItemProperty) == ipGameLabel);
+
+                if (matchingProperty != null)
+                {
+                    LogManager.GetCurrentClassLogger().Info($"✓ MATCH FOUND via GameLabel! Label: '{ipGameLabel}', PowerCost: {matchingProperty.PowerCost}");
+                }
+            }
+            else
+            {
+                LogManager.GetCurrentClassLogger().Info($"✓ MATCH FOUND via PropertiesAreSame! GuiLabel: '{matchingProperty.GuiLabel}', PowerCost: {matchingProperty.PowerCost}");
+            }
 
             if (matchingProperty != null)
             {
                 powerCost = matchingProperty.PowerCost;
-                LogManager.GetCurrentClassLogger().Info($"✓ MATCH FOUND! GuiLabel: '{matchingProperty.GuiLabel}', PowerCost: {powerCost}");
             }
             else
             {
                 powerCost = GetPowerCost(ip);
                 LogManager.GetCurrentClassLogger().Warn($"✗ NO MATCH FOUND - Using calculated PowerCost: {powerCost}");
                 LogManager.GetCurrentClassLogger().Warn($"  This property may not be in any category definitions!");
+                LogManager.GetCurrentClassLogger().Warn($"  GameLabel: '{GameLabel(ip)}'");
             }
         }
         else

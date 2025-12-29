@@ -15,19 +15,31 @@ public class ActivePropertiesModel
     {
         List<CraftingProperty> properties = categories.SelectMany(c => c.Properties).ToList();
 
+        NLog.LogManager.GetCurrentClassLogger().Info($"ActivePropertiesModel: Processing item with {item.ItemProperties.Count()} properties");
+        NLog.LogManager.GetCurrentClassLogger().Info($"ActivePropertiesModel: Loaded {properties.Count} properties from {categories.Count} categories");
+
         foreach (ItemProperty property in item.ItemProperties)
         {
             if (!ItemPropertyHelper.CanBeRemoved(property) &&
                 property.DurationType != EffectDuration.Permanent) continue;
 
             // Check the existing properties in the categories
-            CraftingProperty craftingProperty =
-                properties.FirstOrDefault(p => ItemPropertyHelper.PropertiesAreSame(p, property)) ??
-                ItemPropertyHelper.ToCraftingProperty(property, categories);
+            CraftingProperty? matchedProperty = properties.FirstOrDefault(p => ItemPropertyHelper.PropertiesAreSame(p, property));
 
-            // If the property is in the categories, add it to the list of all properties
-            _visible.Add(craftingProperty);
+            if (matchedProperty != null)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Info($"✓ Direct match found for property in categories");
+                _visible.Add(matchedProperty);
+            }
+            else
+            {
+                NLog.LogManager.GetCurrentClassLogger().Info($"✗ No direct match - calling ToCraftingProperty with {categories.Count} categories");
+                CraftingProperty craftingProperty = ItemPropertyHelper.ToCraftingProperty(property, categories);
+                _visible.Add(craftingProperty);
+            }
         }
+
+        NLog.LogManager.GetCurrentClassLogger().Info($"ActivePropertiesModel: Loaded {_visible.Count} visible properties");
     }
 
     public void HideProperty(CraftingProperty property)
