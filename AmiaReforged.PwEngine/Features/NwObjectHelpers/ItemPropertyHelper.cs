@@ -38,7 +38,7 @@ public static class ItemPropertyHelper
         return label;
     }
 
-    public static CraftingProperty ToCraftingProperty(ItemProperty ip)
+    public static CraftingProperty ToCraftingProperty(ItemProperty ip, IReadOnlyList<CraftingCategory>? categories = null)
     {
         LogManager.GetCurrentClassLogger().Info("Converting unknown property to something useable...");
 
@@ -48,11 +48,33 @@ public static class ItemPropertyHelper
 
         gameLabel = gameLabel.Replace(oldValue: "_", newValue: " ");
 
+        // Try to find the property in the categories to get the correct PowerCost
+        int powerCost = 2; // Default fallback
+        if (categories != null)
+        {
+            List<CraftingProperty> allProperties = categories.SelectMany(c => c.Properties).ToList();
+            CraftingProperty? matchingProperty = allProperties.FirstOrDefault(p => PropertiesAreSame(p.ItemProperty, ip));
+            if (matchingProperty != null)
+            {
+                powerCost = matchingProperty.PowerCost;
+                LogManager.GetCurrentClassLogger().Info($"Found matching property with PowerCost: {powerCost}");
+            }
+            else
+            {
+                powerCost = GetPowerCost(ip);
+                LogManager.GetCurrentClassLogger().Info($"No matching property found, calculated PowerCost: {powerCost}");
+            }
+        }
+        else
+        {
+            powerCost = GetPowerCost(ip);
+        }
+
         return new CraftingProperty
         {
             ItemProperty = ip,
             GuiLabel = gameLabel,
-            PowerCost = GetPowerCost(ip),
+            PowerCost = powerCost,
             CraftingTier = CraftingTier.Wondrous,
             Removable = CanBeRemoved(ip)
         };

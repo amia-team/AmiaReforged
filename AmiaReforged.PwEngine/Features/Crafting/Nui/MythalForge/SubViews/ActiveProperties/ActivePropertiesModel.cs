@@ -1,4 +1,4 @@
-﻿using AmiaReforged.PwEngine.Features.Crafting.Models;
+﻿﻿using AmiaReforged.PwEngine.Features.Crafting.Models;
 using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 using AmiaReforged.PwEngine.Features.NwObjectHelpers;
 using Anvil.API;
@@ -23,7 +23,7 @@ public class ActivePropertiesModel
             // Check the existing properties in the categories
             CraftingProperty craftingProperty =
                 properties.FirstOrDefault(p => ItemPropertyHelper.PropertiesAreSame(p, property)) ??
-                ItemPropertyHelper.ToCraftingProperty(property);
+                ItemPropertyHelper.ToCraftingProperty(property, categories);
 
             // If the property is in the categories, add it to the list of all properties
             _visible.Add(craftingProperty);
