@@ -80,7 +80,101 @@ public static class ItemPropertyHelper
             ItemPropertyType.NoDamage
         ];
 
-        return noCost.Any(it => it == ip.Property.PropertyType) ? 0 : 2;
+        if (noCost.Any(it => it == ip.Property.PropertyType)) return 0;
+
+        // Calculate power cost based on property type and value
+        return ip.Property.PropertyType switch
+        {
+            // Ability Bonus: +1=2, +2=4, +3=6 (bonus * 2)
+            // IntParams[1] contains the ability bonus value
+            ItemPropertyType.AbilityBonus => ip.IntParams.Count > 1 ? ip.IntParams[1] * 2 : 2,
+
+            // Skill Bonus: +5=2, +10=4 (bonus / 5 * 2)
+            // IntParams[1] contains the skill bonus value
+            ItemPropertyType.SkillBonus => ip.IntParams.Count > 1 ? (ip.IntParams[1] / 5) * 2 : 2,
+
+            // Saving Throw Bonus: +1=1, +2=1, +3=2, +4=2, +5=2 (universal or specific)
+            // IntParams[1] contains the save bonus value
+            ItemPropertyType.SavingThrowBonus => ip.IntParams.Count > 1
+                ? ip.IntParams[1] switch
+                {
+                    1 => 1,
+                    2 => 1,
+                    3 => 2,
+                    4 => 2,
+                    5 => 2,
+                    _ => 2
+                }
+                : 2,
+
+            // Regeneration: +1=2, +2=4, +3=6, +4=8
+            // IntParams[0] contains the regeneration value
+            ItemPropertyType.Regeneration => ip.IntParams.Count > 0 ? ip.IntParams[0] * 2 : 2,
+
+            // Vampiric Regeneration: +1=1, +2=1, +3=2
+            // IntParams[0] contains the vampiric regeneration value
+            ItemPropertyType.RegenerationVampiric => ip.IntParams.Count > 0
+                ? ip.IntParams[0] switch
+                {
+                    1 => 1,
+                    2 => 1,
+                    3 => 2,
+                    _ => 1
+                }
+                : 1,
+
+            // AC Bonus: +1=1, +2=1, +3=2, +4=2, +5=4
+            // IntParams[0] contains the AC bonus value
+            ItemPropertyType.AcBonus => ip.IntParams.Count > 0
+                ? ip.IntParams[0] switch
+                {
+                    1 => 1,
+                    2 => 1,
+                    3 => 2,
+                    4 => 2,
+                    5 => 4,
+                    _ => 1
+                }
+                : 1,
+
+            // Attack Bonus: usually costs 2 per +1
+            // IntParams[0] contains the attack bonus value
+            ItemPropertyType.AttackBonus => ip.IntParams.Count > 0 ? ip.IntParams[0] * 2 : 2,
+
+            // Enhancement Bonus: usually costs 2 per +1
+            // IntParams[0] contains the enhancement bonus
+            ItemPropertyType.EnhancementBonus => ip.IntParams.Count > 0 ? ip.IntParams[0] * 2 : 2,
+
+            // Damage Resistance (elemental and physical): 5=1, 10=2, 15=3
+            // Physical damage types (Bludgeoning, Piercing, Slashing) all cost 2
+            // IntParams[0] is damage type, IntParams[1] is resist amount
+            ItemPropertyType.DamageResistance => ip.IntParams.Count > 1
+                ? ip.IntParams[0] switch
+                {
+                    // Physical damage types (Bludgeoning=0, Piercing=1, Slashing=2)
+                    0 or 1 or 2 => 2,
+                    // Elemental types (Acid=5, Cold=6, Divine=7, Electrical=8, Fire=9, Negative=10, Positive=11, Sonic=12)
+                    _ => ip.IntParams[1] switch
+                    {
+                        5 => 1,
+                        10 => 2,
+                        15 => 3,
+                        20 => 4,
+                        _ => 2
+                    }
+                }
+                : 2,
+
+            // Damage Reduction (Soak): all cost 1 in the defined system
+            // IntParams[1] is the soak amount
+            ItemPropertyType.DamageReduction => 1,
+
+            // Keen: 1 for normal weapons, 2 for thrown (requires item context)
+            ItemPropertyType.Keen => 1,
+
+            // Default fallback for any property not explicitly handled
+            _ => 2
+        };
     }
 
     public static bool CanBeRemoved(ItemProperty itemProperty)

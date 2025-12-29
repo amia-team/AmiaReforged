@@ -122,7 +122,15 @@ public class CraftingPropertyData
             SpecialItemProperties.UseLimitationAlignmentGroup,
             SpecialItemProperties.UseLimitationClass,
             SpecialItemProperties.UseLimitationRace,
-            SpecialItemProperties.QualityProperties
+            SpecialItemProperties.QualityProperties,
+
+            // Wondrous DM-only properties
+            WondrousDmProperties.ArcaneSpellFailureReduction,
+            WondrousDmProperties.SneakAttackFeats,
+            WondrousDmProperties.ImmunityMiscellaneous,
+            WondrousDmProperties.BonusFeats,
+            WondrousDmProperties.SpellResistanceWondrous,
+            WondrousDmProperties.WeightReduction
 
         ];
 
@@ -192,6 +200,14 @@ public class CraftingPropertyData
         properties.Add(SpecialItemProperties.UseLimitationClass);
         properties.Add(SpecialItemProperties.UseLimitationRace);
         properties.Add(SpecialItemProperties.QualityProperties);
+
+        // Wondrous DM-only properties
+        properties.Add(WondrousDmProperties.ArcaneSpellFailureReduction);
+        properties.Add(WondrousDmProperties.SneakAttackFeats);
+        properties.Add(WondrousDmProperties.ImmunityMiscellaneous);
+        properties.Add(WondrousDmProperties.BonusFeats);
+        properties.Add(WondrousDmProperties.SpellResistanceWondrous);
+        properties.Add(WondrousDmProperties.WeightReduction);
 
         properties.Add(BonusSpellSlotProperties.AssassinBonusSpells);
         properties.Add(BonusSpellSlotProperties.BardBonusSpells);
