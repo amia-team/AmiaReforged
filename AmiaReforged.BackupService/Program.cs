@@ -51,6 +51,7 @@ public class Program
                     // Register services
                     services.AddSingleton<IPostgresBackupService, PostgresBackupService>();
                     services.AddSingleton<IGitBackupService, GitBackupService>();
+                    services.AddSingleton<ICharacterVaultBackupService, CharacterVaultBackupService>();
 
                     // Register the background worker
                     services.AddHostedService<BackupWorker>();

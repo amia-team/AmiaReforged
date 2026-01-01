@@ -12,6 +12,7 @@ public class BackupWorker : BackgroundService
     private readonly IConfiguration _configuration;
     private readonly IPostgresBackupService _backupService;
     private readonly IGitBackupService _gitService;
+    private readonly ICharacterVaultBackupService _characterVaultService;
     private readonly BackupConfig _backupConfig;
 
     public BackupWorker(
@@ -19,12 +20,14 @@ public class BackupWorker : BackgroundService
         IConfiguration configuration,
         IPostgresBackupService backupService,
         IGitBackupService gitService,
+        ICharacterVaultBackupService characterVaultService,
         BackupConfig backupConfig)
     {
         _logger = logger;
         _configuration = configuration;
         _backupService = backupService;
         _gitService = gitService;
+        _characterVaultService = characterVaultService;
         _backupConfig = backupConfig;
     }
 
@@ -40,6 +43,18 @@ public class BackupWorker : BackgroundService
         {
             _logger.LogInformation("  - {Name}: {Database} on {Host}:{Port}",
                 db.Name, db.GetDatabase(), db.GetHost(), db.GetPort());
+        }
+
+        if (_backupConfig.EnableCharacterVaultBackup)
+        {
+            _logger.LogInformation("Character vault backup enabled");
+            _logger.LogInformation("  Source: {Source}", _backupConfig.GetServerVaultSourcePath());
+            _logger.LogInformation("  Destination: {Destination}",
+                Path.Combine(_backupConfig.BackupDirectory, _backupConfig.CharactersBackupSubdirectory));
+        }
+        else
+        {
+            _logger.LogInformation("Character vault backup disabled");
         }
 
         // Run initial backup immediately on startup
@@ -113,7 +128,33 @@ public class BackupWorker : BackgroundService
 
         _logger.LogInformation("Backup phase complete. Success: {Success}, Failed: {Failed}", successCount, failCount);
 
-        if (successCount > 0)
+        // Backup character vault files
+        bool characterVaultSuccess = true;
+        if (_backupConfig.EnableCharacterVaultBackup)
+        {
+            _logger.LogInformation("Starting character vault backup");
+            CharacterVaultBackupResult vaultResult = await _characterVaultService.BackupCharacterVaultAsync(cancellationToken);
+
+            if (vaultResult.Success)
+            {
+                _logger.LogInformation("Character vault backup succeeded: {Files} files in {Directories} directories",
+                    vaultResult.FilesCopied, vaultResult.DirectoriesCopied);
+            }
+            else
+            {
+                characterVaultSuccess = false;
+                _logger.LogWarning("Character vault backup failed: {Error}", vaultResult.ErrorMessage);
+
+                // TODO: Send Discord webhook notification
+                // string? webhookUrl = _backupConfig.GetDiscordWebhookUrl();
+                // if (!string.IsNullOrEmpty(webhookUrl))
+                // {
+                //     await SendDiscordNotificationAsync(webhookUrl, vaultResult.ErrorMessage);
+                // }
+            }
+        }
+
+        if (successCount > 0 || (characterVaultSuccess && _backupConfig.EnableCharacterVaultBackup))
         {
             // Commit and push to git
             _logger.LogInformation("Committing backups to git");
