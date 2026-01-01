@@ -1,3 +1,4 @@
+using System.Text;
 using AmiaReforged.BackupService.Configuration;
 
 namespace AmiaReforged.BackupService.Services;
@@ -130,9 +131,9 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
         }
         catch (Exception ex)
         {
-            string warning = $"Failed to enumerate directories in {sourceDir}: {ex.Message}";
+            string dirEnumWarning = $"Failed to enumerate directories in {sourceDir}: {ex.Message}";
             _logger.LogWarning(ex, "Failed to enumerate directories in {SourceDir}", sourceDir);
-            warnings.Add(warning);
+            warnings.Add(dirEnumWarning);
             return;
         }
 
@@ -141,7 +142,8 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
             cancellationToken.ThrowIfCancellationRequested();
 
             string dirName = Path.GetFileName(directory);
-            string destSubDir = Path.Combine(destinationDir, dirName);
+            string sanitizedDirName = SanitizeFileName(dirName);
+            string destSubDir = Path.Combine(destinationDir, sanitizedDirName);
 
             try
             {
@@ -157,149 +159,126 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
             }
             catch (Exception ex)
             {
-                string warning = $"Failed to process directory {dirName}: {ex.Message}";
+                string dirProcessWarning = $"Failed to process directory {dirName}: {ex.Message}";
                 _logger.LogWarning(ex, "Failed to process directory {DirName}", dirName);
-                warnings.Add(warning);
+                warnings.Add(dirProcessWarning);
             }
         }
 
-        // Copy all files in current directory
-        // First, try to copy files using .NET, tracking failures
-        string[] files;
-        try
+        // Copy files - use native shell to enumerate and copy files with problematic names
+        var (success, copied, skipped, copyWarning) = CopyFilesWithSanitizedNames(sourceDir, destinationDir);
+
+        filesCopied += copied;
+        filesSkipped += skipped;
+
+        if (!string.IsNullOrEmpty(copyWarning))
         {
-            files = Directory.GetFiles(sourceDir);
-        }
-        catch (Exception ex)
-        {
-            string warning = $"Failed to enumerate files in {sourceDir}: {ex.Message}";
-            _logger.LogWarning(ex, "Failed to enumerate files in {SourceDir}", sourceDir);
-            warnings.Add(warning);
-            return;
-        }
-
-        bool hasFailures = false;
-        int localFilesCopied = 0;
-
-        foreach (string file in files)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            string fileName = Path.GetFileName(file);
-            string destFile = Path.Combine(destinationDir, fileName);
-
-            try
-            {
-                File.Copy(file, destFile, overwrite: true);
-                localFilesCopied++;
-                _logger.LogDebug("Copied: {FileName}", fileName);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug("File.Copy failed for {FileName}: {Error}", fileName, ex.Message);
-                hasFailures = true;
-            }
-        }
-
-        // If any files failed, fall back to native cp for the entire directory contents
-        // This bypasses .NET's problematic filename encoding
-        if (hasFailures)
-        {
-            _logger.LogDebug("Some files failed to copy in {Dir}, falling back to native cp", sourceDir);
-
-            var (success, nativeCopied, nativeWarning) = TryCopyDirectoryContentsWithNativeCommand(sourceDir, destinationDir);
-
-            if (success)
-            {
-                // Native cp copied all files (including ones .NET already copied - it overwrites)
-                filesCopied += nativeCopied;
-                _logger.LogDebug("Native cp copied {Count} files from {Dir}", nativeCopied, sourceDir);
-            }
-            else
-            {
-                // Native cp also failed - count the ones .NET managed to copy
-                filesCopied += localFilesCopied;
-                filesSkipped += files.Length - localFilesCopied;
-                if (!string.IsNullOrEmpty(nativeWarning))
-                {
-                    warnings.Add(nativeWarning);
-                }
-                _logger.LogWarning("Native cp fallback failed for {Dir}: {Warning}", sourceDir, nativeWarning);
-            }
-        }
-        else
-        {
-            filesCopied += localFilesCopied;
+            warnings.Add(copyWarning);
         }
     }
 
     /// <summary>
-    /// Attempts to copy all files in a directory using native cp command.
-    /// This bypasses .NET's filename encoding issues by letting the shell handle filenames directly.
+    /// Copies all files from source to destination using native shell to handle Unicode filenames,
+    /// sanitizing the destination filenames to ASCII-only.
     /// </summary>
-    /// <returns>Tuple of (success, fileCount, warningMessage)</returns>
-    private (bool Success, int FileCount, string? Warning) TryCopyDirectoryContentsWithNativeCommand(string sourceDir, string destinationDir)
+    private (bool Success, int Copied, int Skipped, string? Warning) CopyFilesWithSanitizedNames(string sourceDir, string destinationDir)
     {
         try
         {
-            // Use cp with shell globbing to copy all files
-            // The -f flag forces overwrite, * matches all files
-            var process = new System.Diagnostics.Process
+            // Use bash to get the list of files with proper encoding
+            // printf '%s\0' outputs null-separated filenames to handle special chars
+            var listProcess = new System.Diagnostics.Process
             {
                 StartInfo = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "/bin/bash",
-                    Arguments = $"-c \"cp -f '{sourceDir}'/* '{destinationDir}/' 2>/dev/null || true\"",
+                    Arguments = $"-c \"cd '{sourceDir}' && find . -maxdepth 1 -type f -printf '%f\\n' 2>/dev/null\"",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    StandardOutputEncoding = Encoding.UTF8
                 }
             };
 
-            process.Start();
-            string stderr = process.StandardError.ReadToEnd();
-            process.WaitForExit(TimeSpan.FromSeconds(60));
+            listProcess.Start();
+            string output = listProcess.StandardOutput.ReadToEnd();
+            listProcess.WaitForExit(TimeSpan.FromSeconds(30));
 
-            // Count files in destination to report how many were copied
-            int fileCount = 0;
-            try
+            if (listProcess.ExitCode != 0)
             {
-                // Use ls to count files since .NET might have trouble with some filenames
-                var countProcess = new System.Diagnostics.Process
+                return (false, 0, 0, $"Failed to list files in {sourceDir}");
+            }
+
+            string[] fileNames = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            int copied = 0;
+            int skipped = 0;
+
+            foreach (string fileName in fileNames)
+            {
+                string sanitizedName = SanitizeFileName(fileName);
+                string destPath = Path.Combine(destinationDir, sanitizedName);
+
+                // Use cp with the original filename (shell handles encoding)
+                var copyProcess = new System.Diagnostics.Process
                 {
                     StartInfo = new System.Diagnostics.ProcessStartInfo
                     {
                         FileName = "/bin/bash",
-                        Arguments = $"-c \"ls -1 '{destinationDir}' 2>/dev/null | wc -l\"",
+                        Arguments = $"-c \"cp -f '{sourceDir}/{fileName}' '{destPath}'\"",
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
                         UseShellExecute = false,
                         CreateNoWindow = true
                     }
                 };
-                countProcess.Start();
-                string countOutput = countProcess.StandardOutput.ReadToEnd().Trim();
-                countProcess.WaitForExit(TimeSpan.FromSeconds(10));
-                int.TryParse(countOutput, out fileCount);
-            }
-            catch
-            {
-                // If counting fails, just return 0
+
+                copyProcess.Start();
+                copyProcess.WaitForExit(TimeSpan.FromSeconds(30));
+
+                if (copyProcess.ExitCode == 0)
+                {
+                    copied++;
+                    if (fileName != sanitizedName)
+                    {
+                        _logger.LogDebug("Copied and sanitized: {Original} -> {Sanitized}", fileName, sanitizedName);
+                    }
+                }
+                else
+                {
+                    skipped++;
+                    _logger.LogWarning("Failed to copy file: {FileName}", fileName);
+                }
             }
 
-            // cp with || true always returns 0, check if there were errors
-            if (!string.IsNullOrWhiteSpace(stderr))
-            {
-                return (false, 0, $"Native cp had errors in {sourceDir}: {stderr}");
-            }
-
-            return (true, fileCount, null);
+            return (true, copied, skipped, null);
         }
         catch (Exception ex)
         {
-            return (false, 0, $"Native cp command failed for {sourceDir}: {ex.Message}");
+            return (false, 0, 0, $"Failed to copy files from {sourceDir}: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Sanitizes a filename by replacing non-ASCII characters with underscores.
+    /// Preserves the filename length by using single-character replacement.
+    /// </summary>
+    private static string SanitizeFileName(string fileName)
+    {
+        var sb = new StringBuilder(fileName.Length);
+        foreach (char c in fileName)
+        {
+            // Keep ASCII printable characters (32-126), except problematic ones for filesystems
+            if (c >= 32 && c < 127 && c != '<' && c != '>' && c != ':' && c != '"' && c != '|' && c != '?' && c != '*')
+            {
+                sb.Append(c);
+            }
+            else
+            {
+                sb.Append('_'); // Replace with underscore to preserve length
+            }
+        }
+        return sb.ToString();
     }
 }
 
