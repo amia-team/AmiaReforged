@@ -164,6 +164,7 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
         }
 
         // Copy all files in current directory
+        // First, try to copy files using .NET, tracking failures
         string[] files;
         try
         {
@@ -177,6 +178,9 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
             return;
         }
 
+        bool hasFailures = false;
+        int localFilesCopied = 0;
+
         foreach (string file in files)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -187,43 +191,65 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
             try
             {
                 File.Copy(file, destFile, overwrite: true);
-                filesCopied++;
+                localFilesCopied++;
                 _logger.LogDebug("Copied: {FileName}", fileName);
             }
             catch (Exception ex)
             {
-                // Try fallback to native cp command for problematic files
-                _logger.LogDebug("File.Copy failed for {FileName}, attempting cp fallback: {Error}", fileName, ex.Message);
-
-                if (TryCopyWithNativeCommand(file, destFile))
-                {
-                    filesCopied++;
-                    _logger.LogDebug("Copied with cp fallback: {FileName}", fileName);
-                }
-                else
-                {
-                    filesSkipped++;
-                    string warning = $"Failed to copy file {fileName}: {ex.Message}";
-                    _logger.LogWarning("Skipped file {File}: {Error}", file, ex.Message);
-                    warnings.Add(warning);
-                }
+                _logger.LogDebug("File.Copy failed for {FileName}: {Error}", fileName, ex.Message);
+                hasFailures = true;
             }
+        }
+
+        // If any files failed, fall back to native cp for the entire directory contents
+        // This bypasses .NET's problematic filename encoding
+        if (hasFailures)
+        {
+            _logger.LogDebug("Some files failed to copy in {Dir}, falling back to native cp", sourceDir);
+
+            var (success, nativeCopied, nativeWarning) = TryCopyDirectoryContentsWithNativeCommand(sourceDir, destinationDir);
+
+            if (success)
+            {
+                // Native cp copied all files (including ones .NET already copied - it overwrites)
+                filesCopied += nativeCopied;
+                _logger.LogDebug("Native cp copied {Count} files from {Dir}", nativeCopied, sourceDir);
+            }
+            else
+            {
+                // Native cp also failed - count the ones .NET managed to copy
+                filesCopied += localFilesCopied;
+                filesSkipped += files.Length - localFilesCopied;
+                if (!string.IsNullOrEmpty(nativeWarning))
+                {
+                    warnings.Add(nativeWarning);
+                }
+                _logger.LogWarning("Native cp fallback failed for {Dir}: {Warning}", sourceDir, nativeWarning);
+            }
+        }
+        else
+        {
+            filesCopied += localFilesCopied;
         }
     }
 
     /// <summary>
-    /// Attempts to copy a file using the native cp command as a fallback for problematic filenames.
+    /// Attempts to copy all files in a directory using native cp command.
+    /// This bypasses .NET's filename encoding issues by letting the shell handle filenames directly.
     /// </summary>
-    private bool TryCopyWithNativeCommand(string source, string destination)
+    /// <returns>Tuple of (success, fileCount, warningMessage)</returns>
+    private (bool Success, int FileCount, string? Warning) TryCopyDirectoryContentsWithNativeCommand(string sourceDir, string destinationDir)
     {
         try
         {
+            // Use cp with shell globbing to copy all files
+            // The -f flag forces overwrite, * matches all files
             var process = new System.Diagnostics.Process
             {
                 StartInfo = new System.Diagnostics.ProcessStartInfo
                 {
-                    FileName = "cp",
-                    Arguments = $"-f \"{source}\" \"{destination}\"",
+                    FileName = "/bin/bash",
+                    Arguments = $"-c \"cp -f '{sourceDir}'/* '{destinationDir}/' 2>/dev/null || true\"",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
@@ -232,14 +258,47 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
             };
 
             process.Start();
-            process.WaitForExit(TimeSpan.FromSeconds(30));
+            string stderr = process.StandardError.ReadToEnd();
+            process.WaitForExit(TimeSpan.FromSeconds(60));
 
-            return process.ExitCode == 0;
+            // Count files in destination to report how many were copied
+            int fileCount = 0;
+            try
+            {
+                // Use ls to count files since .NET might have trouble with some filenames
+                var countProcess = new System.Diagnostics.Process
+                {
+                    StartInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "/bin/bash",
+                        Arguments = $"-c \"ls -1 '{destinationDir}' 2>/dev/null | wc -l\"",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    }
+                };
+                countProcess.Start();
+                string countOutput = countProcess.StandardOutput.ReadToEnd().Trim();
+                countProcess.WaitForExit(TimeSpan.FromSeconds(10));
+                int.TryParse(countOutput, out fileCount);
+            }
+            catch
+            {
+                // If counting fails, just return 0
+            }
+
+            // cp with || true always returns 0, check if there were errors
+            if (!string.IsNullOrWhiteSpace(stderr))
+            {
+                return (false, 0, $"Native cp had errors in {sourceDir}: {stderr}");
+            }
+
+            return (true, fileCount, null);
         }
         catch (Exception ex)
         {
-            _logger.LogDebug("Native cp fallback failed: {Error}", ex.Message);
-            return false;
+            return (false, 0, $"Native cp command failed for {sourceDir}: {ex.Message}");
         }
     }
 }
