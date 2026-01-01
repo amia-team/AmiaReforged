@@ -17,9 +17,13 @@ RUN dotnet publish -c Release -o /app/publish --no-restore
 FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
 WORKDIR /app
 
+# Set UTF-8 locale for proper Unicode filename handling
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
 # Install PostgreSQL 18 client for pg_dump (must match server version)
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gnupg curl ca-certificates && \
+    apt-get install -y --no-install-recommends gnupg curl ca-certificates locales && \
     curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-keyring.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
     apt-get update && \
