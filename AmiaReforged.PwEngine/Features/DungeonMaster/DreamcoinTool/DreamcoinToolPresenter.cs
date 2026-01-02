@@ -9,6 +9,7 @@ namespace AmiaReforged.PwEngine.Features.DungeonMaster.DreamcoinTool;
 public sealed class DreamcoinToolPresenter : ScryPresenter<DreamcoinToolView>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+    private const int VfxFreedomOfMovement = 3;
 
     public override DreamcoinToolView View { get; }
 
@@ -101,6 +102,7 @@ public sealed class DreamcoinToolPresenter : ScryPresenter<DreamcoinToolView>
             string targetName = _targetPlayer.LoginCreature?.Name ?? "Unknown";
             _dmPlayer.SendServerMessage($"Added {amount} DCs to {targetName}. New balance: {newBalance}");
             Log.Info($"DM {_dmPlayer.PlayerName} added {amount} DCs to {_targetPlayer.PlayerName}");
+            ApplyDcReceivedEffect(_targetPlayer, amount);
             RefreshBalanceDisplay();
             Token().SetBindValue(View.AddAmount, "0");
         }
@@ -144,13 +146,23 @@ public sealed class DreamcoinToolPresenter : ScryPresenter<DreamcoinToolView>
         }
 
         int successCount = 0;
+        List<NwPlayer> successfulPlayers = new();
         foreach (NwPlayer player in partyMembers)
         {
             int result = await _dreamcoinService.AddDreamcoins(player.CDKey, amount);
-            if (result >= 0) successCount++;
+            if (result >= 0)
+            {
+                successCount++;
+                successfulPlayers.Add(player);
+            }
         }
 
         await NwTask.SwitchToMainThread();
+
+        foreach (NwPlayer player in successfulPlayers)
+        {
+            ApplyDcReceivedEffect(player, amount);
+        }
 
         _dmPlayer.SendServerMessage($"Added {amount} DCs to {successCount} party members in the area.");
         Log.Info($"DM {_dmPlayer.PlayerName} added {amount} DCs to {successCount} party members");
@@ -186,13 +198,23 @@ public sealed class DreamcoinToolPresenter : ScryPresenter<DreamcoinToolView>
         }
 
         int successCount = 0;
+        List<NwPlayer> successfulPlayers = new();
         foreach (NwPlayer player in nearbyPlayers)
         {
             int result = await _dreamcoinService.AddDreamcoins(player.CDKey, amount);
-            if (result >= 0) successCount++;
+            if (result >= 0)
+            {
+                successCount++;
+                successfulPlayers.Add(player);
+            }
         }
 
         await NwTask.SwitchToMainThread();
+
+        foreach (NwPlayer player in successfulPlayers)
+        {
+            ApplyDcReceivedEffect(player, amount);
+        }
 
         _dmPlayer.SendServerMessage($"Added {amount} DCs to {successCount} nearby players.");
         Log.Info($"DM {_dmPlayer.PlayerName} added {amount} DCs to {successCount} nearby players");
@@ -224,6 +246,20 @@ public sealed class DreamcoinToolPresenter : ScryPresenter<DreamcoinToolView>
         {
             _dmPlayer.SendServerMessage("Failed to remove DCs. Player may not have enough.");
         }
+    }
+
+    private void ApplyDcReceivedEffect(NwPlayer player, int amount)
+    {
+        NwCreature? creature = player.LoginCreature;
+        if (creature == null) return;
+
+        // Apply visual effect
+        Effect vfx = Effect.VisualEffect((VfxType)VfxFreedomOfMovement, false, 1.0f);
+        creature.ApplyEffect(EffectDuration.Temporary, vfx, TimeSpan.FromSeconds(3));
+
+        // Send combat log message
+        string dcWord = amount == 1 ? "Dreamcoin" : "Dreamcoins";
+        player.SendServerMessage($"You received {amount} {dcWord}!", ColorConstants.Yellow);
     }
 
     public override void Close()
