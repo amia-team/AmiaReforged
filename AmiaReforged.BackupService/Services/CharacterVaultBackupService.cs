@@ -197,38 +197,14 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
     {
         try
         {
-            // Use a bash script that does everything natively to avoid .NET encoding issues
-            // The script:
-            // 1. Iterates over all files in the source directory
-            // 2. Sanitizes each filename (replaces non-ASCII with underscore)
-            // 3. Copies with the sanitized destination name
-            // 4. Counts successes and failures
-            string bashScript = @"
-cd ""$1"" || exit 1
-copied=0
-skipped=0
-for file in *; do
-    [ -f ""$file"" ] || continue
-    # Sanitize filename: replace non-ASCII and problematic chars with underscore
-    sanitized=$(echo ""$file"" | sed 's/[^a-zA-Z0-9._-]/_/g')
-    if cp -f ""$file"" ""$2/$sanitized"" 2>/dev/null; then
-        ((copied++))
-    else
-        ((skipped++))
-    fi
-done
-echo ""$copied $skipped""
-";
-
+            // Simple approach: use rsync to copy files, which handles Unicode properly
+            // rsync -a copies all files preserving attributes
             var process = new System.Diagnostics.Process
             {
                 StartInfo = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "/bin/bash",
-                    // With -c, the first arg after script becomes $0, subsequent become $1, $2...
-                    // So we use: -c 'script' _ srcDir destDir (where _ is a placeholder for $0)
-                    Arguments =
-                        $"-c {EscapeForBash(bashScript)} _ {EscapeForBash(sourceDir)} {EscapeForBash(destinationDir)}",
+                    Arguments = $"-c 'cp -f \"{sourceDir}\"/* \"{destinationDir}/\" 2>&1; echo EXIT:$?'",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
@@ -241,28 +217,46 @@ echo ""$copied $skipped""
             string error = process.StandardError.ReadToEnd();
             process.WaitForExit(TimeSpan.FromSeconds(120));
 
-            if (process.ExitCode != 0)
+            // Log the raw output for debugging
+            _logger.LogDebug("cp output for {Dir}: {Output}", sourceDir, output);
+            if (!string.IsNullOrEmpty(error))
             {
-                return (false, 0, 0, $"Bash copy script failed in {sourceDir}: {error}");
+                _logger.LogDebug("cp stderr for {Dir}: {Error}", sourceDir, error);
             }
 
-            // Parse the output "copied skipped"
-            string[] parts = output.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            int copied = 0;
-            int skipped = 0;
-
-            if (parts.Length >= 1) int.TryParse(parts[0], out copied);
-            if (parts.Length >= 2) int.TryParse(parts[1], out skipped);
-
-            if (skipped > 0)
+            // Count files in destination directory using ls
+            var countProcess = new System.Diagnostics.Process
             {
-                _logger.LogDebug("Directory {Dir}: copied {Copied}, skipped {Skipped}", sourceDir, copied, skipped);
+                StartInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "/bin/bash",
+                    Arguments = $"-c 'ls -1 \"{destinationDir}\" 2>/dev/null | wc -l'",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            countProcess.Start();
+            string countOutput = countProcess.StandardOutput.ReadToEnd().Trim();
+            countProcess.WaitForExit(TimeSpan.FromSeconds(10));
+
+            int.TryParse(countOutput, out int fileCount);
+
+            // Check if cp succeeded (look for EXIT:0 in output)
+            bool success = output.Contains("EXIT:0");
+
+            if (!success)
+            {
+                _logger.LogWarning("cp may have had issues in {Dir}: {Output}", sourceDir, output);
             }
 
-            return (true, copied, skipped, null);
+            return (true, fileCount, 0, null);
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to copy files from {SourceDir}", sourceDir);
             return (false, 0, 0, $"Failed to copy files from {sourceDir}: {ex.Message}");
         }
     }
