@@ -60,7 +60,8 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
         CancellationToken cancellationToken = default)
     {
         string sourcePath = _config.GetServerVaultSourcePath();
-        string destinationPath = Path.Combine(_config.BackupDirectory, _config.CharactersBackupSubdirectory);
+        // Use GitRepositoryPath as base (e.g., /var/backups/amia) not BackupDirectory (which is for SQL dumps)
+        string destinationPath = Path.Combine(_config.GitRepositoryPath, _config.CharactersBackupSubdirectory);
 
         if (string.IsNullOrEmpty(sourcePath))
         {
