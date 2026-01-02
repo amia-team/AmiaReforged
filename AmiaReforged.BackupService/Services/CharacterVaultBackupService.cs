@@ -225,8 +225,10 @@ echo ""$copied $skipped""
                 StartInfo = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "/bin/bash",
+                    // With -c, the first arg after script becomes $0, subsequent become $1, $2...
+                    // So we use: -c 'script' _ srcDir destDir (where _ is a placeholder for $0)
                     Arguments =
-                        $"-c {EscapeForBash(bashScript)} -- {EscapeForBash(sourceDir)} {EscapeForBash(destinationDir)}",
+                        $"-c {EscapeForBash(bashScript)} _ {EscapeForBash(sourceDir)} {EscapeForBash(destinationDir)}",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
