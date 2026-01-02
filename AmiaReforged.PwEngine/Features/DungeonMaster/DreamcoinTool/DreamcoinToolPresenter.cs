@@ -70,6 +70,14 @@ public sealed class DreamcoinToolPresenter : ScryPresenter<DreamcoinToolView>
         {
             HandleAddDc();
         }
+        else if (ev.ElementId == DreamcoinToolView.AddPartyButtonId)
+        {
+            HandleAddDcParty();
+        }
+        else if (ev.ElementId == DreamcoinToolView.AddNearbyButtonId)
+        {
+            HandleAddDcNearby();
+        }
         else if (ev.ElementId == DreamcoinToolView.TakeButtonId)
         {
             HandleTakeDc();
@@ -100,6 +108,96 @@ public sealed class DreamcoinToolPresenter : ScryPresenter<DreamcoinToolView>
         {
             _dmPlayer.SendServerMessage("Failed to add DCs. Check logs for details.");
         }
+    }
+
+    private async void HandleAddDcParty()
+    {
+        string amountStr = Token().GetBindValue(View.AddAmount) ?? "0";
+        if (!int.TryParse(amountStr, out int amount) || amount <= 0)
+        {
+            _dmPlayer.SendServerMessage("Please enter a valid positive number.");
+            return;
+        }
+
+        NwCreature? targetCreature = _targetPlayer.LoginCreature;
+        if (targetCreature == null)
+        {
+            _dmPlayer.SendServerMessage("Target player not found.");
+            return;
+        }
+
+        NwArea? targetArea = targetCreature.Area;
+        if (targetArea == null)
+        {
+            _dmPlayer.SendServerMessage("Target is not in a valid area.");
+            return;
+        }
+
+        // Get party members in the same area
+        List<NwPlayer> partyMembers = new();
+        foreach (NwCreature member in targetCreature.Faction.GetMembers())
+        {
+            if (member.IsPlayerControlled(out NwPlayer? player) && member.Area == targetArea)
+            {
+                partyMembers.Add(player);
+            }
+        }
+
+        int successCount = 0;
+        foreach (NwPlayer player in partyMembers)
+        {
+            int result = await _dreamcoinService.AddDreamcoins(player.CDKey, amount);
+            if (result >= 0) successCount++;
+        }
+
+        await NwTask.SwitchToMainThread();
+
+        _dmPlayer.SendServerMessage($"Added {amount} DCs to {successCount} party members in the area.");
+        Log.Info($"DM {_dmPlayer.PlayerName} added {amount} DCs to {successCount} party members");
+        RefreshBalanceDisplay();
+        Token().SetBindValue(View.AddAmount, "0");
+    }
+
+    private async void HandleAddDcNearby()
+    {
+        string amountStr = Token().GetBindValue(View.AddAmount) ?? "0";
+        if (!int.TryParse(amountStr, out int amount) || amount <= 0)
+        {
+            _dmPlayer.SendServerMessage("Please enter a valid positive number.");
+            return;
+        }
+
+        NwCreature? targetCreature = _targetPlayer.LoginCreature;
+        if (targetCreature == null)
+        {
+            _dmPlayer.SendServerMessage("Target player not found.");
+            return;
+        }
+
+        // Get players within 5 meters
+        List<NwPlayer> nearbyPlayers = new();
+        foreach (NwCreature creature in targetCreature.Location!.GetNearestCreatures()
+            .Where(c => c.IsPlayerControlled(out _) && c.Distance(targetCreature) <= 5.0f))
+        {
+            if (creature.IsPlayerControlled(out NwPlayer? player))
+            {
+                nearbyPlayers.Add(player);
+            }
+        }
+
+        int successCount = 0;
+        foreach (NwPlayer player in nearbyPlayers)
+        {
+            int result = await _dreamcoinService.AddDreamcoins(player.CDKey, amount);
+            if (result >= 0) successCount++;
+        }
+
+        await NwTask.SwitchToMainThread();
+
+        _dmPlayer.SendServerMessage($"Added {amount} DCs to {successCount} nearby players.");
+        Log.Info($"DM {_dmPlayer.PlayerName} added {amount} DCs to {successCount} nearby players");
+        RefreshBalanceDisplay();
+        Token().SetBindValue(View.AddAmount, "0");
     }
 
     private async void HandleTakeDc()
