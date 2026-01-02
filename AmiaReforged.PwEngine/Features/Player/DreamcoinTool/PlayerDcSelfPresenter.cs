@@ -99,7 +99,7 @@ public sealed class PlayerDcSelfPresenter : ScryPresenter<PlayerDcSelfView>
             return;
         }
 
-        int gold = 1500 * level;
+        uint gold = (uint)(1500 * level);
         int xp = level <= 20 ? level * 1000 : level * 500;
 
         int newBalance = await _dreamcoinService.RemoveDreamcoins(_player.CDKey, 1);
@@ -109,7 +109,7 @@ public sealed class PlayerDcSelfPresenter : ScryPresenter<PlayerDcSelfView>
         {
             creature.Gold += gold;
             creature.Xp += xp;
-            
+
             _player.SendServerMessage($"Burned 1 DC! Received {gold} gold and {xp} XP. Balance: {newBalance} DCs");
             Log.Info($"Player {_player.PlayerName} burned 1 DC for {gold} gold and {xp} XP");
             RefreshDisplay();
