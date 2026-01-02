@@ -186,13 +186,13 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
         try
         {
             // Use bash to get the list of files with proper encoding
-            // printf '%s\0' outputs null-separated filenames to handle special chars
+            // Use null-separated output (-print0) to handle any special characters in filenames
             var listProcess = new System.Diagnostics.Process
             {
                 StartInfo = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "/bin/bash",
-                    Arguments = $"-c \"cd '{sourceDir}' && find . -maxdepth 1 -type f -printf '%f\\n' 2>/dev/null\"",
+                    Arguments = $"-c \"cd {EscapeForBash(sourceDir)} && find . -maxdepth 1 -type f -print0 2>/dev/null\"",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
@@ -210,7 +210,12 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
                 return (false, 0, 0, $"Failed to list files in {sourceDir}");
             }
 
-            string[] fileNames = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            // Split by null character and remove the "./" prefix from find output
+            string[] fileNames = output.Split('\0', StringSplitOptions.RemoveEmptyEntries)
+                .Select(f => f.StartsWith("./") ? f.Substring(2) : f)
+                .Where(f => !string.IsNullOrEmpty(f))
+                .ToArray();
+
             int copied = 0;
             int skipped = 0;
 
@@ -218,14 +223,15 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
             {
                 string sanitizedName = SanitizeFileName(fileName);
                 string destPath = Path.Combine(destinationDir, sanitizedName);
+                string sourcePath = Path.Combine(sourceDir, fileName);
 
-                // Use cp with the original filename (shell handles encoding)
+                // Use cp with properly escaped paths to handle single quotes and special chars
                 var copyProcess = new System.Diagnostics.Process
                 {
                     StartInfo = new System.Diagnostics.ProcessStartInfo
                     {
                         FileName = "/bin/bash",
-                        Arguments = $"-c \"cp -f '{sourceDir}/{fileName}' '{destPath}'\"",
+                        Arguments = $"-c \"cp -f {EscapeForBash(sourcePath)} {EscapeForBash(destPath)}\"",
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
                         UseShellExecute = false,
@@ -257,6 +263,15 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
         {
             return (false, 0, 0, $"Failed to copy files from {sourceDir}: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Escapes a string for safe use in a bash single-quoted argument.
+    /// Replaces ' with '\'' (end quote, escaped quote, start quote).
+    /// </summary>
+    private static string EscapeForBash(string path)
+    {
+        return "'" + path.Replace("'", "'\\''") + "'";
     }
 
     /// <summary>
