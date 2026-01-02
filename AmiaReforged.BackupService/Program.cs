@@ -33,14 +33,6 @@ public class Program
                 .UseServiceProviderFactory(new LightInjectServiceProviderFactory())
                 .ConfigureServices((context, services) =>
                 {
-                    // Reconfigure Serilog with full config
-                    Log.Logger = new LoggerConfiguration()
-                        .ReadFrom.Configuration(context.Configuration)
-                        .Enrich.FromLogContext()
-                        .WriteTo.Console(
-                            outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
-                        .CreateLogger();
-
                     services.AddSerilog();
 
                     // Bind configuration
