@@ -124,8 +124,8 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
             {
                 StartInfo = new System.Diagnostics.ProcessStartInfo
                 {
-                    FileName = "/bin/bash",
-                    Arguments = $"-c 'find \"{destinationPath}\" -type f | wc -l; find \"{destinationPath}\" -type d | wc -l'",
+                    FileName = "find",
+                    Arguments = $"{destinationPath} -type f",
                     RedirectStandardOutput = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
@@ -135,10 +135,24 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
             countProcess.Start();
             string countOutput = await countProcess.StandardOutput.ReadToEndAsync(cancellationToken);
             await countProcess.WaitForExitAsync(cancellationToken);
+            fileCount = countOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length;
 
-            string[] counts = countOutput.Trim().Split('\n');
-            if (counts.Length >= 1) int.TryParse(counts[0].Trim(), out fileCount);
-            if (counts.Length >= 2) int.TryParse(counts[1].Trim(), out dirCount);
+            var dirCountProcess = new System.Diagnostics.Process
+            {
+                StartInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "find",
+                    Arguments = $"{destinationPath} -type d",
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            dirCountProcess.Start();
+            string dirCountOutput = await dirCountProcess.StandardOutput.ReadToEndAsync(cancellationToken);
+            await dirCountProcess.WaitForExitAsync(cancellationToken);
+            dirCount = dirCountOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length;
 
             _logger.LogInformation("Character vault backup completed. Synced {Files} files in {Directories} directories", fileCount, dirCount);
 
