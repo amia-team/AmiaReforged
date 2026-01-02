@@ -28,7 +28,8 @@ public class CharacterVaultBackupResult
     public string? ErrorMessage { get; init; }
     public List<string> Warnings { get; init; } = new();
 
-    public static CharacterVaultBackupResult Succeeded(int files, int directories, int skipped = 0, List<string>? warnings = null) => new()
+    public static CharacterVaultBackupResult Succeeded(int files, int directories, int skipped = 0,
+        List<string>? warnings = null) => new()
     {
         Success = true,
         FilesCopied = files,
@@ -55,14 +56,16 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
         _config = config;
     }
 
-    public async Task<CharacterVaultBackupResult> BackupCharacterVaultAsync(CancellationToken cancellationToken = default)
+    public async Task<CharacterVaultBackupResult> BackupCharacterVaultAsync(
+        CancellationToken cancellationToken = default)
     {
         string sourcePath = _config.GetServerVaultSourcePath();
         string destinationPath = Path.Combine(_config.BackupDirectory, _config.CharactersBackupSubdirectory);
 
         if (string.IsNullOrEmpty(sourcePath))
         {
-            string message = "Server vault source path is not configured. Set SERVERVAULT_PATH environment variable or configure ServerVaultSourcePath in appsettings.json";
+            string message =
+                "Server vault source path is not configured. Set SERVERVAULT_PATH environment variable or configure ServerVaultSourcePath in appsettings.json";
             _logger.LogWarning(message);
             return CharacterVaultBackupResult.Failed(message);
         }
@@ -74,7 +77,8 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
             return CharacterVaultBackupResult.Failed(message);
         }
 
-        _logger.LogInformation("Starting character vault backup from {Source} to {Destination}", sourcePath, destinationPath);
+        _logger.LogInformation("Starting character vault backup from {Source} to {Destination}", sourcePath,
+            destinationPath);
 
         try
         {
@@ -90,19 +94,23 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
             int filesSkipped = 0;
             List<string> warnings = new();
 
-            await Task.Run(() =>
-            {
-                CopyDirectoryRecursive(sourcePath, destinationPath, ref filesCopied, ref directoriesCopied, ref filesSkipped, warnings, cancellationToken);
-            }, cancellationToken);
+            await Task.Run(
+                () =>
+                {
+                    CopyDirectoryRecursive(sourcePath, destinationPath, ref filesCopied, ref directoriesCopied,
+                        ref filesSkipped, warnings, cancellationToken);
+                }, cancellationToken);
 
             if (filesSkipped > 0)
             {
-                _logger.LogWarning("Character vault backup completed with warnings. Copied {Files} files in {Directories} directories, skipped {Skipped} files",
+                _logger.LogWarning(
+                    "Character vault backup completed with warnings. Copied {Files} files in {Directories} directories, skipped {Skipped} files",
                     filesCopied, directoriesCopied, filesSkipped);
             }
             else
             {
-                _logger.LogInformation("Character vault backup completed. Copied {Files} files in {Directories} directories",
+                _logger.LogInformation(
+                    "Character vault backup completed. Copied {Files} files in {Directories} directories",
                     filesCopied, directoriesCopied);
             }
 
@@ -116,12 +124,14 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
         catch (Exception ex)
         {
             string message = $"Failed to backup character vault: {ex.Message}";
-            _logger.LogError(ex, "Failed to backup character vault from {Source} to {Destination}", sourcePath, destinationPath);
+            _logger.LogError(ex, "Failed to backup character vault from {Source} to {Destination}", sourcePath,
+                destinationPath);
             return CharacterVaultBackupResult.Failed(message);
         }
     }
 
-    private void CopyDirectoryRecursive(string sourceDir, string destinationDir, ref int filesCopied, ref int directoriesCopied, ref int filesSkipped, List<string> warnings, CancellationToken cancellationToken)
+    private void CopyDirectoryRecursive(string sourceDir, string destinationDir, ref int filesCopied,
+        ref int directoriesCopied, ref int filesSkipped, List<string> warnings, CancellationToken cancellationToken)
     {
         // Get all subdirectories
         string[] directories;
@@ -155,7 +165,8 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
                 directoriesCopied++;
 
                 // Recursively copy subdirectory contents
-                CopyDirectoryRecursive(directory, destSubDir, ref filesCopied, ref directoriesCopied, ref filesSkipped, warnings, cancellationToken);
+                CopyDirectoryRecursive(directory, destSubDir, ref filesCopied, ref directoriesCopied, ref filesSkipped,
+                    warnings, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -181,80 +192,69 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
     /// Copies all files from source to destination using native shell to handle Unicode filenames,
     /// sanitizing the destination filenames to ASCII-only.
     /// </summary>
-    private (bool Success, int Copied, int Skipped, string? Warning) CopyFilesWithSanitizedNames(string sourceDir, string destinationDir)
+    private (bool Success, int Copied, int Skipped, string? Warning) CopyFilesWithSanitizedNames(string sourceDir,
+        string destinationDir)
     {
         try
         {
-            // Use bash to get the list of files with proper encoding
-            // Use null-separated output (-print0) to handle any special characters in filenames
-            var listProcess = new System.Diagnostics.Process
+            // Use a bash script that does everything natively to avoid .NET encoding issues
+            // The script:
+            // 1. Iterates over all files in the source directory
+            // 2. Sanitizes each filename (replaces non-ASCII with underscore)
+            // 3. Copies with the sanitized destination name
+            // 4. Counts successes and failures
+            string bashScript = @"
+cd ""$1"" || exit 1
+copied=0
+skipped=0
+for file in *; do
+    [ -f ""$file"" ] || continue
+    # Sanitize filename: replace non-ASCII and problematic chars with underscore
+    sanitized=$(echo ""$file"" | sed 's/[^a-zA-Z0-9._-]/_/g')
+    if cp -f ""$file"" ""$2/$sanitized"" 2>/dev/null; then
+        ((copied++))
+    else
+        ((skipped++))
+    fi
+done
+echo ""$copied $skipped""
+";
+
+            var process = new System.Diagnostics.Process
             {
                 StartInfo = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "/bin/bash",
-                    Arguments = $"-c \"cd {EscapeForBash(sourceDir)} && find . -maxdepth 1 -type f -print0 2>/dev/null\"",
+                    Arguments =
+                        $"-c {EscapeForBash(bashScript)} -- {EscapeForBash(sourceDir)} {EscapeForBash(destinationDir)}",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
-                    CreateNoWindow = true,
-                    StandardOutputEncoding = Encoding.UTF8
+                    CreateNoWindow = true
                 }
             };
 
-            listProcess.Start();
-            string output = listProcess.StandardOutput.ReadToEnd();
-            listProcess.WaitForExit(TimeSpan.FromSeconds(30));
+            process.Start();
+            string output = process.StandardOutput.ReadToEnd().Trim();
+            string error = process.StandardError.ReadToEnd();
+            process.WaitForExit(TimeSpan.FromSeconds(120));
 
-            if (listProcess.ExitCode != 0)
+            if (process.ExitCode != 0)
             {
-                return (false, 0, 0, $"Failed to list files in {sourceDir}");
+                return (false, 0, 0, $"Bash copy script failed in {sourceDir}: {error}");
             }
 
-            // Split by null character and remove the "./" prefix from find output
-            string[] fileNames = output.Split('\0', StringSplitOptions.RemoveEmptyEntries)
-                .Select(f => f.StartsWith("./") ? f.Substring(2) : f)
-                .Where(f => !string.IsNullOrEmpty(f))
-                .ToArray();
-
+            // Parse the output "copied skipped"
+            string[] parts = output.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             int copied = 0;
             int skipped = 0;
 
-            foreach (string fileName in fileNames)
+            if (parts.Length >= 1) int.TryParse(parts[0], out copied);
+            if (parts.Length >= 2) int.TryParse(parts[1], out skipped);
+
+            if (skipped > 0)
             {
-                string sanitizedName = SanitizeFileName(fileName);
-                string destPath = Path.Combine(destinationDir, sanitizedName);
-                string sourcePath = Path.Combine(sourceDir, fileName);
-
-                // Use cp with properly escaped paths to handle single quotes and special chars
-                var copyProcess = new System.Diagnostics.Process
-                {
-                    StartInfo = new System.Diagnostics.ProcessStartInfo
-                    {
-                        FileName = "/bin/bash",
-                        Arguments = $"-c \"cp -f {EscapeForBash(sourcePath)} {EscapeForBash(destPath)}\"",
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        UseShellExecute = false,
-                        CreateNoWindow = true
-                    }
-                };
-
-                copyProcess.Start();
-                copyProcess.WaitForExit(TimeSpan.FromSeconds(30));
-
-                if (copyProcess.ExitCode == 0)
-                {
-                    copied++;
-                    if (fileName != sanitizedName)
-                    {
-                        _logger.LogDebug("Copied and sanitized: {Original} -> {Sanitized}", fileName, sanitizedName);
-                    }
-                }
-                else
-                {
-                    skipped++;
-                    _logger.LogWarning("Failed to copy file: {FileName}", fileName);
-                }
+                _logger.LogDebug("Directory {Dir}: copied {Copied}, skipped {Skipped}", sourceDir, copied, skipped);
             }
 
             return (true, copied, skipped, null);
@@ -293,7 +293,7 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
                 sb.Append('_'); // Replace with underscore to preserve length
             }
         }
+
         return sb.ToString();
     }
 }
-
