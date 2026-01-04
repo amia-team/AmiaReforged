@@ -37,14 +37,14 @@ public class CasterLevelOverrideService
     public CasterLevelOverrideService(ShifterDcService shifterDcService)
     {
         _shifterDcService = shifterDcService;
-        
+
         NwModule.Instance.OnClientLeave += RemoveSetup;
 
         NwModule.Instance.OnLevelUp += FixCasterLevelOnLevelUp;
         NwModule.Instance.OnLevelDown += FixCasterLevelOnLevelDown;
         NwModule.Instance.OnSpellCast += FixCasterLevelOverride;
     }
-    
+
     /// <summary>
     /// Gets the effective caster level for a creature, accounting for Shifter forms.
     /// Use this method when calculating spell durations or effects for polymorphed Shifters.
@@ -92,9 +92,6 @@ public class CasterLevelOverrideService
 
     private void DoCasterLevelOverride(NwCreature casterCreature)
     {
-        // Check if override was already applied (avoid reapplying)
-        if (_casterLevelOverridesApplied.TryGetValue(casterCreature, out bool applied) && applied) return;
-
         // Find all prestige classes that have caster level modifiers
         List<(ClassType classType, int level)> prestigeClasses = [];
         foreach (CreatureClassInfo charClass in casterCreature.Classes)
