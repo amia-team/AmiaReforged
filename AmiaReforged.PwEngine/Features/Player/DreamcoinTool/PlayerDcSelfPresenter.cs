@@ -9,6 +9,7 @@ namespace AmiaReforged.PwEngine.Features.Player.DreamcoinTool;
 public sealed class PlayerDcSelfPresenter : ScryPresenter<PlayerDcSelfView>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+    private const int GoldOnlyMultiplier = 1900;
 
     public override PlayerDcSelfView View { get; }
 
@@ -54,7 +55,7 @@ public sealed class PlayerDcSelfPresenter : ScryPresenter<PlayerDcSelfView>
         int level = creature?.Level ?? 1;
         int gold = 1500 * level;
         int xp = level <= 20 ? level * 1000 : level * 500;
-        int goldOnly = 2000 * level;
+        int goldOnly = GoldOnlyMultiplier * level;
 
         bool hasPcKey = creature?.Inventory.Items.Any(i => i.ResRef == "ds_pckey") ?? false;
         bool isMaxLevel = level >= 30;
@@ -161,7 +162,7 @@ public sealed class PlayerDcSelfPresenter : ScryPresenter<PlayerDcSelfView>
         }
 
         int level = creature.Level;
-        uint gold = (uint)(2500 * level);
+        uint gold = (uint)(GoldOnlyMultiplier * level);
 
         int newBalance = await _dreamcoinService.RemoveDreamcoins(_player.CDKey, 1);
         await NwTask.SwitchToMainThread();
