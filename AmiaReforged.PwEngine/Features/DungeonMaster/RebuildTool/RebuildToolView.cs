@@ -1,4 +1,4 @@
-﻿﻿using AmiaReforged.Core.UserInterface;
+﻿using AmiaReforged.Core.UserInterface;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil;
 using Anvil.API;
@@ -936,7 +936,7 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
         return new NuiWindow(layout, "Find Rebuild")
         {
             Geometry = new NuiRect(450f, 300f, modalW, modalH),
-            Resizable = false,
+            Resizable = true,
             Closable = true
         };
     }

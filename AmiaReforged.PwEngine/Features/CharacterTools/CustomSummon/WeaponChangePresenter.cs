@@ -26,7 +26,7 @@ public sealed class WeaponChangePresenter(WeaponChangeView view, NwPlayer player
         NuiWindow window = new NuiWindow(View.RootLayout(), "Change Weapon Type")
         {
             Geometry = new NuiRect(50f, 50f, 430f, 500f),
-            Resizable = false
+            Resizable = true
         };
 
         if (!player.TryCreateNuiWindow(window, out _token))

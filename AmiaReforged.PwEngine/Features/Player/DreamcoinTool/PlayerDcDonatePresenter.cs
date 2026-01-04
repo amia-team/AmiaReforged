@@ -38,7 +38,7 @@ public sealed class PlayerDcDonatePresenter : ScryPresenter<PlayerDcDonateView>
         _window = new NuiWindow(View.RootLayout(), "Player Interaction")
         {
             Geometry = new NuiRect(400f, 300f, View.GetWindowWidth(), View.GetWindowHeight()),
-            Resizable = false,
+            Resizable = true,
         };
 
         if (!_player.TryCreateNuiWindow(_window, out _token))
@@ -160,12 +160,12 @@ public sealed class PlayerDcDonatePresenter : ScryPresenter<PlayerDcDonateView>
 
         string targetName = _targetPlayer.LoginCreature?.Name ?? "Unknown";
         string donorName = _player.LoginCreature?.Name ?? "Unknown";
-        
+
         _player.SendServerMessage($"You donated 1 DC to {targetName}. Your balance: {newDonorBalance}");
         _targetPlayer.SendServerMessage($"{donorName} donated 1 DC to you!");
-        
+
         Log.Info($"Player {_player.PlayerName} donated 1 DC to {_targetPlayer.PlayerName}");
-        
+
         RefreshDisplay();
     }
 

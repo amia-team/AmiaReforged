@@ -139,7 +139,7 @@ public class MythalLedgerPresenter : ScryPresenter<MythalLedgerView>
             Id = "mythal_ledger",
             Geometry = new NuiRect(1600, 500, 300, 300),
             Closable = false,
-            Resizable = false
+            Resizable = true
         };
     }
 

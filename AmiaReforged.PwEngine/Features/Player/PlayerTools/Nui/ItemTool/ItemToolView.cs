@@ -286,7 +286,7 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
         return new NuiWindow(layout, "Edit Description")
         {
             Geometry = new NuiRect(380f, 280f, 380f, 350f),
-            Resizable = false
+            Resizable = true
         };
     }
 }

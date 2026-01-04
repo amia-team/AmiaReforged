@@ -28,7 +28,7 @@ public class OpenSpellbookPresenter(OpenSpellbookView toolView, NwPlayer player)
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Resizable = false,
+            Resizable = true,
             Geometry = new NuiRect(500f, 100f, 580f, 500f)
         };
     }

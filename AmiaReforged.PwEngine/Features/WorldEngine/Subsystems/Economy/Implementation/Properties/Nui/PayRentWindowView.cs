@@ -161,7 +161,7 @@ public sealed class PayRentWindowPresenter : ScryPresenter<PayRentWindowView>
         _window = new NuiWindow(View.RootLayout(), _config.Title)
         {
             Geometry = new NuiRect(300f, 60f, 420f, 440f),
-            Resizable = false
+            Resizable = true
         };
     }
 

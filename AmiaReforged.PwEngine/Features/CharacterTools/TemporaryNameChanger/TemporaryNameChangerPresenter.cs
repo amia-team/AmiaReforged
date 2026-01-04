@@ -23,7 +23,7 @@ public sealed class TemporaryNameChangerPresenter(TemporaryNameChangerView view,
         NuiWindow window = new NuiWindow(View.RootLayout(), "Temporary Name Changer")
         {
             Geometry = new NuiRect(50f, 50f, 675f, 350f),
-            Resizable = false
+            Resizable = true
         };
 
         if (!player.TryCreateNuiWindow(window, out _token))

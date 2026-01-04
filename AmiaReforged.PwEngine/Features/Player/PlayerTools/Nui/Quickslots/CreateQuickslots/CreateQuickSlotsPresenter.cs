@@ -43,7 +43,7 @@ public class CreateQuickSlotsPresenter : ScryPresenter<CreateQuickslotsView>
         {
             Geometry = new NuiRect(0, 0, 400, 300),
             Closable = true,
-            Resizable = false,
+            Resizable = true,
             Collapsed = false
         };
     }

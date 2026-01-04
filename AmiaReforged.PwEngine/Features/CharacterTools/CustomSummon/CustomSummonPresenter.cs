@@ -25,7 +25,7 @@ public sealed class CustomSummonPresenter(CustomSummonView view, NwPlayer player
         NuiWindow window = new NuiWindow(View.RootLayout(), "Custom Summon Selection")
         {
             Geometry = new NuiRect(0f, 50f, 630f, 570f),
-            Resizable = false
+            Resizable = true
         };
 
         if (!player.TryCreateNuiWindow(window, out _token))

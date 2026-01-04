@@ -23,7 +23,7 @@ public sealed class HeightChangerPresenter(HeightChangerView view, NwPlayer play
         NuiWindow window = new NuiWindow(View.RootLayout(), "Height Changer")
         {
             Geometry = new NuiRect(50f, 50f, 660f, 480f),
-            Resizable = false
+            Resizable = true
         };
 
         if (!player.TryCreateNuiWindow(window, out _token))

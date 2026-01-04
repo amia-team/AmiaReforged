@@ -28,7 +28,7 @@ public sealed class CustomSummonDmPresenter(CustomSummonDmView view, NwPlayer pl
         NuiWindow window = new NuiWindow(View.RootLayout(), "Custom Summon Manager [DM]")
         {
             Geometry = new NuiRect(0f, 50f, 630f, 570f),
-            Resizable = false
+            Resizable = true
         };
 
         if (!player.TryCreateNuiWindow(window, out _token))

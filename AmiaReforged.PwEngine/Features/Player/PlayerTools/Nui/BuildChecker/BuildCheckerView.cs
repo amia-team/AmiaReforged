@@ -346,7 +346,7 @@ public sealed class BuildCheckerView : ScryView<BuildCheckerPresenter>, IToolWin
         return new NuiWindow(layout, "Auto-Rebuild")
         {
             Geometry = new NuiRect(450f, 250f, modalW, modalH),
-            Resizable = false,
+            Resizable = true,
             Closable = true
         };
     }

@@ -67,7 +67,7 @@ public class CreateSpellbookPresenter(CreateSpellbookView toolView, NwPlayer pla
         {
             Geometry = new NuiRect(0, 0, 400, 300),
             Closable = true,
-            Resizable = false
+            Resizable = true
         };
     }
 

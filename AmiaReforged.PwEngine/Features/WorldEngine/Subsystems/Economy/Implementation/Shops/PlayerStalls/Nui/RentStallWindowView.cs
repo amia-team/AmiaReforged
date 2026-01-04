@@ -294,7 +294,7 @@ public sealed class RentStallWindowPresenter : ScryPresenter<RentStallWindowView
         _window = new NuiWindow(View.RootLayout(), _config.Title)
         {
             Geometry = new NuiRect(0f, 0f, 635f, 650f),
-            Resizable = false
+            Resizable = true
         };
     }
 

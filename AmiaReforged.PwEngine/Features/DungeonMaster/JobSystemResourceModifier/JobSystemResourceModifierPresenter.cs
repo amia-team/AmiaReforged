@@ -37,7 +37,7 @@ public sealed class JobSystemResourceModifierPresenter : ScryPresenter<JobSystem
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(300f, 100f, 645f, 675f),
-            Resizable = false,
+            Resizable = true,
         };
 
         if (!_dm.TryCreateNuiWindow(_window, out _token))

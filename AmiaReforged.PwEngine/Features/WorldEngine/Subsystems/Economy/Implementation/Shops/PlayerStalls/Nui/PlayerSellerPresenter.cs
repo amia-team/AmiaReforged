@@ -66,7 +66,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         _window = new NuiWindow(View.RootLayout(), _config.Title)
         {
             Geometry = new NuiRect(90f, 70f, 850f, 770f),
-            Resizable = false
+            Resizable = true
         };
     }
 

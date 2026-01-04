@@ -1,4 +1,4 @@
-﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 
@@ -24,7 +24,7 @@ public sealed class AppearanceCustomizationPresenter(AppearanceCustomizationView
         NuiWindow window = new NuiWindow(View.RootLayout(), "Appearance Customization")
         {
             Geometry = new NuiRect(50f, 50f, 700f, 800f),
-            Resizable = false
+            Resizable = true
         };
 
         if (!player.TryCreateNuiWindow(window, out _token))

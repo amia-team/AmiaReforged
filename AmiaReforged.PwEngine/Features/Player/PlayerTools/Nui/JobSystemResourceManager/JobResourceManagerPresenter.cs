@@ -35,7 +35,7 @@ public sealed class JobResourceManagerPresenter : ScryPresenter<JobResourceManag
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(300f, 100f, 660f, 675f),
-            Resizable = false,
+            Resizable = true,
         };
 
         if (!_player.TryCreateNuiWindow(_window, out _token))

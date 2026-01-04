@@ -37,7 +37,7 @@ public sealed class PlayerDcSelfPresenter : ScryPresenter<PlayerDcSelfView>
         _window = new NuiWindow(View.RootLayout(), "Dreamcoins")
         {
             Geometry = new NuiRect(400f, 300f, View.GetWindowWidth(), View.GetWindowHeight()),
-            Resizable = false,
+            Resizable = true,
         };
 
         if (!_player.TryCreateNuiWindow(_window, out _token))

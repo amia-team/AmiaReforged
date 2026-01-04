@@ -26,7 +26,7 @@ public class CharacterBiographyPresenter : ScryPresenter<CharacterBiographyView>
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(0f, 100f, 670, 590f),
-            Resizable = false
+            Resizable = true
         };
     }
 

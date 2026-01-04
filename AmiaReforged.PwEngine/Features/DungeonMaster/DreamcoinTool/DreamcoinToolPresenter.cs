@@ -39,7 +39,7 @@ public sealed class DreamcoinToolPresenter : ScryPresenter<DreamcoinToolView>
         _window = new NuiWindow(View.RootLayout(), "Dreamcoin Tool")
         {
             Geometry = new NuiRect(400f, 300f, View.GetWindowWidth(), View.GetWindowHeight()),
-            Resizable = false,
+            Resizable = true,
         };
 
         if (!_dmPlayer.TryCreateNuiWindow(_window, out _token))

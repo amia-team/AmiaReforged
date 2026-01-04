@@ -52,7 +52,7 @@ public sealed class HouseResidentsPresenter : ScryPresenter<HouseResidentsView>
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(0f, 100f, 630f, 620f),
-            Resizable = false
+            Resizable = true
         };
     }
 

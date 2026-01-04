@@ -1,4 +1,4 @@
-﻿using Anvil.API;
+﻿﻿using Anvil.API;
 using Anvil.API.Events;
 using NWN.Core;
 using Action = System.Action;
@@ -60,7 +60,7 @@ public sealed class SimplePopupPresenter : ScryPresenter<SimplePopupView>
         _window = new NuiWindow(View.RootLayout(), _title)
         {
             Geometry = new NuiRect(500f, 500f, 400f, 300f),
-            Resizable = false
+            Resizable = true
         };
     }
 

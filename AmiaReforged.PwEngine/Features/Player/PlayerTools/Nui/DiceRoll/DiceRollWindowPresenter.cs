@@ -31,7 +31,7 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(0f, 100f, 630f, 460f),
-            Resizable = false
+            Resizable = true
         };
     }
 

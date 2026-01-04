@@ -209,7 +209,7 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
         {
             Geometry = new NuiRect(BankStorageWindowView.WindowPosX, BankStorageWindowView.WindowPosY,
                 BankStorageWindowView.WindowWidth, BankStorageWindowView.WindowHeight),
-            Resizable = false
+            Resizable = true
         };
     }
 

@@ -28,7 +28,7 @@ public sealed class BuildCheckerPresenter : ScryPresenter<BuildCheckerView>
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(0f, 100f, 630f, 670f),
-            Resizable = false
+            Resizable = true
         };
     }
 

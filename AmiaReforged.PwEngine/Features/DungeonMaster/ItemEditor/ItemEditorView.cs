@@ -462,7 +462,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
         return new NuiWindow(layout, "Edit Tag")
         {
             Geometry = new NuiRect(420f, 320f, 380f, 180f),
-            Resizable = false
+            Resizable = true
         };
     }
 }

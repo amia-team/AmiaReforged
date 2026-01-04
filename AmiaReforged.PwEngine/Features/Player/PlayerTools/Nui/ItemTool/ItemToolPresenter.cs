@@ -32,11 +32,11 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
         // Initialize model after DI
         _model = new ItemToolModel(_player, RenameService.Value);
         _model.OnNewSelection += OnNewSelection;
-        
+
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(0f, 100f, 635f, 550f),
-            Resizable = false
+            Resizable = true
         };
     }
 
@@ -76,7 +76,7 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
     private void HandleClick(ModuleEvents.OnNuiEvent ev)
     {
         if (_model == null) return;
-        
+
         if (ev.ElementId == View.SelectItemButton.Id)
         {
             _model.EnterTargetingMode();
@@ -220,7 +220,7 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
     private void TryAdjustIcon(int delta)
     {
         if (_model == null) return;
-        
+
         IconAdjustResult result = _model.TryAdjustIcon(delta, out int newValue, out int maxValue);
         switch (result)
         {
@@ -242,7 +242,7 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
     private void OnNewSelection()
     {
         if (_model == null) return;
-        
+
         _model.EnsureInitialNameCaptured();
         _model.EnsureInitialDescCaptured();
         UpdateFromModel();

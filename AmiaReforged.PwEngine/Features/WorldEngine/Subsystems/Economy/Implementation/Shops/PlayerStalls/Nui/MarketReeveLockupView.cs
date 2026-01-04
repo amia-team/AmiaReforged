@@ -227,7 +227,7 @@ public sealed class MarketReeveLockupPresenter : ScryPresenter<MarketReeveLockup
         _window = new NuiWindow(View.RootLayout(), _config.Title)
         {
             Geometry = new NuiRect(120f, 120f, 580f, 450f),
-            Resizable = false
+            Resizable = true
         };
     }
 

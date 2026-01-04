@@ -262,7 +262,7 @@ public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView
         _window = new NuiWindow(View.RootLayout(), $"{_bankDisplayName} - Account Management")
         {
             Geometry = new NuiRect(140f, 140f, BankAdminWindowView.WindowWidth, BankAdminWindowView.WindowHeight),
-            Resizable = false
+            Resizable = true
         };
     }
 

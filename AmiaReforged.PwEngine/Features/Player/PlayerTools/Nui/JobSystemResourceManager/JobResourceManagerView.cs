@@ -332,7 +332,7 @@ public sealed class JobResourceManagerView : ScryView<JobResourceManagerPresente
         return new NuiWindow(layout, "Transfer Destination")
         {
             Geometry = new NuiRect(450f, 250f, 400f, 300f),
-            Resizable = false
+            Resizable = true
         };
     }
 }

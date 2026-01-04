@@ -1,4 +1,4 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 
@@ -111,7 +111,7 @@ public sealed class ProductDescriptionPresenter : ScryPresenter<ProductDescripti
         _window = new NuiWindow(View.RootLayout(), "Product Description")
         {
             Geometry = new NuiRect(200f, 150f, 480f, 420f),
-            Resizable = false
+            Resizable = true
         };
     }
 

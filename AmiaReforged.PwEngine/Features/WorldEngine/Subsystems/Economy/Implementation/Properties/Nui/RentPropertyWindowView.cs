@@ -206,7 +206,7 @@ public sealed class RentPropertyWindowPresenter : ScryPresenter<RentPropertyWind
         _window = new NuiWindow(View.RootLayout(), _config.Title)
         {
             Geometry = new NuiRect(0f, 0f, 420f, 420f),
-            Resizable = false
+            Resizable = true
         };
     }
 

@@ -96,7 +96,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
                 BankWindowView.WindowPosY,
                 BankWindowView.WindowWidth,
                 BankWindowView.WindowHeight),
-            Resizable = false
+            Resizable = true
         };
     }
 
