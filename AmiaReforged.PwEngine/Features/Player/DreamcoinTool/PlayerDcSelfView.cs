@@ -7,16 +7,19 @@ namespace AmiaReforged.PwEngine.Features.Player.DreamcoinTool;
 public sealed class PlayerDcSelfView : ScryView<PlayerDcSelfPresenter>
 {
     private const float WindowWidth = 300f;
-    private const float WindowHeight = 150f;
+    private const float WindowHeight = 200f;
 
     public override PlayerDcSelfPresenter Presenter { get; protected set; }
 
     // Binds
     public readonly NuiBind<string> CurrentBalance = new("current_balance");
     public readonly NuiBind<string> BurnRewardInfo = new("burn_reward_info");
+    public readonly NuiBind<string> BurnGoldOnlyInfo = new("burn_gold_only_info");
+    public readonly NuiBind<bool> CanBurnForXp = new("can_burn_xp");
 
     // Buttons
     public const string BurnButtonId = "btn_burn_dc";
+    public const string BurnGoldOnlyButtonId = "btn_burn_dc_gold";
 
     public PlayerDcSelfView(NwPlayer player, DreamcoinService dreamcoinService)
     {
@@ -43,12 +46,25 @@ public sealed class PlayerDcSelfView : ScryView<PlayerDcSelfPresenter>
                         new NuiLabel(BurnRewardInfo) { Width = WindowWidth - 20f }
                     }
                 },
-                new NuiSpacer(),
                 new NuiRow
                 {
                     Children = new List<NuiElement>
                     {
-                        new NuiButton("Burn 1 DC for Gold & XP") { Id = BurnButtonId, Width = WindowWidth - 40f }
+                        new NuiButton("Burn 1 DC for Gold & XP") { Id = BurnButtonId, Width = WindowWidth - 40f, Enabled = CanBurnForXp }
+                    }
+                },
+                new NuiRow
+                {
+                    Children = new List<NuiElement>
+                    {
+                        new NuiLabel(BurnGoldOnlyInfo) { Width = WindowWidth - 20f }
+                    }
+                },
+                new NuiRow
+                {
+                    Children = new List<NuiElement>
+                    {
+                        new NuiButton("Burn 1 DC for Gold Only") { Id = BurnGoldOnlyButtonId, Width = WindowWidth - 40f }
                     }
                 }
             }
