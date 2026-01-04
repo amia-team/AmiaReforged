@@ -8,6 +8,17 @@ namespace AmiaReforged.PwEngine.Features.Module.DeveloperTools;
 /// <summary>
 /// Generates randomized appearances and names for NPC citizens.
 /// Handles the "jes_randomname" script for creature spawn customization.
+///
+/// Local Variable System for Race Control:
+/// - To ALLOW a specific race: Set "allow" to racial type ID AND set "allow_set" to 1
+/// - To BAN a specific race: Set "ban" to racial type ID AND set "ban_set" to 1
+/// - To BAN multiple races: Set "ban_count" to number of bans, then set "ban_1", "ban_1_set", "ban_2", "ban_2_set", etc.
+/// - To set a DEFAULT race: Set "default" to racial type ID AND set "default_set" to 1
+///
+/// Racial Type IDs: Dwarf=0, Elf=1, Gnome=2, Halfling=3, Half-Elf=4, Half-Orc=5, Human=6, Drow=33
+///
+/// The "_set" variables are required because 0 (Dwarf) is a valid racial type but also the default return value
+/// of GetLocalInt when a variable doesn't exist. This prevents ambiguity.
 /// </summary>
 [ServiceBinding(typeof(CitizenGenerator))]
 public class CitizenGenerator
@@ -250,10 +261,15 @@ public class CitizenGenerator
     private int GetRandomRace(NwCreature npc)
     {
         // Check if there's a single allowed race
+        // Use -1 as "not set" so that 0 (dwarf) can be a valid value
         int allowedRace = NWScript.GetLocalInt(npc, "allow");
-        if (allowedRace > 0) // 0 would be dwarf, so we check > 0 to ensure it's intentionally set
+        if (allowedRace >= 0) // 0 or higher means a race is set (dwarf is 0)
         {
-            return GetRaceIndex(allowedRace);
+            int hasAllowSet = NWScript.GetLocalInt(npc, "allow_set");
+            if (hasAllowSet == 1) // Explicitly check if the variable was intentionally set
+            {
+                return GetRaceIndex(allowedRace);
+            }
         }
 
         int maxAttempts = 100; // Prevent infinite loops
@@ -274,7 +290,8 @@ public class CitizenGenerator
 
         // If we couldn't find an allowed race, use default or current race
         int defaultRace = NWScript.GetLocalInt(npc, "default");
-        if (defaultRace > 0)
+        int hasDefaultSet = NWScript.GetLocalInt(npc, "default_set");
+        if (defaultRace >= 0 && hasDefaultSet == 1)
         {
             return GetRaceIndex(defaultRace);
         }
@@ -286,8 +303,10 @@ public class CitizenGenerator
     private bool IsRaceAllowed(NwCreature npc, int racialTypeId)
     {
         // Check for single ban
+        // Use ban_set to distinguish between "not set" and "set to dwarf (0)"
         int bannedRace = NWScript.GetLocalInt(npc, "ban");
-        if (bannedRace > 0 && bannedRace == racialTypeId)
+        int hasBanSet = NWScript.GetLocalInt(npc, "ban_set");
+        if (hasBanSet == 1 && bannedRace == racialTypeId)
         {
             return false;
         }
@@ -299,7 +318,8 @@ public class CitizenGenerator
             for (int i = 1; i <= banCount; i++)
             {
                 int bannedRaceId = NWScript.GetLocalInt(npc, $"ban_{i}");
-                if (bannedRaceId > 0 && bannedRaceId == racialTypeId)
+                int hasBanSetI = NWScript.GetLocalInt(npc, $"ban_{i}_set");
+                if (hasBanSetI == 1 && bannedRaceId == racialTypeId)
                 {
                     return false;
                 }
