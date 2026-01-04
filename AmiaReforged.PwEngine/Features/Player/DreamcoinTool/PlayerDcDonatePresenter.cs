@@ -9,7 +9,6 @@ namespace AmiaReforged.PwEngine.Features.Player.DreamcoinTool;
 public sealed class PlayerDcDonatePresenter : ScryPresenter<PlayerDcDonateView>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    private const string DonateCooldownVar = "dc_donate_timestamp";
 
     public override PlayerDcDonateView View { get; }
 
@@ -66,12 +65,18 @@ public sealed class PlayerDcDonatePresenter : ScryPresenter<PlayerDcDonateView>
         }
     }
 
+    private string GetCooldownVariableName()
+    {
+        return $"{_targetPlayer.CDKey}_lastdonation";
+    }
+
     private TimeSpan? GetDonateCooldownRemaining()
     {
-        NwItem? pcKey = _player.LoginCreature?.FindItemWithTag("ds_pckey");
+        NwItem? pcKey = _player.LoginCreature?.Inventory.Items.FirstOrDefault(i => i.ResRef == "ds_pckey");
         if (pcKey == null) return null;
 
-        string? timestampStr = pcKey.GetObjectVariable<LocalVariableString>(DonateCooldownVar).Value;
+        string variableName = GetCooldownVariableName();
+        string? timestampStr = pcKey.GetObjectVariable<LocalVariableString>(variableName).Value;
         if (string.IsNullOrEmpty(timestampStr)) return null;
 
         if (!DateTime.TryParse(timestampStr, out DateTime lastDonate)) return null;
@@ -86,10 +91,11 @@ public sealed class PlayerDcDonatePresenter : ScryPresenter<PlayerDcDonateView>
 
     private void SetDonateCooldown()
     {
-        NwItem? pcKey = _player.LoginCreature?.FindItemWithTag("ds_pckey");
+        NwItem? pcKey = _player.LoginCreature?.Inventory.Items.FirstOrDefault(i => i.ResRef == "ds_pckey");
         if (pcKey == null) return;
 
-        pcKey.GetObjectVariable<LocalVariableString>(DonateCooldownVar).Value = DateTime.UtcNow.ToString("O");
+        string variableName = GetCooldownVariableName();
+        pcKey.GetObjectVariable<LocalVariableString>(variableName).Value = DateTime.UtcNow.ToString("O");
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent ev)

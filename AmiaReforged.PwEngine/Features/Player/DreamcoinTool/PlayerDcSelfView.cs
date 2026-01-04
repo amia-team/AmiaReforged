@@ -7,7 +7,7 @@ namespace AmiaReforged.PwEngine.Features.Player.DreamcoinTool;
 public sealed class PlayerDcSelfView : ScryView<PlayerDcSelfPresenter>
 {
     private const float WindowWidth = 300f;
-    private const float WindowHeight = 200f;
+    private const float WindowHeight = 250f;
 
     public override PlayerDcSelfPresenter Presenter { get; protected set; }
 
