@@ -15,17 +15,19 @@ public sealed class PlayerDcSelfPresenter : ScryPresenter<PlayerDcSelfView>
 
     private readonly NwPlayer _player;
     private readonly DreamcoinService _dreamcoinService;
+    private readonly DcPlaytimeService _playtimeService;
 
     private NuiWindowToken _token;
     private NuiWindow? _window;
 
     public override NuiWindowToken Token() => _token;
 
-    public PlayerDcSelfPresenter(PlayerDcSelfView view, NwPlayer player, DreamcoinService dreamcoinService)
+    public PlayerDcSelfPresenter(PlayerDcSelfView view, NwPlayer player, DreamcoinService dreamcoinService, DcPlaytimeService playtimeService)
     {
         View = view;
         _player = player;
         _dreamcoinService = dreamcoinService;
+        _playtimeService = playtimeService;
     }
 
     public override void InitBefore()
@@ -65,6 +67,10 @@ public sealed class PlayerDcSelfPresenter : ScryPresenter<PlayerDcSelfView>
             (hasPcKey ? $"Burn reward: {gold} gold, {xp} XP" : "Requires ds_pckey to burn for XP");
 
         Token().SetBindValue(View.CurrentBalance, $"You have {balance} Dreamcoins");
+
+        int minutesUntilNextDc = _playtimeService.GetMinutesUntilNextDc(_player.CDKey);
+        Token().SetBindValue(View.NextDcTimer, $"Next DC in: {minutesUntilNextDc} min");
+
         Token().SetBindValue(View.BurnRewardInfo, burnRewardText);
         Token().SetBindValue(View.BurnGoldOnlyInfo, $"Gold only reward: {goldOnly} gold");
         Token().SetBindValue(View.CanBurnForXp, canBurnForXp);

@@ -7,12 +7,13 @@ namespace AmiaReforged.PwEngine.Features.Player.DreamcoinTool;
 public sealed class PlayerDcSelfView : ScryView<PlayerDcSelfPresenter>
 {
     private const float WindowWidth = 300f;
-    private const float WindowHeight = 250f;
+    private const float WindowHeight = 280f;
 
     public override PlayerDcSelfPresenter Presenter { get; protected set; }
 
     // Binds
     public readonly NuiBind<string> CurrentBalance = new("current_balance");
+    public readonly NuiBind<string> NextDcTimer = new("next_dc_timer");
     public readonly NuiBind<string> BurnRewardInfo = new("burn_reward_info");
     public readonly NuiBind<string> BurnGoldOnlyInfo = new("burn_gold_only_info");
     public readonly NuiBind<bool> CanBurnForXp = new("can_burn_xp");
@@ -21,9 +22,9 @@ public sealed class PlayerDcSelfView : ScryView<PlayerDcSelfPresenter>
     public const string BurnButtonId = "btn_burn_dc";
     public const string BurnGoldOnlyButtonId = "btn_burn_dc_gold";
 
-    public PlayerDcSelfView(NwPlayer player, DreamcoinService dreamcoinService)
+    public PlayerDcSelfView(NwPlayer player, DreamcoinService dreamcoinService, DcPlaytimeService playtimeService)
     {
-        Presenter = new PlayerDcSelfPresenter(this, player, dreamcoinService);
+        Presenter = new PlayerDcSelfPresenter(this, player, dreamcoinService, playtimeService);
     }
 
     public override NuiLayout RootLayout()
@@ -37,6 +38,13 @@ public sealed class PlayerDcSelfView : ScryView<PlayerDcSelfPresenter>
                     Children = new List<NuiElement>
                     {
                         new NuiLabel(CurrentBalance) { Width = WindowWidth - 20f }
+                    }
+                },
+                new NuiRow
+                {
+                    Children = new List<NuiElement>
+                    {
+                        new NuiLabel(NextDcTimer) { Width = WindowWidth - 20f }
                     }
                 },
                 new NuiRow

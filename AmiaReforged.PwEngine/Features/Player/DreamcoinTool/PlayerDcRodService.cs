@@ -18,11 +18,13 @@ public class PlayerDcRodService
     private const string PcDcRodTag = "pc_dcrod";
 
     private readonly DreamcoinService _dreamcoinService;
+    private readonly DcPlaytimeService _playtimeService;
     private readonly WindowDirector _director;
 
-    public PlayerDcRodService(DreamcoinService dreamcoinService, WindowDirector director)
+    public PlayerDcRodService(DreamcoinService dreamcoinService, DcPlaytimeService playtimeService, WindowDirector director)
     {
         _dreamcoinService = dreamcoinService;
+        _playtimeService = playtimeService;
         _director = director;
 
         NwModule.Instance.OnActivateItem += HandlePcDcRodActivation;
@@ -38,7 +40,7 @@ public class PlayerDcRodService
             return;
 
         NwCreature? targetCreature = obj.TargetObject as NwCreature;
-        
+
         // Self-target: show balance and burn DC window
         if (targetCreature == null || targetCreature == obj.ItemActivator)
         {
@@ -59,7 +61,7 @@ public class PlayerDcRodService
 
     private void OpenSelfWindow(NwPlayer player)
     {
-        PlayerDcSelfView view = new(player, _dreamcoinService);
+        PlayerDcSelfView view = new(player, _dreamcoinService, _playtimeService);
         IScryPresenter presenter = view.Presenter;
 
         InjectionService? injector = AnvilCore.GetService<InjectionService>();

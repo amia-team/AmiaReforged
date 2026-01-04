@@ -37,6 +37,20 @@ public sealed class DcPlaytimeService
         Log.Info("DcPlaytimeService initialized. Tracking player playtime for DC awards.");
     }
 
+    /// <summary>
+    ///   Gets the remaining minutes until the next DC award for a player.
+    /// </summary>
+    /// <param name="cdKey">The player's CD key.</param>
+    /// <returns>Minutes remaining, or the full MinutesPerDc if not tracked yet.</returns>
+    public int GetMinutesUntilNextDc(string cdKey)
+    {
+        if (_accumulatedMinutes.TryGetValue(cdKey, out int accumulated))
+        {
+            return MinutesPerDc - accumulated;
+        }
+        return MinutesPerDc;
+    }
+
     private async void OnPlaytimeTick()
     {
         // Get all online players (excluding DMs)
