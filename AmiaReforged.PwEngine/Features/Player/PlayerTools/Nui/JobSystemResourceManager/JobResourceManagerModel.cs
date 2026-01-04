@@ -1,4 +1,4 @@
-﻿﻿using Anvil.API;
+﻿using Anvil.API;
 
 namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.JobSystemResourceManager;
 
@@ -35,7 +35,9 @@ internal sealed class JobResourceManagerModel
         "js_arca_trca",
         "js_arca_wdca",
         "js_plcspawner",
-        "js_tailorkit"
+        "js_tailorkit",
+        "js_jew_amul",
+        "js_jew_ring"
     };
 
     // Exceptions for js_bla_ prefix (allowed items)
@@ -80,6 +82,10 @@ internal sealed class JobResourceManagerModel
 
         // Check prefix patterns
         if (resref.StartsWith("js_arch_"))
+            return true;
+
+        // Check js_sold_losta pattern (lost animals/baby animals)
+        if (resref.StartsWith("js_sold_losta"))
             return true;
 
         // Check js_bla_ pattern (exclude all except exceptions)
@@ -275,7 +281,7 @@ internal sealed class JobResourceManagerModel
     /// Transfers a resource from one location to another
     /// </summary>
     public bool TransferResource(ResourceDataRecord resource, int quantity,
-        ResourceTransferDestination destination, NwPlayer? targetPlayer = null, int targetBoxIndex = -1)
+        ResourceTransferDestination destination, NwPlayer? targetPlayer = null, int targetBoxIndex = -1, NwItem? targetMiniatureBox = null)
     {
         if (quantity <= 0 || quantity > resource.Quantity)
             return false;
@@ -285,10 +291,15 @@ internal sealed class JobResourceManagerModel
             return false;
 
         // Add to destination
-        if (!AddToDestination(resource.Resref, resource.Name, quantity, destination, targetPlayer, targetBoxIndex))
+        if (!AddToDestination(resource.Resref, resource.Name, quantity, destination, targetPlayer, targetBoxIndex, targetMiniatureBox))
         {
             // Rollback: add back to source
-            AddBackToSource(resource, quantity);
+            if (!AddBackToSource(resource, quantity))
+            {
+                // Critical: Rollback failed! Items were removed but couldn't be restored
+                // Log this error for admin investigation
+                NWN.Core.NWScript.WriteTimestampedLogEntry($"[CRITICAL] Job Resource Manager: Failed to rollback transfer for player {_player?.PlayerName ?? "Unknown"}. Lost {quantity}x {resource.Name} (resref: {resource.Resref})");
+            }
             return false;
         }
 
@@ -407,7 +418,7 @@ internal sealed class JobResourceManagerModel
     }
 
     private bool AddToDestination(string resref, string name, int quantity,
-        ResourceTransferDestination destination, NwPlayer? targetPlayer, int targetBoxIndex)
+        ResourceTransferDestination destination, NwPlayer? targetPlayer, int targetBoxIndex, NwItem? targetMiniatureBox)
     {
         switch (destination)
         {
@@ -416,6 +427,9 @@ internal sealed class JobResourceManagerModel
             case ResourceTransferDestination.OtherPlayerMerchantBox:
                 return AddToPlayerMerchantBox(targetPlayer, resref, name, quantity);
             case ResourceTransferDestination.MiniatureBox:
+                // Use direct item reference if provided, otherwise fall back to index-based lookup
+                if (targetMiniatureBox != null)
+                    return AddToMiniatureBoxDirect(targetMiniatureBox, resref, name, quantity);
                 return AddToMiniatureBox(targetBoxIndex, resref, name, quantity);
             case ResourceTransferDestination.Inventory:
                 return AddToInventory(resref, name, quantity);
@@ -533,6 +547,27 @@ internal sealed class JobResourceManagerModel
         return false;
     }
 
+    private bool AddToMiniatureBoxDirect(NwItem targetBox, string resref, string name, int quantity)
+    {
+        if (targetBox == null || targetBox.Tag != MiniatureStorageBoxTag)
+            return false;
+
+        LocalVariableString boxResref = targetBox.GetObjectVariable<LocalVariableString>("storagebox");
+        LocalVariableInt count = targetBox.GetObjectVariable<LocalVariableInt>("storageboxcount");
+
+        // Check if box is empty or contains the same resource
+        if (!boxResref.HasValue || boxResref.Value == resref || boxResref.Value == "")
+        {
+            boxResref.Value = resref;
+            count.Value = (count.HasValue ? count.Value : 0) + quantity;
+            targetBox.GetObjectVariable<LocalVariableString>("storageboxname").Value = name;
+            targetBox.Description = $"Item Count Stored: {count.Value}";
+            targetBox.Name = $"<c~Îë>Storage Chest: {name}</c>";
+            return true;
+        }
+        return false; // Box already has different resource
+    }
+
     private bool AddToMiniatureBox(int boxIndex, string resref, string name, int quantity)
     {
         if (_player.ControlledCreature == null) return false;
@@ -582,20 +617,20 @@ internal sealed class JobResourceManagerModel
         return true;
     }
 
-    private void AddBackToSource(ResourceDataRecord resource, int quantity)
+    private bool AddBackToSource(ResourceDataRecord resource, int quantity)
     {
         // Rollback operation - add back to original source
         switch (resource.Source)
         {
             case ResourceSource.MerchantBox:
                 AddToMerchantBoxAtIndex(resource.SourceIndex, resource.Resref, resource.Name, quantity);
-                break;
+                return true;
             case ResourceSource.MiniatureBox:
-                AddToMiniatureBox(resource.SourceIndex, resource.Resref, resource.Name, quantity);
-                break;
+                return AddToMiniatureBox(resource.SourceIndex, resource.Resref, resource.Name, quantity);
             case ResourceSource.Inventory:
-                AddToInventory(resource.Resref, resource.Name, quantity);
-                break;
+                return AddToInventory(resource.Resref, resource.Name, quantity);
+            default:
+                return false;
         }
     }
 

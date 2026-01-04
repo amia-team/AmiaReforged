@@ -389,7 +389,6 @@ public sealed class JobResourceManagerPresenter : ScryPresenter<JobResourceManag
         }
 
         LocalVariableString boxResref = targetItem.GetObjectVariable<LocalVariableString>("storagebox");
-        LocalVariableInt boxCount = targetItem.GetObjectVariable<LocalVariableInt>("storageboxcount");
 
         // Check if box is empty or has same resource
         if (boxResref.HasValue && boxResref.Value != "" && boxResref.Value != resource.Resref)
@@ -398,25 +397,8 @@ public sealed class JobResourceManagerPresenter : ScryPresenter<JobResourceManag
             return;
         }
 
-        // Find the index of this miniature box
-        List<NwItem> miniatureBoxes = _model.GetMiniatureStorageBoxes();
-        int boxIndex = -1;
-        for (int i = 0; i < miniatureBoxes.Count; i++)
-        {
-            if (miniatureBoxes[i] == targetItem)
-            {
-                boxIndex = i;
-                break;
-            }
-        }
-
-        if (boxIndex < 0)
-        {
-            _player.SendServerMessage("Could not find the selected miniature storage box.", new Color(255, 0, 0));
-            return;
-        }
-
-        if (_model.TransferResource(resource, quantity, ResourceTransferDestination.MiniatureBox, null, boxIndex))
+        // Pass the target item directly to avoid index instability issues
+        if (_model.TransferResource(resource, quantity, ResourceTransferDestination.MiniatureBox, targetMiniatureBox: targetItem))
         {
             _player.SendServerMessage($"Transferred {quantity} {resource.Name} to the miniature storage box.", new Color(0, 255, 0));
             _selectedResourceIndex = -1; // Reset selection after transfer
