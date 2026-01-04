@@ -54,7 +54,7 @@ public sealed class PlayerDcSelfPresenter : ScryPresenter<PlayerDcSelfView>
         int level = creature?.Level ?? 1;
         int gold = 1500 * level;
         int xp = level <= 20 ? level * 1000 : level * 500;
-        int goldOnly = 2500 * level;
+        int goldOnly = 2000 * level;
 
         bool hasPcKey = creature?.Inventory.Items.Any(i => i.ResRef == "ds_pckey") ?? false;
         bool isMaxLevel = level >= 30;
