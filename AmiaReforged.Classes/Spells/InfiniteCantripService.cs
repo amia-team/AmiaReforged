@@ -64,10 +64,20 @@ public class InfiniteCantripService
         if (obj.Spell is null) return;
         if (player.LoginCreature is null) return;
 
+        Log.Debug($"[InfiniteCantrip] {player.LoginCreature.Name} cast {obj.Spell.Name} (InnateLevel: {obj.Spell.InnateSpellLevel})");
+
         // Always restore level 0 spells (cantrips)
         if (obj.Spell.InnateSpellLevel == 0)
         {
-            player.LoginCreature.RestoreSpells(0);
+            Log.Debug($"[InfiniteCantrip] Restoring cantrips for {player.LoginCreature.Name}");
+
+            // Delay restoration to ensure spell slot is consumed first
+            _ = NwTask.Run(async () =>
+            {
+                await NwTask.Delay(TimeSpan.FromMilliseconds(100));
+                player.LoginCreature.RestoreSpells(0);
+                Log.Debug($"[InfiniteCantrip] Cantrips restored for {player.LoginCreature.Name}");
+            });
             return;
         }
 
@@ -75,11 +85,17 @@ public class InfiniteCantripService
         if (obj.Spell.InnateSpellLevel == 1)
         {
             int effectiveCasterLevel = GetEffectiveCasterLevel(player.LoginCreature);
+            Log.Debug($"[InfiniteCantrip] {player.LoginCreature.Name} effective caster level: {effectiveCasterLevel}");
 
             if (effectiveCasterLevel >= 20)
             {
-                player.LoginCreature.RestoreSpells(1);
-                Log.Debug($"{player.LoginCreature.Name}: Restored level 1 spells (effective caster level: {effectiveCasterLevel})");
+                // Delay restoration to ensure spell slot is consumed first
+                _ = NwTask.Run(async () =>
+                {
+                    await NwTask.Delay(TimeSpan.FromMilliseconds(100));
+                    player.LoginCreature.RestoreSpells(1);
+                    Log.Debug($"[InfiniteCantrip] Level 1 spells restored for {player.LoginCreature.Name}");
+                });
             }
         }
     }
