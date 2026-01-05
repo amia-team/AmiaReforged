@@ -109,6 +109,13 @@ public sealed class MythalLedgerView : ScryView<MythalLedgerPresenter>
             {
                 new NuiRow
                 {
+                    Width = 0f,
+                    Height = 0f,
+                    Children = new List<NuiElement>(),
+                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 300f, 400f))]
+                },
+                new NuiRow
+                {
                     Children =
                     {
                         new NuiLabel(label: "Minor:"),

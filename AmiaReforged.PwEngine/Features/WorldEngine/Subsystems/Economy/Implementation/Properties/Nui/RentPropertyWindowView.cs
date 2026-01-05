@@ -51,6 +51,13 @@ public sealed class RentPropertyWindowView : ScryView<RentPropertyWindowPresente
             [
                 new NuiRow
                 {
+                    Width = 0f,
+                    Height = 0f,
+                    Children = new List<NuiElement>(),
+                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 450f, 700f))]
+                },
+                new NuiRow
+                {
                     Children =
                     [
                         new NuiLabel(PropertyName)

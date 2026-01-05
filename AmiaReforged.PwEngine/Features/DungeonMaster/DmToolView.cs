@@ -51,6 +51,13 @@ public sealed class DmToolView : ScryView<DmToolPresenter>
             [
                 new NuiRow
                 {
+                    Width = 0f,
+                    Height = 0f,
+                    Children = new List<NuiElement>(),
+                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 400f, 600f))]
+                },
+                new NuiRow
+                {
                     Height = 40f,
                     Children =
                     [

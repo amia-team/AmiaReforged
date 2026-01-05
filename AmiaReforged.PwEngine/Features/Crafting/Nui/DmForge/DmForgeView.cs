@@ -78,6 +78,13 @@ public sealed class DmForgeView : ScryView<DmForgePresenter>
             {
                 new NuiRow
                 {
+                    Width = 0f,
+                    Height = 0f,
+                    Children = new List<NuiElement>(),
+                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 1100f, 600f))]
+                },
+                new NuiRow
+                {
                     Children =
                     {
                         new NuiTextEdit("Edit Name", ItemName, 100, false) { Width = 250f, Height = 40f },

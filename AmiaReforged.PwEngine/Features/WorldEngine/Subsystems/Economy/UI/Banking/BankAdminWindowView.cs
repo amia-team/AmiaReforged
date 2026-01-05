@@ -87,6 +87,13 @@ public sealed class BankAdminWindowView : ScryView<BankAdminWindowPresenter>
         {
             Children =
             [
+                new NuiRow
+                {
+                    Width = 0f,
+                    Height = 0f,
+                    Children = new List<NuiElement>(),
+                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 700f, 700f))]
+                },
                 // Account Holders Section
                 new NuiRow
                 {

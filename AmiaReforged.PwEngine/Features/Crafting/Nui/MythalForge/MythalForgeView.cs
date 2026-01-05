@@ -1,4 +1,4 @@
-﻿using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.ActiveProperties;
+﻿﻿using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.ActiveProperties;
 using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
@@ -87,6 +87,13 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
         {
             Children =
             {
+                new NuiRow
+                {
+                    Width = 0f,
+                    Height = 0f,
+                    Children = new List<NuiElement>(),
+                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 1200f, 800f))]
+                },
                 new NuiRow
                 {
                     Children =

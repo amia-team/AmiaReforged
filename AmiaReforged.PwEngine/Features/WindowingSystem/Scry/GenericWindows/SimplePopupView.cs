@@ -1,4 +1,4 @@
-﻿using Anvil.API;
+﻿﻿using Anvil.API;
 using Action = System.Action;
 
 namespace AmiaReforged.PwEngine.Features.WindowingSystem.Scry.GenericWindows;
@@ -31,6 +31,13 @@ public sealed class SimplePopupView : ScryView<SimplePopupPresenter>
         {
             Children =
             {
+                new NuiRow
+                {
+                    Width = 0f,
+                    Height = 0f,
+                    Children = new List<NuiElement>(),
+                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 350f, 300f))]
+                },
                 new NuiGroup
                 {
                     Element = new NuiText(_message)

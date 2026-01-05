@@ -1,4 +1,4 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem;
+﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 
@@ -25,6 +25,13 @@ public sealed class ConfirmPathView : ScryView<MonkPathPresenter>
         {
             Children =
             {
+                new NuiRow
+                {
+                    Width = 0f,
+                    Height = 0f,
+                    Children = new List<NuiElement>(),
+                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 500f, 600f))]
+                },
                 new NuiRow
                 {
                     Children =

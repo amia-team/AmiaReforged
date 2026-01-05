@@ -79,6 +79,13 @@ public sealed class BankStorageWindowView : ScryView<BankStorageWindowPresenter>
         {
             Children =
             [
+                new NuiRow
+                {
+                    Width = 0f,
+                    Height = 0f,
+                    Children = new List<NuiElement>(),
+                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 800f, 600f))]
+                },
                 // Header with capacity and upgrade
                 new NuiRow
                 {

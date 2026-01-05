@@ -29,10 +29,19 @@ public sealed class PlayerDcSelfView : ScryView<PlayerDcSelfPresenter>
 
     public override NuiLayout RootLayout()
     {
+        NuiRow bgLayer = new NuiRow
+        {
+            Width = 0f,
+            Height = 0f,
+            Children = new List<NuiElement>(),
+            DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, WindowWidth, WindowHeight))]
+        };
+
         return new NuiColumn
         {
             Children = new List<NuiElement>
             {
+                bgLayer,
                 new NuiRow
                 {
                     Children = new List<NuiElement>

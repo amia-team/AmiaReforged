@@ -157,6 +157,13 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
         {
             Children =
             [
+                new NuiRow
+                {
+                    Width = 0f,
+                    Height = 0f,
+                    Children = new List<NuiElement>(),
+                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 900f, 700f))]
+                },
                 BuildHeader(),
                 new NuiSpacer { Height = StandardSpacing },
                 // Quick access buttons for other windows
