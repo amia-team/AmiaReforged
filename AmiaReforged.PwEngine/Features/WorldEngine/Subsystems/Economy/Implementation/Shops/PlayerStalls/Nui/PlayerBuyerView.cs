@@ -123,7 +123,6 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
                                 Height = 10f,
                                 HorizontalAlign = NuiHAlign.Left,
                                 VerticalAlign = NuiVAlign.Middle,
-                                ForegroundColor = new Color(30, 20, 12)
                             },
                             new NuiSpacer { Height = 6f },
                             new NuiLabel(PreviewItemCost)
@@ -132,7 +131,6 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
                                 Height = 10f,
                                 HorizontalAlign = NuiHAlign.Left,
                                 VerticalAlign = NuiVAlign.Middle,
-                                ForegroundColor = new Color(30, 20, 12)
                             },
                             new NuiSpacer { Height = 12f },
                             new NuiLabel("Description:")
@@ -141,7 +139,6 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
                                 Height = 10f,
                                 HorizontalAlign = NuiHAlign.Left,
                                 VerticalAlign = NuiVAlign.Middle,
-                                ForegroundColor = new Color(30, 20, 12),
                                 Visible = PreviewDescriptionVisible
                             },
                             new NuiText(PreviewItemDescription)
@@ -164,7 +161,6 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
                                         Height = 26f,
                                         HorizontalAlign = NuiHAlign.Left,
                                         VerticalAlign = NuiVAlign.Middle,
-                                        ForegroundColor = new Color(30, 20, 12)
                                     },
                                     new NuiTextEdit(string.Empty, QuantityValue, 5, false)
                                     {
@@ -177,7 +173,6 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
                                         Height = 26f,
                                         HorizontalAlign = NuiHAlign.Left,
                                         VerticalAlign = NuiVAlign.Middle,
-                                        ForegroundColor = new Color(80, 80, 80)
                                     }
                                 ]
                             },
@@ -192,7 +187,6 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
                                         Height = 22f,
                                         HorizontalAlign = NuiHAlign.Left,
                                         VerticalAlign = NuiVAlign.Middle,
-                                        ForegroundColor = new Color(30, 20, 12)
                                     }
                                 ]
                             },

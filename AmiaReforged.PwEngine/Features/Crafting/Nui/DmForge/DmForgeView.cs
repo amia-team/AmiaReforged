@@ -118,7 +118,8 @@ public sealed class DmForgeView : ScryView<DmForgePresenter>
                                 {
                                     new NuiLabel("Current Properties")
                                     {
-                                        Height = 15f
+                                        Height = 15f,
+                                        ForegroundColor = new Color(50, 40, 30)
                                     },
                                     new NuiList(currentCells, CurrentCount) { RowHeight = 28f }
                                 }
@@ -138,7 +139,10 @@ public sealed class DmForgeView : ScryView<DmForgePresenter>
                                         Height = 30f,
                                         Children =
                                         {
-                                            new NuiLabel("Search:"),
+                                            new NuiLabel("Search:")
+                                            {
+                                                ForegroundColor = new Color(50, 40, 30)
+                                            },
                                             new NuiTextEdit("type to filter...", SearchBind, 64, false)
                                             {
                                                 Width = 260f
@@ -147,7 +151,8 @@ public sealed class DmForgeView : ScryView<DmForgePresenter>
                                     },
                                     new NuiLabel("Available Properties")
                                     {
-                                        Height = 15f
+                                        Height = 15f,
+                                        ForegroundColor = new Color(50, 40, 30)
                                     },
                                     new NuiList(availableCells, AvailableCount) { RowHeight = 28f }
                                 }

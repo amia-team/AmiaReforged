@@ -103,7 +103,8 @@ public sealed class BankAdminWindowView : ScryView<BankAdminWindowPresenter>
                         {
                             Height = 28f,
                             HorizontalAlign = NuiHAlign.Left,
-                            VerticalAlign = NuiVAlign.Middle
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(50, 40, 30)
                         },
                         new NuiSpacer(),
                         new NuiButton("Refresh")
@@ -126,7 +127,8 @@ public sealed class BankAdminWindowView : ScryView<BankAdminWindowPresenter>
                 {
                     Height = 24f,
                     HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle
+                    VerticalAlign = NuiVAlign.Middle,
+                    ForegroundColor = new Color(50, 40, 30)
                 },
                 new NuiRow
                 {
@@ -153,14 +155,16 @@ public sealed class BankAdminWindowView : ScryView<BankAdminWindowPresenter>
                     Visible = CanIssueShares,
                     Height = 44f,
                     HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Top
+                    VerticalAlign = NuiVAlign.Top,
+                    ForegroundColor = new Color(50, 40, 30)
                 },
                 new NuiLabel("Only account owners can issue share documents.")
                 {
                     Visible = CannotIssueShares,
                     Height = 32f,
                     HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle
+                    VerticalAlign = NuiVAlign.Middle,
+                    ForegroundColor = new Color(50, 40, 30)
                 },
                 new NuiSpacer { Height = 12f },
 
@@ -169,7 +173,8 @@ public sealed class BankAdminWindowView : ScryView<BankAdminWindowPresenter>
                 {
                     Height = 24f,
                     HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle
+                    VerticalAlign = NuiVAlign.Middle,
+                    ForegroundColor = new Color(50, 40, 30)
                 },
                 new NuiList(transactionRowTemplate, TransactionCount)
                 {
@@ -180,7 +185,8 @@ public sealed class BankAdminWindowView : ScryView<BankAdminWindowPresenter>
                 {
                     Height = 30f,
                     HorizontalAlign = NuiHAlign.Center,
-                    VerticalAlign = NuiVAlign.Middle
+                    VerticalAlign = NuiVAlign.Middle,
+                    ForegroundColor = new Color(50, 40, 30)
                 },
                 new NuiSpacer(),
 

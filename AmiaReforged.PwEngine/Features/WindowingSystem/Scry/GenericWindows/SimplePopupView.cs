@@ -1,4 +1,4 @@
-﻿﻿using Anvil.API;
+﻿using Anvil.API;
 using Action = System.Action;
 
 namespace AmiaReforged.PwEngine.Features.WindowingSystem.Scry.GenericWindows;
@@ -42,7 +42,8 @@ public sealed class SimplePopupView : ScryView<SimplePopupPresenter>
                 {
                     Element = new NuiText(_message)
                     {
-                        Scrollbars = NuiScrollbars.Auto
+                        Scrollbars = NuiScrollbars.Auto,
+                        ForegroundColor = new Color(50, 40, 30)
                     },
                     Border = true,
                     Width = 300,

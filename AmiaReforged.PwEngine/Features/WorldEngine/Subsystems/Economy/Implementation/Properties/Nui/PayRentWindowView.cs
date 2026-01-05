@@ -57,7 +57,8 @@ public sealed class PayRentWindowView : ScryView<PayRentWindowPresenter>
                         {
                             HorizontalAlign = NuiHAlign.Center,
                             Height = 26f,
-                            Width = 400f
+                            Width = 400f,
+                            ForegroundColor = new Color(50, 40, 30)
                         }
                     ]
                 },
@@ -65,12 +66,16 @@ public sealed class PayRentWindowView : ScryView<PayRentWindowPresenter>
                 new NuiGroup
                 {
                     Height = 80f,
-                    Element = new NuiText(PropertyDescription) { Scrollbars = NuiScrollbars.Y }
+                    Element = new NuiText(PropertyDescription)
+                    {
+                        Scrollbars = NuiScrollbars.Y,
+                        ForegroundColor = new Color(50, 40, 30)
+                    }
                 },
                 new NuiSpacer { Height = 8f },
-                new NuiLabel(RentAmountText) { Height = 20f },
-                new NuiLabel(CurrentDueDateText) { Height = 20f },
-                new NuiLabel(NewDueDateText) { Height = 20f },
+                new NuiLabel(RentAmountText) { Height = 20f, ForegroundColor = new Color(50, 40, 30) },
+                new NuiLabel(CurrentDueDateText) { Height = 20f, ForegroundColor = new Color(50, 40, 30) },
+                new NuiLabel(NewDueDateText) { Height = 20f, ForegroundColor = new Color(50, 40, 30) },
                 new NuiSpacer { Height = 8f },
                 new NuiRow
                 {
@@ -93,13 +98,15 @@ public sealed class PayRentWindowView : ScryView<PayRentWindowPresenter>
                         {
                             Id = "pay_rent_direct_btn",
                             Enabled = DirectOptionEnabled,
-                            Width = 200f
+                            Width = 200f,
+                            ForegroundColor = new Color(50, 40, 30)
                         }.Assign(out DirectButton),
                         new NuiButton("Pay from Coinhouse")
                         {
                             Id = "pay_rent_coin_btn",
                             Enabled = CoinhouseOptionEnabled,
-                            Width = 200f
+                            Width = 200f,
+                            ForegroundColor = new Color(50, 40, 30)
                         }.Assign(out CoinhouseButton)
                     ]
                 },
@@ -111,13 +118,15 @@ public sealed class PayRentWindowView : ScryView<PayRentWindowPresenter>
                         {
                             HorizontalAlign = NuiHAlign.Center,
                             Height = 16f,
-                            Width = 200f
+                            Width = 200f,
+                            ForegroundColor = new Color(50, 40, 30)
                         },
                         new NuiLabel(CoinhouseOptionStatus)
                         {
                             HorizontalAlign = NuiHAlign.Center,
                             Height = 16f,
-                            Width = 200f
+                            Width = 200f,
+                            ForegroundColor = new Color(50, 40, 30)
                         }
                     ]
                 },
@@ -130,7 +139,8 @@ public sealed class PayRentWindowView : ScryView<PayRentWindowPresenter>
                         new NuiButton("Cancel")
                         {
                             Id = "pay_rent_cancel_btn",
-                            Width = 120f
+                            Width = 120f,
+                            ForegroundColor = new Color(50, 40, 30)
                         }.Assign(out CancelButton)
                     ]
                 }

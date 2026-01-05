@@ -1,4 +1,4 @@
-﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem;
+﻿﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using static AmiaReforged.Classes.Monk.Nui.FightingStyle.FightingStyleNuiElements;
@@ -40,7 +40,8 @@ public sealed class FightingStyleView : ScryView<FightingStylePresenter>
                         new NuiText(KnockdownStyleDescription)
                         {
                             Border = false,
-                            Scrollbars = NuiScrollbars.None
+                            Scrollbars = NuiScrollbars.None,
+                            ForegroundColor = new Color(50, 40, 30)
                         }
                     }
                 },
@@ -56,7 +57,8 @@ public sealed class FightingStyleView : ScryView<FightingStylePresenter>
                         new NuiText(DisarmStyleDescription)
                         {
                             Border = false,
-                            Scrollbars = NuiScrollbars.None
+                            Scrollbars = NuiScrollbars.None,
+                            ForegroundColor = new Color(50, 40, 30)
                         }
                     }
                 },
@@ -72,7 +74,8 @@ public sealed class FightingStyleView : ScryView<FightingStylePresenter>
                         new NuiText(RangedStyleDescription)
                         {
                             Border = false,
-                            Scrollbars = NuiScrollbars.None
+                            Scrollbars = NuiScrollbars.None,
+                            ForegroundColor = new Color(50, 40, 30)
                         }
                     }
                 }

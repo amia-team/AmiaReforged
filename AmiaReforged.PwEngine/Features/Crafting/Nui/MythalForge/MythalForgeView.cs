@@ -1,4 +1,4 @@
-﻿﻿using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.ActiveProperties;
+﻿﻿﻿using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.ActiveProperties;
 using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
@@ -113,7 +113,10 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                         {
                             Children =
                             {
-                                new NuiLabel(label: "Max Powers:"),
+                                new NuiLabel(label: "Max Powers:")
+                                {
+                                    ForegroundColor = new Color(50, 40, 30)
+                                },
                                 new NuiGroup
                                 {
                                     Element = new NuiLabel(MaxPowers),
@@ -125,7 +128,10 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                             }
                         },
 
-                        new NuiLabel(label: "Remaining Powers:"),
+                        new NuiLabel(label: "Remaining Powers:")
+                        {
+                            ForegroundColor = new Color(50, 40, 30)
+                        },
                         new NuiGroup
                         {
                             Element = new NuiLabel(RemainingPowers),
@@ -168,7 +174,10 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                             {
                                 Children =
                                 {
-                                    new NuiLabel(label: "Difficulty:"),
+                                    new NuiLabel(label: "Difficulty:")
+                                    {
+                                        ForegroundColor = new Color(50, 40, 30)
+                                    },
                                     new NuiGroup
                                     {
                                         Element = new NuiLabel(DifficultyClass),
@@ -185,7 +194,10 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                             {
                                 Children =
                                 {
-                                    new NuiLabel(label: "Gold Cost:"),
+                                    new NuiLabel(label: "Gold Cost:")
+                                    {
+                                        ForegroundColor = new Color(50, 40, 30)
+                                    },
                                     new NuiGroup
                                     {
                                         Element = new NuiLabel(GoldCost)

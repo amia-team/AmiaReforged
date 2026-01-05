@@ -43,14 +43,14 @@ public sealed class PlayerDcDonateView : ScryView<PlayerDcDonatePresenter>
                 {
                     Children = new List<NuiElement>
                     {
-                        new NuiLabel(TargetName) { Width = WindowWidth - 20f }
+                        new NuiLabel(TargetName) { Width = WindowWidth - 20f, ForegroundColor = new Color(50, 40, 30) }
                     }
                 },
                 new NuiRow
                 {
                     Children = new List<NuiElement>
                     {
-                        new NuiLabel(DonateStatus) { Width = WindowWidth - 20f }
+                        new NuiLabel(DonateStatus) { Width = WindowWidth - 20f, ForegroundColor = new Color(50, 40, 30) }
                     }
                 },
                 new NuiSpacer(),

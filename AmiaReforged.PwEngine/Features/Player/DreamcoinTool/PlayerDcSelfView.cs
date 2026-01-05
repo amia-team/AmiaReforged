@@ -46,21 +46,21 @@ public sealed class PlayerDcSelfView : ScryView<PlayerDcSelfPresenter>
                 {
                     Children = new List<NuiElement>
                     {
-                        new NuiLabel(CurrentBalance) { Width = WindowWidth - 20f }
+                        new NuiLabel(CurrentBalance) { Width = WindowWidth - 20f, ForegroundColor = new Color(50, 40, 30) }
                     }
                 },
                 new NuiRow
                 {
                     Children = new List<NuiElement>
                     {
-                        new NuiLabel(NextDcTimer) { Width = WindowWidth - 20f }
+                        new NuiLabel(NextDcTimer) { Width = WindowWidth - 20f, ForegroundColor = new Color(50, 40, 30) }
                     }
                 },
                 new NuiRow
                 {
                     Children = new List<NuiElement>
                     {
-                        new NuiLabel(BurnRewardInfo) { Width = WindowWidth - 20f }
+                        new NuiLabel(BurnRewardInfo) { Width = WindowWidth - 20f, ForegroundColor = new Color(50, 40, 30) }
                     }
                 },
                 new NuiRow
@@ -74,7 +74,7 @@ public sealed class PlayerDcSelfView : ScryView<PlayerDcSelfPresenter>
                 {
                     Children = new List<NuiElement>
                     {
-                        new NuiLabel(BurnGoldOnlyInfo) { Width = WindowWidth - 20f }
+                        new NuiLabel(BurnGoldOnlyInfo) { Width = WindowWidth - 20f, ForegroundColor = new Color(50, 40, 30) }
                     }
                 },
                 new NuiRow

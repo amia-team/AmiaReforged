@@ -125,7 +125,8 @@ public sealed class RentPropertyWindowView : ScryView<RentPropertyWindowPresente
                     Visible = DirectOptionVisible,
                     HorizontalAlign = NuiHAlign.Left,
                     VerticalAlign = NuiVAlign.Middle,
-                    Height = 20f
+                    Height = 20f,
+                    ForegroundColor = new Color(50, 40, 30)
                 },
                 new NuiSpacer { Height = 6f },
                 new NuiRow
@@ -147,7 +148,8 @@ public sealed class RentPropertyWindowView : ScryView<RentPropertyWindowPresente
                     Visible = CoinhouseOptionVisible,
                     HorizontalAlign = NuiHAlign.Left,
                     VerticalAlign = NuiVAlign.Middle,
-                    Height = 20f
+                    Height = 20f,
+                    ForegroundColor = new Color(50, 40, 30)
                 },
                 new NuiSpacer { Height = 12f },
                 new NuiRow

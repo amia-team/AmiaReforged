@@ -1,4 +1,4 @@
-﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem;
+﻿﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 
@@ -45,7 +45,8 @@ public sealed class ConfirmPathView : ScryView<MonkPathPresenter>
                         {
                             VerticalAlign = NuiVAlign.Middle,
                             HorizontalAlign = NuiHAlign.Center,
-                            Height = 64
+                            Height = 64,
+                            ForegroundColor = new Color(50, 40, 30)
                         }
                     }
                 },
@@ -57,7 +58,8 @@ public sealed class ConfirmPathView : ScryView<MonkPathPresenter>
                         new NuiText(PathText)
                         {
                             Height = 450,
-                            Scrollbars = NuiScrollbars.None
+                            Scrollbars = NuiScrollbars.None,
+                            ForegroundColor = new Color(50, 40, 30)
                         }
                     }
                 },

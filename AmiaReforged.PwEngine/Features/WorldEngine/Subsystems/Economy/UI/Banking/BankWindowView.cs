@@ -212,7 +212,8 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                         new NuiLabel(EligibilitySummary)
                         {
                             Height = 22f,
-                            HorizontalAlign = NuiHAlign.Left
+                            HorizontalAlign = NuiHAlign.Left,
+                            ForegroundColor = new Color(50, 40, 30)
                         },
                         new NuiRow
                         {
@@ -229,7 +230,8 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                                 new NuiLabel(PersonalEligibilityStatus)
                                 {
                                     HorizontalAlign = NuiHAlign.Left,
-                                    VerticalAlign = NuiVAlign.Middle
+                                    VerticalAlign = NuiVAlign.Middle,
+                                    ForegroundColor = new Color(50, 40, 30)
                                 }
                             ]
                         },
@@ -241,7 +243,8 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                 {
                     Height = 26f,
                     HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle
+                    VerticalAlign = NuiVAlign.Middle,
+                    ForegroundColor = new Color(50, 40, 30)
                 },
                 BuildMainContent(accountRowTemplate, holdingRowTemplate, pendingRowTemplate)
             ]
@@ -258,13 +261,15 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                 {
                     Height = 28f,
                     HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle
+                    VerticalAlign = NuiVAlign.Middle,
+                    ForegroundColor = new Color(50, 40, 30)
                 },
                 new NuiLabel(BankSubtitle)
                 {
                     Height = 22f,
                     HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle
+                    VerticalAlign = NuiVAlign.Middle,
+                    ForegroundColor = new Color(50, 40, 30)
                 }
             ]
         };
@@ -297,13 +302,15 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                 {
                     Height = 22f,
                     HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle
+                    VerticalAlign = NuiVAlign.Middle,
+                    ForegroundColor = new Color(50, 40, 30)
                 },
                 new NuiLabel(LastAccessed)
                 {
                     Height = 20f,
                     HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle
+                    VerticalAlign = NuiVAlign.Middle,
+                    ForegroundColor = new Color(50, 40, 30)
                 },
                 new NuiSpacer { Height = 8f },
                 new NuiRow
@@ -314,7 +321,8 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                         new NuiLabel("Deposit")
                         {
                             Width = 80f,
-                            VerticalAlign = NuiVAlign.Middle
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(50, 40, 30)
                         },
                         new NuiCombo
                         {
@@ -333,7 +341,8 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                         new NuiLabel("Coin Amount")
                         {
                             Width = 80f,
-                            VerticalAlign = NuiVAlign.Middle
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(50, 40, 30)
                         },
                         new NuiTextEdit("", DepositAmountText, 9, false)
                         {
@@ -357,7 +366,8 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                         new NuiLabel("Withdraw")
                         {
                             Width = 80f,
-                            VerticalAlign = NuiVAlign.Middle
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(50, 40, 30)
                         },
                         new NuiCombo
                         {
@@ -376,7 +386,8 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                         new NuiLabel("Coin Amount")
                         {
                             Width = 80f,
-                            VerticalAlign = NuiVAlign.Middle
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(50, 40, 30)
                         },
                         new NuiTextEdit("", WithdrawAmountText, 9, false)
                         {

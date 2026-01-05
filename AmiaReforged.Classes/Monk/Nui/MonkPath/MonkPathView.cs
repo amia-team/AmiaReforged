@@ -1,4 +1,4 @@
-﻿﻿using AmiaReforged.Classes.Monk.Types;
+﻿﻿﻿using AmiaReforged.Classes.Monk.Types;
 using AmiaReforged.PwEngine.Features.WindowingSystem;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
@@ -159,7 +159,8 @@ public sealed class MonkPathView : ScryView<MonkPathPresenter>
                                 new NuiText(text: MonkPathNuiElements.SwingingCenserDescription)
                                 {
                                     Border = false,
-                                    Scrollbars = NuiScrollbars.None
+                                    Scrollbars = NuiScrollbars.None,
+                                    ForegroundColor = new Color(50, 40, 30)
                                 }
                             }
                         }

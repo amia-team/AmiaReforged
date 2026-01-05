@@ -96,7 +96,8 @@ public sealed class BankStorageWindowView : ScryView<BankStorageWindowPresenter>
                             Width = ContentWidth - StandardButtonWidth - 20f,
                             Height = 28f,
                             HorizontalAlign = NuiHAlign.Left,
-                            VerticalAlign = NuiVAlign.Middle
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(50, 40, 30)
                         },
                         new NuiSpacer(),
                         new NuiButton("Upgrade")
@@ -112,7 +113,8 @@ public sealed class BankStorageWindowView : ScryView<BankStorageWindowPresenter>
                 {
                     Height = 20f,
                     Visible = CanUpgradeStorage,
-                    HorizontalAlign = NuiHAlign.Left
+                    HorizontalAlign = NuiHAlign.Left,
+                    ForegroundColor = new Color(50, 40, 30)
                 },
                 new NuiSpacer { Height = StandardSpacing },
                 // Two-column layout: Inventory | Storage
@@ -128,7 +130,8 @@ public sealed class BankStorageWindowView : ScryView<BankStorageWindowPresenter>
                                 {
                                     Height = labelHeight,
                                     Width = HalfWidth,
-                                    HorizontalAlign = NuiHAlign.Left
+                                    HorizontalAlign = NuiHAlign.Left,
+                                    ForegroundColor = new Color(50, 40, 30)
                                 },
                                 new NuiList(inventoryRowTemplate, InventoryItemCount)
                                 {
@@ -147,7 +150,8 @@ public sealed class BankStorageWindowView : ScryView<BankStorageWindowPresenter>
                                 {
                                     Height = labelHeight,
                                     Width = HalfWidth,
-                                    HorizontalAlign = NuiHAlign.Left
+                                    HorizontalAlign = NuiHAlign.Left,
+                                    ForegroundColor = new Color(50, 40, 30)
                                 },
                                 new NuiList(storedItemRowTemplate, StorageItemCount)
                                 {
