@@ -10,19 +10,35 @@ public static class EldritchDamage
 {
     public static int CalculateDamageAmount(uint caster)
     {
+        // 1. Gather stats
         int warlockLevels = GetLevelByClass(57, caster);
         int chaMod = GetAbilityModifier(ABILITY_CHARISMA, caster);
-        int damageBonus = (int)(warlockLevels == 30 ? chaMod * 1.5 : chaMod);
-        int epicBlastBonus = 5 * ExtraDieFromFeats(caster);
-        int damageDice = d2(warlockLevels) + epicBlastBonus;
+        int epicBlastCount = ExtraDieFromFeats(caster);
 
-        int chaBonusDamage = damageBonus * damageBonus / 100;
-        int extraDamageFromEldritchMaster = GetHasFeat(1298, caster) == TRUE ? (int)(damageDice * 0.25) : 0;
+        // 2. Base damage roll
+        int damage = d2(warlockLevels);
 
-        damageDice += chaBonusDamage;
-        damageDice += extraDamageFromEldritchMaster;
+        // 3. Epic Eldritch Blast: +5 flat damage per feat
+        damage += epicBlastCount * 5;
 
-        return damageDice;
+        // 4. Eldritch Master: +25% damage
+        if (GetHasFeat(1298, caster) == TRUE)
+        {
+            damage += damage / 4;
+        }
+
+        // 5. Charisma scaling: +1% per CHA mod
+        int chaPercent = chaMod;
+
+        // Level 30 capstone: CHA mod × 1.5
+        if (warlockLevels == 30)
+        {
+            chaPercent = (int)(chaMod * 1.5);
+        }
+
+        damage += (damage * chaPercent) / 100;
+
+        return damage;
     }
 
     private static int ExtraDieFromFeats(uint caster)
