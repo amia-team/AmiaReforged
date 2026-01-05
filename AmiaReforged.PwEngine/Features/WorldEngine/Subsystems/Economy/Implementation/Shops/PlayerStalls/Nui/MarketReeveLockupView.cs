@@ -52,13 +52,6 @@ public sealed class MarketReeveLockupView : ScryView<MarketReeveLockupPresenter>
             DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, WindowW, WindowH))]
         };
 
-        NuiRow headerOverlay = new NuiRow
-        {
-            Width = 0f, Height = 0f,
-            Children = new List<NuiElement>(),
-            DrawList = [new NuiDrawListImage("ui_header", new NuiRect(HeaderLeftPad, HeaderTopPad, HeaderW, HeaderH))]
-        };
-
         NuiSpacer headerSpacer = new NuiSpacer { Height = 85f };
         NuiSpacer spacer6 = new NuiSpacer { Height = 6f };
         NuiSpacer spacer8 = new NuiSpacer { Height = 8f };
@@ -92,7 +85,6 @@ public sealed class MarketReeveLockupView : ScryView<MarketReeveLockupPresenter>
             Children =
             [
                 bgLayer,
-                headerOverlay,
                 headerSpacer,
 
                 new NuiRow

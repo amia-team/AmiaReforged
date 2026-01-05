@@ -49,13 +49,7 @@ public sealed class DmToolView : ScryView<DmToolPresenter>
         {
             Children =
             [
-                new NuiRow
-                {
-                    Width = 0f,
-                    Height = 0f,
-                    Children = new List<NuiElement>(),
-                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 400f, 600f))]
-                },
+                new NuiRow { Width = 0f, Height = 0f, Children = new List<NuiElement>(), DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 400f, 600f))] },
                 new NuiRow
                 {
                     Height = 40f,
@@ -72,7 +66,9 @@ public sealed class DmToolView : ScryView<DmToolPresenter>
 
                 new NuiList(rowTemplate, WindowCount)
                 {
-                    RowHeight = 35f
+                    RowHeight = 35f,
+                    Width = 400f,
+                    Height = 560f
                 }
             ]
         };
