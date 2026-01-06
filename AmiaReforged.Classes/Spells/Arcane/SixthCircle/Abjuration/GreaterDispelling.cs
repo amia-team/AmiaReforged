@@ -12,22 +12,37 @@ namespace AmiaReforged.Classes.Spells.Arcane.SixthCircle.Abjuration;
 /// When cast on a single target, dispels all effects on that target.
 /// When cast on an area, dispels the best (highest CL) effect on each creature.
 ///
-/// Abjuration spell focus feats provide bonuses to caster level:
+/// PC Casting uses enhanced spell focus bonuses:
 /// - Spell Focus: +1 CL
 /// - Greater Spell Focus: +3 CL
 /// - Epic Spell Focus: +6 CL
+/// - Maximum effective caster level is capped at 30.
 ///
-/// Maximum effective caster level is capped at 30.
+/// NPC Casting uses the legacy dispel system:
+/// - Caster level capped at 15
+/// - Feat bonuses: +2 per abjuration focus tier
+/// - Per-effect dispel checks with player feedback
+/// - PvP bonus randomizer system
+///
 /// Creatures under Time Stop cannot be dispelled.
+/// Petrified creatures and those with X1_L_IMMUNE_TO_DISPEL=10 are immune.
 /// </summary>
 [ServiceBinding(typeof(ISpell))]
 public class GreaterDispelling : ISpell
 {
+    private const int MaxCasterLevelPc = 30;
+    private const string PcDispelOverrideVar = "PCDispel";
+
+    private readonly DispelService _dispelService;
+
+    public GreaterDispelling(DispelService dispelService)
+    {
+        _dispelService = dispelService;
+    }
+
     public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "NW_S0_GrDispel";
-
-    private const int MaxCasterLevel = 30;
 
     public void SetSpellResisted(bool result)
     {
@@ -41,32 +56,67 @@ public class GreaterDispelling : ISpell
         NwGameObject? targetObject = eventData.TargetObject;
         Location? targetLocation = eventData.TargetLocation;
 
-        int casterLevel = CalculateEffectiveCasterLevel(caster);
+        // Determine if we use PC or NPC casting logic
+        bool usePcCasting = ShouldUsePcCasting(caster);
 
-        // Send debug messages to player
-        SendCasterLevelInfo(caster, eventData.Caster.CasterLevel, casterLevel);
+        if (usePcCasting)
+        {
+            DoPcCasting(caster, targetObject, targetLocation, eventData.Spell);
+        }
+        else
+        {
+            DoNpcCasting(caster, targetObject, targetLocation, eventData.Spell);
+        }
+    }
+
+    /// <summary>
+    /// Determines whether to use PC casting rules (enhanced) or NPC rules (legacy balanced).
+    /// </summary>
+    private static bool ShouldUsePcCasting(NwCreature caster)
+    {
+        // PCs and DMs use the enhanced version
+        if (caster.IsPlayerControlled || caster.IsDMAvatar)
+        {
+            return true;
+        }
+
+        // NPCs can be flagged to use PC version via local variable
+        if (GetLocalInt(caster.ObjectId, PcDispelOverrideVar) == 1)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// PC casting uses enhanced spell focus bonuses and higher CL cap.
+    /// </summary>
+    private void DoPcCasting(NwCreature caster, NwGameObject? targetObject, Location? targetLocation, NwSpell spell)
+    {
+        int casterLevel = CalculatePcEffectiveCasterLevel(caster);
+
+        SendCasterLevelInfo(caster, caster.CasterLevel, casterLevel);
 
         Effect breachVfx = Effect.VisualEffect(VfxType.ImpBreach);
         Effect impactVfx = Effect.VisualEffect(VfxType.FnfDispelGreater);
 
         if (targetObject != null)
         {
-            // Targeted Dispel - Dispel all effects
-            DoTargetedDispel(caster, targetObject, casterLevel, breachVfx, impactVfx, eventData.Spell);
+            DoPcTargetedDispel(caster, targetObject, casterLevel, breachVfx, impactVfx, spell);
         }
         else if (targetLocation != null)
         {
-            // Area of Effect - Dispel best effect only
-            DoAreaDispel(caster, targetLocation, casterLevel, breachVfx, impactVfx, eventData.Spell);
+            DoPcAreaDispel(caster, targetLocation, casterLevel, breachVfx, impactVfx, spell);
         }
     }
 
-    private static int CalculateEffectiveCasterLevel(NwCreature caster)
+    private static int CalculatePcEffectiveCasterLevel(NwCreature caster)
     {
         int casterLevel = caster.CasterLevel;
         int bonus = 0;
 
-        // Check for Abjuration spell focus feats (cumulative bonuses based on highest feat)
+        // PC version: non-cumulative bonuses based on highest feat
         if (caster.KnowsFeat(Feat.EpicSpellFocusAbjuration!))
         {
             bonus = 6;
@@ -82,8 +132,182 @@ public class GreaterDispelling : ISpell
 
         casterLevel += bonus;
 
-        // Cap at maximum caster level
-        return Math.Min(casterLevel, MaxCasterLevel);
+        return Math.Min(casterLevel, MaxCasterLevelPc);
+    }
+
+    private void DoPcTargetedDispel(NwCreature caster, NwGameObject target, int casterLevel,
+        Effect breachVfx, Effect impactVfx, NwSpell spell)
+    {
+        SpellUtils.SignalSpell(caster, target, spell);
+
+        if (target is NwCreature targetCreature && HasTimeStop(targetCreature))
+        {
+            targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpGlobeUse));
+            return;
+        }
+
+        if (IsDispelImmune(target))
+        {
+            return;
+        }
+
+        target.ApplyEffect(EffectDuration.Instant, impactVfx);
+
+        // PC version uses engine's EffectDispelMagicAll
+        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDispelMagicAll(casterLevel), target.ObjectId);
+        target.ApplyEffect(EffectDuration.Instant, breachVfx);
+    }
+
+    private void DoPcAreaDispel(NwCreature caster, Location targetLocation, int casterLevel,
+        Effect breachVfx, Effect impactVfx, NwSpell spell)
+    {
+        targetLocation.ApplyEffect(EffectDuration.Instant, impactVfx);
+
+        IntPtr targetLoc = GetSpellTargetLocation();
+
+        const int validObjectTypes = OBJECT_TYPE_CREATURE | OBJECT_TYPE_AREA_OF_EFFECT | OBJECT_TYPE_PLACEABLE;
+        uint currentTarget = GetFirstObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_LARGE, targetLoc, FALSE, validObjectTypes);
+
+        while (GetIsObjectValid(currentTarget) == TRUE)
+        {
+            ProcessPcAreaTarget(caster, currentTarget, casterLevel, breachVfx, spell);
+            currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_LARGE, targetLoc, FALSE, validObjectTypes);
+        }
+    }
+
+    private void ProcessPcAreaTarget(NwCreature caster, uint currentTarget, int casterLevel, Effect breachVfx, NwSpell spell)
+    {
+        int objectType = GetObjectType(currentTarget);
+
+        switch (objectType)
+        {
+            case OBJECT_TYPE_AREA_OF_EFFECT:
+                _dispelService.TryDispelAreaOfEffect(caster, currentTarget, casterLevel);
+                break;
+
+            case OBJECT_TYPE_PLACEABLE:
+                SignalEvent(currentTarget, EventSpellCastAt(caster.ObjectId, SPELL_GREATER_DISPELLING));
+                break;
+
+            case OBJECT_TYPE_CREATURE:
+                NwCreature? creature = currentTarget.ToNwObject<NwCreature>();
+                if (creature != null)
+                {
+                    SpellUtils.SignalSpell(caster, creature, spell);
+
+                    if (HasTimeStop(creature))
+                    {
+                        creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpGlobeUse));
+                    }
+                    else if (!IsDispelImmune(creature))
+                    {
+                        // PC AoE mode: dispel best effect only
+                        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDispelMagicBest(casterLevel), currentTarget);
+                        creature.ApplyEffect(EffectDuration.Instant, breachVfx);
+                    }
+                }
+                break;
+        }
+    }
+
+    /// <summary>
+    /// NPC casting uses the legacy dispel system with CL cap of 15 and custom dispel checks.
+    /// This prevents balance issues with old dungeons that rely on specific dispel mechanics.
+    /// </summary>
+    private void DoNpcCasting(NwCreature caster, NwGameObject? targetObject, Location? targetLocation, NwSpell spell)
+    {
+        int casterLevel = caster.CasterLevel;
+
+        SendCasterLevelInfo(caster, caster.CasterLevel, casterLevel);
+
+        Effect breachVfx = Effect.VisualEffect(VfxType.ImpBreach);
+        Effect impactVfx = Effect.VisualEffect(VfxType.FnfDispelGreater);
+
+        if (targetObject != null)
+        {
+            DoNpcTargetedDispel(caster, targetObject, casterLevel, breachVfx, impactVfx, spell);
+        }
+        else if (targetLocation != null)
+        {
+            DoNpcAreaDispel(caster, targetLocation, casterLevel, breachVfx, impactVfx, spell);
+        }
+    }
+
+    private void DoNpcTargetedDispel(NwCreature caster, NwGameObject target, int casterLevel,
+        Effect breachVfx, Effect impactVfx, NwSpell spell)
+    {
+        SpellUtils.SignalSpell(caster, target, spell);
+
+        if (target is NwCreature targetCreature && HasTimeStop(targetCreature))
+        {
+            targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpGlobeUse));
+            return;
+        }
+
+        if (IsDispelImmune(target))
+        {
+            return;
+        }
+
+        target.ApplyEffect(EffectDuration.Instant, impactVfx);
+
+        // NPC version: uses custom DispelService with per-effect checks and CL cap of 15
+        // maxSpells=4 matches the original NWScript: DispelEffectsAll(OBJECT_SELF, nCasterLevel, oTarget, 4, SPELL_GREATER_DISPELLING)
+        _dispelService.DispelEffectsAll(caster, target, casterLevel, DispelService.DispelType.GreaterDispelling, maxSpells: 4);
+
+        target.ApplyEffect(EffectDuration.Instant, breachVfx);
+    }
+
+    private void DoNpcAreaDispel(NwCreature caster, Location targetLocation, int casterLevel,
+        Effect breachVfx, Effect impactVfx, NwSpell spell)
+    {
+        targetLocation.ApplyEffect(EffectDuration.Instant, impactVfx);
+
+        IntPtr targetLoc = GetSpellTargetLocation();
+
+        const int validObjectTypes = OBJECT_TYPE_CREATURE | OBJECT_TYPE_AREA_OF_EFFECT | OBJECT_TYPE_PLACEABLE;
+        uint currentTarget = GetFirstObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_LARGE, targetLoc, FALSE, validObjectTypes);
+
+        while (GetIsObjectValid(currentTarget) == TRUE)
+        {
+            ProcessNpcAreaTarget(caster, currentTarget, casterLevel, breachVfx, spell);
+            currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_LARGE, targetLoc, FALSE, validObjectTypes);
+        }
+    }
+
+    private void ProcessNpcAreaTarget(NwCreature caster, uint currentTarget, int casterLevel, Effect breachVfx, NwSpell spell)
+    {
+        int objectType = GetObjectType(currentTarget);
+
+        switch (objectType)
+        {
+            case OBJECT_TYPE_AREA_OF_EFFECT:
+                _dispelService.TryDispelAreaOfEffect(caster, currentTarget, casterLevel);
+                break;
+
+            case OBJECT_TYPE_PLACEABLE:
+                SignalEvent(currentTarget, EventSpellCastAt(caster.ObjectId, SPELL_GREATER_DISPELLING));
+                break;
+
+            case OBJECT_TYPE_CREATURE:
+                NwCreature? creature = currentTarget.ToNwObject<NwCreature>();
+                if (creature != null)
+                {
+                    SpellUtils.SignalSpell(caster, creature, spell);
+
+                    if (HasTimeStop(creature))
+                    {
+                        creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpGlobeUse));
+                    }
+                    else if (!IsDispelImmune(creature))
+                    {
+                        // NPC AoE mode: use engine dispel for best effect (matches original behavior)
+                        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDispelMagicBest(casterLevel), currentTarget);
+                        creature.ApplyEffect(EffectDuration.Instant, breachVfx);
+                    }
+                }
+                break;
+        }
     }
 
     private static void SendCasterLevelInfo(NwCreature caster, int startingCl, int modifiedCl)
@@ -97,111 +321,9 @@ public class GreaterDispelling : ISpell
         player.SendServerMessage($"Modified CL: {modifiedCl}");
     }
 
-    private static void DoTargetedDispel(NwCreature caster, NwGameObject target, int casterLevel,
-        Effect breachVfx, Effect impactVfx, NwSpell spell)
-    {
-        // Signal spell cast at event
-        SpellUtils.SignalSpell(caster, target, spell);
-
-        // Can't dispel Time Stopped creatures
-        if (target is NwCreature targetCreature && HasTimeStop(targetCreature))
-        {
-            targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpGlobeUse));
-            return;
-        }
-
-        // Check for dispel immunity
-        if (IsDispelImmune(target))
-        {
-            return;
-        }
-
-        // Apply visual effects
-        target.ApplyEffect(EffectDuration.Instant, impactVfx);
-
-        // Dispel all effects on the target
-        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDispelMagicAll(casterLevel), target.ObjectId);
-        target.ApplyEffect(EffectDuration.Instant, breachVfx);
-    }
-
-    private static void DoAreaDispel(NwCreature caster, Location targetLocation, int casterLevel,
-        Effect breachVfx, Effect impactVfx, NwSpell spell)
-    {
-        // Apply area impact visual
-        targetLocation.ApplyEffect(EffectDuration.Instant, impactVfx);
-
-        uint casterObjectId = caster.ObjectId;
-
-        // Use the target location for the shape
-        IntPtr targetLoc = GetSpellTargetLocation();
-
-        const int validObjectTypes = OBJECT_TYPE_CREATURE | OBJECT_TYPE_AREA_OF_EFFECT | OBJECT_TYPE_PLACEABLE;
-        uint currentTarget = GetFirstObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_LARGE, targetLoc, FALSE, validObjectTypes);
-
-        while (GetIsObjectValid(currentTarget) == TRUE)
-        {
-            int objectType = GetObjectType(currentTarget);
-
-            if (objectType == OBJECT_TYPE_AREA_OF_EFFECT)
-            {
-                // Handle Area of Effect objects
-                DispelAreaOfEffect(currentTarget, casterLevel);
-            }
-            else if (objectType == OBJECT_TYPE_PLACEABLE)
-            {
-                // Signal event for placeables
-                SignalEvent(currentTarget, EventSpellCastAt(casterObjectId, SPELL_GREATER_DISPELLING));
-            }
-            else if (objectType == OBJECT_TYPE_CREATURE)
-            {
-                // Handle creatures
-                NwCreature? creature = currentTarget.ToNwObject<NwCreature>();
-                if (creature != null)
-                {
-                    SpellUtils.SignalSpell(caster, creature, spell);
-
-                    // Can't dispel Time Stopped creatures
-                    if (HasTimeStop(creature))
-                    {
-                        creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpGlobeUse));
-                    }
-                    else if (!IsDispelImmune(creature))
-                    {
-                        // Dispel best effect only in AoE mode
-                        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDispelMagicBest(casterLevel), currentTarget);
-                        creature.ApplyEffect(EffectDuration.Instant, breachVfx);
-                    }
-                }
-            }
-
-            currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_LARGE, targetLoc, FALSE, validObjectTypes);
-        }
-    }
-
-    private static void DispelAreaOfEffect(uint aoeObject, int casterLevel)
-    {
-        // Get the creator's caster level
-        uint aoeCreator = GetAreaOfEffectCreator(aoeObject);
-        int aoeCreatorCl = GetCasterLevel(aoeCreator);
-
-        // Check if it's a mobile aura (can't dispel these)
-        string tag = GetTag(aoeObject);
-        bool isAura = tag.Length >= 7 && GetSubString(tag, 0, 7) == "VFX_MOB";
-
-        if (!isAura)
-        {
-            // Perform dispel check
-            if (NwEffects.DispelCheck(casterLevel, aoeCreatorCl) == TRUE)
-            {
-                DestroyObject(aoeObject);
-            }
-        }
-    }
-
     private static bool HasTimeStop(NwCreature creature)
     {
-        return creature.ActiveEffects.Any(e =>
-            e.Spell?.SpellType == Spell.TimeStop);
+        return creature.ActiveEffects.Any(e => e.Spell?.SpellType == Spell.TimeStop);
     }
 
     private static bool IsDispelImmune(NwGameObject target)
