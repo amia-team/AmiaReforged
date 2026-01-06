@@ -8,8 +8,13 @@ using AmiaReforged.Core.UserInterface;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.DungeonMaster.PlcEdit;
+using AmiaReforged.PwEngine.Features.Player.Housing;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.AreaPersistence;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Properties;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -63,6 +68,10 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
     [Inject] private Lazy<PlaceablePersistenceService> PersistenceService { get; init; } = null!;
     [Inject] private Lazy<IPersistentObjectRepository> ObjectRepository { get; init; } = null!;
+    [Inject] private Lazy<PropertyMetadataResolver> MetadataResolver { get; init; } = null!;
+    [Inject] private Lazy<PropertyDefinitionSynchronizer> PropertySynchronizer { get; init; } = null!;
+    [Inject] private Lazy<IRentablePropertyRepository> PropertyRepository { get; init; } = null!;
+    [Inject] private Lazy<RuntimeCharacterService> CharacterService { get; init; } = null!;
 
     public override NuiWindowToken Token() => _token;
 
@@ -651,6 +660,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         }
 
         string areaResRef = creature.Area.ResRef;
+        bool hasPropertyAccess = IsPlayerPropertyOwner(creature.Area);
         Token().SetBindValue(View.StatusMessage, "Recovering all placeables in area...");
 
         _ = NwTask.Run(async () =>
@@ -660,8 +670,11 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             int skippedNoFit = 0;
             int failedCount = 0;
 
-            List<PersistentObject> placeables =
-                ObjectRepository.Value.GetPlaceablesForCharacterInArea(characterId, areaResRef);
+            // If player has property access, get all placeables in area; otherwise only their own
+            List<PersistentObject> placeables = hasPropertyAccess
+                ? ObjectRepository.Value.GetObjectsForArea(areaResRef)
+                    .Where(o => o.Type == (int)ObjectTypes.Placeable).ToList()
+                : ObjectRepository.Value.GetPlaceablesForCharacterInArea(characterId, areaResRef);
 
             await NwTask.SwitchToMainThread();
 
@@ -1421,6 +1434,11 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         LocalVariableString ownerVar = placeable.GetObjectVariable<LocalVariableString>(CharacterIdLocalString);
         if (!ownerVar.HasValue || string.IsNullOrWhiteSpace(ownerVar.Value))
         {
+            // No owner - check if player has property access
+            if (IsPlayerPropertyOwner(placeable.Area))
+            {
+                return true;
+            }
             denialReason = $"'{placeable.Name}' is not assigned to any character and cannot be edited.";
             return false;
         }
@@ -1433,11 +1451,86 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
         if (ownerId != playerId)
         {
+            // Not the owner - check if player has property access
+            if (IsPlayerPropertyOwner(placeable.Area))
+            {
+                return true;
+            }
             denialReason = $"You do not own '{placeable.Name}'.";
             return false;
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Checks if the player has property access (owner, tenant, or resident) in the given area.
+    /// </summary>
+    private bool IsPlayerPropertyOwner(NwArea? area)
+    {
+        if (area is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            // Check if this area is a rentable property
+            if (!MetadataResolver.Value.TryCapture(area, out PropertyAreaMetadata metadata))
+            {
+                return false;
+            }
+
+            PropertyId propertyId = PropertySynchronizer.Value.ResolvePropertyId(metadata);
+
+            // Get the property snapshot synchronously (blocking call, but property checks are usually fast)
+            RentablePropertySnapshot? snapshot = PropertyRepository.Value
+                .GetSnapshotAsync(propertyId)
+                .GetAwaiter()
+                .GetResult();
+
+            if (snapshot is null)
+            {
+                return false;
+            }
+
+            // Resolve the player's persona ID
+            if (!CharacterService.Value.TryGetPlayerKey(_player, out Guid key) || key == Guid.Empty)
+            {
+                return false;
+            }
+
+            CharacterId characterId = CharacterId.From(key);
+            PersonaId personaId = PersonaId.FromCharacter(characterId);
+
+            // Check if player has access (owner, tenant, or resident)
+            if (snapshot.CurrentOwner is { } owner && owner.Equals(personaId))
+            {
+                return true;
+            }
+
+            if (snapshot.CurrentTenant is { } tenant && tenant.Equals(personaId))
+            {
+                return true;
+            }
+
+            if (snapshot.ActiveRental is { } active && active.Tenant.Equals(personaId))
+            {
+                return true;
+            }
+
+            if (snapshot.Residents.Any(resident => resident.Equals(personaId)))
+            {
+                return true;
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(ex, "Failed to check property ownership for area {AreaTag}.", area.Tag ?? "<untagged>");
+            return false;
+        }
     }
 
     private void ToggleBindWatch(bool enable)

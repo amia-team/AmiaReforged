@@ -3,6 +3,7 @@ using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.PlaceableEditor;
 using Anvil.API;
+using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
@@ -62,6 +63,7 @@ public class PlaceablePersistenceService
 
             NWScript.SetLocalInt(plc, DatabaseIdLocalInt, (int)obj.Id);
             ApplyCharacterAssociation(plc, obj.CharacterId);
+            plc.OnDeath += HandlePlaceableDeath;
             plc.Location = l;
         }
     }
@@ -110,6 +112,24 @@ public class PlaceablePersistenceService
         await _objectRepository.SaveObject(persistentObject);
         await NwTask.SwitchToMainThread();
         placeable.GetObjectVariable<LocalVariableInt>(DatabaseIdLocalInt).Value = (int)persistentObject.Id;
+
+        // Subscribe to OnDeath so the placeable is removed from DB when destroyed
+        placeable.OnDeath -= HandlePlaceableDeath;
+        placeable.OnDeath += HandlePlaceableDeath;
+    }
+
+    private async void HandlePlaceableDeath(PlaceableEvents.OnDeath obj)
+    {
+        NwPlaceable placeable = obj.KilledObject;
+        LocalVariableInt dbVar = placeable.GetObjectVariable<LocalVariableInt>(DatabaseIdLocalInt);
+        long id = dbVar.Value;
+
+        if (id <= 0)
+        {
+            return;
+        }
+
+        await _objectRepository.DeleteObject(id);
     }
 
     public async Task SaveAreaPlaceables(NwArea area)
