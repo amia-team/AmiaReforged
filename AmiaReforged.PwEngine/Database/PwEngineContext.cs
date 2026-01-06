@@ -80,6 +80,11 @@ public class PwEngineContext : DbContext
     public DbSet<CharacterRebuild> CharacterRebuilds { get; set; } = null!;
     public DbSet<RebuildItemRecord> RebuildItemRecords { get; set; } = null!;
 
+    /// <summary>
+    /// Monthly dreamcoin rentals tied to player CD Keys.
+    /// </summary>
+    public DbSet<DreamcoinRental> DreamcoinRentals { get; set; } = null!;
+
 
     public PwEngineContext()
     {
@@ -147,5 +152,6 @@ public class PwEngineContext : DbContext
         modelBuilder.ApplyConfiguration(new VaultConfiguration());
         modelBuilder.ApplyConfiguration(new CharacterRebuildConfiguration());
         modelBuilder.ApplyConfiguration(new RebuildItemRecordConfiguration());
+        modelBuilder.ApplyConfiguration(new DreamcoinRentalConfiguration());
     }
 }
