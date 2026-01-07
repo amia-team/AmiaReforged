@@ -432,6 +432,38 @@ public class PlayerShopRepository(PwContextFactory factory) : IPlayerShopReposit
             Log.Error(e, "Failed to persist player stall ledger entry for stall {StallId}.", entry.StallId);
         }
     }
+
+    public List<StallProduct> GetProductsWithoutItemType()
+    {
+        using PwEngineContext ctx = factory.CreateDbContext();
+
+        return ctx.StallProducts
+            .Where(p => p.BaseItemType == null)
+            .ToList();
+    }
+
+    public bool UpdateProductBaseItemType(long productId, int baseItemType)
+    {
+        using PwEngineContext ctx = factory.CreateDbContext();
+
+        try
+        {
+            StallProduct? product = ctx.StallProducts.SingleOrDefault(p => p.Id == productId);
+            if (product is null)
+            {
+                return false;
+            }
+
+            product.BaseItemType = baseItemType;
+            ctx.SaveChanges();
+            return true;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Failed to update base item type for product {ProductId}.", productId);
+            return false;
+        }
+    }
 }
 
 public interface IPlayerShopRepository
@@ -475,4 +507,14 @@ public interface IPlayerShopRepository
     void SaveTransaction(StallTransaction transaction);
     IReadOnlyList<PlayerStallLedgerEntry> GetLedgerEntries(long stallId, Guid? ownerCharacterId, int maxEntries);
     void AddLedgerEntry(PlayerStallLedgerEntry entry);
+
+    /// <summary>
+    /// Gets all stall products that have a null BaseItemType, for backfill purposes.
+    /// </summary>
+    List<StallProduct> GetProductsWithoutItemType();
+
+    /// <summary>
+    /// Updates the BaseItemType for a specific product.
+    /// </summary>
+    bool UpdateProductBaseItemType(long productId, int baseItemType);
 }

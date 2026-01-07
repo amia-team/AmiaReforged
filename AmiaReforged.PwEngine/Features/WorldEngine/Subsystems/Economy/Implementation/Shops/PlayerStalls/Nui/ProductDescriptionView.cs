@@ -92,13 +92,15 @@ public sealed class ProductDescriptionPresenter : ScryPresenter<ProductDescripti
 {
     private readonly NwPlayer _player;
     private readonly string _description;
+    private readonly string? _itemTypeName;
     private NuiWindowToken _token;
     private NuiWindow? _window;
 
-    public ProductDescriptionPresenter(NwPlayer player, string description)
+    public ProductDescriptionPresenter(NwPlayer player, string description, string? itemTypeName = null)
     {
         _player = player;
         _description = description;
+        _itemTypeName = itemTypeName;
         View = new ProductDescriptionView(this);
     }
 
@@ -142,7 +144,8 @@ public sealed class ProductDescriptionPresenter : ScryPresenter<ProductDescripti
             return;
         }
 
-        Token().SetBindValue(View.ProductDescription, _description);
+        string displayDescription = FormatDescriptionWithItemType(_description, _itemTypeName);
+        Token().SetBindValue(View.ProductDescription, displayDescription);
         Token().OnNuiEvent += ProcessEvent;
     }
 
@@ -150,6 +153,16 @@ public sealed class ProductDescriptionPresenter : ScryPresenter<ProductDescripti
     {
         Token().OnNuiEvent -= ProcessEvent;
         _token.Close();
+    }
+
+    private static string FormatDescriptionWithItemType(string description, string? itemTypeName)
+    {
+        if (string.IsNullOrWhiteSpace(itemTypeName))
+        {
+            return description;
+        }
+
+        return $"[{itemTypeName}]\n\n{description}";
     }
 }
 

@@ -34,7 +34,9 @@ public sealed record PlayerStallProductView(
     bool IsSoldOut,
     bool IsPurchasable,
     string? Tooltip,
-    string? OriginalName = null);
+    string? OriginalName = null,
+    int? BaseItemType = null,
+    string? ItemTypeName = null);
 
 /// <summary>
 /// Snapshot rendered in the buyer window.
@@ -123,7 +125,9 @@ public sealed record PlayerStallSellerProductView(
     bool IsSoldOut,
     int SortOrder,
     string? Tooltip,
-    bool CanAdjustPrice);
+    bool CanAdjustPrice,
+    int? BaseItemType = null,
+    string? ItemTypeName = null);
 
 /// <summary>
 /// Player-held item that can be consigned to the stall.

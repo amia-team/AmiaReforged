@@ -1044,7 +1044,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
             return;
         }
 
-        ProductDescriptionPresenter descriptionPresenter = new(_player, product.Tooltip);
+        ProductDescriptionPresenter descriptionPresenter = new(_player, product.Tooltip, product.ItemTypeName);
         descriptionPresenter.Create();
     }
 

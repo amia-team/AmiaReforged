@@ -2010,6 +2010,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 
             string name = string.IsNullOrWhiteSpace(product.Name) ? product.ResRef : product.Name;
             string? tooltip = string.IsNullOrWhiteSpace(product.Description) ? null : product.Description;
+            string? itemTypeName = BaseItemTypeNameResolver.GetDisplayName(product.BaseItemType);
 
             views.Add(new PlayerStallProductView(
                 product.Id,
@@ -2019,7 +2020,9 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
                 soldOut,
                 purchasable,
                 tooltip,
-                product.OriginalName));
+                product.OriginalName,
+                product.BaseItemType,
+                itemTypeName));
         }
 
         return views;
@@ -2042,6 +2045,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 
             string displayName = string.IsNullOrWhiteSpace(product.Name) ? product.ResRef : product.Name;
             string? tooltip = string.IsNullOrWhiteSpace(product.Description) ? null : product.Description;
+            string? itemTypeName = BaseItemTypeNameResolver.GetDisplayName(product.BaseItemType);
 
             views.Add(new PlayerStallSellerProductView(
                 product.Id,
@@ -2052,7 +2056,9 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
                 soldOut,
                 product.SortOrder,
                 tooltip,
-                canAdjustPrice));
+                canAdjustPrice,
+                product.BaseItemType,
+                itemTypeName));
         }
 
         return views;

@@ -343,7 +343,10 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 		bool hasDescription = !string.IsNullOrWhiteSpace(product.Tooltip);
 		Token().SetBindValue(View.PreviewDescriptionVisible, hasDescription);
 		Token().SetBindValue(View.PreviewNoDescriptionVisible, !hasDescription);
-		Token().SetBindValue(View.PreviewItemDescription, hasDescription ? product.Tooltip! : string.Empty);
+
+		// Format description with item type prefix
+		string descriptionText = FormatDescriptionWithItemType(product.Tooltip, product.ItemTypeName);
+		Token().SetBindValue(View.PreviewItemDescription, descriptionText);
 
 		Log.Debug("Preview set - HasDescription: {HasDescription}, Description: {Description}",
 			hasDescription, hasDescription ? product.Tooltip : "(none)");
@@ -357,6 +360,29 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 
 		// Enable buy button only if purchasable
 		Token().SetBindValue(View.PreviewBuyEnabled, row.CanPurchase);
+	}
+
+	private static string FormatDescriptionWithItemType(string? description, string? itemTypeName)
+	{
+		bool hasItemType = !string.IsNullOrWhiteSpace(itemTypeName);
+		bool hasDescription = !string.IsNullOrWhiteSpace(description);
+
+		if (!hasItemType && !hasDescription)
+		{
+			return string.Empty;
+		}
+
+		if (!hasItemType)
+		{
+			return description!;
+		}
+
+		if (!hasDescription)
+		{
+			return $"[{itemTypeName}]";
+		}
+
+		return $"[{itemTypeName}]\n\n{description}";
 	}
 
 	private sealed record ProductRow(long ProductId, bool CanPurchase, PlayerStallProductView Product);
