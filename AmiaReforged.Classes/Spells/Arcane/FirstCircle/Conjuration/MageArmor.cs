@@ -33,8 +33,6 @@ public class MageArmor : ISpell
         NwGameObject? targetObject = eventData.TargetObject;
         if (targetObject is not NwCreature target) return;
 
-        SpellUtils.SignalSpell(caster, target, eventData.Spell);
-
         TimeSpan duration = SpellUtils.ExtendSpell(eventData.MetaMagicFeat, NwTimeSpan.FromHours(caster.CasterLevel));
 
         switch (eventData.Spell.SpellType)
