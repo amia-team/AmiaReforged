@@ -197,6 +197,7 @@ public sealed class DreamcoinRentalRepository(IDbContextFactory<PwEngineContext>
             DreamcoinRental? rental = await ctx.DreamcoinRentals.FindAsync([id], cancellationToken);
             if (rental != null)
             {
+                rental.IsActive = true;
                 rental.IsDelinquent = false;
                 rental.LastPaymentUtc = paymentDate;
                 // Set next due date to the 1st of the next month
