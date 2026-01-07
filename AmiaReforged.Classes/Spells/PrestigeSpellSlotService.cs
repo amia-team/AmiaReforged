@@ -21,10 +21,14 @@ public class PrestigeSpellSlotService
     private readonly Dictionary<ClassType, Func<int, int>> _prestigeClassModifiers = new()
     {
         { ClassType.DragonDisciple, prcLevel => Math.Max(0, prcLevel) },
-        { ClassType.Blackguard, prcLevel => Math.Max(0, prcLevel) }
+        { ClassType.Blackguard, prcLevel => Math.Max(0, prcLevel) },
+        { ClassType.PaleMaster, prcLevel => Math.Max(0, prcLevel) },
+        { ClassType.ArcaneArcher, prcLevel => Math.Max(0, prcLevel / 2) }
     };
 
     // Mapping of prestige classes to their valid base caster classes
+    // NOTE: Only Dragon Disciple and Blackguard need custom spell slot handling
+    // Other prestige classes (Pale Master, Arcane Archer) are handled correctly by Classes.2da
     private static readonly Dictionary<ClassType, HashSet<ClassType>> PrestigeToBaseCasterMap = new()
     {
         {
@@ -295,7 +299,7 @@ public class PrestigeSpellSlotService
 
         int totalPropertiesAdded = 0;
 
-        for (int spellLevel = 1; spellLevel <= 9; spellLevel++)
+        for (int spellLevel = 0; spellLevel <= 9; spellLevel++)
         {
             // Calculate slots at actual level vs effective level
             int actualBaseSlots = GetBaseSpellSlotsForLevel(baseClass, actualLevel, spellLevel);
@@ -349,7 +353,6 @@ public class PrestigeSpellSlotService
             ClassType.Druid => NWScript.IP_CONST_CLASS_DRUID,
             ClassType.Paladin => NWScript.IP_CONST_CLASS_PALADIN,
             ClassType.Ranger => NWScript.IP_CONST_CLASS_RANGER,
-            ClassType.Assassin => NWScript.CLASS_TYPE_ASSASSIN,
             _ => (int)classType
         };
     }
@@ -365,7 +368,6 @@ public class PrestigeSpellSlotService
             ClassType.Druid => Ability.Wisdom,
             ClassType.Paladin => Ability.Wisdom,
             ClassType.Ranger => Ability.Wisdom,
-            ClassType.Assassin => Ability.Intelligence,
             _ => Ability.Intelligence
         };
 
@@ -400,94 +402,396 @@ public class PrestigeSpellSlotService
     // NWN spell slot progression tables
     private int GetBardSpellSlots(int casterLevel, int spellLevel)
     {
-        return spellLevel switch
+        // Bard spell progression per cls_spgn_bard.2da
+        return (spellLevel, casterLevel) switch
         {
-            1 => casterLevel >= 2 ? 4 : 0,
-            2 => casterLevel >= 4 ? 3 : 0,
-            3 => casterLevel >= 7 ? 3 : 0,
-            4 => casterLevel >= 10 ? 3 : 0,
-            5 => casterLevel >= 13 ? 2 : 0,
-            6 => casterLevel >= 16 ? 2 : 0,
+            // Level 0 (cantrips) - 2 at L1, 3 at L2-13, 4 at L14+
+            (0, >= 14) => 4,
+            (0, >= 2) => 3,
+            (0, >= 1) => 2,
+
+            // Level 1 - 0 at L1-2, 1 at L3, 2 at L4, 3 at L5-12, 4 at L13+
+            (1, >= 13) => 4,
+            (1, >= 5) => 3,
+            (1, >= 4) => 2,
+            (1, >= 3) => 1,
+
+            // Level 2 - 0 at L1-4, 1 at L5, 2 at L6-14, 4 at L15+
+            (2, >= 15) => 4,
+            (2, >= 6) => 2,
+            (2, >= 5) => 1,
+
+            // Level 3 - 0 at L1-7, 1 at L8, 2 at L9-13, 3 at L14, 4 at L16+
+            (3, >= 16) => 4,
+            (3, >= 14) => 3,
+            (3, >= 9) => 2,
+            (3, >= 8) => 1,
+
+            // Level 4 - 0 at L1-10, 1 at L11, 2 at L12-13, 3 at L14-16, 4 at L17+
+            (4, >= 17) => 4,
+            (4, >= 14) => 3,
+            (4, >= 12) => 2,
+            (4, >= 11) => 1,
+
+            // Level 5 - 0 at L1-13, 1 at L14, 2 at L15-16, 3 at L17, 4 at L18+
+            (5, >= 18) => 4,
+            (5, >= 17) => 3,
+            (5, >= 15) => 2,
+            (5, >= 14) => 1,
+
+            // Level 6 - 0 at L1-16, 1 at L17, 2 at L18, 3 at L19, 4 at L20+
+            (6, >= 20) => 4,
+            (6, >= 19) => 3,
+            (6, >= 18) => 2,
+            (6, >= 17) => 1,
+
             _ => 0
         };
     }
 
     private int GetSorcererSpellSlots(int casterLevel, int spellLevel)
     {
-        return spellLevel switch
+        // Sorcerer spell progression per cls_spgn_sorc.2da
+        return (spellLevel, casterLevel) switch
         {
-            1 => casterLevel >= 1 ? 5 : 0,
-            2 => casterLevel >= 4 ? 5 : 0,
-            3 => casterLevel >= 6 ? 5 : 0,
-            4 => casterLevel >= 8 ? 5 : 0,
-            5 => casterLevel >= 10 ? 4 : 0,
-            6 => casterLevel >= 12 ? 4 : 0,
-            7 => casterLevel >= 14 ? 4 : 0,
-            8 => casterLevel >= 16 ? 4 : 0,
-            9 => casterLevel >= 18 ? 3 : 0,
+            // Level 0 - 5 at L1, 6 at L2+
+            (0, >= 2) => 6,
+            (0, >= 1) => 5,
+
+            // Level 1 - 3 at L1, 4 at L2, 5 at L3, 6 at L4+
+            (1, >= 4) => 6,
+            (1, >= 3) => 5,
+            (1, >= 2) => 4,
+            (1, >= 1) => 3,
+
+            // Level 2 - 0 at L1-3, 3 at L4, 4 at L5, 5 at L6, 6 at L7+
+            (2, >= 7) => 6,
+            (2, >= 6) => 5,
+            (2, >= 5) => 4,
+            (2, >= 4) => 3,
+
+            // Level 3 - 0 at L1-5, 3 at L6, 4 at L7, 5 at L8, 6 at L9+
+            (3, >= 9) => 6,
+            (3, >= 8) => 5,
+            (3, >= 7) => 4,
+            (3, >= 6) => 3,
+
+            // Level 4 - 0 at L1-7, 3 at L8, 4 at L9, 5 at L10, 6 at L11+
+            (4, >= 11) => 6,
+            (4, >= 10) => 5,
+            (4, >= 9) => 4,
+            (4, >= 8) => 3,
+
+            // Level 5 - 0 at L1-9, 3 at L10, 4 at L11, 5 at L12, 6 at L13+
+            (5, >= 13) => 6,
+            (5, >= 12) => 5,
+            (5, >= 11) => 4,
+            (5, >= 10) => 3,
+
+            // Level 6 - 0 at L1-11, 3 at L12, 4 at L13, 5 at L14, 6 at L15+
+            (6, >= 15) => 6,
+            (6, >= 14) => 5,
+            (6, >= 13) => 4,
+            (6, >= 12) => 3,
+
+            // Level 7 - 0 at L1-13, 3 at L14, 4 at L15, 5 at L16, 6 at L17+
+            (7, >= 17) => 6,
+            (7, >= 16) => 5,
+            (7, >= 15) => 4,
+            (7, >= 14) => 3,
+
+            // Level 8 - 0 at L1-15, 3 at L16, 4 at L17, 5 at L18, 6 at L19+
+            (8, >= 19) => 6,
+            (8, >= 18) => 5,
+            (8, >= 17) => 4,
+            (8, >= 16) => 3,
+
+            // Level 9 - 0 at L1-17, 3 at L18, 4 at L19, 6 at L20+
+            (9, >= 20) => 6,
+            (9, >= 19) => 4,
+            (9, >= 18) => 3,
+
             _ => 0
         };
     }
 
     private int GetWizardSpellSlots(int casterLevel, int spellLevel)
     {
-        return spellLevel switch
+        // Wizard spell progression per cls_spgn_wiz.2da
+        return (spellLevel, casterLevel) switch
         {
-            1 => casterLevel >= 1 ? 3 : 0,
-            2 => casterLevel >= 3 ? 2 : 0,
-            3 => casterLevel >= 5 ? 2 : 0,
-            4 => casterLevel >= 7 ? 2 : 0,
-            5 => casterLevel >= 9 ? 2 : 0,
-            6 => casterLevel >= 11 ? 2 : 0,
-            7 => casterLevel >= 13 ? 2 : 0,
-            8 => casterLevel >= 15 ? 2 : 0,
-            9 => casterLevel >= 17 ? 2 : 0,
+            // Level 0 - 3 at L1, 4 at L2+
+            (0, >= 2) => 4,
+            (0, >= 1) => 3,
+
+            // Level 1 - 1 at L1, 2 at L2-3, 3 at L4-6, 4 at L7+
+            (1, >= 7) => 4,
+            (1, >= 4) => 3,
+            (1, >= 2) => 2,
+            (1, >= 1) => 1,
+
+            // Level 2 - 0 at L1-2, 1 at L3, 2 at L4-5, 3 at L6-8, 4 at L9+
+            (2, >= 9) => 4,
+            (2, >= 6) => 3,
+            (2, >= 4) => 2,
+            (2, >= 3) => 1,
+
+            // Level 3 - 0 at L1-4, 1 at L5, 2 at L6-7, 3 at L8-10, 4 at L11+
+            (3, >= 11) => 4,
+            (3, >= 8) => 3,
+            (3, >= 6) => 2,
+            (3, >= 5) => 1,
+
+            // Level 4 - 0 at L1-6, 1 at L7, 2 at L8-10, 3 at L11-12, 4 at L13+
+            (4, >= 13) => 4,
+            (4, >= 11) => 3,
+            (4, >= 8) => 2,
+            (4, >= 7) => 1,
+
+            // Level 5 - 0 at L1-8, 1 at L9, 2 at L10-11, 3 at L12-14, 4 at L15+
+            (5, >= 15) => 4,
+            (5, >= 12) => 3,
+            (5, >= 10) => 2,
+            (5, >= 9) => 1,
+
+            // Level 6 - 0 at L1-10, 1 at L11, 2 at L12-14, 3 at L15-16, 4 at L17+
+            (6, >= 17) => 4,
+            (6, >= 15) => 3,
+            (6, >= 12) => 2,
+            (6, >= 11) => 1,
+
+            // Level 7 - 0 at L1-12, 1 at L13, 2 at L14-16, 3 at L17-18, 4 at L19+
+            (7, >= 19) => 4,
+            (7, >= 17) => 3,
+            (7, >= 14) => 2,
+            (7, >= 13) => 1,
+
+            // Level 8 - 0 at L1-14, 1 at L15, 2 at L16-18, 3 at L19, 4 at L20+
+            (8, >= 20) => 4,
+            (8, >= 19) => 3,
+            (8, >= 16) => 2,
+            (8, >= 15) => 1,
+
+            // Level 9 - 0 at L1-16, 1 at L17, 2 at L18, 3 at L19, 4 at L20+
+            (9, >= 20) => 4,
+            (9, >= 19) => 3,
+            (9, >= 18) => 2,
+            (9, >= 17) => 1,
+
             _ => 0
         };
     }
 
     private int GetClericSpellSlots(int casterLevel, int spellLevel)
     {
-        return spellLevel switch
+        // Cleric spell progression per cls_spgn_cler.2da
+        return (spellLevel, casterLevel) switch
         {
-            1 => casterLevel >= 1 ? 3 : 0,
-            2 => casterLevel >= 3 ? 2 : 0,
-            3 => casterLevel >= 5 ? 2 : 0,
-            4 => casterLevel >= 7 ? 2 : 0,
-            5 => casterLevel >= 9 ? 2 : 0,
-            6 => casterLevel >= 11 ? 2 : 0,
-            7 => casterLevel >= 13 ? 2 : 0,
-            8 => casterLevel >= 15 ? 2 : 0,
-            9 => casterLevel >= 17 ? 2 : 0,
+            // Level 0 - 3 at L1, 4 at L2-3, 5 at L4-6, 6 at L7+
+            (0, >= 7) => 6,
+            (0, >= 4) => 5,
+            (0, >= 2) => 4,
+            (0, >= 1) => 3,
+
+            // Level 1 - 2 at L1, 3 at L2-3, 4 at L4-6, 5 at L7-10, 6 at L11+
+            (1, >= 11) => 6,
+            (1, >= 7) => 5,
+            (1, >= 4) => 4,
+            (1, >= 2) => 3,
+            (1, >= 1) => 2,
+
+            // Level 2 - 0 at L1-2, 2 at L3, 3 at L4-5, 4 at L6-8, 5 at L9-12, 6 at L13+
+            (2, >= 13) => 6,
+            (2, >= 9) => 5,
+            (2, >= 6) => 4,
+            (2, >= 4) => 3,
+            (2, >= 3) => 2,
+
+            // Level 3 - 0 at L1-4, 2 at L5, 3 at L6-7, 4 at L8-10, 5 at L11-14, 6 at L15+
+            (3, >= 15) => 6,
+            (3, >= 11) => 5,
+            (3, >= 8) => 4,
+            (3, >= 6) => 3,
+            (3, >= 5) => 2,
+
+            // Level 4 - 0 at L1-6, 2 at L7, 3 at L8-10, 4 at L11-12, 5 at L13-16, 6 at L17+
+            (4, >= 17) => 6,
+            (4, >= 13) => 5,
+            (4, >= 11) => 4,
+            (4, >= 8) => 3,
+            (4, >= 7) => 2,
+
+            // Level 5 - 0 at L1-8, 2 at L9, 3 at L10-11, 4 at L12-14, 5 at L15-18, 6 at L19+
+            (5, >= 19) => 6,
+            (5, >= 15) => 5,
+            (5, >= 12) => 4,
+            (5, >= 10) => 3,
+            (5, >= 9) => 2,
+
+            // Level 6 - 0 at L1-10, 2 at L11, 3 at L12-14, 4 at L15-16, 5 at L17+
+            (6, >= 17) => 5,
+            (6, >= 15) => 4,
+            (6, >= 12) => 3,
+            (6, >= 11) => 2,
+
+            // Level 7 - 0 at L1-12, 2 at L13, 3 at L14-16, 4 at L17-18, 5 at L19+
+            (7, >= 19) => 5,
+            (7, >= 17) => 4,
+            (7, >= 14) => 3,
+            (7, >= 13) => 2,
+
+            // Level 8 - 0 at L1-14, 2 at L15, 3 at L16-18, 4 at L19-20, 5 at L21+
+            (8, >= 21) => 5,
+            (8, >= 19) => 4,
+            (8, >= 16) => 3,
+            (8, >= 15) => 2,
+
+            // Level 9 - 0 at L1-16, 2 at L17, 3 at L18, 4 at L19, 5 at L20+
+            (9, >= 20) => 5,
+            (9, >= 19) => 4,
+            (9, >= 18) => 3,
+            (9, >= 17) => 2,
+
             _ => 0
         };
     }
 
     private int GetDruidSpellSlots(int casterLevel, int spellLevel)
     {
-        return GetClericSpellSlots(casterLevel, spellLevel);
+        // Druid spell progression per cls_spgn_dru.2da
+        return (spellLevel, casterLevel) switch
+        {
+            // Level 0 - 3 at L1, 4 at L2-3, 5 at L4-6, 6 at L7+
+            (0, >= 7) => 6,
+            (0, >= 4) => 5,
+            (0, >= 2) => 4,
+            (0, >= 1) => 3,
+
+            // Level 1 - 1 at L1, 2 at L2-3, 3 at L4-6, 4 at L7-10, 5 at L11+
+            (1, >= 11) => 5,
+            (1, >= 7) => 4,
+            (1, >= 4) => 3,
+            (1, >= 2) => 2,
+            (1, >= 1) => 1,
+
+            // Level 2 - 0 at L1-2, 1 at L3, 2 at L4-5, 3 at L6-8, 4 at L9-12, 5 at L13+
+            (2, >= 13) => 5,
+            (2, >= 9) => 4,
+            (2, >= 6) => 3,
+            (2, >= 4) => 2,
+            (2, >= 3) => 1,
+
+            // Level 3 - 0 at L1-4, 1 at L5, 2 at L6-7, 3 at L8-10, 4 at L11-14, 5 at L15+
+            (3, >= 15) => 5,
+            (3, >= 11) => 4,
+            (3, >= 8) => 3,
+            (3, >= 6) => 2,
+            (3, >= 5) => 1,
+
+            // Level 4 - 0 at L1-6, 1 at L7, 2 at L8-10, 3 at L11-12, 4 at L13-16, 5 at L17+
+            (4, >= 17) => 5,
+            (4, >= 13) => 4,
+            (4, >= 11) => 3,
+            (4, >= 8) => 2,
+            (4, >= 7) => 1,
+
+            // Level 5 - 0 at L1-8, 1 at L9, 2 at L10-11, 3 at L12-14, 4 at L15-18, 5 at L19+
+            (5, >= 19) => 5,
+            (5, >= 15) => 4,
+            (5, >= 12) => 3,
+            (5, >= 10) => 2,
+            (5, >= 9) => 1,
+
+            // Level 6 - 0 at L1-10, 1 at L11, 2 at L12-14, 3 at L15-16, 4 at L17+
+            (6, >= 17) => 4,
+            (6, >= 15) => 3,
+            (6, >= 12) => 2,
+            (6, >= 11) => 1,
+
+            // Level 7 - 0 at L1-12, 1 at L13, 2 at L14-16, 3 at L17-18, 4 at L19+
+            (7, >= 19) => 4,
+            (7, >= 17) => 3,
+            (7, >= 14) => 2,
+            (7, >= 13) => 1,
+
+            // Level 8 - 0 at L1-14, 1 at L15, 2 at L16-18, 3 at L19, 4 at L20+
+            (8, >= 20) => 4,
+            (8, >= 19) => 3,
+            (8, >= 16) => 2,
+            (8, >= 15) => 1,
+
+            // Level 9 - 0 at L1-16, 1 at L17, 2 at L18, 3 at L19, 4 at L20+
+            (9, >= 20) => 4,
+            (9, >= 19) => 3,
+            (9, >= 18) => 2,
+            (9, >= 17) => 1,
+
+            _ => 0
+        };
     }
 
     private int GetPaladinSpellSlots(int casterLevel, int spellLevel)
     {
-        return spellLevel switch
+        // Paladin spell progression per cls_spgn_pal.2da
+        // Paladins have no level 0 spells
+        return (spellLevel, casterLevel) switch
         {
-            1 => casterLevel >= 4 ? 1 : 0,
-            2 => casterLevel >= 8 ? 1 : 0,
-            3 => casterLevel >= 12 ? 1 : 0,
-            4 => casterLevel >= 16 ? 1 : 0,
+            // Level 1 - 0 at L4-5, 1 at L6-13, 2 at L14-17, 3 at L18+
+            (1, >= 18) => 3,
+            (1, >= 14) => 2,
+            (1, >= 6) => 1,
+            (1, >= 4) => 0,
+
+            // Level 2 - 0 at L8-9, 1 at L10-15, 2 at L16-18, 3 at L19+
+            (2, >= 19) => 3,
+            (2, >= 16) => 2,
+            (2, >= 10) => 1,
+            (2, >= 8) => 0,
+
+            // Level 3 - 0 at L11, 1 at L12-16, 2 at L17-18, 3 at L19+
+            (3, >= 19) => 3,
+            (3, >= 17) => 2,
+            (3, >= 12) => 1,
+            (3, >= 11) => 0,
+
+            // Level 4 - 0 at L14, 1 at L15-18, 2 at L19, 3 at L20+
+            (4, >= 20) => 3,
+            (4, >= 19) => 2,
+            (4, >= 15) => 1,
+
             _ => 0
         };
     }
 
     private int GetRangerSpellSlots(int casterLevel, int spellLevel)
     {
-        return spellLevel switch
+        // Ranger spell progression per cls_spgn_rang.2da
+        // Rangers have no level 0 spells (same progression as Paladin)
+        return (spellLevel, casterLevel) switch
         {
-            1 => casterLevel >= 4 ? 1 : 0,
-            2 => casterLevel >= 8 ? 1 : 0,
-            3 => casterLevel >= 12 ? 1 : 0,
-            4 => casterLevel >= 16 ? 1 : 0,
+            // Level 1 - 0 at L4-5, 1 at L6-13, 2 at L14-17, 3 at L18+
+            (1, >= 18) => 3,
+            (1, >= 14) => 2,
+            (1, >= 6) => 1,
+            (1, >= 4) => 0,
+
+            // Level 2 - 0 at L8-9, 1 at L10-15, 2 at L16-18, 3 at L19+
+            (2, >= 19) => 3,
+            (2, >= 16) => 2,
+            (2, >= 10) => 1,
+            (2, >= 8) => 0,
+
+            // Level 3 - 0 at L11, 1 at L12-16, 2 at L17-18, 3 at L19+
+            (3, >= 19) => 3,
+            (3, >= 17) => 2,
+            (3, >= 12) => 1,
+            (3, >= 11) => 0,
+
+            // Level 4 - 0 at L14, 1 at L15-18, 2 at L19, 3 at L20+
+            (4, >= 20) => 3,
+            (4, >= 19) => 2,
+            (4, >= 15) => 1,
+
             _ => 0
         };
     }
