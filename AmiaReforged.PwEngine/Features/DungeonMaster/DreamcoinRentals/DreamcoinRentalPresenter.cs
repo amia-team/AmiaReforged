@@ -165,6 +165,10 @@ public sealed class DreamcoinRentalPresenter : ScryPresenter<DreamcoinRentalView
                 HandleDeactivateRental(ev.ArrayIndex);
                 break;
 
+            case DreamcoinRentalView.ReactivateRentalButtonId:
+                HandleReactivateRental(ev.ArrayIndex);
+                break;
+
             case DreamcoinRentalView.DeleteRentalButtonId:
                 HandleDeleteRental(ev.ArrayIndex);
                 break;
@@ -323,6 +327,15 @@ public sealed class DreamcoinRentalPresenter : ScryPresenter<DreamcoinRentalView
 
         DreamcoinRental rental = _model.VisibleRentals[arrayIndex];
         await _model.DeactivateRentalAsync(rental.Id);
+    }
+
+    private async void HandleReactivateRental(int arrayIndex)
+    {
+        if (arrayIndex < 0 || arrayIndex >= _model.VisibleRentals.Count)
+            return;
+
+        DreamcoinRental rental = _model.VisibleRentals[arrayIndex];
+        await _model.ReactivateRentalAsync(rental.Id);
     }
 
     private async void HandleDeleteRental(int arrayIndex)

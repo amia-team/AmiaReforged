@@ -66,4 +66,9 @@ public interface IDreamcoinRentalRepository
     /// Deactivates a rental.
     /// </summary>
     Task DeactivateAsync(int id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Reactivates a rental.
+    /// </summary>
+    Task ReactivateAsync(int id, CancellationToken cancellationToken = default);
 }

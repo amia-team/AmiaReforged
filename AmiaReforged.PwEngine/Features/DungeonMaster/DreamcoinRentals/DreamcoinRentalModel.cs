@@ -164,6 +164,24 @@ public sealed class DreamcoinRentalModel
         }
     }
 
+    public async Task<bool> ReactivateRentalAsync(int rentalId)
+    {
+        try
+        {
+            await Repository.Value.ReactivateAsync(rentalId);
+            await NwTask.SwitchToMainThread();
+            _dmPlayer.SendServerMessage("Rental reactivated.", ColorConstants.Lime);
+            await LoadRentalsAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            await NwTask.SwitchToMainThread();
+            _dmPlayer.SendServerMessage($"Failed to reactivate rental: {ex.Message}", ColorConstants.Red);
+            return false;
+        }
+    }
+
     public async Task<bool> DeleteRentalAsync(int rentalId)
     {
         try

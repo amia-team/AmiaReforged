@@ -30,7 +30,8 @@ public sealed class DreamcoinRentalRepository(IDbContextFactory<PwEngineContext>
         }
     }
 
-    public async Task<List<DreamcoinRental>> GetByPlayerCdKeyAsync(string cdKey, CancellationToken cancellationToken = default)
+    public async Task<List<DreamcoinRental>> GetByPlayerCdKeyAsync(string cdKey,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -83,7 +84,8 @@ public sealed class DreamcoinRentalRepository(IDbContextFactory<PwEngineContext>
         }
     }
 
-    public async Task<List<DreamcoinRental>> GetRentalsDueForPaymentAsync(DateTime asOfDate, CancellationToken cancellationToken = default)
+    public async Task<List<DreamcoinRental>> GetRentalsDueForPaymentAsync(DateTime asOfDate,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -225,6 +227,28 @@ public sealed class DreamcoinRentalRepository(IDbContextFactory<PwEngineContext>
         catch (Exception ex)
         {
             Log.Error(ex, "Failed to deactivate dreamcoin rental {Id}", id);
+            throw;
+        }
+    }
+
+    public async Task ReactivateAsync(int id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await using PwEngineContext ctx = await factory.CreateDbContextAsync(cancellationToken);
+            DreamcoinRental? rental = await ctx.DreamcoinRentals.FindAsync([id], cancellationToken);
+            if (rental != null)
+            {
+                rental.IsActive = true;
+                // Reset next due date to the 1st of next month
+                DateTime now = DateTime.UtcNow;
+                rental.NextDueDateUtc = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(1);
+                await ctx.SaveChangesAsync(cancellationToken);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to reactivate dreamcoin rental {Id}", id);
             throw;
         }
     }

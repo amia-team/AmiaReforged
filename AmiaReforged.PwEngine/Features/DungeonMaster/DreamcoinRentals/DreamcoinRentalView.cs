@@ -37,6 +37,7 @@ public sealed class DreamcoinRentalView : ScryView<DreamcoinRentalPresenter>, ID
     public const string SearchButtonId = "btn_search";
     public const string EditRentalButtonId = "btn_edit";
     public const string DeactivateRentalButtonId = "btn_deactivate";
+    public const string ReactivateRentalButtonId = "btn_reactivate";
     public const string DeleteRentalButtonId = "btn_delete";
     public const string ClearDelinquentButtonId = "btn_clear_delinquent";
 
@@ -123,6 +124,17 @@ public sealed class DreamcoinRentalView : ScryView<DreamcoinRentalPresenter>, ID
                 Id = DeactivateRentalButtonId,
                 Aspect = 1f,
                 Tooltip = "Deactivate Rental"
+            })
+            {
+                VariableSize = false,
+                Width = 35f
+            },
+            // Reactivate button
+            new(new NuiButtonImage("ir_empopen")
+            {
+                Id = ReactivateRentalButtonId,
+                Aspect = 1f,
+                Tooltip = "Reactivate Rental"
             })
             {
                 VariableSize = false,
