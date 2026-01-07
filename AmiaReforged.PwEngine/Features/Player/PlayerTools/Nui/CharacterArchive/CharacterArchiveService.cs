@@ -1,5 +1,4 @@
-﻿﻿using Anvil.API;
-using Anvil.Services;
+﻿using Anvil.Services;
 using NLog;
 
 namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.CharacterArchive;
@@ -136,55 +135,213 @@ public class CharacterArchiveService
     }
 
     /// <summary>
-    /// Attempts to read character info (name and portrait) from a BIC file by temporarily creating
-    /// a creature from the BIC and reading its properties.
+    /// Attempts to read character info (name and portrait) from a BIC file by parsing the GFF structure.
+    /// This reads the binary GFF format directly without creating any game objects.
     /// </summary>
     /// <returns>Tuple of (CharacterName, PortraitResRef) or (null, null) if failed</returns>
     private (string?, string?) ReadCharacterInfoFromBic(string filePath)
     {
         try
         {
-            // Find the spawn waypoint
-            NwWaypoint? spawnWaypoint = NwObject.FindObjectsWithTag<NwWaypoint>("ds_copy").FirstOrDefault();
+            byte[] data = File.ReadAllBytes(filePath);
 
-            if (spawnWaypoint == null)
+            // Validate GFF header
+            if (data.Length < 56 ||
+                data[0] != 'B' || data[1] != 'I' || data[2] != 'C' || data[3] != ' ')
             {
-                Log.Warn("Could not find waypoint 'ds_copy' for temporary character creation");
+                Log.Debug($"Invalid GFF header in {Path.GetFileName(filePath)}");
                 return (null, null);
             }
 
-            // Read the BIC file as bytes
-            byte[] bicData = File.ReadAllBytes(filePath);
+            // Parse GFF structure
+            var gff = new GffParser(data);
 
-            // Deserialize the creature from the BIC data
-            NwCreature? tempCreature = NwCreature.Deserialize(bicData);
+            string? firstName = gff.GetCExoLocString("FirstName");
+            string? lastName = gff.GetCExoLocString("LastName");
+            string? portrait = gff.GetResRef("Portrait");
 
-            if (tempCreature == null)
+            // Construct character name
+            string? characterName = null;
+            if (!string.IsNullOrWhiteSpace(firstName) && !string.IsNullOrWhiteSpace(lastName))
             {
-                Log.Debug($"Failed to deserialize creature from {Path.GetFileName(filePath)}");
-                return (null, null);
+                characterName = $"{firstName} {lastName}".Trim();
+            }
+            else if (!string.IsNullOrWhiteSpace(firstName))
+            {
+                characterName = firstName.Trim();
+            }
+            else if (!string.IsNullOrWhiteSpace(lastName))
+            {
+                characterName = lastName.Trim();
             }
 
-            // Move creature to the waypoint location so it exists in the world
-            tempCreature.Location = spawnWaypoint.Location;
+            if (!string.IsNullOrEmpty(characterName) || !string.IsNullOrEmpty(portrait))
+            {
+                Log.Info($"Read character '{characterName ?? "Unknown"}' with portrait '{portrait ?? "default"}' from {Path.GetFileName(filePath)}");
+            }
 
-            // Read the character name and portrait from the creature
-            string characterName = tempCreature.Name;
-            string portraitResRef = tempCreature.PortraitResRef;
-
-            // Clean up - destroy the temporary creature immediately
-            tempCreature.Destroy();
-
-            Log.Info($"Read character '{characterName}' with portrait '{portraitResRef}' from {Path.GetFileName(filePath)}");
-
-            return (characterName, portraitResRef);
+            return (characterName, portrait);
         }
         catch (Exception ex)
         {
             Log.Debug(ex, $"Could not read character info from {filePath}");
+            return (null, null);
+        }
+    }
+
+    /// <summary>
+    /// Simple GFF parser for reading specific fields from BIC files.
+    /// </summary>
+    private class GffParser
+    {
+        private readonly byte[] _data;
+        private readonly int _structOffset;
+        private readonly int _structCount;
+        private readonly int _fieldOffset;
+        private readonly int _fieldCount;
+        private readonly int _labelOffset;
+        private readonly int _fieldDataOffset;
+        private readonly int _fieldIndicesOffset;
+
+        public GffParser(byte[] data)
+        {
+            _data = data;
+
+            // Read GFF header offsets (all little-endian)
+            _structOffset = ReadInt32(8);
+            _structCount = ReadInt32(12);
+            _fieldOffset = ReadInt32(16);
+            _fieldCount = ReadInt32(20);
+            _labelOffset = ReadInt32(24);
+            // LabelCount at 28
+            _fieldDataOffset = ReadInt32(32);
+            // FieldDataCount at 36
+            _fieldIndicesOffset = ReadInt32(40);
+            // FieldIndicesCount at 44
+            // ListIndicesOffset at 48
+            // ListIndicesCount at 52
         }
 
-        return (null, null);
+        public string? GetCExoLocString(string fieldName)
+        {
+            int? fieldIndex = FindFieldInStruct(0, fieldName);
+            if (fieldIndex == null) return null;
+
+            int fieldPos = _fieldOffset + (fieldIndex.Value * 12);
+            int fieldType = ReadInt32(fieldPos);
+            int dataOrDataOffset = ReadInt32(fieldPos + 8);
+
+            // Type 12 = CExoLocString
+            if (fieldType != 12) return null;
+
+            // For CExoLocString, the data is in the Field Data block
+            int locStringPos = _fieldDataOffset + dataOrDataOffset;
+
+            if (locStringPos + 12 > _data.Length) return null;
+
+            // CExoLocString structure: TotalSize(4), StringRef(4), StringCount(4), then string entries
+            int stringCount = ReadInt32(locStringPos + 8);
+
+            if (stringCount > 0)
+            {
+                // Read first string entry: ID(4), Length(4), String(Length)
+                int stringEntryPos = locStringPos + 12;
+
+                if (stringEntryPos + 8 > _data.Length) return null;
+
+                int stringLength = ReadInt32(stringEntryPos + 4);
+
+                if (stringLength > 0 && stringLength < 1024 && stringEntryPos + 8 + stringLength <= _data.Length)
+                {
+                    return System.Text.Encoding.UTF8.GetString(_data, stringEntryPos + 8, stringLength);
+                }
+            }
+
+            return null;
+        }
+
+        public string? GetResRef(string fieldName)
+        {
+            int? fieldIndex = FindFieldInStruct(0, fieldName);
+            if (fieldIndex == null) return null;
+
+            int fieldPos = _fieldOffset + (fieldIndex.Value * 12);
+            int fieldType = ReadInt32(fieldPos);
+            int dataOrDataOffset = ReadInt32(fieldPos + 8);
+
+            // Type 11 = ResRef
+            if (fieldType != 11) return null;
+
+            // For ResRef, the data is in the Field Data block
+            int resRefPos = _fieldDataOffset + dataOrDataOffset;
+
+            if (resRefPos >= _data.Length) return null;
+
+            // ResRef: Length(1), String(Length) - max 16 chars
+            int resRefLength = _data[resRefPos];
+
+            if (resRefLength > 0 && resRefLength <= 16 && resRefPos + 1 + resRefLength <= _data.Length)
+            {
+                return System.Text.Encoding.ASCII.GetString(_data, resRefPos + 1, resRefLength);
+            }
+
+            return null;
+        }
+
+        private int? FindFieldInStruct(int structIndex, string fieldName)
+        {
+            if (structIndex >= _structCount) return null;
+
+            int structPos = _structOffset + (structIndex * 12);
+            // int structType = ReadInt32(structPos);
+            int dataOrDataOffset = ReadInt32(structPos + 4);
+            int fieldCount = ReadInt32(structPos + 8);
+
+            // Find the field in the struct's field indices
+            for (int i = 0; i < fieldCount; i++)
+            {
+                int fieldIndexPos = _fieldIndicesOffset + (dataOrDataOffset + i) * 4;
+                int fieldIndex = ReadInt32(fieldIndexPos);
+
+                if (fieldIndex >= _fieldCount) continue;
+
+                int fieldPos = _fieldOffset + (fieldIndex * 12);
+                // int fieldType = ReadInt32(fieldPos);
+                int labelIndex = ReadInt32(fieldPos + 4);
+                // int fieldDataOrOffset = ReadInt32(fieldPos + 8);
+
+                // Check label
+                if (labelIndex < 16384) // Max label count
+                {
+                    int labelPos = _labelOffset + (labelIndex * 16);
+                    string label = ReadNullTerminatedString(labelPos, 16);
+
+                    if (label == fieldName)
+                    {
+                        return fieldIndex;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private int ReadInt32(int offset)
+        {
+            return _data[offset] |
+                   (_data[offset + 1] << 8) |
+                   (_data[offset + 2] << 16) |
+                   (_data[offset + 3] << 24);
+        }
+
+        private string ReadNullTerminatedString(int offset, int maxLength)
+        {
+            int length = 0;
+            while (length < maxLength && offset + length < _data.Length && _data[offset + length] != 0)
+            {
+                length++;
+            }
+            return System.Text.Encoding.ASCII.GetString(_data, offset, length);
+        }
     }
 }
-
