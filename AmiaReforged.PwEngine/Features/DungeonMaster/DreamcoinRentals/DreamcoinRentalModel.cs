@@ -98,12 +98,14 @@ public sealed class DreamcoinRentalModel
         try
         {
             await Repository.Value.AddAsync(rental);
+            await NwTask.SwitchToMainThread();
             _dmPlayer.SendServerMessage($"Rental created for {playerCdKey}. Due: {monthlyCost} DC on the 1st of each month.", ColorConstants.Lime);
             await LoadRentalsAsync();
             return true;
         }
         catch (Exception ex)
         {
+            await NwTask.SwitchToMainThread();
             _dmPlayer.SendServerMessage($"Failed to create rental: {ex.Message}", ColorConstants.Red);
             return false;
         }
@@ -120,6 +122,7 @@ public sealed class DreamcoinRentalModel
         try
         {
             DreamcoinRental? rental = await Repository.Value.GetByIdAsync(rentalId);
+            await NwTask.SwitchToMainThread();
             if (rental == null)
             {
                 _dmPlayer.SendServerMessage("Rental not found.", ColorConstants.Red);
@@ -130,12 +133,14 @@ public sealed class DreamcoinRentalModel
             rental.Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
 
             await Repository.Value.UpdateAsync(rental);
+            await NwTask.SwitchToMainThread();
             _dmPlayer.SendServerMessage($"Rental updated successfully.", ColorConstants.Lime);
             await LoadRentalsAsync();
             return true;
         }
         catch (Exception ex)
         {
+            await NwTask.SwitchToMainThread();
             _dmPlayer.SendServerMessage($"Failed to update rental: {ex.Message}", ColorConstants.Red);
             return false;
         }
@@ -146,12 +151,14 @@ public sealed class DreamcoinRentalModel
         try
         {
             await Repository.Value.DeactivateAsync(rentalId);
+            await NwTask.SwitchToMainThread();
             _dmPlayer.SendServerMessage("Rental deactivated.", ColorConstants.Lime);
             await LoadRentalsAsync();
             return true;
         }
         catch (Exception ex)
         {
+            await NwTask.SwitchToMainThread();
             _dmPlayer.SendServerMessage($"Failed to deactivate rental: {ex.Message}", ColorConstants.Red);
             return false;
         }
@@ -162,12 +169,14 @@ public sealed class DreamcoinRentalModel
         try
         {
             await Repository.Value.DeleteAsync(rentalId);
+            await NwTask.SwitchToMainThread();
             _dmPlayer.SendServerMessage("Rental deleted permanently.", ColorConstants.Lime);
             await LoadRentalsAsync();
             return true;
         }
         catch (Exception ex)
         {
+            await NwTask.SwitchToMainThread();
             _dmPlayer.SendServerMessage($"Failed to delete rental: {ex.Message}", ColorConstants.Red);
             return false;
         }
@@ -178,6 +187,7 @@ public sealed class DreamcoinRentalModel
         try
         {
             DreamcoinRental? rental = await Repository.Value.GetByIdAsync(rentalId);
+            await NwTask.SwitchToMainThread();
             if (rental == null)
             {
                 _dmPlayer.SendServerMessage("Rental not found.", ColorConstants.Red);
@@ -185,12 +195,14 @@ public sealed class DreamcoinRentalModel
             }
 
             await Repository.Value.MarkPaidAsync(rentalId, DateTime.UtcNow);
+            await NwTask.SwitchToMainThread();
             _dmPlayer.SendServerMessage("Delinquency cleared and next due date updated.", ColorConstants.Lime);
             await LoadRentalsAsync();
             return true;
         }
         catch (Exception ex)
         {
+            await NwTask.SwitchToMainThread();
             _dmPlayer.SendServerMessage($"Failed to clear delinquency: {ex.Message}", ColorConstants.Red);
             return false;
         }
