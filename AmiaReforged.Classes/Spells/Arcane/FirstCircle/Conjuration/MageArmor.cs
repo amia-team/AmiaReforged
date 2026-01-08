@@ -33,6 +33,9 @@ public class MageArmor : ISpell
         NwGameObject? targetObject = eventData.TargetObject;
         if (targetObject is not NwCreature target) return;
 
+        // Signal the spell as non-hostile (friendly buff) to prevent breaking invisibility
+        SpellUtils.SignalFriendlySpell(caster, target, eventData.Spell.SpellType);
+
         TimeSpan duration = SpellUtils.ExtendSpell(eventData.MetaMagicFeat, NwTimeSpan.FromHours(caster.CasterLevel));
 
         switch (eventData.Spell.SpellType)

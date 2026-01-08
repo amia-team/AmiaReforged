@@ -106,6 +106,15 @@ public class SpellUtils
     }
 
     /// <summary>
+    /// Signals a friendly (non-hostile) spell cast at a target. Use this for buff spells
+    /// that should not break invisibility or trigger hostile reactions.
+    /// </summary>
+    public static void SignalFriendlySpell(NwGameObject caster, NwCreature target, Spell spellType)
+    {
+        NWScript.SignalEvent(target, NWScript.EventSpellCastAt(caster, (int)spellType, NWScript.FALSE));
+    }
+
+    /// <summary>
     /// Accounts for custom DCs like Shifter and Monk Wild Magic
     /// </summary>
     /// <returns></returns>
