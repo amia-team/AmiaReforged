@@ -464,6 +464,61 @@ public class PlayerShopRepository(PwContextFactory factory) : IPlayerShopReposit
             return false;
         }
     }
+
+    public bool AddMember(long stallId, PlayerStallMember member)
+    {
+        using PwEngineContext ctx = factory.CreateDbContext();
+
+        try
+        {
+            member.StallId = stallId;
+            ctx.PlayerStallMembers.Add(member);
+            ctx.SaveChanges();
+            return true;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Failed to add member to stall {StallId}.", stallId);
+            return false;
+        }
+    }
+
+    public bool RemoveMember(long stallId, string memberPersonaId)
+    {
+        using PwEngineContext ctx = factory.CreateDbContext();
+
+        try
+        {
+            PlayerStallMember? member = ctx.PlayerStallMembers
+                .FirstOrDefault(m => 
+                    m.StallId == stallId && 
+                    m.PersonaId == memberPersonaId && 
+                    m.RevokedUtc == null);
+
+            if (member is null)
+            {
+                return false;
+            }
+
+            member.RevokedUtc = DateTime.UtcNow;
+            ctx.SaveChanges();
+            return true;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Failed to remove member {MemberPersonaId} from stall {StallId}.", memberPersonaId, stallId);
+            return false;
+        }
+    }
+
+    public List<PlayerStallMember> GetActiveMembers(long stallId)
+    {
+        using PwEngineContext ctx = factory.CreateDbContext();
+
+        return ctx.PlayerStallMembers
+            .Where(m => m.StallId == stallId && m.RevokedUtc == null)
+            .ToList();
+    }
 }
 
 public interface IPlayerShopRepository
@@ -517,4 +572,19 @@ public interface IPlayerShopRepository
     /// Updates the BaseItemType for a specific product.
     /// </summary>
     bool UpdateProductBaseItemType(long productId, int baseItemType);
+
+    /// <summary>
+    /// Adds a new member to a stall.
+    /// </summary>
+    bool AddMember(long stallId, PlayerStallMember member);
+
+    /// <summary>
+    /// Removes a member from a stall by soft-deleting (setting RevokedUtc).
+    /// </summary>
+    bool RemoveMember(long stallId, string memberPersonaId);
+
+    /// <summary>
+    /// Gets all active (non-revoked) members for a stall.
+    /// </summary>
+    List<PlayerStallMember> GetActiveMembers(long stallId);
 }

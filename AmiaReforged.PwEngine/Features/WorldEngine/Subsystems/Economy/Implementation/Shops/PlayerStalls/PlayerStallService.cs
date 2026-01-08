@@ -590,4 +590,94 @@ public sealed class PlayerStallService : IPlayerStallService
                 dbTag, areaResRef);
         }
     }
+
+    public Task<PlayerStallServiceResult> AddMemberAsync(AddStallMemberRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        PlayerStall? stall = _shops.GetShopWithMembers(request.StallId);
+        if (stall is null)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(
+                PlayerStallError.StallNotFound,
+                $"Stall {request.StallId} was not found."));
+        }
+
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+        string requestorPersonaId = request.Requestor.ToString();
+
+        PlayerStallMemberDescriptor descriptor = new(
+            request.MemberPersona.ToString(),
+            request.MemberDisplayName,
+            request.CanManageInventory,
+            request.CanConfigureSettings,
+            request.CanCollectEarnings);
+
+        PlayerStallDomainResult<PlayerStallMember> domainResult = aggregate.TryAddMember(requestorPersonaId, descriptor);
+        if (!domainResult.Success)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(domainResult.Error, domainResult.ErrorMessage!));
+        }
+
+        PlayerStallMember member = domainResult.Payload!;
+        bool added = _shops.AddMember(request.StallId, member);
+        if (!added)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(
+                PlayerStallError.PersistenceFailure,
+                "Failed to add member to stall."));
+        }
+
+        IReadOnlyDictionary<string, object> data = new Dictionary<string, object>
+        {
+            ["stallId"] = request.StallId,
+            ["memberPersonaId"] = member.PersonaId,
+            ["memberDisplayName"] = member.DisplayName
+        };
+
+        return Task.FromResult(PlayerStallServiceResult.Ok(data));
+    }
+
+    public Task<PlayerStallServiceResult> RemoveMemberAsync(RemoveStallMemberRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        PlayerStall? stall = _shops.GetShopWithMembers(request.StallId);
+        if (stall is null)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(
+                PlayerStallError.StallNotFound,
+                $"Stall {request.StallId} was not found."));
+        }
+
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+        string requestorPersonaId = request.Requestor.ToString();
+        string memberPersonaId = request.MemberPersona.ToString();
+
+        PlayerStallDomainResult<string> domainResult = aggregate.TryRemoveMember(requestorPersonaId, memberPersonaId);
+        if (!domainResult.Success)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(domainResult.Error, domainResult.ErrorMessage!));
+        }
+
+        bool removed = _shops.RemoveMember(request.StallId, memberPersonaId);
+        if (!removed)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(
+                PlayerStallError.PersistenceFailure,
+                "Failed to remove member from stall."));
+        }
+
+        IReadOnlyDictionary<string, object> data = new Dictionary<string, object>
+        {
+            ["stallId"] = request.StallId,
+            ["memberPersonaId"] = memberPersonaId
+        };
+
+        return Task.FromResult(PlayerStallServiceResult.Ok(data));
+    }
 }

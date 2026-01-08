@@ -100,6 +100,12 @@ public interface IPlayerStallService
 
     Task<PlayerStallServiceResult> WithdrawEarningsAsync(WithdrawStallEarningsRequest request,
         CancellationToken cancellationToken = default);
+
+    Task<PlayerStallServiceResult> AddMemberAsync(AddStallMemberRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<PlayerStallServiceResult> RemoveMemberAsync(RemoveStallMemberRequest request,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -116,3 +122,23 @@ public sealed record PlayerStallCoOwnerRequest(
     bool CanManageInventory,
     bool CanConfigureSettings,
     bool CanCollectEarnings);
+
+/// <summary>
+/// Request to add a member to a player stall.
+/// </summary>
+public sealed record AddStallMemberRequest(
+    long StallId,
+    PersonaId Requestor,
+    PersonaId MemberPersona,
+    string MemberDisplayName,
+    bool CanManageInventory = true,
+    bool CanConfigureSettings = true,
+    bool CanCollectEarnings = true);
+
+/// <summary>
+/// Request to remove a member from a player stall.
+/// </summary>
+public sealed record RemoveStallMemberRequest(
+    long StallId,
+    PersonaId Requestor,
+    PersonaId MemberPersona);

@@ -1729,6 +1729,161 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         return result;
     }
 
+    /// <summary>
+    /// Handles seller requests to add a member to the stall.
+    /// Only the stall owner can add members.
+    /// </summary>
+    public async Task<PlayerStallSellerOperationResult> RequestAddMemberAsync(PlayerStallAddMemberRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        SellerSubscription? subscription;
+        lock (_syncRoot)
+        {
+            _sellerSessions.TryGetValue(request.SessionId, out subscription);
+        }
+
+        if (subscription is null || subscription.StallId != request.StallId ||
+            subscription.Persona != request.RequestorPersona)
+        {
+            return PlayerStallSellerOperationResult.Fail(
+                "Your stall session is no longer valid.",
+                ColorConstants.Orange);
+        }
+
+        AddStallMemberRequest serviceRequest = new(
+            request.StallId,
+            request.RequestorPersona,
+            request.MemberPersona,
+            request.MemberDisplayName);
+
+        PlayerStallServiceResult serviceResult = await _stallService
+            .AddMemberAsync(serviceRequest)
+            .ConfigureAwait(false);
+
+        if (!serviceResult.Success)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                serviceResult.ErrorMessage ?? "Failed to add member.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        PlayerStall? updatedStall = _shops.GetShopWithMembers(request.StallId);
+        if (updatedStall is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "This stall is no longer available.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        List<StallProduct> products = _shops.ProductsForShop(request.StallId) ?? new List<StallProduct>();
+
+        PlayerStallSellerSnapshot snapshot = await BuildSellerSnapshotAsync(
+            updatedStall,
+            products,
+            request.RequestorPersona,
+            null).ConfigureAwait(false);
+
+        string message = string.Format(CultureInfo.InvariantCulture, "{0} has been added as a stall member.", request.MemberDisplayName);
+
+        PlayerStallSellerOperationResult result = PlayerStallSellerOperationResult.Ok(
+            snapshot,
+            message,
+            ColorConstants.Lime);
+
+        await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, result).ConfigureAwait(false);
+
+        await PublishSellerSnapshotsAsync(
+            request.StallId,
+            updatedStall,
+            products,
+            request.SessionId).ConfigureAwait(false);
+
+        return result;
+    }
+
+    /// <summary>
+    /// Handles seller requests to remove a member from the stall.
+    /// Only the stall owner can remove members.
+    /// </summary>
+    public async Task<PlayerStallSellerOperationResult> RequestRemoveMemberAsync(PlayerStallRemoveMemberRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        SellerSubscription? subscription;
+        lock (_syncRoot)
+        {
+            _sellerSessions.TryGetValue(request.SessionId, out subscription);
+        }
+
+        if (subscription is null || subscription.StallId != request.StallId ||
+            subscription.Persona != request.RequestorPersona)
+        {
+            return PlayerStallSellerOperationResult.Fail(
+                "Your stall session is no longer valid.",
+                ColorConstants.Orange);
+        }
+
+        RemoveStallMemberRequest serviceRequest = new(
+            request.StallId,
+            request.RequestorPersona,
+            PersonaId.Parse(request.MemberPersonaId));
+
+        PlayerStallServiceResult serviceResult = await _stallService
+            .RemoveMemberAsync(serviceRequest)
+            .ConfigureAwait(false);
+
+        if (!serviceResult.Success)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                serviceResult.ErrorMessage ?? "Failed to remove member.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        PlayerStall? updatedStall = _shops.GetShopWithMembers(request.StallId);
+        if (updatedStall is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "This stall is no longer available.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        List<StallProduct> products = _shops.ProductsForShop(request.StallId) ?? new List<StallProduct>();
+
+        PlayerStallSellerSnapshot snapshot = await BuildSellerSnapshotAsync(
+            updatedStall,
+            products,
+            request.RequestorPersona,
+            null).ConfigureAwait(false);
+
+        PlayerStallSellerOperationResult result = PlayerStallSellerOperationResult.Ok(
+            snapshot,
+            "Member has been removed from the stall.",
+            ColorConstants.Lime);
+
+        await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, result).ConfigureAwait(false);
+
+        await PublishSellerSnapshotsAsync(
+            request.StallId,
+            updatedStall,
+            products,
+            request.SessionId).ConfigureAwait(false);
+
+        return result;
+    }
+
     private List<Func<PlayerStallBuyerSnapshot, Task>> CollectSnapshotCallbacks(long stallId)
     {
         List<Func<PlayerStallBuyerSnapshot, Task>> callbacks = new();
@@ -2350,6 +2505,10 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
                 ? "This stall is not currently active."
                 : "Deposit gold into stall escrow for rent payment.";
 
+        // Build member views for the UI
+        List<PlayerStallMemberView> memberViews = BuildMemberViews(stall, personaId, isOwner);
+        bool canManageMembers = isOwner;
+
         return new PlayerStallSellerSnapshot(
             summary,
             context,
@@ -2376,7 +2535,45 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             earningsTooltip,
             depositEnabled,
             depositTooltip,
-            ledgerEntries);
+            ledgerEntries,
+            memberViews,
+            isOwner,
+            canManageMembers);
+    }
+
+    private static List<PlayerStallMemberView> BuildMemberViews(PlayerStall stall, string currentPersonaId, bool isOwner)
+    {
+        List<PlayerStallMemberView> views = new();
+
+        if (stall.Members is null || stall.Members.Count == 0)
+        {
+            return views;
+        }
+
+        foreach (PlayerStallMember member in stall.Members.Where(m => m is not null))
+        {
+            if (member.RevokedUtc.HasValue)
+            {
+                continue;
+            }
+
+            bool memberIsOwner = !string.IsNullOrWhiteSpace(stall.OwnerPersonaId) &&
+                                  string.Equals(stall.OwnerPersonaId, member.PersonaId, StringComparison.OrdinalIgnoreCase);
+
+            // Owner can remove any non-owner member
+            bool canRemove = isOwner && !memberIsOwner;
+
+            views.Add(new PlayerStallMemberView(
+                member.PersonaId,
+                member.DisplayName,
+                member.CanManageInventory,
+                member.CanConfigureSettings,
+                member.CanCollectEarnings,
+                memberIsOwner,
+                canRemove));
+        }
+
+        return views;
     }
 
     private int CalculateCurrentPeriodGrossProfits(PlayerStall stall)

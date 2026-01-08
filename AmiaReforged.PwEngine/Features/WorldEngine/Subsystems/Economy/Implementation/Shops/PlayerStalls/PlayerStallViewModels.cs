@@ -170,7 +170,10 @@ public sealed record PlayerStallSellerSnapshot(
     string? EarningsTooltip = null,
     bool DepositEnabled = false,
     string? DepositTooltip = null,
-    IReadOnlyList<PlayerStallLedgerEntryView>? LedgerEntries = null);
+    IReadOnlyList<PlayerStallLedgerEntryView>? LedgerEntries = null,
+    IReadOnlyList<PlayerStallMemberView>? Members = null,
+    bool IsOwner = false,
+    bool CanManageMembers = false);
 
 /// <summary>
 /// Window wiring details used when presenting the seller interface.
@@ -371,3 +374,34 @@ public sealed record PlayerStallLedgerEntryView(
     string? Description,
     long? TransactionId,
     string? MetadataJson);
+
+/// <summary>
+/// Request raised by the seller UI to add a member to the stall.
+/// </summary>
+public sealed record PlayerStallAddMemberRequest(
+    Guid SessionId,
+    long StallId,
+    PersonaId RequestorPersona,
+    PersonaId MemberPersona,
+    string MemberDisplayName);
+
+/// <summary>
+/// Request raised by the seller UI to remove a member from the stall.
+/// </summary>
+public sealed record PlayerStallRemoveMemberRequest(
+    Guid SessionId,
+    long StallId,
+    PersonaId RequestorPersona,
+    string MemberPersonaId);
+
+/// <summary>
+/// View model for a stall member displayed in the UI.
+/// </summary>
+public sealed record PlayerStallMemberView(
+    string PersonaId,
+    string DisplayName,
+    bool CanManageInventory,
+    bool CanConfigureSettings,
+    bool CanCollectEarnings,
+    bool IsOwner,
+    bool CanRemove);

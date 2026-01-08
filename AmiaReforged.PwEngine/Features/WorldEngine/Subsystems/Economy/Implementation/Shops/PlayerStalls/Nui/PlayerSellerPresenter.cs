@@ -1,5 +1,8 @@
 using System.Globalization;
+using System.Text;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Time;
 using Anvil.API;
 using Anvil.API.Events;
@@ -55,6 +58,9 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
     private bool _depositEnabled;
     private string _depositTooltip = string.Empty;
     private PlayerStallSellerOperationResult? _lastOperationResult;
+    private readonly List<PlayerStallMemberView> _members = new();
+    private bool _isOwner;
+    private bool _canManageMembers;
 
     [Inject] private PlayerStallEventManager EventManager { get; init; } = null!;
     [Inject] private IHarptosTimeService HarptosTimeService { get; init; } = null!;
@@ -178,6 +184,18 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         if (eventData.ElementId == View.ViewDescriptionButton.Id)
         {
             HandleViewFullDescription();
+            return;
+        }
+
+        if (View.RemoveMemberButton != null && eventData.ElementId == View.RemoveMemberButton.Id)
+        {
+            _ = HandleRemoveMemberAsync(eventData.ArrayIndex);
+            return;
+        }
+
+        if (View.AddMemberButton != null && eventData.ElementId == View.AddMemberButton.Id)
+        {
+            _ = HandleAddMemberAsync();
             return;
         }
 
@@ -348,6 +366,17 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         Token().SetBindValues(View.LedgerDescriptionEntries, ledgerDescriptions);
         Token().SetBindValues(View.LedgerTooltipEntries, ledgerTooltips);
         Token().SetBindValue(View.LedgerCount, ledgerTimestamps.Count);
+
+        // Apply member data
+        _isOwner = snapshot.IsOwner;
+        _canManageMembers = snapshot.CanManageMembers;
+        _members.Clear();
+        if (snapshot.Members is not null)
+        {
+            _members.AddRange(snapshot.Members);
+        }
+
+        ApplyMemberBindings();
 
         string? targetInventoryId = _selectedInventoryItemId;
         if (targetInventoryId is not null &&
@@ -1361,5 +1390,204 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
 
         value = parsed;
         return true;
+    }
+
+    private void ApplyMemberBindings()
+    {
+        bool sectionVisible = _isOwner || _members.Count > 0;
+        Token().SetBindValue(View.MemberSectionVisible, sectionVisible);
+        Token().SetBindValue(View.AddMemberVisible, _canManageMembers);
+        Token().SetBindValue(View.AddMemberEnabled, _canManageMembers && !_isProcessing);
+        Token().SetBindValue(View.AddMemberInput, string.Empty);
+
+        List<string> memberNames = new(_members.Count);
+        List<string> memberTooltips = new(_members.Count);
+        List<bool> removeEnabled = new(_members.Count);
+
+        foreach (PlayerStallMemberView member in _members)
+        {
+            string displayName = member.IsOwner 
+                ? $"{member.DisplayName} (Owner)" 
+                : member.DisplayName;
+            memberNames.Add(displayName);
+            memberTooltips.Add(BuildMemberTooltip(member));
+            removeEnabled.Add(member.CanRemove && !_isProcessing);
+        }
+
+        Token().SetBindValues(View.MemberNames, memberNames);
+        Token().SetBindValues(View.MemberTooltips, memberTooltips);
+        Token().SetBindValues(View.MemberRemoveEnabled, removeEnabled);
+        Token().SetBindValue(View.MemberCount, memberNames.Count);
+    }
+
+    private static string BuildMemberTooltip(PlayerStallMemberView member)
+    {
+        StringBuilder sb = new();
+        sb.AppendLine(member.DisplayName);
+        if (member.IsOwner)
+        {
+            sb.AppendLine("Role: Owner");
+        }
+        else
+        {
+            sb.AppendLine("Role: Member");
+        }
+        sb.AppendLine();
+        sb.Append("Permissions: ");
+        List<string> perms = new();
+        if (member.CanManageInventory) perms.Add("Inventory");
+        if (member.CanConfigureSettings) perms.Add("Settings");
+        if (member.CanCollectEarnings) perms.Add("Earnings");
+        sb.Append(perms.Count > 0 ? string.Join(", ", perms) : "None");
+        return sb.ToString();
+    }
+
+    private async Task HandleAddMemberAsync()
+    {
+        if (_isClosing || _isProcessing)
+        {
+            return;
+        }
+
+        if (_sessionId is not Guid sessionId)
+        {
+            return;
+        }
+
+        if (!_canManageMembers)
+        {
+            await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
+                "Only the stall owner can add members.",
+                ColorConstants.Orange)).ConfigureAwait(false);
+            return;
+        }
+
+        string? memberName = Token().GetBindValue(View.AddMemberInput);
+        if (string.IsNullOrWhiteSpace(memberName))
+        {
+            await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
+                "Enter a character name to add as a member.",
+                ColorConstants.Orange)).ConfigureAwait(false);
+            return;
+        }
+
+        await SetProcessingStateAsync(true).ConfigureAwait(false);
+
+        try
+        {
+            // Try to find the player by character name and get their persona
+            PersonaId? memberPersona = TryResolvePersonaByCharacterName(memberName.Trim());
+            if (memberPersona is null)
+            {
+                await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
+                    $"Could not find character '{memberName}'. They must be online.",
+                    ColorConstants.Orange)).ConfigureAwait(false);
+                return;
+            }
+
+            PlayerStallAddMemberRequest request = new(
+                sessionId,
+                _config.StallId,
+                _config.SellerPersona,
+                memberPersona.Value,
+                memberName.Trim());
+
+            PlayerStallSellerOperationResult result = await EventManager
+                .RequestAddMemberAsync(request)
+                .ConfigureAwait(false);
+
+            await HandleOperationResultAsync(result).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error while adding member to stall {StallId}.", _config.StallId);
+
+            await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
+                "Failed to add member.",
+                ColorConstants.Red)).ConfigureAwait(false);
+        }
+        finally
+        {
+            await SetProcessingStateAsync(false).ConfigureAwait(false);
+        }
+    }
+
+    private async Task HandleRemoveMemberAsync(int rowIndex)
+    {
+        if (_isClosing || _isProcessing)
+        {
+            return;
+        }
+
+        if (_sessionId is not Guid sessionId)
+        {
+            return;
+        }
+
+        if (rowIndex < 0 || rowIndex >= _members.Count)
+        {
+            return;
+        }
+
+        PlayerStallMemberView member = _members[rowIndex];
+        if (!member.CanRemove)
+        {
+            await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
+                "You cannot remove that member.",
+                ColorConstants.Orange)).ConfigureAwait(false);
+            return;
+        }
+
+        await SetProcessingStateAsync(true).ConfigureAwait(false);
+
+        try
+        {
+            PlayerStallRemoveMemberRequest request = new(
+                sessionId,
+                _config.StallId,
+                _config.SellerPersona,
+                member.PersonaId);
+
+            PlayerStallSellerOperationResult result = await EventManager
+                .RequestRemoveMemberAsync(request)
+                .ConfigureAwait(false);
+
+            await HandleOperationResultAsync(result).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error while removing member from stall {StallId}.", _config.StallId);
+
+            await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
+                "Failed to remove member.",
+                ColorConstants.Red)).ConfigureAwait(false);
+        }
+        finally
+        {
+            await SetProcessingStateAsync(false).ConfigureAwait(false);
+        }
+    }
+
+    private PersonaId? TryResolvePersonaByCharacterName(string characterName)
+    {
+        // Try to find online player by character name
+        NwPlayer? targetPlayer = NwModule.Instance.Players
+            .FirstOrDefault(p => 
+                p.ControlledCreature is not null && 
+                string.Equals(p.ControlledCreature.Name, characterName, StringComparison.OrdinalIgnoreCase));
+
+        if (targetPlayer?.ControlledCreature is null)
+        {
+            return null;
+        }
+
+        // Get the character's persona ID from their GUID
+        Guid characterGuid = targetPlayer.ControlledCreature.GetObjectVariable<LocalVariableGuid>("CHARACTER_GUID").Value;
+        if (characterGuid == Guid.Empty)
+        {
+            return null;
+        }
+
+        return PersonaId.FromCharacter(new CharacterId(characterGuid));
     }
 }

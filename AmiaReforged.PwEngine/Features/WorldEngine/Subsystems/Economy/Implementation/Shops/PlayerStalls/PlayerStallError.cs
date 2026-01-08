@@ -24,5 +24,9 @@ public enum PlayerStallError
     InvalidWithdrawalAmount,
     InsufficientEscrow,
     InvalidDepositAmount,
-    DepositAmountTooLarge
+    DepositAmountTooLarge,
+    InvalidMember,
+    MemberAlreadyExists,
+    MemberNotFound,
+    CannotRemoveOwner
 }

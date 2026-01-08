@@ -378,6 +378,130 @@ public sealed class PlayerStallAggregate
         }, sanitizedAmount));
     }
 
+    /// <summary>
+    /// Attempts to add a new member to the stall.
+    /// Only the owner can add members.
+    /// </summary>
+    public PlayerStallDomainResult<PlayerStallMember> TryAddMember(
+        string requestorPersonaId,
+        PlayerStallMemberDescriptor descriptor)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+
+        if (string.IsNullOrWhiteSpace(requestorPersonaId))
+        {
+            return PlayerStallDomainResult<PlayerStallMember>.Fail(
+                PlayerStallError.Unauthorized,
+                "A persona is required to add stall members.");
+        }
+
+        if (!_snapshot.IsActive)
+        {
+            return PlayerStallDomainResult<PlayerStallMember>.Fail(
+                PlayerStallError.StallInactive,
+                "This stall is not currently active.");
+        }
+
+        if (!IsOwner(requestorPersonaId))
+        {
+            return PlayerStallDomainResult<PlayerStallMember>.Fail(
+                PlayerStallError.NotOwner,
+                "Only the stall owner may add members.");
+        }
+
+        if (string.IsNullOrWhiteSpace(descriptor.PersonaId))
+        {
+            return PlayerStallDomainResult<PlayerStallMember>.Fail(
+                PlayerStallError.InvalidMember,
+                "Member persona ID is required.");
+        }
+
+        // Check if this persona is already a member (using any of the permission dictionaries)
+        if (_snapshot.InventoryPermissions.ContainsKey(descriptor.PersonaId) ||
+            _snapshot.CollectionPermissions.ContainsKey(descriptor.PersonaId) ||
+            _snapshot.SettingsPermissions.ContainsKey(descriptor.PersonaId))
+        {
+            return PlayerStallDomainResult<PlayerStallMember>.Fail(
+                PlayerStallError.MemberAlreadyExists,
+                "That persona is already a member of this stall.");
+        }
+
+        PlayerStallMember member = new()
+        {
+            StallId = _snapshot.Id,
+            PersonaId = descriptor.PersonaId,
+            DisplayName = string.IsNullOrWhiteSpace(descriptor.DisplayName) 
+                ? descriptor.PersonaId 
+                : descriptor.DisplayName,
+            CanManageInventory = descriptor.CanManageInventory,
+            CanConfigureSettings = descriptor.CanConfigureSettings,
+            CanCollectEarnings = descriptor.CanCollectEarnings,
+            AddedByPersonaId = requestorPersonaId,
+            AddedUtc = DateTime.UtcNow
+        };
+
+        return PlayerStallDomainResult<PlayerStallMember>.Ok(member);
+    }
+
+    /// <summary>
+    /// Attempts to remove a member from the stall.
+    /// Only the owner can remove members.
+    /// </summary>
+    public PlayerStallDomainResult<string> TryRemoveMember(
+        string requestorPersonaId,
+        string memberPersonaId)
+    {
+        if (string.IsNullOrWhiteSpace(requestorPersonaId))
+        {
+            return PlayerStallDomainResult<string>.Fail(
+                PlayerStallError.Unauthorized,
+                "A persona is required to remove stall members.");
+        }
+
+        if (!_snapshot.IsActive)
+        {
+            return PlayerStallDomainResult<string>.Fail(
+                PlayerStallError.StallInactive,
+                "This stall is not currently active.");
+        }
+
+        if (!IsOwner(requestorPersonaId))
+        {
+            return PlayerStallDomainResult<string>.Fail(
+                PlayerStallError.NotOwner,
+                "Only the stall owner may remove members.");
+        }
+
+        if (string.IsNullOrWhiteSpace(memberPersonaId))
+        {
+            return PlayerStallDomainResult<string>.Fail(
+                PlayerStallError.InvalidMember,
+                "Member persona ID is required.");
+        }
+
+        // Cannot remove the owner
+        if (IsOwner(memberPersonaId))
+        {
+            return PlayerStallDomainResult<string>.Fail(
+                PlayerStallError.CannotRemoveOwner,
+                "The stall owner cannot be removed as a member.");
+        }
+
+        // Check if the persona is actually a member
+        bool isMember = _snapshot.InventoryPermissions.ContainsKey(memberPersonaId) ||
+                        _snapshot.CollectionPermissions.ContainsKey(memberPersonaId) ||
+                        _snapshot.SettingsPermissions.ContainsKey(memberPersonaId);
+
+        if (!isMember)
+        {
+            return PlayerStallDomainResult<string>.Fail(
+                PlayerStallError.MemberNotFound,
+                "That persona is not a member of this stall.");
+        }
+
+        return PlayerStallDomainResult<string>.Ok(memberPersonaId);
+    }
+
     private bool HasInventoryPrivileges(string personaId)
     {
         if (string.IsNullOrWhiteSpace(personaId))
@@ -543,3 +667,13 @@ public sealed class PlayerStallAggregate
 public sealed record PlayerStallWithdrawal(Action<PlayerStall> Apply, int Amount, bool WasPartial);
 
 public sealed record PlayerStallDeposit(Action<PlayerStall> Apply, int Amount);
+
+/// <summary>
+/// Descriptor for adding a new member to a stall.
+/// </summary>
+public sealed record PlayerStallMemberDescriptor(
+    string PersonaId,
+    string DisplayName,
+    bool CanManageInventory = true,
+    bool CanConfigureSettings = true,
+    bool CanCollectEarnings = true);

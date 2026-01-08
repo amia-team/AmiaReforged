@@ -94,6 +94,16 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
     public readonly NuiBind<bool> InventoryPriceEnabled = new("player_stall_seller_inventory_price_enabled");
     public readonly NuiBind<bool> InventoryListEnabled = new("player_stall_seller_inventory_list_enabled");
 
+    // Member management bindings
+    public readonly NuiBind<int> MemberCount = new("player_stall_seller_member_count");
+    public readonly NuiBind<string> MemberNames = new("player_stall_seller_member_names");
+    public readonly NuiBind<string> MemberTooltips = new("player_stall_seller_member_tooltips");
+    public readonly NuiBind<bool> MemberRemoveEnabled = new("player_stall_seller_member_remove_enabled");
+    public readonly NuiBind<bool> MemberSectionVisible = new("player_stall_seller_member_section_visible");
+    public readonly NuiBind<bool> AddMemberVisible = new("player_stall_seller_add_member_visible");
+    public readonly NuiBind<string> AddMemberInput = new("player_stall_seller_add_member_input");
+    public readonly NuiBind<bool> AddMemberEnabled = new("player_stall_seller_add_member_enabled");
+
     public NuiButton ManageButton = null!;
     public NuiButton UpdatePriceButton = null!;
     public NuiButton RentToggleButton = null!;
@@ -105,6 +115,8 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
     public NuiButton WithdrawAllProfitsButton = null!;
     public NuiButton DepositButton = null!;
     public NuiButtonImage ViewDescriptionButton = null!;
+    public NuiButton RemoveMemberButton = null!;
+    public NuiButton AddMemberButton = null!;
 
     public const string HoldEarningsToggleId = "player_stall_hold_earnings_toggle";
 
@@ -187,6 +199,30 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                 VerticalAlign = NuiVAlign.Middle,
                 Tooltip = LedgerTooltipEntries
             })
+        ];
+
+        List<NuiListTemplateCell> memberTemplate =
+        [
+            new(new NuiLabel(MemberNames)
+            {
+                Height = 22f,
+                Width = 200f,
+                HorizontalAlign = NuiHAlign.Left,
+                VerticalAlign = NuiVAlign.Middle,
+                Tooltip = MemberTooltips
+            }),
+            new(new NuiButton("Remove")
+            {
+                Id = "player_stall_remove_member",
+                Height = 22f,
+                Width = 70f,
+                Enabled = MemberRemoveEnabled,
+                Tooltip = new NuiBind<string>("player_stall_remove_member_tooltip")
+            }.Assign(out RemoveMemberButton))
+            {
+                Width = 80f,
+                VariableSize = false
+            }
         ];
 
         NuiColumn productDetailColumn = new()
@@ -707,6 +743,60 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                                     Width = ContentWidth - 60f,
                                     Height = 170f,
                                     RowHeight = 22f
+                                }
+                            ]
+                        }
+                    ]
+                },
+                // Member management section (only visible to owner)
+                new NuiRow
+                {
+                    Visible = MemberSectionVisible,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiColumn
+                        {
+                            Width = ContentWidth - 20f,
+                            Children =
+                            [
+                                new NuiSpacer { Height = 4f },
+                                new NuiLabel("Stall Members")
+                                {
+                                    Height = 20f,
+                                    HorizontalAlign = NuiHAlign.Left,
+                                    VerticalAlign = NuiVAlign.Middle,
+                                    ForegroundColor = new Color(30, 20, 12)
+                                },
+                                new NuiSpacer { Height = 6f },
+                                new NuiList(memberTemplate, MemberCount)
+                                {
+                                    Width = ContentWidth - 60f,
+                                    Height = 100f,
+                                    RowHeight = 26f
+                                },
+                                new NuiSpacer { Height = 8f },
+                                new NuiRow
+                                {
+                                    Visible = AddMemberVisible,
+                                    Height = 30f,
+                                    Children =
+                                    [
+                                        new NuiTextEdit("Character name...", AddMemberInput, 64, false)
+                                        {
+                                            Width = 200f,
+                                            Height = 26f,
+                                            Enabled = AddMemberEnabled
+                                        },
+                                        new NuiSpacer { Width = 8f },
+                                        new NuiButton("Add Member")
+                                        {
+                                            Id = "player_stall_add_member",
+                                            Width = 100f,
+                                            Height = 26f,
+                                            Enabled = AddMemberEnabled
+                                        }.Assign(out AddMemberButton)
+                                    ]
                                 }
                             ]
                         }
