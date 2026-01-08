@@ -32,7 +32,7 @@ public class LanguageCheckerPresenter : ScryPresenter<LanguageCheckerView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(0, 100, 500f, 550f),
+            Geometry = new NuiRect(0, 100, 425f, 550f),
             Resizable = true
         };
     }
@@ -69,17 +69,13 @@ public class LanguageCheckerPresenter : ScryPresenter<LanguageCheckerView>
         string countText = $"Total Languages: {Model.GetTotalLanguageCount()}";
         Token().SetBindValue(View.LanguageCountText, countText);
 
-        // Format automatic languages for display (one per line)
-        string autoDisplay = Model.AutomaticLanguages.Count > 0
-            ? string.Join(", ", Model.AutomaticLanguages)
-            : "(None)";
-        Token().SetBindValue(View.AutomaticLanguagesDisplay, autoDisplay);
+        // Update automatic languages list
+        Token().SetBindValues(View.AutomaticLanguageLabels, Model.AutomaticLanguages);
+        Token().SetBindValue(View.AutomaticLanguagesCount, Model.AutomaticLanguages.Count);
 
-        // Format chosen languages for display (one per line)
-        string chosenDisplay = Model.ChosenLanguages.Count > 0
-            ? string.Join(", ", Model.ChosenLanguages)
-            : "(None)";
-        Token().SetBindValue(View.ChosenLanguagesDisplay, chosenDisplay);
+        // Update chosen languages list
+        Token().SetBindValues(View.ChosenLanguageLabels, Model.ChosenLanguages);
+        Token().SetBindValue(View.ChosenLanguagesCount, Model.ChosenLanguages.Count);
     }
 
     public override void Create()

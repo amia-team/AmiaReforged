@@ -5,13 +5,15 @@ namespace AmiaReforged.PwEngine.Features.DungeonMaster.LanguageChecker;
 
 public class LanguageCheckerView : ScryView<LanguageCheckerPresenter>, IDmWindow
 {
-    private const float WindowW = 500f;
+    private const float WindowW = 425f;
     private const float WindowH = 550f;
 
     public readonly NuiBind<string> SelectedCharacterName = new(key: "selected_character_name");
     public readonly NuiBind<string> LanguageCountText = new(key: "language_count_text");
-    public readonly NuiBind<string> AutomaticLanguagesDisplay = new(key: "automatic_languages_display");
-    public readonly NuiBind<string> ChosenLanguagesDisplay = new(key: "chosen_languages_display");
+    public readonly NuiBind<int> AutomaticLanguagesCount = new(key: "automatic_languages_count");
+    public readonly NuiBind<string> AutomaticLanguageLabels = new(key: "automatic_language_labels");
+    public readonly NuiBind<int> ChosenLanguagesCount = new(key: "chosen_languages_count");
+    public readonly NuiBind<string> ChosenLanguageLabels = new(key: "chosen_language_labels");
 
     public NuiButtonImage PlayerChooserButton = null!;
 
@@ -64,15 +66,14 @@ public class LanguageCheckerView : ScryView<LanguageCheckerPresenter>, IDmWindow
                     ForegroundColor = new Color(30, 20, 12)
                 },
                 pickerButton,
-                new NuiSpacer { Width = 10f },
+                new NuiSpacer { Width = 5f },
                 new NuiLabel(SelectedCharacterName)
                 {
                     Height = 30f,
                     Width = 250f,
                     VerticalAlign = NuiVAlign.Middle,
                     ForegroundColor = new Color(30, 20, 12)
-                },
-                new NuiSpacer { Width = 20f }
+                }
             }
         };
 
@@ -85,10 +86,9 @@ public class LanguageCheckerView : ScryView<LanguageCheckerPresenter>, IDmWindow
                 new NuiLabel(LanguageCountText)
                 {
                     Height = 20f,
-                    Width = 450f,
+                    Width = 200f,
                     ForegroundColor = new Color(30, 20, 12)
-                },
-                new NuiSpacer { Width = 20f }
+                }
             }
         };
 
@@ -101,10 +101,9 @@ public class LanguageCheckerView : ScryView<LanguageCheckerPresenter>, IDmWindow
                 new NuiLabel("Automatic Languages:")
                 {
                     Height = 20f,
-                    Width = 450f,
+                    Width = 200f,
                     ForegroundColor = new Color(30, 20, 12)
-                },
-                new NuiSpacer { Width = 20f }
+                }
             }
         };
 
@@ -113,13 +112,20 @@ public class LanguageCheckerView : ScryView<LanguageCheckerPresenter>, IDmWindow
             Children =
             {
                 new NuiSpacer { Width = 50f },
-                new NuiLabel(AutomaticLanguagesDisplay)
+                new NuiList(
+                    [
+                        new NuiListTemplateCell(new NuiLabel(AutomaticLanguageLabels)
+                        {
+                            VerticalAlign = NuiVAlign.Middle,
+                            HorizontalAlign = NuiHAlign.Left
+                        }) { Width = 200f }
+                    ],
+                    AutomaticLanguagesCount)
                 {
+                    Width = 200f,
                     Height = 150f,
-                    Width = 430f,
-                    ForegroundColor = new Color(30, 20, 12)
-                },
-                new NuiSpacer { Width = 20f }
+                    Scrollbars = NuiScrollbars.Auto
+                }
             }
         };
 
@@ -132,10 +138,9 @@ public class LanguageCheckerView : ScryView<LanguageCheckerPresenter>, IDmWindow
                 new NuiLabel("Chosen Languages:")
                 {
                     Height = 20f,
-                    Width = 450f,
+                    Width = 200f,
                     ForegroundColor = new Color(30, 20, 12)
-                },
-                new NuiSpacer { Width = 20f }
+                }
             }
         };
 
@@ -144,13 +149,20 @@ public class LanguageCheckerView : ScryView<LanguageCheckerPresenter>, IDmWindow
             Children =
             {
                 new NuiSpacer { Width = 50f },
-                new NuiLabel(ChosenLanguagesDisplay)
+                new NuiList(
+                    [
+                        new NuiListTemplateCell(new NuiLabel(ChosenLanguageLabels)
+                        {
+                            VerticalAlign = NuiVAlign.Middle,
+                            HorizontalAlign = NuiHAlign.Left
+                        }) { Width = 200f }
+                    ],
+                    ChosenLanguagesCount)
                 {
+                    Width = 200f,
                     Height = 150f,
-                    Width = 430f,
-                    ForegroundColor = new Color(30, 20, 12)
-                },
-                new NuiSpacer { Width = 20f }
+                    Scrollbars = NuiScrollbars.Auto
+                }
             }
         };
 
@@ -161,17 +173,16 @@ public class LanguageCheckerView : ScryView<LanguageCheckerPresenter>, IDmWindow
             Children =
             {
                 bgLayer,
-                new NuiSpacer { Height = 15f },
+                new NuiSpacer { Height = 5f },
                 headerRow,
-                new NuiSpacer { Height = 15f },
+                new NuiSpacer { Height = 5f },
                 countRow,
-                new NuiSpacer { Height = 15f },
+                new NuiSpacer { Height = 5f },
                 automaticHeaderRow,
                 automaticDisplayRow,
-                new NuiSpacer { Height = 10f },
+                new NuiSpacer { Height = 3f },
                 chosenHeaderRow,
-                chosenDisplayRow,
-                new NuiSpacer()
+                chosenDisplayRow
             }
         };
 
