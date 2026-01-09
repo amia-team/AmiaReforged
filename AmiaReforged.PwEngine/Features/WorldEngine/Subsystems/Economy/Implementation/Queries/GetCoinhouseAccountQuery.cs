@@ -18,6 +18,7 @@ public sealed record GetCoinhouseAccountQuery(PersonaId Persona, CoinhouseTag Co
 public sealed record CoinhouseAccountQueryResult
 {
     public required bool AccountExists { get; init; }
+    public required Guid AccountId { get; init; }
     public required CoinhouseAccountSummary? Account { get; init; }
     public IReadOnlyList<CoinhouseAccountHolderDto> Holders { get; init; } = Array.Empty<CoinhouseAccountHolderDto>();
 }

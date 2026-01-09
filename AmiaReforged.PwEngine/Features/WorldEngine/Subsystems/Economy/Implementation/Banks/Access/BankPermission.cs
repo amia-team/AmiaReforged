@@ -8,5 +8,6 @@ public enum BankPermission
     Deposit = 1 << 1,
     Withdraw = 1 << 2,
     IssueShares = 1 << 3,
-    RequestWithdraw = 1 << 4
+    RequestWithdraw = 1 << 4,
+    ManageHolders = 1 << 5
 }

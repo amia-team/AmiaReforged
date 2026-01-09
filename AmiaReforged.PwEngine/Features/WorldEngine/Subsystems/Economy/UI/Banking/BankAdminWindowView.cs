@@ -2,10 +2,13 @@ using System.Globalization;
 using AmiaReforged.PwEngine.Features.WindowingSystem;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Facades;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Banks.Access;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Banks.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Queries;
 using Anvil;
 using Anvil.API;
@@ -33,6 +36,12 @@ public sealed class BankAdminWindowView : ScryView<BankAdminWindowPresenter>
     public readonly NuiBind<string> HolderRoles = new("admin_holder_roles");
     public readonly NuiBind<string> HolderJoinedDates = new("admin_holder_joined_dates");
 
+    // Bindings for holder management
+    public readonly NuiBind<bool> CanManageHolders = new("admin_can_manage_holders");
+    public readonly NuiBind<bool> HolderIsRemovable = new("admin_holder_is_removable");
+    public readonly NuiBind<List<NuiComboEntry>> HolderRoleOptions = new("admin_holder_role_options");
+    public readonly NuiBind<int> HolderRoleSelection = new("admin_holder_role_selection");
+
     // Bindings for share document issuance
     public readonly NuiBind<List<NuiComboEntry>> ShareTypeEntries = new("admin_share_type_entries");
     public readonly NuiBind<int> ShareTypeSelection = new("admin_share_type_selection");
@@ -50,6 +59,7 @@ public sealed class BankAdminWindowView : ScryView<BankAdminWindowPresenter>
     public NuiButton IssueShareDocumentButton = null!;
     public NuiButton RefreshButton = null!;
     public NuiButton CloseButton = null!;
+    public NuiButton RemoveHolderButton = null!;
 
     public override BankAdminWindowPresenter Presenter { get; protected set; }
 
@@ -63,14 +73,21 @@ public sealed class BankAdminWindowView : ScryView<BankAdminWindowPresenter>
 
     public override NuiLayout RootLayout()
     {
-        // Account holders list template
+        // Account holders list template with management controls
         List<NuiListTemplateCell> holderRowTemplate =
         [
-            new(new NuiLabel(HolderNames) { Width = 200f, HorizontalAlign = NuiHAlign.Left }),
-            new(new NuiSpacer { Width = 8f }),
-            new(new NuiLabel(HolderRoles) { Width = 120f, HorizontalAlign = NuiHAlign.Left }),
-            new(new NuiSpacer { Width = 8f }),
-            new(new NuiLabel(HolderJoinedDates) { Width = 140f, HorizontalAlign = NuiHAlign.Left })
+            new(new NuiLabel(HolderNames) { Width = 180f, HorizontalAlign = NuiHAlign.Left }),
+            new(new NuiSpacer { Width = 4f }),
+            new(new NuiLabel(HolderRoles) { Width = 140f, HorizontalAlign = NuiHAlign.Left }),
+            new(new NuiSpacer { Width = 4f }),
+            new(new NuiButton("X")
+            {
+                Id = "admin_btn_remove_holder",
+                Width = 28f,
+                Height = 24f,
+                Tooltip = new NuiBind<string>("admin_remove_tooltip"),
+                Enabled = HolderIsRemovable
+            }.Assign(out RemoveHolderButton))
         ];
 
         // Transaction history list template (placeholder)
@@ -243,10 +260,13 @@ public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView
     private List<CoinhouseAccountHolderDto> _holders = [];
     private BankAccessProfile? _accessProfile;
     private int _selectedShareType;
+    private bool _canManageHolders;
+    private Guid _requestorHolderId;
 
     [Inject] private Lazy<IBankAccessEvaluator> BankAccessEvaluator { get; init; } = null!;
     [Inject] private Lazy<Characters.Runtime.RuntimeCharacterService> CharacterService { get; init; } = null!;
     [Inject] private WindowDirector WindowDirector { get; init; } = null!;
+    [Inject] private Lazy<IBankingFacade> BankingFacade { get; init; } = null!;
 
     public BankAdminWindowPresenter(BankAdminWindowView view, NwPlayer player, CoinhouseTag coinhouseTag, string bankDisplayName)
     {
@@ -271,6 +291,7 @@ public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView
 
         CharacterId characterId = CharacterId.From(playerKey);
         _persona = PersonaId.FromCharacter(characterId);
+        _requestorHolderId = playerKey;
 
         _window = new NuiWindow(View.RootLayout(), $"{_bankDisplayName} - Account Management")
         {
@@ -319,16 +340,31 @@ public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView
     {
         try
         {
-            // Query account data from the existing handlers
-            // Note: This would typically use a query handler like GetCoinhouseAccountQuery
-            // For now, we'll display placeholder data until the query integration is complete
+            // Query account data using the banking facade
+            GetCoinhouseAccountQuery query = new(_persona, _coinhouseTag);
+            _accountData = await BankingFacade.Value.GetCoinhouseAccountAsync(query);
 
             await NwTask.SwitchToMainThread();
 
-            // Initialize with empty state
-            UpdateAccountHolderDisplay([]);
+            if (_accountData == null || !_accountData.AccountExists)
+            {
+                _canManageHolders = false;
+                UpdateAccountHolderDisplay([]);
+                UpdateTransactionDisplay([]);
+                UpdateShareAccessState(canIssue: false);
+                return;
+            }
+
+            // Determine if the current user can manage holders
+            CoinhouseAccountHolderDto? currentUserHolder = _accountData.Holders
+                .FirstOrDefault(h => h.HolderId == _requestorHolderId);
+
+            _canManageHolders = currentUserHolder?.Role is HolderRole.Owner or HolderRole.JointOwner;
+            bool canIssueShares = currentUserHolder?.Role is HolderRole.Owner or HolderRole.JointOwner;
+
+            UpdateAccountHolderDisplay(_accountData.Holders);
             UpdateTransactionDisplay([]);
-            UpdateShareAccessState(canIssue: false);
+            UpdateShareAccessState(canIssue: canIssueShares);
         }
         catch (Exception ex)
         {
@@ -345,18 +381,50 @@ public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView
 
         List<string> names = [];
         List<string> roles = [];
-        List<string> joinedDates = [];
+        List<bool> isRemovable = [];
+        List<int> roleSelections = [];
+        List<string> removeTooltips = [];
+
+        // Build role options for the combo box (excludes Owner role)
+        List<NuiComboEntry> roleOptions =
+        [
+            new("Joint Owner", 0),
+            new("Authorized User", 1),
+            new("Trustee", 2),
+            new("Viewer", 3)
+        ];
 
         foreach (CoinhouseAccountHolderDto holder in holders)
         {
             string fullName = $"{holder.FirstName} {holder.LastName}".Trim();
             names.Add(string.IsNullOrEmpty(fullName) ? "Unknown" : fullName);
             roles.Add(FormatHolderRole(holder.Role));
-            // JoinedAt doesn't exist on DTO - we'll show the role instead for now
-            joinedDates.Add(FormatHolderRole(holder.Role));
-        }        Token().SetBindValues(View.HolderNames, names);
+
+            // Owner cannot be removed or have role changed
+            bool canRemove = _canManageHolders && holder.Role != HolderRole.Owner;
+            isRemovable.Add(canRemove);
+            roleSelections.Add(GetComboIndexFromRole(holder.Role));
+
+            if (holder.Role == HolderRole.Owner)
+            {
+                removeTooltips.Add("The account owner cannot be removed");
+            }
+            else if (!_canManageHolders)
+            {
+                removeTooltips.Add("You do not have permission to manage holders");
+            }
+            else
+            {
+                removeTooltips.Add("Remove this holder from the account");
+            }
+        }
+
+        Token().SetBindValues(View.HolderNames, names);
         Token().SetBindValues(View.HolderRoles, roles);
-        Token().SetBindValues(View.HolderJoinedDates, joinedDates);
+        Token().SetBindValues(View.HolderIsRemovable, isRemovable);
+        Token().SetBindValues(View.HolderRoleSelection, roleSelections);
+        Token().SetBindValue(View.HolderRoleOptions, roleOptions);
+        Token().SetBindValue(View.CanManageHolders, _canManageHolders);
         Token().SetBindValue(View.AccountHolderCount, holders.Count);
     }
 
@@ -403,25 +471,30 @@ public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView
 
     private void HandleNuiEvent(ModuleEvents.OnNuiEvent e)
     {
-        if (e.EventType != NuiEventType.Click) return;
-
-        switch (e.ElementId)
+        if (e.EventType == NuiEventType.Click)
         {
-            case "admin_btn_close":
-                Close();
-                break;
+            switch (e.ElementId)
+            {
+                case "admin_btn_close":
+                    Close();
+                    break;
 
-            case "admin_btn_refresh":
-                _ = LoadAccountDataAsync();
-                break;
+                case "admin_btn_refresh":
+                    _ = LoadAccountDataAsync();
+                    break;
 
-            case "admin_btn_issue_share":
-                _ = HandleIssueShareDocumentAsync();
-                break;
+                case "admin_btn_issue_share":
+                    _ = HandleIssueShareDocumentAsync();
+                    break;
 
-            case "admin_share_combo":
-                HandleShareTypeChange();
-                break;
+                case "admin_btn_remove_holder":
+                    _ = HandleRemoveHolderAsync(e.ArrayIndex);
+                    break;
+
+                case "admin_share_combo":
+                    HandleShareTypeChange();
+                    break;
+            }
         }
     }
 
@@ -438,6 +511,168 @@ public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView
         };
 
         UpdateShareInstructions(shareType);
+    }
+
+    private async Task HandleRemoveHolderAsync(int rowIndex)
+    {
+        if (rowIndex < 0 || rowIndex >= _holders.Count)
+        {
+            return;
+        }
+
+        CoinhouseAccountHolderDto holderToRemove = _holders[rowIndex];
+
+        // Prevent removing the owner
+        if (holderToRemove.Role == HolderRole.Owner)
+        {
+            await NwTask.SwitchToMainThread();
+            _player.SendServerMessage(
+                "The account owner cannot be removed.",
+                ColorConstants.Orange);
+            return;
+        }
+
+        if (!_canManageHolders)
+        {
+            await NwTask.SwitchToMainThread();
+            _player.SendServerMessage(
+                "You do not have permission to remove account holders.",
+                ColorConstants.Orange);
+            return;
+        }
+
+        if (_accountData == null || !_accountData.AccountExists)
+        {
+            return;
+        }
+
+        RemoveCoinhouseAccountHolderCommand command = new(
+            _persona,
+            _accountData.AccountId,
+            _coinhouseTag,
+            holderToRemove.HolderId);
+
+        CommandResult result = await BankingFacade.Value.RemoveAccountHolderAsync(command);
+
+        await NwTask.SwitchToMainThread();
+
+        if (!result.Success)
+        {
+            _player.SendServerMessage(
+                result.ErrorMessage ?? "Failed to remove account holder.",
+                ColorConstants.Orange);
+            return;
+        }
+
+        string holderName = $"{holderToRemove.FirstName} {holderToRemove.LastName}".Trim();
+        _player.SendServerMessage(
+            $"{holderName} has been removed from the account.",
+            ColorConstants.White);
+
+        // Refresh the holder list
+        _ = LoadAccountDataAsync();
+    }
+
+    private async Task HandleHolderRoleChangeAsync(int rowIndex)
+    {
+        if (rowIndex < 0 || rowIndex >= _holders.Count)
+        {
+            return;
+        }
+
+        CoinhouseAccountHolderDto holderToUpdate = _holders[rowIndex];
+
+        // Cannot change the owner's role
+        if (holderToUpdate.Role == HolderRole.Owner)
+        {
+            await NwTask.SwitchToMainThread();
+            _player.SendServerMessage(
+                "The account owner's role cannot be changed.",
+                ColorConstants.Orange);
+            return;
+        }
+
+        if (!_canManageHolders)
+        {
+            await NwTask.SwitchToMainThread();
+            _player.SendServerMessage(
+                "You do not have permission to change account holder roles.",
+                ColorConstants.Orange);
+            return;
+        }
+
+        if (_accountData == null || !_accountData.AccountExists)
+        {
+            return;
+        }
+
+        // Get the selected new role from the combo
+        List<int> selections = Token().GetBindValues(View.HolderRoleSelection);
+        if (rowIndex >= selections.Count)
+        {
+            return;
+        }
+
+        int selectedRoleIndex = selections[rowIndex];
+        HolderRole newRole = GetRoleFromComboIndex(selectedRoleIndex);
+
+        if (newRole == holderToUpdate.Role)
+        {
+            return; // No change
+        }
+
+        UpdateCoinhouseAccountHolderRoleCommand command = new(
+            _persona,
+            _accountData.AccountId,
+            _coinhouseTag,
+            holderToUpdate.HolderId,
+            newRole);
+
+        CommandResult result = await BankingFacade.Value.UpdateAccountHolderRoleAsync(command);
+
+        await NwTask.SwitchToMainThread();
+
+        if (!result.Success)
+        {
+            _player.SendServerMessage(
+                result.ErrorMessage ?? "Failed to update account holder role.",
+                ColorConstants.Orange);
+            // Reset the combo to the original role
+            _ = LoadAccountDataAsync();
+            return;
+        }
+
+        string holderName = $"{holderToUpdate.FirstName} {holderToUpdate.LastName}".Trim();
+        _player.SendServerMessage(
+            $"{holderName}'s role has been updated to {FormatHolderRole(newRole)}.",
+            ColorConstants.White);
+
+        // Refresh the holder list
+        _ = LoadAccountDataAsync();
+    }
+
+    private static HolderRole GetRoleFromComboIndex(int index)
+    {
+        return index switch
+        {
+            0 => HolderRole.JointOwner,
+            1 => HolderRole.AuthorizedUser,
+            2 => HolderRole.Trustee,
+            3 => HolderRole.Viewer,
+            _ => HolderRole.Viewer
+        };
+    }
+
+    private static int GetComboIndexFromRole(HolderRole role)
+    {
+        return role switch
+        {
+            HolderRole.JointOwner => 0,
+            HolderRole.AuthorizedUser => 1,
+            HolderRole.Trustee => 2,
+            HolderRole.Viewer => 3,
+            _ => 3
+        };
     }
 
     private async Task HandleIssueShareDocumentAsync()

@@ -33,4 +33,6 @@ public sealed record BankAccessProfile
     public bool CanRequestWithdraw => Permissions.HasFlag(BankPermission.RequestWithdraw);
 
     public bool CanIssueShares => Permissions.HasFlag(BankPermission.IssueShares);
+
+    public bool CanManageHolders => Permissions.HasFlag(BankPermission.ManageHolders);
 }

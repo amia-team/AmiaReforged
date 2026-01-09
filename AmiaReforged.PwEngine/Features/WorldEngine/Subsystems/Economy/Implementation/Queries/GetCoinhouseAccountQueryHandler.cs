@@ -71,6 +71,7 @@ public sealed class GetCoinhouseAccountQueryHandler : IQueryHandler<GetCoinhouse
         return new CoinhouseAccountQueryResult
         {
             AccountExists = true,
+            AccountId = account.Id,
             Account = summary,
             Holders = account.Holders ?? Array.Empty<CoinhouseAccountHolderDto>()
         };

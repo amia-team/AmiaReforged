@@ -36,6 +36,25 @@ public interface IBankingFacade
     Task<CoinhouseAccountEligibilityResult> GetCoinhouseAccountEligibilityAsync(
         GetCoinhouseAccountEligibilityQuery query, CancellationToken ct = default);
 
+    // === Account Holder Management ===
+
+    /// <summary>
+    /// Adds a new holder to a coinhouse account via share document activation.
+    /// </summary>
+    Task<CommandResult> JoinCoinhouseAccountAsync(JoinCoinhouseAccountCommand command, CancellationToken ct = default);
+
+    /// <summary>
+    /// Removes an account holder from a coinhouse account.
+    /// Cannot remove the sole owner of an account.
+    /// </summary>
+    Task<CommandResult> RemoveAccountHolderAsync(RemoveCoinhouseAccountHolderCommand command, CancellationToken ct = default);
+
+    /// <summary>
+    /// Updates an account holder's role on a coinhouse account.
+    /// Ownership transfer (promoting to Owner) is not permitted.
+    /// </summary>
+    Task<CommandResult> UpdateAccountHolderRoleAsync(UpdateCoinhouseAccountHolderRoleCommand command, CancellationToken ct = default);
+
     // === Gold Transactions ===
 
     /// <summary>

@@ -24,6 +24,9 @@ public sealed class BankingFacade : IBankingFacade
     private readonly ICommandHandler<DepositGoldCommand> _depositHandler;
     private readonly ICommandHandler<WithdrawGoldCommand> _withdrawHandler;
     private readonly IQueryHandler<GetBalanceQuery, int?> _getBalanceHandler;
+    private readonly ICommandHandler<JoinCoinhouseAccountCommand> _joinAccountHandler;
+    private readonly ICommandHandler<RemoveCoinhouseAccountHolderCommand> _removeHolderHandler;
+    private readonly ICommandHandler<UpdateCoinhouseAccountHolderRoleCommand> _updateHolderRoleHandler;
 
     public BankingFacade(
         ICommandHandler<OpenCoinhouseAccountCommand> openAccountHandler,
@@ -32,7 +35,10 @@ public sealed class BankingFacade : IBankingFacade
         IQueryHandler<GetCoinhouseAccountEligibilityQuery, CoinhouseAccountEligibilityResult> eligibilityHandler,
         ICommandHandler<DepositGoldCommand> depositHandler,
         ICommandHandler<WithdrawGoldCommand> withdrawHandler,
-        IQueryHandler<GetBalanceQuery, int?> getBalanceHandler)
+        IQueryHandler<GetBalanceQuery, int?> getBalanceHandler,
+        ICommandHandler<JoinCoinhouseAccountCommand> joinAccountHandler,
+        ICommandHandler<RemoveCoinhouseAccountHolderCommand> removeHolderHandler,
+        ICommandHandler<UpdateCoinhouseAccountHolderRoleCommand> updateHolderRoleHandler)
     {
         _openAccountHandler = openAccountHandler;
         _getAccountHandler = getAccountHandler;
@@ -41,6 +47,9 @@ public sealed class BankingFacade : IBankingFacade
         _depositHandler = depositHandler;
         _withdrawHandler = withdrawHandler;
         _getBalanceHandler = getBalanceHandler;
+        _joinAccountHandler = joinAccountHandler;
+        _removeHolderHandler = removeHolderHandler;
+        _updateHolderRoleHandler = updateHolderRoleHandler;
     }
 
     /// <inheritdoc />
@@ -71,5 +80,17 @@ public sealed class BankingFacade : IBankingFacade
     /// <inheritdoc />
     public Task<int?> GetBalanceAsync(GetBalanceQuery query, CancellationToken ct = default)
         => _getBalanceHandler.HandleAsync(query, ct);
+
+    /// <inheritdoc />
+    public Task<CommandResult> JoinCoinhouseAccountAsync(JoinCoinhouseAccountCommand command, CancellationToken ct = default)
+        => _joinAccountHandler.HandleAsync(command, ct);
+
+    /// <inheritdoc />
+    public Task<CommandResult> RemoveAccountHolderAsync(RemoveCoinhouseAccountHolderCommand command, CancellationToken ct = default)
+        => _removeHolderHandler.HandleAsync(command, ct);
+
+    /// <inheritdoc />
+    public Task<CommandResult> UpdateAccountHolderRoleAsync(UpdateCoinhouseAccountHolderRoleCommand command, CancellationToken ct = default)
+        => _updateHolderRoleHandler.HandleAsync(command, ct);
 }
 
