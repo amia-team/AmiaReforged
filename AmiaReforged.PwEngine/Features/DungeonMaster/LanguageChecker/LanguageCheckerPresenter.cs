@@ -32,7 +32,7 @@ public class LanguageCheckerPresenter : ScryPresenter<LanguageCheckerView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(0, 100, 425f, 550f),
+            Geometry = new NuiRect(0, 100, 425f, 700f),
             Resizable = true
         };
     }
@@ -52,6 +52,59 @@ public class LanguageCheckerPresenter : ScryPresenter<LanguageCheckerView>
         if (click.ElementId == View.PlayerChooserButton.Id)
         {
             Model.EnterTargetingMode();
+            return;
+        }
+
+        if (click.ElementId == View.SearchLanguagesButton.Id)
+        {
+            // Get the filter text from the bind and apply it
+            string filterText = Token().GetBindValue(View.LanguageFilterText) ?? string.Empty;
+            Model.SetLanguageFilter(filterText);
+            UpdateView();
+            return;
+        }
+
+        if (click.ElementId == "remove_chosen_language")
+        {
+            // Combined list is: chosen languages + DM-added languages
+            int totalLanguages = Model.ChosenLanguages.Count + Model.DmAddedLanguages.Count;
+            if (click.ArrayIndex >= 0 && click.ArrayIndex < totalLanguages)
+            {
+                string language;
+                if (click.ArrayIndex < Model.ChosenLanguages.Count)
+                {
+                    // It's a chosen language
+                    language = Model.ChosenLanguages[click.ArrayIndex];
+                }
+                else
+                {
+                    // It's a DM-added language, need to remove the " (DM)" suffix to get the real name
+                    int dmIndex = click.ArrayIndex - Model.ChosenLanguages.Count;
+                    language = Model.DmAddedLanguages[dmIndex];
+                }
+
+                Model.RemoveChosenLanguage(language);
+                UpdateView();
+                _player.SendServerMessage($"Removed '{language}' from {Model.GetCharacterName()}", ColorConstants.Green);
+            }
+            return;
+        }
+
+
+        if (click.ElementId == "add_available_language")
+        {
+            if (click.ArrayIndex >= 0)
+            {
+                var availableLanguages = Model.GetAvailableLanguages();
+                if (click.ArrayIndex < availableLanguages.Count)
+                {
+                    string language = availableLanguages[click.ArrayIndex];
+                    Model.AddChosenLanguage(language);
+                    UpdateView();
+                    _player.SendServerMessage($"Added '{language}' to {Model.GetCharacterName()}", ColorConstants.Green);
+                }
+            }
+            return;
         }
     }
 
@@ -73,9 +126,17 @@ public class LanguageCheckerPresenter : ScryPresenter<LanguageCheckerView>
         Token().SetBindValues(View.AutomaticLanguageLabels, Model.AutomaticLanguages);
         Token().SetBindValue(View.AutomaticLanguagesCount, Model.AutomaticLanguages.Count);
 
-        // Update chosen languages list
-        Token().SetBindValues(View.ChosenLanguageLabels, Model.ChosenLanguages);
-        Token().SetBindValue(View.ChosenLanguagesCount, Model.ChosenLanguages.Count);
+        // Update chosen languages list (combine chosen + DM-added for display)
+        List<string> allChosenLanguages = new List<string>(Model.ChosenLanguages);
+        // Add DM-added languages with " (DM)" suffix to distinguish them
+        allChosenLanguages.AddRange(Model.DmAddedLanguages.Select(lang => $"{lang} (DM)"));
+        Token().SetBindValues(View.ChosenLanguageLabels, allChosenLanguages);
+        Token().SetBindValue(View.ChosenLanguagesCount, allChosenLanguages.Count);
+
+        // Update available languages list
+        var availableLanguages = Model.GetAvailableLanguages();
+        Token().SetBindValues(View.AvailableLanguageLabels, availableLanguages);
+        Token().SetBindValue(View.AvailableLanguagesCount, availableLanguages.Count);
     }
 
     public override void Create()
@@ -91,6 +152,7 @@ public class LanguageCheckerPresenter : ScryPresenter<LanguageCheckerView>
         }
 
         _player.TryCreateNuiWindow(_window, out _token);
+        Token().SetBindValue(View.LanguageFilterText, string.Empty);
         UpdateView();
     }
 

@@ -40,7 +40,7 @@ public static class LanguageData
         "Midani",
         "Mulhorandi",
         "Nexalan",
-        "Orc",
+        "Orcish",
         "Rashemi",
         "Shaaran",
         "Shou",
