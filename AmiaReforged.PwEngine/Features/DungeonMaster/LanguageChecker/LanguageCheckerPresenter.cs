@@ -32,7 +32,7 @@ public class LanguageCheckerPresenter : ScryPresenter<LanguageCheckerView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(0, 100, 425f, 700f),
+            Geometry = new NuiRect(0, 100, 500f, 520f),
             Resizable = true
         };
     }

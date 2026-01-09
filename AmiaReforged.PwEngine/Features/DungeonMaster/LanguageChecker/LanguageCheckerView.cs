@@ -5,8 +5,8 @@ namespace AmiaReforged.PwEngine.Features.DungeonMaster.LanguageChecker;
 
 public class LanguageCheckerView : ScryView<LanguageCheckerPresenter>, IDmWindow
 {
-    private const float WindowW = 425f;
-    private const float WindowH = 700f;
+    private const float WindowW = 500f;
+    private const float WindowH = 520f;
 
     public readonly NuiBind<string> SelectedCharacterName = new(key: "selected_character_name");
     public readonly NuiBind<string> LanguageCountText = new(key: "language_count_text");
@@ -63,20 +63,13 @@ public class LanguageCheckerView : ScryView<LanguageCheckerPresenter>, IDmWindow
         {
             Children =
             {
-                new NuiSpacer { Width = 20f },
-                new NuiLabel("Character:")
-                {
-                    Height = 30f,
-                    Width = 80f,
-                    VerticalAlign = NuiVAlign.Middle,
-                    ForegroundColor = new Color(30, 20, 12)
-                },
+                new NuiSpacer { Width = 30f },
                 pickerButton,
                 new NuiSpacer { Width = 5f },
                 new NuiLabel(SelectedCharacterName)
                 {
                     Height = 30f,
-                    Width = 250f,
+                    Width = 400f,
                     VerticalAlign = NuiVAlign.Middle,
                     ForegroundColor = new Color(30, 20, 12)
                 }
@@ -98,8 +91,8 @@ public class LanguageCheckerView : ScryView<LanguageCheckerPresenter>, IDmWindow
             }
         };
 
-        // Automatic languages header and display
-        NuiRow automaticHeaderRow = new NuiRow
+        // Combined header row for Automatic and Chosen languages
+        NuiRow languagesHeaderRow = new NuiRow
         {
             Children =
             {
@@ -107,61 +100,47 @@ public class LanguageCheckerView : ScryView<LanguageCheckerPresenter>, IDmWindow
                 new NuiLabel("Automatic Languages:")
                 {
                     Height = 20f,
-                    Width = 200f,
+                    Width = 160f,
+                    ForegroundColor = new Color(30, 20, 12)
+                },
+                new NuiSpacer { Width = 45f },
+                new NuiLabel("Chosen Languages:")
+                {
+                    Height = 20f,
+                    Width = 160f,
                     ForegroundColor = new Color(30, 20, 12)
                 }
             }
         };
 
-        NuiRow automaticDisplayRow = new NuiRow
+        // Combined display row for Automatic and Chosen languages lists
+        NuiRow languagesDisplayRow = new NuiRow
         {
             Children =
             {
-                new NuiSpacer { Width = 50f },
+                new NuiSpacer { Width = 30f },
                 new NuiList(
                     [
                         new NuiListTemplateCell(new NuiLabel(AutomaticLanguageLabels)
                         {
                             VerticalAlign = NuiVAlign.Middle,
-                            HorizontalAlign = NuiHAlign.Left
+                            HorizontalAlign = NuiHAlign.Center
                         }) { Width = 160f }
                     ],
                     AutomaticLanguagesCount)
                 {
-                    Width = 165f,
+                    Width = 195f,
                     Height = 150f,
                     Scrollbars = NuiScrollbars.Auto
-                }
-            }
-        };
-
-        // Chosen languages header and display
-        NuiRow chosenHeaderRow = new NuiRow
-        {
-            Children =
-            {
-                new NuiSpacer { Width = 30f },
-                new NuiLabel("Chosen Languages:")
-                {
-                    Height = 20f,
-                    Width = 200f,
-                    ForegroundColor = new Color(30, 20, 12)
-                }
-            }
-        };
-
-        NuiRow chosenDisplayRow = new NuiRow
-        {
-            Children =
-            {
-                new NuiSpacer { Width = 50f },
+                },
+                new NuiSpacer { Width = 10f },
                 new NuiList(
                     [
                         new NuiListTemplateCell(new NuiLabel(ChosenLanguageLabels)
                         {
                             VerticalAlign = NuiVAlign.Middle,
-                            HorizontalAlign = NuiHAlign.Left
-                        }) { Width = 100f },
+                            HorizontalAlign = NuiHAlign.Center
+                        }) { Width = 130f },
                         new NuiListTemplateCell(new NuiButtonImage("ui_btn_sm_min")
                         {
                             Id = "remove_chosen_language",
@@ -172,10 +151,11 @@ public class LanguageCheckerView : ScryView<LanguageCheckerPresenter>, IDmWindow
                     ],
                     ChosenLanguagesCount)
                 {
-                    Width = 165f,
-                    Height = 100f,
+                    Width = 195f,
+                    Height = 150f,
                     Scrollbars = NuiScrollbars.Auto
-                }
+                },
+                new NuiSpacer { Width = 30f }
             }
         };
 
@@ -194,7 +174,7 @@ public class LanguageCheckerView : ScryView<LanguageCheckerPresenter>, IDmWindow
             }
         };
 
-        // Add language search filter row
+        // Add language search button
         NuiButtonImage searchButton = new NuiButtonImage("isk_search")
         {
             Id = "search_languages",
@@ -204,35 +184,19 @@ public class LanguageCheckerView : ScryView<LanguageCheckerPresenter>, IDmWindow
         };
         SearchLanguagesButton = searchButton;
 
-        NuiRow languageSearchRow = new NuiRow
-        {
-            Children =
-            {
-                new NuiSpacer { Width = 50f },
-                new NuiTextEdit(label: "Filter languages...", LanguageFilterText, 50, false)
-                {
-                    Width = 150f,
-                    Height = 35f
-                },
-                new NuiSpacer { Width = 5f },
-                searchButton,
-                new NuiSpacer { Width = 10f }
-            }
-        };
-
-        // Add language list
+        // Available languages list with filter on the same row
         NuiRow addLanguageRow = new NuiRow
         {
             Children =
             {
-                new NuiSpacer { Width = 50f },
+                new NuiSpacer { Width = 30f },
                 new NuiList(
                     [
                         new NuiListTemplateCell(new NuiLabel(AvailableLanguageLabels)
                         {
                             VerticalAlign = NuiVAlign.Middle,
-                            HorizontalAlign = NuiHAlign.Left
-                        }) { Width = 100f },
+                            HorizontalAlign = NuiHAlign.Center
+                        }) { Width = 130f },
                         new NuiListTemplateCell(new NuiButtonImage("ui_btn_sm_plus")
                         {
                             Id = "add_available_language",
@@ -243,10 +207,19 @@ public class LanguageCheckerView : ScryView<LanguageCheckerPresenter>, IDmWindow
                     ],
                     AvailableLanguagesCount)
                 {
-                    Width = 165f,
+                    Width = 195f,
                     Height = 120f,
                     Scrollbars = NuiScrollbars.Auto
-                }
+                },
+                new NuiSpacer { Width = 10f },
+                new NuiTextEdit(label: "Filter...", LanguageFilterText, 50, false)
+                {
+                    Width = 130f,
+                    Height = 35f
+                },
+                new NuiSpacer { Width = 5f },
+                searchButton,
+                new NuiSpacer { Width = 10f }
             }
         };
 
@@ -262,16 +235,13 @@ public class LanguageCheckerView : ScryView<LanguageCheckerPresenter>, IDmWindow
                 new NuiSpacer { Height = 5f },
                 countRow,
                 new NuiSpacer { Height = 5f },
-                automaticHeaderRow,
-                automaticDisplayRow,
-                new NuiSpacer { Height = 3f },
-                chosenHeaderRow,
-                chosenDisplayRow,
-                new NuiSpacer { Height = 3f },
+                languagesHeaderRow,
+                languagesDisplayRow,
+                new NuiSpacer { Height = 10f },
                 addLanguageHeaderRow,
-                languageSearchRow,
                 new NuiSpacer { Height = 3f },
-                addLanguageRow
+                addLanguageRow,
+                new NuiSpacer { Height = 10f },
             }
         };
 

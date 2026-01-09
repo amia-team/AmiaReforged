@@ -110,7 +110,7 @@ public class LanguageToolModel
         }
 
         // Rogues get Thieves' Cant automatically
-        if (_character.GetClassInfo(ClassType.Rogue)?.Level > 0)
+        if (_character.GetClassInfo(ClassType.Rogue)?.Level > 4)
         {
             if (!AutomaticLanguages.Contains(LanguageData.SpecialLanguages.ThievesCant))
             {
