@@ -86,6 +86,11 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
     // Window buttons
     public NuiButton OpenStorageWindowButton = null!;
     public NuiButton OpenAdminWindowButton = null!;
+    
+    /// <summary>
+    /// Indicates whether the player has an active account at this bank (for enabling admin features).
+    /// </summary>
+    public NuiBind<bool> HasActiveAccount = new("bank_has_active_account");
 
     public BankWindowView(NwPlayer player, CoinhouseTag coinhouseTag, string bankDisplayName)
     {
@@ -178,6 +183,14 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                             Width = TabButtonWidth + 20f,
                             Height = StandardButtonHeight - 4f
                         }.Assign(out OpenStorageWindowButton),
+                        new NuiSpacer { Width = 10f },
+                        new NuiButton("Manage Account")
+                        {
+                            Id = "bank_btn_open_admin",
+                            Width = TabButtonWidth + 20f,
+                            Height = StandardButtonHeight - 4f,
+                            Enabled = HasActiveAccount
+                        }.Assign(out OpenAdminWindowButton),
                         new NuiSpacer { Width = 10f },
                     ]
                 },

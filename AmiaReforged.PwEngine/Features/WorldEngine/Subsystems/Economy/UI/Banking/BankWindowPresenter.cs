@@ -214,6 +214,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
 
         bool showPersonalActions = !Model.AccountExists;
         Token().SetBindValue(View.ShowPersonalAccountActions, showPersonalActions);
+        Token().SetBindValue(View.HasActiveAccount, Model.AccountExists);
 
         bool showOrganizationActions = Model.OrganizationEligibility.Any(option => !option.AlreadyHasAccount);
         Token().SetBindValue(View.IsOrganizationLeader, showOrganizationActions);
@@ -282,6 +283,9 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
         {
             case "bank_btn_open_storage":
                 OpenStorageWindow();
+                break;
+            case "bank_btn_open_admin":
+                OpenAdminWindow();
                 break;
             case "bank_btn_open_personal":
                 _ = HandleOpenPersonalAccountAsync();
@@ -1593,5 +1597,11 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
     {
         BankStorageWindowView storageWindow = new(_player, _coinhouseTag, _bankDisplayName);
         WindowDirector.OpenWindow(storageWindow.Presenter);
+    }
+
+    private void OpenAdminWindow()
+    {
+        BankAdminWindowView adminWindow = new(_player, _coinhouseTag, _bankDisplayName);
+        WindowDirector.OpenWindow(adminWindow.Presenter);
     }
 }
