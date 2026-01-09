@@ -9,15 +9,17 @@ public class LanguageConfirmationPresenter : ScryPresenter<LanguageConfirmationV
 {
     private readonly NwPlayer _player;
     private readonly Action _onConfirm;
+    private readonly Action _onCancel;
     private readonly string _message;
     private NuiWindowToken _token;
     private NuiWindow? _window;
 
-    public LanguageConfirmationPresenter(LanguageConfirmationView view, NwPlayer player, Action onConfirm, string message)
+    public LanguageConfirmationPresenter(LanguageConfirmationView view, NwPlayer player, Action onConfirm, Action onCancel, string message)
     {
         View = view;
         _player = player;
         _onConfirm = onConfirm;
+        _onCancel = onCancel;
         _message = message;
     }
 
@@ -49,14 +51,17 @@ public class LanguageConfirmationPresenter : ScryPresenter<LanguageConfirmationV
     {
         if (click.ElementId == View.ConfirmButton.Id)
         {
-            Close();
+            _token.Close();
             _onConfirm.Invoke();
             return;
         }
 
         if (click.ElementId == View.CancelButton.Id)
         {
-            Close();
+            // Close the same way as Confirm, but invoke the cancel callback instead
+            _token.OnNuiEvent -= ProcessEvent;
+            _token.Close();
+            _onCancel.Invoke();
         }
     }
 
@@ -79,19 +84,18 @@ public class LanguageConfirmationPresenter : ScryPresenter<LanguageConfirmationV
 
         _player.TryCreateNuiWindow(_window, out _token);
 
-        // Subscribe to events directly
-        Token().OnNuiEvent += ProcessEvent;
+        // Subscribe to events so button clicks are processed
+        _token.OnNuiEvent += ProcessEvent;
 
         UpdateView();
     }
 
     public override void Close()
     {
-        // Unsubscribe from events
+        // Unsubscribe from events before closing
         if (_token != null)
         {
-            Token().OnNuiEvent -= ProcessEvent;
-            _token.Close();
+            _token.OnNuiEvent -= ProcessEvent;
         }
     }
 }

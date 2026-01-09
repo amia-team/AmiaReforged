@@ -1,4 +1,4 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem;
+﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Action = System.Action;
@@ -15,9 +15,9 @@ public class LanguageConfirmationView : ScryView<LanguageConfirmationPresenter>
     public NuiButton ConfirmButton = null!;
     public NuiButton CancelButton = null!;
 
-    public LanguageConfirmationView(NwPlayer player, Action onConfirm, string message)
+    public LanguageConfirmationView(NwPlayer player, Action onConfirm, Action onCancel, string message)
     {
-        Presenter = new LanguageConfirmationPresenter(this, player, onConfirm, message);
+        Presenter = new LanguageConfirmationPresenter(this, player, onConfirm, onCancel, message);
     }
 
     public sealed override LanguageConfirmationPresenter Presenter { get; protected set; }

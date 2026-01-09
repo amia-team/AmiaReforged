@@ -6,12 +6,12 @@ namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.LanguageTool;
 
 public class LanguageToolView : ScryView<LanguageToolPresenter>, IToolWindow
 {
-    private const float WindowW = 500f;
-    private const float WindowH = 450f;
+    private const float WindowW = 540f;
+    private const float WindowH = 580f;
 
     public readonly NuiBind<string> LanguageCountText = new(key: "language_count_text");
-    public readonly NuiBind<int> AutomaticLanguagesSelected = new(key: "automatic_languages_selected");
-    public readonly NuiBind<List<NuiComboEntry>> AutomaticLanguageEntries = new(key: "automatic_language_entries");
+    public readonly NuiBind<int> AutomaticLanguagesCount = new(key: "automatic_languages_count");
+    public readonly NuiBind<string> AutomaticLanguageLabels = new(key: "automatic_language_labels");
     public readonly NuiBind<int> ChosenLanguagesCount = new(key: "chosen_languages_count");
     public readonly NuiBind<int> AvailableLanguagesCount = new(key: "available_languages_count");
     public readonly NuiBind<string> ChosenLanguageLabels = new(key: "chosen_language_labels");
@@ -91,7 +91,7 @@ public class LanguageToolView : ScryView<LanguageToolPresenter>, IToolWindow
             }
         };
 
-        // Automatic Languages row with enabled dropdown (clickable for viewing, but selections don't do anything)
+        // Automatic Languages row with scrollable list (for viewing, selections don't do anything)
         NuiRow automaticRow = new NuiRow
         {
             Children =
@@ -99,21 +99,27 @@ public class LanguageToolView : ScryView<LanguageToolPresenter>, IToolWindow
                 new NuiSpacer { Width = 30f },
                 new NuiLabel("Automatic Languages:")
                 {
-                    Height = 30f,
+                    Height = 70f,
                     Width = 150f,
                     VerticalAlign = NuiVAlign.Middle,
                     ForegroundColor = new Color(30, 20, 12)
                 },
-                new NuiCombo
+                new NuiSpacer { Width = 15f },
+                new NuiList(
+                    [
+                        new NuiListTemplateCell(new NuiLabel(AutomaticLanguageLabels)
+                        {
+                            Tooltip = "You receive these languages automatically.",
+                            VerticalAlign = NuiVAlign.Middle,
+                            HorizontalAlign = NuiHAlign.Center
+                        }) { Width = 120f }
+                    ],
+                    AutomaticLanguagesCount)
                 {
-                    Selected = AutomaticLanguagesSelected,
-                    Entries = AutomaticLanguageEntries,
-                    Width = 280f,
-                    Height = 30f,
-                    Tooltip = "You receive these languages automatically.",
-                    Enabled = true // Enabled so players can click to view all languages
-                },
-                new NuiSpacer { Width = 30f }
+                    Width = 180f,
+                    Height = 70f,
+                    Scrollbars = NuiScrollbars.Auto
+                }
             }
         };
 

@@ -38,7 +38,7 @@ public class LanguageToolPresenter : ScryPresenter<LanguageToolView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(0, 100, 540f, 540f),
+            Geometry = new NuiRect(0, 100, 540f, 580f),
             Resizable = true
         };
     }
@@ -126,6 +126,7 @@ public class LanguageToolPresenter : ScryPresenter<LanguageToolView>
         LanguageConfirmationView confirmPopup = new LanguageConfirmationView(
             _player,
             OnConfirmSave,
+            OnConfirmationCancelled,
             message
         );
 
@@ -152,17 +153,21 @@ public class LanguageToolPresenter : ScryPresenter<LanguageToolView>
         }
     }
 
+    private void OnConfirmationCancelled()
+    {
+        _pendingConfirmation = false;
+    }
+
     public override void UpdateView()
     {
         // Update language count text
         string countText = $"You have chosen {Model.ChosenLanguages.Count} out of {Model.MaxChoosableLanguages} languages your character can know.";
         Token().SetBindValue(View.LanguageCountText, countText);
 
-        // Update automatic languages dropdown (remove any empty strings)
+        // Update automatic languages list (remove any empty strings)
         List<string> autoLanguages = Model.AutomaticLanguages.Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
-        List<NuiComboEntry> autoLanguageEntries = autoLanguages.Select((lang, index) => new NuiComboEntry(lang, index)).ToList();
-        Token().SetBindValue(View.AutomaticLanguageEntries, autoLanguageEntries);
-        Token().SetBindValue(View.AutomaticLanguagesSelected, 0); // Default to first entry
+        Token().SetBindValues(View.AutomaticLanguageLabels, autoLanguages);
+        Token().SetBindValue(View.AutomaticLanguagesCount, autoLanguages.Count);
 
         // Update chosen languages list
         Token().SetBindValues(View.ChosenLanguageLabels, Model.ChosenLanguages);
