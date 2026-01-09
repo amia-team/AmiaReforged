@@ -100,9 +100,10 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
     public readonly NuiBind<string> MemberTooltips = new("player_stall_seller_member_tooltips");
     public readonly NuiBind<bool> MemberRemoveEnabled = new("player_stall_seller_member_remove_enabled");
     public readonly NuiBind<bool> MemberSectionVisible = new("player_stall_seller_member_section_visible");
-    public readonly NuiBind<bool> AddMemberVisible = new("player_stall_seller_add_member_visible");
-    public readonly NuiBind<string> AddMemberInput = new("player_stall_seller_add_member_input");
-    public readonly NuiBind<bool> AddMemberEnabled = new("player_stall_seller_add_member_enabled");
+    public readonly NuiBind<bool> TargetMemberVisible = new("player_stall_seller_target_member_visible");
+    public readonly NuiBind<bool> TargetMemberEnabled = new("player_stall_seller_target_member_enabled");
+    public readonly NuiBind<string> MemberStatusMessage = new("player_stall_seller_member_status_message");
+    public readonly NuiBind<bool> MemberStatusVisible = new("player_stall_seller_member_status_visible");
 
     public NuiButton ManageButton = null!;
     public NuiButton UpdatePriceButton = null!;
@@ -116,7 +117,7 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
     public NuiButton DepositButton = null!;
     public NuiButtonImage ViewDescriptionButton = null!;
     public NuiButton RemoveMemberButton = null!;
-    public NuiButton AddMemberButton = null!;
+    public NuiButton TargetMemberButton = null!;
 
     public const string HoldEarningsToggleId = "player_stall_hold_earnings_toggle";
 
@@ -778,24 +779,28 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                                 new NuiSpacer { Height = 8f },
                                 new NuiRow
                                 {
-                                    Visible = AddMemberVisible,
+                                    Visible = TargetMemberVisible,
                                     Height = 30f,
                                     Children =
                                     [
-                                        new NuiTextEdit("Character name...", AddMemberInput, 64, false)
+                                        new NuiButton("Target Player")
                                         {
-                                            Width = 200f,
+                                            Id = "player_stall_target_member",
+                                            Width = 120f,
                                             Height = 26f,
-                                            Enabled = AddMemberEnabled
-                                        },
-                                        new NuiSpacer { Width = 8f },
-                                        new NuiButton("Add Member")
+                                            Enabled = TargetMemberEnabled,
+                                            Tooltip = "Click to target a player character in-game to add as a stall member."
+                                        }.Assign(out TargetMemberButton),
+                                        new NuiSpacer { Width = 12f },
+                                        new NuiLabel(MemberStatusMessage)
                                         {
-                                            Id = "player_stall_add_member",
-                                            Width = 100f,
+                                            Visible = MemberStatusVisible,
+                                            Width = 300f,
                                             Height = 26f,
-                                            Enabled = AddMemberEnabled
-                                        }.Assign(out AddMemberButton)
+                                            HorizontalAlign = NuiHAlign.Left,
+                                            VerticalAlign = NuiVAlign.Middle,
+                                            ForegroundColor = new Color(30, 20, 12)
+                                        }
                                     ]
                                 }
                             ]

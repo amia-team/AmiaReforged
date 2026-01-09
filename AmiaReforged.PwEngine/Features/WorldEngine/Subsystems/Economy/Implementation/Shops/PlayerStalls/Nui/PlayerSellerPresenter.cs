@@ -64,6 +64,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
 
     [Inject] private PlayerStallEventManager EventManager { get; init; } = null!;
     [Inject] private IHarptosTimeService HarptosTimeService { get; init; } = null!;
+    [Inject] private Lazy<WorldEngine.Subsystems.Characters.Runtime.RuntimeCharacterService> CharacterService { get; init; } = null!;
 
     public override NuiWindowToken Token() => _token;
 
@@ -193,9 +194,9 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
             return;
         }
 
-        if (View.AddMemberButton != null && eventData.ElementId == View.AddMemberButton.Id)
+        if (View.TargetMemberButton != null && eventData.ElementId == View.TargetMemberButton.Id)
         {
-            _ = HandleAddMemberAsync();
+            BeginTargetMember();
             return;
         }
 
@@ -1396,9 +1397,10 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
     {
         bool sectionVisible = _isOwner || _members.Count > 0;
         Token().SetBindValue(View.MemberSectionVisible, sectionVisible);
-        Token().SetBindValue(View.AddMemberVisible, _canManageMembers);
-        Token().SetBindValue(View.AddMemberEnabled, _canManageMembers && !_isProcessing);
-        Token().SetBindValue(View.AddMemberInput, string.Empty);
+        Token().SetBindValue(View.TargetMemberVisible, _canManageMembers);
+        Token().SetBindValue(View.TargetMemberEnabled, _canManageMembers && !_isProcessing);
+        Token().SetBindValue(View.MemberStatusMessage, string.Empty);
+        Token().SetBindValue(View.MemberStatusVisible, false);
 
         List<string> memberNames = new(_members.Count);
         List<string> memberTooltips = new(_members.Count);
@@ -1442,61 +1444,101 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         return sb.ToString();
     }
 
-    private async Task HandleAddMemberAsync()
+    private void BeginTargetMember()
     {
         if (_isClosing || _isProcessing)
         {
             return;
         }
 
-        if (_sessionId is not Guid sessionId)
+        if (_sessionId is null)
         {
             return;
         }
 
         if (!_canManageMembers)
         {
-            await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
-                "Only the stall owner can add members.",
-                ColorConstants.Orange)).ConfigureAwait(false);
+            Token().SetBindValue(View.MemberStatusMessage, "Only the stall owner can add members.");
+            Token().SetBindValue(View.MemberStatusVisible, true);
             return;
         }
 
-        string? memberName = Token().GetBindValue(View.AddMemberInput);
-        if (string.IsNullOrWhiteSpace(memberName))
+        Token().SetBindValue(View.MemberStatusMessage, "Target a player character to add as a member...");
+        Token().SetBindValue(View.MemberStatusVisible, true);
+
+        _player.EnterTargetMode(HandleAddMemberTarget, new TargetModeSettings
         {
-            await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
-                "Enter a character name to add as a member.",
-                ColorConstants.Orange)).ConfigureAwait(false);
+            CursorType = MouseCursor.Action,
+            ValidTargets = ObjectTypes.Creature
+        });
+    }
+
+    private void HandleAddMemberTarget(ModuleEvents.OnPlayerTarget targetData)
+    {
+        if (_sessionId is not Guid sessionId)
+        {
             return;
         }
 
+        if (targetData.TargetObject is not NwCreature targetCreature)
+        {
+            Token().SetBindValue(View.MemberStatusMessage, "You must target a player character.");
+            Token().SetBindValue(View.MemberStatusVisible, true);
+            return;
+        }
+
+        NwPlayer? targetPlayer = targetCreature.ControllingPlayer;
+        if (targetPlayer == null || !targetCreature.IsPlayerControlled)
+        {
+            Token().SetBindValue(View.MemberStatusMessage, "Target must be a player character.");
+            Token().SetBindValue(View.MemberStatusVisible, true);
+            return;
+        }
+
+        if (!CharacterService.Value.TryGetPlayerKey(targetPlayer, out Guid targetCharacterId))
+        {
+            Token().SetBindValue(View.MemberStatusMessage, "Unable to determine target character key.");
+            Token().SetBindValue(View.MemberStatusVisible, true);
+            return;
+        }
+
+        PersonaId targetPersona = PersonaId.FromCharacter(new CharacterId(targetCharacterId));
+        string memberName = targetCreature.Name;
+
+        // Check if already a member
+        if (_members.Any(m => m.PersonaId.Equals(targetPersona)))
+        {
+            Token().SetBindValue(View.MemberStatusMessage, $"{memberName} is already a member.");
+            Token().SetBindValue(View.MemberStatusVisible, true);
+            return;
+        }
+
+        _ = AddMemberAsync(sessionId, targetPersona, memberName);
+    }
+
+    private async Task AddMemberAsync(Guid sessionId, PersonaId memberPersona, string memberName)
+    {
         await SetProcessingStateAsync(true).ConfigureAwait(false);
 
         try
         {
-            // Try to find the player by character name and get their persona
-            PersonaId? memberPersona = TryResolvePersonaByCharacterName(memberName.Trim());
-            if (memberPersona is null)
-            {
-                await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
-                    $"Could not find character '{memberName}'. They must be online.",
-                    ColorConstants.Orange)).ConfigureAwait(false);
-                return;
-            }
-
             PlayerStallAddMemberRequest request = new(
                 sessionId,
                 _config.StallId,
                 _config.SellerPersona,
-                memberPersona.Value,
-                memberName.Trim());
+                memberPersona,
+                memberName);
 
             PlayerStallSellerOperationResult result = await EventManager
                 .RequestAddMemberAsync(request)
                 .ConfigureAwait(false);
 
             await HandleOperationResultAsync(result).ConfigureAwait(false);
+
+            // Clear the member status on success
+            await NwTask.SwitchToMainThread();
+            Token().SetBindValue(View.MemberStatusMessage, string.Empty);
+            Token().SetBindValue(View.MemberStatusVisible, false);
         }
         catch (Exception ex)
         {
@@ -1566,28 +1608,5 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         {
             await SetProcessingStateAsync(false).ConfigureAwait(false);
         }
-    }
-
-    private PersonaId? TryResolvePersonaByCharacterName(string characterName)
-    {
-        // Try to find online player by character name
-        NwPlayer? targetPlayer = NwModule.Instance.Players
-            .FirstOrDefault(p => 
-                p.ControlledCreature is not null && 
-                string.Equals(p.ControlledCreature.Name, characterName, StringComparison.OrdinalIgnoreCase));
-
-        if (targetPlayer?.ControlledCreature is null)
-        {
-            return null;
-        }
-
-        // Get the character's persona ID from their GUID
-        Guid characterGuid = targetPlayer.ControlledCreature.GetObjectVariable<LocalVariableGuid>("CHARACTER_GUID").Value;
-        if (characterGuid == Guid.Empty)
-        {
-            return null;
-        }
-
-        return PersonaId.FromCharacter(new CharacterId(characterGuid));
     }
 }
