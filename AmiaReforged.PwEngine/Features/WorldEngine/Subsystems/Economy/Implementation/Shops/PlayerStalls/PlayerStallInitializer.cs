@@ -303,7 +303,7 @@ public sealed class PlayerStallInitializer
             }
 
             PlayerStall? stall = await Task.Run(() =>
-                _shops.GetShopById(registration.StallId!.Value)).ConfigureAwait(false);
+                _shops.GetShopWithMembers(registration.StallId!.Value)).ConfigureAwait(false);
 
             await NwTask.SwitchToMainThread();
 
@@ -351,6 +351,13 @@ public sealed class PlayerStallInitializer
 
             if (stallHasOwner)
             {
+                // Check if player is an active member - members get seller access
+                if (IsActiveMember(stall, characterPersonaId))
+                {
+                    await OpenSellerWindowAsync(player, stall, characterPersonaId).ConfigureAwait(false);
+                    return;
+                }
+
                 if (!IsStallOpen(stall))
                 {
                     await SendServerMessageAsync(player,
@@ -446,6 +453,19 @@ public sealed class PlayerStallInitializer
     private static bool IsStallOpen(PlayerStall stall)
     {
         return stall.IsActive && !stall.SuspendedUtc.HasValue;
+    }
+
+    private static bool IsActiveMember(PlayerStall stall, PersonaId characterPersonaId)
+    {
+        if (stall.Members is null || stall.Members.Count == 0)
+        {
+            return false;
+        }
+
+        string personaKey = characterPersonaId.ToString();
+        return stall.Members.Any(m =>
+            string.Equals(m.PersonaId, personaKey, StringComparison.OrdinalIgnoreCase)
+            && m.RevokedUtc == null);
     }
 
     private static bool IsPersonaUsingDifferentCharacter(
