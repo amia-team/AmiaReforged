@@ -25,6 +25,11 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 	private int _selectedProductUnitPrice;
 	private int _currentGoldOnHand;
 
+	// Filter state
+	private string _searchTerm = string.Empty;
+	private int _selectedBaseItemType = -1; // -1 = All Types
+	private PlayerStallBuyerSnapshot? _currentSnapshot;
+
 	public PlayerBuyerPresenter(PlayerBuyerView view, NwPlayer player, PlayerStallBuyerWindowConfig config)
 	{
 		View = view;
@@ -80,8 +85,22 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 
 	public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
 	{
+		if (eventData.EventType == NuiEventType.Watch)
+		{
+			HandleWatchEvent(eventData);
+			return;
+		}
+
 		if (eventData.EventType != NuiEventType.Click)
 		{
+			return;
+		}
+
+		if (eventData.ElementId == "player_stall_clear_search")
+		{
+			_searchTerm = string.Empty;
+			Token().SetBindValue(View.SearchFilter, string.Empty);
+			RefreshProductList();
 			return;
 		}
 
@@ -140,6 +159,7 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 	{
 		await NwTask.SwitchToMainThread();
 
+		_currentSnapshot = snapshot;
 		_productRows.Clear();
 		_selectedProductIndex = -1;
 		_selectedProductQuantityAvailable = 0;
@@ -165,48 +185,11 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 		Token().SetBindValue(View.PreviewPlaceholderVisible, true);
 		Token().SetBindValue(View.QuantityRowVisible, false);
 
-	List<string> entries = new(snapshot.Products.Count);
-	List<string> tooltips = new(snapshot.Products.Count);
-	List<bool> enabled = new(snapshot.Products.Count);
+		// Initialize filter controls and set up watches
+		InitializeFilterOptions(snapshot.Products);
+		SetupFilterWatches();
 
-		foreach (PlayerStallProductView product in snapshot.Products)
-		{
-			bool canPurchase = product.IsPurchasable && !product.IsSoldOut;
-			_productRows.Add(new ProductRow(product.ProductId, canPurchase, product));
-
-			string status = product.IsSoldOut
-				? "(Sold out)"
-				: product.QuantityAvailable > 0
-					? string.Format(CultureInfo.InvariantCulture, "({0} on hand)", product.QuantityAvailable)
-					: string.Empty;
-
-			string statusSuffix = string.IsNullOrWhiteSpace(status) ? string.Empty : " " + status;
-
-			// Display original name if different from current name
-			string originalNameSuffix = string.Empty;
-			if (!string.IsNullOrWhiteSpace(product.OriginalName) &&
-			    !string.Equals(product.OriginalName, product.DisplayName, StringComparison.OrdinalIgnoreCase))
-			{
-				originalNameSuffix = string.Format(CultureInfo.InvariantCulture, " (Originally: {0})", product.OriginalName);
-			}
-
-			string entry = string.Format(
-				CultureInfo.InvariantCulture,
-				"{0} - {1}{2}{3}",
-				product.DisplayName,
-				FormatPrice(product.Price),
-				statusSuffix,
-				originalNameSuffix);
-
-			entries.Add(entry);
-			tooltips.Add($"{product.Price.ToString()} gp");
-			enabled.Add(true); // Always allow selecting to see preview
-		}
-
-		Token().SetBindValues(View.ProductEntries, entries);
-		Token().SetBindValues(View.ProductTooltips, tooltips);
-		Token().SetBindValues(View.ProductSelectable, enabled);
-		Token().SetBindValue(View.ProductCount, entries.Count);
+		RefreshProductList();
 	}
 
 	private async Task HandlePurchaseAsync(int rowIndex)
@@ -383,6 +366,129 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 		}
 
 		return $"[{itemTypeName}]\n\n{description}";
+	}
+
+	private void SetupFilterWatches()
+	{
+		Token().SetBindWatch(View.SearchFilter, true);
+		Token().SetBindWatch(View.BaseItemTypeSelection, true);
+		Token().SetBindValue(View.SearchFilter, _searchTerm);
+	}
+
+	private void InitializeFilterOptions(IReadOnlyList<PlayerStallProductView> products)
+	{
+		List<NuiComboEntry> options = [new NuiComboEntry("All Types", -1)];
+
+		// Collect unique base item types present in the current products
+		var uniqueTypes = products
+			.Where(p => p.BaseItemType.HasValue)
+			.Select(p => (Type: p.BaseItemType!.Value, Name: p.ItemTypeName ?? BaseItemTypeNameResolver.GetDisplayName(p.BaseItemType) ?? $"Type {p.BaseItemType}"))
+			.DistinctBy(t => t.Type)
+			.OrderBy(t => t.Name);
+
+		foreach ((int type, string name) in uniqueTypes)
+		{
+			options.Add(new NuiComboEntry(name, type));
+		}
+
+		Token().SetBindValue(View.BaseItemTypeOptions, options);
+		Token().SetBindValue(View.BaseItemTypeSelection, _selectedBaseItemType);
+	}
+
+	private void HandleWatchEvent(ModuleEvents.OnNuiEvent eventData)
+	{
+		if (eventData.ElementId == View.SearchFilter.Key)
+		{
+			_searchTerm = (Token().GetBindValue(View.SearchFilter) ?? string.Empty).Trim();
+			RefreshProductList();
+			return;
+		}
+
+		if (eventData.ElementId == View.BaseItemTypeSelection.Key)
+		{
+			_selectedBaseItemType = Token().GetBindValue(View.BaseItemTypeSelection);
+			RefreshProductList();
+		}
+	}
+
+	private IEnumerable<PlayerStallProductView> ApplyFilters(IReadOnlyList<PlayerStallProductView> products)
+	{
+		IEnumerable<PlayerStallProductView> filtered = products;
+
+		if (!string.IsNullOrEmpty(_searchTerm))
+		{
+			filtered = filtered.Where(p =>
+				p.DisplayName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
+				(!string.IsNullOrEmpty(p.OriginalName) && p.OriginalName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)) ||
+				(!string.IsNullOrEmpty(p.Tooltip) && p.Tooltip.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)));
+		}
+
+		if (_selectedBaseItemType >= 0)
+		{
+			filtered = filtered.Where(p => p.BaseItemType == _selectedBaseItemType);
+		}
+
+		return filtered;
+	}
+
+	private void RefreshProductList()
+	{
+		if (_currentSnapshot is null)
+		{
+			return;
+		}
+
+		_productRows.Clear();
+		_selectedProductIndex = -1;
+
+		// Hide preview when list refreshes
+		Token().SetBindValue(View.PreviewVisible, false);
+		Token().SetBindValue(View.PreviewPlaceholderVisible, true);
+
+		IEnumerable<PlayerStallProductView> filteredProducts = ApplyFilters(_currentSnapshot.Products);
+
+		List<string> entries = new();
+		List<string> tooltips = new();
+		List<bool> enabled = new();
+
+		foreach (PlayerStallProductView product in filteredProducts)
+		{
+			bool canPurchase = product.IsPurchasable && !product.IsSoldOut;
+			_productRows.Add(new ProductRow(product.ProductId, canPurchase, product));
+
+			string status = product.IsSoldOut
+				? "(Sold out)"
+				: product.QuantityAvailable > 0
+					? string.Format(CultureInfo.InvariantCulture, "({0} on hand)", product.QuantityAvailable)
+					: string.Empty;
+
+			string statusSuffix = string.IsNullOrWhiteSpace(status) ? string.Empty : " " + status;
+
+			// Display original name if different from current name
+			string originalNameSuffix = string.Empty;
+			if (!string.IsNullOrWhiteSpace(product.OriginalName) &&
+			    !string.Equals(product.OriginalName, product.DisplayName, StringComparison.OrdinalIgnoreCase))
+			{
+				originalNameSuffix = string.Format(CultureInfo.InvariantCulture, " (Originally: {0})", product.OriginalName);
+			}
+
+			string entry = string.Format(
+				CultureInfo.InvariantCulture,
+				"{0} - {1}{2}{3}",
+				product.DisplayName,
+				FormatPrice(product.Price),
+				statusSuffix,
+				originalNameSuffix);
+
+			entries.Add(entry);
+			tooltips.Add($"{product.Price.ToString()} gp");
+			enabled.Add(true); // Always allow selecting to see preview
+		}
+
+		Token().SetBindValues(View.ProductEntries, entries);
+		Token().SetBindValues(View.ProductTooltips, tooltips);
+		Token().SetBindValues(View.ProductSelectable, enabled);
+		Token().SetBindValue(View.ProductCount, entries.Count);
 	}
 
 	private sealed record ProductRow(long ProductId, bool CanPurchase, PlayerStallProductView Product);

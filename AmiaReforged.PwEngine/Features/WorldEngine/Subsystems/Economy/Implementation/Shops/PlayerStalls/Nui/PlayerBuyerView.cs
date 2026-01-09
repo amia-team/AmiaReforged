@@ -30,6 +30,11 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
     public readonly NuiBind<string> ProductTooltips = new("player_stall_product_tooltips");
     public readonly NuiBind<bool> ProductSelectable = new("player_stall_product_selectable");
 
+    // Filter bindings
+    public readonly NuiBind<string> SearchFilter = new("player_stall_search");
+    public readonly NuiBind<int> BaseItemTypeSelection = new("player_stall_item_type_filter");
+    public readonly NuiBind<List<NuiComboEntry>> BaseItemTypeOptions = new("player_stall_item_type_options");
+
     // Preview bindings
     public readonly NuiBind<bool> PreviewVisible = new("player_stall_preview_visible");
     public readonly NuiBind<bool> PreviewPlaceholderVisible = new("player_stall_preview_placeholder_visible");
@@ -294,6 +299,42 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
                         }
                     ]
                 },
+                new NuiRow
+                {
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiTextEdit("Search products...", SearchFilter, 64, false)
+                        {
+                            Width = 180f,
+                            Height = 26f
+                        },
+                        new NuiButtonImage("ir_abort")
+                        {
+                            Id = "player_stall_clear_search",
+                            Width = 26f,
+                            Height = 26f,
+                            Tooltip = "Clear search"
+                        },
+                        new NuiSpacer { Width = 10f },
+                        new NuiLabel("Type:")
+                        {
+                            Width = 40f,
+                            Height = 26f,
+                            HorizontalAlign = NuiHAlign.Right,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiCombo
+                        {
+                            Width = 150f,
+                            Height = 26f,
+                            Entries = BaseItemTypeOptions,
+                            Selected = BaseItemTypeSelection
+                        }
+                    ]
+                },
+                new NuiSpacer { Height = 4f },
                 new NuiRow
                 {
                     Children =
