@@ -73,6 +73,13 @@ public class LanguageCheckerModel
             AutomaticLanguages = autoLanguages.Split('|').Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
         }
 
+        // Add class-based automatic languages
+        AddClassBasedAutomaticLanguages();
+
+        // Save the automatic languages (including class-based ones) back to the PC Key
+        SaveAutomaticLanguages();
+
+
         // Load chosen languages
         LocalVariableString chosenVar = pcKey.GetObjectVariable<LocalVariableString>(LanguageCheckerData.LanguagesChosenVar);
         string? chosenLanguages = chosenVar.Value;
@@ -111,11 +118,173 @@ public class LanguageCheckerModel
     }
 
     /// <summary>
-    /// Gets total language count.
+    /// Gets total language count (including automatic languages).
     /// </summary>
     public int GetTotalLanguageCount()
     {
         return GetAllLanguages().Count;
+    }
+
+    /// <summary>
+    /// Gets the maximum number of languages the character can select (before class/feat bonuses).
+    /// </summary>
+    public int GetMaxLanguageCount()
+    {
+        if (_selectedCharacter == null)
+            return 0;
+
+        // Base max languages from class/race
+        int maxLanguages = GetBaseLanguageMax();
+
+        // Bonus from Lore skill (1 bonus per 10 ranks of base Lore skill)
+        int loreBonus = GetLoreSkillBonus();
+        maxLanguages += loreBonus;
+
+        // Bonus from Epic Skill Focus: Lore feat
+        int epicSkillFocusBonus = HasEpicSkillFocusLore() ? 1 : 0;
+        maxLanguages += epicSkillFocusBonus;
+
+        // Bonus from having at least 5 Bard levels
+        int bardBonus = GetBardLevelBonus();
+        maxLanguages += bardBonus;
+
+        return maxLanguages;
+    }
+
+    /// <summary>
+    /// Gets the base maximum languages for the character (from class/race, before feat/skill bonuses).
+    /// This includes the base language from class/race plus INT modifier bonus.
+    /// </summary>
+    private int GetBaseLanguageMax()
+    {
+        if (_selectedCharacter == null)
+            return 0;
+
+        try
+        {
+            // Get INT modifier bonus (characters get 1 bonus language per point of INT modifier)
+            int intModifier = _selectedCharacter.GetAbilityModifier(Ability.Intelligence);
+
+            return Math.Max(intModifier, 0); // Ensure at least 0 languages
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// Gets language bonus from Lore skill rank (1 bonus per 10 base ranks, not including gear).
+    /// </summary>
+    private int GetLoreSkillBonus()
+    {
+        if (_selectedCharacter == null)
+            return 0;
+
+        try
+        {
+            // Get Lore skill rank
+            int skillRank = _selectedCharacter.GetSkillRank(Skill.Lore);
+
+            // Award 1 language per 10 base ranks
+            return skillRank / 10;
+        }
+        catch
+        {
+            // If there's any error, just return 0
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// Checks if the character has the Epic Skill Focus: Lore feat.
+    /// </summary>
+    private bool HasEpicSkillFocusLore()
+    {
+        if (_selectedCharacter == null)
+            return false;
+
+        try
+        {
+            // Check if the character has the Epic Skill Focus: Lore feat
+            NwFeat? feat = _selectedCharacter.Feats.FirstOrDefault(f => f.FeatType == Feat.EpicSkillFocusLore);
+            return feat != null;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Gets language bonus from Bard class level (1 bonus if 5+ levels).
+    /// </summary>
+    private int GetBardLevelBonus()
+    {
+        if (_selectedCharacter == null)
+            return 0;
+
+        try
+        {
+            // Get Bard class level - iterate through classes to find Bard
+            int bardLevel = 0;
+
+            foreach (var classInfo in _selectedCharacter.Classes)
+            {
+                string className = classInfo.Class.Name.ToString();
+
+                // Check if this is the Bard class by name
+                if (className.Contains("Bard", StringComparison.OrdinalIgnoreCase))
+                {
+                    bardLevel = classInfo.Level;
+                    break;
+                }
+            }
+            return bardLevel >= 5 ? 1 : 0;
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// Adds class-based automatic languages to the character's language list.
+    /// </summary>
+    private void AddClassBasedAutomaticLanguages()
+    {
+        if (_selectedCharacter == null)
+            return;
+
+        try
+        {
+            // Dragon Disciple: Draconic is automatic if 10+ levels
+            int dragonDiscipleLevel = 0;
+
+            foreach (var classInfo in _selectedCharacter.Classes)
+            {
+                string className = classInfo.Class.Name.ToString();
+
+                // Check if this is the Dragon Disciple class by name
+                if (className.Contains("Dragon Disciple", StringComparison.OrdinalIgnoreCase))
+                {
+                    dragonDiscipleLevel = classInfo.Level;
+                    break;
+                }
+            }
+
+            if (dragonDiscipleLevel >= 10)
+            {
+                if (!AutomaticLanguages.Contains("Draconic"))
+                {
+                    AutomaticLanguages.Add("Draconic");
+                }
+            }
+        }
+        catch
+        {
+            // Silently continue if there's an error
+        }
     }
 
     /// <summary>
@@ -132,7 +301,8 @@ public class LanguageCheckerModel
             "Durpari", "Dwarven", "Elven", "Giant", "Gnoll", "Gnomish", "Goblin", "Halruaan", "Hin",
             "Ignan", "Illuskan", "Infernal", "Kozakuran", "Lantanese", "Loross", "Midani", "Mulhorandi",
             "Nexalan", "Orcish", "Rashemi", "Shaaran", "Shou", "Slaadi", "Sylvan", "Tashalan", "Terran",
-            "Thayan", "Thieves' Cant", "Thorass", "Tuigan", "Turmic", "Uluik", "Undercommon", "Untheric"
+            "Thayan", "Thieves' Cant", "Thorass", "Tuigan", "Turmic", "Uluik", "Undercommon", "Untheric",
+            "Waelan", "Yuan-Ti", "Gith", "Aboleth", "Kenku", "Kentaur"
         };
 
         // Remove duplicates and sort
@@ -222,6 +392,21 @@ public class LanguageCheckerModel
         string dmLanguagesStr = string.Join("|", DmAddedLanguages);
         LocalVariableString dmVar = pcKey.GetObjectVariable<LocalVariableString>(LanguageCheckerData.LanguagesDmAddedVar);
         dmVar.Value = dmLanguagesStr;
+    }
+
+    /// <summary>
+    /// Saves automatic languages to the PC Key.
+    /// </summary>
+    private void SaveAutomaticLanguages()
+    {
+        if (_selectedCharacter == null) return;
+
+        NwItem? pcKey = _selectedCharacter.Inventory.Items.FirstOrDefault(item => item.ResRef == LanguageCheckerData.PcKeyResRef);
+        if (pcKey == null) return;
+
+        string autoLanguagesStr = string.Join("|", AutomaticLanguages);
+        LocalVariableString autoVar = pcKey.GetObjectVariable<LocalVariableString>(LanguageCheckerData.LanguagesAutomaticVar);
+        autoVar.Value = autoLanguagesStr;
     }
 }
 

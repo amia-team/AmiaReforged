@@ -10,6 +10,7 @@ public static class LanguageData
     /// </summary>
     public static readonly List<string> AllSelectableLanguages = new()
     {
+        "Aboleth",
         "Abyssal",
         "Aglarondan",
         "Alzhedo",
@@ -27,6 +28,7 @@ public static class LanguageData
         "Dwarven",
         "Elven",
         "Giant",
+        "Gith",
         "Gnoll",
         "Gnomish",
         "Goblin",
@@ -35,6 +37,8 @@ public static class LanguageData
         "Ignan",
         "Illuskan",
         "Infernal",
+        "Kenku",
+        "Kentaur",
         "Kozakuran",
         "Lantanese",
         "Midani",
@@ -53,7 +57,9 @@ public static class LanguageData
         "Turmic",
         "Uluik",
         "Undercommon",
-        "Untheric"
+        "Untheric",
+        "Waelan",
+        "Yuan-Ti"
     };
 
     /// <summary>

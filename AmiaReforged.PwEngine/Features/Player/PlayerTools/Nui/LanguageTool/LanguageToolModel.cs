@@ -100,8 +100,8 @@ public class LanguageToolModel
     {
         if (_character == null) return;
 
-        // Druids get Druidic automatically
-        if (_character.GetClassInfo(ClassType.Druid)?.Level > 0)
+        // Druids get Druidic automatically at 5+ levels
+        if (_character.GetClassInfo(ClassType.Druid)?.Level > 5)
         {
             if (!AutomaticLanguages.Contains(LanguageData.SpecialLanguages.Druidic))
             {
@@ -109,12 +109,22 @@ public class LanguageToolModel
             }
         }
 
-        // Rogues get Thieves' Cant automatically
+        // Rogues get Thieves' Cant automatically at 5+ levels
         if (_character.GetClassInfo(ClassType.Rogue)?.Level > 4)
         {
             if (!AutomaticLanguages.Contains(LanguageData.SpecialLanguages.ThievesCant))
             {
                 AutomaticLanguages.Add(LanguageData.SpecialLanguages.ThievesCant);
+            }
+        }
+
+        // Dragon Disciples get Draconic automatically at 10+ levels
+        int ddLevel = _character.GetClassInfo(ClassType.DragonDisciple)?.Level ?? 0;
+        if (ddLevel >= 10)
+        {
+            if (!AutomaticLanguages.Contains("Draconic"))
+            {
+                AutomaticLanguages.Add("Draconic");
             }
         }
     }
@@ -130,11 +140,99 @@ public class LanguageToolModel
         int baseInt = _character.GetAbilityScore(Ability.Intelligence, true);
         int intModifier = (baseInt - 10) / 2;
 
-        // If they only have 1 automatic language, they get 1 + INT mod
-        // Otherwise they just get INT mod additional languages
-        int baseBonus = AutomaticLanguages.Count == 1 ? 1 : 0;
+        // Start with INT modifier only (no base +1)
+        int totalLanguages = Math.Max(0, intModifier);
 
-        return Math.Max(0, intModifier + baseBonus);
+        // Add bonus from Lore skill (1 bonus per 10 base ranks)
+        int loreBonus = GetLoreSkillBonus();
+        totalLanguages += loreBonus;
+
+        // Add bonus from Epic Skill Focus: Lore feat
+        if (HasEpicSkillFocusLore())
+        {
+            totalLanguages += 1;
+        }
+
+        // Add bonus from Bard class (5+ levels = 1 bonus)
+        int bardBonus = GetBardLevelBonus();
+        totalLanguages += bardBonus;
+
+        return totalLanguages;
+    }
+
+    /// <summary>
+    /// Gets language bonus from Lore skill rank (1 bonus per 10 base ranks, not including gear).
+    /// </summary>
+    private int GetLoreSkillBonus()
+    {
+        if (_character == null)
+            return 0;
+
+        try
+        {
+            // Get Lore skill rank
+            int skillRank = _character.GetSkillRank(Skill.Lore, true);
+
+            // Award 1 language per 10 base ranks
+            return skillRank / 10;
+        }
+        catch
+        {
+            // If there's any error, just return 0
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// Checks if the character has the Epic Skill Focus: Lore feat.
+    /// </summary>
+    private bool HasEpicSkillFocusLore()
+    {
+        if (_character == null)
+            return false;
+
+        try
+        {
+            // Check if the character has the Epic Skill Focus: Lore feat
+            NwFeat? feat = _character.Feats.FirstOrDefault(f => f.FeatType == Feat.EpicSkillFocusLore);
+            return feat != null;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Gets language bonus from Bard class level (1 bonus if 5+ levels).
+    /// </summary>
+    private int GetBardLevelBonus()
+    {
+        if (_character == null)
+            return 0;
+
+        try
+        {
+            // Get Bard class level by iterating through classes
+            int bardLevel = 0;
+            foreach (var classInfo in _character.Classes)
+            {
+                string className = classInfo.Class.Name.ToString();
+
+                // Check if this is the Bard class by name
+                if (className.Contains("Bard", StringComparison.OrdinalIgnoreCase))
+                {
+                    bardLevel = classInfo.Level;
+                    break;
+                }
+            }
+
+            return bardLevel >= 5 ? 1 : 0;
+        }
+        catch
+        {
+            return 0;
+        }
     }
 
     /// <summary>
@@ -181,7 +279,7 @@ public class LanguageToolModel
             AvailableLanguages.Add(LanguageData.SpecialLanguages.Thorass);
         }
 
-        // Loross requires 10+ INT modifier
+        // Loross requires 8+ INT modifier
         if (intModifier >= 8 && !AutomaticLanguages.Contains(LanguageData.SpecialLanguages.Loross)
             && !ChosenLanguages.Contains(LanguageData.SpecialLanguages.Loross))
         {

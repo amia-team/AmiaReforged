@@ -118,8 +118,10 @@ public class LanguageCheckerPresenter : ScryPresenter<LanguageCheckerView>
         // Update character name
         Token().SetBindValue(View.SelectedCharacterName, Model.GetCharacterName());
 
-        // Update language count
-        string countText = $"Total Languages: {Model.GetTotalLanguageCount()}";
+        // Update language count - show both current total and maximum allowed
+        int totalLanguages = Model.GetTotalLanguageCount();
+        int maxLanguages = Model.GetMaxLanguageCount();
+        string countText = $"Total Languages: {totalLanguages} (Max: {maxLanguages})";
         Token().SetBindValue(View.LanguageCountText, countText);
 
         // Update automatic languages list

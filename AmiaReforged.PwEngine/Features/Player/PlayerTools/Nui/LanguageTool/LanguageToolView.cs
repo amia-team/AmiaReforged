@@ -19,6 +19,7 @@ public class LanguageToolView : ScryView<LanguageToolPresenter>, IToolWindow
     public readonly NuiBind<bool> SaveButtonEnabled = new(key: "save_button_enabled");
 
     public NuiButtonImage SaveButton = null!;
+    public NuiButtonImage ReportLanguagesButton = null!;
 
     public LanguageToolView(NwPlayer player)
     {
@@ -200,8 +201,16 @@ public class LanguageToolView : ScryView<LanguageToolPresenter>, IToolWindow
         {
             Children =
             {
-                new NuiSpacer { Width = 185f },
+                new NuiSpacer { Width = 166f },
                 ImagePlatedButton("save_languages", out SaveButton, "ui_btn_save"),
+                new NuiSpacer { Width = 10f },
+                new NuiButtonImage("ui_speak")
+                {
+                    Id = "report_languages",
+                    Width = 38f,
+                    Height = 38f,
+                    Tooltip = "Report your known languages."
+                }.Assign(out ReportLanguagesButton),
                 new NuiSpacer { Width = 10f }
             }
         };

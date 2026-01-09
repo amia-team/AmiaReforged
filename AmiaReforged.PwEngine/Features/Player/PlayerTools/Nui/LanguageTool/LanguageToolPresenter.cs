@@ -103,7 +103,46 @@ public class LanguageToolPresenter : ScryPresenter<LanguageToolView>
                     }
                 }
             }
+            return;
         }
+
+        if (click.ElementId == View.ReportLanguagesButton.Id)
+        {
+            ReportLanguages();
+            return;
+        }
+    }
+
+    private void ReportLanguages()
+    {
+        NwCreature? character = _player.LoginCreature;
+        if (character == null)
+        {
+            _player.SendServerMessage("Character not found.", ColorConstants.Red);
+            return;
+        }
+
+        // Get all languages (automatic + chosen)
+        List<string> allLanguages = new List<string>(Model.AutomaticLanguages);
+        allLanguages.AddRange(Model.ChosenLanguages);
+        allLanguages = allLanguages.Distinct().ToList();
+        allLanguages.Sort();
+
+        // Create the message
+        string languageList = string.Join(", ", allLanguages);
+        string message = $"*{character.Name} reports knowing: {languageList}*";
+
+        // Send message to all players in the same area as this character
+        foreach (NwPlayer player in NwModule.Instance.Players)
+        {
+            if (player.LoginCreature != null && player.LoginCreature.Area == character.Area)
+            {
+                player.SendServerMessage(message, ColorConstants.Cyan);
+            }
+        }
+
+        // Send confirmation to the player who triggered it
+        _player.SendServerMessage($"Language information reported.", ColorConstants.Green);
     }
 
     private void ShowSaveConfirmation()
