@@ -18,8 +18,6 @@ public class BoxOfHats
     private const string MaskBoxPcKeyLocalObject = "mask_box";
     private const string IsSetUpLocalInt = "is_setup";
     private const string SelectedRaceLocalInt = "selected_race";
-    private const string MaskVfxLocalInt = "mask_vfx";
-    private const string HatVfxLocalInt = "hat_vfx";
 
     private const string HatVfxTag = "hat_vfx";
     private const string MaskVfxTag = "mask_vfx";
@@ -178,17 +176,13 @@ public class BoxOfHats
         {
             NWScript.SendMessageToPC(playerCreature,
                 $"BUG REPORT: Could not select hat from {selectedHat}. Screenshot this and send this to staff on Discord or on the Forums");
-            NWScript.SetLocalInt(pcKey, HatVfxLocalInt, 0);
-
             return;
         }
 
-        NWScript.SetLocalInt(pcKey, HatVfxLocalInt, (int)vfx);
-
         VisualEffectTableEntry hatEntry = NwGameTables.VisualEffectTable.GetRow((int)vfx);
         Effect hatVfx = Effect.VisualEffect(hatEntry);
-        // PersistentVfxService controls persistence for permanently applied unyielding visual effects
-        hatVfx.SubType = EffectSubType.Unyielding;
+        // PersistentVfxService controls persistence for permanently applied supernatural visual effects
+        hatVfx.SubType = EffectSubType.Supernatural;
         hatVfx.Tag = HatVfxTag;
 
         playerCreature.ApplyEffect(EffectDuration.Permanent, hatVfx);
@@ -239,19 +233,15 @@ public class BoxOfHats
             : _masksAndHats.MasksForRace[race].FemaleMasks.GetValueOrDefault(maskEnum);
         if (vfx is null)
         {
-            NWScript.SetLocalInt(pcKey, MaskVfxLocalInt, 0);
-
             NWScript.SendMessageToPC(playerCreature,
-                $"BUG REPORT: Could not select hat from {mask}. Screenshot this and send this to staff on Discord or on the Forums");
+                $"BUG REPORT: Could not select mask from {mask}. Screenshot this and send this to staff on Discord or on the Forums");
             return;
         }
 
-        NWScript.SetLocalInt(pcKey, MaskVfxLocalInt, (int)vfx);
-
         VisualEffectTableEntry maskEntry = NwGameTables.VisualEffectTable.GetRow((int)vfx);
         Effect maskVfx = Effect.VisualEffect(maskEntry);
-        // PersistentVfxService controls persistence for permanently applied unyielding visual effects
-        maskVfx.SubType = EffectSubType.Unyielding;
+        // PersistentVfxService controls persistence for permanently applied supernatural visual effects
+        maskVfx.SubType = EffectSubType.Supernatural;
         maskVfx.Tag = MaskVfxTag;
 
         playerCreature.ApplyEffect(EffectDuration.Permanent, maskVfx);
