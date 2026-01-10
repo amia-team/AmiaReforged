@@ -35,6 +35,12 @@ public sealed class BankAccountModel
     public CoinhouseTag Coinhouse { get; private set; } = default;
 
     public bool AccountExists { get; private set; }
+    
+    /// <summary>
+    /// True if the player owns an account at this coinhouse (not just a holder on someone else's account).
+    /// </summary>
+    public bool HasOwnAccount { get; private set; }
+    
     public CoinhouseAccountSummary? AccountSummary { get; private set; }
     public int CurrentBalance { get; private set; }
     public DateTime? LastAccessedAt { get; private set; }
@@ -134,11 +140,13 @@ public sealed class BankAccountModel
         AccessibleAccounts = [];
         AccessibleAccountOptions.Clear();
         SelectedAccountIndex = 0;
+        HasOwnAccount = false;
 
         // First, load all accessible accounts (personal + shared)
         GetAccessibleAccountsQuery accessibleQuery = new(Persona, Coinhouse);
         AccessibleAccountsResult accessibleResult = await _banking.GetAccessibleAccountsAsync(accessibleQuery, cancellationToken);
         AccessibleAccounts = accessibleResult.Accounts;
+        HasOwnAccount = accessibleResult.HasOwnAccount;
         
         // Build combo options for account selector
         for (int i = 0; i < AccessibleAccounts.Count; i++)
@@ -162,6 +170,7 @@ public sealed class BankAccountModel
 
         CoinhouseAccountQueryResult? result = await _banking.GetCoinhouseAccountAsync(query, cancellationToken);
         AccountExists = result?.AccountExists ?? false;
+        HasOwnAccount = result?.IsOwnAccount ?? false;
         AccountSummary = result?.Account;
         AccountHolders = result?.Holders ?? [];
 
@@ -272,6 +281,12 @@ public sealed class BankAccountModel
         ApplyAccessProfile(_accessEvaluator.Evaluate(Persona, AccountSummary!, AccountHolders));
         SeedShareOptions();
         ShareInstructions = BuildShareInstructions();
+        
+        // If the player doesn't have their own account, load eligibility so they can open one
+        if (!account.IsOwnAccount)
+        {
+            await LoadEligibilityAsync(cancellationToken);
+        }
     }
 
     /// <summary>

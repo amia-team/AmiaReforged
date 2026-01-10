@@ -31,6 +31,11 @@ public sealed record AccessibleAccountsResult
     /// True if the persona has more than one accessible account (enabling selection).
     /// </summary>
     public bool HasMultipleAccounts => Accounts.Count > 1;
+    
+    /// <summary>
+    /// True if the persona owns an account at this coinhouse (not just a holder on someone else's account).
+    /// </summary>
+    public bool HasOwnAccount => Accounts.Any(a => a.IsOwnAccount);
 }
 
 /// <summary>

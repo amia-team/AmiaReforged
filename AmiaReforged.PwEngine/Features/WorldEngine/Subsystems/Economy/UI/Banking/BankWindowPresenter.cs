@@ -199,15 +199,17 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
         Token().SetBindValues(View.PendingDepositLabels, Model.PendingDepositItems);
         Token().SetBindValue(View.PendingDepositCount, Model.PendingDepositItems.Count);
 
-        string eligibilitySummary = Model.AccountExists
+        // Show account opening options when player doesn't have their own account
+        // (they may still have access to shared accounts)
+        string eligibilitySummary = Model.HasOwnAccount
             ? "You already have an active account at this coinhouse."
             : Model.EligibilitySummary;
 
-        string personalStatus = Model.AccountExists
+        string personalStatus = Model.HasOwnAccount
             ? "Personal account is already open."
             : Model.PersonalEligibilityStatus;
 
-        string organizationStatus = Model.AccountExists
+        string organizationStatus = Model.HasOwnAccount
             ? "Shared account tools will become available after provisioning."
             : Model.OrganizationEligibilityStatus;
 
@@ -215,7 +217,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
         Token().SetBindValue(View.PersonalEligibilityStatus, personalStatus);
         Token().SetBindValue(View.OrganizationEligibilityStatus, organizationStatus);
 
-        bool showPersonalActions = !Model.AccountExists;
+        bool showPersonalActions = !Model.HasOwnAccount;
         Token().SetBindValue(View.ShowPersonalAccountActions, showPersonalActions);
         Token().SetBindValue(View.HasActiveAccount, Model.AccountExists);
         

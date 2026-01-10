@@ -18,6 +18,12 @@ public sealed record GetCoinhouseAccountQuery(PersonaId Persona, CoinhouseTag Co
 public sealed record CoinhouseAccountQueryResult
 {
     public required bool AccountExists { get; init; }
+    
+    /// <summary>
+    /// True if this account is owned by the queried persona (not just a holder on someone else's account).
+    /// </summary>
+    public required bool IsOwnAccount { get; init; }
+    
     public required Guid AccountId { get; init; }
     public required CoinhouseAccountSummary? Account { get; init; }
     public IReadOnlyList<CoinhouseAccountHolderDto> Holders { get; init; } = Array.Empty<CoinhouseAccountHolderDto>();

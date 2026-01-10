@@ -31,6 +31,7 @@ public sealed class GetCoinhouseAccountQueryHandler : IQueryHandler<GetCoinhouse
 
         Guid accountId = PersonaAccountId.ForCoinhouse(query.Persona, query.Coinhouse);
         CoinhouseAccountDto? account = await _coinhouses.GetAccountForAsync(accountId, cancellationToken);
+        bool isOwnAccount = account is not null;
 
         if (account is null && Guid.TryParse(query.Persona.Value, out Guid holderGuid))
         {
@@ -71,6 +72,7 @@ public sealed class GetCoinhouseAccountQueryHandler : IQueryHandler<GetCoinhouse
         return new CoinhouseAccountQueryResult
         {
             AccountExists = true,
+            IsOwnAccount = isOwnAccount,
             AccountId = account.Id,
             Account = summary,
             Holders = account.Holders ?? Array.Empty<CoinhouseAccountHolderDto>()
