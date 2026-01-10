@@ -16,6 +16,7 @@ public class LanguageToolView : ScryView<LanguageToolPresenter>, IToolWindow
     public readonly NuiBind<int> AvailableLanguagesCount = new(key: "available_languages_count");
     public readonly NuiBind<string> ChosenLanguageLabels = new(key: "chosen_language_labels");
     public readonly NuiBind<string> AvailableLanguageLabels = new(key: "available_language_labels");
+    public readonly NuiBind<string> AvailableLanguagesTooltip = new(key: "available_languages_tooltip");
     public readonly NuiBind<bool> SaveButtonEnabled = new(key: "save_button_enabled");
 
     public NuiButtonImage SaveButton = null!;
@@ -184,7 +185,8 @@ public class LanguageToolView : ScryView<LanguageToolPresenter>, IToolWindow
                         new NuiLabel("Available Languages:")
                         {
                             Height = 20f,
-                            ForegroundColor = new Color(30, 20, 12)
+                            ForegroundColor = new Color(30, 20, 12),
+                            Tooltip = AvailableLanguagesTooltip
                         },
                         new NuiList(availableLanguagesCells, AvailableLanguagesCount)
                         {

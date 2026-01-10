@@ -201,7 +201,16 @@ public class LanguageToolPresenter : ScryPresenter<LanguageToolView>
     {
         // Update language count text
         string countText = $"You have chosen {Model.ChosenLanguages.Count} out of {Model.MaxChoosableLanguages} languages your character can know.";
+
         Token().SetBindValue(View.LanguageCountText, countText);
+
+        // Update Available Languages tooltip based on whether player is in rebuild mode
+        string availableTooltip = "Languages you can learn.";
+        if (Model.PreviouslyKnownLanguages.Count > 0)
+        {
+            availableTooltip = "+ = Previously known language (lost during rebuild). You must restore all lost languages before choosing new ones.";
+        }
+        Token().SetBindValue(View.AvailableLanguagesTooltip, availableTooltip);
 
         // Update automatic languages list (remove any empty strings)
         List<string> autoLanguages = Model.AutomaticLanguages.Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
@@ -212,8 +221,17 @@ public class LanguageToolPresenter : ScryPresenter<LanguageToolView>
         Token().SetBindValues(View.ChosenLanguageLabels, Model.ChosenLanguages);
         Token().SetBindValue(View.ChosenLanguagesCount, Model.ChosenLanguages.Count);
 
-        // Update available languages list
-        Token().SetBindValues(View.AvailableLanguageLabels, Model.AvailableLanguages);
+        // Update available languages list - add indicator for previously known languages
+        List<string> displayLanguages = Model.AvailableLanguages.Select(lang =>
+        {
+            if (Model.PreviouslyKnownLanguages.Contains(lang))
+            {
+                return $"+ {lang}"; // Plus indicates previously known
+            }
+            return lang;
+        }).ToList();
+
+        Token().SetBindValues(View.AvailableLanguageLabels, displayLanguages);
         Token().SetBindValue(View.AvailableLanguagesCount, Model.AvailableLanguages.Count);
 
         // Save button is always enabled - can save at any time with any number of languages

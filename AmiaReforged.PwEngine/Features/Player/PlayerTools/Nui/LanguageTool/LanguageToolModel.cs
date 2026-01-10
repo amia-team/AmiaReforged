@@ -11,6 +11,8 @@ public class LanguageToolModel
     private const string LanguagesChosenVar = "LANGUAGES_CHOSEN";
     private const string LanguagesAutomaticVar = "LANGUAGES_AUTOMATIC";
     private const string LanguagesLockedVar = "LANGUAGES_LOCKED";
+    private const string LanguagesTotalVar = "LANGUAGES_TOTAL";
+    private const string LanguagesSavedVar = "LANGUAGES_SAVED";
 
     private readonly NwPlayer _player;
     private readonly NwCreature? _character;
@@ -26,8 +28,10 @@ public class LanguageToolModel
     public List<string> AutomaticLanguages { get; private set; } = new();
     public List<string> ChosenLanguages { get; private set; } = new();
     public List<string> SavedLanguages { get; private set; } = new(); // Languages that were loaded from PC Key
+    public List<string> PreviouslyKnownLanguages { get; private set; } = new(); // Languages from LANGUAGES_SAVED that can be re-chosen
     public List<string> AvailableLanguages { get; private set; } = new();
     public int MaxChoosableLanguages { get; private set; }
+    public int OriginalLanguageTotal { get; private set; } // The LANGUAGES_TOTAL value from before rebuild
     public bool IsLocked { get; private set; }
 
     /// <summary>
@@ -70,6 +74,19 @@ public class LanguageToolModel
                 ChosenLanguages = savedLanguages.Split('|').ToList();
                 SavedLanguages = new List<string>(ChosenLanguages); // Keep track of what was saved
             }
+
+            // Load languages that were lost during rebuild from LANGUAGES_SAVED
+            LocalVariableString savedVar = pcKey.GetObjectVariable<LocalVariableString>(LanguagesSavedVar);
+            string? previouslyKnownStr = savedVar.Value;
+
+            if (!string.IsNullOrEmpty(previouslyKnownStr))
+            {
+                PreviouslyKnownLanguages = previouslyKnownStr.Split('|').Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
+            }
+
+            // Load the original language total (from before rebuild)
+            LocalVariableInt totalVar = pcKey.GetObjectVariable<LocalVariableInt>(LanguagesTotalVar);
+            OriginalLanguageTotal = totalVar.HasValue ? totalVar.Value : 0;
         }
 
         // Check if they have any previously saved languages
@@ -137,7 +154,7 @@ public class LanguageToolModel
         if (_character == null) return 0;
 
         // Get base Intelligence modifier (without gear)
-        int baseInt = _character.GetAbilityScore(Ability.Intelligence, true);
+        int baseInt = _character.GetRawAbilityScore(Ability.Intelligence);
         int intModifier = (baseInt - 10) / 2;
 
         // Start with INT modifier only (no base +1)
@@ -237,29 +254,53 @@ public class LanguageToolModel
 
     /// <summary>
     /// Builds the list of available languages that can be chosen.
+    /// If the player has previously known languages (from LANGUAGES_SAVED), they can ONLY choose from those.
+    /// Once ALL previously known languages are restored (LANGUAGES_SAVED is empty), they can choose from all languages.
     /// </summary>
     private void BuildAvailableLanguagesList()
     {
         AvailableLanguages = new List<string>();
 
-        foreach (string language in LanguageData.AllSelectableLanguages)
+        // If player has previously known languages (lost during rebuild), they can ONLY re-choose those
+        // This prevents players from "forgetting" and learning new languages during a rebuild
+        // Once all saved languages are restored, the full list becomes available again
+        if (PreviouslyKnownLanguages.Count > 0)
         {
-            // Skip if already an automatic language
-            if (AutomaticLanguages.Contains(language))
-                continue;
+            // Player can ONLY re-choose previously known languages until all are restored
+            foreach (string language in PreviouslyKnownLanguages)
+            {
+                if (!AutomaticLanguages.Contains(language) && !ChosenLanguages.Contains(language))
+                {
+                    AvailableLanguages.Add(language);
+                }
+            }
 
-            // Skip if already chosen
-            if (ChosenLanguages.Contains(language))
-                continue;
-
-            AvailableLanguages.Add(language);
+            // Sort alphabetically
+            AvailableLanguages.Sort();
         }
+        else
+        {
+            // No previously known languages - player can choose from all available languages
+            // This happens for new characters OR when all saved languages have been restored
+            foreach (string language in LanguageData.AllSelectableLanguages)
+            {
+                // Skip if already an automatic language
+                if (AutomaticLanguages.Contains(language))
+                    continue;
 
-        // Add special languages based on requirements
-        AddSpecialLanguagesIfQualified();
+                // Skip if already chosen
+                if (ChosenLanguages.Contains(language))
+                    continue;
 
-        // Sort alphabetically
-        AvailableLanguages.Sort();
+                AvailableLanguages.Add(language);
+            }
+
+            // Add special languages based on requirements
+            AddSpecialLanguagesIfQualified();
+
+            // Sort alphabetically
+            AvailableLanguages.Sort();
+        }
     }
 
     /// <summary>
@@ -298,6 +339,7 @@ public class LanguageToolModel
     /// <summary>
     /// Adds a language to the chosen list.
     /// Can be done even after initial save, as long as there are slots remaining.
+    /// Note: LANGUAGES_SAVED is only updated when player clicks Save, not when adding/removing.
     /// </summary>
     public bool AddLanguage(string language)
     {
@@ -308,6 +350,8 @@ public class LanguageToolModel
 
         ChosenLanguages.Add(language);
         AvailableLanguages.Remove(language);
+
+
         return true;
     }
 
@@ -366,6 +410,45 @@ public class LanguageToolModel
         {
             LocalVariableString autoLangVar = pcKey.GetObjectVariable<LocalVariableString>(LanguagesAutomaticVar);
             autoLangVar.Value = automaticLanguagesString;
+        }
+
+        // Save the total language count for tracking
+        LocalVariableInt totalVar = pcKey.GetObjectVariable<LocalVariableInt>(LanguagesTotalVar);
+        int previousTotal = totalVar.HasValue ? totalVar.Value : 0;
+        totalVar.Value = MaxChoosableLanguages;
+
+        // Update LANGUAGES_SAVED by removing any languages that are now chosen
+        if (PreviouslyKnownLanguages.Count > 0)
+        {
+            // Remove languages from PreviouslyKnownLanguages that are now in ChosenLanguages
+            List<string> stillNotChosen = PreviouslyKnownLanguages.Where(lang => !ChosenLanguages.Contains(lang)).ToList();
+
+            LocalVariableString savedVar = pcKey.GetObjectVariable<LocalVariableString>(LanguagesSavedVar);
+
+            if (stillNotChosen.Count > 0)
+            {
+                // Update LANGUAGES_SAVED with remaining languages
+                savedVar.Value = string.Join("|", stillNotChosen);
+                PreviouslyKnownLanguages = new List<string>(stillNotChosen);
+            }
+            else
+            {
+                // All previously saved languages have been re-chosen, delete the variable
+                savedVar.Delete();
+                PreviouslyKnownLanguages.Clear();
+                _player.SendServerMessage("All lost languages have been restored! You may now learn new languages.", ColorConstants.Cyan);
+            }
+        }
+
+        // Check if player has restored all lost languages (for when they haven't saved yet but reach the original total)
+        // If chosen count matches the previous LANGUAGES_TOTAL, they've restored everything
+        if (previousTotal > 0 && ChosenLanguages.Count >= previousTotal && PreviouslyKnownLanguages.Count == 0)
+        {
+            LocalVariableString savedVar = pcKey.GetObjectVariable<LocalVariableString>(LanguagesSavedVar);
+            if (savedVar.HasValue)
+            {
+                savedVar.Delete();
+            }
         }
 
         // Update saved languages list to match what we just saved
