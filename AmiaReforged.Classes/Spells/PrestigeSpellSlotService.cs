@@ -1,4 +1,4 @@
-﻿using Anvil.API;
+﻿﻿using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core;
@@ -16,6 +16,10 @@ namespace AmiaReforged.Classes.Spells;
 public class PrestigeSpellSlotService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
+    // Track creatures currently being processed to prevent concurrent execution
+    private readonly HashSet<uint> _processingCreatures = new();
+    private readonly object _processingLock = new();
 
     // Dictionary mapping prestige classes to their caster level modifier formulas
     private readonly Dictionary<ClassType, Func<int, int>> _prestigeClassModifiers = new()
@@ -68,6 +72,32 @@ public class PrestigeSpellSlotService
     }
 
     private async Task ApplyPrestigeSpellSlotSkin(NwCreature creature)
+    {
+        // Prevent concurrent execution for the same creature
+        lock (_processingLock)
+        {
+            if (_processingCreatures.Contains(creature))
+            {
+                Log.Info($"=== SKIPPED: ApplyPrestigeSpellSlotSkin already in progress for {creature.Name} ===");
+                return;
+            }
+            _processingCreatures.Add(creature);
+        }
+
+        try
+        {
+            await ApplyPrestigeSpellSlotSkinInternal(creature);
+        }
+        finally
+        {
+            lock (_processingLock)
+            {
+                _processingCreatures.Remove(creature);
+            }
+        }
+    }
+
+    private async Task ApplyPrestigeSpellSlotSkinInternal(NwCreature creature)
     {
         Log.Info($"=== STEP 0: Starting ApplyPrestigeSpellSlotSkin for {creature.Name} ===");
 

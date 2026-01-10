@@ -1,14 +1,17 @@
-﻿using Anvil.API;
+using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using AmiaReforged.Races.Races;
 using NWN.Core.NWNX;
 using AmiaReforged.PwEngine.Database.Entities.Admin;
+using NLog;
 
 namespace AmiaReforged.PwEngine.Features.DungeonMaster.RebuildTool;
 
 public sealed class RebuildToolModel
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
     private readonly NwPlayer _player;
     private readonly IRebuildRepository _repository;
     public NwCreature? SelectedCharacter { get; private set; }
@@ -249,6 +252,9 @@ public sealed class RebuildToolModel
 
         // Set character to target level using NWScript
         NWN.Core.NWScript.SetXP((uint)SelectedCharacter, targetXp);
+
+        // Check and reduce languages if they've lost language slots
+        CheckAndReduceLanguages(targetPlayer);
 
         // Send messages to both DM and player
         string message = $"Partial Rebuild: {SelectedCharacter.Name} set to level {targetLevel}. Removed {xpRemoved:N0} XP.";
@@ -905,6 +911,13 @@ public sealed class RebuildToolModel
                 return;
             }
 
+            // Get the player who owns this character
+            NwPlayer? targetPlayer = targetCharacter.ControllingPlayer;
+            if (targetPlayer != null)
+            {
+                // Check and reduce languages if they've lost language slots
+                CheckAndReduceLanguages(targetPlayer);
+            }
 
             _repository.CompleteRebuild(rebuildId);
             _repository.DeleteItemRecordsByRebuildId(rebuildId);
@@ -995,6 +1008,179 @@ public sealed class RebuildToolModel
             _player.SendServerMessage($"Error deserializing item: {ex.Message}", ColorConstants.Yellow);
             return null;
         }
+    }
+
+    private void CheckAndReduceLanguages(NwPlayer targetPlayer)
+    {
+        Log.Info($"[LANG-DM] CheckAndReduceLanguages called for {SelectedCharacter?.Name ?? "null"}");
+
+        if (SelectedCharacter == null)
+        {
+            Log.Info($"[LANG-DM] Selected character is null, returning");
+            return;
+        }
+
+        // Find PC Key
+        uint pcKeyId = NWN.Core.NWScript.GetItemPossessedBy(SelectedCharacter, "ds_pckey");
+        bool isValid = NWN.Core.NWScript.GetIsObjectValid(pcKeyId) == NWN.Core.NWScript.TRUE;
+        Log.Info($"[LANG-DM] PC Key ID: {pcKeyId}, IsValid: {isValid}");
+
+        if (!isValid) return;
+
+        // Get current chosen languages
+        string chosenStr = NWN.Core.NWScript.GetLocalString(pcKeyId, "LANGUAGES_CHOSEN");
+        Log.Info($"[LANG-DM] LANGUAGES_CHOSEN string: '{chosenStr}'");
+
+        if (string.IsNullOrEmpty(chosenStr))
+        {
+            Log.Info($"[LANG-DM] LANGUAGES_CHOSEN is null or empty, returning");
+            return;
+        }
+
+        List<string> chosenLanguages = chosenStr.Split('|').Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
+        Log.Info($"[LANG-DM] Parsed chosen languages count: {chosenLanguages.Count}, languages: {string.Join(", ", chosenLanguages)}");
+
+        // If no languages chosen, nothing to do
+        if (chosenLanguages.Count == 0)
+        {
+            Log.Info($"[LANG-DM] No languages in list after parsing, returning");
+            return;
+        }
+
+        // Calculate current max language count
+        int currentMaxLanguages = CalculateMaxLanguagesForCharacter();
+        Log.Info($"[LANG-DM] Current max languages calculated: {currentMaxLanguages}");
+
+        // Get the stored total from when they last saved
+        int previousTotal = NWN.Core.NWScript.GetLocalInt(pcKeyId, "LANGUAGES_TOTAL");
+        Log.Info($"[LANG-DM] LANGUAGES_TOTAL from PC Key: {previousTotal}");
+
+        // If LANGUAGES_TOTAL doesn't exist (legacy character), use the current chosen count as the previous total
+        if (previousTotal == 0)
+        {
+            previousTotal = chosenLanguages.Count;
+            Log.Info($"[LANG-DM] LANGUAGES_TOTAL was 0 (legacy character), setting to {previousTotal}");
+            // Save it for future reference
+            NWN.Core.NWScript.SetLocalInt(pcKeyId, "LANGUAGES_TOTAL", previousTotal);
+        }
+
+        Log.Info($"[LANG-DM] Comparison - Current Max: {currentMaxLanguages}, Previous Total: {previousTotal}");
+
+        // If current max is less than previous total, they've lost language slots
+        if (currentMaxLanguages < previousTotal)
+        {
+            Log.Info($"[LANG-DM] Player has LOST language slots! Processing removal...");
+
+            // Calculate how many languages need to be removed
+            int languagesToRemove = previousTotal - currentMaxLanguages;
+            int actualRemoveCount = Math.Min(languagesToRemove, chosenLanguages.Count);
+
+            Log.Info($"[LANG-DM] Languages to remove: {languagesToRemove}, Actual remove count: {actualRemoveCount}");
+
+            if (actualRemoveCount > 0)
+            {
+                // Save the full list to LANGUAGES_SAVED before modifying
+                NWN.Core.NWScript.SetLocalString(pcKeyId, "LANGUAGES_SAVED", chosenStr);
+                Log.Info($"[LANG-DM] Saved full list to LANGUAGES_SAVED: '{chosenStr}'");
+
+                // Remove languages from the end (last chosen)
+                List<string> removedLanguages = new();
+                for (int i = 0; i < actualRemoveCount; i++)
+                {
+                    int lastIndex = chosenLanguages.Count - 1;
+                    string removedLang = chosenLanguages[lastIndex];
+                    removedLanguages.Add(removedLang);
+                    chosenLanguages.RemoveAt(lastIndex);
+                    Log.Info($"[LANG-DM] Removed language #{i + 1}: '{removedLang}'");
+                }
+
+                // Save the updated chosen languages
+                string updatedChosenStr = string.Join("|", chosenLanguages);
+                NWN.Core.NWScript.SetLocalString(pcKeyId, "LANGUAGES_CHOSEN", updatedChosenStr);
+                Log.Info($"[LANG-DM] Updated LANGUAGES_CHOSEN to: '{updatedChosenStr}'");
+
+                // Notify the player
+                string removedList = string.Join(", ", removedLanguages);
+                targetPlayer.SendServerMessage($"You have lost access to one or more languages: {removedList}", ColorConstants.Orange);
+                _player.SendServerMessage($"Removed {actualRemoveCount} language(s) from {SelectedCharacter.Name}: {removedList}", ColorConstants.Green);
+                Log.Info($"[LANG-DM] Notified player of removed languages: {removedList}");
+            }
+            else
+            {
+                Log.Info($"[LANG-DM] actualRemoveCount was 0, no languages removed");
+            }
+        }
+        else
+        {
+            Log.Info($"[LANG-DM] No language slots lost (current {currentMaxLanguages} >= previous {previousTotal}), no action taken");
+        }
+    }
+
+    private int CalculateMaxLanguagesForCharacter()
+    {
+        if (SelectedCharacter == null) return 0;
+
+        // Get base Intelligence modifier (without gear)
+        int baseInt = SelectedCharacter.GetRawAbilityScore(Ability.Intelligence);
+        int intModifier = (baseInt - 10) / 2;
+        Log.Info($"[LANG-DM-CALC] Base INT: {baseInt}, INT Modifier: {intModifier}");
+
+        // Start with INT modifier only
+        int totalLanguages = Math.Max(0, intModifier);
+        Log.Info($"[LANG-DM-CALC] Starting total (INT mod): {totalLanguages}");
+
+        // Add bonus from Lore skill (1 bonus per 10 base ranks)
+        int loreRank = NWN.Core.NWScript.GetSkillRank(NWN.Core.NWScript.SKILL_LORE, (uint)SelectedCharacter, NWN.Core.NWScript.TRUE);
+        Log.Info($"[LANG-DM-CALC] Base Lore Rank: {loreRank}");
+        int loreBonus = loreRank / 10;
+        totalLanguages += loreBonus;
+        Log.Info($"[LANG-DM-CALC] Lore Bonus: {loreBonus}, Running Total: {totalLanguages}");
+
+        // Add bonus from Epic Skill Focus: Lore feat (feat 492)
+        bool hasEpicLore = NWN.Core.NWScript.GetHasFeat(492, (uint)SelectedCharacter) == NWN.Core.NWScript.TRUE;
+        Log.Info($"[LANG-DM-CALC] Checking Epic Skill Focus: Lore - Found: {hasEpicLore}");
+        if (hasEpicLore)
+        {
+            totalLanguages += 1;
+            Log.Info($"[LANG-DM-CALC] Has Epic Skill Focus: Lore, Running Total: {totalLanguages}");
+        }
+        else
+        {
+            Log.Info($"[LANG-DM-CALC] Does NOT have Epic Skill Focus: Lore");
+        }
+
+        // Add bonus from Bard class (5+ levels = 1 bonus)
+        int bardLevel = GetClassLevel(35); // Bard is class 35
+        Log.Info($"[LANG-DM-CALC] Bard Level: {bardLevel}");
+        int bardBonus = bardLevel >= 5 ? 1 : 0;
+        totalLanguages += bardBonus;
+        Log.Info($"[LANG-DM-CALC] Bard Bonus: {bardBonus}, Final Total: {totalLanguages}");
+
+        return totalLanguages;
+    }
+
+    private int GetClassLevel(int classType)
+    {
+        if (SelectedCharacter == null) return 0;
+
+        int totalLevels = SelectedCharacter.Level;
+        int classLevels = 0;
+
+        Log.Info($"[LANG-DM-CLASS] Checking for class type {classType} across {totalLevels} levels");
+
+        for (int level = 1; level <= totalLevels; level++)
+        {
+            CreatureLevelInfo levelInfo = SelectedCharacter.GetLevelStats(level);
+            int levelClassType = (int)levelInfo.ClassInfo.Class.ClassType;
+
+            if (levelClassType == classType)
+            {
+                classLevels++;
+            }
+        }
+
+        Log.Info($"[LANG-DM-CLASS] Found {classLevels} levels of class type {classType}");
+        return classLevels;
     }
 
     private void RemoveHeritageFeat(NwPlayer targetPlayer)
