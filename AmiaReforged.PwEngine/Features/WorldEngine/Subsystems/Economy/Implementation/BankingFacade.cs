@@ -27,6 +27,7 @@ public sealed class BankingFacade : IBankingFacade
     private readonly ICommandHandler<JoinCoinhouseAccountCommand> _joinAccountHandler;
     private readonly ICommandHandler<RemoveCoinhouseAccountHolderCommand> _removeHolderHandler;
     private readonly ICommandHandler<UpdateCoinhouseAccountHolderRoleCommand> _updateHolderRoleHandler;
+    private readonly IQueryHandler<GetAccessibleAccountsQuery, AccessibleAccountsResult> _getAccessibleAccountsHandler;
 
     public BankingFacade(
         ICommandHandler<OpenCoinhouseAccountCommand> openAccountHandler,
@@ -38,7 +39,8 @@ public sealed class BankingFacade : IBankingFacade
         IQueryHandler<GetBalanceQuery, int?> getBalanceHandler,
         ICommandHandler<JoinCoinhouseAccountCommand> joinAccountHandler,
         ICommandHandler<RemoveCoinhouseAccountHolderCommand> removeHolderHandler,
-        ICommandHandler<UpdateCoinhouseAccountHolderRoleCommand> updateHolderRoleHandler)
+        ICommandHandler<UpdateCoinhouseAccountHolderRoleCommand> updateHolderRoleHandler,
+        IQueryHandler<GetAccessibleAccountsQuery, AccessibleAccountsResult> getAccessibleAccountsHandler)
     {
         _openAccountHandler = openAccountHandler;
         _getAccountHandler = getAccountHandler;
@@ -50,6 +52,7 @@ public sealed class BankingFacade : IBankingFacade
         _joinAccountHandler = joinAccountHandler;
         _removeHolderHandler = removeHolderHandler;
         _updateHolderRoleHandler = updateHolderRoleHandler;
+        _getAccessibleAccountsHandler = getAccessibleAccountsHandler;
     }
 
     /// <inheritdoc />
@@ -59,6 +62,10 @@ public sealed class BankingFacade : IBankingFacade
     /// <inheritdoc />
     public Task<CoinhouseAccountQueryResult?> GetCoinhouseAccountAsync(GetCoinhouseAccountQuery query, CancellationToken ct = default)
         => _getAccountHandler.HandleAsync(query, ct);
+
+    /// <inheritdoc />
+    public Task<AccessibleAccountsResult> GetAccessibleAccountsAsync(GetAccessibleAccountsQuery query, CancellationToken ct = default)
+        => _getAccessibleAccountsHandler.HandleAsync(query, ct);
 
     /// <inheritdoc />
     public Task<IReadOnlyList<BalanceDto>> GetCoinhouseBalancesAsync(GetCoinhouseBalancesQuery query, CancellationToken ct = default)

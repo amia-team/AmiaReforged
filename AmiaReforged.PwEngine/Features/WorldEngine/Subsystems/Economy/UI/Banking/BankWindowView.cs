@@ -91,6 +91,12 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
     /// Indicates whether the player has an active account at this bank (for enabling admin features).
     /// </summary>
     public NuiBind<bool> HasActiveAccount = new("bank_has_active_account");
+    
+    // Account selector bindings (for switching between personal and shared accounts)
+    public readonly NuiBind<List<NuiComboEntry>> AccessibleAccountEntries = new("bank_accessible_account_entries");
+    public readonly NuiBind<int> AccessibleAccountSelection = new("bank_accessible_account_selection");
+    public readonly NuiBind<bool> ShowAccountSelector = new("bank_show_account_selector");
+    public readonly NuiBind<string> CurrentAccountLabel = new("bank_current_account_label");
 
     public BankWindowView(NwPlayer player, CoinhouseTag coinhouseTag, string bankDisplayName)
     {
@@ -258,6 +264,35 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                     HorizontalAlign = NuiHAlign.Left,
                     VerticalAlign = NuiVAlign.Middle,
                     ForegroundColor = new Color(50, 40, 30)
+                },
+                // Account selector (shown when user has access to multiple accounts)
+                new NuiRow
+                {
+                    Visible = ShowAccountSelector,
+                    Height = StandardRowHeight,
+                    Children =
+                    [
+                        new NuiLabel("Active Account:")
+                        {
+                            Width = 110f,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(50, 40, 30)
+                        },
+                        new NuiCombo
+                        {
+                            Id = "bank_account_selector",
+                            Width = 280f,
+                            Entries = AccessibleAccountEntries,
+                            Selected = AccessibleAccountSelection
+                        },
+                        new NuiSpacer(),
+                        new NuiLabel(CurrentAccountLabel)
+                        {
+                            HorizontalAlign = NuiHAlign.Right,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(80, 80, 80)
+                        }
+                    ]
                 },
                 BuildMainContent(accountRowTemplate, holdingRowTemplate, pendingRowTemplate)
             ]

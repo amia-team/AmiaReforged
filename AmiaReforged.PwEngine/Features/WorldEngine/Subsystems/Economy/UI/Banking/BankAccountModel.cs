@@ -66,6 +66,19 @@ public sealed class BankAccountModel
     public int SelectedDepositMode { get; set; }
     public int SelectedWithdrawMode { get; set; }
     public int SelectedShareType { get; set; } = (int)BankShareType.JointOwner;
+    
+    // Accessible accounts (personal + shared)
+    public IReadOnlyList<AccessibleAccountInfo> AccessibleAccounts { get; private set; } = [];
+    public List<NuiComboEntry> AccessibleAccountOptions { get; } = [];
+    public int SelectedAccountIndex { get; set; }
+    public bool HasMultipleAccounts => AccessibleAccounts.Count > 1;
+    public AccessibleAccountInfo? CurrentAccount => 
+        SelectedAccountIndex >= 0 && SelectedAccountIndex < AccessibleAccounts.Count 
+            ? AccessibleAccounts[SelectedAccountIndex] 
+            : null;
+    public string CurrentAccountRoleLabel => CurrentAccount is not null
+        ? $"({CurrentAccount.Role})"
+        : string.Empty;
 
     public bool CanView => Permissions.HasFlag(BankPermission.View);
     public bool CanDeposit => Permissions.HasFlag(BankPermission.Deposit);
@@ -118,7 +131,33 @@ public sealed class BankAccountModel
         Permissions = BankPermission.None;
         ShareInstructions = string.Empty;
         SelectedShareType = (int)BankShareType.JointOwner;
+        AccessibleAccounts = [];
+        AccessibleAccountOptions.Clear();
+        SelectedAccountIndex = 0;
 
+        // First, load all accessible accounts (personal + shared)
+        GetAccessibleAccountsQuery accessibleQuery = new(Persona, Coinhouse);
+        AccessibleAccountsResult accessibleResult = await _banking.GetAccessibleAccountsAsync(accessibleQuery, cancellationToken);
+        AccessibleAccounts = accessibleResult.Accounts;
+        
+        // Build combo options for account selector
+        for (int i = 0; i < AccessibleAccounts.Count; i++)
+        {
+            AccessibleAccountInfo account = AccessibleAccounts[i];
+            string label = account.IsOwnAccount 
+                ? $"Personal Account ({account.Role})"
+                : $"{account.DisplayName} ({account.Role})";
+            AccessibleAccountOptions.Add(new NuiComboEntry(label, i));
+        }
+
+        // If we have accessible accounts, load the first one
+        if (accessibleResult.HasAccounts)
+        {
+            await LoadSelectedAccountAsync(cancellationToken);
+            return;
+        }
+
+        // No accounts - show account opening options
         GetCoinhouseAccountQuery query = new(Persona, Coinhouse);
 
         CoinhouseAccountQueryResult? result = await _banking.GetCoinhouseAccountAsync(query, cancellationToken);
@@ -171,6 +210,88 @@ public sealed class BankAccountModel
         SeedShareOptions();
         ShareInstructions = BuildShareInstructions();
     }
+
+    /// <summary>
+    /// Loads the currently selected account's data.
+    /// Called after initial load or when the user switches accounts.
+    /// </summary>
+    private async Task LoadSelectedAccountAsync(CancellationToken cancellationToken = default)
+    {
+        AccessibleAccountInfo? account = CurrentAccount;
+        if (account is null)
+        {
+            AccountExists = false;
+            AccountSummary = null;
+            CurrentBalance = 0;
+            LastAccessedAt = null;
+            AccountHolders = [];
+            CurrentHolderRole = null;
+            Permissions = BankPermission.None;
+            
+            AccountEntries.Clear();
+            HoldingEntries.Clear();
+            AccountEntries.Add("No active account");
+            HoldingEntries.Add("Open a treasury to begin banking.");
+            
+            await LoadEligibilityAsync(cancellationToken);
+            SeedDefaultCombos();
+            EnsureInventoryPlaceholder();
+            ApplyAccessProfile(BankAccessProfile.None);
+            ShareInstructions = BuildShareInstructions();
+            return;
+        }
+
+        // Use the pre-loaded account data from AccessibleAccountInfo
+        AccountExists = true;
+        AccountSummary = account.Summary;
+        AccountHolders = account.Holders;
+        CurrentHolderRole = account.Role;
+        CurrentBalance = account.Balance;
+        LastAccessedAt = account.Summary.LastAccessedAt;
+
+        AccountEntries.Clear();
+        HoldingEntries.Clear();
+
+        string accountLabel = account.IsOwnAccount ? BankTitle : account.DisplayName;
+        AccountEntries.Add(accountLabel);
+
+        HoldingEntries.Add($"Available Funds - {FormatCurrency(CurrentBalance)}");
+
+        if (account.Summary.Credit > 0)
+        {
+            HoldingEntries.Add($"Outstanding Debt - {FormatCurrency(account.Summary.Credit)}");
+        }
+
+        if (account.Summary.Debit > 0)
+        {
+            HoldingEntries.Add($"Deposited Assets - {FormatCurrency(account.Summary.Debit)}");
+        }
+
+        SeedDefaultCombos();
+        EnsureInventoryPlaceholder();
+        ApplyAccessProfile(_accessEvaluator.Evaluate(Persona, AccountSummary!, AccountHolders));
+        SeedShareOptions();
+        ShareInstructions = BuildShareInstructions();
+    }
+
+    /// <summary>
+    /// Switches to a different account and reloads the view data.
+    /// </summary>
+    public async Task SwitchToAccountAsync(int accountIndex, CancellationToken cancellationToken = default)
+    {
+        if (accountIndex < 0 || accountIndex >= AccessibleAccounts.Count)
+        {
+            return;
+        }
+
+        SelectedAccountIndex = accountIndex;
+        await LoadSelectedAccountAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Gets the currently selected account's ID, or null if no account is selected.
+    /// </summary>
+    public Guid? SelectedAccountId => CurrentAccount?.AccountId;
 
     private async Task LoadEligibilityAsync(CancellationToken cancellationToken)
     {

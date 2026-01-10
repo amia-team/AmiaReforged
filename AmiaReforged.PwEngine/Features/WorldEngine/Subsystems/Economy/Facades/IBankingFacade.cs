@@ -26,6 +26,11 @@ public interface IBankingFacade
     Task<CoinhouseAccountQueryResult?> GetCoinhouseAccountAsync(GetCoinhouseAccountQuery query, CancellationToken ct = default);
 
     /// <summary>
+    /// Gets all accounts a persona can access at a specific coinhouse (personal + shared).
+    /// </summary>
+    Task<AccessibleAccountsResult> GetAccessibleAccountsAsync(GetAccessibleAccountsQuery query, CancellationToken ct = default);
+
+    /// <summary>
     /// Gets all coinhouse balances for a persona.
     /// </summary>
     Task<IReadOnlyList<BalanceDto>> GetCoinhouseBalancesAsync(GetCoinhouseBalancesQuery query, CancellationToken ct = default);

@@ -161,6 +161,9 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
 
         UpdateView();
         ResetAmountInputs();
+        
+        // Set up watch for account selector changes
+        Token().SetBindWatch(View.AccessibleAccountSelection, true);
 
         if (!Model.AccountExists)
         {
@@ -215,6 +218,12 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
         bool showPersonalActions = !Model.AccountExists;
         Token().SetBindValue(View.ShowPersonalAccountActions, showPersonalActions);
         Token().SetBindValue(View.HasActiveAccount, Model.AccountExists);
+        
+        // Update account selector (for switching between personal and shared accounts)
+        Token().SetBindValue(View.AccessibleAccountEntries, Model.AccessibleAccountOptions);
+        Token().SetBindValue(View.AccessibleAccountSelection, Model.SelectedAccountIndex);
+        Token().SetBindValue(View.ShowAccountSelector, Model.HasMultipleAccounts);
+        Token().SetBindValue(View.CurrentAccountLabel, Model.CurrentAccountRoleLabel);
 
         bool showOrganizationActions = Model.OrganizationEligibility.Any(option => !option.AlreadyHasAccount);
         Token().SetBindValue(View.IsOrganizationLeader, showOrganizationActions);
@@ -274,6 +283,13 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent obj)
     {
+        // Handle account selector changes
+        if (obj.EventType == NuiEventType.Watch && obj.ElementId == "bank_accessible_account_selection")
+        {
+            _ = HandleAccountSelectionChangeAsync();
+            return;
+        }
+
         if (obj.EventType != NuiEventType.Click)
         {
             return;
@@ -344,6 +360,42 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
     public override void Close()
     {
         _token.Close();
+    }
+
+    private async Task HandleAccountSelectionChangeAsync()
+    {
+        int selectedIndex = Token().GetBindValue(View.AccessibleAccountSelection);
+        
+        if (selectedIndex == Model.SelectedAccountIndex)
+        {
+            return; // No change
+        }
+
+        Token().Player.SendServerMessage($"Switching to selected account...", ColorConstants.White);
+
+        try
+        {
+            await Model.SwitchToAccountAsync(selectedIndex);
+            
+            // Reload foreclosed items and personal storage for the new account context
+            Guid playerKey = CharacterService.Value.GetPlayerKey(_player);
+            await LoadForeclosedItemsAsync(playerKey);
+            await LoadPersonalStorageAsync(playerKey);
+            await LoadInventoryItemsAsync();
+            
+            await NwTask.SwitchToMainThread();
+            
+            UpdateView();
+            ResetAmountInputs();
+            
+            string accountName = Model.CurrentAccount?.DisplayName ?? "account";
+            Token().Player.SendServerMessage($"Now viewing: {accountName}", ColorConstants.Lime);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to switch accounts for player {PlayerName}", _player.PlayerName);
+            Token().Player.SendServerMessage("Failed to switch accounts. Please try again.", ColorConstants.Orange);
+        }
     }
 
     private async Task HandleOpenPersonalAccountAsync()
