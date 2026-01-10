@@ -21,58 +21,65 @@ public class TwoHandedBonusHandler
         eventService.SubscribeAll<OnLoadCharacterFinish, OnLoadCharacterFinish.Factory>(OnCharacterLoadApplyTwoHanded, EventCallbackType.After);
         Log.Info(message: "TwoHandedBonusHandler initialized.");
     }
-    
+
     private static void OnEquipApplyTwoHanded(OnItemEquip eventData)
     {
         if (!eventData.EquippedBy.IsPlayerControlled) return;
-        
+
         bool isWieldable = eventData.Slot is InventorySlot.RightHand or InventorySlot.LeftHand;
-        
+
         // If the item is wieldable, we want to check for two-handed bonus and can return code early
         if (isWieldable)
         {
             TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.EquippedBy);
             return;
         }
-        
+
         // If the item property doesn't affect abilities, we know to return early
         ItemProperty? abilityProperty = eventData.Item.ItemProperties.FirstOrDefault(p => p.Property.PropertyType is
             ItemPropertyType.AbilityBonus or ItemPropertyType.DecreasedAbilityScore);
 
         // If the ability affected isn't strength, we know to return early; otherwise we check for two-handed bonus
         if (abilityProperty?.IntParams[0] is not (int)Ability.Strength) return;
-        
+
         TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.EquippedBy);
     }
-    
+
     private static void OnUnequipApplyTwoHanded(OnItemUnequip eventData)
     {
         if (!eventData.Creature.IsPlayerControlled) return;
-        
+
+        // Check if item still exists (can be null if destroyed during unequip)
+        if (eventData.Item == null || !eventData.Item.IsValid)
+        {
+            TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
+            return;
+        }
+
         // These are hex-coded EquipableSlots from baseitems.2da to match EquipmentSlots for basic weapons
         const EquipmentSlots leftOrRightHandItem = EquipmentSlots.RightHand | EquipmentSlots.LeftHand;
-        const EquipmentSlots creatureWeapon = EquipmentSlots.CreatureWeaponBite | EquipmentSlots.CreatureWeaponLeft 
+        const EquipmentSlots creatureWeapon = EquipmentSlots.CreatureWeaponBite | EquipmentSlots.CreatureWeaponLeft
             | EquipmentSlots.CreatureWeaponRight;
         const EquipmentSlots oneHandedWeapon = leftOrRightHandItem | creatureWeapon;
         const EquipmentSlots twoHandedWeapon = EquipmentSlots.RightHand | creatureWeapon;
 
         bool isWieldable = eventData.Item.BaseItem.EquipmentSlots is EquipmentSlots.RightHand
             or EquipmentSlots.LeftHand or leftOrRightHandItem or oneHandedWeapon or twoHandedWeapon;
-        
+
         // If the item is wieldable, we want to check for two-handed bonus and can return code early
         if (isWieldable)
         {
             TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
             return;
         }
-        
+
         // If the item property doesn't affect abilities, we know to return early
         ItemProperty? abilityProperty = eventData.Item.ItemProperties.FirstOrDefault(p => p.Property.PropertyType is
             ItemPropertyType.AbilityBonus or ItemPropertyType.DecreasedAbilityScore);
 
         // If the ability affected isn't strength, we know to return early; otherwise we check for two-handed bonus
         if (abilityProperty?.IntParams[0] is not (int)Ability.Strength) return;
-        
+
         TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
     }
 
@@ -82,7 +89,7 @@ public class TwoHandedBonusHandler
         if (!creature.IsPlayerControlled) return;
         if (eventData.Effect.EffectType is not (EffectType.AbilityIncrease or EffectType.AbilityDecrease)) return;
         if (eventData.Effect.IntParams[0] is not (int)Ability.Strength) return;
-        
+
         TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
     }
 
@@ -92,29 +99,29 @@ public class TwoHandedBonusHandler
         if (!creature.IsPlayerControlled) return;
         if (eventData.Effect.EffectType is not (EffectType.AbilityIncrease or EffectType.AbilityDecrease)) return;
         if (eventData.Effect.IntParams[0] is not (int)Ability.Strength) return;
-        
+
         TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
     }
 
     private static void OnPolymorphApplyTwoHanded(OnPolymorphApply eventData)
     {
         if (!eventData.Creature.IsPlayerControlled) return;
-        
+
         TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
     }
-    
+
     private static void OnPolymorphRemoveTwoHanded(OnPolymorphRemove eventData)
     {
         if (!eventData.Creature.IsPlayerControlled) return;
-        
+
         TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
     }
 
     private static void OnCharacterLoadApplyTwoHanded(OnLoadCharacterFinish eventData)
     {
         if (eventData.Player.ControlledCreature is not { } creature) return;
-        
+
         TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
     }
-    
+
 }
