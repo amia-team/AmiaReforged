@@ -349,22 +349,34 @@ public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView
             if (_accountData == null || !_accountData.AccountExists)
             {
                 _canManageHolders = false;
+                _accessProfile = BankAccessProfile.None;
                 UpdateAccountHolderDisplay([]);
                 UpdateTransactionDisplay([]);
                 UpdateShareAccessState(canIssue: false);
                 return;
             }
 
+            // Evaluate access profile for the current user
+            CoinhouseAccountSummary summary = new()
+            {
+                CoinhouseId = 0, // Not needed for permission evaluation
+                CoinhouseTag = _coinhouseTag,
+                Debit = 0,
+                Credit = 0,
+                OpenedAt = DateTime.UtcNow,
+                LastAccessedAt = DateTime.UtcNow
+            };
+            _accessProfile = BankAccessEvaluator.Value.Evaluate(_persona, summary, _accountData.Holders);
+
             // Determine if the current user can manage holders
             CoinhouseAccountHolderDto? currentUserHolder = _accountData.Holders
                 .FirstOrDefault(h => h.HolderId == _requestorHolderId);
 
             _canManageHolders = currentUserHolder?.Role is HolderRole.Owner or HolderRole.JointOwner;
-            bool canIssueShares = currentUserHolder?.Role is HolderRole.Owner or HolderRole.JointOwner;
 
             UpdateAccountHolderDisplay(_accountData.Holders);
             UpdateTransactionDisplay([]);
-            UpdateShareAccessState(canIssue: canIssueShares);
+            UpdateShareAccessState(canIssue: _accessProfile.CanIssueShares);
         }
         catch (Exception ex)
         {
