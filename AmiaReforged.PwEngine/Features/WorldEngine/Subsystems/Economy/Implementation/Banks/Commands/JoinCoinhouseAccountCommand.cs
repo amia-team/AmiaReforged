@@ -6,6 +6,10 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementati
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Banks.Commands;
 
+/// <summary>
+/// Command to add a holder to a coinhouse account. When NewHolder is specified, the Requestor is adding
+/// someone else (must have IssueShares permission). When NewHolder is null, the Requestor is joining themselves.
+/// </summary>
 public sealed record JoinCoinhouseAccountCommand(
     PersonaId Requestor,
     Guid AccountId,
@@ -14,4 +18,5 @@ public sealed record JoinCoinhouseAccountCommand(
     HolderType HolderType,
     HolderRole Role,
     string HolderFirstName,
-    string HolderLastName) : ICommand;
+    string HolderLastName,
+    PersonaId? NewHolder = null) : ICommand;

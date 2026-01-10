@@ -1,4 +1,3 @@
-using System.Globalization;
 using AmiaReforged.PwEngine.Features.WindowingSystem;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
@@ -14,7 +13,6 @@ using Anvil;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.UI.Banking;
 
@@ -42,12 +40,14 @@ public sealed class BankAdminWindowView : ScryView<BankAdminWindowPresenter>
     public readonly NuiBind<List<NuiComboEntry>> HolderRoleOptions = new("admin_holder_role_options");
     public readonly NuiBind<int> HolderRoleSelection = new("admin_holder_role_selection");
 
-    // Bindings for share document issuance
-    public readonly NuiBind<List<NuiComboEntry>> ShareTypeEntries = new("admin_share_type_entries");
-    public readonly NuiBind<int> ShareTypeSelection = new("admin_share_type_selection");
-    public readonly NuiBind<string> ShareInstructions = new("admin_share_instructions");
-    public readonly NuiBind<bool> CanIssueShares = new("admin_can_issue_shares");
-    public readonly NuiBind<bool> CannotIssueShares = new("admin_cannot_issue_shares");
+    // Bindings for adding account holders via target
+    public readonly NuiBind<List<NuiComboEntry>> HolderRoleEntries = new("admin_holder_role_entries");
+    public readonly NuiBind<int> NewHolderRoleSelection = new("admin_new_holder_role_selection");
+    public readonly NuiBind<bool> TargetHolderVisible = new("admin_target_holder_visible");
+    public readonly NuiBind<bool> TargetHolderEnabled = new("admin_target_holder_enabled");
+    public readonly NuiBind<string> HolderStatusMessage = new("admin_holder_status_message");
+    public readonly NuiBind<bool> HolderStatusVisible = new("admin_holder_status_visible");
+    public readonly NuiBind<bool> CannotAddHolders = new("admin_cannot_add_holders");
 
     // Bindings for transaction history (placeholder)
     public readonly NuiBind<int> TransactionCount = new("admin_transaction_count");
@@ -56,7 +56,7 @@ public sealed class BankAdminWindowView : ScryView<BankAdminWindowPresenter>
     public readonly NuiBind<string> TransactionAmounts = new("admin_transaction_amounts");
 
     // Buttons
-    public NuiButton IssueShareDocumentButton = null!;
+    public NuiButton TargetHolderButton = null!;
     public NuiButton RefreshButton = null!;
     public NuiButton CloseButton = null!;
     public NuiButton RemoveHolderButton = null!;
@@ -139,8 +139,8 @@ public sealed class BankAdminWindowView : ScryView<BankAdminWindowPresenter>
                 },
                 new NuiSpacer { Height = 12f },
 
-                // Share Document Issuance Section
-                new NuiLabel("Issue Share Document")
+                // Add Account Holder Section
+                new NuiLabel("Add Account Holder")
                 {
                     Height = 24f,
                     HorizontalAlign = NuiHAlign.Left,
@@ -149,35 +149,41 @@ public sealed class BankAdminWindowView : ScryView<BankAdminWindowPresenter>
                 },
                 new NuiRow
                 {
-                    Visible = CanIssueShares,
+                    Visible = TargetHolderVisible,
+                    Height = 36f,
                     Children =
                     [
                         new NuiCombo
                         {
-                            Id = "admin_share_combo",
-                            Entries = ShareTypeEntries,
-                            Selected = ShareTypeSelection
+                            Id = "admin_holder_role_combo",
+                            Entries = HolderRoleEntries,
+                            Selected = NewHolderRoleSelection,
+                            Width = 180f
                         },
                         new NuiSpacer { Width = 12f },
-                        new NuiButton("Issue Document")
+                        new NuiButton("Target Player")
                         {
-                            Id = "admin_btn_issue_share",
-                            Width = 180f,
-                            Height = 32f
-                        }.Assign(out IssueShareDocumentButton)
+                            Id = "admin_btn_target_holder",
+                            Width = 120f,
+                            Height = 30f,
+                            Enabled = TargetHolderEnabled,
+                            Tooltip = "Click to target a player character to add as an account holder."
+                        }.Assign(out TargetHolderButton),
+                        new NuiSpacer { Width = 12f },
+                        new NuiLabel(HolderStatusMessage)
+                        {
+                            Visible = HolderStatusVisible,
+                            Width = 240f,
+                            Height = 30f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(50, 40, 30)
+                        }
                     ]
                 },
-                new NuiLabel(ShareInstructions)
+                new NuiLabel("Only account owners can add holders.")
                 {
-                    Visible = CanIssueShares,
-                    Height = 44f,
-                    HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Top,
-                    ForegroundColor = new Color(50, 40, 30)
-                },
-                new NuiLabel("Only account owners can issue share documents.")
-                {
-                    Visible = CannotIssueShares,
+                    Visible = CannotAddHolders,
                     Height = 32f,
                     HorizontalAlign = NuiHAlign.Left,
                     VerticalAlign = NuiVAlign.Middle,
@@ -229,23 +235,6 @@ public sealed class BankAdminWindowView : ScryView<BankAdminWindowPresenter>
 
 public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView>
 {
-    private const string ShareDocumentResRef = "bank_sharedoc";
-    private const string ShareDocumentFallbackResRef = "nw_it_mp_scroll001";
-
-    private static class ShareDocumentLocals
-    {
-        public const string AccountId = "bank_share_account_id";
-        public const string CoinhouseTag = "bank_share_coinhouse_tag";
-        public const string ShareType = "bank_share_type";
-        public const string ShareTypeId = "bank_share_type_id";
-        public const string HolderRole = "bank_share_holder_role";
-        public const string HolderRoleId = "bank_share_holder_role_id";
-        public const string Issuer = "bank_share_issuer";
-        public const string DocumentId = "bank_share_document_id";
-        public const string IssuedAt = "bank_share_issued_at";
-        public const string BankName = "bank_share_bank_name";
-    }
-
     private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
     private readonly NwPlayer _player;
@@ -259,7 +248,7 @@ public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView
     private CoinhouseAccountQueryResult? _accountData;
     private List<CoinhouseAccountHolderDto> _holders = [];
     private BankAccessProfile? _accessProfile;
-    private int _selectedShareType;
+    private int _selectedNewHolderRole;
     private bool _canManageHolders;
     private Guid _requestorHolderId;
 
@@ -267,6 +256,7 @@ public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView
     [Inject] private Lazy<Characters.Runtime.RuntimeCharacterService> CharacterService { get; init; } = null!;
     [Inject] private WindowDirector WindowDirector { get; init; } = null!;
     [Inject] private Lazy<IBankingFacade> BankingFacade { get; init; } = null!;
+    [Inject] private ICommandHandler<JoinCoinhouseAccountCommand> JoinAccountHandler { get; init; } = null!;
 
     public BankAdminWindowPresenter(BankAdminWindowView view, NwPlayer player, CoinhouseTag coinhouseTag, string bankDisplayName)
     {
@@ -308,7 +298,7 @@ public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView
         _player.TryCreateNuiWindow(_window, out _token);
 
         SubscribeEvents();
-        InitializeShareTypes();
+        InitializeHolderRoles();
         _ = LoadAccountDataAsync();
     }
 
@@ -322,18 +312,20 @@ public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView
         Token().OnNuiEvent += HandleNuiEvent;
     }
 
-    private void InitializeShareTypes()
+    private void InitializeHolderRoles()
     {
-        List<NuiComboEntry> shareEntries =
+        List<NuiComboEntry> roleEntries =
         [
-            new("Joint Owner (Full Access)", (int)BankShareType.JointOwner),
-            new("Authorized User (Transactions)", (int)BankShareType.AuthorizedUser),
+            new("Joint Owner (Full Access)", (int)HolderRole.JointOwner),
+            new("Authorized User (Transactions)", (int)HolderRole.AuthorizedUser),
+            new("Trustee (View Only)", (int)HolderRole.Trustee),
         ];
 
-        Token().SetBindValue(View.ShareTypeEntries, shareEntries);
-        Token().SetBindValue(View.ShareTypeSelection, 0);
-        _selectedShareType = (int)BankShareType.JointOwner;
-        UpdateShareInstructions(BankShareType.JointOwner);
+        Token().SetBindValue(View.HolderRoleEntries, roleEntries);
+        Token().SetBindValue(View.NewHolderRoleSelection, (int)HolderRole.JointOwner);
+        Token().SetBindValue(View.HolderStatusMessage, "");
+        Token().SetBindValue(View.HolderStatusVisible, false);
+        _selectedNewHolderRole = (int)HolderRole.JointOwner;
     }
 
     private async Task LoadAccountDataAsync()
@@ -352,7 +344,7 @@ public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView
                 _accessProfile = BankAccessProfile.None;
                 UpdateAccountHolderDisplay([]);
                 UpdateTransactionDisplay([]);
-                UpdateShareAccessState(canIssue: false);
+                UpdateAddHolderAccessState(canAdd: false);
                 return;
             }
 
@@ -376,7 +368,7 @@ public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView
 
             UpdateAccountHolderDisplay(_accountData.Holders);
             UpdateTransactionDisplay([]);
-            UpdateShareAccessState(canIssue: _accessProfile.CanIssueShares);
+            UpdateAddHolderAccessState(canAdd: _accessProfile.CanIssueShares);
         }
         catch (Exception ex)
         {
@@ -450,10 +442,11 @@ public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView
         Token().SetBindValue(View.TransactionCount, 0);
     }
 
-    private void UpdateShareAccessState(bool canIssue)
+    private void UpdateAddHolderAccessState(bool canAdd)
     {
-        Token().SetBindValue(View.CanIssueShares, canIssue);
-        Token().SetBindValue(View.CannotIssueShares, !canIssue);
+        Token().SetBindValue(View.TargetHolderVisible, canAdd);
+        Token().SetBindValue(View.TargetHolderEnabled, canAdd);
+        Token().SetBindValue(View.CannotAddHolders, !canAdd);
     }
 
     private string FormatHolderRole(HolderRole role)
@@ -466,19 +459,6 @@ public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView
             HolderRole.Trustee => "Trustee",
             _ => "Unknown"
         };
-    }
-
-    private void UpdateShareInstructions(BankShareType shareType)
-    {
-        string instructions = shareType switch
-        {
-            BankShareType.JointOwner => "Joint Owners have full account access including issuing shares.",
-            BankShareType.AuthorizedUser => "Authorized Users can deposit, withdraw, and view balance.",
-            BankShareType.Trustee => "Trustees can manage account on behalf of the owner.",
-            _ => "Select a share type to see permissions."
-        };
-
-        Token().SetBindValue(View.ShareInstructions, instructions);
     }
 
     private void HandleNuiEvent(ModuleEvents.OnNuiEvent e)
@@ -495,34 +475,162 @@ public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView
                     _ = LoadAccountDataAsync();
                     break;
 
-                case "admin_btn_issue_share":
-                    _ = HandleIssueShareDocumentAsync();
+                case "admin_btn_target_holder":
+                    BeginTargetHolder();
                     break;
 
                 case "admin_btn_remove_holder":
                     _ = HandleRemoveHolderAsync(e.ArrayIndex);
                     break;
 
-                case "admin_share_combo":
-                    HandleShareTypeChange();
+                case "admin_holder_role_combo":
+                    HandleHolderRoleChange();
                     break;
             }
         }
     }
 
-    private void HandleShareTypeChange()
+    private void HandleHolderRoleChange()
     {
-        int selected = Token().GetBindValue(View.ShareTypeSelection);
-        _selectedShareType = selected;
+        int selected = Token().GetBindValue(View.NewHolderRoleSelection);
+        _selectedNewHolderRole = selected;
+    }
 
-        BankShareType shareType = selected switch
+    private void BeginTargetHolder()
+    {
+        if (_accountData == null || !_accountData.AccountExists)
         {
-            0 => BankShareType.JointOwner,
-            1 => BankShareType.AuthorizedUser,
-            _ => BankShareType.JointOwner
+            return;
+        }
+
+        if (_accessProfile?.CanIssueShares != true)
+        {
+            Token().SetBindValue(View.HolderStatusMessage, "Only account owners can add holders.");
+            Token().SetBindValue(View.HolderStatusVisible, true);
+            return;
+        }
+
+        Token().SetBindValue(View.HolderStatusMessage, "Target a player character to add as holder...");
+        Token().SetBindValue(View.HolderStatusVisible, true);
+
+        _player.EnterTargetMode(HandleAddHolderTarget, new TargetModeSettings
+        {
+            CursorType = MouseCursor.Action,
+            ValidTargets = ObjectTypes.Creature
+        });
+    }
+
+    private void HandleAddHolderTarget(ModuleEvents.OnPlayerTarget targetData)
+    {
+        if (targetData.TargetObject is not NwCreature targetCreature)
+        {
+            Token().SetBindValue(View.HolderStatusMessage, "You must target a player character.");
+            Token().SetBindValue(View.HolderStatusVisible, true);
+            return;
+        }
+
+        NwPlayer? targetPlayer = targetCreature.ControllingPlayer;
+        if (targetPlayer == null || !targetCreature.IsPlayerControlled)
+        {
+            Token().SetBindValue(View.HolderStatusMessage, "Target must be a player character.");
+            Token().SetBindValue(View.HolderStatusVisible, true);
+            return;
+        }
+
+        if (!CharacterService.Value.TryGetPlayerKey(targetPlayer, out Guid targetCharacterId))
+        {
+            Token().SetBindValue(View.HolderStatusMessage, "Unable to determine target character.");
+            Token().SetBindValue(View.HolderStatusVisible, true);
+            return;
+        }
+
+        PersonaId targetPersona = PersonaId.FromCharacter(new CharacterId(targetCharacterId));
+        string memberName = targetCreature.Name;
+
+        // Check if the target is the same player
+        if (targetCharacterId == _requestorHolderId)
+        {
+            Token().SetBindValue(View.HolderStatusMessage, "You cannot add yourself as a holder.");
+            Token().SetBindValue(View.HolderStatusVisible, true);
+            return;
+        }
+
+        // Check if already a holder
+        if (_holders.Any(h => h.HolderId == targetCharacterId))
+        {
+            Token().SetBindValue(View.HolderStatusMessage, $"{memberName} is already an account holder.");
+            Token().SetBindValue(View.HolderStatusVisible, true);
+            return;
+        }
+
+        _ = AddHolderAsync(targetPersona, memberName);
+    }
+
+    private async Task AddHolderAsync(PersonaId holderPersona, string holderName)
+    {
+        if (_accountData == null)
+        {
+            return;
+        }
+
+        HolderRole role = (HolderRole)_selectedNewHolderRole;
+        
+        // Map HolderRole to BankShareType
+        BankShareType shareType = role switch
+        {
+            HolderRole.JointOwner => BankShareType.JointOwner,
+            HolderRole.AuthorizedUser => BankShareType.AuthorizedUser,
+            HolderRole.Trustee => BankShareType.Trustee,
+            _ => BankShareType.AuthorizedUser
         };
 
-        UpdateShareInstructions(shareType);
+        // Parse the holder name into first/last
+        string[] nameParts = holderName.Split(' ', 2);
+        string firstName = nameParts.Length > 0 ? nameParts[0] : holderName;
+        string lastName = nameParts.Length > 1 ? nameParts[1] : string.Empty;
+        
+        JoinCoinhouseAccountCommand command = new(
+            Requestor: _persona,
+            AccountId: _accountData.AccountId,
+            Coinhouse: _coinhouseTag,
+            ShareType: shareType,
+            HolderType: HolderType.Individual,
+            Role: role,
+            HolderFirstName: firstName,
+            HolderLastName: lastName,
+            NewHolder: holderPersona
+        );
+
+        try
+        {
+            CommandResult result = await JoinAccountHandler.HandleAsync(command);
+
+            await NwTask.SwitchToMainThread();
+
+            if (!result.Success)
+            {
+                Token().SetBindValue(View.HolderStatusMessage, result.ErrorMessage ?? "Failed to add holder.");
+                Token().SetBindValue(View.HolderStatusVisible, true);
+                return;
+            }
+
+            string roleName = FormatHolderRole(role);
+            Token().SetBindValue(View.HolderStatusMessage, $"{holderName} added as {roleName}.");
+            Token().SetBindValue(View.HolderStatusVisible, true);
+
+            _player.SendServerMessage($"{holderName} has been added to your account as {roleName}.", ColorConstants.Green);
+
+            // Reload account data to refresh the holder list
+            await LoadAccountDataAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to add holder to account at coinhouse {Coinhouse}", _coinhouseTag.Value);
+
+            await NwTask.SwitchToMainThread();
+            Token().SetBindValue(View.HolderStatusMessage, "An error occurred. Please try again.");
+            Token().SetBindValue(View.HolderStatusVisible, true);
+        }
     }
 
     private async Task HandleRemoveHolderAsync(int rowIndex)
@@ -685,165 +793,5 @@ public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView
             HolderRole.Viewer => 3,
             _ => 3
         };
-    }
-
-    private async Task HandleIssueShareDocumentAsync()
-    {
-        if (_accountData == null || !_accountData.AccountExists)
-        {
-            await NwTask.SwitchToMainThread();
-            _player.SendServerMessage(
-                "Open an account before issuing share documents.",
-                ColorConstants.White);
-            return;
-        }
-
-        if (_accessProfile?.CanIssueShares != true)
-        {
-            await NwTask.SwitchToMainThread();
-            _player.SendServerMessage(
-                "You are not authorized to issue share documents for this account.",
-                ColorConstants.White);
-            return;
-        }
-
-        BankShareType shareType = _selectedShareType switch
-        {
-            0 => BankShareType.JointOwner,
-            1 => BankShareType.AuthorizedUser,
-            2 => BankShareType.Trustee,
-            _ => BankShareType.JointOwner
-        };
-
-        if (_player.LoginCreature is null)
-        {
-            await NwTask.SwitchToMainThread();
-            _player.SendServerMessage(
-                "You must be possessing a character to issue share documents.",
-                ColorConstants.Orange);
-            return;
-        }
-
-        Guid accountId = PersonaAccountId.ForCoinhouse(_persona, _coinhouseTag);
-        Guid documentId = Guid.NewGuid();
-        HolderRole holderRole = shareType.ToHolderRole();
-        DateTime issuedAt = DateTime.UtcNow;
-
-        try
-        {
-            await NwTask.SwitchToMainThread();
-
-            NwCreature? creature = _player.LoginCreature;
-            if (creature?.Location == null)
-            {
-                _player.SendServerMessage(
-                    "Share documents cannot be issued right now. Please try again shortly.",
-                    ColorConstants.Orange);
-                return;
-            }
-
-            NwItem? document = NwItem.Create(ShareDocumentResRef, creature.Location);
-            if (document is null)
-            {
-                Log.Warn("Share document blueprint '{ResRef}' was not found. Falling back to '{Fallback}'.",
-                    ShareDocumentResRef, ShareDocumentFallbackResRef);
-                document = NwItem.Create(ShareDocumentFallbackResRef, creature.Location);
-            }
-
-            if (document is null)
-            {
-                _player.SendServerMessage(
-                    "The bank cannot produce share documents at this time.",
-                    ColorConstants.Orange);
-                return;
-            }
-
-            string issuerName = creature.Name ?? _player.PlayerName ?? "Unknown Issuer";
-            string documentName = FormatShareDocumentName(shareType);
-
-            document.Tag = documentId.ToString("N");
-            document.Name = documentName;
-            document.Description = BuildShareDocumentDescription(
-                shareType,
-                accountId,
-                documentId,
-                issuerName,
-                issuedAt);
-            document.Identified = true;
-            document.StackSize = 1;
-
-            NWScript.SetLocalString(document, ShareDocumentLocals.AccountId, accountId.ToString());
-            NWScript.SetLocalString(document, ShareDocumentLocals.CoinhouseTag, _coinhouseTag.Value ?? string.Empty);
-            NWScript.SetLocalString(document, ShareDocumentLocals.ShareType, shareType.ToString());
-            NWScript.SetLocalInt(document, ShareDocumentLocals.ShareTypeId, (int)shareType);
-            NWScript.SetLocalString(document, ShareDocumentLocals.HolderRole, holderRole.ToString());
-            NWScript.SetLocalInt(document, ShareDocumentLocals.HolderRoleId, (int)holderRole);
-            NWScript.SetLocalString(document, ShareDocumentLocals.Issuer, issuerName);
-            NWScript.SetLocalString(document, ShareDocumentLocals.DocumentId, documentId.ToString());
-            NWScript.SetLocalString(document, ShareDocumentLocals.IssuedAt,
-                issuedAt.ToString("o", CultureInfo.InvariantCulture));
-            NWScript.SetLocalString(document, ShareDocumentLocals.BankName, _bankDisplayName);
-
-            creature.AcquireItem(document);
-
-            _player.SendServerMessage(
-                $"A {documentName} has been added to your inventory.",
-                ColorConstants.White);
-
-            Log.Info(
-                "Issued bank share document {DocumentId} for account {AccountId} ({ShareType}) at coinhouse {Coinhouse}.",
-                documentId, accountId, shareType, _coinhouseTag.Value ?? "(unknown)");
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Failed to create share document for account at coinhouse {Coinhouse}.",
-                _coinhouseTag.Value ?? "(unknown)");
-
-            await NwTask.SwitchToMainThread();
-            _player.SendServerMessage(
-                "The banker failed to prepare the share document. Please try again later.",
-                ColorConstants.Orange);
-        }
-    }
-
-    private string FormatShareDocumentName(BankShareType shareType)
-    {
-        string roleName = shareType switch
-        {
-            BankShareType.JointOwner => "Joint Owner",
-            BankShareType.AuthorizedUser => "Authorized User",
-            BankShareType.Trustee => "Trustee",
-            _ => "Unknown"
-        };
-        return $"{_bankDisplayName} Share ({roleName})";
-    }
-
-    private string BuildShareDocumentDescription(
-        BankShareType shareType,
-        Guid accountId,
-        Guid documentId,
-        string issuerName,
-        DateTime issuedAt)
-    {
-        string roleName = shareType switch
-        {
-            BankShareType.JointOwner => "Joint Owner",
-            BankShareType.AuthorizedUser => "Authorized User",
-            BankShareType.Trustee => "Trustee",
-            _ => "Unknown"
-        };
-
-        string summary = shareType switch
-        {
-            BankShareType.JointOwner => "Full account access including share issuance",
-            BankShareType.AuthorizedUser => "Deposit, withdraw, and view balance",
-            BankShareType.Trustee => "Manage account on behalf of owner",
-            _ => "Unknown permissions"
-        };
-
-        string coinhouseTag = _coinhouseTag.Value ?? "Unspecified";
-
-        return
-            $"{_bankDisplayName}\nShare Role: {roleName}\nScope: {summary}\nCoinhouse: {coinhouseTag}\nAccount Reference: {accountId}\nDocument: {documentId}\nIssuer: {issuerName}\nIssued (UTC): {issuedAt.ToString("g", CultureInfo.InvariantCulture)}\n\nPresent this parchment at the banker to register the share.";
     }
 }

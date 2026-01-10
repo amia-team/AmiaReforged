@@ -2,6 +2,7 @@ using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Accounts;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Banks.Access;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Banks.Commands;
@@ -14,7 +15,10 @@ public class JoinCoinhouseAccountCommandHandler(IPersonaRepository personas, ICo
     public async Task<CommandResult> HandleAsync(JoinCoinhouseAccountCommand command,
         CancellationToken cancellationToken = default)
     {
-        if (!TryResolveHolderCharacter(command.Requestor, out Guid holderId))
+        // Determine who is being added as a holder
+        PersonaId holderPersona = command.NewHolder ?? command.Requestor;
+        
+        if (!TryResolveHolderCharacter(holderPersona, out Guid holderId))
         {
             return CommandResult.Fail("Only active characters may join coinhouse accounts.");
         }
@@ -26,6 +30,27 @@ public class JoinCoinhouseAccountCommandHandler(IPersonaRepository personas, ICo
         }
 
         List<CoinhouseAccountHolderDto> holders = coinhouse.Holders.ToList();
+
+        // If NewHolder is specified, verify the requestor has permission to add holders
+        if (command.NewHolder != null)
+        {
+            if (!TryResolveHolderCharacter(command.Requestor, out Guid requestorId))
+            {
+                return CommandResult.Fail("Invalid requestor persona.");
+            }
+
+            CoinhouseAccountHolderDto? requestorHolder = holders.FirstOrDefault(h => h.HolderId == requestorId);
+            if (requestorHolder == null)
+            {
+                return CommandResult.Fail("You are not an account holder.");
+            }
+
+            BankPermission permissions = BankRolePermissions.ForRole(requestorHolder.Role);
+            if (!permissions.HasFlag(BankPermission.IssueShares))
+            {
+                return CommandResult.Fail("You do not have permission to add account holders.");
+            }
+        }
 
         if (holders.Any(h => h.HolderId == holderId))
         {
