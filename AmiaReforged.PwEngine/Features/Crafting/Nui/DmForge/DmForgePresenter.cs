@@ -140,10 +140,19 @@ public sealed class DmForgePresenter : ScryPresenter<DmForgeView>
         _current.Clear();
 
         int baseItemType = NWScript.GetBaseItemType(_item);
-        bool isTwoHander = ItemTypeConstants.Melee2HWeapons().Contains(baseItemType);
-        bool isCasterWeapon = NWScript.GetLocalInt(_item, ItemTypeConstants.CasterWeaponVar) == NWScript.TRUE;
-        if (isCasterWeapon)
-            baseItemType = isTwoHander ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
+
+        // Magic staffs are always treated as 1H caster weapons
+        if (baseItemType == NWScript.BASE_ITEM_MAGICSTAFF)
+        {
+            baseItemType = CraftingPropertyData.CasterWeapon1H;
+        }
+        else
+        {
+            bool isTwoHander = ItemTypeConstants.Melee2HWeapons().Contains(baseItemType);
+            bool isCasterWeapon = NWScript.GetLocalInt(_item, ItemTypeConstants.CasterWeaponVar) == NWScript.TRUE;
+            if (isCasterWeapon)
+                baseItemType = isTwoHander ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
+        }
 
         IReadOnlyList<CraftingCategory>? availableCategories = null;
         if (_propertyData.Properties.TryGetValue(baseItemType, out IReadOnlyList<CraftingCategory>? categories))

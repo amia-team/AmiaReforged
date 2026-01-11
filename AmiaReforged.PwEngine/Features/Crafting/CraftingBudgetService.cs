@@ -13,6 +13,10 @@ public class CraftingBudgetService
         int casterWeapon = NWScript.GetLocalInt(item, sVarName: "CASTER_WEAPON");
         bool isTwoHanded = ItemTypeConstants.Melee2HWeapons().Contains(baseItemType);
 
+        // Magic staffs are always treated as 1H caster weapons
+        if (baseItemType == NWScript.BASE_ITEM_MAGICSTAFF)
+            return MythalBudgetFor(CraftingPropertyData.CasterWeapon1H);
+
         int trueBase = baseItemType;
         if (casterWeapon == 1)
             trueBase = isTwoHanded ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
@@ -70,7 +74,7 @@ public class CraftingBudgetService
             NWScript.BASE_ITEM_TRIDENT => 6,
             NWScript.BASE_ITEM_WARHAMMER => 6,
             NWScript.BASE_ITEM_WHIP => 6,
-            // Magic staves still need to be imbued with a spell to be a caster weapon
+            // Magic staves are always treated as 1H caster weapons (handled in MythalBudgetForNwItem)
             NWScript.BASE_ITEM_MAGICSTAFF => 6,
             //Thrown Weapons are 5
             NWScript.BASE_ITEM_SHURIKEN => 5,

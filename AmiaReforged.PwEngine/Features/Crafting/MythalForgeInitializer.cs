@@ -249,10 +249,18 @@ public class MythalForgeInitializer
         if (NWScript.GetLocalString(obj.Player.LoginCreature, LvarTargetingMode) != TargetingModeMythalForge) return;
         int baseItemType = NWScript.GetBaseItemType(item);
 
-        bool isTwoHander = ItemTypeConstants.Melee2HWeapons().Contains(baseItemType);
-        bool isCasterWeapon = NWScript.GetLocalInt(item, sVarName: "CASTER_WEAPON") == NWScript.TRUE;
-        if (isCasterWeapon)
-            baseItemType = isTwoHander ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
+        // Magic staffs are always treated as 1H caster weapons
+        if (baseItemType == NWScript.BASE_ITEM_MAGICSTAFF)
+        {
+            baseItemType = CraftingPropertyData.CasterWeapon1H;
+        }
+        else
+        {
+            bool isTwoHander = ItemTypeConstants.Melee2HWeapons().Contains(baseItemType);
+            bool isCasterWeapon = NWScript.GetLocalInt(item, sVarName: "CASTER_WEAPON") == NWScript.TRUE;
+            if (isCasterWeapon)
+                baseItemType = isTwoHander ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
+        }
 
         bool itemListingNotFound =
             !_propertyData.Properties.TryGetValue(baseItemType, out IReadOnlyList<CraftingCategory>? categories);
@@ -335,10 +343,19 @@ public class MythalForgeInitializer
         if (obj.Player.LoginCreature == null) return;
 
         int baseItemType = NWScript.GetBaseItemType(item);
-        bool isTwoHander = ItemTypeConstants.Melee2HWeapons().Contains(baseItemType);
-        bool isCasterWeapon = NWScript.GetLocalInt(item, sVarName: "CASTER_WEAPON") == NWScript.TRUE;
-        if (isCasterWeapon)
-            baseItemType = isTwoHander ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
+
+        // Magic staffs are always treated as 1H caster weapons
+        if (baseItemType == NWScript.BASE_ITEM_MAGICSTAFF)
+        {
+            baseItemType = CraftingPropertyData.CasterWeapon1H;
+        }
+        else
+        {
+            bool isTwoHander = ItemTypeConstants.Melee2HWeapons().Contains(baseItemType);
+            bool isCasterWeapon = NWScript.GetLocalInt(item, sVarName: "CASTER_WEAPON") == NWScript.TRUE;
+            if (isCasterWeapon)
+                baseItemType = isTwoHander ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
+        }
 
         if (!_propertyData.Properties.ContainsKey(baseItemType))
         {
