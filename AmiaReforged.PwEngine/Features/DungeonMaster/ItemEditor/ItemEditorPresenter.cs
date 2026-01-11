@@ -21,11 +21,13 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
     private NuiWindowToken? _nameModalToken;
     private NuiWindowToken? _descModalToken;
     private NuiWindowToken? _tagModalToken;
+    private NuiWindowToken? _editVariableModalToken;
 
     private bool _initializing;
     private bool _addingVariable;
     private bool _applyingChanges;
     private bool _processingEvent;
+    private int _editingVariableIndex = -1; // Track which variable is being edited
 
     public override NuiWindowToken Token() => _token;
 
@@ -132,6 +134,13 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
                 return;
             }
 
+            // EDIT VARIABLE - NuiList provides the index automatically
+            if (ev.ElementId == "btn_edit_var")
+            {
+                EditVariableAt(ev.ArrayIndex);
+                return;
+            }
+
             // ICON bumps
             if (ev.ElementId == View.IconPlus1.Id)   { TryAdjustIcon(+1); return; }
             if (ev.ElementId == View.IconMinus1.Id)  { TryAdjustIcon(-1); return; }
@@ -194,6 +203,19 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
                     modalToken.SetBindValue(View.EditTagBuffer, snap?.Tag ?? "");
                     _tagModalToken.Value.OnNuiEvent += HandleTagModalEvent;
                 }
+            }
+
+            // EDIT VARIABLE - modal opens from button click in variable list
+            if (ev.ElementId == "btn_modal_ok_var")
+            {
+                HandleEditVariableModalEvent(ev);
+                return;
+            }
+
+            if (ev.ElementId == "btn_modal_cancel_var")
+            {
+                HandleEditVariableModalEvent(ev);
+                return;
             }
         }
         finally
@@ -306,6 +328,69 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
                 _tagModalToken = null;
             }
         }
+    }
+
+    private void HandleEditVariableModalEvent(ModuleEvents.OnNuiEvent ev)
+    {
+        if (ev.EventType != NuiEventType.Click)
+            return;
+
+        if (ev.ElementId == "btn_modal_ok_var")
+        {
+            // Validate the editing index is still valid
+            if (_editingVariableIndex < 0 || _editingVariableIndex >= _vars.Count)
+            {
+                _player.SendServerMessage("Variable index out of range.", ColorConstants.Orange);
+                CloseEditVariableModal();
+                return;
+            }
+
+            // Get the new values from the modal
+            string newValue = _editVariableModalToken!.Value.GetBindValue(View.EditVariableValue) ?? string.Empty;
+            int newType = 0;
+            try
+            {
+                newType = _editVariableModalToken.Value.GetBindValue(View.EditVariableType);
+            }
+            catch
+            {
+                newType = 0; // Default to Int if reading fails
+            }
+
+            // Parse the value with the new type
+            LocalVariableData newData = ParseLocalVarInput((LocalVariableType)newType, newValue, out string? error);
+            if (error != null)
+            {
+                _player.SendServerMessage(error, ColorConstants.Orange);
+                return;
+            }
+
+            // Update the variable in our list (keep the same key)
+            var (key, _) = _vars[_editingVariableIndex];
+            _vars[_editingVariableIndex] = (key, newData);
+
+            _player.SendServerMessage($"Variable '{key}' updated.", ColorConstants.Green);
+
+            CloseEditVariableModal();
+            UpdateVariableList();
+            return;
+        }
+
+        if (ev.ElementId == "btn_modal_cancel_var")
+        {
+            CloseEditVariableModal();
+        }
+    }
+
+    private void CloseEditVariableModal()
+    {
+        if (_editVariableModalToken.HasValue)
+        {
+            _editVariableModalToken.Value.OnNuiEvent -= HandleEditVariableModalEvent;
+            _editVariableModalToken?.Close();
+            _editVariableModalToken = null;
+        }
+        _editingVariableIndex = -1;
     }
 
     // ------------------------------------------------------------
@@ -536,6 +621,36 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         _player.SendServerMessage($"Variable '{keyToDelete}' marked for deletion. Click Save to confirm.", ColorConstants.Green);
 
         UpdateVariableList();
+    }
+
+    private void EditVariableAt(int index)
+    {
+        if (index < 0 || index >= _vars.Count) return;
+
+        // Prevent opening if modal already exists
+        if (_editVariableModalToken.HasValue)
+            return;
+
+        // Get the variable to edit
+        var (key, data) = _vars[index];
+        _editingVariableIndex = index;
+
+        // Open the edit modal
+        NuiWindow w = View.BuildEditVariableModal();
+        if (_player.TryCreateNuiWindow(w, out NuiWindowToken modalToken))
+        {
+            _editVariableModalToken = modalToken;
+
+            // Initialize the type combo with a default value to prevent null bind errors
+            View.InitializeEditVariableTypeDefault(_editVariableModalToken.Value);
+
+            // Set the binds in the modal
+            modalToken.SetBindValue(View.EditVariableName, key);
+            modalToken.SetBindValue(View.EditVariableType, (int)data.Type);
+            modalToken.SetBindValue(View.EditVariableValue, ToDisplay(data));
+
+            _editVariableModalToken.Value.OnNuiEvent += HandleEditVariableModalEvent;
+        }
     }
 
     private static LocalVariableData ParseLocalVarInput(LocalVariableType type, string raw, out string? error)

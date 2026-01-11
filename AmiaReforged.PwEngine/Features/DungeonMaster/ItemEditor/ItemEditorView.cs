@@ -49,9 +49,14 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
     public NuiButtonImage IconMinus10 = null!;
 
     // Edit modals (Name / Description)
-    // We’ll open these as separate small windows from the presenter; these binds hold the working buffer.
+    // We'll open these as separate small windows from the presenter; these binds hold the working buffer.
     public readonly NuiBind<string> EditNameBuffer = new("edit_name_buf");
     public readonly NuiBind<string> EditDescBuffer = new("edit_desc_buf");
+
+    // Edit variable modal binds
+    public readonly NuiBind<string> EditVariableName = new("edit_var_name");
+    public readonly NuiBind<int> EditVariableType = new("edit_var_type");
+    public readonly NuiBind<string> EditVariableValue = new("edit_var_value");
 
     // Presenter aliases (unchanged)
     public NuiBind<string> NewVariableName => VariableName;
@@ -168,7 +173,15 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
             { Width = 150f }) { Width = 150f };
 
         NuiListTemplateCell valueCell = new NuiListTemplateCell(new NuiLabel(VariableValues)
-            { Width = 285f }) { Width = 285f };
+            { Width = 260f }) { Width = 260f };
+
+        NuiListTemplateCell editCell = new NuiListTemplateCell(new NuiButtonImage("ui_btn_sm_edit")
+        {
+            Id = "btn_edit_var",
+            Width = 25f,
+            Height = 25f,
+            Tooltip = "Edit Variable"
+        }) { Width = 25f };
 
         NuiListTemplateCell deleteCell = new NuiListTemplateCell(new NuiButtonImage("ui_btn_sm_x")
         {
@@ -179,7 +192,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
         }) { Width = 25f };
 
         // Scrollable list with max height to contain variables
-        NuiList variableList = new NuiList(new[] { nameCell, typeCell, valueCell, deleteCell }, VariableCount)
+        NuiList variableList = new NuiList(new[] { nameCell, typeCell, valueCell, editCell, deleteCell }, VariableCount)
         {
             RowHeight = 27f,
             Width = 725f,
@@ -247,6 +260,15 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
     public void InitializeVariableTypeDefault(NuiWindowToken token)
     {
         token.SetBindValue(VariableType, 0); // Default to Int
+    }
+
+    /// <summary>
+    /// Initializes the edit variable type combo with a default selection of "Int" (0).
+    /// This must be called when opening the edit variable modal.
+    /// </summary>
+    public void InitializeEditVariableTypeDefault(NuiWindowToken token)
+    {
+        token.SetBindValue(EditVariableType, 0); // Default to Int
     }
 
     private NuiElement BuildBasicProps()
@@ -471,6 +493,74 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
         return new NuiWindow(layout, "Edit Tag")
         {
             Geometry = new NuiRect(420f, 320f, 380f, 180f),
+            Resizable = true
+        };
+    }
+
+    public NuiWindow BuildEditVariableModal()
+    {
+        List<NuiComboEntry> varTypeOptions = new List<NuiComboEntry>
+        {
+            new NuiComboEntry("Int", 0),
+            new NuiComboEntry("Float", 1),
+            new NuiComboEntry("String", 2),
+            new NuiComboEntry("Location", 3),
+            new NuiComboEntry("Object", 4),
+        };
+
+        NuiColumn layout = new NuiColumn
+        {
+            Width = 420f,
+            Height = 380f,
+            Children =
+            {
+                new NuiRow
+                {
+                    Width = 0f,
+                    Height = 0f,
+                    DrawList = new()
+                    {
+                        new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 460f, 420f))
+                    }
+                },
+                new NuiLabel("Edit Variable") { Height = 18f, HorizontalAlign = NuiHAlign.Center, ForegroundColor = new Color(30, 20, 12) },
+                new NuiSpacer { Height = 6f },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiLabel("Name:") { Width = 80f, Height = 20f, VerticalAlign = NuiVAlign.Middle },
+                        new NuiLabel(EditVariableName) { Width = 320f, Height = 20f, VerticalAlign = NuiVAlign.Middle }
+                    }
+                },
+                new NuiSpacer { Height = 4f },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiLabel("Type:") { Width = 80f, Height = 28f, VerticalAlign = NuiVAlign.Middle },
+                        new NuiCombo { Entries = varTypeOptions, Selected = EditVariableType, Width = 320f }
+                    }
+                },
+                new NuiSpacer { Height = 4f },
+                new NuiLabel("Value:") { Height = 16f },
+                new NuiTextEdit("Value", EditVariableValue, 5000, true) { Height = 160f },
+                new NuiSpacer { Height = 8f },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiButtonImage("ui_btn_save") { Id = "btn_modal_ok_var", Width = 50f, Height = 38f, Tooltip = "Save Variable" },
+                        new NuiSpacer { Width = 20f },
+                        new NuiButtonImage("ui_btn_cancel") { Id = "btn_modal_cancel_var", Width = 50f, Height = 38f, Tooltip = "Cancel" }
+                    }
+                }
+            }
+        };
+
+        return new NuiWindow(layout, "Edit Variable")
+        {
+            Geometry = new NuiRect(380f, 240f, 420f, 380f),
             Resizable = true
         };
     }
