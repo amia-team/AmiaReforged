@@ -173,6 +173,10 @@ internal sealed class ItemEditorModel
     {
         if (SelectedItem is null) return;
 
+        // First, delete any existing variable of a different type to avoid conflicts
+        DeleteVariable(name);
+
+        // Now set the variable with the correct type
         switch (data.Type)
         {
             case LocalVariableType.Int:
@@ -197,11 +201,22 @@ internal sealed class ItemEditorModel
     {
         if (SelectedItem is null) return;
 
-        SelectedItem.GetObjectVariable<LocalVariableInt>(name).Delete();
-        SelectedItem.GetObjectVariable<LocalVariableFloat>(name).Delete();
-        SelectedItem.GetObjectVariable<LocalVariableString>(name).Delete();
-        SelectedItem.GetObjectVariable<LocalVariableLocation>(name).Delete();
-        SelectedItem.GetObjectVariable<LocalVariableObject<NwObject>>(name).Delete();
+        // Delete the variable from all possible types (only one will actually exist)
+        // Check if each type exists before attempting to delete
+        LocalVariableInt lvi = SelectedItem.GetObjectVariable<LocalVariableInt>(name);
+        if (lvi.HasValue) lvi.Delete();
+
+        LocalVariableFloat lvf = SelectedItem.GetObjectVariable<LocalVariableFloat>(name);
+        if (lvf.HasValue) lvf.Delete();
+
+        LocalVariableString lvs = SelectedItem.GetObjectVariable<LocalVariableString>(name);
+        if (lvs.HasValue) lvs.Delete();
+
+        LocalVariableLocation lvl = SelectedItem.GetObjectVariable<LocalVariableLocation>(name);
+        if (lvl.HasValue) lvl.Delete();
+
+        LocalVariableObject<NwObject> lvo = SelectedItem.GetObjectVariable<LocalVariableObject<NwObject>>(name);
+        if (lvo.HasValue) lvo.Delete();
     }
 
     public void EnterTargetingMode()

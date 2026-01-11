@@ -240,6 +240,15 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
         };
     }
 
+    /// <summary>
+    /// Initializes the variable type combo with a default selection of "Int" (0).
+    /// This must be called after the window is created to avoid null bind errors.
+    /// </summary>
+    public void InitializeVariableTypeDefault(NuiWindowToken token)
+    {
+        token.SetBindValue(VariableType, 0); // Default to Int
+    }
+
     private NuiElement BuildBasicProps()
     {
         const float labelW = 100f;

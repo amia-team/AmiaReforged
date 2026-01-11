@@ -60,6 +60,9 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
             Token().SetBindWatch(View.Description, false);
             Token().SetBindWatch(View.Tag, false);
 
+            // Initialize variable type combo with a default value to prevent null bind errors
+            View.InitializeVariableTypeDefault(Token());
+
             UpdateFromModel();
             RefreshIconInfo();
         }
@@ -465,7 +468,18 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
 
             string name = Token().GetBindValue(View.NewVariableName) ?? string.Empty;
             string val  = Token().GetBindValue(View.NewVariableValue) ?? string.Empty;
-            int    type = Token().GetBindValue(View.NewVariableType);
+
+            // Read the variable type - will be 0 (Int) by default from initialization
+            int type = 0;
+            try
+            {
+                type = Token().GetBindValue(View.NewVariableType);
+            }
+            catch
+            {
+                // If reading fails, default to Int (0)
+                type = 0;
+            }
 
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -514,21 +528,12 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
     {
         if (index < 0 || index >= _vars.Count) return;
 
-        // Get the variable key before removing from list
+        // Remove from local list - the actual deletion will happen when ApplyChanges is called
         string keyToDelete = _vars[index].Key;
-
-        // Remove from local list
         _vars.RemoveAt(index);
 
-        // Actually delete from the item
-        if (_model.SelectedItem != null)
-        {
-            _model.SelectedItem.GetObjectVariable<LocalVariableInt>(keyToDelete).Delete();
-            _model.SelectedItem.GetObjectVariable<LocalVariableFloat>(keyToDelete).Delete();
-            _model.SelectedItem.GetObjectVariable<LocalVariableString>(keyToDelete).Delete();
-            _model.SelectedItem.GetObjectVariable<LocalVariableLocation>(keyToDelete).Delete();
-            _model.SelectedItem.GetObjectVariable<LocalVariableObject<NwObject>>(keyToDelete).Delete();
-        }
+        // Inform user of deletion
+        _player.SendServerMessage($"Variable '{keyToDelete}' marked for deletion. Click Save to confirm.", ColorConstants.Green);
 
         UpdateVariableList();
     }
