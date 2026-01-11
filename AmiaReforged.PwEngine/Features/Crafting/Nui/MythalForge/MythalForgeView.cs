@@ -92,7 +92,7 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                     Width = 0f,
                     Height = 0f,
                     Children = new List<NuiElement>(),
-                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 1200f, 640f))]
+                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 1600f, 900f))]
                 },
                 new NuiRow
                 {
