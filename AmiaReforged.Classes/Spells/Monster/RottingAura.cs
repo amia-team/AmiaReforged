@@ -1,7 +1,6 @@
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using NLog;
 
 namespace AmiaReforged.Classes.Spells.Monster;
 
