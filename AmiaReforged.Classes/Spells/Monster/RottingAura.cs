@@ -14,8 +14,9 @@ namespace AmiaReforged.Classes.Spells.Monster;
  *
  * Description: Rotting Aura causes living creatures that enter it to be sickened until they leave the aura.
  * A sickened creature takes a -2 penalty to their attack, damage, skill, and saving throws.
- * Further, each round that a creature lingers in the aura, they must pass a fortitude save or take 1 damage to constitution
- * and be nauseated (slowed) until they leave the aura. Each time a creature fails the saving throw, the aura's creator is healed for 5 damage.
+ * Further, each round that a creature lingers in the aura, they must pass a fortitude save or be nauseated (slowed)
+ * until they leave the aura. A nauseated creature takes a -2 penalty to armor class and constitution,
+ * and their movement speed is halved. Each time a creature fails the saving throw, the aura's creator is healed for 5 damage.
  */
 
 [ServiceBinding(typeof(ISpell))]
@@ -50,8 +51,9 @@ public class RottingAura(ShifterDcService shifterDcService, ScriptHandleFactory 
     {
         Effect nauseatedEffect = Effect.LinkEffects
         (
-            Effect.Slow(),
-            Effect.AbilityDecrease(Ability.Constitution, 1)
+            Effect.ACDecrease(2),
+            Effect.MovementSpeedDecrease(50),
+            Effect.AbilityDecrease(Ability.Constitution, 2)
         );
 
         nauseatedEffect.SubType = EffectSubType.Extraordinary;
