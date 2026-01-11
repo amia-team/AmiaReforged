@@ -199,6 +199,7 @@ public class SpellUtils
     public static bool IsValidHostileTarget(NwCreature target, NwCreature caster)
     {
         if (target.IsDMAvatar) return false;
+        if (target.Master == caster || target == caster) return true;
         if (target.IsReactionTypeFriendly(caster)) return false;
         return true;
     }
