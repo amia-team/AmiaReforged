@@ -92,7 +92,7 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                     Width = 0f,
                     Height = 0f,
                     Children = new List<NuiElement>(),
-                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 1200f, 800f))]
+                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 1200f, 640f))]
                 },
                 new NuiRow
                 {
@@ -146,9 +146,27 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                 {
                     Children =
                     {
-                        CategoryView.RootLayout(),
-                        ActivePropertiesView.RootLayout(),
-                        ChangelistView.RootLayout()
+                        new NuiGroup
+                        {
+                            Element = CategoryView.RootLayout(),
+                            Border = false,
+                            Width = 380f,
+                            Height = 420f
+                        },
+                        new NuiGroup
+                        {
+                            Element = ActivePropertiesView.RootLayout(),
+                            Border = true,
+                            Width = 380f,
+                            Height = 420f
+                        },
+                        new NuiGroup
+                        {
+                            Element = ChangelistView.RootLayout(),
+                            Border = true,
+                            Width = 380f,
+                            Height = 420f
+                        }
                     }
                 },
                 new NuiRow

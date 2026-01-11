@@ -67,7 +67,7 @@ public class ChangelistView : IScryView
                     Scrollbars = NuiScrollbars.None
                 }
             },
-            Width = 400f,
+            Width = 380f,
             Height = 400f
         };
     }

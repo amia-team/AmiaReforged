@@ -141,10 +141,12 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
             Element = new NuiColumn
             {
                 Children = elements,
-                Width = 400f,
+                Width = 380f,
                 Height = 400f
             },
-            Border = true
+            Border = true,
+            Width = 380f,
+            Height = 400f
         };
 
         return categoryLayout;
