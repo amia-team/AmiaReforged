@@ -16,7 +16,7 @@ namespace AmiaReforged.Classes.Spells.Monster;
  * A sickened creature takes a -2 penalty to their attack, damage, skill, and saving throws.
  * Further, each round that a creature lingers in the aura, they must pass a fortitude save or be nauseated (slowed)
  * until they leave the aura. A nauseated creature takes a -2 penalty to armor class and constitution,
- * and their movement speed is halved. Each time a creature fails the saving throw, the aura's creator is healed for 5 damage.
+ * and their movement speed is halved. Each time a creature is nauseated, the aura's creator is healed for 5 hit points.
  */
 
 [ServiceBinding(typeof(ISpell))]
