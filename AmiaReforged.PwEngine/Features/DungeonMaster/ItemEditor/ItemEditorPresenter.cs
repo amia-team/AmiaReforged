@@ -16,6 +16,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
 
     // Local working copy of variables (we keep this in the presenter to render the manual column)
     private readonly List<(string Key, LocalVariableData Data)> _vars = new();
+    private string _variableFilterTerm = string.Empty; // Current filter term for variable search
 
     // Modal window tokens
     private NuiWindowToken? _nameModalToken;
@@ -124,6 +125,13 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
             if (ev.ElementId == View.AddVariableButton.Id)
             {
                 AddNewVariable();
+                return;
+            }
+
+            // SEARCH VARIABLES - filter by name
+            if (ev.ElementId == "btn_search_var")
+            {
+                SearchVariables();
                 return;
             }
 
@@ -403,8 +411,9 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         // Always show the same placeholder for Description in the main window
         Token().SetBindValue(View.DescPlaceholder, item != null ? "Edit to View" : "");
 
-        // Reset local vars list
+        // Reset local vars list and filter
         _vars.Clear();
+        _variableFilterTerm = string.Empty; // Clear filter when changing items
 
         if (item == null)
         {
@@ -434,18 +443,23 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
     // Sync _vars -> view binds for the NuiList
     private void UpdateVariableList()
     {
-        List<string> names  = new List<string>(_vars.Count);
-        List<string> types  = new List<string>(_vars.Count);
-        List<string> values = new List<string>(_vars.Count);
+        List<string> names  = new List<string>();
+        List<string> types  = new List<string>();
+        List<string> values = new List<string>();
 
-        foreach ((string key, LocalVariableData data) in _vars)
+        // Filter variables based on current search term
+        var filteredVars = string.IsNullOrEmpty(_variableFilterTerm)
+            ? _vars
+            : _vars.Where(v => v.Key.Contains(_variableFilterTerm, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        foreach ((string key, LocalVariableData data) in filteredVars)
         {
             names.Add(key);
             types.Add(data.Type.ToString());
             values.Add(ToDisplay(data));
         }
 
-        Token().SetBindValue(View.VariableCount, _vars.Count);
+        Token().SetBindValue(View.VariableCount, filteredVars.Count);
         Token().SetBindValues(View.VariableNames,  names);
         Token().SetBindValues(View.VariableTypes,  types);
         Token().SetBindValues(View.VariableValues, values);
@@ -651,6 +665,28 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
 
             _editVariableModalToken.Value.OnNuiEvent += HandleEditVariableModalEvent;
         }
+    }
+
+    private void SearchVariables()
+    {
+        // Get the search term from the Variable Name input field
+        string searchTerm = Token().GetBindValue(View.NewVariableName) ?? string.Empty;
+
+        // If search term is empty, show all variables
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            _variableFilterTerm = string.Empty;
+            _player.SendServerMessage("Filter cleared. Showing all variables.", ColorConstants.Green);
+        }
+        else
+        {
+            _variableFilterTerm = searchTerm.Trim();
+            int matchCount = _vars.Count(v => v.Key.Contains(_variableFilterTerm, StringComparison.OrdinalIgnoreCase));
+            _player.SendServerMessage($"Filter applied: '{_variableFilterTerm}' - {matchCount} matching variable(s).", ColorConstants.Green);
+        }
+
+        // Refresh the display with the filter applied
+        UpdateVariableList();
     }
 
     private static LocalVariableData ParseLocalVarInput(LocalVariableType type, string raw, out string? error)

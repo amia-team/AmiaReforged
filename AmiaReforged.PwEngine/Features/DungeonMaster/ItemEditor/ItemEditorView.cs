@@ -35,6 +35,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
     public readonly NuiBind<string> VariableName = new("item_var_name");
     public readonly NuiBind<int> VariableType = new("item_var_type");
     public readonly NuiBind<string> VariableValue = new("item_var_value");
+    public readonly NuiBind<string> VariableNameFilter = new("item_var_name_filter");
 
     // Clickables (now NuiButtonImage, but we preserve the same IDs where applicable)
     public NuiButtonImage SelectItemButton = null!;
@@ -244,10 +245,11 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
             {
                 new NuiTextEdit("Variable Name", VariableName, 64, false)
                     { Width = 220f, Enabled = ValidObjectSelected },
+                ImageButton("btn_search_var", "Search", out _, 35f, 35f, "cc_scale"),
                 new NuiCombo
-                    { Entries = varTypeOptions, Selected = VariableType, Width = 140f, Enabled = ValidObjectSelected },
+                    { Entries = varTypeOptions, Selected = VariableType, Width = 105f, Enabled = ValidObjectSelected },
                 new NuiTextEdit("Value", VariableValue, 1024, false)
-                    { Width = 320, Enabled = ValidObjectSelected },
+                    { Width = 315, Enabled = ValidObjectSelected },
                 ImageButton("btn_add_var", "Add", out AddVariableButton, 35f, 35f, "ui_btn_sm_plus")
             }
         };
