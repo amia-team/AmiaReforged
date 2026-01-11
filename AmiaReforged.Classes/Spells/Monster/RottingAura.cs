@@ -1,6 +1,7 @@
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NLog;
 
 namespace AmiaReforged.Classes.Spells.Monster;
 
@@ -18,7 +19,7 @@ namespace AmiaReforged.Classes.Spells.Monster;
  * and be nauseated (slowed) until they leave the aura. Each time a creature fails the saving throw, the aura's creator is healed for 5 damage.
  */
 
-[ServiceBinding(typeof(RottingAura))]
+[ServiceBinding(typeof(ISpell))]
 public class RottingAura(ShifterDcService shifterDcService, ScriptHandleFactory scriptHandleFactory) : ISpell
 {
     private const PersistentVfxType MobRottingVfx = (PersistentVfxType)57;
@@ -130,13 +131,16 @@ public class RottingAura(ShifterDcService shifterDcService, ScriptHandleFactory 
     private static ScriptHandleResult OnEnterRottingAura(CallInfo info, NwGameObject caster,
         AppearanceTableEntry? appearanceType)
     {
+        if (!info.TryGetEvent(out AreaOfEffectEvents.OnEnter? eventData))
+            return ScriptHandleResult.Handled;
+
         if (caster is NwCreature casterCreature && appearanceType != casterCreature.Appearance)
         {
             RemoveRottingAura(casterCreature);
             return ScriptHandleResult.Handled;
         }
 
-        if (!IsValidCreature(info.ObjectSelf, out NwCreature? targetCreature) || targetCreature == null)
+        if (!IsValidCreature(eventData.Entering, out NwCreature? targetCreature) || targetCreature == null)
             return ScriptHandleResult.Handled;
 
         targetCreature.ApplyEffect(EffectDuration.Instant, SickenedVfx);
@@ -148,22 +152,22 @@ public class RottingAura(ShifterDcService shifterDcService, ScriptHandleFactory 
     private static ScriptHandleResult OnHeartbeatRottingAura(CallInfo info, NwGameObject caster,
         AppearanceTableEntry? appearanceType, int dc)
     {
+        if (!info.TryGetEvent(out AreaOfEffectEvents.OnHeartbeat? eventData))
+            return ScriptHandleResult.Handled;
+
         if (caster is NwCreature casterCreature && appearanceType != casterCreature.Appearance)
         {
             RemoveRottingAura(casterCreature);
             return ScriptHandleResult.Handled;
         }
 
-        if (!IsValidCreature(info.ObjectSelf, out NwCreature? targetCreature)
-            || targetCreature == null
-            || IsNauseated(targetCreature))
-            return ScriptHandleResult.Handled;
-
-        SavingThrowResult savingThrowResult
-            = targetCreature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Disease, caster);
-
-        if (savingThrowResult == SavingThrowResult.Failure)
+        foreach (NwCreature targetCreature in eventData.Effect.GetObjectsInEffectArea<NwCreature>())
         {
+            SavingThrowResult savingThrowResult
+                = targetCreature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Disease, caster);
+
+            if (savingThrowResult != SavingThrowResult.Failure) continue;
+
             targetCreature.ApplyEffect(EffectDuration.Permanent, NauseatedEffect());
             targetCreature.ApplyEffect(EffectDuration.Instant, NauseatedVfx);
 
@@ -175,7 +179,10 @@ public class RottingAura(ShifterDcService shifterDcService, ScriptHandleFactory 
 
     private static ScriptHandleResult OnExitRottingAura(CallInfo info)
     {
-        if (info.ObjectSelf is not NwCreature targetCreature) return ScriptHandleResult.Handled;
+        if (!info.TryGetEvent(out AreaOfEffectEvents.OnExit? eventData))
+            return ScriptHandleResult.Handled;
+
+        if (eventData.Exiting is not NwCreature targetCreature) return ScriptHandleResult.Handled;
 
         Effect? sickened = targetCreature.ActiveEffects.FirstOrDefault(e => e.Tag == SickenedEffectTag);
         if (sickened != null) targetCreature.RemoveEffect(sickened);
@@ -189,9 +196,9 @@ public class RottingAura(ShifterDcService shifterDcService, ScriptHandleFactory 
     /// <summary>
     /// // Only affects living creatures that aren't immune to disease
     /// </summary>
-    private static bool IsValidCreature(NwObject? gameObject, out NwCreature? targetCreature)
+    private static bool IsValidCreature(NwGameObject targetObject, out NwCreature? targetCreature)
     {
-        if (gameObject is NwCreature { Race.RacialType: not (RacialType.Ooze or RacialType.Construct
+        if (targetObject is NwCreature { Race.RacialType: not (RacialType.Ooze or RacialType.Construct
                 or RacialType.Undead or RacialType.Elemental) } creature
             && !creature.IsImmuneTo(ImmunityType.Disease))
         {
@@ -203,12 +210,9 @@ public class RottingAura(ShifterDcService shifterDcService, ScriptHandleFactory 
         return false;
     }
 
-    private static void RemoveRottingAura(NwCreature caster)
+    private static void RemoveRottingAura(NwGameObject caster)
     {
         Effect? aura = caster.ActiveEffects.FirstOrDefault(e => e.Tag == RottingAuraEffectTag);
         if (aura != null) caster.RemoveEffect(aura);
     }
-
-    private static bool IsNauseated(NwCreature creature)
-        => creature.ActiveEffects.Any(e => e.Tag == NauseatedEffectTag);
 }
