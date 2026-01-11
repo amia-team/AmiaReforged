@@ -131,17 +131,22 @@ public class RottingAura(ShifterDcService shifterDcService, ScriptHandleFactory 
     private static ScriptHandleResult OnEnterRottingAura(CallInfo info, NwGameObject caster,
         AppearanceTableEntry? appearanceType)
     {
-        if (!info.TryGetEvent(out AreaOfEffectEvents.OnEnter? eventData))
+        if (!info.TryGetEvent(out AreaOfEffectEvents.OnEnter? eventData)
+            || eventData.Entering is not NwCreature targetCreature
+            || !IsValidCreature(targetCreature))
             return ScriptHandleResult.Handled;
 
-        if (caster is NwCreature casterCreature && appearanceType != casterCreature.Appearance)
+        if (caster is NwCreature casterCreature)
         {
-            RemoveRottingAura(casterCreature);
-            return ScriptHandleResult.Handled;
-        }
+            if (casterCreature.Appearance != appearanceType)
+            {
+                RemoveRottingAura(casterCreature);
+                return ScriptHandleResult.Handled;
+            }
 
-        if (!IsValidCreature(eventData.Entering, out NwCreature? targetCreature) || targetCreature == null)
-            return ScriptHandleResult.Handled;
+            if (casterCreature.IsReactionTypeFriendly(targetCreature))
+                return ScriptHandleResult.Handled;
+        }
 
         targetCreature.ApplyEffect(EffectDuration.Instant, SickenedVfx);
         targetCreature.ApplyEffect(EffectDuration.Permanent, SickenedEffect());
@@ -163,6 +168,10 @@ public class RottingAura(ShifterDcService shifterDcService, ScriptHandleFactory 
 
         foreach (NwCreature targetCreature in eventData.Effect.GetObjectsInEffectArea<NwCreature>())
         {
+            if (!IsValidCreature(targetCreature)) continue;
+
+            if (caster is NwCreature creature && creature.IsReactionTypeFriendly(targetCreature)) continue;
+
             SavingThrowResult savingThrowResult
                 = targetCreature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Disease, caster);
 
@@ -179,10 +188,9 @@ public class RottingAura(ShifterDcService shifterDcService, ScriptHandleFactory 
 
     private static ScriptHandleResult OnExitRottingAura(CallInfo info)
     {
-        if (!info.TryGetEvent(out AreaOfEffectEvents.OnExit? eventData))
+        if (!info.TryGetEvent(out AreaOfEffectEvents.OnExit? eventData)
+            || eventData.Exiting is not NwCreature targetCreature)
             return ScriptHandleResult.Handled;
-
-        if (eventData.Exiting is not NwCreature targetCreature) return ScriptHandleResult.Handled;
 
         Effect? sickened = targetCreature.ActiveEffects.FirstOrDefault(e => e.Tag == SickenedEffectTag);
         if (sickened != null) targetCreature.RemoveEffect(sickened);
@@ -196,19 +204,9 @@ public class RottingAura(ShifterDcService shifterDcService, ScriptHandleFactory 
     /// <summary>
     /// // Only affects living creatures that aren't immune to disease
     /// </summary>
-    private static bool IsValidCreature(NwGameObject targetObject, out NwCreature? targetCreature)
-    {
-        if (targetObject is NwCreature { Race.RacialType: not (RacialType.Ooze or RacialType.Construct
-                or RacialType.Undead or RacialType.Elemental) } creature
-            && !creature.IsImmuneTo(ImmunityType.Disease))
-        {
-            targetCreature = creature;
-            return true;
-        }
-
-        targetCreature = null;
-        return false;
-    }
+    private static bool IsValidCreature(NwCreature targetCreature) =>
+        targetCreature.Race.RacialType is not (RacialType.Ooze or RacialType.Construct or RacialType.Elemental or RacialType.Undead)
+        && !targetCreature.IsImmuneTo(ImmunityType.Disease);
 
     private static void RemoveRottingAura(NwGameObject caster)
     {
