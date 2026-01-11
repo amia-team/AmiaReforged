@@ -71,6 +71,14 @@ public class RottingAura(ShifterDcService shifterDcService, ScriptHandleFactory 
     {
         if (eventData.Caster == null) return;
 
+        // Recasting disables aura instead of stacking it
+        Effect? existingAura = eventData.Caster.ActiveEffects.FirstOrDefault(e => e.Tag == RottingAuraEffectTag);
+        if (existingAura != null)
+        {
+            eventData.Caster.RemoveEffect(existingAura);
+            return;
+        }
+
         int casterLevel = eventData.Caster.CasterLevel;
         int dc = eventData.SaveDC;
 
