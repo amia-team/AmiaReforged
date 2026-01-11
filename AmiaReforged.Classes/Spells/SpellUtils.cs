@@ -204,4 +204,23 @@ public class SpellUtils
         return true;
     }
 
+    /// <summary>
+    /// Generates a random delay within the specified range. Use with NWTask.Delay in async Task methods.
+    /// </summary>
+    /// <param name="min">The minimum value (seconds), default to 0.4f as per NWScript's GetRandomDelay.</param>
+    /// <param name="max">The maximum value (seconds), default to 1.1f as per NWScript's GetRandomDelay.</param>
+    /// <returns>A random TimeSpan in seconds between min and max.</returns>
+    public static TimeSpan GetRandomDelay(double min = 0.4f, double max = 1.1f)
+    {
+        if (min > max)
+        {
+            return TimeSpan.FromSeconds(min);
+        }
+
+        double randomDouble = Random.Shared.NextDouble();
+        double delay = min + randomDouble * (max - min);
+
+        return TimeSpan.FromSeconds(delay);
+    }
+
 }
