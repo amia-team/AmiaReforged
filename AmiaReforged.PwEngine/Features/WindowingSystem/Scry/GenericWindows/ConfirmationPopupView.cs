@@ -38,8 +38,7 @@ public sealed class ConfirmationPopupView : ScryView<ConfirmationPopupPresenter>
                 {
                     Element = new NuiText(_message)
                     {
-                        Scrollbars = NuiScrollbars.Auto,
-                        ForegroundColor = new Color(50, 40, 30)
+                        Scrollbars = NuiScrollbars.Auto
                     },
                     Border = true,
                     Width = 400,
