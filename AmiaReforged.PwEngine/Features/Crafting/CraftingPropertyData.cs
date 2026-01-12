@@ -43,7 +43,19 @@ public class CraftingPropertyData
     {
         List<CraftingCategory> properties = [];
 
-        AddEquippedItemProperties(properties);
+        AddBaseEquippedItemProperties(properties);
+
+        // Caster weapons use the 1-cost bonus spell slots
+        properties.Add(BonusSpellSlotProperties.AssassinBonusSpells);
+        properties.Add(BonusSpellSlotProperties.BardBonusSpells);
+        properties.Add(BonusSpellSlotProperties.ClericBonusSpells);
+        properties.Add(BonusSpellSlotProperties.DruidBonusSpells);
+        properties.Add(BonusSpellSlotProperties.PaladinBonusSpells);
+        properties.Add(BonusSpellSlotProperties.RangerBonusSpells);
+        properties.Add(BonusSpellSlotProperties.SorcererBonusSpells);
+        properties.Add(BonusSpellSlotProperties.WizardBonusSpells);
+
+        properties.Add(SpellResistanceProperties.SpellResistances);
 
         Properties.TryAdd(CasterWeapon1H, properties);
         Properties.TryAdd(CasterWeapon2H, properties);
@@ -172,7 +184,11 @@ public class CraftingPropertyData
         Properties.TryAdd(NWScript.BASE_ITEM_GLOVES, properties);
     }
 
-    private static void AddEquippedItemProperties(List<CraftingCategory> properties)
+    /// <summary>
+    /// Adds base equipped item properties without bonus spell slots.
+    /// Used by both regular equipped items and caster weapons.
+    /// </summary>
+    private static void AddBaseEquippedItemProperties(List<CraftingCategory> properties)
     {
         properties.Add(GenericItemProperties.Armor);
         properties.Add(GenericItemProperties.ElementalResistances);
@@ -208,15 +224,25 @@ public class CraftingPropertyData
         properties.Add(WondrousDmProperties.BonusFeats);
         properties.Add(WondrousDmProperties.SpellResistanceWondrous);
         properties.Add(WondrousDmProperties.WeightReduction);
+    }
 
-        properties.Add(BonusSpellSlotProperties.AssassinBonusSpells);
-        properties.Add(BonusSpellSlotProperties.BardBonusSpells);
-        properties.Add(BonusSpellSlotProperties.ClericBonusSpells);
-        properties.Add(BonusSpellSlotProperties.DruidBonusSpells);
-        properties.Add(BonusSpellSlotProperties.PaladinBonusSpells);
-        properties.Add(BonusSpellSlotProperties.RangerBonusSpells);
-        properties.Add(BonusSpellSlotProperties.SorcererBonusSpells);
-        properties.Add(BonusSpellSlotProperties.WizardBonusSpells);
+    /// <summary>
+    /// Adds equipped item properties with 2-cost bonus spell slots.
+    /// Used for armor, accessories, and other non-caster-weapon items.
+    /// </summary>
+    private static void AddEquippedItemProperties(List<CraftingCategory> properties)
+    {
+        AddBaseEquippedItemProperties(properties);
+
+        // Non-caster items use the 2-cost bonus spell slots
+        properties.Add(BonusSpellSlotProperties.AssassinBonusSpellsCostly);
+        properties.Add(BonusSpellSlotProperties.BardBonusSpellsCostly);
+        properties.Add(BonusSpellSlotProperties.ClericBonusSpellsCostly);
+        properties.Add(BonusSpellSlotProperties.DruidBonusSpellsCostly);
+        properties.Add(BonusSpellSlotProperties.PaladinBonusSpellsCostly);
+        properties.Add(BonusSpellSlotProperties.RangerBonusSpellsCostly);
+        properties.Add(BonusSpellSlotProperties.SorcererBonusSpellsCostly);
+        properties.Add(BonusSpellSlotProperties.WizardBonusSpellsCostly);
 
         properties.Add(SpellResistanceProperties.SpellResistances);
     }
