@@ -188,11 +188,12 @@ public sealed class WeaponChangePresenter(WeaponChangeView view, NwPlayer player
             BaseItemType.Club or BaseItemType.Dagger or BaseItemType.Kama or
             BaseItemType.Kukri or BaseItemType.Sickle or BaseItemType.Warhammer or
             BaseItemType.LightFlail or BaseItemType.Whip or BaseItemType.Trident or
-            BaseItemType.DwarvenWaraxe => 0,
+            BaseItemType.DwarvenWaraxe or BaseItemType.Bastardsword or BaseItemType.Katana or
+            BaseItemType.MagicStaff => 0,
 
             // Two-handed weapons (4)
             BaseItemType.Greatsword or BaseItemType.Greataxe or BaseItemType.Halberd or
-            BaseItemType.HeavyFlail or BaseItemType.Scythe or
+            BaseItemType.HeavyFlail or BaseItemType.Scythe or BaseItemType.ShortSpear => 4,
             BaseItemType.Quarterstaff => 4,
 
             // Bows (5)
@@ -291,6 +292,9 @@ public sealed class WeaponChangePresenter(WeaponChangeView view, NwPlayer player
             BaseItemType.Whip => "js_bla_wewh",
             BaseItemType.Trident => "js_bla_wetr",
             BaseItemType.DwarvenWaraxe => "js_bla_wedw",
+            BaseItemType.Bastardsword => "js_bla_webs",
+            BaseItemType.Katana => "js_bla_weka",
+            BaseItemType.MagicStaff => "js_bla_wems",
 
             // Two-handed weapons
             BaseItemType.Greatsword => "js_bla_wegs",
@@ -299,6 +303,7 @@ public sealed class WeaponChangePresenter(WeaponChangeView view, NwPlayer player
             BaseItemType.HeavyFlail => "js_bla_wehf",
             BaseItemType.Scythe => "js_bla_wesy",
             BaseItemType.Quarterstaff => "js_bla_wequ",
+            BaseItemType.ShortSpear => "js_bla_wesp",
 
             // Bows
             BaseItemType.Longbow => "js_arch_bow",
