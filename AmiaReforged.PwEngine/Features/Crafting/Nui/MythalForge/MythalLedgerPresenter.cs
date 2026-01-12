@@ -109,13 +109,13 @@ public class MythalLedgerPresenter : ScryPresenter<MythalLedgerView>
     /// to update the ledger view bindings.</param>
     private void UpdateLedgerBindings(MythalForgeModel senderModel)
     {
-        Token().SetBindValue(View.MinorMythalCount, senderModel.MythalCategoryModel.MinorMythals);
-        Token().SetBindValue(View.LesserMythalCount, senderModel.MythalCategoryModel.LesserMythals);
-        Token().SetBindValue(View.IntermediateMythalCount, senderModel.MythalCategoryModel.IntermediateMythals);
-        Token().SetBindValue(View.GreaterMythalCount, senderModel.MythalCategoryModel.GreaterMythals);
-        Token().SetBindValue(View.FlawlessMythalCount, senderModel.MythalCategoryModel.FlawlessMythals);
-        Token().SetBindValue(View.PerfectMythalCount, senderModel.MythalCategoryModel.PerfectMythals);
-        Token().SetBindValue(View.DivineMythalCount, senderModel.MythalCategoryModel.DivineMythals);
+        Token().SetBindValue(View.MinorMythalCount, senderModel.MythalCategoryModel.MinorMythals.ToString());
+        Token().SetBindValue(View.LesserMythalCount, senderModel.MythalCategoryModel.LesserMythals.ToString());
+        Token().SetBindValue(View.IntermediateMythalCount, senderModel.MythalCategoryModel.IntermediateMythals.ToString());
+        Token().SetBindValue(View.GreaterMythalCount, senderModel.MythalCategoryModel.GreaterMythals.ToString());
+        Token().SetBindValue(View.FlawlessMythalCount, senderModel.MythalCategoryModel.FlawlessMythals.ToString());
+        Token().SetBindValue(View.PerfectMythalCount, senderModel.MythalCategoryModel.PerfectMythals.ToString());
+        Token().SetBindValue(View.DivineMythalCount, senderModel.MythalCategoryModel.DivineMythals.ToString());
     }
 
     /// <summary>
@@ -137,7 +137,7 @@ public class MythalLedgerPresenter : ScryPresenter<MythalLedgerView>
         _window = new NuiWindow(View.RootLayout(), title: "Mythal Ledger")
         {
             Id = "mythal_ledger",
-            Geometry = new NuiRect(1600, 500, 300, 300),
+            Geometry = new NuiRect(1600, 500, 200, 250),
             Closable = false,
             Resizable = true
         };
@@ -163,7 +163,17 @@ public class MythalLedgerPresenter : ScryPresenter<MythalLedgerView>
             return;
         }
 
-        _player.TryCreateNuiWindow(_window, out _token);
+        if (!_player.TryCreateNuiWindow(_window, out _token))
+        {
+            _player.SendServerMessage("Failed to create Mythal Ledger window token.");
+            return;
+        }
+
+        // Initialize the ledger with current values
+        if (_parent?.Model != null)
+        {
+            UpdateLedgerBindings(_parent.Model);
+        }
     }
 
     /// <summary>

@@ -105,81 +105,79 @@ public sealed class MythalLedgerView : ScryView<MythalLedgerPresenter>
     public override NuiLayout RootLayout() =>
         new NuiColumn
         {
+            Width = 200f, Height = 250f,
             Children =
             {
-                // new NuiRow
-                // {
-                //     Width = 0f,
-                //     Height = 0f,
-                //     Children = new List<NuiElement>(),
-                //     DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 300f, 400f))]
-                // },
-                new NuiGroup
+                new NuiRow
                 {
-                    Element = new NuiColumn
+                    Width = 0f,
+                    Height = 0f,
+                    Children = new List<NuiElement>(),
+                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(-20f, -20f, 250f, 300f))]
+                },
+                new NuiLabel(label: "Mythals Available:") { Height = 15f, Width = 180f, HorizontalAlign = NuiHAlign.Center , ForegroundColor = new Color(30, 20, 12)},
+                new NuiRow
+                {
+                    Children =
                     {
-                        Children =
-                        {
-                            new NuiRow
-                            {
-                                Children =
-                                {
-                                    new NuiLabel(label: "Minor:"),
-                                    new NuiLabel(MinorMythalCount)
-                                }
-                            },
-                            new NuiRow
-                            {
-                                Children =
-                                {
-                                    new NuiLabel(label: "Lesser:"),
-                                    new NuiLabel(LesserMythalCount)
-                                }
-                            },
-                            new NuiRow
-                            {
-                                Children =
-                                {
-                                    new NuiLabel(label: "Intermediate:"),
-                                    new NuiLabel(IntermediateMythalCount)
-                                }
-                            },
-                            new NuiRow
-                            {
-                                Children =
-                                {
-                                    new NuiLabel(label: "Greater:"),
-                                    new NuiLabel(GreaterMythalCount)
-                                }
-                            },
-                            new NuiRow
-                            {
-                                Children =
-                                {
-                                    new NuiLabel(label: "Flawless:"),
-                                    new NuiLabel(FlawlessMythalCount)
-                                }
-                            },
-                            new NuiRow
-                            {
-                                Children =
-                                {
-                                    new NuiLabel(label: "Perfect:"),
-                                    new NuiLabel(PerfectMythalCount)
-                                }
-                            },
-                            new NuiRow
-                            {
-                                Children =
-                                {
-                                    new NuiLabel(label: "Divine:"),
-                                    new NuiLabel(DivineMythalCount)
-                                }
-                            }
-                        }
-                    },
-                    Border = false,
-                    Scrollbars = NuiScrollbars.None
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(label: "Minor:") { ForegroundColor = new Color(30, 20, 12), Width = 100f },
+                        new NuiLabel(MinorMythalCount) { ForegroundColor = new Color(30, 20, 12), Width = 40f }
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(label: "Lesser:") { ForegroundColor = new Color(30, 20, 12), Width = 100f },
+                        new NuiLabel(LesserMythalCount) { ForegroundColor = new Color(30, 20, 12), Width = 40f }
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(label: "Intermediate:") { ForegroundColor = new Color(30, 20, 12), Width = 100f },
+                        new NuiLabel(IntermediateMythalCount) { ForegroundColor = new Color(30, 20, 12), Width = 40f }
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(label: "Greater:") { ForegroundColor = new Color(30, 20, 12), Width = 100f },
+                        new NuiLabel(GreaterMythalCount) { ForegroundColor = new Color(30, 20, 12), Width = 40f }
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(label: "Flawless:") { ForegroundColor = new Color(30, 20, 12), Width = 100f },
+                        new NuiLabel(FlawlessMythalCount) { ForegroundColor = new Color(30, 20, 12), Width = 40f }
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(label: "Perfect:") { ForegroundColor = new Color(30, 20, 12), Width = 100f },
+                        new NuiLabel(PerfectMythalCount) { ForegroundColor = new Color(30, 20, 12), Width = 40f }
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(label: "Divine:") { ForegroundColor = new Color(30, 20, 12), Width = 100f },
+                        new NuiLabel(DivineMythalCount) { ForegroundColor = new Color(30, 20, 12), Width = 40f }
+                    }
                 }
             }
         };
