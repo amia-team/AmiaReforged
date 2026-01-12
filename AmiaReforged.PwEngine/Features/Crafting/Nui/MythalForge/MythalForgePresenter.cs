@@ -63,7 +63,14 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// </summary>
     private bool _creating;
 
+    /// <summary>
+    /// Tracks whether the over-budget warning has been shown to avoid displaying it multiple times.
+    /// </summary>
+    private bool _warningShown;
+
     [Inject] private Lazy<IRenameItemService> RenameService { get; init; } = null!;
+
+    [Inject] private Lazy<WindowDirector> WindowDirector { get; init; } = null!;
 
     /// <summary>
     /// Represents the token used to manage the Nui window associated with the Mythal Forge view.
@@ -345,11 +352,11 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     private void OnCasterWeaponConversionConfirmed()
     {
         Model.ConvertToCasterWeapon();
-        
+
         NwItem item = Model.Item;
-        
+
         RaiseCloseEvent();
-        
+
         // Raise event so the forge can be reopened with caster weapon categories
         CasterWeaponConversionCompleted?.Invoke(this, item);
     }
@@ -583,21 +590,27 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
     /// <summary>
     /// Displays a popup warning message if the remaining power budget is less than zero.
+    /// The warning is only shown once per forge session.
+    /// The warning is delayed to ensure it appears on top of the MythalForge window.
     /// </summary>
     /// <param name="remaining">The number of remaining powers in the power budget.</param>
     private void DisplayPopupIfOverBudget(int remaining)
     {
-        if (remaining < 0)
-            GenericWindow
-                .Builder()
-                .For()
-                .SimplePopup()
-                .WithPlayer(_player)
-                .WithTitle(title: "Mythal Forge: WARNING!!!!")
-                .WithMessage(
-                    message:
-                    "This item is stronger than what a Mythal Forge can create. Take care not to weaken the item when editing it!")
-                .OpenWithParent(Token());
+        if (remaining < 0 && !_warningShown)
+        {
+            _warningShown = true;
+
+            // Delay opening the warning window to ensure it appears on top of the MythalForge window
+            // Using a small delay ensures the MythalForge window is fully rendered first
+            NwTask.Run(async () =>
+            {
+                await NwTask.Delay(TimeSpan.FromMilliseconds(100));
+                await NwTask.SwitchToMainThread();
+
+                OverBudgetWarningView view = new(_player);
+                WindowDirector.Value.OpenWindow(view.Presenter);
+            });
+        }
     }
 
     /// <summary>
