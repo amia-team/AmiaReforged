@@ -28,14 +28,18 @@ public class DefensiveStance
 
         NwCreature character = obj.Creature;
 
-        Effect? activeEffect = character.ActiveEffects.FirstOrDefault(e => e.Tag == DefensiveStanceEffectTag);
-        if (activeEffect != null)
+        List<Effect> activeDefStanceEffects
+            = character.ActiveEffects.Where(e => e.Tag == DefensiveStanceEffectTag).ToList();
+        if (activeDefStanceEffects.Count > 0)
         {
-            character.RemoveEffect(activeEffect);
+            foreach (Effect effect in activeDefStanceEffects)
+            {
+                character.RemoveEffect(effect);
+            }
+
             character.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpPdkHeroicShield));
             return;
         }
-
 
         int defenderLevel =
             character.Classes.FirstOrDefault(c => c.Class.ClassType == ClassType.DwarvenDefender)?.Level ?? 0;
@@ -100,11 +104,15 @@ public class DefensiveStance
             return;
         }
 
-        Effect? defensiveEffect =
-            obj.Player.LoginCreature.ActiveEffects.FirstOrDefault(e => e.Tag == DefensiveStanceEffectTag);
-        if (defensiveEffect == null) return;
+        List<Effect> activeDefStanceEffects
+            = obj.Player.LoginCreature.ActiveEffects.Where(e => e.Tag == DefensiveStanceEffectTag).ToList();
 
-        obj.Player.LoginCreature.RemoveEffect(defensiveEffect);
+        if (activeDefStanceEffects.Count == 0) return;
+
+        foreach (Effect effect in activeDefStanceEffects)
+        {
+            obj.Player.LoginCreature.RemoveEffect(effect);
+        }
     }
 
     [ScriptHandler(scriptName: "stance_defdr_on")]
