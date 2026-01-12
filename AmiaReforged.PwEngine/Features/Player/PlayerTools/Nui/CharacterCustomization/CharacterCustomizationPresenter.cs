@@ -33,6 +33,7 @@ public sealed class CharacterCustomizationPresenter(CharacterCustomizationView v
         NuiWindow window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(50f, 50f, 700f, 800f),
+            Closable = false,
             Resizable = true
         };
 

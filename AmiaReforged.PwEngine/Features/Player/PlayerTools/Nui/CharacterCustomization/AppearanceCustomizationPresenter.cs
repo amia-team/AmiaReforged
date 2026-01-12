@@ -24,6 +24,7 @@ public sealed class AppearanceCustomizationPresenter(AppearanceCustomizationView
         NuiWindow window = new NuiWindow(View.RootLayout(), "Appearance Customization")
         {
             Geometry = new NuiRect(50f, 50f, 700f, 800f),
+            Closable = false,
             Resizable = true
         };
 

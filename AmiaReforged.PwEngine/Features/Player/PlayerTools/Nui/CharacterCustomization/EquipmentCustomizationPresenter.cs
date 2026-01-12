@@ -1,4 +1,4 @@
-﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 using NLog;
@@ -22,6 +22,7 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
         NuiWindow window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(50f, 50f, 700f, 800f),
+            Closable = false,
             Resizable = true
         };
 
