@@ -118,98 +118,56 @@ public sealed class MythalLedgerView : ScryView<MythalLedgerPresenter>
                 {
                     Children =
                     {
-                        new NuiLabel(label: "Minor:")
-                        {
-                            ForegroundColor = new Color(50, 40, 30)
-                        },
+                        new NuiLabel(label: "Minor:"),
                         new NuiLabel(MinorMythalCount)
-                        {
-                            ForegroundColor = new Color(50, 40, 30)
-                        }
                     }
                 },
                 new NuiRow
                 {
                     Children =
                     {
-                        new NuiLabel(label: "Lesser:")
-                        {
-                            ForegroundColor = new Color(50, 40, 30)
-                        },
+                        new NuiLabel(label: "Lesser:"),
                         new NuiLabel(LesserMythalCount)
-                        {
-                            ForegroundColor = new Color(50, 40, 30)
-                        }
                     }
                 },
                 new NuiRow
                 {
                     Children =
                     {
-                        new NuiLabel(label: "Intermediate:")
-                        {
-                            ForegroundColor = new Color(50, 40, 30)
-                        },
+                        new NuiLabel(label: "Intermediate:"),
                         new NuiLabel(IntermediateMythalCount)
-                        {
-                            ForegroundColor = new Color(50, 40, 30)
-                        }
                     }
                 },
                 new NuiRow
                 {
                     Children =
                     {
-                        new NuiLabel(label: "Greater:")
-                        {
-                            ForegroundColor = new Color(50, 40, 30)
-                        },
+                        new NuiLabel(label: "Greater:"),
                         new NuiLabel(GreaterMythalCount)
-                        {
-                            ForegroundColor = new Color(50, 40, 30)
-                        }
                     }
                 },
                 new NuiRow
                 {
                     Children =
                     {
-                        new NuiLabel(label: "Flawless:")
-                        {
-                            ForegroundColor = new Color(50, 40, 30)
-                        },
+                        new NuiLabel(label: "Flawless:"),
                         new NuiLabel(FlawlessMythalCount)
-                        {
-                            ForegroundColor = new Color(50, 40, 30)
-                        }
                     }
                 },
                 new NuiRow
                 {
                     Children =
                     {
-                        new NuiLabel(label: "Perfect:")
-                        {
-                            ForegroundColor = new Color(50, 40, 30)
-                        },
+                        new NuiLabel(label: "Perfect:"),
                         new NuiLabel(PerfectMythalCount)
-                        {
-                            ForegroundColor = new Color(50, 40, 30)
-                        }
                     }
                 },
                 new NuiRow
                 {
                     Children =
                     {
-                        new NuiLabel(label: "Divine:")
-                        {
-                            ForegroundColor = new Color(50, 40, 30)
-                        },
+                        new NuiLabel(label: "Divine:"),
                         new NuiLabel(DivineMythalCount)
-                        {
-                            ForegroundColor = new Color(50, 40, 30)
-                        }
                     }
                 }
             }
