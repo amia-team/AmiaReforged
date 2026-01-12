@@ -31,4 +31,13 @@ public class GenericWindowBuilder : IWindowBuilder, IWindowTypeStage
         SimplePopupBuilder popupBuilder = service.Inject(new SimplePopupBuilder());
         return popupBuilder;
     }
+
+    /// <summary>
+    ///     Creates a new instance of <see cref="ConfirmationPopupBuilder" />.
+    /// </summary>
+    /// <returns>A new <see cref="ConfirmationPopupBuilder" /> instance.</returns>
+    public IConfirmationPopupBuilder ConfirmationPopup()
+    {
+        return new ConfirmationPopupBuilder();
+    }
 }

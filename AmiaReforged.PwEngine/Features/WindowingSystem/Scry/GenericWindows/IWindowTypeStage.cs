@@ -10,4 +10,10 @@ public interface IWindowTypeStage
     /// </summary>
     /// <returns>A new <see cref="SimplePopupBuilder" /> instance.</returns>
     ISimplePopupBuilder SimplePopup();
+
+    /// <summary>
+    ///     Creates a new instance of <see cref="ConfirmationPopupBuilder" />.
+    /// </summary>
+    /// <returns>A new <see cref="ConfirmationPopupBuilder" /> instance.</returns>
+    IConfirmationPopupBuilder ConfirmationPopup();
 }

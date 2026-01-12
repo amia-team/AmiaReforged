@@ -31,6 +31,13 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     public delegate void ViewUpdatedEventHandler(MythalForgePresenter sender, EventArgs e);
 
     /// <summary>
+    /// Represents a delegate for handling the event triggered when a caster weapon conversion is requested.
+    /// </summary>
+    /// <param name="sender">The instance of the MythalForgePresenter that is sending the event.</param>
+    /// <param name="item">The item to reopen the forge for after conversion.</param>
+    public delegate void CasterWeaponConversionEventHandler(MythalForgePresenter sender, NwItem item);
+
+    /// <summary>
     /// The title of the Mythal Forge window.
     /// </summary>
     private const string WindowTitle = "Mythal Forge";
@@ -157,6 +164,11 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// Triggered automatically when the Mythal Forge window is about to close.
     /// </summary>
     public event ForgeClosingEventHandler? ForgeClosing;
+
+    /// <summary>
+    /// Triggered when a weapon has been converted to a caster weapon and the forge needs to reopen.
+    /// </summary>
+    public event CasterWeaponConversionEventHandler? CasterWeaponConversionCompleted;
 
     /// <summary>
     /// Prevents players from attempting to exploit the system by dropping items during crafting.
@@ -296,7 +308,50 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             return;
         }
 
+        if (eventData.ElementId == MythalForgeView.ToCasterWeapon)
+        {
+            ShowCasterWeaponConfirmation();
+            return;
+        }
+
         UpdateView();
+    }
+
+    /// <summary>
+    /// Shows a confirmation popup for converting the weapon to a caster weapon.
+    /// </summary>
+    private void ShowCasterWeaponConfirmation()
+    {
+        const string message = "Converting to a caster weapon will REMOVE all incompatible properties including: " +
+                               "damage bonuses, massive criticals, attack bonus, enhancement bonus, on-hit effects, " +
+                               "visual effects, keen, and vampiric regeneration.\n\n" +
+                               "This cannot be undone. Are you sure?";
+
+        GenericWindow
+            .Builder()
+            .For()
+            .ConfirmationPopup()
+            .WithPlayer(_player)
+            .WithTitle("Convert to Caster Weapon")
+            .WithMessage(message)
+            .OnConfirm(OnCasterWeaponConversionConfirmed)
+            .OnCancel(() => { }) // Do nothing on cancel, just close the popup
+            .Open();
+    }
+
+    /// <summary>
+    /// Called when the player confirms the caster weapon conversion.
+    /// </summary>
+    private void OnCasterWeaponConversionConfirmed()
+    {
+        Model.ConvertToCasterWeapon();
+        
+        NwItem item = Model.Item;
+        
+        RaiseCloseEvent();
+        
+        // Raise event so the forge can be reopened with caster weapon categories
+        CasterWeaponConversionCompleted?.Invoke(this, item);
     }
 
     /// <summary>
@@ -351,6 +406,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         UpdateGoldCost();
         UpdateDifficultyClass();
         UpdateCategoryBindings();
+        UpdateCasterWeaponButton();
 
         OnViewUpdated();
     }
@@ -514,6 +570,15 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         SetIfChanged(View.RemainingPowers, remaining.ToString());
 
         if (_creating) DisplayPopupIfOverBudget(remaining);
+    }
+
+    /// <summary>
+    /// Updates the enabled state of the "To Caster Weapon" button based on whether
+    /// the current item can be converted to a caster weapon.
+    /// </summary>
+    private void UpdateCasterWeaponButton()
+    {
+        SetIfChanged(View.ToCasterWeaponEnabled, Model.CanConvertToCasterWeapon);
     }
 
     /// <summary>

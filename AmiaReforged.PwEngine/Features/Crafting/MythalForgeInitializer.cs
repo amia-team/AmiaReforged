@@ -323,10 +323,38 @@ public class MythalForgeInitializer
         NWScript.DeleteLocalString(obj.Player.LoginCreature, LvarTargetingMode);
 
         MythalForgeView itemWindow = new(_propertyData, _budget, item, obj.Player, _validator, _dcCalculator);
+        
+        // Subscribe to caster weapon conversion event to reopen forge with new categories
+        itemWindow.Presenter.CasterWeaponConversionCompleted += OnCasterWeaponConversionCompleted;
+        
         _windowSystem.OpenWindow(itemWindow.Presenter);
 
         obj.Player.OpenInventory();
         obj.Player.OnPlayerTarget -= ValidateAndSelectPlayer;
+    }
+
+    /// <summary>
+    /// Handles the event when a weapon has been converted to a caster weapon.
+    /// Reopens the forge with the updated caster weapon categories.
+    /// </summary>
+    private void OnCasterWeaponConversionCompleted(MythalForgePresenter sender, NwItem item)
+    {
+        // Unsubscribe from the event
+        sender.CasterWeaponConversionCompleted -= OnCasterWeaponConversionCompleted;
+
+        NwPlayer? player = (item.Possessor as NwCreature)?.ControllingPlayer;
+        if (player == null) return;
+
+        // Small delay to ensure the previous window is fully closed
+        NwTask.Run(async () =>
+        {
+            await NwTask.Delay(TimeSpan.FromMilliseconds(100));
+            
+            // Reopen the forge with the item (now a caster weapon)
+            MythalForgeView newForgeWindow = new(_propertyData, _budget, item, player, _validator, _dcCalculator);
+            newForgeWindow.Presenter.CasterWeaponConversionCompleted += OnCasterWeaponConversionCompleted;
+            _windowSystem.OpenWindow(newForgeWindow.Presenter);
+        });
     }
 
     // DM validator: no lvar or proximity checks; no ownership restriction

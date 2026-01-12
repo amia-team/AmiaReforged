@@ -92,6 +92,37 @@ public class MythalForgeModel
     public ChangeListModel ChangeListModel { get; }
 
     /// <summary>
+    /// Gets whether the item can be converted to a caster weapon.
+    /// </summary>
+    /// <remarks>
+    /// An item can be converted if:
+    /// - It is a melee weapon (1H or 2H)
+    /// - It is NOT already a caster weapon
+    /// - It is NOT a magic staff (which is always treated as a caster weapon)
+    /// </remarks>
+    public bool CanConvertToCasterWeapon
+    {
+        get
+        {
+            int baseType = NWScript.GetBaseItemType(Item);
+            
+            // Magic staffs are always caster weapons, can't convert
+            if (baseType == NWScript.BASE_ITEM_MAGICSTAFF)
+                return false;
+            
+            // Already a caster weapon
+            if (NWScript.GetLocalInt(Item, ItemTypeConstants.CasterWeaponVar) == NWScript.TRUE)
+                return false;
+            
+            // Must be a melee weapon (1H or 2H)
+            bool isMeleeWeapon = ItemTypeConstants.MeleeWeapons().Contains(baseType) ||
+                                 ItemTypeConstants.Melee2HWeapons().Contains(baseType);
+            
+            return isMeleeWeapon;
+        }
+    }
+
+    /// <summary>
     /// Represents a model used in the Mythal Forge crafting system, managing categories of mythals and their associated data.
     /// </summary>
     public MythalCategoryModel MythalCategoryModel { get; }
@@ -311,6 +342,51 @@ public class MythalForgeModel
         _player.LoginCreature?.ApplyEffect(EffectDuration.Instant, explosion);
 
         MythalCategoryModel.DestroyMythals(_player);
+    }
+
+    /// <summary>
+    /// Converts the current weapon to a caster weapon by removing all incompatible properties
+    /// and setting the caster weapon flag.
+    /// </summary>
+    /// <remarks>
+    /// Incompatible properties include: damage bonuses, massive criticals, attack bonus,
+    /// enhancement bonus, on-hit effects, visual effects, keen, and vampiric regeneration.
+    /// These are properties available on regular weapons but not on caster weapons.
+    /// </remarks>
+    public void ConvertToCasterWeapon()
+    {
+        // List of property types that are NOT allowed on caster weapons
+        HashSet<ItemPropertyType> incompatibleTypes =
+        [
+            ItemPropertyType.DamageBonus,
+            ItemPropertyType.MassiveCriticals,
+            ItemPropertyType.AttackBonus,
+            ItemPropertyType.EnhancementBonus,
+            ItemPropertyType.OnHitProperties,
+            ItemPropertyType.VisualEffect,
+            ItemPropertyType.Keen,
+            ItemPropertyType.RegenerationVampiric
+        ];
+
+        // Collect properties to remove (can't modify collection while iterating)
+        List<ItemProperty> propertiesToRemove = Item.ItemProperties
+            .Where(p => incompatibleTypes.Contains(p.Property.PropertyType))
+            .ToList();
+
+        // Remove incompatible properties
+        foreach (ItemProperty property in propertiesToRemove)
+        {
+            Item.RemoveItemProperty(property);
+        }
+
+        // Set the caster weapon flag
+        NWScript.SetLocalInt(Item, ItemTypeConstants.CasterWeaponVar, NWScript.TRUE);
+
+        // Visual feedback
+        Effect explosion = Effect.VisualEffect(VfxType.ImpMagblue);
+        _player.LoginCreature?.ApplyEffect(EffectDuration.Instant, explosion);
+
+        _player.SendServerMessage("Weapon has been converted to a caster weapon.", ColorConstants.Cyan);
     }
 
     /// <summary>
