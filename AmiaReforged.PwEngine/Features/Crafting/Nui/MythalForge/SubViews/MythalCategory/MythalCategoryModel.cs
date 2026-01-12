@@ -124,6 +124,8 @@ public class MythalCategoryModel
         }
 
         Dictionary<CraftingTier, int> current = ItemPropertyHelper.GetMythals(player);
+        Dictionary<CraftingTier, int> looseMythals = ItemPropertyHelper.GetLooseMythals(player);
+        
         foreach (CraftingTier key in _mythals.Map.Keys)
         {
             Log.Info("Key: " + key);
@@ -134,15 +136,38 @@ public class MythalCategoryModel
             if (amountToTake <= 0) continue;
 
             string resRefForMythal = ItemPropertyHelper.TierToResRef(key);
-
             Log.Info("ResRef: " + resRefForMythal);
 
-            List<NwItem> mythals =
-                player.LoginCreature.Inventory.Items.Where(i => i.ResRef == resRefForMythal).ToList();
-
-            for (int i = 0; i < amountToTake; i++)
+            // First, consume loose mythals from inventory
+            int looseCount = looseMythals[key];
+            int looseToDestroy = Math.Min(amountToTake, looseCount);
+            
+            if (looseToDestroy > 0)
             {
-                mythals[i].Destroy();
+                List<NwItem> mythals =
+                    player.LoginCreature.Inventory.Items.Where(i => i.ResRef == resRefForMythal).ToList();
+
+                for (int i = 0; i < looseToDestroy; i++)
+                {
+                    mythals[i].Destroy();
+                }
+                
+                amountToTake -= looseToDestroy;
+                Log.Info($"Destroyed {looseToDestroy} loose mythals, remaining to take: {amountToTake}");
+            }
+
+            // Then, consume from Mythal Tubes if needed
+            if (amountToTake > 0)
+            {
+                List<NwItem> tubes = ItemPropertyHelper.GetTubesForTier(player, key);
+                foreach (NwItem tube in tubes)
+                {
+                    if (amountToTake <= 0) break;
+                    
+                    int consumed = ItemPropertyHelper.ConsumeMythalsFromTube(tube, amountToTake);
+                    amountToTake -= consumed;
+                    Log.Info($"Consumed {consumed} mythals from tube, remaining to take: {amountToTake}");
+                }
             }
         }
     }

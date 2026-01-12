@@ -1,8 +1,10 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
+using AmiaReforged.PwEngine.Features.Crafting;
 using AmiaReforged.PwEngine.Features.Crafting.Models;
 using Anvil.API;
 using NLog;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.NwObjectHelpers;
 
@@ -167,16 +169,48 @@ public static class ItemPropertyHelper
     public static Dictionary<CraftingTier, int> GetMythals(NwPlayer player)
     {
         Log.Info($"Getting mythals for player: {player.PlayerName}.");
-        Dictionary<string, CraftingTier> mythalMap = new()
+        Dictionary<string, CraftingTier> mythalMap = ResRefToTierMap();
+
+        Dictionary<CraftingTier, int> mythals = new()
         {
-            { "mythal1", CraftingTier.Minor },
-            { "mythal2", CraftingTier.Lesser },
-            { "mythal3", CraftingTier.Intermediate },
-            { "mythal4", CraftingTier.Greater },
-            { "mythal5", CraftingTier.Flawless },
-            { "mythal6", CraftingTier.Perfect },
-            { "mythal7", CraftingTier.Divine }
+            { CraftingTier.Minor, 0 },
+            { CraftingTier.Lesser, 0 },
+            { CraftingTier.Intermediate, 0 },
+            { CraftingTier.Greater, 0 },
+            { CraftingTier.Flawless, 0 },
+            { CraftingTier.Perfect, 0 },
+            { CraftingTier.Divine, 0 }
         };
+
+        NwCreature? playerLoginCreature = player.LoginCreature;
+        if (playerLoginCreature == null) return mythals;
+
+        // Count loose mythals in inventory
+        foreach (NwItem item in playerLoginCreature.Inventory.Items.Where(i => i.ResRef.StartsWith(value: "mythal")))
+        {
+            string resRef = item.ResRef;
+
+            if (!mythalMap.TryGetValue(resRef, out CraftingTier tier)) continue;
+
+            mythals[tier] += 1;
+        }
+
+        // Count mythals stored in Mythal Tubes
+        Dictionary<CraftingTier, int> tubeMythals = GetMythalsFromTubes(player);
+        foreach (CraftingTier tier in tubeMythals.Keys)
+        {
+            mythals[tier] += tubeMythals[tier];
+        }
+
+        return mythals;
+    }
+
+    /// <summary>
+    /// Gets the count of loose mythals in the player's inventory (not in tubes).
+    /// </summary>
+    public static Dictionary<CraftingTier, int> GetLooseMythals(NwPlayer player)
+    {
+        Dictionary<string, CraftingTier> mythalMap = ResRefToTierMap();
 
         Dictionary<CraftingTier, int> mythals = new()
         {
@@ -196,7 +230,6 @@ public static class ItemPropertyHelper
         {
             string resRef = item.ResRef;
 
-
             if (!mythalMap.TryGetValue(resRef, out CraftingTier tier)) continue;
 
             mythals[tier] += 1;
@@ -204,6 +237,142 @@ public static class ItemPropertyHelper
 
         return mythals;
     }
+
+    /// <summary>
+    /// Gets the count of mythals stored in Mythal Tubes in the player's inventory.
+    /// </summary>
+    public static Dictionary<CraftingTier, int> GetMythalsFromTubes(NwPlayer player)
+    {
+        Dictionary<string, CraftingTier> mythalMap = ResRefToTierMap();
+
+        Dictionary<CraftingTier, int> mythals = new()
+        {
+            { CraftingTier.Minor, 0 },
+            { CraftingTier.Lesser, 0 },
+            { CraftingTier.Intermediate, 0 },
+            { CraftingTier.Greater, 0 },
+            { CraftingTier.Flawless, 0 },
+            { CraftingTier.Perfect, 0 },
+            { CraftingTier.Divine, 0 }
+        };
+
+        NwCreature? playerLoginCreature = player.LoginCreature;
+        if (playerLoginCreature == null) return mythals;
+
+        // Find all Mythal Tubes
+        IEnumerable<NwItem> tubes = playerLoginCreature.Inventory.Items
+            .Where(i => i.ResRef == ItemTypeConstants.MythalTubeResRef);
+
+        foreach (NwItem tube in tubes)
+        {
+            int itemCount = NWScript.GetLocalInt(tube, ItemTypeConstants.StorageItemCountVar);
+            if (itemCount <= 0) continue;
+
+            string storedItem = NWScript.GetLocalString(tube, ItemTypeConstants.StoredItemVar);
+            if (string.IsNullOrEmpty(storedItem)) continue;
+
+            if (!mythalMap.TryGetValue(storedItem, out CraftingTier tier)) continue;
+
+            mythals[tier] += itemCount;
+        }
+
+        return mythals;
+    }
+
+    /// <summary>
+    /// Gets all Mythal Tubes in the player's inventory that contain the specified mythal type.
+    /// </summary>
+    public static List<NwItem> GetTubesForTier(NwPlayer player, CraftingTier tier)
+    {
+        List<NwItem> result = [];
+
+        NwCreature? playerLoginCreature = player.LoginCreature;
+        if (playerLoginCreature == null) return result;
+
+        string targetResRef = TierToResRef(tier);
+        if (string.IsNullOrEmpty(targetResRef)) return result;
+
+        IEnumerable<NwItem> tubes = playerLoginCreature.Inventory.Items
+            .Where(i => i.ResRef == ItemTypeConstants.MythalTubeResRef);
+
+        foreach (NwItem tube in tubes)
+        {
+            string storedItem = NWScript.GetLocalString(tube, ItemTypeConstants.StoredItemVar);
+            if (storedItem == targetResRef)
+            {
+                result.Add(tube);
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Consumes the specified number of mythals from a Mythal Tube.
+    /// Returns the number of mythals actually consumed.
+    /// </summary>
+    public static int ConsumeMythalsFromTube(NwItem tube, int amount)
+    {
+        int currentCount = NWScript.GetLocalInt(tube, ItemTypeConstants.StorageItemCountVar);
+        if (currentCount <= 0) return 0;
+
+        int toConsume = Math.Min(amount, currentCount);
+        int newCount = currentCount - toConsume;
+
+        if (newCount <= 0)
+        {
+            // Empty the tube - match NWScript behavior by resetting the tube
+            // Reset name to "Mythal Storage Tube" (empty tube state)
+            tube.Name = "Mythal Storage Tube";
+            NWScript.DeleteLocalString(tube, ItemTypeConstants.StoredItemVar);
+            NWScript.DeleteLocalInt(tube, ItemTypeConstants.StorageItemCountVar);
+            // Reset description to empty
+            tube.Description = "";
+        }
+        else
+        {
+            NWScript.SetLocalInt(tube, ItemTypeConstants.StorageItemCountVar, newCount);
+            // Update the tube name to reflect new count
+            string storedItem = NWScript.GetLocalString(tube, ItemTypeConstants.StoredItemVar);
+            string mythalName = GetMythalDisplayName(storedItem);
+            tube.Name = $"Mythal Storage Tube ({mythalName})";
+            tube.Description = $"Number of stored items: {newCount}";
+        }
+
+        return toConsume;
+    }
+
+    /// <summary>
+    /// Gets a display name for a mythal resref.
+    /// </summary>
+    private static string GetMythalDisplayName(string resRef)
+    {
+        return resRef switch
+        {
+            "mythal1" => "Minor Mythal",
+            "mythal2" => "Lesser Mythal",
+            "mythal3" => "Intermediate Mythal",
+            "mythal4" => "Greater Mythal",
+            "mythal5" => "Flawless Mythal",
+            "mythal6" => "Perfect Mythal",
+            "mythal7" => "Divine Mythal",
+            _ => "Unknown Mythal"
+        };
+    }
+
+    /// <summary>
+    /// Maps mythal resrefs to crafting tiers.
+    /// </summary>
+    private static Dictionary<string, CraftingTier> ResRefToTierMap() => new()
+    {
+        { "mythal1", CraftingTier.Minor },
+        { "mythal2", CraftingTier.Lesser },
+        { "mythal3", CraftingTier.Intermediate },
+        { "mythal4", CraftingTier.Greater },
+        { "mythal5", CraftingTier.Flawless },
+        { "mythal6", CraftingTier.Perfect },
+        { "mythal7", CraftingTier.Divine }
+    };
 
     public static string TierToResRef(CraftingTier tier)
     {

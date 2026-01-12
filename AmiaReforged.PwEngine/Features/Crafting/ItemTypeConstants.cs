@@ -9,6 +9,21 @@ public static class ItemTypeConstants
 {
     public const string CasterWeaponVar = "CASTER_WEAPON";
 
+    /// <summary>
+    /// The resref of the Artificer Mythal Tube item that stores mythals virtually.
+    /// </summary>
+    public const string MythalTubeResRef = "js_arca_mytu";
+
+    /// <summary>
+    /// The local variable name used to store the item count on storage containers.
+    /// </summary>
+    public const string StorageItemCountVar = "ItemCount";
+
+    /// <summary>
+    /// The local variable name used to store the stored item resref on storage containers.
+    /// </summary>
+    public const string StoredItemVar = "StoredItem";
+
     public static List<int> MeleeWeapons() =>
     [
         NWScript.BASE_ITEM_BASTARDSWORD,
