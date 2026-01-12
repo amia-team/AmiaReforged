@@ -237,13 +237,21 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
                     DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 420f, 250f))]
                 },
                 new NuiLabel("Edit Name"){ Height=18f, HorizontalAlign = NuiHAlign.Center, ForegroundColor = new Color(30, 20, 12) },
-                new NuiTextEdit("Name", EditNameBuffer, 100, false) { Height = 32f },
                 new NuiRow
                 {
                     Children =
                     {
+                        new NuiSpacer{Width=10f},
+                        new NuiTextEdit("Name", EditNameBuffer, 100, false) { Height = 32f }
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer{Width=10f},
                         ImagePlatedLabeledButton("ind_modal_ok_name", "", out _ , "ui_btn_save"),
-                        new NuiSpacer{Width=20f},
+                        new NuiSpacer{Width=10f},
                         ImagePlatedLabeledButton("ind_modal_discard_name", "", out _ , "ui_btn_discard"),
                     }
                 }
@@ -267,16 +275,32 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
                 new NuiRow
                 {
                     Width = 0f, Height = 0f,
-                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 420f, 250f))]
+                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(-20f, -20f, 420f, 250f))]
                 },
                 new NuiLabel("Edit Description"){ Height=18f, HorizontalAlign = NuiHAlign.Center, ForegroundColor = new Color(30, 20, 12) },
-                new NuiTextEdit("Description", EditDescBuffer, 5000, true) { Height = 160f },
                 new NuiRow
                 {
                     Children =
                     {
+                        new NuiSpacer{Width=90f},
+                        new NuiButton("Clear All") { Id = "ind_clear_desc", Height = 28f },
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer{Width=1f},
+                        new NuiTextEdit("Description", EditDescBuffer, 5000, true) { Height = 160f }
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer{Width=10f},
                         ImagePlatedLabeledButton("ind_modal_ok_desc", "", out _ , "ui_btn_save"),
-                        new NuiSpacer{Width=20f},
+                        new NuiSpacer{Width=10f},
                         ImagePlatedLabeledButton("ind_modal_discard_desc", "", out _ , "ui_btn_discard"),
                     }
                 }

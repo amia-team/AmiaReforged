@@ -23,12 +23,18 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
     private NuiWindowToken? _descModalToken;
     private NuiWindowToken? _tagModalToken;
     private NuiWindowToken? _editVariableModalToken;
+    private NuiWindowToken? _editItemTypeModalToken;
+    private NuiWindowToken? _confirmNoDamageModalToken;
 
     private bool _initializing;
     private bool _addingVariable;
     private bool _applyingChanges;
     private bool _processingEvent;
     private int _editingVariableIndex = -1; // Track which variable is being edited
+
+    // Item type change tracking
+    private List<(BaseItemType Type, string ResRef)> _compatibleItemTypes = new();
+    private int _selectedItemTypeIndex = -1;
 
     public override NuiWindowToken Token() => _token;
 
@@ -46,7 +52,8 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(400f, 120f, 800f, 720f),
-            Resizable = true,
+            Closable = false,
+            Resizable = true
         };
 
         if (!_player.TryCreateNuiWindow(_window, out _token))
@@ -213,6 +220,12 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
                 }
             }
 
+            if (ev.ElementId == "btn_edit_itemtype")
+            {
+                EditItemType();
+                return;
+            }
+
             // EDIT VARIABLE - modal opens from button click in variable list
             if (ev.ElementId == "btn_modal_ok_var")
             {
@@ -223,6 +236,32 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
             if (ev.ElementId == "btn_modal_cancel_var")
             {
                 HandleEditVariableModalEvent(ev);
+                return;
+            }
+
+            // EDIT ITEM TYPE modal buttons
+            if (ev.ElementId == "btn_modal_ok_itemtype")
+            {
+                HandleEditItemTypeModalEvent(ev);
+                return;
+            }
+
+            if (ev.ElementId == "btn_modal_cancel_itemtype")
+            {
+                CloseEditItemTypeModal();
+                return;
+            }
+
+            // CONFIRM NO DAMAGE modal buttons
+            if (ev.ElementId == "btn_confirm_nodamage")
+            {
+                ProceedWithNoDamageChange();
+                return;
+            }
+
+            if (ev.ElementId == "btn_cancel_nodamage")
+            {
+                CloseConfirmNoDamageModal();
                 return;
             }
         }
@@ -278,6 +317,13 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
     {
         if (ev.EventType != NuiEventType.Click)
             return;
+
+        if (ev.ElementId == "btn_clear_desc")
+        {
+            _descModalToken!.Value.SetBindValue(View.EditDescBuffer, string.Empty);
+            _player.SendServerMessage("Description cleared.", ColorConstants.Green);
+            return;
+        }
 
         if (ev.ElementId == "btn_modal_ok_desc")
         {
@@ -342,6 +388,13 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
     {
         if (ev.EventType != NuiEventType.Click)
             return;
+
+        if (ev.ElementId == "btn_clear_var")
+        {
+            _editVariableModalToken!.Value.SetBindValue(View.EditVariableValue, string.Empty);
+            _player.SendServerMessage("Variable value cleared.", ColorConstants.Green);
+            return;
+        }
 
         if (ev.ElementId == "btn_modal_ok_var")
         {
@@ -420,6 +473,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
             Token().SetBindValue(View.Name, "");
             Token().SetBindValue(View.Description, "");
             Token().SetBindValue(View.Tag, "");
+            Token().SetBindValue(View.ItemType, "");
             RebuildLayout();
             return;
         }
@@ -430,6 +484,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         Token().SetBindValue(View.Name, snapshot.Name);
         Token().SetBindValue(View.Description, snapshot.Description);
         Token().SetBindValue(View.Tag, snapshot.Tag);
+        Token().SetBindValue(View.ItemType, GetItemTypeName(item.BaseItem.ItemType));
 
         foreach (KeyValuePair<string, LocalVariableData> kv in snapshot.Variables)
             _vars.Add((kv.Key, kv.Value));
@@ -745,6 +800,555 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
     {
         bool allowed = _model.IsIconAllowed(out int current, out int max);
         Token().SetBindValue(View.IconControlsVisible, allowed);
-        Token().SetBindValue(View.IconInfo, allowed ? $"Icon: {current} / {max}" : "Icon: —");
+        Token().SetBindValue(View.IconInfo, allowed ? $"Icon: {current} / {max}" : "Icon: -");
+    }
+
+    // ============================================================
+    // Item Type Change Methods
+    // ============================================================
+
+    private void EditItemType()
+    {
+        if (_model.SelectedItem == null)
+        {
+            _player.SendServerMessage("No item selected.", ColorConstants.Orange);
+            return;
+        }
+
+        if (_editItemTypeModalToken.HasValue)
+            return;
+
+        // Get compatible item types for the current item's type
+        _compatibleItemTypes = GetBaseItemTypeMapping(_model.SelectedItem.BaseItem.ItemType);
+
+        if (_compatibleItemTypes.Count == 0)
+        {
+            _player.SendServerMessage("No compatible item types found for this item.", ColorConstants.Orange);
+            return;
+        }
+
+        // Build combo entries for the modal
+        List<NuiComboEntry> entries = new();
+
+        // Check if this is armor - show AC levels instead of item types
+        if (_model.SelectedItem.BaseItem.ItemType == BaseItemType.Armor)
+        {
+            for (int i = 0; i < _compatibleItemTypes.Count; i++)
+            {
+                entries.Add(new NuiComboEntry($"AC {i}", i));
+            }
+        }
+        else
+        {
+            // For 1H weapons, add warning indicator for non-weapon items that can't take weapon properties
+            bool is1HCategory = _model.SelectedItem.BaseItem.ItemType == BaseItemType.Shortsword ||
+                               _model.SelectedItem.BaseItem.ItemType == BaseItemType.Longsword ||
+                               _model.SelectedItem.BaseItem.ItemType == BaseItemType.Dagger ||
+                               (int)_model.SelectedItem.BaseItem.ItemType >= 93; // Custom items
+
+            List<int> limitedItemRows = new() { 93, 15, 94, 113, 222, 223 }; // Trumpet, Torch, Moon, Tools Left, Focus, Umbrella
+
+            for (int i = 0; i < _compatibleItemTypes.Count; i++)
+            {
+                string displayName = GetItemTypeName(_compatibleItemTypes[i].Item1);
+
+                // Add warning symbol for 1H non-weapon items that can't take weapon properties
+                if (is1HCategory && limitedItemRows.Contains((int)_compatibleItemTypes[i].Item1))
+                {
+                    displayName = $"[NO DAMAGE] {displayName}";
+                }
+
+                entries.Add(new NuiComboEntry(displayName, i));
+            }
+        }
+
+        // Open the modal
+        NuiWindow w = View.BuildEditItemTypeModal(entries);
+        if (_player.TryCreateNuiWindow(w, out NuiWindowToken modalToken))
+        {
+            _editItemTypeModalToken = modalToken;
+            // Initialize with default selection
+            modalToken.SetBindValue(View.EditItemTypeSelection, 0);
+            _editItemTypeModalToken.Value.OnNuiEvent += HandleEditItemTypeModalEvent;
+        }
+    }
+
+    private void HandleEditItemTypeModalEvent(ModuleEvents.OnNuiEvent ev)
+    {
+        if (ev.EventType != NuiEventType.Click)
+            return;
+
+        if (ev.ElementId == "btn_modal_ok_itemtype")
+        {
+            ConfirmItemTypeChange();
+            return;
+        }
+
+        if (ev.ElementId == "btn_modal_cancel_itemtype")
+        {
+            CloseEditItemTypeModal();
+            return;
+        }
+    }
+
+    private async void ConfirmItemTypeChange()
+    {
+        if (_model.SelectedItem == null || !_model.SelectedItem.IsValid)
+        {
+            _player.SendServerMessage("Item is no longer valid.", ColorConstants.Orange);
+            CloseEditItemTypeModal();
+            return;
+        }
+
+        int selection = 0;
+        try
+        {
+            selection = _editItemTypeModalToken!.Value.GetBindValue(View.EditItemTypeSelection);
+        }
+        catch
+        {
+            _player.SendServerMessage("Invalid selection.", ColorConstants.Orange);
+            CloseEditItemTypeModal();
+            return;
+        }
+
+        if (selection < 0 || selection >= _compatibleItemTypes.Count)
+        {
+            _player.SendServerMessage("Invalid item type selected.", ColorConstants.Orange);
+            CloseEditItemTypeModal();
+            return;
+        }
+
+        var (newType, newResRef) = _compatibleItemTypes[selection];
+        string currentName = _model.SelectedItem.Name;
+        string currentDesc = _model.SelectedItem.Description;
+        string currentTag = _model.SelectedItem.Tag;
+        Location currentLocation = _model.SelectedItem.Location;
+
+        // Check if trying to change to a [NO DAMAGE] item type with weapon properties
+        List<int> noDamageItemRows = new() { 93, 15, 94, 113, 222, 223 }; // Trumpet, Torch, Moon, Tools Left, Focus, Umbrella
+
+        if (noDamageItemRows.Contains((int)newType) && HasWeaponProperties(_model.SelectedItem))
+        {
+            // Show confirmation modal instead of blocking
+            ShowConfirmNoDamageModal(selection);
+            return;
+        }
+
+        // No issues, proceed with the item type change
+        await PerformItemTypeChange(newType, newResRef, currentName, currentDesc, currentTag, currentLocation);
+    }
+
+    private void ShowConfirmNoDamageModal(int selectedIndex)
+    {
+        if (_confirmNoDamageModalToken.HasValue)
+            return;
+
+        _selectedItemTypeIndex = selectedIndex; // Store which item type was selected
+
+        NuiWindow w = View.BuildConfirmNoDamageItemTypeModal();
+        if (_player.TryCreateNuiWindow(w, out NuiWindowToken modalToken))
+        {
+            _confirmNoDamageModalToken = modalToken;
+            _confirmNoDamageModalToken.Value.OnNuiEvent += HandleConfirmNoDamageModalEvent;
+        }
+    }
+
+    private void HandleConfirmNoDamageModalEvent(ModuleEvents.OnNuiEvent ev)
+    {
+        if (ev.EventType != NuiEventType.Click)
+            return;
+
+        if (ev.ElementId == "btn_confirm_nodamage")
+        {
+            ProceedWithNoDamageChange();
+            return;
+        }
+
+        if (ev.ElementId == "btn_cancel_nodamage")
+        {
+            CloseConfirmNoDamageModal();
+            return;
+        }
+    }
+
+    private async void ProceedWithNoDamageChange()
+    {
+        if (_model.SelectedItem == null || !_model.SelectedItem.IsValid)
+        {
+            _player.SendServerMessage("Item is no longer valid.", ColorConstants.Orange);
+            CloseConfirmNoDamageModal();
+            return;
+        }
+
+        if (_selectedItemTypeIndex < 0 || _selectedItemTypeIndex >= _compatibleItemTypes.Count)
+        {
+            _player.SendServerMessage("Invalid item type selected.", ColorConstants.Orange);
+            CloseConfirmNoDamageModal();
+            return;
+        }
+
+        var (newType, newResRef) = _compatibleItemTypes[_selectedItemTypeIndex];
+        string currentName = _model.SelectedItem.Name;
+        string currentDesc = _model.SelectedItem.Description;
+        string currentTag = _model.SelectedItem.Tag;
+        Location currentLocation = _model.SelectedItem.Location;
+
+        CloseConfirmNoDamageModal();
+        await PerformItemTypeChange(newType, newResRef, currentName, currentDesc, currentTag, currentLocation);
+    }
+
+    private void CloseConfirmNoDamageModal()
+    {
+        if (_confirmNoDamageModalToken.HasValue)
+        {
+            _confirmNoDamageModalToken.Value.OnNuiEvent -= HandleConfirmNoDamageModalEvent;
+            _confirmNoDamageModalToken?.Close();
+            _confirmNoDamageModalToken = null;
+        }
+        _selectedItemTypeIndex = -1;
+    }
+
+    private async Task PerformItemTypeChange(BaseItemType newType, string newResRef, string currentName, string currentDesc, string currentTag, Location currentLocation)
+    {
+        // Create new item with the new base type
+        NwItem? newItem = null;
+
+        if (_model.SelectedItem?.Possessor is NwGameObject possessor)
+        {
+            // Item is in a creature's inventory or container
+            newItem = await NwItem.Create(newResRef, possessor, 1, "");
+        }
+        else
+        {
+            // Item is on the ground - create with null possessor at the location
+            newItem = await NwItem.Create(newResRef, null, 1, "");
+            if (newItem != null)
+            {
+                // Move the item to the original item's location
+                newItem.Location = currentLocation;
+            }
+        }
+
+        if (newItem == null)
+        {
+            _player.SendServerMessage($"Failed to create item of type {GetItemTypeName(newType)}.", ColorConstants.Red);
+            CloseEditItemTypeModal();
+            return;
+        }
+
+        // Copy over basic properties
+        newItem.Name = currentName;
+        newItem.Description = currentDesc;
+        newItem.Tag = currentTag;
+
+        // Copy all item properties from the old item
+        int propertiesCopied = 0;
+        foreach (var prop in _model.SelectedItem.ItemProperties)
+        {
+            newItem.AddItemProperty(prop, EffectDuration.Permanent);
+            propertiesCopied++;
+        }
+
+        // Copy variables
+        int varsCopied = 0;
+        foreach (ObjectVariable var in _model.SelectedItem.LocalVariables)
+        {
+            switch (var)
+            {
+                case LocalVariableInt li:
+                    newItem.GetObjectVariable<LocalVariableInt>(li.Name).Value = li.Value;
+                    varsCopied++;
+                    break;
+                case LocalVariableFloat lf:
+                    newItem.GetObjectVariable<LocalVariableFloat>(lf.Name).Value = lf.Value;
+                    varsCopied++;
+                    break;
+                case LocalVariableString ls:
+                    newItem.GetObjectVariable<LocalVariableString>(ls.Name).Value = ls.Value ?? string.Empty;
+                    varsCopied++;
+                    break;
+                case LocalVariableLocation lloc:
+                    newItem.GetObjectVariable<LocalVariableLocation>(lloc.Name).Value = lloc.Value;
+                    varsCopied++;
+                    break;
+                case LocalVariableObject<NwObject> lo:
+                    newItem.GetObjectVariable<LocalVariableObject<NwObject>>(lo.Name).Value = lo.Value;
+                    varsCopied++;
+                    break;
+            }
+        }
+
+        // Destroy the old item
+        _model.SelectedItem.Destroy();
+
+        // Update the model with the new item
+        _model.SelectedItem = newItem;
+        UpdateFromModel();
+
+        _player.SendServerMessage($"Item type changed to {GetItemTypeName(newType).ColorString(ColorConstants.Cyan)}. Copied {propertiesCopied} properties and {varsCopied} variables.", ColorConstants.Green);
+        CloseEditItemTypeModal();
+    }
+
+    private void CloseEditItemTypeModal()
+    {
+        if (_editItemTypeModalToken.HasValue)
+        {
+            _editItemTypeModalToken.Value.OnNuiEvent -= HandleEditItemTypeModalEvent;
+            _editItemTypeModalToken?.Close();
+            _editItemTypeModalToken = null;
+        }
+        _compatibleItemTypes.Clear();
+        _selectedItemTypeIndex = -1;
+    }
+
+    private List<(BaseItemType Type, string ResRef)> GetBaseItemTypeMapping(BaseItemType currentType)
+    {
+        var result = new List<(BaseItemType, string)>();
+
+        // Check if it's armor - special case with AC dropdown
+        if (currentType == BaseItemType.Armor)
+        {
+            return GetArmorAcMappings();
+        }
+
+        // 1-Handed Weapons category (including custom items)
+        var oneHandedWeapons = new List<(BaseItemType, string)>
+        {
+            (BaseItemType.Shortsword, "js_bla_wess"),
+            (BaseItemType.Longsword, "js_bla_wels"),
+            (BaseItemType.Bastardsword, "js_bla_webs"),
+            (BaseItemType.Rapier, "js_bla_wera"),
+            (BaseItemType.Scimitar, "js_bla_wesc"),
+            (BaseItemType.Handaxe, "js_bla_weha"),
+            (BaseItemType.Battleaxe, "js_bla_weba"),
+            (BaseItemType.Katana, "js_bla_weka"),
+            (BaseItemType.LightHammer, "js_bla_welh"),
+            (BaseItemType.LightMace, "js_bla_wema"),
+            (BaseItemType.Morningstar, "js_bla_wemo"),
+            (BaseItemType.Club, "js_bla_wecl"),
+            (BaseItemType.Dagger, "js_bla_weda"),
+            (BaseItemType.Kama, "js_bla_wekm"),
+            (BaseItemType.Kukri, "js_bla_weku"),
+            (BaseItemType.Sickle, "js_bla_wesi"),
+            (BaseItemType.Warhammer, "js_bla_wewa"),
+            (BaseItemType.LightFlail, "js_bla_welf"),
+            (BaseItemType.Whip, "js_bla_wewh"),
+            (BaseItemType.Trident, "js_bla_wetr"),
+            (BaseItemType.DwarvenWaraxe, "js_bla_wedw"),
+            (BaseItemType.MagicStaff, "js_bla_wems"),
+            // Custom 1H items (row 116-221)
+            ((BaseItemType)116, "hldb_book"),        // Tools, Right
+            ((BaseItemType)117, "temp_chair"),       // Holdable Chair
+            ((BaseItemType)204, "mus_flute"),        // Baby, etc.
+            ((BaseItemType)208, "item_flower_a3"),   // Hand Flower
+            ((BaseItemType)209, "item_flower_b3"),   // Hand Bouquet
+            ((BaseItemType)210, "temp_cflower"),     // Crystal Flower
+            ((BaseItemType)211, "temp_cbouquet"),    // Crystal Bouquet
+            ((BaseItemType)212, "item_bottle"),      // Drinks/Quill
+            ((BaseItemType)213, "temp_trade"),       // Tools, Trade
+            ((BaseItemType)214, "temp_htome"),       // Tome, Light
+            ((BaseItemType)215, "temp_utome"),       // Tome, Dark
+            ((BaseItemType)219, "item_pipe1"),       // Pipes, Spyglass
+            ((BaseItemType)221, "temp_cards"),       // Play Cards
+
+            // ⚠ Items below cannot take weapon properties (Keen, Damage Bonus, etc.)
+            ((BaseItemType)93, "temp_trumpet"),      // ⚠ Trumpet
+            ((BaseItemType)15, "nw_it_torch001"),    // ⚠ Torch
+            ((BaseItemType)94, "temp_moon"),         // ⚠ Moon On A Stick
+            ((BaseItemType)113, "hldb_bucket"),      // ⚠ Tools, Left
+            ((BaseItemType)222, "temp_focus"),       // ⚠ Focus
+            ((BaseItemType)223, "temp_umbrella")    // ⚠ Umbrella
+        };
+
+        // 2-Handed Weapons category (including custom items)
+        var twoHandedWeapons = new List<(BaseItemType, string)>
+        {
+            (BaseItemType.Greatsword, "js_bla_wegs"),
+            (BaseItemType.Greataxe, "js_bla_wega"),
+            (BaseItemType.Halberd, "js_bla_wehb"),
+            (BaseItemType.HeavyFlail, "js_bla_wehf"),
+            (BaseItemType.Scythe, "js_bla_wesy"),
+            (BaseItemType.Quarterstaff, "js_bla_wequ"),
+            (BaseItemType.ShortSpear, "js_bla_wesp"),
+            (BaseItemType.Doubleaxe, "js_bla_wedb"),
+            (BaseItemType.TwoBladedSword, "js_bla_we2b"),
+            (BaseItemType.DireMace, "js_bla_wedm"),
+            // Custom 2H items
+            ((BaseItemType)114, "hldb_shovel"),      // Tools, Pole
+            ((BaseItemType)220, "temp_2hmstaff"),    // 2H Magic Staff
+        };
+
+        // Ranged Weapons category
+        var rangedWeapons = new List<(BaseItemType, string)>
+        {
+            (BaseItemType.Longbow, "js_arch_bow"),
+            (BaseItemType.Shortbow, "js_arch_sbow"),
+            (BaseItemType.LightCrossbow, "js_arch_lbow"),
+            (BaseItemType.HeavyCrossbow, "js_arch_cbow"),
+            (BaseItemType.Sling, "js_arch_sling"),
+        };
+
+        // Thrown Weapons category
+        var thrownWeapons = new List<(BaseItemType, string)>
+        {
+            (BaseItemType.Dart, "js_arch_dart"),
+            (BaseItemType.Shuriken, "js_arch_shrk"),
+            (BaseItemType.ThrowingAxe, "js_arch_thax"),
+        };
+
+        // Ammunition category
+        var ammunition = new List<(BaseItemType, string)>
+        {
+            (BaseItemType.Arrow, "js_arch_star"),
+            (BaseItemType.Bolt, "js_arch_stbt"),
+            (BaseItemType.Bullet, "js_arch_stbu"),
+        };
+
+        // Shields category
+        var shields = new List<(BaseItemType, string)>
+        {
+            (BaseItemType.SmallShield, "js_bla_shsm"),
+            (BaseItemType.LargeShield, "js_bla_shlg"),
+            (BaseItemType.TowerShield, "js_bla_shto"),
+        };
+
+        // Accessories category
+        var accessories = new List<(BaseItemType, string)>
+        {
+            (BaseItemType.Helmet, "js_bla_helm"),
+            (BaseItemType.Amulet, "js_jew_amul"),
+            (BaseItemType.Ring, "js_jew_ring"),
+            ((BaseItemType)21, "js_tai_belt"),       // Belt
+            ((BaseItemType)26, "js_tai_boot"),       // Boots
+            ((BaseItemType)36, "js_tai_glove"),      // Gloves
+            ((BaseItemType)78, "js_bla_brac"),       // Bracer
+            ((BaseItemType)80, "js_tai_cloa"),       // Cloak
+        };
+
+        // Miscellaneous category
+        var miscellaneous = new List<(BaseItemType, string)>
+        {
+            ((BaseItemType)24, "dc_cus_temp_s"),     // Misc Small 1
+            ((BaseItemType)119, "dc_cus_temp_s2"),   // Misc Small 2
+            ((BaseItemType)120, "dc_cus_temp_s3"),   // Misc Small 3
+            ((BaseItemType)29, "temp_miscm1"),       // Misc Medium 1
+            ((BaseItemType)121, "temp_miscm2"),      // Misc Medium 2
+            ((BaseItemType)34, "temp_miscl"),        // Misc Large
+            ((BaseItemType)79, "dc_cus_temp_t"),     // Misc Thin
+            ((BaseItemType)74, "temp_book"),         // Book
+            ((BaseItemType)77, "nw_it_gem013"),      // Gem
+            ((BaseItemType)118, "temp_gem2"),        // Gem 2
+            ((BaseItemType)122, "temp_medal"),       // Medals
+            ((BaseItemType)123, "temp_fstone"),      // Faerie Stone
+            ((BaseItemType)124, "temp_ioun"),        // Ioun Stone
+        };
+
+        // Determine which category the current item belongs to and return those options
+        if (oneHandedWeapons.Any(w => w.Item1 == currentType))
+            return oneHandedWeapons;
+        if (twoHandedWeapons.Any(w => w.Item1 == currentType))
+            return twoHandedWeapons;
+        if (rangedWeapons.Any(w => w.Item1 == currentType))
+            return rangedWeapons;
+        if (thrownWeapons.Any(w => w.Item1 == currentType))
+            return thrownWeapons;
+        if (ammunition.Any(w => w.Item1 == currentType))
+            return ammunition;
+        if (shields.Any(w => w.Item1 == currentType))
+            return shields;
+        if (accessories.Any(w => w.Item1 == currentType))
+            return accessories;
+        if (miscellaneous.Any(w => w.Item1 == currentType))
+            return miscellaneous;
+
+        return result;
+    }
+
+    private List<(BaseItemType Type, string ResRef)> GetArmorAcMappings()
+    {
+        // Special handling for armor - return AC 0 to AC 8 mappings
+        return new List<(BaseItemType, string)>
+        {
+            ((BaseItemType)0, "js_tai_arcl"),   // AC 0
+            ((BaseItemType)1, "js_tai_arpa"),   // AC 1
+            ((BaseItemType)2, "js_tai_arle"),   // AC 2
+            ((BaseItemType)3, "js_tai_arha"),   // AC 3
+            ((BaseItemType)4, "js_bla_arsc"),   // AC 4
+            ((BaseItemType)5, "js_bla_arch"),   // AC 5
+            ((BaseItemType)6, "js_bla_arbm"),   // AC 6
+            ((BaseItemType)7, "js_bla_arhp"),   // AC 7
+            ((BaseItemType)8, "js_bla_arfp"),   // AC 8
+        };
+    }
+
+    private string GetItemTypeName(BaseItemType itemType)
+    {
+        // First check if it's a standard enum value with a display name
+        string standardName = itemType.ToString();
+
+        // Handle custom base item types (rows 93+)
+        string customName = (int)itemType switch
+        {
+            93 => "Trumpet",
+            94 => "Moon On A Stick",
+            113 => "Tools, Left (Bucket)",
+            114 => "Tools, Pole (Shovel)",
+            116 => "Tools, Right",
+            117 => "Holdable Chair",
+            118 => "Gem 2",
+            119 => "Misc Small 2",
+            120 => "Misc Small 3",
+            121 => "Misc Medium 2",
+            122 => "Medals",
+            123 => "Faerie Stone",
+            124 => "Ioun Stone",
+            204 => "Baby, etc.",
+            208 => "Hand Flower",
+            209 => "Hand Bouquet",
+            210 => "Crystal Flower",
+            211 => "Crystal Bouquet",
+            212 => "Drinks/Quill",
+            213 => "Tools, Trade",
+            214 => "Tome, Light",
+            215 => "Tome, Dark",
+            219 => "Pipes, Spyglass",
+            220 => "2H Magic Staff",
+            221 => "Play Cards",
+            222 => "Focus",
+            223 => "Umbrella",
+            _ => null
+        };
+
+        if (customName != null)
+            return customName;
+
+        // For standard enums, convert to friendly display name
+        return System.Text.RegularExpressions.Regex.Replace(standardName, "([a-z])([A-Z])", "$1 $2");
+    }
+
+    /// <summary>
+    /// Checks if an item has weapon-specific properties that would not transfer to [NO DAMAGE] item types.
+    /// </summary>
+    private bool HasWeaponProperties(NwItem item)
+    {
+        if (item == null)
+            return false;
+
+        // Check if the item has any item properties at all
+        // If it does, we assume they might be weapon-specific and block the change to be safe
+        // This is a conservative approach that prevents data loss
+        int propertyCount = 0;
+        foreach (var itemProp in item.ItemProperties)
+        {
+            propertyCount++;
+            // If there are any item properties, assume they're weapon-specific
+            // This is safer than trying to identify specific property types
+            return true;
+        }
+
+        return propertyCount > 0;
     }
 }
+
+

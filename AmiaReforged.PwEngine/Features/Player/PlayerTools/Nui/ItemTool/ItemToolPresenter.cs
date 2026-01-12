@@ -176,6 +176,13 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
         if (ev.EventType != NuiEventType.Click)
             return;
 
+        if (ev.ElementId == "ind_clear_desc")
+        {
+            _descModalToken!.Value.SetBindValue(View.EditDescBuffer, string.Empty);
+            _player.SendServerMessage("Description cleared.", ColorConstants.Green);
+            return;
+        }
+
         if (ev.ElementId == "ind_modal_ok_desc")
         {
             string newDesc = _descModalToken!.Value.GetBindValue(View.EditDescBuffer) ?? string.Empty;

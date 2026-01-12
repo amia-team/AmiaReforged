@@ -19,6 +19,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
     public readonly NuiBind<string> Name = new("item_name");
     public readonly NuiBind<string> Description = new("item_desc");
     public readonly NuiBind<string> Tag = new("item_tag");
+    public readonly NuiBind<string> ItemType = new("item_type");
 
     public readonly NuiBind<bool> ValidObjectSelected = new("item_valid");
     public readonly NuiBind<bool> IconControlsVisible = new("item_icon_visible");
@@ -59,6 +60,10 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
     public readonly NuiBind<int> EditVariableType = new("edit_var_type");
     public readonly NuiBind<string> EditVariableValue = new("edit_var_value");
 
+    // Edit item type modal binds
+    public readonly NuiBind<string> EditItemTypeBuffer = new("edit_itemtype_buf");
+    public readonly NuiBind<int> EditItemTypeSelection = new("edit_itemtype_sel");
+
     // Presenter aliases (unchanged)
     public NuiBind<string> NewVariableName => VariableName;
     public NuiBind<string> NewVariableValue => VariableValue;
@@ -76,22 +81,6 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
     // ——————————————————————————————————————————
     // Helpers
     // ——————————————————————————————————————————
-
-    private NuiElement Divider(float thickness = 1f, byte alpha = 48)
-    {
-        // Transparent row with a faint horizontal line
-        return new NuiRow
-        {
-            Height = thickness + 4f, // a bit of breathing room
-            DrawList = new()
-            {
-                // line across the full window width (tweak as desired)
-                new NuiDrawListLine(new Color(0,0,0, alpha), false, thickness + 2f, new NuiVector(0.0f, 100.0f),
-                    new NuiVector(0.0f, 400.0f))
-            },
-        };
-    }
-
 
     private static NuiElement ImageButton(string id, string tooltip, out NuiButtonImage logicalButton,
         float width, float height, string plateResRef)
@@ -197,7 +186,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
         {
             RowHeight = 27f,
             Width = 725f,
-            Height = 280f,
+            Height = 250f,
             Scrollbars = NuiScrollbars.Y,
         };
 
@@ -234,9 +223,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
         {
             new NuiComboEntry("Int", 0),
             new NuiComboEntry("Float", 1),
-            new NuiComboEntry("String", 2),
-            new NuiComboEntry("Location", 3),
-            new NuiComboEntry("Object", 4),
+            new NuiComboEntry("String", 2)
         };
 
         return new NuiRow
@@ -282,8 +269,8 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
         {
             Children =
             {
-                new NuiLabel("Name:") { Width = labelW, Height = 20f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12) },
-                new NuiLabel(Name) { Width = valueW, Height = 20f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12) },
+                new NuiLabel("Name:") { Width = labelW, Height = 35f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12) },
+                new NuiLabel(Name) { Width = valueW, Height = 35f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12) },
                 ImageButton("btn_edit_name", "Edit Name", out _, 35f, 35f, "ui_btn_sm_edit")
             }
         };
@@ -292,9 +279,9 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
         {
             Children =
             {
-                new NuiLabel("Description:") { Width = labelW, Height = 20f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12) },
+                new NuiLabel("Description:") { Width = labelW, Height = 35f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12) },
                 // #2 placeholder (wired below)
-                new NuiLabel(DescPlaceholder) { Width = valueW, Height = 20f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12) },
+                new NuiLabel(DescPlaceholder) { Width = valueW, Height = 35f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12) },
                 ImageButton("btn_edit_desc", "Edit Description", out _, 35f, 35f, "ui_btn_sm_edit")
             }
         };
@@ -303,13 +290,23 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
         {
             Children =
             {
-                new NuiLabel("Tag:") { Width = labelW, Height = 20f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12) },
-                new NuiLabel(Tag) { Width = valueW, Height = 20f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12) },
+                new NuiLabel("Tag:") { Width = labelW, Height = 35f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12) },
+                new NuiLabel(Tag) { Width = valueW, Height = 35f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12) },
                 ImageButton("btn_edit_tag", "Edit Tag", out _, 35f, 35f, "ui_btn_sm_edit")
             }
         };
 
-        return new NuiColumn { Children = { nameRow, descRow, tagRow } };
+        NuiRow itemTypeRow = new NuiRow
+        {
+            Children =
+            {
+                new NuiLabel("Item Type:") { Width = labelW, Height = 35f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12) },
+                new NuiLabel(ItemType) { Width = valueW, Height = 35f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12) },
+                ImageButton("btn_edit_itemtype", "Edit Item Type", out _, 35f, 35f, "ui_btn_sm_edit")
+            }
+        };
+
+        return new NuiColumn { Children = { nameRow, descRow, tagRow, itemTypeRow } };
     }
 
 
@@ -336,7 +333,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
         };
 
         NuiElement headerOverlay = BuildHeaderOverlay();
-        NuiSpacer headerSpacer = new NuiSpacer { Height = HeaderH + HeaderTopPad + 6f };
+        NuiSpacer headerSpacer = new NuiSpacer { Height = 120f };
 
         NuiRow selectRow = new NuiRow
         {
@@ -367,19 +364,9 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
                 headerOverlay,
                 headerSpacer,
                 selectRow,
-                new NuiSpacer { Height = 4f },
-                Divider(),
-                new NuiSpacer { Height = 4f },
                 BuildBasicProps(),
-                new NuiSpacer { Height = 4f },
-                Divider(),
-                new NuiSpacer { Height = 4f },
                 BuildIconGroup(),
-                new NuiSpacer { Height = 8f },
                 variablesEmpty,
-                new NuiSpacer { Height = 5f },
-                Divider(),
-                new NuiSpacer { Height = 5f },
                 saveRow
             }
         };
@@ -401,17 +388,25 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
                     Width = 0f, Height = 0f,
                     DrawList = new()
                     {
-                        new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 420f, 250f))
+                        new NuiDrawListImage("ui_bg", new NuiRect(-20f, -20f, 420f, 250f))
                     }
                 },
                 new NuiLabel("Edit Name") { Height = 18f, HorizontalAlign = NuiHAlign.Center, ForegroundColor = new Color(30, 20, 12)},
-                new NuiTextEdit("Name", EditNameBuffer, 100, false) { Height = 32f },
                 new NuiRow
                 {
                     Children =
                     {
+                        new NuiSpacer { Width = 10f },
+                        new NuiTextEdit("Name", EditNameBuffer, 100, false) { Height = 32f }
+                        }
+                    },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 10f },
                         ImagePlatedLabeledButton("btn_modal_ok_name", "", out _, "ui_btn_save"),
-                        new NuiSpacer { Width = 20f },
+                        new NuiSpacer { Width = 10f },
                         ImagePlatedLabeledButton("btn_modal_cancel_name", "", out _, "ui_btn_cancel"),
                     }
                 }
@@ -421,7 +416,8 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
         return new NuiWindow(layout, "Edit Name")
         {
             Geometry = new NuiRect(400f, 300f, 380f, 180f),
-            Resizable = false
+            Closable = false,
+            Resizable = true
         };
     }
 
@@ -429,7 +425,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
     {
         NuiColumn layout = new NuiColumn
         {
-            Width = 380f, Height = 350f,
+            Width = 390f, Height = 350f,
             Children =
             {
                 new NuiRow
@@ -441,13 +437,29 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
                     }
                 },
                 new NuiLabel("Edit Description") { Height = 18f, HorizontalAlign = NuiHAlign.Center, ForegroundColor = new Color(30, 20, 12)},
-                new NuiTextEdit("Description", EditDescBuffer, 5000, true) { Height = 160f },
                 new NuiRow
                 {
                     Children =
                     {
+                        new NuiSpacer { Width = 90f },
+                        new NuiButton("Clear All") { Id = "btn_clear_desc", Height = 28f }
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 10f },
+                        new NuiTextEdit("Description", EditDescBuffer, 5000, true) { Height = 160f }
+                        }
+                    },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 10f },
                         ImagePlatedLabeledButton("btn_modal_ok_desc", "", out _, "ui_btn_save"),
-                        new NuiSpacer { Width = 20f },
+                        new NuiSpacer { Width = 10f },
                         ImagePlatedLabeledButton("btn_modal_cancel_desc", "", out _, "ui_btn_cancel"),
                     }
                 }
@@ -456,7 +468,8 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
 
         return new NuiWindow(layout, "Edit Description")
         {
-            Geometry = new NuiRect(360f, 260f, 380f, 350f),
+            Geometry = new NuiRect(360f, 260f, 390f, 350f),
+            Closable = false,
             Resizable = true
         };
     }
@@ -467,7 +480,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
     {
         NuiColumn layout = new NuiColumn
         {
-            Width = 380f, Height = 180f,
+            Width = 390f, Height = 180f,
             Children =
             {
                 new NuiRow
@@ -475,15 +488,23 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
                     Width = 0f, Height = 0f,
                     DrawList = new()
                     {
-                        new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 420f, 250f))
+                        new NuiDrawListImage("ui_bg", new NuiRect(-20f, -20f, 420f, 250f))
                     }
                 },
                 new NuiLabel("Edit Tag") { Height = 18f, HorizontalAlign = NuiHAlign.Center, ForegroundColor = new Color(30, 20, 12) },
-                new NuiTextEdit("Tag", EditTagBuffer, 64, false) { Height = 32f },
                 new NuiRow
                 {
                     Children =
                     {
+                        new NuiSpacer { Width = 10f },
+                        new NuiTextEdit("Tag", EditTagBuffer, 64, false) { Height = 32f }
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 10f },
                         ImagePlatedLabeledButton("btn_modal_ok_tag", "", out _, "ui_btn_save"),
                         new NuiSpacer { Width = 20f },
                         ImagePlatedLabeledButton("btn_modal_cancel_tag", "", out _, "ui_btn_cancel"),
@@ -495,6 +516,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
         return new NuiWindow(layout, "Edit Tag")
         {
             Geometry = new NuiRect(420f, 320f, 380f, 180f),
+            Closable = false,
             Resizable = true
         };
     }
@@ -512,7 +534,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
 
         NuiColumn layout = new NuiColumn
         {
-            Width = 380f,
+            Width = 390f,
             Height = 380f,
             Children =
             {
@@ -531,6 +553,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
                 {
                     Children =
                     {
+                        new NuiSpacer { Width = 10f },
                         new NuiLabel("Name:") { Width = 60f, Height = 20f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12)},
                         new NuiLabel(EditVariableName) { Width = 220f, Height = 20f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12)}
                     }
@@ -540,18 +563,35 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
                 {
                     Children =
                     {
-                        new NuiLabel("Type:") { Width = 60f, Height = 28f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12)},
+                        new NuiSpacer { Width = 10f },
+                        new NuiLabel("Type:") { Width = 60f, Height = 35f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12)},
                         new NuiCombo { Entries = varTypeOptions, Selected = EditVariableType, Width = 100f }
                     }
                 },
                 new NuiSpacer { Height = 4f },
-                new NuiLabel("Value:") { Height = 16f, ForegroundColor = new Color(30, 20, 12)},
-                new NuiTextEdit("Value", EditVariableValue, 5000, true) { Height = 160f, Width = 328},
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 10f },
+                        new NuiLabel("Value:") { Height = 28f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12)},
+                        new NuiButton("Clear All") { Id = "btn_clear_var", Height = 28f, Width = 100f }
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 10f },
+                        new NuiTextEdit("Value", EditVariableValue, 5000, true) { Height = 160f, Width = 328},
+                    }
+                },
                 new NuiSpacer { Height = 8f },
                 new NuiRow
                 {
                     Children =
                     {
+                        new NuiSpacer { Width = 10f },
                         new NuiButtonImage("ui_btn_save") { Id = "btn_modal_ok_var", Width = 150f, Height = 38f, Tooltip = "Save Variable" },
                         new NuiSpacer { Width = 20f },
                         new NuiButtonImage("ui_btn_cancel") { Id = "btn_modal_cancel_var", Width = 150f, Height = 38f, Tooltip = "Cancel" }
@@ -562,8 +602,125 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
 
         return new NuiWindow(layout, "Edit Variable")
         {
-            Geometry = new NuiRect(380f, 240f, 350f, 420f),
+            Geometry = new NuiRect(380f, 240f, 360f, 420f),
+            Closable = false,
+            Resizable = true
+        };
+    }
+
+    public NuiWindow BuildEditItemTypeModal(List<NuiComboEntry> itemTypeOptions)
+    {
+        NuiColumn layout = new NuiColumn
+        {
+            Width = 395f,
+            Height = 200f,
+            Children =
+            {
+                new NuiRow
+                {
+                    Width = 0f,
+                    Height = 0f,
+                    DrawList = new()
+                    {
+                        new NuiDrawListImage("ui_bg", new NuiRect(-20f, -20f, 420f, 240f))
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 10f },
+                        new NuiLabel("Change Item Type") { Height = 18f, HorizontalAlign = NuiHAlign.Center, ForegroundColor = new Color(30, 20, 12) }
+                    }
+                },
+                new NuiSpacer { Height = 2f },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 10f },
+                        new NuiLabel("Select new item type:") { Height = 16f, ForegroundColor = new Color(30, 20, 12)}
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 10f },
+                        new NuiCombo { Entries = itemTypeOptions, Selected = EditItemTypeSelection, Width = 360f }
+                    }
+                },
+                new NuiSpacer { Height = 5f },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 20f },
+                        new NuiButtonImage("ui_btn_save") { Id = "btn_modal_ok_itemtype", Width = 150f, Height = 38f, Tooltip = "Change Item Type" },
+                        new NuiSpacer { Width = 15f },
+                        new NuiButtonImage("ui_btn_cancel") { Id = "btn_modal_cancel_itemtype", Width = 150f, Height = 38f, Tooltip = "Cancel" }
+                    }
+                }
+            }
+        };
+
+        return new NuiWindow(layout, "Edit Item Type")
+        {
+            Geometry = new NuiRect(380f, 240f, 395f, 200f),
+            Closable = false,
+            Resizable = true
+        };
+    }
+
+    public NuiWindow BuildConfirmNoDamageItemTypeModal()
+    {
+        NuiColumn layout = new NuiColumn
+        {
+            Width = 500f,
+            Height = 320f,
+            Children =
+            {
+                new NuiRow
+                {
+                    Width = 0f,
+                    Height = 0f,
+                    DrawList = new()
+                    {
+                        new NuiDrawListImage("ui_bg", new NuiRect(-20f, -20f, 500f, 355f))
+                    }
+                },
+                new NuiLabel("WARNING: Non-Weapon Item Type") { Height = 22f, HorizontalAlign = NuiHAlign.Center, ForegroundColor = new Color(100, 32, 32) },
+                new NuiLabel("This item type CANNOT accept weapon-specific properties!")
+                    { Height = 20f, Width = 450f, ForegroundColor = new Color(30, 20, 12), HorizontalAlign = NuiHAlign.Center },
+                new NuiLabel("The following properties will be REMOVED if you proceed:") { Height = 18f, Width = 450f, ForegroundColor = new Color(30, 20, 12), HorizontalAlign = NuiHAlign.Center },
+                new NuiLabel("- Attack Bonus (AB)") { Height = 16f, ForegroundColor = new Color(30, 20, 12), HorizontalAlign = NuiHAlign.Center },
+                new NuiLabel("- Enhancement Bonus") { Height = 16f, ForegroundColor = new Color(30, 20, 12), HorizontalAlign = NuiHAlign.Center },
+                new NuiLabel("- Bonus Damage") { Height = 16f, ForegroundColor = new Color(30, 20, 12), HorizontalAlign = NuiHAlign.Center },
+                new NuiLabel("- Keen") { Height = 16f, ForegroundColor = new Color(30, 20, 12), HorizontalAlign = NuiHAlign.Center },
+                new NuiLabel("Any other weapon-specific properties") { Height = 16f, ForegroundColor = new Color(30, 20, 12), HorizontalAlign = NuiHAlign.Center },
+                new NuiSpacer { Height = 15f },
+                new NuiLabel("Are you sure you want to continue?") { Height = 20f, ForegroundColor = new Color(100, 32, 32), HorizontalAlign = NuiHAlign.Center },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 65f },
+                        new NuiButtonImage("ui_btn_save") { Id = "btn_confirm_nodamage", Width = 150f, Height = 38f, Tooltip = "Yes, Proceed with Change" },
+                        new NuiSpacer { Width = 10f },
+                        new NuiButtonImage("ui_btn_cancel") { Id = "btn_cancel_nodamage", Width = 150f, Height = 38f, Tooltip = "No, Cancel" }
+                    }
+                }
+            }
+        };
+
+        return new NuiWindow(layout, "Confirm Item Type Change")
+        {
+            Geometry = new NuiRect(280f, 180f, 500f, 320f),
+            Closable = false,
             Resizable = true
         };
     }
 }
+
+
+

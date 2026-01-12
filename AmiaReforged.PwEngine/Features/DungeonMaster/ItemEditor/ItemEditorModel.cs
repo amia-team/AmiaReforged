@@ -17,7 +17,7 @@ internal sealed class ItemEditorModel
         _player = player;
     }
 
-    public NwItem? SelectedItem { get; private set; }
+    public NwItem? SelectedItem { get; internal set; }
     public bool HasSelected => SelectedItem != null;
 
     public delegate void OnNewSelectionHandler();
