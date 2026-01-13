@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Features.WindowingSystem.Scry.GenericWindows;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Time;
@@ -197,6 +198,12 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         if (View.TargetMemberButton != null && eventData.ElementId == View.TargetMemberButton.Id)
         {
             BeginTargetMember();
+            return;
+        }
+
+        if (View.CloseStallButton != null && eventData.ElementId == View.CloseStallButton.Id)
+        {
+            ShowCloseStallConfirmation();
             return;
         }
 
@@ -1137,6 +1144,89 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         }
     }
 
+    private void ShowCloseStallConfirmation()
+    {
+        if (_isClosing || _isProcessing)
+        {
+            return;
+        }
+
+        const string message = "This will CLOSE your stall and return all items.\n\n" +
+                               "• Items will be placed in your inventory\n" +
+                               "• Items that don't fit will be held by the Market Reeve\n" +
+                               "• Any escrow balance will be withdrawn to your gold\n" +
+                               "• The stall will become unclaimed\n\n" +
+                               "Are you sure you want to close this stall?";
+
+        GenericWindow
+            .Builder()
+            .For()
+            .ConfirmationPopup()
+            .WithPlayer(_player)
+            .WithTitle("Close Stall & Retrieve All")
+            .WithMessage(message)
+            .OnConfirm(OnCloseStallConfirmed)
+            .OnCancel(() => { }) // Do nothing on cancel, just close the popup
+            .Open();
+    }
+
+    private void OnCloseStallConfirmed()
+    {
+        _ = HandleCloseStallAndRetrieveAllAsync();
+    }
+
+    private async Task HandleCloseStallAndRetrieveAllAsync()
+    {
+        if (_isClosing || _isProcessing)
+        {
+            return;
+        }
+
+        if (_sessionId is not Guid sessionId)
+        {
+            return;
+        }
+
+        await SetProcessingStateAsync(true).ConfigureAwait(false);
+
+        try
+        {
+            PlayerStallCloseAndRetrieveAllRequest request = new(
+                sessionId,
+                _config.StallId,
+                _config.SellerPersona);
+
+            PlayerStallCloseAndRetrieveAllResult result = await EventManager
+                .RequestCloseStallAndRetrieveAllAsync(request)
+                .ConfigureAwait(false);
+
+            if (result.Success)
+            {
+                // Close the seller window since the stall is now released
+                _player.SendServerMessage(result.Message ?? "Stall closed successfully.", result.MessageColor ?? ColorConstants.Lime);
+                RequestClose();
+            }
+            else
+            {
+                await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
+                    result.Message ?? "Failed to close stall.",
+                    result.MessageColor ?? ColorConstants.Red)).ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error while closing stall and retrieving all items for stall {StallId}.", _config.StallId);
+
+            await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
+                "We couldn't close the stall right now.",
+                ColorConstants.Red)).ConfigureAwait(false);
+        }
+        finally
+        {
+            await SetProcessingStateAsync(false).ConfigureAwait(false);
+        }
+    }
+
     private static string FormatInventoryEntry(PlayerStallSellerInventoryItemView item)
     {
         string quantity = item.IsStackable
@@ -1401,6 +1491,10 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         Token().SetBindValue(View.TargetMemberEnabled, _canManageMembers && !_isProcessing);
         Token().SetBindValue(View.MemberStatusMessage, string.Empty);
         Token().SetBindValue(View.MemberStatusVisible, false);
+
+        // Close stall button is only visible/enabled for owners
+        Token().SetBindValue(View.CloseStallVisible, _isOwner);
+        Token().SetBindValue(View.CloseStallEnabled, _isOwner && !_isProcessing);
 
         List<string> memberNames = new(_members.Count);
         List<string> memberTooltips = new(_members.Count);

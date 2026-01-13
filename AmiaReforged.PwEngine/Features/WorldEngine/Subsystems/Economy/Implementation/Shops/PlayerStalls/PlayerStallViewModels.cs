@@ -405,3 +405,45 @@ public sealed record PlayerStallMemberView(
     bool CanCollectEarnings,
     bool IsOwner,
     bool CanRemove);
+
+/// <summary>
+/// Request raised by the seller UI to close the stall and retrieve all items.
+/// Items that do not fit in the player's inventory are transferred to the Market Reeve lockup.
+/// Escrow balance is withdrawn to the player's gold.
+/// </summary>
+public sealed record PlayerStallCloseAndRetrieveAllRequest(
+    Guid SessionId,
+    long StallId,
+    PersonaId SellerPersona);
+
+/// <summary>
+/// Result of the close stall and retrieve all operation.
+/// </summary>
+public sealed record PlayerStallCloseAndRetrieveAllResult(
+    bool Success,
+    string? Message,
+    Color? MessageColor,
+    int ItemsReturned,
+    int ItemsSentToReeve,
+    int GoldWithdrawn)
+{
+    public static PlayerStallCloseAndRetrieveAllResult Fail(string message, Color? color = null)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            throw new ArgumentException("Failure result requires a message.", nameof(message));
+        }
+
+        return new PlayerStallCloseAndRetrieveAllResult(false, message, color, 0, 0, 0);
+    }
+
+    public static PlayerStallCloseAndRetrieveAllResult Ok(
+        int itemsReturned,
+        int itemsSentToReeve,
+        int goldWithdrawn,
+        string? message = null,
+        Color? color = null)
+    {
+        return new PlayerStallCloseAndRetrieveAllResult(true, message, color, itemsReturned, itemsSentToReeve, goldWithdrawn);
+    }
+}

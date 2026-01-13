@@ -35,6 +35,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
     private readonly ICoinhouseRepository _coinhouses;
     private readonly IRenameItemService _renameService;
     private readonly IWorldEngineFacade _worldEngine;
+    private readonly ReeveLockupService _lockupService;
     private readonly Dictionary<Guid, BuyerSubscription> _buyerSessions = new();
     private readonly Dictionary<long, HashSet<Guid>> _stallBuyers = new();
     private readonly Dictionary<Guid, SellerSubscription> _sellerSessions = new();
@@ -47,7 +48,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         IPlayerStallService stallService,
         ICoinhouseRepository coinhouses,
         IRenameItemService renameService,
-        IWorldEngineFacade worldEngine)
+        IWorldEngineFacade worldEngine,
+        ReeveLockupService lockupService)
     {
         _shops = shops ?? throw new ArgumentNullException(nameof(shops));
         _characters = characters ?? throw new ArgumentNullException(nameof(characters));
@@ -55,6 +57,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         _coinhouses = coinhouses ?? throw new ArgumentNullException(nameof(coinhouses));
         _renameService = renameService ?? throw new ArgumentNullException(nameof(renameService));
         _worldEngine = worldEngine ?? throw new ArgumentNullException(nameof(worldEngine));
+        _lockupService = lockupService ?? throw new ArgumentNullException(nameof(lockupService));
     }
 
     /// <summary>
@@ -1882,6 +1885,216 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             request.SessionId).ConfigureAwait(false);
 
         return result;
+    }
+
+    /// <summary>
+    /// Handles seller requests to close the stall and retrieve all items.
+    /// Items that do not fit in the player's inventory are sent to the Market Reeve lockup.
+    /// Escrow balance is withdrawn directly to the player's gold.
+    /// </summary>
+    public async Task<PlayerStallCloseAndRetrieveAllResult> RequestCloseStallAndRetrieveAllAsync(
+        PlayerStallCloseAndRetrieveAllRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        SellerSubscription? subscription;
+        lock (_syncRoot)
+        {
+            _sellerSessions.TryGetValue(request.SessionId, out subscription);
+        }
+
+        if (subscription is null || subscription.StallId != request.StallId ||
+            subscription.Persona != request.SellerPersona)
+        {
+            return PlayerStallCloseAndRetrieveAllResult.Fail(
+                "Your stall session is no longer valid.",
+                ColorConstants.Orange);
+        }
+
+        if (!TryResolvePersonaGuid(request.SellerPersona, out Guid personaGuid))
+        {
+            return PlayerStallCloseAndRetrieveAllResult.Fail(
+                "We couldn't verify your persona for that action.",
+                ColorConstants.Orange);
+        }
+
+        if (!_characters.TryGetPlayer(personaGuid, out NwPlayer? player) || player is null)
+        {
+            return PlayerStallCloseAndRetrieveAllResult.Fail(
+                "You must be logged in as that persona to close the stall.",
+                ColorConstants.Orange);
+        }
+
+        NwCreature? sellerCreature = await ResolveActiveCreatureAsync(player).ConfigureAwait(false);
+        if (sellerCreature is null)
+        {
+            return PlayerStallCloseAndRetrieveAllResult.Fail(
+                "You must be possessing your character to close the stall.",
+                ColorConstants.Orange);
+        }
+
+        PlayerStall? stall = _shops.GetShopWithMembers(request.StallId);
+        if (stall is null)
+        {
+            return PlayerStallCloseAndRetrieveAllResult.Fail(
+                "This stall is no longer available.",
+                ColorConstants.Orange);
+        }
+
+        // Only the owner can close the stall
+        string personaId = request.SellerPersona.ToString();
+        bool isOwner = string.Equals(stall.OwnerPersonaId, personaId, StringComparison.OrdinalIgnoreCase);
+
+        if (!isOwner)
+        {
+            return PlayerStallCloseAndRetrieveAllResult.Fail(
+                "Only the stall owner can close the stall and retrieve all items.",
+                ColorConstants.Orange);
+        }
+
+        // Get all products with stock
+        List<StallProduct>? allProducts = _shops.ProductsForShop(request.StallId);
+        List<StallProduct> productsToRetrieve = allProducts?
+            .Where(p => p.Quantity > 0)
+            .ToList() ?? new List<StallProduct>();
+
+        int itemsReturned = 0;
+        int itemsSentToReeve = 0;
+        List<StallProduct> productsReturned = new();
+        List<StallProduct> productsSentToReeve = new();
+
+        // Try to restore each product to the player's inventory
+        foreach (StallProduct product in productsToRetrieve)
+        {
+            // First, flag the product as inactive
+            bool flagged = _shops.UpdateStallAndProduct(request.StallId, product.Id, (persistedStall, persistedProduct) =>
+            {
+                if (persistedProduct.Quantity <= 0 || !persistedProduct.IsActive)
+                {
+                    return false;
+                }
+
+                persistedProduct.IsActive = false;
+                return true;
+            });
+
+            if (!flagged)
+            {
+                continue;
+            }
+
+            product.IsActive = false;
+
+            // Try to restore item to player's inventory
+            NwItem? restoredItem = await StallProductRestorer.RestoreItemAsync(product, sellerCreature, product.Quantity)
+                .ConfigureAwait(false);
+
+            if (restoredItem is not null)
+            {
+                // Successfully returned to player
+                ApplyReclaimedItemMetadata(restoredItem, stall, product);
+                _shops.RemoveProductFromShop(request.StallId, product.Id);
+                productsReturned.Add(product);
+                itemsReturned += product.Quantity;
+            }
+            else
+            {
+                // Could not fit in inventory - send to reeve lockup
+                productsSentToReeve.Add(product);
+                itemsSentToReeve += product.Quantity;
+            }
+        }
+
+        // Send overflow items to the reeve lockup
+        if (productsSentToReeve.Count > 0)
+        {
+            int storedCount = await _lockupService.StoreSuspendedInventoryAsync(stall, productsSentToReeve)
+                .ConfigureAwait(false);
+
+            foreach (StallProduct product in productsSentToReeve)
+            {
+                _shops.RemoveProductFromShop(request.StallId, product.Id);
+            }
+
+            Log.Info(
+                "Transferred {Count} overflow items to reeve lockup during stall closure for stall {StallId}.",
+                storedCount,
+                request.StallId);
+        }
+
+        // Withdraw escrow balance to player
+        int goldWithdrawn = 0;
+        if (stall.EscrowBalance > 0)
+        {
+            WithdrawStallEarningsRequest withdrawRequest = new(
+                request.StallId,
+                request.SellerPersona,
+                null); // null means withdraw all
+
+            PlayerStallServiceResult withdrawResult = await _stallService
+                .WithdrawEarningsAsync(withdrawRequest)
+                .ConfigureAwait(false);
+
+            if (withdrawResult.Success &&
+                withdrawResult.Data is { } data &&
+                data.TryGetValue("amount", out object? amountObj) &&
+                amountObj is int withdrawnAmount &&
+                withdrawnAmount > 0)
+            {
+                await RefundGoldAsync(sellerCreature, withdrawnAmount).ConfigureAwait(false);
+                goldWithdrawn = withdrawnAmount;
+            }
+        }
+
+        // Release the stall
+        ReleasePlayerStallRequest releaseRequest = new(
+            request.StallId,
+            request.SellerPersona,
+            Force: false,
+            ReleasedUtc: DateTime.UtcNow,
+            AreaResRef: stall.AreaResRef,
+            PlaceableTag: stall.Tag);
+
+        PlayerStallServiceResult releaseResult = await _stallService
+            .ReleaseAsync(releaseRequest)
+            .ConfigureAwait(false);
+
+        if (!releaseResult.Success)
+        {
+            Log.Warn(
+                "Failed to release stall {StallId} after retrieving items: {Error}",
+                request.StallId,
+                releaseResult.ErrorMessage);
+        }
+
+        // Build success message
+        List<string> messageParts = new();
+
+        if (itemsReturned > 0)
+        {
+            messageParts.Add(string.Format(CultureInfo.InvariantCulture, "{0:n0} item(s) returned to your inventory", itemsReturned));
+        }
+
+        if (itemsSentToReeve > 0)
+        {
+            messageParts.Add(string.Format(CultureInfo.InvariantCulture, "{0:n0} item(s) sent to the Market Reeve", itemsSentToReeve));
+        }
+
+        if (goldWithdrawn > 0)
+        {
+            messageParts.Add(string.Format(CultureInfo.InvariantCulture, "{0:n0} gp withdrawn", goldWithdrawn));
+        }
+
+        string message = messageParts.Count > 0
+            ? "Stall closed. " + string.Join(", ", messageParts) + "."
+            : "Stall closed.";
+
+        return PlayerStallCloseAndRetrieveAllResult.Ok(
+            itemsReturned,
+            itemsSentToReeve,
+            goldWithdrawn,
+            message,
+            ColorConstants.Lime);
     }
 
     private List<Func<PlayerStallBuyerSnapshot, Task>> CollectSnapshotCallbacks(long stallId)

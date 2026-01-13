@@ -105,6 +105,9 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
     public readonly NuiBind<string> MemberStatusMessage = new("player_stall_seller_member_status_message");
     public readonly NuiBind<bool> MemberStatusVisible = new("player_stall_seller_member_status_visible");
 
+    public readonly NuiBind<bool> CloseStallVisible = new("player_stall_seller_close_stall_visible");
+    public readonly NuiBind<bool> CloseStallEnabled = new("player_stall_seller_close_stall_enabled");
+
     public NuiButton ManageButton = null!;
     public NuiButton UpdatePriceButton = null!;
     public NuiButton RentToggleButton = null!;
@@ -118,6 +121,7 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
     public NuiButtonImage ViewDescriptionButton = null!;
     public NuiButton RemoveMemberButton = null!;
     public NuiButton TargetMemberButton = null!;
+    public NuiButton CloseStallButton = null!;
 
     public const string HoldEarningsToggleId = "player_stall_hold_earnings_toggle";
 
@@ -833,7 +837,17 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                             Id = "player_stall_seller_close",
                             Height = 38f,
                             Width = 150f
-                        }.Assign(out CloseButton)
+                        }.Assign(out CloseButton),
+                        new NuiSpacer { Width = 20f },
+                        new NuiButton("Close Stall & Retrieve All")
+                        {
+                            Id = "player_stall_close_and_retrieve_all",
+                            Height = 38f,
+                            Width = 220f,
+                            Visible = CloseStallVisible,
+                            Enabled = CloseStallEnabled,
+                            Tooltip = "Close your stall and retrieve all items. Items that don't fit will be held by the Market Reeve."
+                        }.Assign(out CloseStallButton)
                     ]
                 }
             ]
