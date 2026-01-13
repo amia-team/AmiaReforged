@@ -30,7 +30,7 @@ public static class BonusSpellSlotProperties
     /// <param name="classType">The NWN class type constant (e.g., NWScript.IP_CONST_CLASS_WIZARD)</param>
     /// <param name="className">Display name for the class (e.g., "Wizard")</param>
     /// <param name="exclusiveClass">The ClassType enum for class exclusivity</param>
-    /// <param name="powerCost">Power cost per spell slot (1 for caster weapons, 2 for other items)</param>
+    /// <param name="powerCost">Power cost per spell slot (always 1 point)</param>
     /// <param name="startLevel">Starting spell level (0 for full casters, 1 for partial casters)</param>
     /// <param name="maxLevel">Maximum spell level available</param>
     /// <returns>A configured CraftingCategory for bonus spell slots</returns>
@@ -105,40 +105,40 @@ public static class BonusSpellSlotProperties
         CreateBonusSpellCategory("wizard_bonus_spells", "Wizard Bonus Spells",
             NWScript.IP_CONST_CLASS_WIZARD, "Wizard", ClassType.Wizard, powerCost: 1, startLevel: 0, maxLevel: 9);
 
-    // ========== Equipped Item Categories (PowerCost = 2) ==========
+    // ========== Equipped Item Categories (PowerCost = 1) ==========
     public static readonly CraftingCategory AssassinBonusSpellsCostly =
         CreateBonusSpellCategory("assassin_bonus_spells_costly", "Assassin Bonus Spells",
-            NWScript.CLASS_TYPE_ASSASSIN, "Assassin", ClassType.Assassin, powerCost: 2, startLevel: 1, maxLevel: 4);
+            NWScript.CLASS_TYPE_ASSASSIN, "Assassin", ClassType.Assassin, powerCost: 1, startLevel: 1, maxLevel: 4);
 
     public static readonly CraftingCategory BardBonusSpellsCostly =
         CreateBonusSpellCategory("bard_bonus_spells_costly", "Bard Bonus Spells",
-            NWScript.IP_CONST_CLASS_BARD, "Bard", ClassType.Bard, powerCost: 2, startLevel: 0, maxLevel: 6);
+            NWScript.IP_CONST_CLASS_BARD, "Bard", ClassType.Bard, powerCost: 1, startLevel: 0, maxLevel: 6);
 
     public static readonly CraftingCategory BlackguardBonusSpellsCostly =
         CreateBonusSpellCategory("blackguard_bonus_spells_costly", "Blackguard Bonus Spells",
-            NWScript.CLASS_TYPE_BLACKGUARD, "Blackguard", ClassType.Blackguard, powerCost: 2, startLevel: 1, maxLevel: 4);
+            NWScript.CLASS_TYPE_BLACKGUARD, "Blackguard", ClassType.Blackguard, powerCost: 1, startLevel: 1, maxLevel: 4);
 
     public static readonly CraftingCategory ClericBonusSpellsCostly =
         CreateBonusSpellCategory("cleric_bonus_spells_costly", "Cleric Bonus Spells",
-            NWScript.IP_CONST_CLASS_CLERIC, "Cleric", ClassType.Cleric, powerCost: 2, startLevel: 0, maxLevel: 9);
+            NWScript.IP_CONST_CLASS_CLERIC, "Cleric", ClassType.Cleric, powerCost: 1, startLevel: 0, maxLevel: 9);
 
     public static readonly CraftingCategory DruidBonusSpellsCostly =
         CreateBonusSpellCategory("druid_bonus_spells_costly", "Druid Bonus Spells",
-            NWScript.IP_CONST_CLASS_DRUID, "Druid", ClassType.Druid, powerCost: 2, startLevel: 0, maxLevel: 9);
+            NWScript.IP_CONST_CLASS_DRUID, "Druid", ClassType.Druid, powerCost: 1, startLevel: 0, maxLevel: 9);
 
     public static readonly CraftingCategory PaladinBonusSpellsCostly =
         CreateBonusSpellCategory("paladin_bonus_spells_costly", "Paladin Bonus Spells",
-            NWScript.IP_CONST_CLASS_PALADIN, "Paladin", ClassType.Paladin, powerCost: 2, startLevel: 1, maxLevel: 4);
+            NWScript.IP_CONST_CLASS_PALADIN, "Paladin", ClassType.Paladin, powerCost: 1, startLevel: 1, maxLevel: 4);
 
     public static readonly CraftingCategory RangerBonusSpellsCostly =
         CreateBonusSpellCategory("ranger_bonus_spells_costly", "Ranger Bonus Spells",
-            NWScript.IP_CONST_CLASS_RANGER, "Ranger", ClassType.Ranger, powerCost: 2, startLevel: 1, maxLevel: 4);
+            NWScript.IP_CONST_CLASS_RANGER, "Ranger", ClassType.Ranger, powerCost: 1, startLevel: 1, maxLevel: 4);
 
     public static readonly CraftingCategory SorcererBonusSpellsCostly =
         CreateBonusSpellCategory("sorcerer_bonus_spells_costly", "Sorcerer Bonus Spells",
-            NWScript.IP_CONST_CLASS_SORCERER, "Sorcerer", ClassType.Sorcerer, powerCost: 2, startLevel: 0, maxLevel: 9);
+            NWScript.IP_CONST_CLASS_SORCERER, "Sorcerer", ClassType.Sorcerer, powerCost: 1, startLevel: 0, maxLevel: 9);
 
     public static readonly CraftingCategory WizardBonusSpellsCostly =
         CreateBonusSpellCategory("wizard_bonus_spells_costly", "Wizard Bonus Spells",
-            NWScript.IP_CONST_CLASS_WIZARD, "Wizard", ClassType.Wizard, powerCost: 2, startLevel: 0, maxLevel: 9);
+            NWScript.IP_CONST_CLASS_WIZARD, "Wizard", ClassType.Wizard, powerCost: 1, startLevel: 0, maxLevel: 9);
 }

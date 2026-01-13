@@ -12,15 +12,12 @@ public class SkillBonusValidator : IValidationRule
         "Bluff",
         "Craft Armor",
         "Craft Weapon",
-        "Craft Trap",
         "Intimidate",
         "Lore",
         "Persuade",
         "Pick Pocket",
-        "Open Lock",
         "Ride",
-        "Tumble",
-        "Use Magic Device"
+        "Tumble"
     ];
 
     private ValidationResult ValidatePersonalSkill(SkillBonus skillBonus, IEnumerable<ItemProperty> itemProperties,
@@ -59,14 +56,16 @@ public class SkillBonusValidator : IValidationRule
 
         ValidationEnum result = anySkill ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
 
-        // Check if any of the existing skills are +5 since there may only be one
-        List<SkillBonus> addedFreebies = skillsInChangelist.Where(x => x.Bonus == 5).ToList();
-        List<SkillBonus> existingFreebies = skillsInItem.Where(x => x.Bonus == 5).ToList();
-        bool hasMaxSkill = skillBonus.Bonus == 5 && skillsInChangelist.Count > 0 || skillsInItem.Count > 0;
+        // Check if any of the existing skills are +5 since there may only be one free personal skill
+        bool freeSkillInChangelist = skillsInChangelist.Any(x => x.Bonus == 5);
+        bool freeSkillOnItem = skillsInItem.Any(x => x.Bonus == 5) && removedSkills.All(x => x.Bonus != 5 || skillsInItem.Count(s => s.Bonus == 5) > removedSkills.Count(r => r.Bonus == 5));
+        bool alreadyHasFreebieSkill = freeSkillInChangelist || freeSkillOnItem;
+        
+        // Only block if incoming is a +5 AND a freebie already exists
+        bool hasMaxFreeSkill = skillBonus.Bonus == 5 && alreadyHasFreebieSkill;
 
-
-        result = hasMaxSkill ? ValidationEnum.LimitReached : result;
-        string error = hasMaxSkill ? "Free personal skill bonus limit reached (The first +5 is factored into the point cost)." :
+        result = hasMaxFreeSkill ? ValidationEnum.LimitReached : result;
+        string error = hasMaxFreeSkill ? "Free personal skill bonus limit reached (The first +5 is factored into the point cost)." :
             anySkill ? $"You already have {skillBonus.Skill} on this item" : "";
 
 
