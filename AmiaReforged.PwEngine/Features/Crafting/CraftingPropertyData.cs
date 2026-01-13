@@ -76,7 +76,7 @@ public class CraftingPropertyData
                     {
                         PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(1)!,
-                        GuiLabel = "+1 AC",
+                        GuiLabel = "+1 Armor Class",
                         CraftingTier = CraftingTier.Minor,
                         GoldCost = GenericItemProperties.AcCost1
                     },
@@ -84,7 +84,7 @@ public class CraftingPropertyData
                     {
                         PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(2)!,
-                        GuiLabel = "+2 AC",
+                        GuiLabel = "+2 Armor Class",
                         CraftingTier = CraftingTier.Lesser,
                         GoldCost = GenericItemProperties.AcCost2
                     },
@@ -92,7 +92,7 @@ public class CraftingPropertyData
                     {
                         PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(3)!,
-                        GuiLabel = "+3 AC",
+                        GuiLabel = "+3 Armor Class",
                         CraftingTier = CraftingTier.Intermediate,
                         GoldCost = GenericItemProperties.AcCost3
                     },
@@ -100,7 +100,7 @@ public class CraftingPropertyData
                     {
                         PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(4)!,
-                        GuiLabel = "+4 AC",
+                        GuiLabel = "+4 Armor Class",
                         CraftingTier = CraftingTier.Greater,
                         GoldCost = GenericItemProperties.AcCost4
                     },
@@ -108,7 +108,7 @@ public class CraftingPropertyData
                     {
                         PowerCost = 2,
                         ItemProperty = NWScript.ItemPropertyACBonus(5)!,
-                        GuiLabel = "+5 AC",
+                        GuiLabel = "+5 Armor Class",
                         CraftingTier = CraftingTier.Flawless,
                         GoldCost = GenericItemProperties.AcCost5
                     }

@@ -111,6 +111,25 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                             Id = ApplyNameButtonId,
                             Width = 150f,
                             Height = 38f
+                        }
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiTextEdit(label: "Filter...", CategoryView.PropertyFilterText, 100, false)
+                        {
+                            Width = 100f,
+                            Height = 38f
+                        },
+                        new NuiSpacer { Width = 5f },
+                        new NuiButtonImage("isk_search")
+                        {
+                            Id = MythalCategoryView.SearchPropertiesButton,
+                            Width = 35f,
+                            Height = 35f,
+                            Tooltip = "Search/filter properties"
                         },
                         new NuiSpacer { Width = 30f },
                         new NuiLabel(label: "Max Powers:")
@@ -146,25 +165,21 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                 {
                     Children =
                     {
-                        new NuiGroup
-                        {
-                            Element = CategoryView.RootLayout(),
-                            Border = false,
-                            Width = 380f,
-                            Height = 420f
-                        },
+                        CategoryView.RootLayout(),
+                        new NuiSpacer { Width = 50f },
                         new NuiGroup
                         {
                             Element = ActivePropertiesView.RootLayout(),
                             Border = true,
-                            Width = 380f,
+                            Width = 430f,
                             Height = 420f
                         },
+                        new NuiSpacer { Width = 50f },
                         new NuiGroup
                         {
                             Element = ChangelistView.RootLayout(),
                             Border = true,
-                            Width = 380f,
+                            Width = 430f,
                             Height = 420f
                         }
                     }

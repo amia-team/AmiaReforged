@@ -28,6 +28,8 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
     /// </summary>
     public readonly Dictionary<string, NuiBind<string>> PowerCostTooltips = new();
 
+    public const string SearchPropertiesButton = "search_properties";
+
     /// <summary>
     ///     Initializes a new instance of the <see cref="MythalCategoryView" /> class.
     /// </summary>
@@ -48,107 +50,69 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
     /// </summary>
     public List<string> ButtonIds { get; } = new();
 
+    public NuiBind<int> PropertyCount { get; } = new("property_count");
+    public NuiBind<string> PropertyLabels { get; } = new("property_labels");
+    public NuiBind<string> PropertyCosts { get; } = new("property_costs");
+    public NuiBind<string> PropertyFilterText { get; } = new("property_filter_text");
+
     public override NuiLayout RootLayout()
     {
-        List<NuiElement> elements = new();
-
+        // Collect all properties from all categories
+        List<MythalCategoryModel.MythalProperty> allProperties = new();
         foreach (MythalCategoryModel.MythalCategory category in _categories)
         {
-            List<NuiElement> properties = new();
-            foreach (MythalCategoryModel.MythalProperty property in category.Properties)
-            {
-                NuiBind<bool> enableProperty = new(property.Id + "_enable");
-                NuiBind<Color> costColor = new(property.Id + "_color");
-                NuiBind<string> powerCostTooltip = new(property.Id + "_tooltip");
-                NuiBind<bool> emphasized = new(property.Id + "_emphasized");
-
-                Color foreground = property.Internal.CraftingTier switch
-                {
-                    CraftingTier.Minor => ColorConstants.White,
-                    CraftingTier.Lesser => ColorConstants.Lime,
-                    CraftingTier.Intermediate => ColorConstants.Teal,
-                    CraftingTier.Greater => ColorConstants.Magenta,
-                    CraftingTier.Perfect => ColorConstants.Orange,
-                    CraftingTier.Divine => ColorConstants.Yellow,
-                    _ => ColorConstants.White
-                };
-
-                string tooltip = property.Internal.CraftingTier.ToString();
-                NuiRow propertyRow = new()
-                {
-                    Children =
-                    {
-                        new NuiButton(property.Label)
-                        {
-                            ForegroundColor = foreground,
-                            Tooltip = tooltip,
-                            Id = property.Id,
-                            Width = 200f,
-                            Enabled = enableProperty
-                        },
-                        new NuiGroup
-                        {
-                            Element = new NuiLabel(property.Internal.PowerCost.ToString())
-                            {
-                                ForegroundColor = costColor,
-                                HorizontalAlign = NuiHAlign.Center,
-                                VerticalAlign = NuiVAlign.Middle
-                            },
-                            Width = 50f,
-                            Height = 50f,
-                            Encouraged = emphasized,
-                            Tooltip = powerCostTooltip
-                        }
-                    }
-                };
-
-                properties.Add(propertyRow);
-                EnabledPropertyBindings.Add(property.Id, enableProperty);
-                PowerCostColors.Add(property.Id, costColor);
-                PowerCostTooltips.Add(property.Id, powerCostTooltip);
-                ButtonIds.Add(property.Id);
-                EmphasizedProperties.Add(property.Id, emphasized);
-            }
-
-            NuiColumn categoryColumn = new()
-            {
-                Children =
-                {
-                    new NuiGroup
-                    {
-                        Element = new NuiLabel(category.Label),
-                        Width = 300f,
-                        Height = 30f
-                    },
-                    new NuiGroup
-                    {
-                        Element = new NuiColumn
-                        {
-                            Children = properties
-                        },
-                        Border = true,
-                        Height = 200f,
-                        Width = 300f
-                    }
-                }
-            };
-
-            elements.Add(categoryColumn);
+            allProperties.AddRange(category.Properties);
         }
 
-        NuiGroup categoryLayout = new()
+        // Sort alphabetically by label
+        allProperties.Sort((a, b) => string.Compare(a.Label, b.Label, StringComparison.Ordinal));
+
+        // Create list template cells for the NuiList - property name and cost columns
+        List<NuiListTemplateCell> cells = new();
+
+        foreach (MythalCategoryModel.MythalProperty property in allProperties)
         {
-            Element = new NuiColumn
+            NuiBind<bool> enableProperty = new(property.Id + "_enable");
+            NuiBind<Color> costColor = new(property.Id + "_color");
+            NuiBind<string> powerCostTooltip = new(property.Id + "_tooltip");
+            NuiBind<bool> emphasized = new(property.Id + "_emphasized");
+
+            string tierTooltip = property.Internal.CraftingTier.ToString();
+
+            // Store bindings for presenter to use
+            EnabledPropertyBindings.Add(property.Id, enableProperty);
+            PowerCostColors.Add(property.Id, costColor);
+            PowerCostTooltips.Add(property.Id, powerCostTooltip);
+            ButtonIds.Add(property.Id);
+            EmphasizedProperties.Add(property.Id, emphasized);
+        }
+
+        // Create two list template cells: one for property name (wider), one for power cost (narrow)
+        List<NuiListTemplateCell> templateCells =
+        [
+            new NuiListTemplateCell(new NuiLabel(PropertyLabels)
             {
-                Children = elements,
-                Width = 380f,
-                Height = 400f
-            },
-            Border = true,
-            Width = 380f,
-            Height = 400f
+                VerticalAlign = NuiVAlign.Middle,
+                HorizontalAlign = NuiHAlign.Left,
+                Tooltip = PropertyLabels
+            }) { Width = 180f },
+            new NuiListTemplateCell(new NuiLabel(PropertyCosts)
+            {
+                VerticalAlign = NuiVAlign.Middle,
+                HorizontalAlign = NuiHAlign.Left
+            }) { Width = 50f }
+        ];
+
+        NuiList propertyList = new(templateCells, PropertyCount)
+        {
+            RowHeight = 38f,
+            Width = 230f,
+            Height = 250f
         };
 
-        return categoryLayout;
+        return new NuiColumn
+        {
+            Children = { propertyList }
+        };
     }
 }

@@ -273,6 +273,14 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             if (ApplyName())
                 return;
 
+        if (eventData.ElementId == MythalCategoryView.SearchPropertiesButton)
+        {
+            // Get the filter text from the bind and apply it
+            string filterText = Token().GetBindValue(View.CategoryView.PropertyFilterText) ?? string.Empty;
+            FilterProperties(filterText);
+            return;
+        }
+
         if (eventData.ElementId == View.ActivePropertiesView.RemoveProperty)
         {
             int index = eventData.ArrayIndex;
@@ -620,6 +628,27 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     {
         Model.RefreshCategories();
 
+        // Collect all properties from all categories for the count
+        List<MythalCategoryModel.MythalProperty> allProperties = new();
+        foreach (MythalCategoryModel.MythalCategory category in MythalCategories)
+        {
+            allProperties.AddRange(category.Properties);
+        }
+
+        // Sort alphabetically by label (match the view's sort order)
+        allProperties.Sort((a, b) => string.Compare(a.Label, b.Label, StringComparison.Ordinal));
+
+        // Update the property count binding for the NuiList
+        SetIfChanged(View.CategoryView.PropertyCount, allProperties.Count);
+
+        // Build the property labels and costs lists for the NuiList
+        List<string> propertyLabels = allProperties.Select(p => p.Label).ToList();
+        SetListIfChanged(View.CategoryView.PropertyLabels, propertyLabels);
+
+        List<string> propertyCosts = allProperties.Select(p => p.Internal.PowerCost.ToString()).ToList();
+        SetListIfChanged(View.CategoryView.PropertyCosts, propertyCosts);
+
+        // Update individual property bindings
         foreach (MythalCategoryModel.MythalCategory category in MythalCategories)
         {
             foreach (MythalCategoryModel.MythalProperty property in category.Properties)
@@ -631,6 +660,41 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
                     property.CostLabelTooltip ?? string.Empty);
             }
         }
+    }
+
+    /// <summary>
+    /// Filters the properties list based on the provided search text.
+    /// </summary>
+    /// <param name="filterText">The text to filter properties by.</param>
+    private void FilterProperties(string filterText)
+    {
+        // Collect all properties from all categories
+        List<MythalCategoryModel.MythalProperty> allProperties = new();
+        foreach (MythalCategoryModel.MythalCategory category in MythalCategories)
+        {
+            allProperties.AddRange(category.Properties);
+        }
+
+        // Sort alphabetically by label
+        allProperties.Sort((a, b) => string.Compare(a.Label, b.Label, StringComparison.Ordinal));
+
+        // Filter properties based on search text (case-insensitive)
+        if (!string.IsNullOrWhiteSpace(filterText))
+        {
+            allProperties = allProperties.Where(p =>
+                p.Label.Contains(filterText, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        // Update the property count binding for the NuiList
+        SetIfChanged(View.CategoryView.PropertyCount, allProperties.Count);
+
+        // Build the property labels and costs lists for the NuiList
+        List<string> propertyLabels = allProperties.Select(p => p.Label).ToList();
+        SetListIfChanged(View.CategoryView.PropertyLabels, propertyLabels);
+
+        List<string> propertyCosts = allProperties.Select(p => p.Internal.PowerCost.ToString()).ToList();
+        SetListIfChanged(View.CategoryView.PropertyCosts, propertyCosts);
     }
 
     /// <summary>
@@ -739,6 +803,8 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
         _player.TryCreateNuiWindow(_window, out _token);
         _ledgerView.Presenter.Create();
+
+        Token().SetBindValue(View.CategoryView.PropertyFilterText, string.Empty);
 
         UpdateView();
 

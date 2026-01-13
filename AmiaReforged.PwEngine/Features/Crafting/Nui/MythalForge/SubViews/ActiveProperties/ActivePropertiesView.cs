@@ -54,8 +54,8 @@ public class ActivePropertiesView : IScryView
                     Scrollbars = NuiScrollbars.None
                 }
             },
-            Width = 380f,
-            Height = 400f
+            Width = 250f,
+            Height = 300f
         };
     }
 }

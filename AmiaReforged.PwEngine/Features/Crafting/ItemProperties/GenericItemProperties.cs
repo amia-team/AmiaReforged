@@ -302,7 +302,7 @@ public static class GenericItemProperties
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyACBonus(1)!,
-                GuiLabel = "+1 AC",
+                GuiLabel = "+1 Armor Class",
                 GoldCost = AcCost1,
                 CraftingTier = CraftingTier.Minor
             },
@@ -310,7 +310,7 @@ public static class GenericItemProperties
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyACBonus(2)!,
-                GuiLabel = "+2 AC",
+                GuiLabel = "+2 Armor Class",
                 GoldCost = AcCost2,
                 CraftingTier = CraftingTier.Lesser
             },
@@ -318,7 +318,7 @@ public static class GenericItemProperties
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyACBonus(3)!,
-                GuiLabel = "+3 AC",
+                GuiLabel = "+3 Armor Class",
                 GoldCost = AcCost3,
                 CraftingTier = CraftingTier.Intermediate
             },
@@ -326,7 +326,7 @@ public static class GenericItemProperties
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyACBonus(4)!,
-                GuiLabel = "+4 AC",
+                GuiLabel = "+4 Armor Class",
                 GoldCost = AcCost4,
                 CraftingTier = CraftingTier.Greater
             },
@@ -334,7 +334,7 @@ public static class GenericItemProperties
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertyACBonus(5)!,
-                GuiLabel = "+5 AC",
+                GuiLabel = "+5 Armor Class",
                 GoldCost = AcCost5,
                 CraftingTier = CraftingTier.Flawless
             }
