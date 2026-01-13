@@ -57,7 +57,8 @@ public class HealingCircle(ShifterDcService shifterDcService) : ISpell
         Effect healVfx = Effect.VisualEffect(VfxType.ImpHealingM);
         Effect damageVfx = Effect.VisualEffect(VfxType.ImpSunstrike);
 
-        eventData.TargetLocation.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfLosHoly20));
+        eventData.TargetLocation.ApplyEffect(EffectDuration.Instant,
+            Effect.VisualEffect(VfxType.FnfLosHoly10, fScale: RadiusSize.Large / RadiusSize.Medium));
 
         foreach (NwCreature targetCreature in eventData.TargetLocation.GetObjectsInShapeByType<NwCreature>(Shape.Sphere,
                      RadiusSize.Large, false))
@@ -73,7 +74,7 @@ public class HealingCircle(ShifterDcService shifterDcService) : ISpell
 
             if (eventData.Caster is NwCreature caster)
             {
-                if (!targetCreature.IsReactionTypeFriendly(caster))
+                if (!targetCreature.IsReactionTypeFriendly(caster) || caster != targetCreature)
                     continue;
             }
 

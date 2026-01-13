@@ -58,8 +58,10 @@ public class CircleOfDoom(ShifterDcService shifterDcService) : ISpell
         Effect healVfx = Effect.VisualEffect(VfxType.ImpHealingM);
         Effect damageVfx = Effect.VisualEffect(VfxType.ImpNegativeEnergy);
 
+        const float fnfVfxScale = RadiusSize.Large / RadiusSize.Medium + 0.4f;
+
         eventData.TargetLocation.ApplyEffect(EffectDuration.Instant,
-            Effect.VisualEffect(VfxType.FnfLosEvil10, fScale: RadiusSize.Large / RadiusSize.Medium));
+            Effect.VisualEffect(VfxType.FnfLosEvil10, fScale: fnfVfxScale));
 
         foreach (NwCreature targetCreature in eventData.TargetLocation.GetObjectsInShapeByType<NwCreature>(Shape.Sphere,
                      RadiusSize.Large, false))
@@ -88,7 +90,6 @@ public class CircleOfDoom(ShifterDcService shifterDcService) : ISpell
         await NwTask.Delay(SpellUtils.GetRandomDelay());
 
         int healAmount = CalculateDamage(casterLevel, dice, metaMagic);
-
 
         await caster.WaitForObjectContext();
         Effect healEffect = Effect.Heal(healAmount);
