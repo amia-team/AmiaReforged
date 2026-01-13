@@ -2429,7 +2429,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
                 tooltip,
                 product.OriginalName,
                 product.BaseItemType,
-                itemTypeName));
+                itemTypeName,
+                product.ItemData));
         }
 
         return views;
@@ -2465,7 +2466,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
                 tooltip,
                 canAdjustPrice,
                 product.BaseItemType,
-                itemTypeName));
+                itemTypeName,
+                product.ItemData));
         }
 
         return views;

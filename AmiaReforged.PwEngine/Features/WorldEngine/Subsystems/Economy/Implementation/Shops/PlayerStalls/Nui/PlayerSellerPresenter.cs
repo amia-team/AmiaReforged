@@ -62,6 +62,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
     private readonly List<PlayerStallMemberView> _members = new();
     private bool _isOwner;
     private bool _canManageMembers;
+    private NwItem? _examinedItem;
 
     [Inject] private PlayerStallEventManager EventManager { get; init; } = null!;
     [Inject] private IHarptosTimeService HarptosTimeService { get; init; } = null!;
@@ -221,6 +222,13 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         }
 
         _isClosing = true;
+
+        // Destroy any spawned examine item
+        if (_examinedItem is not null && _examinedItem.IsValid)
+        {
+            _examinedItem.Destroy();
+            _examinedItem = null;
+        }
 
         try
         {
@@ -1076,13 +1084,70 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         }
 
         PlayerStallSellerProductView? product = TryGetSelectedProduct();
-        if (product is null || string.IsNullOrWhiteSpace(product.Tooltip))
+        if (product is null || product.ItemData is not { Length: > 0 })
         {
             return;
         }
 
-        ProductDescriptionPresenter descriptionPresenter = new(_player, product.Tooltip, product.ItemTypeName);
-        descriptionPresenter.Create();
+        _ = ExamineSelectedProductAsync(product.ItemData);
+    }
+
+    private async Task ExamineSelectedProductAsync(byte[] itemData)
+    {
+        await NwTask.SwitchToMainThread();
+
+        // Find the ds_copy waypoint in core_atr area
+        NwArea? targetArea = NwModule.Instance.Areas.FirstOrDefault(a => a.ResRef == "core_atr");
+        if (targetArea is null)
+        {
+            NotifyError("Unable to examine item: staging area not found.");
+            return;
+        }
+
+        NwWaypoint? copyWaypoint = targetArea.FindObjectsOfTypeInArea<NwWaypoint>()
+            .FirstOrDefault(w => w.Tag == "ds_copy");
+
+        if (copyWaypoint is null)
+        {
+            NotifyError("Unable to examine item: staging waypoint not found.");
+            return;
+        }
+
+        // Destroy any previously spawned examine item
+        if (_examinedItem is not null && _examinedItem.IsValid)
+        {
+            _examinedItem.Destroy();
+            _examinedItem = null;
+        }
+
+        try
+        {
+            // Parse and spawn the item from serialized data
+            string jsonText = Encoding.UTF8.GetString(itemData);
+            Json json = Json.Parse(jsonText);
+            NwItem? item = json.ToNwObject<NwItem>(copyWaypoint.Location);
+
+            if (item is null || !item.IsValid)
+            {
+                NotifyError("Unable to examine item: failed to materialize item.");
+                return;
+            }
+
+            _examinedItem = item;
+
+            // Small delay before examining to ensure the item is fully created
+            await NwTask.Delay(TimeSpan.FromMilliseconds(50));
+
+            if (_player.IsValid && _examinedItem is not null && _examinedItem.IsValid)
+            {
+                _player.ForceExamine(_examinedItem);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to spawn item for examination in stall {StallId}.", _config.StallId);
+            NotifyError("Unable to examine item: an error occurred.");
+        }
     }
 
     private async Task HandleRetrieveSelectedProductAsync()

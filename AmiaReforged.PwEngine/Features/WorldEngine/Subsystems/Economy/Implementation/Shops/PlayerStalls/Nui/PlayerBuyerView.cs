@@ -44,6 +44,7 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
     public readonly NuiBind<bool> PreviewNoDescriptionVisible = new("player_stall_preview_no_description_visible");
     public readonly NuiBind<string> PreviewItemCost = new("player_stall_preview_item_cost");
     public readonly NuiBind<bool> PreviewBuyEnabled = new("player_stall_preview_buy_enabled");
+    public readonly NuiBind<bool> PreviewExamineEnabled = new("player_stall_preview_examine_enabled");
 
     // Quantity input bindings
     public readonly NuiBind<bool> QuantityRowVisible = new("player_stall_quantity_row_visible");
@@ -53,6 +54,7 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
 
     public NuiButton SelectButton = null!;
     public NuiButton BuyFromPreviewButton = null!;
+    public NuiButton ExamineItemButton = null!;
     public NuiButton LeaveButton = null!;
 
     public PlayerBuyerView(NwPlayer player, PlayerStallBuyerWindowConfig config)
@@ -203,6 +205,14 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
                                 Height = 35f,
                                 Enabled = PreviewBuyEnabled
                             }.Assign(out BuyFromPreviewButton),
+                            new NuiSpacer { Height = 4f },
+                            new NuiButton("Examine Item")
+                            {
+                                Id = "player_stall_examine_item",
+                                Width = 260f,
+                                Height = 30f,
+                                Enabled = PreviewExamineEnabled
+                            }.Assign(out ExamineItemButton),
                             new NuiSpacer { Height = 8f }
                         ]
                     }

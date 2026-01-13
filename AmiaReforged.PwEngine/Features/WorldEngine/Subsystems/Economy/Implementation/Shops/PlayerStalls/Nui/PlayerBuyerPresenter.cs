@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
@@ -24,6 +25,8 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 	private int _selectedProductQuantityAvailable;
 	private int _selectedProductUnitPrice;
 	private int _currentGoldOnHand;
+	private byte[]? _selectedProductItemData;
+	private NwItem? _examinedItem;
 
 	// Filter state
 	private string _searchTerm = string.Empty;
@@ -117,6 +120,12 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 			return;
 		}
 
+		if (eventData.ElementId == View.ExamineItemButton.Id)
+		{
+			_ = ExamineSelectedProductAsync();
+			return;
+		}
+
 		if (eventData.ElementId == View.LeaveButton.Id)
 		{
 			RaiseCloseEvent();
@@ -132,6 +141,13 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 		}
 
 		_isClosing = true;
+
+		// Destroy any spawned examine item
+		if (_examinedItem is not null && _examinedItem.IsValid)
+		{
+			_examinedItem.Destroy();
+			_examinedItem = null;
+		}
 
 		try
 		{
@@ -184,6 +200,8 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 		Token().SetBindValue(View.PreviewVisible, false);
 		Token().SetBindValue(View.PreviewPlaceholderVisible, true);
 		Token().SetBindValue(View.QuantityRowVisible, false);
+		Token().SetBindValue(View.PreviewExamineEnabled, false);
+		_selectedProductItemData = null;
 
 		// Initialize filter controls and set up watches
 		InitializeFilterOptions(snapshot.Products);
@@ -343,6 +361,10 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 
 		// Enable buy button only if purchasable
 		Token().SetBindValue(View.PreviewBuyEnabled, row.CanPurchase);
+
+		// Store item data and enable examine button only if item data is available
+		_selectedProductItemData = product.ItemData;
+		Token().SetBindValue(View.PreviewExamineEnabled, product.ItemData is { Length: > 0 });
 	}
 
 	private static string FormatDescriptionWithItemType(string? description, string? itemTypeName)
@@ -366,6 +388,70 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 		}
 
 		return $"[{itemTypeName}]\n\n{description}";
+	}
+
+	private async Task ExamineSelectedProductAsync()
+	{
+		if (_selectedProductItemData is not { Length: > 0 })
+		{
+			NotifyError("No item data available to examine.");
+			return;
+		}
+
+		await NwTask.SwitchToMainThread();
+
+		// Find the ds_copy waypoint in core_atr area
+		NwArea? targetArea = NwModule.Instance.Areas.FirstOrDefault(a => a.ResRef == "core_atr");
+		if (targetArea is null)
+		{
+			NotifyError("Unable to examine item: staging area not found.");
+			return;
+		}
+
+		NwWaypoint? copyWaypoint = targetArea.FindObjectsOfTypeInArea<NwWaypoint>()
+			.FirstOrDefault(w => w.Tag == "ds_copy");
+
+		if (copyWaypoint is null)
+		{
+			NotifyError("Unable to examine item: staging waypoint not found.");
+			return;
+		}
+
+		// Destroy any previously spawned examine item
+		if (_examinedItem is not null && _examinedItem.IsValid)
+		{
+			_examinedItem.Destroy();
+			_examinedItem = null;
+		}
+
+		try
+		{
+			// Parse and spawn the item from serialized data
+			string jsonText = Encoding.UTF8.GetString(_selectedProductItemData);
+			Json json = Json.Parse(jsonText);
+			NwItem? item = json.ToNwObject<NwItem>(copyWaypoint.Location);
+
+			if (item is null || !item.IsValid)
+			{
+				NotifyError("Unable to examine item: failed to materialize item.");
+				return;
+			}
+
+			_examinedItem = item;
+
+			// Small delay before examining to ensure the item is fully created
+			await NwTask.Delay(TimeSpan.FromMilliseconds(50));
+
+			if (_player.IsValid && _examinedItem is not null && _examinedItem.IsValid)
+			{
+				_player.ForceExamine(_examinedItem);
+			}
+		}
+		catch (Exception ex)
+		{
+			Log.Error(ex, "Failed to spawn item for examination in stall {StallId}.", _config.StallId);
+			NotifyError("Unable to examine item: an error occurred.");
+		}
 	}
 
 	private void SetupFilterWatches()
