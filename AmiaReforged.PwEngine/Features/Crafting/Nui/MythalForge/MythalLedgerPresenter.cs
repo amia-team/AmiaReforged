@@ -137,7 +137,7 @@ public class MythalLedgerPresenter : ScryPresenter<MythalLedgerView>
         _window = new NuiWindow(View.RootLayout(), title: "Mythal Ledger")
         {
             Id = "mythal_ledger",
-            Geometry = new NuiRect(1600, 500, 200, 250),
+            Geometry = new NuiRect(1500, 300, 200, 250),
             Closable = false,
             Resizable = true
         };

@@ -130,7 +130,7 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                         new NuiLabel(label: "Remaining Powers:")
                         {
                             VerticalAlign = NuiVAlign.Middle,
-                            Width = 120f,
+                            Width = 125f,
                             Height = 38f
                         },
                         new NuiSpacer { Width = 10f },
