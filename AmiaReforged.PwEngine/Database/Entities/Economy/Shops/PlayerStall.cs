@@ -44,6 +44,13 @@ public class PlayerStall
     public string? OwnerDisplayName { get; set; }
 
     /// <summary>
+    /// Custom display name for the stall placeable shown in-game.
+    /// When null, defaults to "{OwnerDisplayName}'s Stall".
+    /// </summary>
+    [MaxLength(255)]
+    public string? CustomDisplayName { get; set; }
+
+    /// <summary>
     /// Account used for rent withdrawal and automatic deposit of proceeds when enabled.
     /// </summary>
     public Guid? CoinHouseAccountId { get; set; }

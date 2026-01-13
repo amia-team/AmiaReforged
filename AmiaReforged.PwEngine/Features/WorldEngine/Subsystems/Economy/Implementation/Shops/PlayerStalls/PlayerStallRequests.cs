@@ -79,6 +79,16 @@ public sealed record WithdrawStallEarningsRequest(
     int? RequestedAmount);
 
 /// <summary>
+/// Request to rename a player stall with a custom display name.
+/// </summary>
+public sealed record RenameStallRequest(
+    long StallId,
+    PersonaId Requestor,
+    string? CustomDisplayName,
+    string? AreaResRef = null,
+    string? PlaceableTag = null);
+
+/// <summary>
 /// Service boundary for player stall operations.
 /// </summary>
 public interface IPlayerStallService
@@ -105,6 +115,9 @@ public interface IPlayerStallService
         CancellationToken cancellationToken = default);
 
     Task<PlayerStallServiceResult> RemoveMemberAsync(RemoveStallMemberRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<PlayerStallServiceResult> RenameStallAsync(RenameStallRequest request,
         CancellationToken cancellationToken = default);
 }
 

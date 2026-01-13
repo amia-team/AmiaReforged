@@ -715,7 +715,7 @@ public sealed class PlayerStallInitializer
             }
 
             bool isClaimed = !string.IsNullOrWhiteSpace(stall.OwnerDisplayName);
-            string newName = isClaimed ? $"{stall.OwnerDisplayName}'s Stall" : "Unclaimed Stall";
+            string newName = ResolveStallDisplayName(stall.CustomDisplayName, stall.OwnerDisplayName);
 
             if (placeable.IsValid)
             {
@@ -748,6 +748,21 @@ public sealed class PlayerStallInitializer
         {
             Log.Error(ex, "Failed to update stall placeable appearance for stall {StallId}.", stallId);
         }
+    }
+
+    /// <summary>
+    /// Resolves the display name for a stall, preferring custom name over default.
+    /// </summary>
+    private static string ResolveStallDisplayName(string? customDisplayName, string? ownerDisplayName)
+    {
+        if (!string.IsNullOrWhiteSpace(customDisplayName))
+        {
+            return customDisplayName;
+        }
+
+        return !string.IsNullOrWhiteSpace(ownerDisplayName)
+            ? $"{ownerDisplayName}'s Stall"
+            : "Unclaimed Stall";
     }
 
     private sealed record StallRegistration(long? StallId, string? DbTag, string? AreaResRef, StallRegistrationState State)

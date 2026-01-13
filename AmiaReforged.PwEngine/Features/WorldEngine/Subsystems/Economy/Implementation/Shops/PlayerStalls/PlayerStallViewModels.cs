@@ -175,7 +175,9 @@ public sealed record PlayerStallSellerSnapshot(
     IReadOnlyList<PlayerStallLedgerEntryView>? LedgerEntries = null,
     IReadOnlyList<PlayerStallMemberView>? Members = null,
     bool IsOwner = false,
-    bool CanManageMembers = false);
+    bool CanManageMembers = false,
+    string? CustomDisplayName = null,
+    bool RenameEnabled = false);
 
 /// <summary>
 /// Window wiring details used when presenting the seller interface.
@@ -354,6 +356,15 @@ public sealed record PlayerStallHoldEarningsRequest(
     long StallId,
     PersonaId SellerPersona,
     bool HoldEarningsInStall);
+
+/// <summary>
+/// Request raised by the seller UI to rename the stall.
+/// </summary>
+public sealed record PlayerStallRenameRequest(
+    Guid SessionId,
+    long StallId,
+    PersonaId SellerPersona,
+    string? CustomDisplayName);
 
 /// <summary>
 /// Request raised by the seller UI to withdraw stall escrow.

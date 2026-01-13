@@ -28,5 +28,6 @@ public enum PlayerStallError
     InvalidMember,
     MemberAlreadyExists,
     MemberNotFound,
-    CannotRemoveOwner
+    CannotRemoveOwner,
+    NameTooLong
 }

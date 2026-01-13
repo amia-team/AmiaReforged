@@ -39,6 +39,10 @@ public sealed class PlayerStallConfiguration : IEntityTypeConfiguration<PlayerSt
             .HasColumnName("owner_display_name")
             .HasMaxLength(255);
 
+        builder.Property(s => s.CustomDisplayName)
+            .HasColumnName("custom_display_name")
+            .HasMaxLength(255);
+
         builder.Property(s => s.CoinHouseAccountId)
             .HasColumnName("coinhouse_account_id");
 

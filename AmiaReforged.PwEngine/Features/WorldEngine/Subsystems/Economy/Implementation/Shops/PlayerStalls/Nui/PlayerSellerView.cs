@@ -108,6 +108,12 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
     public readonly NuiBind<bool> CloseStallVisible = new("player_stall_seller_close_stall_visible");
     public readonly NuiBind<bool> CloseStallEnabled = new("player_stall_seller_close_stall_enabled");
 
+    // Stall naming bindings
+    public readonly NuiBind<string> StallNameInput = new("player_stall_seller_stall_name_input");
+    public readonly NuiBind<bool> StallNameInputEnabled = new("player_stall_seller_stall_name_input_enabled");
+    public readonly NuiBind<bool> StallNameSaveEnabled = new("player_stall_seller_stall_name_save_enabled");
+    public readonly NuiBind<bool> StallNameRowVisible = new("player_stall_seller_stall_name_row_visible");
+
     public NuiButton ManageButton = null!;
     public NuiButton UpdatePriceButton = null!;
     public NuiButton RentToggleButton = null!;
@@ -122,6 +128,7 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
     public NuiButton RemoveMemberButton = null!;
     public NuiButton TargetMemberButton = null!;
     public NuiButton CloseStallButton = null!;
+    public NuiButton SaveStallNameButton = null!;
 
     public const string HoldEarningsToggleId = "player_stall_hold_earnings_toggle";
 
@@ -721,6 +728,40 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                             Enabled = RentToggleEnabled,
                             Tooltip = RentToggleTooltip
                         }.Assign(out RentToggleButton)
+                    ]
+                },
+                new NuiSpacer { Height = 12f },
+                // Stall name input row (owner only)
+                new NuiRow
+                {
+                    Visible = StallNameRowVisible,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel("Stall Name:")
+                        {
+                            Height = 30f,
+                            Width = 90f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiTextEdit("Enter stall name...", StallNameInput, 255, false)
+                        {
+                            Width = 280f,
+                            Height = 30f,
+                            Enabled = StallNameInputEnabled,
+                            Tooltip = "Set a custom name for your stall (max 255 characters). Leave blank to use default."
+                        },
+                        new NuiSpacer { Width = 8f },
+                        new NuiButton("Rename")
+                        {
+                            Id = "player_stall_save_stall_name",
+                            Height = 30f,
+                            Width = 90f,
+                            Enabled = StallNameSaveEnabled,
+                            Tooltip = "Save the custom stall name"
+                        }.Assign(out SaveStallNameButton)
                     ]
                 },
                 new NuiSpacer { Height = 12f },

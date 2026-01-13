@@ -63,6 +63,8 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
     private bool _isOwner;
     private bool _canManageMembers;
     private NwItem? _examinedItem;
+    private string _customDisplayName = string.Empty;
+    private bool _renameEnabled;
 
     [Inject] private PlayerStallEventManager EventManager { get; init; } = null!;
     [Inject] private IHarptosTimeService HarptosTimeService { get; init; } = null!;
@@ -205,6 +207,12 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         if (View.CloseStallButton != null && eventData.ElementId == View.CloseStallButton.Id)
         {
             ShowCloseStallConfirmation();
+            return;
+        }
+
+        if (View.SaveStallNameButton != null && eventData.ElementId == View.SaveStallNameButton.Id)
+        {
+            _ = HandleSaveStallNameAsync();
             return;
         }
 
@@ -392,7 +400,12 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
             _members.AddRange(snapshot.Members);
         }
 
+        // Apply stall name data
+        _customDisplayName = snapshot.CustomDisplayName ?? string.Empty;
+        _renameEnabled = snapshot.RenameEnabled;
+
         ApplyMemberBindings();
+        ApplyStallNameBindings();
 
         string? targetInventoryId = _selectedInventoryItemId;
         if (targetInventoryId is not null &&
@@ -1579,6 +1592,70 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         Token().SetBindValues(View.MemberTooltips, memberTooltips);
         Token().SetBindValues(View.MemberRemoveEnabled, removeEnabled);
         Token().SetBindValue(View.MemberCount, memberNames.Count);
+    }
+
+    private void ApplyStallNameBindings()
+    {
+        // Show rename row only for owners
+        Token().SetBindValue(View.StallNameRowVisible, _isOwner);
+        Token().SetBindValue(View.StallNameInputEnabled, _renameEnabled && !_isProcessing);
+        Token().SetBindValue(View.StallNameSaveEnabled, _renameEnabled && !_isProcessing);
+        Token().SetBindValue(View.StallNameInput, _customDisplayName);
+    }
+
+    private async Task HandleSaveStallNameAsync()
+    {
+        if (_isClosing || _isProcessing)
+        {
+            return;
+        }
+
+        if (_sessionId is not Guid sessionId)
+        {
+            return;
+        }
+
+        if (!_renameEnabled)
+        {
+            await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
+                "Only the stall owner may rename the stall.",
+                ColorConstants.Orange)).ConfigureAwait(false);
+            return;
+        }
+
+        await SetProcessingStateAsync(true).ConfigureAwait(false);
+
+        try
+        {
+            string? newName = Token().GetBindValue(View.StallNameInput);
+
+            PlayerStallRenameRequest request = new(
+                sessionId,
+                _config.StallId,
+                _config.SellerPersona,
+                newName);
+
+            PlayerStallSellerOperationResult result = await EventManager
+                .RequestRenameStallAsync(request)
+                .ConfigureAwait(false);
+
+            if (!result.Success)
+            {
+                await HandleOperationResultAsync(result).ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error while renaming stall {StallId}.", _config.StallId);
+
+            await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
+                "We couldn't rename the stall.",
+                ColorConstants.Red)).ConfigureAwait(false);
+        }
+        finally
+        {
+            await SetProcessingStateAsync(false).ConfigureAwait(false);
+        }
     }
 
     private static string BuildMemberTooltip(PlayerStallMemberView member)

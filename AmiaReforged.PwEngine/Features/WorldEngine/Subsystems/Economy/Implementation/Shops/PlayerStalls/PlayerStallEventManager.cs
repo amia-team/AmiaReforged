@@ -927,6 +927,123 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
     }
 
     /// <summary>
+    /// Handles seller requests to rename the stall.
+    /// </summary>
+    public async Task<PlayerStallSellerOperationResult> RequestRenameStallAsync(
+        PlayerStallRenameRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        SellerSubscription? subscription;
+        lock (_syncRoot)
+        {
+            _sellerSessions.TryGetValue(request.SessionId, out subscription);
+        }
+
+        if (subscription is null || subscription.StallId != request.StallId ||
+            subscription.Persona != request.SellerPersona)
+        {
+            return PlayerStallSellerOperationResult.Fail(
+                "Your stall session is no longer valid.",
+                ColorConstants.Orange);
+        }
+
+        if (!TryResolvePersonaGuid(request.SellerPersona, out Guid personaGuid))
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "We couldn't verify your persona for that action.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        if (!_characters.TryGetPlayer(personaGuid, out NwPlayer? player) || player is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "You must be logged in as that persona to manage the stall.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        PlayerStall? stall = _shops.GetShopWithMembers(request.StallId);
+        if (stall is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "This stall is no longer available.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        RenameStallRequest serviceRequest = new(
+            request.StallId,
+            request.SellerPersona,
+            request.CustomDisplayName,
+            stall.AreaResRef,
+            stall.Tag);
+
+        PlayerStallServiceResult serviceResult = await _stallService
+            .RenameStallAsync(serviceRequest)
+            .ConfigureAwait(false);
+
+        if (!serviceResult.Success)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                serviceResult.ErrorMessage ?? "Failed to rename the stall.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        PlayerStall? updatedStall = _shops.GetShopWithMembers(request.StallId);
+        if (updatedStall is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "This stall is no longer available.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        List<StallProduct> products = _shops.ProductsForShop(request.StallId) ?? new List<StallProduct>();
+
+        PlayerStallSellerSnapshot snapshot = await BuildSellerSnapshotAsync(
+            updatedStall,
+            products,
+            request.SellerPersona,
+            null).ConfigureAwait(false);
+
+        string displayedName = string.IsNullOrWhiteSpace(request.CustomDisplayName)
+            ? $"{stall.OwnerDisplayName}'s Stall"
+            : request.CustomDisplayName;
+
+        string message = string.IsNullOrWhiteSpace(request.CustomDisplayName)
+            ? "Stall name has been reset to default."
+            : $"Stall has been renamed to '{displayedName}'.";
+
+        PlayerStallSellerOperationResult result = PlayerStallSellerOperationResult.Ok(
+            snapshot,
+            message,
+            ColorConstants.Lime);
+
+        await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, result).ConfigureAwait(false);
+
+        await PublishSellerSnapshotsAsync(
+            request.StallId,
+            updatedStall,
+            products,
+            request.SessionId).ConfigureAwait(false);
+
+        return result;
+    }
+
+    /// <summary>
     /// Handles seller requests to withdraw stall earnings.
     /// </summary>
     public async Task<PlayerStallSellerOperationResult> RequestWithdrawEarningsAsync(PlayerStallWithdrawRequest request)
@@ -2763,6 +2880,9 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         List<PlayerStallMemberView> memberViews = BuildMemberViews(stall, personaId, isOwner);
         bool canManageMembers = isOwner;
 
+        // Rename is owner-only
+        bool renameEnabled = isOwner;
+
         return new PlayerStallSellerSnapshot(
             summary,
             context,
@@ -2792,7 +2912,9 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             ledgerEntries,
             memberViews,
             isOwner,
-            canManageMembers);
+            canManageMembers,
+            stall.CustomDisplayName,
+            renameEnabled);
     }
 
     private static List<PlayerStallMemberView> BuildMemberViews(PlayerStall stall, string currentPersonaId, bool isOwner)

@@ -85,8 +85,8 @@ public sealed class PlayerStallService : IPlayerStallService
                 "Failed to persist stall ownership changes."));
         }
 
-        // Rename placeable to show owner's name
-        string stallName = $"{request.OwnerDisplayName}'s Stall";
+        // Rename placeable to show owner's name (custom name is null on fresh claim)
+        string stallName = ResolveStallDisplayName(stall.CustomDisplayName, request.OwnerDisplayName);
         UpdateStallPlaceableAppearance(request.AreaResRef, request.PlaceableTag, stall.Tag, stallName, true);
 
         IReadOnlyDictionary<string, object> data = new Dictionary<string, object>
@@ -679,5 +679,86 @@ public sealed class PlayerStallService : IPlayerStallService
         };
 
         return Task.FromResult(PlayerStallServiceResult.Ok(data));
+    }
+
+    public Task<PlayerStallServiceResult> RenameStallAsync(RenameStallRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        PlayerStall? stall = _shops.GetShopById(request.StallId);
+        if (stall is null)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(
+                PlayerStallError.StallNotFound,
+                $"Stall {request.StallId} was not found."));
+        }
+
+        // Owner-only check
+        if (!string.Equals(stall.OwnerPersonaId, request.Requestor.ToString(), StringComparison.Ordinal))
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(
+                PlayerStallError.NotOwner,
+                "Only the stall owner may rename the stall."));
+        }
+
+        // Validate name length (255 char limit)
+        string? customName = request.CustomDisplayName?.Trim();
+        if (customName is not null && customName.Length > 255)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(
+                PlayerStallError.NameTooLong,
+                "Stall name cannot exceed 255 characters."));
+        }
+
+        // Allow empty string to clear custom name (revert to default)
+        if (string.IsNullOrWhiteSpace(customName))
+        {
+            customName = null;
+        }
+
+        bool updated = _shops.UpdateShop(request.StallId, s =>
+        {
+            s.CustomDisplayName = customName;
+            s.UpdatedUtc = DateTime.UtcNow;
+        });
+
+        if (!updated)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(
+                PlayerStallError.PersistenceFailure,
+                "Failed to update stall name."));
+        }
+
+        // Update the placeable's in-game name if location info provided
+        if (!string.IsNullOrWhiteSpace(request.AreaResRef) && !string.IsNullOrWhiteSpace(request.PlaceableTag))
+        {
+            string displayName = ResolveStallDisplayName(customName, stall.OwnerDisplayName);
+            UpdateStallPlaceableAppearance(request.AreaResRef, request.PlaceableTag, stall.Tag, displayName, true);
+        }
+
+        IReadOnlyDictionary<string, object> data = new Dictionary<string, object>
+        {
+            ["stallId"] = request.StallId,
+            ["customDisplayName"] = customName ?? string.Empty
+        };
+
+        return Task.FromResult(PlayerStallServiceResult.Ok(data));
+    }
+
+    /// <summary>
+    /// Resolves the display name for a stall, preferring custom name over default.
+    /// </summary>
+    private static string ResolveStallDisplayName(string? customDisplayName, string? ownerDisplayName)
+    {
+        if (!string.IsNullOrWhiteSpace(customDisplayName))
+        {
+            return customDisplayName;
+        }
+
+        return !string.IsNullOrWhiteSpace(ownerDisplayName)
+            ? $"{ownerDisplayName}'s Stall"
+            : "Unclaimed Stall";
     }
 }
