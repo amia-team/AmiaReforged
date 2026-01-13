@@ -16,6 +16,7 @@ using Anvil.API;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops.PlayerStalls;
 
@@ -387,12 +388,16 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             stall.CurrentTenureGrossSales += totalPrice;
             stall.CurrentTenureNetEarnings += totalPrice;
 
+            // Resolve both the display name (potentially disguised) and original name (for DM auditing)
+            string buyerDisplayName = await ResolveBuyerDisplayNameAsync(buyerCreature, player).ConfigureAwait(false);
+            string buyerOriginalName = await ResolveBuyerOriginalNameAsync(buyerCreature, player).ConfigureAwait(false);
+
             StallTransaction transaction = new()
             {
                 StallId = stall.Id,
                 StallProductId = product.Id,
                 BuyerPersonaId = request.BuyerPersona.ToString(),
-                BuyerDisplayName = await ResolveBuyerDisplayNameAsync(buyerCreature, player).ConfigureAwait(false),
+                BuyerDisplayName = buyerDisplayName,
                 Quantity = quantity,
                 GrossAmount = totalPrice,
                 EscrowAmount = escrowPortion,
@@ -410,6 +415,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
                 product,
                 transaction,
                 request.BuyerPersona,
+                buyerOriginalName,
                 quantity,
                 totalPrice,
                 escrowPortion,
@@ -2282,6 +2288,39 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
     {
         await NwTask.SwitchToMainThread();
 
+        if (creature is { IsValid: true })
+        {
+            // First check for a NWNX name override (disguise/alias)
+            // This respects roleplay disguises set via Thousand Faces or Temporary Name Changer
+            string nameOverride = RenamePlugin.GetPCNameOverride(creature);
+            if (!string.IsNullOrWhiteSpace(nameOverride))
+            {
+                return nameOverride;
+            }
+
+            // Fall back to the character's original name
+            if (!string.IsNullOrWhiteSpace(creature.Name))
+            {
+                return creature.Name;
+            }
+        }
+
+        if (player.IsValid && !string.IsNullOrWhiteSpace(player.PlayerName))
+        {
+            return player.PlayerName;
+        }
+
+        return "Unknown buyer";
+    }
+
+    /// <summary>
+    /// Gets the buyer's original (true) character name, ignoring any name overrides.
+    /// Used for DM auditing purposes - this name is stored in metadata but not shown to players.
+    /// </summary>
+    private static async Task<string> ResolveBuyerOriginalNameAsync(NwCreature creature, NwPlayer player)
+    {
+        await NwTask.SwitchToMainThread();
+
         if (creature is { IsValid: true } && !string.IsNullOrWhiteSpace(creature.Name))
         {
             return creature.Name;
@@ -2849,6 +2888,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         StallProduct product,
         StallTransaction transaction,
         PersonaId buyerPersona,
+        string buyerOriginalName,
         int quantity,
         int totalPrice,
         int escrowAmount,
@@ -2890,6 +2930,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             buyerName,
             Math.Max(0, totalPrice));
 
+        // Include buyerOriginalName in metadata for DM auditing purposes
+        // This allows DMs to identify the true character behind a disguise if needed
         var metadata = new
         {
             transactionId = transaction.Id,
@@ -2898,6 +2940,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             quantity = Math.Max(1, quantity),
             buyerPersona = buyerPersona.ToString(),
             buyerName,
+            buyerOriginalName,
             grossAmount = Math.Max(0, totalPrice),
             escrowAmount = Math.Max(0, escrowAmount),
             depositAmount = Math.Max(0, depositAmount)
