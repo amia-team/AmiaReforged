@@ -353,9 +353,12 @@ public sealed class SpellLearningPresenter : ScryPresenter<SpellLearningView>
             if (nwClass == null)
                 return false;
 
-            int? availableLevel = spell.GetSpellLevelByClass(nwClass);
+            // GetSpellLevelForClass returns 255 if the spell is not available for this class
+#pragma warning disable CS0618 // Type or member is obsolete
+            byte availableLevel = spell.GetSpellLevelForClass(nwClass);
+#pragma warning restore CS0618 // Type or member is obsolete
 
-            if (availableLevel == spellLevel)
+            if (availableLevel != 255 && availableLevel == spellLevel)
                 return true;
         }
         catch (Exception ex)

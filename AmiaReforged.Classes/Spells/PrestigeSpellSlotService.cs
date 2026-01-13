@@ -1,4 +1,4 @@
-﻿﻿using Anvil.API;
+﻿using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core;
@@ -312,7 +312,94 @@ public class PrestigeSpellSlotService
             Log.Error($"STEP 5: ✗✗✗ FAILED - Nothing equipped in skin slot!");
         }
 
+        // STEP 6: Schedule a delayed verification check to ensure hide stays equipped
+        Log.Info($"STEP 6: Scheduling delayed verification check...");
+        _ = NwTask.Run(async () => await VerifyHideEquipped(creature));
+
         Log.Info($"=== FINISHED: ApplyPrestigeSpellSlotSkin for {creature.Name} ===");
+    }
+
+    /// <summary>
+    /// Delayed verification to ensure hide is properly equipped and not in inventory.
+    /// Runs after a short delay to catch edge cases where the hide doesn't stay equipped.
+    /// </summary>
+    private async Task VerifyHideEquipped(NwCreature creature)
+    {
+        // Wait 2 seconds to let everything settle
+        await NwTask.Delay(TimeSpan.FromSeconds(2));
+
+        // Check if creature is still valid
+        if (!creature.IsValid)
+        {
+            Log.Info($"VERIFICATION: Creature no longer valid, skipping verification");
+            return;
+        }
+
+        Log.Info($"=== VERIFICATION CHECK: Starting for {creature.Name} ===");
+
+        // Check what's in the skin slot
+        NwItem? equippedHide = creature.GetItemInSlot(InventorySlot.CreatureSkin);
+
+        // Check for any PCHIDE items in inventory
+        List<NwItem> hidesInInventory = creature.Inventory.Items
+            .Where(item => item.ResRef == "ds_pchide")
+            .ToList();
+
+        if (hidesInInventory.Count > 0)
+        {
+            Log.Warn($"VERIFICATION: Found {hidesInInventory.Count} PCHIDE item(s) in inventory - this should not happen!");
+
+            // If there's a hide properly equipped, destroy the inventory duplicates
+            if (equippedHide != null && equippedHide.ResRef == "ds_pchide")
+            {
+                Log.Info($"VERIFICATION: Hide is properly equipped, removing inventory duplicates");
+                foreach (NwItem hide in hidesInInventory)
+                {
+                    Log.Info($"VERIFICATION: Destroying duplicate hide in inventory");
+                    hide.Destroy();
+                }
+                Log.Info($"VERIFICATION: ✓ Cleaned up {hidesInInventory.Count} duplicate(s)");
+            }
+            else
+            {
+                // No hide equipped, but there are hides in inventory - equip one and destroy the rest
+                Log.Warn($"VERIFICATION: No hide equipped but found hide(s) in inventory - attempting to equip");
+
+                NwItem firstHide = hidesInInventory[0];
+                creature.RunEquip(firstHide, InventorySlot.CreatureSkin);
+                await NwTask.NextFrame();
+
+                // Destroy any remaining duplicates
+                for (int i = 1; i < hidesInInventory.Count; i++)
+                {
+                    hidesInInventory[i].Destroy();
+                }
+
+                // Verify it got equipped
+                NwItem? nowEquipped = creature.GetItemInSlot(InventorySlot.CreatureSkin);
+                if (nowEquipped != null && nowEquipped == firstHide)
+                {
+                    Log.Info($"VERIFICATION: ✓ Successfully equipped hide from inventory");
+                }
+                else
+                {
+                    Log.Error($"VERIFICATION: ✗ Failed to equip hide from inventory - this may require manual intervention");
+                }
+            }
+        }
+        else if (equippedHide == null || equippedHide.ResRef != "ds_pchide")
+        {
+            // No hide in inventory and none equipped - character needs one, re-apply
+            Log.Warn($"VERIFICATION: No PCHIDE found equipped or in inventory - re-applying");
+            await ApplyPrestigeSpellSlotSkin(creature);
+        }
+        else
+        {
+            // Everything is fine
+            Log.Info($"VERIFICATION: ✓ Hide is properly equipped and no duplicates in inventory");
+        }
+
+        Log.Info($"=== VERIFICATION CHECK: Finished for {creature.Name} ===");
     }
 
     private void AddPrestigeSpellSlotProperties(NwItem item, NwCreature creature, ClassType baseClass, int actualLevel, int effectiveLevel)
