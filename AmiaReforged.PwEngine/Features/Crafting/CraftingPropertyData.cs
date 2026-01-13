@@ -48,6 +48,7 @@ public class CraftingPropertyData
         // Caster weapons use the 1-cost bonus spell slots
         properties.Add(BonusSpellSlotProperties.AssassinBonusSpells);
         properties.Add(BonusSpellSlotProperties.BardBonusSpells);
+        properties.Add(BonusSpellSlotProperties.BlackguardBonusSpells);
         properties.Add(BonusSpellSlotProperties.ClericBonusSpells);
         properties.Add(BonusSpellSlotProperties.DruidBonusSpells);
         properties.Add(BonusSpellSlotProperties.PaladinBonusSpells);
@@ -142,7 +143,20 @@ public class CraftingPropertyData
             WondrousDmProperties.ImmunityMiscellaneous,
             WondrousDmProperties.BonusFeats,
             WondrousDmProperties.SpellResistanceWondrous,
-            WondrousDmProperties.WeightReduction
+            WondrousDmProperties.WeightReduction,
+
+            // Bonus spell slots
+            BonusSpellSlotProperties.AssassinBonusSpellsCostly,
+            BonusSpellSlotProperties.BardBonusSpellsCostly,
+            BonusSpellSlotProperties.BlackguardBonusSpellsCostly,
+            BonusSpellSlotProperties.ClericBonusSpellsCostly,
+            BonusSpellSlotProperties.DruidBonusSpellsCostly,
+            BonusSpellSlotProperties.PaladinBonusSpellsCostly,
+            BonusSpellSlotProperties.RangerBonusSpellsCostly,
+            BonusSpellSlotProperties.SorcererBonusSpellsCostly,
+            BonusSpellSlotProperties.WizardBonusSpellsCostly,
+
+            SpellResistanceProperties.SpellResistances
 
         ];
 
@@ -227,16 +241,17 @@ public class CraftingPropertyData
     }
 
     /// <summary>
-    /// Adds equipped item properties with 2-cost bonus spell slots.
+    /// Adds equipped item properties with bonus spell slots.
     /// Used for armor, accessories, and other non-caster-weapon items.
     /// </summary>
     private static void AddEquippedItemProperties(List<CraftingCategory> properties)
     {
         AddBaseEquippedItemProperties(properties);
 
-        // Non-caster items use the 2-cost bonus spell slots
+        // Non-caster items use the bonus spell slots
         properties.Add(BonusSpellSlotProperties.AssassinBonusSpellsCostly);
         properties.Add(BonusSpellSlotProperties.BardBonusSpellsCostly);
+        properties.Add(BonusSpellSlotProperties.BlackguardBonusSpellsCostly);
         properties.Add(BonusSpellSlotProperties.ClericBonusSpellsCostly);
         properties.Add(BonusSpellSlotProperties.DruidBonusSpellsCostly);
         properties.Add(BonusSpellSlotProperties.PaladinBonusSpellsCostly);
@@ -291,6 +306,17 @@ public class CraftingPropertyData
         properties.Add(MeleeOnHitProperties.OnHits);
 
         properties.Add(VisualEffectConstants.VisualEffects);
+
+        // Bonus spell slots (1-point cost) for all melee/thrown weapons
+        properties.Add(BonusSpellSlotProperties.AssassinBonusSpells);
+        properties.Add(BonusSpellSlotProperties.BardBonusSpells);
+        properties.Add(BonusSpellSlotProperties.BlackguardBonusSpells);
+        properties.Add(BonusSpellSlotProperties.ClericBonusSpells);
+        properties.Add(BonusSpellSlotProperties.DruidBonusSpells);
+        properties.Add(BonusSpellSlotProperties.PaladinBonusSpells);
+        properties.Add(BonusSpellSlotProperties.RangerBonusSpells);
+        properties.Add(BonusSpellSlotProperties.SorcererBonusSpells);
+        properties.Add(BonusSpellSlotProperties.WizardBonusSpells);
     }
 
     private void SetupThrownWeapons()
