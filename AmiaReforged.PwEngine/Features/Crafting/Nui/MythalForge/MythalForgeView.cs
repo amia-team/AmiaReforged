@@ -1,4 +1,4 @@
-﻿﻿﻿using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.ActiveProperties;
+﻿using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.ActiveProperties;
 using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
@@ -94,8 +94,9 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                     Width = 0f,
                     Height = 0f,
                     Children = new List<NuiElement>(),
-                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 1600f, 900f))]
+                    DrawList = [new NuiDrawListImage("ui_forge", new NuiRect(-5f, -25f, 1220f, 813f))]
                 },
+                new NuiSpacer { Height = 170f },
                 new NuiRow
                 {
                     Children =
@@ -103,44 +104,41 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                         new NuiTextEdit(label: "Edit Name", ItemName, 100, false)
                         {
                             Width = 200f,
-                            Height = 60f
+                            Height = 38f
                         },
-                        new NuiButton(label: "Change Name")
+                        new NuiButtonImage("ui_btn_rename")
                         {
                             Id = ApplyNameButtonId,
-                            Height = 60f
+                            Width = 150f,
+                            Height = 38f
                         },
-                        new NuiSpacer(),
-                        new NuiRow
+                        new NuiSpacer { Width = 30f },
+                        new NuiLabel(label: "Max Powers:")
                         {
-                            Children =
-                            {
-                                new NuiLabel(label: "Max Powers:")
-                                {
-                                    ForegroundColor = new Color(50, 40, 30)
-                                },
-                                new NuiGroup
-                                {
-                                    Element = new NuiLabel(MaxPowers),
-                                    Border = true,
-                                    Width = 50f,
-                                    Height = 50f,
-                                    Margin = 2f
-                                }
-                            }
+                            VerticalAlign = NuiVAlign.Middle,
+                            Width = 85f,
+                            Height = 38f
                         },
-
+                        new NuiSpacer { Width = 10f },
+                        new NuiLabel(MaxPowers)
+                        {
+                            VerticalAlign = NuiVAlign.Middle,
+                            Width = 50f,
+                            Height = 38f
+                        },
+                        new NuiSpacer { Width = 230f },
                         new NuiLabel(label: "Remaining Powers:")
                         {
-                            ForegroundColor = new Color(50, 40, 30)
+                            VerticalAlign = NuiVAlign.Middle,
+                            Width = 120f,
+                            Height = 38f
                         },
-                        new NuiGroup
+                        new NuiSpacer { Width = 10f },
+                        new NuiLabel(RemainingPowers)
                         {
-                            Element = new NuiLabel(RemainingPowers),
-                            Border = true,
+                            VerticalAlign = NuiVAlign.Middle,
                             Width = 50f,
-                            Height = 50f,
-                            Margin = 2f
+                            Height = 38f
                         }
                     }
                 },
@@ -175,70 +173,63 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                 {
                     Children =
                     {
-                        new NuiButton(label: "Cancel")
+                        new NuiButtonImage("ui_btn_cancelf")
                         {
                             Id = Cancel,
-                            Width = 200f,
-                            Height = 60f
+                            Width = 150f,
+                            Height = 38f
                         },
-                        new NuiButton(label: "Apply")
+                        new NuiSpacer { Width = 20f },
+                        new NuiButtonImage("ui_btn_forge")
                         {
                             Id = ApplyChanges,
-                            Width = 200f,
-                            Height = 60f,
+                            Width = 150f,
+                            Height = 38f,
+                            Tooltip = "Forge your item!",
                             Enabled = ApplyEnabled
                         },
-                        new NuiButton(label: "To Caster Weapon")
+                        new NuiSpacer { Width = 20f },
+                        new NuiButtonImage("ui_btn_castweap")
                         {
                             Id = ToCasterWeapon,
-                            Width = 200f,
-                            Height = 60f,
+                            Width = 150f,
+                            Height = 38f,
                             Enabled = ToCasterWeaponEnabled,
                             Tooltip = "Convert to a caster weapon. Incompatible properties will be removed."
                         },
-                        new NuiGroup
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(label: "Difficulty:")
                         {
-                            Element = new NuiRow
-                            {
-                                Children =
-                                {
-                                    new NuiLabel(label: "Difficulty:")
-                                    {
-                                        ForegroundColor = new Color(50, 40, 30)
-                                    },
-                                    new NuiGroup
-                                    {
-                                        Element = new NuiLabel(DifficultyClass),
-                                        Tooltip = SkillTooltip,
-                                        Encouraged = EncourageDifficulty,
-                                        ForegroundColor = SkillColor
-                                    }
-                                }
-                            }
+                            Width = 70f,
+                            Height = 38f,
+                            VerticalAlign = NuiVAlign.Middle
                         },
-                        new NuiGroup
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(DifficultyClass)
                         {
-                            Element = new NuiRow
-                            {
-                                Children =
-                                {
-                                    new NuiLabel(label: "Gold Cost:")
-                                    {
-                                        ForegroundColor = new Color(50, 40, 30)
-                                    },
-                                    new NuiGroup
-                                    {
-                                        Element = new NuiLabel(GoldCost)
-                                        {
-                                            ForegroundColor = GoldCostColor,
-                                            HorizontalAlign = NuiHAlign.Center,
-                                            VerticalAlign = NuiVAlign.Middle,
-                                            Tooltip = GoldCostTooltip,
-                                            Encouraged = EncourageGold
-                                        }
-                                    }
-                                }
-                            }
+                            Tooltip = SkillTooltip,
+                            Width = 20f,
+                            Height = 38f,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = SkillColor
+                        },
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(label: "Gold Cost:")
+                        {
+                            Width = 75f,
+                            Height = 38f,
+                            VerticalAlign = NuiVAlign.Middle
+                        },
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(GoldCost)
+                        {
+                            ForegroundColor = GoldCostColor,
+                            Height = 38f,
+                            Width = 100f,
+                            HorizontalAlign = NuiHAlign.Center,
+                            VerticalAlign = NuiVAlign.Middle,
+                            Tooltip = GoldCostTooltip,
+                            Encouraged = EncourageGold
                         }
                     }
                 }

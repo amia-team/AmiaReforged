@@ -105,7 +105,7 @@ public sealed class MythalLedgerView : ScryView<MythalLedgerPresenter>
     public override NuiLayout RootLayout() =>
         new NuiColumn
         {
-            Width = 200f, Height = 250f,
+            Width = 200f, Height = 275f,
             Children =
             {
                 new NuiRow
@@ -113,16 +113,16 @@ public sealed class MythalLedgerView : ScryView<MythalLedgerPresenter>
                     Width = 0f,
                     Height = 0f,
                     Children = new List<NuiElement>(),
-                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(-20f, -20f, 250f, 300f))]
+                    DrawList = [new NuiDrawListImage("ui_forge", new NuiRect(-20f, -270f, 250f, 590f))]
                 },
-                new NuiLabel(label: "Mythals Available:") { Height = 15f, Width = 180f, HorizontalAlign = NuiHAlign.Center , ForegroundColor = new Color(30, 20, 12)},
+                new NuiLabel(label: "Mythals Available:") { Height = 40f, Width = 160f, HorizontalAlign = NuiHAlign.Center},
                 new NuiRow
                 {
                     Children =
                     {
                         new NuiSpacer { Width = 20f },
-                        new NuiLabel(label: "Minor:") { ForegroundColor = new Color(30, 20, 12), Width = 100f },
-                        new NuiLabel(MinorMythalCount) { ForegroundColor = new Color(30, 20, 12), Width = 40f }
+                        new NuiLabel(label: "Minor:"){Width = 100},
+                        new NuiLabel(MinorMythalCount){Width = 20}
                     }
                 },
                 new NuiRow
@@ -130,8 +130,8 @@ public sealed class MythalLedgerView : ScryView<MythalLedgerPresenter>
                     Children =
                     {
                         new NuiSpacer { Width = 20f },
-                        new NuiLabel(label: "Lesser:") { ForegroundColor = new Color(30, 20, 12), Width = 100f },
-                        new NuiLabel(LesserMythalCount) { ForegroundColor = new Color(30, 20, 12), Width = 40f }
+                        new NuiLabel(label: "Lesser:"){Width = 100},
+                        new NuiLabel(LesserMythalCount){Width = 20}
                     }
                 },
                 new NuiRow
@@ -139,8 +139,8 @@ public sealed class MythalLedgerView : ScryView<MythalLedgerPresenter>
                     Children =
                     {
                         new NuiSpacer { Width = 20f },
-                        new NuiLabel(label: "Intermediate:") { ForegroundColor = new Color(30, 20, 12), Width = 100f },
-                        new NuiLabel(IntermediateMythalCount) { ForegroundColor = new Color(30, 20, 12), Width = 40f }
+                        new NuiLabel(label: "Intermediate:"){Width = 100},
+                        new NuiLabel(IntermediateMythalCount){Width = 20}
                     }
                 },
                 new NuiRow
@@ -148,8 +148,8 @@ public sealed class MythalLedgerView : ScryView<MythalLedgerPresenter>
                     Children =
                     {
                         new NuiSpacer { Width = 20f },
-                        new NuiLabel(label: "Greater:") { ForegroundColor = new Color(30, 20, 12), Width = 100f },
-                        new NuiLabel(GreaterMythalCount) { ForegroundColor = new Color(30, 20, 12), Width = 40f }
+                        new NuiLabel(label: "Greater:"){Width = 100},
+                        new NuiLabel(GreaterMythalCount){Width = 20}
                     }
                 },
                 new NuiRow
@@ -157,8 +157,8 @@ public sealed class MythalLedgerView : ScryView<MythalLedgerPresenter>
                     Children =
                     {
                         new NuiSpacer { Width = 20f },
-                        new NuiLabel(label: "Flawless:") { ForegroundColor = new Color(30, 20, 12), Width = 100f },
-                        new NuiLabel(FlawlessMythalCount) { ForegroundColor = new Color(30, 20, 12), Width = 40f }
+                        new NuiLabel(label: "Flawless:"){Width = 100},
+                        new NuiLabel(FlawlessMythalCount){Width = 20}
                     }
                 },
                 new NuiRow
@@ -166,8 +166,8 @@ public sealed class MythalLedgerView : ScryView<MythalLedgerPresenter>
                     Children =
                     {
                         new NuiSpacer { Width = 20f },
-                        new NuiLabel(label: "Perfect:") { ForegroundColor = new Color(30, 20, 12), Width = 100f },
-                        new NuiLabel(PerfectMythalCount) { ForegroundColor = new Color(30, 20, 12), Width = 40f }
+                        new NuiLabel(label: "Perfect:"){Width = 100},
+                        new NuiLabel(PerfectMythalCount){Width = 20}
                     }
                 },
                 new NuiRow
@@ -175,8 +175,8 @@ public sealed class MythalLedgerView : ScryView<MythalLedgerPresenter>
                     Children =
                     {
                         new NuiSpacer { Width = 20f },
-                        new NuiLabel(label: "Divine:") { ForegroundColor = new Color(30, 20, 12), Width = 100f },
-                        new NuiLabel(DivineMythalCount) { ForegroundColor = new Color(30, 20, 12), Width = 40f }
+                        new NuiLabel(label: "Divine:"){Width = 100},
+                        new NuiLabel(DivineMythalCount){Width = 20}
                     }
                 }
             }

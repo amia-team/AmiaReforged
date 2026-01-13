@@ -30,15 +30,15 @@ public sealed class OverBudgetWarningView : ScryView<OverBudgetWarningPresenter>
                     Height = 0f,
                     DrawList = new()
                     {
-                        new NuiDrawListImage("ui_bg", new NuiRect(-20f, -20f, 520f, 290f))
+                        new NuiDrawListImage("ui_forge", new NuiRect(-20f, -270f, 520f, 560f))
                     }
                 },
                 new NuiSpacer { Height = 5f },
-                new NuiLabel("===WARNING: Item Over Budget!!!===") { Width = 450f, Height = 22f, HorizontalAlign = NuiHAlign.Center, ForegroundColor = new Color(100, 32, 32) },
+                new NuiLabel("===WARNING: Item Over Budget!!!===") { Width = 450f, Height = 22f, HorizontalAlign = NuiHAlign.Center, ForegroundColor = new Color(200, 32, 32)},
                 new NuiLabel("This item is stronger than what a Mythal Forge can create!")
-                    { Width = 450f, Height = 20f, HorizontalAlign = NuiHAlign.Center, ForegroundColor = new Color(30, 20, 12) },
+                    { Width = 450f, Height = 20f, HorizontalAlign = NuiHAlign.Center},
                 new NuiLabel("Take care not to weaken the item when editing it!")
-                    { Width = 450f, Height = 18f, HorizontalAlign = NuiHAlign.Center, ForegroundColor = new Color(30, 20, 12) },
+                    { Width = 450f, Height = 18f, HorizontalAlign = NuiHAlign.Center},
                 new NuiSpacer { Height = 15f },
                 new NuiRow
                 {
