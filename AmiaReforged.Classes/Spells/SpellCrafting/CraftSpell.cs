@@ -1,7 +1,7 @@
 ﻿using Anvil.API;
 using Anvil.API.Events;
 
-namespace AmiaReforged.Classes.Spells;
+namespace AmiaReforged.Classes.Spells.SpellCrafting;
 
 public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
 {
@@ -121,23 +121,58 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         }
     }
 
-    private void ChargeForSpellCraft(NwPlayer player, NwCreature caster, int spellCraftCost)
+    private static void ChargeForSpellCraft(NwPlayer player, NwCreature caster, int spellCraftCost)
     {
         caster.Gold -= (uint)spellCraftCost;
         player.SendServerMessage($"Lost {spellCraftCost} GP.");
     }
 
-    private void AddClassRestrictions(NwItem item)
+    /// <summary>
+    /// If the spell's cast by divine or arcane caster, restrict to divine or arcane casters respectively
+    /// </summary>
+    private void AddClassRestrictions(NwCreature caster, NwItem item)
     {
-        foreach (NwClass c in NwRuleset.Classes.Where(c => c.IsPlayerClass))
+        NwClass casterClass = caster.Classes[eventData.ClassIndex].Class;
+
+        switch (casterClass.IsArcaneCaster)
         {
-            byte spellLevel = spell.MasterSpell?.GetSpellLevelForClass(c) ?? spell.GetSpellLevelForClass(c);
+            case true:
+            {
+                NwClass[] arcaneCasterClasses = NwRuleset.Classes.Where(c => c.IsArcaneCaster).ToArray();
 
-            if (spellLevel != 255)
-                item.AddItemProperty(ItemProperty.LimitUseByClass(c), EffectDuration.Permanent);
+                foreach (NwClass c in arcaneCasterClasses)
+                {
+                    if (_casterClassExceptions.Contains(c)) continue;
+                    item.AddItemProperty(ItemProperty.LimitUseByClass(c), EffectDuration.Permanent);
+                }
+
+                break;
+            }
+            case false:
+            {
+                NwClass[] divineCasterClasses =
+                    NwRuleset.Classes.Where(c => c is { IsSpellCaster: true, IsArcaneCaster: false }).ToArray();
+
+                foreach (NwClass c in divineCasterClasses)
+                {
+                    if (_casterClassExceptions.Contains(c)) continue;
+                    item.AddItemProperty(ItemProperty.LimitUseByClass(c), EffectDuration.Permanent);
+                }
+
+                break;
+            }
         }
-
     }
+
+    private const int WarlockClassId = 57;
+    /// <summary>
+    /// Gets classes that aren't technically divine or arcane casters, like warlock and dragon disciple
+    /// </summary>
+    private readonly NwClass?[] _casterClassExceptions =
+    [
+        NwClass.FromClassType(ClassType.DragonDisciple),
+        NwClass.FromClassId(WarlockClassId)
+    ];
 
     private async Task ScribeScroll(NwCreature caster, int spellPropId)
     {
@@ -162,7 +197,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         scribedScroll.Name = _spellName;
         scribedScroll.Description = _spellDescription;
 
-        AddClassRestrictions(scribedScroll);
+        AddClassRestrictions(caster, scribedScroll);
 
         scribedScroll.Stolen = true;
 
@@ -171,7 +206,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         caster.AcquireItem(scribedScroll);
     }
 
-    private int CalculateScribeCost(int spellPropCl, int spellInnateLevel) =>
+    private static int CalculateScribeCost(int spellPropCl, int spellInnateLevel) =>
         spellInnateLevel == 0
             ? spellPropCl * 1 * 25
             : spellPropCl * spellInnateLevel * 25;
@@ -197,7 +232,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         craftedWand.Name = "Wand of "+_spellName;
         craftedWand.Description = _spellDescription;
 
-        AddClassRestrictions(craftedWand);
+        AddClassRestrictions(caster, craftedWand);
 
         craftedWand.Stolen = true;
 
@@ -302,7 +337,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         return spellPropIdAndCl;
     }
 
-    private SpellCraftResult ValidateScribeScroll(NwCreature caster, int spellLevel, int spellPropCl, out int cost)
+    private static SpellCraftResult ValidateScribeScroll(NwCreature caster, int spellLevel, int spellPropCl, out int cost)
     {
         cost = CalculateScribeCost(spellPropCl, spellLevel);
         if (!caster.KnowsFeat(Feat.ScribeScroll!)) return SpellCraftResult.NoFeat;

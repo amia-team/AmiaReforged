@@ -2,8 +2,6 @@
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
-using NWN.Core;
-using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Spells;
 
@@ -30,19 +28,9 @@ public class SpellCastingService
         }
 
         NwModule.Instance.OnSpellCast += PreventRestrictedCasting;
-        NwModule.Instance.OnSpellCast += CraftSpell;
     }
 
-    private void CraftSpell(OnSpellCast eventData)
-    {
-        if (eventData.TargetObject is not NwItem targetItem) return;
-        if (eventData.Spell is not { } spell) return;
-
-        CraftSpell craftSpell = new(eventData, spell, targetItem);
-        craftSpell.DoCraftSpell();
-    }
-
-    private void PreventRestrictedCasting(OnSpellCast obj)
+    private static void PreventRestrictedCasting(OnSpellCast obj)
     {
         if (!obj.Caster.IsPlayerControlled(out NwPlayer? player)) return;
         if (obj.Spell is null) return;
