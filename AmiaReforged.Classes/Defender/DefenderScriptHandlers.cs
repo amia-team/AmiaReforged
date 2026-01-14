@@ -28,7 +28,7 @@ public class DefenderScriptHandlers
     ///     Default object housing information about the call to a given script. See <see cref="CallInfo" /> for
     ///     more information or peruse the Anvil API documents online for more information
     /// </param>
-    [ScriptHandler(scriptName: "todo_replace_me")]
+    [ScriptHandler(scriptName: "def_duty")]
     public void OnDefendersDuty(CallInfo info)
     {
         // Because this ability directly intervenes with the standard game loop's typical processes,
