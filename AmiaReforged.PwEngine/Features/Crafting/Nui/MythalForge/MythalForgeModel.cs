@@ -260,7 +260,16 @@ public class MythalForgeModel
 
             foreach (ChangeListModel.ChangelistEntry entry in ChangeListModel.ChangeList())
             {
-                if (entry.State == ChangeListModel.ChangeState.Added) remaining -= entry.Property.PowerCost;
+                if (entry.State == ChangeListModel.ChangeState.Added)
+                {
+                    // Subtract power cost for properties being added
+                    remaining -= entry.Property.PowerCost;
+                }
+                else if (entry.State == ChangeListModel.ChangeState.Removed)
+                {
+                    // Add back power cost for properties being removed
+                    remaining += entry.Property.PowerCost;
+                }
             }
 
             return Math.Clamp(remaining, -16, MaxBudget);

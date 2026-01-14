@@ -11,6 +11,7 @@ public class ActivePropertiesView : IScryView
 
     public NuiBind<string> PropertyNames { get; } = new(key: "ip_names");
     public NuiBind<string> PropertyPowerCosts { get; } = new(key: "ip_power_costs");
+    public NuiBind<Color> PropertyColors { get; } = new(key: "ip_colors");
     public NuiBind<bool> Removable { get; } = new(key: "ip_remove");
     public NuiBind<int> PropertyCount { get; } = new(key: "ip_count");
 
@@ -18,13 +19,17 @@ public class ActivePropertiesView : IScryView
     {
         List<NuiListTemplateCell> cells =
         [
-            new(new NuiLabel(PropertyNames)),
+            new(new NuiLabel(PropertyNames)
+            {
+                ForegroundColor = PropertyColors
+            }),
             new(new NuiGroup
             {
                 Element = new NuiLabel(PropertyPowerCosts)
                 {
                     HorizontalAlign = NuiHAlign.Center,
-                    VerticalAlign = NuiVAlign.Middle
+                    VerticalAlign = NuiVAlign.Middle,
+                    ForegroundColor = PropertyColors
                 },
                 Aspect = 1f
             })

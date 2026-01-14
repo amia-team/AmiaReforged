@@ -184,15 +184,7 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                         {
                             Element = ActivePropertiesView.RootLayout(),
                             Border = true,
-                            Width = 430f,
-                            Height = 420f
-                        },
-                        new NuiSpacer { Width = 50f },
-                        new NuiGroup
-                        {
-                            Element = ChangelistView.RootLayout(),
-                            Border = true,
-                            Width = 430f,
+                            Width = 900f,
                             Height = 420f
                         }
                     }

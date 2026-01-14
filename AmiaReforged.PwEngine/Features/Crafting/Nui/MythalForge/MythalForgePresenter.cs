@@ -115,6 +115,12 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     private List<MythalCategoryModel.MythalProperty> _filteredProperties = new();
 
     /// <summary>
+    /// Stores the consolidated property list (current + changes) for the remove button to reference.
+    /// Format: (label, powerCost, color, removable, isChange, changeIndex, visiblePropertyIndex)
+    /// </summary>
+    private List<(string label, int powerCost, Color color, bool removable, bool isChange, int? changeIndex, int? visiblePropertyIndex)> _consolidatedProperties = new();
+
+    /// <summary>
     /// Represents the presenter for the Mythal Forge crafting feature, responsible for managing
     /// the interaction between the view and model components for crafting operations.
     /// </summary>
@@ -292,26 +298,82 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         if (eventData.ElementId == View.ActivePropertiesView.RemoveProperty)
         {
             int index = eventData.ArrayIndex;
-            MythalCategoryModel.MythalProperty p = Model.ActivePropertiesModel.GetVisibleProperties()[index];
-
-            Model.RemoveActiveProperty(p);
-            Model.RefreshCategories();
-        }
-
-        if (eventData.ElementId == ChangelistView.RemoveFromChangeList)
-        {
-            int index = eventData.ArrayIndex;
-
-            ChangeListModel.ChangelistEntry e = Model.ChangeListModel.ChangeList()[index];
-
-            switch (e.State)
+            if (index >= 0 && index < _consolidatedProperties.Count)
             {
-                case ChangeListModel.ChangeState.Added:
-                    Model.UndoAddition(e.Property);
-                    break;
-                case ChangeListModel.ChangeState.Removed:
-                    Model.UndoRemoval(e.Property);
-                    break;
+                var item = _consolidatedProperties[index];
+
+                if (item.isChange)
+                {
+                    // This is a change entry - undo it
+                    if (item.changeIndex.HasValue)
+                    {
+                        List<ChangeListModel.ChangelistEntry> changes = Model.ChangeListModel.ChangeList();
+                        if (item.changeIndex.Value < changes.Count)
+                        {
+                            ChangeListModel.ChangelistEntry entry = changes[item.changeIndex.Value];
+
+                            switch (entry.State)
+                            {
+                                case ChangeListModel.ChangeState.Added:
+                                    Model.UndoAddition(entry.Property);
+                                    break;
+                                case ChangeListModel.ChangeState.Removed:
+                                    // Check if we have enough power points to restore this property
+                                    int powerCostToRestore = entry.Property.PowerCost;
+                                    int currentRemaining = Model.RemainingPowers;
+
+                                    // When we undo the removal, we'll lose the power points it was giving us back
+                                    // So we need to check if we'd still be within budget
+                                    int remainingAfterUndo = currentRemaining - powerCostToRestore;
+
+                                    if (remainingAfterUndo < 0)
+                                    {
+                                        _player.SendServerMessage(
+                                            $"Not enough power points remaining to restore this property. Need {powerCostToRestore} points, but only {currentRemaining} available.",
+                                            ColorConstants.Red);
+                                        return;
+                                    }
+
+                                    // Only remove from changelist - don't call UndoRemoval which would add it back to visible properties
+                                    // (The property was never hidden, so we don't want to reveal it again)
+                                    Model.ChangeListModel.UndoRemoval(entry.Property);
+                                    _player.SendServerMessage($"Restored: {entry.Label}", ColorConstants.Cyan);
+                                    break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // This is an existing property - mark it for removal (don't hide it)
+                    if (item.visiblePropertyIndex.HasValue)
+                    {
+                        List<MythalCategoryModel.MythalProperty> visibleProperties = Model.VisibleProperties.ToList();
+                        if (item.visiblePropertyIndex.Value < visibleProperties.Count)
+                        {
+                            MythalCategoryModel.MythalProperty prop = visibleProperties[item.visiblePropertyIndex.Value];
+
+                            // Check if this property is already in the changelist as removed
+                            List<ChangeListModel.ChangelistEntry> changes = Model.ChangeListModel.ChangeList();
+                            bool alreadyMarkedForRemoval = changes.Any(e =>
+                                e.State == ChangeListModel.ChangeState.Removed &&
+                                ItemPropertyHelper.PropertiesAreSame(e.Property, prop.Internal.ItemProperty));
+
+                            if (alreadyMarkedForRemoval)
+                            {
+                                _player.SendServerMessage("This property is already marked for removal.", ColorConstants.Orange);
+                            }
+                            else
+                            {
+                                // Only add to changelist, don't hide the property
+                                Model.ChangeListModel.AddRemovedProperty(prop.Internal);
+                                _player.SendServerMessage($"Marked for removal: {prop.Label}", ColorConstants.Orange);
+                            }
+                        }
+                    }
+                }
+
+                Model.RefreshCategories();
             }
         }
 
@@ -532,7 +594,6 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         UpdateNameField();
         UpdateItemPowerBindings();
         UpdateItemPropertyBindings();
-        UpdateChangeListBindings();
         UpdateGoldCost();
         UpdateDifficultyClass();
         UpdateCategoryBindings();
@@ -879,51 +940,76 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     }
 
     /// <summary>
-    /// Updates the item property bindings in the view based on the currently visible properties.
+    /// Updates the item property bindings in the view based on the currently visible properties and changes.
+    /// Now shows a consolidated list with color-coded states: White = existing, Green = adding, Red = removing.
     /// </summary>
     /// <remarks>
     /// This method retrieves the list of visible properties from the model and updates the view's bindings
-    /// with the corresponding property count, names, power costs, and whether the properties are removable.
+    /// with the corresponding property count, names, power costs, colors, and whether the properties are removable.
     /// </remarks>
     private void UpdateItemPropertyBindings()
     {
         List<MythalCategoryModel.MythalProperty> visibleProperties = Model.VisibleProperties.ToList();
+        List<ChangeListModel.ChangelistEntry> changes = Model.ChangeListModel.ChangeList();
 
-        SetIfChanged(View.ActivePropertiesView.PropertyCount, visibleProperties.Count);
+        // Create a combined list with all properties and their states
+        _consolidatedProperties = new();
 
-        List<string> labels = visibleProperties.Select(m => m.Label).ToList();
+        // Add current properties (white or red if being removed)
+        for (int visIndex = 0; visIndex < visibleProperties.Count; visIndex++)
+        {
+            var prop = visibleProperties[visIndex];
+            // Check if this property is marked for removal in the changelist
+            int? changeIndex = null;
+            bool isBeingRemoved = false;
+            for (int i = 0; i < changes.Count; i++)
+            {
+                if (changes[i].State == ChangeListModel.ChangeState.Removed &&
+                    ItemPropertyHelper.PropertiesAreSame(changes[i].Property, prop.Internal.ItemProperty))
+                {
+                    changeIndex = i;
+                    isBeingRemoved = true;
+                    break;
+                }
+            }
+
+            if (isBeingRemoved)
+            {
+                // Show as red (being removed) - can undo the removal
+                _consolidatedProperties.Add((prop.Label, prop.Internal.PowerCost, ColorConstants.Red, true, true, changeIndex, visIndex));
+            }
+            else
+            {
+                // Show as white (existing) - can remove if removable
+                _consolidatedProperties.Add((prop.Label, prop.Internal.PowerCost, ColorConstants.White, prop.Internal.Removable, false, null, visIndex));
+            }
+        }
+
+        // Add properties being added (green) - can undo the addition
+        for (int i = 0; i < changes.Count; i++)
+        {
+            if (changes[i].State == ChangeListModel.ChangeState.Added)
+            {
+                _consolidatedProperties.Add((changes[i].Label, changes[i].Property.PowerCost, ColorConstants.Lime, true, true, i, null));
+            }
+        }
+
+        // Update bindings
+        SetIfChanged(View.ActivePropertiesView.PropertyCount, _consolidatedProperties.Count);
+
+        List<string> labels = _consolidatedProperties.Select(x => x.label).ToList();
         SetListIfChanged(View.ActivePropertiesView.PropertyNames, labels);
 
-        List<string> powerCosts = visibleProperties.Select(m => m.Internal.PowerCost.ToString()).ToList();
+        List<string> powerCosts = _consolidatedProperties.Select(x => x.powerCost.ToString()).ToList();
         SetListIfChanged(View.ActivePropertiesView.PropertyPowerCosts, powerCosts);
 
-        List<bool> removable = visibleProperties.Select(m => m.Internal.Removable).ToList();
+        List<Color> colors = _consolidatedProperties.Select(x => x.color).ToList();
+        SetListIfChanged(View.ActivePropertiesView.PropertyColors, colors);
+
+        List<bool> removable = _consolidatedProperties.Select(x => x.removable).ToList();
         SetListIfChanged(View.ActivePropertiesView.Removable, removable);
     }
 
-    /// <summary>
-    /// Updates the bindings for the Change List view within the Mythal Forge interface, reflecting the current state of the Change List model.
-    /// </summary>
-    private void UpdateChangeListBindings()
-    {
-        List<ChangeListModel.ChangelistEntry> changes = Model.ChangeListModel.ChangeList();
-
-        SetIfChanged(View.ChangelistView.ChangeCount, changes.Count);
-
-        List<string> entryLabels = changes.Select(m => m.Label).ToList();
-        SetListIfChanged(View.ChangelistView.PropertyLabel, entryLabels);
-
-        List<string> entryCosts = changes.Select(m => m.Property.PowerCost.ToString()).ToList();
-        SetListIfChanged(View.ChangelistView.CostString, entryCosts);
-
-        List<Color> entryColors = changes.Select(m => m.State switch
-        {
-            ChangeListModel.ChangeState.Added => ColorConstants.Lime,
-            ChangeListModel.ChangeState.Removed => ColorConstants.Red,
-            _ => ColorConstants.White
-        }).ToList();
-        SetListIfChanged(View.ChangelistView.Colors, entryColors);
-    }
 
     /// <summary>
     /// Updates the gold cost display and related UI bindings within the crafting interface.
