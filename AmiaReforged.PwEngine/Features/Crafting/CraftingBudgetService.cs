@@ -29,7 +29,7 @@ public class CraftingBudgetService
         return baseItemType switch
         {
             // Equippables
-            NWScript.BASE_ITEM_AMULET => 4,
+            NWScript.BASE_ITEM_AMULET => 6,
             NWScript.BASE_ITEM_ARMOR => 8,
             NWScript.BASE_ITEM_TOWERSHIELD => 8,
             NWScript.BASE_ITEM_SMALLSHIELD => 8,
@@ -91,8 +91,8 @@ public class CraftingBudgetService
             NWScript.BASE_ITEM_BOLT => 4,
             NWScript.BASE_ITEM_BULLET => 4,
             // Special case where there isn't actually a set base item type
-            CraftingPropertyData.CasterWeapon1H => 6,
-            CraftingPropertyData.CasterWeapon2H => 12,
+            CraftingPropertyData.CasterWeapon1H => 8,
+            CraftingPropertyData.CasterWeapon2H => 16,
             _ => 0
         };
     }

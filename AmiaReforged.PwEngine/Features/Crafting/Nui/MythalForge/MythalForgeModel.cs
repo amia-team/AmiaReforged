@@ -92,34 +92,73 @@ public class MythalForgeModel
     public ChangeListModel ChangeListModel { get; }
 
     /// <summary>
-    /// Gets whether the item can be converted to a caster weapon.
+    /// Gets whether the item can be converted to/from a caster weapon.
     /// </summary>
     /// <remarks>
     /// An item can be converted if:
     /// - It is a melee weapon (1H or 2H)
-    /// - It is NOT already a caster weapon
     /// - It is NOT a magic staff (which is always treated as a caster weapon)
+    /// The button will convert TO a caster weapon if it's currently a regular weapon,
+    /// or convert BACK to a regular weapon if it's currently a caster weapon.
     /// </remarks>
     public bool CanConvertToCasterWeapon
     {
         get
         {
             int baseType = NWScript.GetBaseItemType(Item);
-            
+
             // Magic staffs are always caster weapons, can't convert
             if (baseType == NWScript.BASE_ITEM_MAGICSTAFF)
                 return false;
-            
-            // Already a caster weapon
-            if (NWScript.GetLocalInt(Item, ItemTypeConstants.CasterWeaponVar) == NWScript.TRUE)
-                return false;
-            
+
             // Must be a melee weapon (1H or 2H)
             bool isMeleeWeapon = ItemTypeConstants.MeleeWeapons().Contains(baseType) ||
                                  ItemTypeConstants.Melee2HWeapons().Contains(baseType);
-            
+
             return isMeleeWeapon;
         }
+    }
+
+    /// <summary>
+    /// Gets whether the item is currently a caster weapon.
+    /// </summary>
+    public bool IsCasterWeapon => NWScript.GetLocalInt(Item, ItemTypeConstants.CasterWeaponVar) == NWScript.TRUE;
+
+    /// <summary>
+    /// Checks if the caster weapon can be safely converted back to a regular weapon
+    /// without exceeding the regular weapon's power budget.
+    /// </summary>
+    /// <returns>True if conversion is safe; false if it would exceed the budget.</returns>
+    public bool CanConvertFromCasterWeapon()
+    {
+        if (!IsCasterWeapon)
+            return false;
+
+        // Get the current base type and calculate what the regular weapon budget would be
+        int baseType = NWScript.GetBaseItemType(Item);
+        int regularWeaponMaxBudget = _budget.MythalBudgetFor(baseType);
+
+        // Calculate the current power being used on the item
+        // This is: Current Max Budget (as caster weapon) - Remaining Powers
+        int currentPowerUsage = MaxBudget - RemainingPowers;
+
+        return currentPowerUsage <= regularWeaponMaxBudget;
+    }
+
+    /// <summary>
+    /// Gets the amount of power that would exceed the regular weapon budget if converted.
+    /// </summary>
+    /// <returns>The excess power, or 0 if within budget.</returns>
+    public int GetConversionExcessPower()
+    {
+        if (!IsCasterWeapon)
+            return 0;
+
+        int baseType = NWScript.GetBaseItemType(Item);
+        int regularWeaponMaxBudget = _budget.MythalBudgetFor(baseType);
+        int currentPowerUsage = MaxBudget - RemainingPowers;
+
+        return Math.Max(0, currentPowerUsage - regularWeaponMaxBudget);
     }
 
     /// <summary>
@@ -387,6 +426,40 @@ public class MythalForgeModel
         _player.LoginCreature?.ApplyEffect(EffectDuration.Instant, explosion);
 
         _player.SendServerMessage("Weapon has been converted to a caster weapon.", ColorConstants.Cyan);
+    }
+
+    /// <summary>
+    /// Converts the current caster weapon back to a regular weapon by removing the caster weapon flag.
+    /// </summary>
+    /// <remarks>
+    /// This allows the weapon to be converted back to a regular weapon, making it eligible for
+    /// weapon-specific properties like damage bonuses, attack bonuses, etc.
+    /// Note: This does NOT automatically add back any properties that were removed during
+    /// the initial conversion to caster weapon - those must be re-added manually.
+    /// </remarks>
+    /// <returns>True if conversion was successful; false if blocked due to power budget.</returns>
+    public bool ConvertFromCasterWeapon()
+    {
+        // Check if the conversion would exceed the regular weapon power budget
+        if (!CanConvertFromCasterWeapon())
+        {
+            int excessPower = GetConversionExcessPower();
+            _player.SendServerMessage(
+                $"Cannot convert to regular weapon: This weapon uses {excessPower} more power point{(excessPower != 1 ? "s" : "")} " +
+                $"than a regular weapon can hold. Remove some properties before converting back.",
+                ColorConstants.Orange);
+            return false;
+        }
+
+        // Remove the caster weapon flag
+        NWScript.DeleteLocalInt(Item, ItemTypeConstants.CasterWeaponVar);
+
+        // Visual feedback
+        Effect explosion = Effect.VisualEffect(VfxType.ImpMagblue);
+        _player.LoginCreature?.ApplyEffect(EffectDuration.Instant, explosion);
+
+        _player.SendServerMessage("Weapon has been converted back to a regular weapon.", ColorConstants.Cyan);
+        return true;
     }
 
     /// <summary>

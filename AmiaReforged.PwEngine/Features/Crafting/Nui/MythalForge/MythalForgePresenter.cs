@@ -356,7 +356,15 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
         if (eventData.ElementId == MythalForgeView.ToCasterWeapon)
         {
-            ShowCasterWeaponConfirmation();
+            // Check if it's currently a caster weapon to determine conversion direction
+            if (Model.IsCasterWeapon)
+            {
+                ShowRegularWeaponConfirmation();
+            }
+            else
+            {
+                ShowCasterWeaponConfirmation();
+            }
             return;
         }
 
@@ -386,6 +394,27 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     }
 
     /// <summary>
+    /// Shows a confirmation popup for converting the weapon back to a regular weapon.
+    /// </summary>
+    private void ShowRegularWeaponConfirmation()
+    {
+        const string message = "Converting back to a regular weapon will allow you to add weapon-specific properties " +
+                               "like damage bonuses, attack bonus, and on-hit effects.\n\n" +
+                               "Are you sure you want to convert this weapon back to a regular weapon?";
+
+        GenericWindow
+            .Builder()
+            .For()
+            .ConfirmationPopup()
+            .WithPlayer(_player)
+            .WithTitle("Convert to Regular Weapon")
+            .WithMessage(message)
+            .OnConfirm(OnRegularWeaponConversionConfirmed)
+            .OnCancel(() => { }) // Do nothing on cancel, just close the popup
+            .Open();
+    }
+
+    /// <summary>
     /// Called when the player confirms the caster weapon conversion.
     /// </summary>
     private void OnCasterWeaponConversionConfirmed()
@@ -397,6 +426,29 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         RaiseCloseEvent();
 
         // Raise event so the forge can be reopened with caster weapon categories
+        CasterWeaponConversionCompleted?.Invoke(this, item);
+    }
+
+    /// <summary>
+    /// Called when the player confirms converting back to a regular weapon.
+    /// </summary>
+    private void OnRegularWeaponConversionConfirmed()
+    {
+        // Try to convert - this may fail if power budget would be exceeded
+        bool success = Model.ConvertFromCasterWeapon();
+
+        if (!success)
+        {
+            // Conversion was blocked - player already received feedback message
+            // Don't close the forge, let them remove properties first
+            return;
+        }
+
+        NwItem item = Model.Item;
+
+        RaiseCloseEvent();
+
+        // Raise event so the forge can be reopened with regular weapon categories
         CasterWeaponConversionCompleted?.Invoke(this, item);
     }
 
@@ -424,6 +476,9 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             _player.SendServerMessage(message: result.ErrorMessage ?? "Failed to rename item.", ColorConstants.Orange);
             return true;
         }
+
+        // Send success feedback to the player
+        _player.SendServerMessage($"Item name changed to {newName}.", ColorConstants.Cyan);
 
         return false;
     }
@@ -648,10 +703,18 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// <summary>
     /// Updates the enabled state of the "To Caster Weapon" button based on whether
     /// the current item can be converted to a caster weapon.
+    /// Also updates the tooltip to reflect the current conversion direction.
     /// </summary>
     private void UpdateCasterWeaponButton()
     {
         SetIfChanged(View.ToCasterWeaponEnabled, Model.CanConvertToCasterWeapon);
+
+        // Update tooltip based on current state
+        string tooltip = Model.IsCasterWeapon
+            ? "Convert back to a regular weapon. This will allow weapon-specific properties to be added."
+            : "Convert to a caster weapon. Incompatible properties will be removed.";
+
+        SetIfChanged(View.ToCasterWeaponTooltip, tooltip);
     }
 
     /// <summary>

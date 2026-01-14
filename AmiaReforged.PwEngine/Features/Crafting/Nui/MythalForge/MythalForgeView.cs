@@ -78,6 +78,7 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
     public NuiBind<Color> SkillColor { get; } = new(key: "dc_color");
     public NuiBind<string> SkillTooltip { get; } = new(key: "skill_name");
     public NuiBind<bool> ToCasterWeaponEnabled { get; } = new(key: "to_caster_enabled");
+    public NuiBind<string> ToCasterWeaponTooltip { get; } = new(key: "to_caster_tooltip");
 
     /// <summary>
     ///     Defines the root layout of the Mythal Forge view. The layout is composed of several sub-views, which are
@@ -109,6 +110,7 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                         new NuiButtonImage("ui_btn_rename")
                         {
                             Id = ApplyNameButtonId,
+                            Tooltip = "Change this item's name.",
                             Width = 150f,
                             Height = 38f
                         }
@@ -219,7 +221,7 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                             Width = 150f,
                             Height = 38f,
                             Enabled = ToCasterWeaponEnabled,
-                            Tooltip = "Convert to a caster weapon. Incompatible properties will be removed."
+                            Tooltip = ToCasterWeaponTooltip
                         },
                         new NuiSpacer { Width = 20f },
                         new NuiLabel(label: "Difficulty:")
