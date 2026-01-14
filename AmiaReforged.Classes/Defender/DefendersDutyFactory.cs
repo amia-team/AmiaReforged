@@ -7,12 +7,15 @@ namespace AmiaReforged.Classes.Defender;
 public class DefendersDutyFactory
 {
     private readonly SchedulerService _scheduler;
+    private readonly ScriptHandleFactory _scriptHandleFactory;
 
-    public DefendersDutyFactory(SchedulerService scheduler)
+    public DefendersDutyFactory(SchedulerService scheduler, ScriptHandleFactory scriptHandleFactory)
     {
         _scheduler = scheduler;
+        _scriptHandleFactory = scriptHandleFactory;
     }
 
 
-    public DefendersDuty CreateDefendersDuty(NwPlayer defender, NwCreature target) => new(defender, target, _scheduler);
+    public DefendersDuty CreateDefendersDuty(NwPlayer defender, NwCreature target) 
+        => new(defender, target, _scheduler, _scriptHandleFactory);
 }
