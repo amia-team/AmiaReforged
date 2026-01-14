@@ -114,6 +114,13 @@ public static class ItemPropertyHelper
 
     private static int GetPowerCost(ItemProperty ip)
     {
+        // Check for "On Hit: None" which is a placeholder/empty property
+        string gameLabel = GameLabel(ip);
+        if (gameLabel.Contains("On Hit: None", StringComparison.OrdinalIgnoreCase))
+        {
+            return 0;
+        }
+
         List<ItemPropertyType> noCost =
         [
             ItemPropertyType.DecreasedAbilityScore,
