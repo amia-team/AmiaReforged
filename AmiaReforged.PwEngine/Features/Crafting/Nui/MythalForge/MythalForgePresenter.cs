@@ -284,11 +284,9 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             // Handle category dropdown selection
             int? selectedIndexNullable = Token().GetBindValue(View.CategoryView.CategoryFilterIndex);
             _selectedCategoryFilterIndex = selectedIndexNullable ?? -1;
-            _player.SendServerMessage($"[DEBUG] Dropdown clicked - Selected index: {_selectedCategoryFilterIndex}", ColorConstants.Orange);
-            _player.SendServerMessage($"[DEBUG] Total categories: {MythalCategories.Count}", ColorConstants.Orange);
             if (_selectedCategoryFilterIndex >= 0 && _selectedCategoryFilterIndex < MythalCategories.Count)
             {
-                _player.SendServerMessage($"[DEBUG] Selected category: {MythalCategories[_selectedCategoryFilterIndex].Label}", ColorConstants.Orange);
+                _player.SendServerMessage($"Selected category: {MythalCategories[_selectedCategoryFilterIndex].Label}", ColorConstants.Orange);
             }
             ApplyFilters();
             return;
@@ -299,17 +297,13 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             // When search button is clicked, read the current dropdown value
             int? selectedIndexNullable = Token().GetBindValue(View.CategoryView.CategoryFilterIndex);
             int currentDropdownIndex = selectedIndexNullable ?? -1;
-
-            _player.SendServerMessage($"[DEBUG] Search button clicked - Reading dropdown index: {currentDropdownIndex}", ColorConstants.Orange);
-
             // Update the selected category if it changed
             if (currentDropdownIndex != _selectedCategoryFilterIndex)
             {
                 _selectedCategoryFilterIndex = currentDropdownIndex;
-                _player.SendServerMessage($"[DEBUG] Category selection changed to index: {_selectedCategoryFilterIndex}", ColorConstants.Orange);
                 if (_selectedCategoryFilterIndex >= 0 && _selectedCategoryFilterIndex < MythalCategories.Count)
                 {
-                    _player.SendServerMessage($"[DEBUG] Selected category: {MythalCategories[_selectedCategoryFilterIndex].Label}", ColorConstants.Orange);
+                    _player.SendServerMessage($"Selected category: {MythalCategories[_selectedCategoryFilterIndex].Label}", ColorConstants.Orange);
                 }
             }
 
@@ -728,16 +722,12 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// </summary>
     private void ApplyFilters()
     {
-        _player.SendServerMessage($"[DEBUG] ApplyFilters called - Current category index: {_selectedCategoryFilterIndex}", ColorConstants.Orange);
-
         // Collect all properties from all categories
         List<MythalCategoryModel.MythalProperty> allProperties = new();
         foreach (MythalCategoryModel.MythalCategory category in MythalCategories)
         {
             allProperties.AddRange(category.Properties);
         }
-
-        _player.SendServerMessage($"[DEBUG] Total properties before filtering: {allProperties.Count}", ColorConstants.Orange);
 
         // Sort alphabetically by label
         allProperties.Sort((a, b) => string.Compare(a.Label, b.Label, StringComparison.Ordinal));
@@ -746,13 +736,11 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         if (_selectedCategoryFilterIndex >= 0 && _selectedCategoryFilterIndex < MythalCategories.Count)
         {
             MythalCategoryModel.MythalCategory selectedCategory = MythalCategories[_selectedCategoryFilterIndex];
-            _player.SendServerMessage($"[DEBUG] Filtering by category: {selectedCategory.Label} with {selectedCategory.Properties.Count} properties", ColorConstants.Orange);
             allProperties = allProperties.Where(p => selectedCategory.Properties.Contains(p)).ToList();
-            _player.SendServerMessage($"[DEBUG] Properties after category filter: {allProperties.Count}", ColorConstants.Orange);
         }
         else
         {
-            _player.SendServerMessage($"[DEBUG] No category filter (showing all)", ColorConstants.Orange);
+            _player.SendServerMessage($"Showing all categories.", ColorConstants.Orange);
         }
 
         // Filter by search text
@@ -762,10 +750,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             allProperties = allProperties.Where(p =>
                 p.Label.Contains(filterText, StringComparison.OrdinalIgnoreCase))
                 .ToList();
-            _player.SendServerMessage($"[DEBUG] Properties after text filter: {allProperties.Count}", ColorConstants.Orange);
         }
-
-        _player.SendServerMessage($"[DEBUG] Final count being displayed: {allProperties.Count}", ColorConstants.Orange);
 
         // Update the property count binding for the NuiList
         SetIfChanged(View.CategoryView.PropertyCount, allProperties.Count);
