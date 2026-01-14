@@ -43,11 +43,15 @@ public class DefenderScriptHandlers
         if (!info.ObjectSelf.IsPlayerControlled(out NwPlayer? player)) return;
 
         SpellEvents.OnSpellCast eventData = new();
-        if (eventData.TargetObject is not NwCreature targetCreature) return;
-        if (eventData.Caster is not NwCreature casterCreature) return;
+        Log.Info("made event object");
 
+        if (eventData.TargetObject is not NwCreature targetCreature) return;
+        Log.Info("got target creature");
+        if (eventData.Caster is not NwCreature casterCreature) return;
+        Log.Info("got caster creature");
 
         if (targetCreature.IsDead) return;
+        Log.Info("target is alive");
 
 
         if(targetCreature.IsEnemy(casterCreature))
@@ -55,6 +59,7 @@ public class DefenderScriptHandlers
             player.SendServerMessage(FriendsOnly, ColorConstants.Red);
             return;
         }
+        Log.Info("Doing some things");
 
         DefendersDuty duty = _abilityFactory.CreateDefendersDuty(player, targetCreature);
 
