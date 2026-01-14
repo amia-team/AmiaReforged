@@ -1,4 +1,5 @@
 ﻿using Anvil.API;
+using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
@@ -41,25 +42,21 @@ public class DefenderScriptHandlers
 
         if (!info.ObjectSelf.IsPlayerControlled(out NwPlayer? player)) return;
 
-        NwObject? targetObject = NWScript.GetSpellTargetObject().ToNwObject();
-        if (targetObject == null) return;
+        SpellEvents.OnSpellCast eventData = new();
+        if (eventData.TargetObject is not NwCreature targetCreature) return;
+        if (eventData.Caster is not NwCreature casterCreature) return;
 
-        if (NWScript.GetIsFriend(targetObject) == NWScript.FALSE)
+
+        if (targetCreature.IsDead) return;
+
+
+        if(targetCreature.IsEnemy(casterCreature))
         {
-            player.SendServerMessage(FriendsOnly);
+            player.SendServerMessage(FriendsOnly, ColorConstants.Red);
             return;
         }
 
-        if (NWScript.GetIsDead(targetObject) == NWScript.TRUE) return;
-
-        NwCreature? creature = targetObject as NwCreature;
-        if (creature == null)
-        {
-            Log.Warn(message: "Defenders Duty called with no creature target.");
-            return;
-        }
-
-        DefendersDuty duty = _abilityFactory.CreateDefendersDuty(player, creature);
+        DefendersDuty duty = _abilityFactory.CreateDefendersDuty(player, targetCreature);
 
         duty.Apply();
     }
