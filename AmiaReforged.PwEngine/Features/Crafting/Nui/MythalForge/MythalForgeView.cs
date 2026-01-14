@@ -1,4 +1,4 @@
-﻿using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.ActiveProperties;
+﻿﻿using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.ActiveProperties;
 using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
@@ -121,9 +121,18 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                         new NuiTextEdit(label: "Filter...", CategoryView.PropertyFilterText, 100, false)
                         {
                             Width = 100f,
-                            Height = 38f
+                            Height = 35f
                         },
                         new NuiSpacer { Width = 5f },
+                        new NuiCombo
+                        {
+                            Id = MythalCategoryView.CategoryFilterChanged,
+                            Width = 120f,
+                            Height = 35f,
+                            Entries = CategoryView.CategoryFilterOptions,
+                            Selected = CategoryView.CategoryFilterIndex
+                        },
+                        new NuiSpacer { Width = 10f },
                         new NuiButtonImage("isk_search")
                         {
                             Id = MythalCategoryView.SearchPropertiesButton,
@@ -131,33 +140,33 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                             Height = 35f,
                             Tooltip = "Search/filter properties"
                         },
-                        new NuiSpacer { Width = 30f },
+                        new NuiSpacer { Width = 20f },
                         new NuiLabel(label: "Max Powers:")
                         {
                             VerticalAlign = NuiVAlign.Middle,
                             Width = 85f,
-                            Height = 38f
+                            Height = 35f
                         },
                         new NuiSpacer { Width = 10f },
                         new NuiLabel(MaxPowers)
                         {
                             VerticalAlign = NuiVAlign.Middle,
                             Width = 50f,
-                            Height = 38f
+                            Height = 35f
                         },
                         new NuiSpacer { Width = 230f },
                         new NuiLabel(label: "Remaining Powers:")
                         {
                             VerticalAlign = NuiVAlign.Middle,
                             Width = 125f,
-                            Height = 38f
+                            Height = 35f
                         },
                         new NuiSpacer { Width = 10f },
                         new NuiLabel(RemainingPowers)
                         {
                             VerticalAlign = NuiVAlign.Middle,
                             Width = 50f,
-                            Height = 38f
+                            Height = 35f
                         }
                     }
                 },

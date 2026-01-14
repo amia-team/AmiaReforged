@@ -54,6 +54,11 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
     public NuiBind<string> PropertyLabels { get; } = new("property_labels");
     public NuiBind<string> PropertyCosts { get; } = new("property_costs");
     public NuiBind<string> PropertyFilterText { get; } = new("property_filter_text");
+    public NuiBind<int> CategoryFilterIndex { get; } = new("category_filter_index");
+    public NuiBind<List<NuiComboEntry>> CategoryFilterOptions { get; } = new("category_filter_options");
+
+    public const string CategoryFilterChanged = "category_filter_changed";
+
 
     public override NuiLayout RootLayout()
     {

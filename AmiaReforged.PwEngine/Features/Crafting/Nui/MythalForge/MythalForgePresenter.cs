@@ -105,6 +105,11 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     private readonly Dictionary<string, List<Color>> _colorListCache = new();
 
     /// <summary>
+    /// Tracks the currently selected category filter index (-1 means "All Categories").
+    /// </summary>
+    private int _selectedCategoryFilterIndex = -1;
+
+    /// <summary>
     /// Represents the presenter for the Mythal Forge crafting feature, responsible for managing
     /// the interaction between the view and model components for crafting operations.
     /// </summary>
@@ -207,6 +212,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// <param name="obj">The NUI event data to process.</param>
     public override void ProcessEvent(ModuleEvents.OnNuiEvent obj)
     {
+
         switch (obj.EventType)
         {
             case NuiEventType.Click:
@@ -273,11 +279,42 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             if (ApplyName())
                 return;
 
+        if (eventData.ElementId == MythalCategoryView.CategoryFilterChanged)
+        {
+            // Handle category dropdown selection
+            int? selectedIndexNullable = Token().GetBindValue(View.CategoryView.CategoryFilterIndex);
+            _selectedCategoryFilterIndex = selectedIndexNullable ?? -1;
+            _player.SendServerMessage($"[DEBUG] Dropdown clicked - Selected index: {_selectedCategoryFilterIndex}", ColorConstants.Orange);
+            _player.SendServerMessage($"[DEBUG] Total categories: {MythalCategories.Count}", ColorConstants.Orange);
+            if (_selectedCategoryFilterIndex >= 0 && _selectedCategoryFilterIndex < MythalCategories.Count)
+            {
+                _player.SendServerMessage($"[DEBUG] Selected category: {MythalCategories[_selectedCategoryFilterIndex].Label}", ColorConstants.Orange);
+            }
+            ApplyFilters();
+            return;
+        }
+
         if (eventData.ElementId == MythalCategoryView.SearchPropertiesButton)
         {
-            // Get the filter text from the bind and apply it
-            string filterText = Token().GetBindValue(View.CategoryView.PropertyFilterText) ?? string.Empty;
-            FilterProperties(filterText);
+            // When search button is clicked, read the current dropdown value
+            int? selectedIndexNullable = Token().GetBindValue(View.CategoryView.CategoryFilterIndex);
+            int currentDropdownIndex = selectedIndexNullable ?? -1;
+
+            _player.SendServerMessage($"[DEBUG] Search button clicked - Reading dropdown index: {currentDropdownIndex}", ColorConstants.Orange);
+
+            // Update the selected category if it changed
+            if (currentDropdownIndex != _selectedCategoryFilterIndex)
+            {
+                _selectedCategoryFilterIndex = currentDropdownIndex;
+                _player.SendServerMessage($"[DEBUG] Category selection changed to index: {_selectedCategoryFilterIndex}", ColorConstants.Orange);
+                if (_selectedCategoryFilterIndex >= 0 && _selectedCategoryFilterIndex < MythalCategories.Count)
+                {
+                    _player.SendServerMessage($"[DEBUG] Selected category: {MythalCategories[_selectedCategoryFilterIndex].Label}", ColorConstants.Orange);
+                }
+            }
+
+            // Handle search button click to apply filters
+            ApplyFilters();
             return;
         }
 
@@ -564,6 +601,33 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     }
 
     /// <summary>
+    /// Updates the bound list of NuiComboEntry values if the new values differ from the cached values.
+    /// </summary>
+    /// <param name="bind">The binding for the combo entry list.</param>
+    /// <param name="values">The new list of combo entries to be set.</param>
+    private void SetListIfChanged(NuiBind<List<NuiComboEntry>> bind, List<NuiComboEntry> values)
+    {
+        string key = bind.Key;
+        if (_stringListCache.TryGetValue(key, out List<string>? old) && old.Count == values.Count)
+        {
+            bool same = true;
+            for (int i = 0; i < values.Count; i++)
+            {
+                if (old[i] != values[i].Label)
+                {
+                    same = false;
+                    break;
+                }
+            }
+
+            if (same) return;
+        }
+
+        _stringListCache[key] = values.Select(v => v.Label).ToList();
+        Token().SetBindValue(bind, values);
+    }
+
+    /// <summary>
     /// Updates the name field in the view with the name of the item from the model.
     /// </summary>
     private void UpdateNameField()
@@ -628,25 +692,22 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     {
         Model.RefreshCategories();
 
-        // Collect all properties from all categories for the count
-        List<MythalCategoryModel.MythalProperty> allProperties = new();
-        foreach (MythalCategoryModel.MythalCategory category in MythalCategories)
+        // Build category dropdown options (including "All Categories" option)
+        List<NuiComboEntry> categoryOptions = new List<NuiComboEntry> { new("All Categories", -1) };
+        for (int i = 0; i < MythalCategories.Count; i++)
         {
-            allProperties.AddRange(category.Properties);
+            categoryOptions.Add(new(MythalCategories[i].Label, i));
+        }
+        SetListIfChanged(View.CategoryView.CategoryFilterOptions, categoryOptions);
+
+        // Reset category filter to "All Categories" if out of bounds
+        if (_selectedCategoryFilterIndex >= MythalCategories.Count)
+        {
+            _selectedCategoryFilterIndex = -1;
         }
 
-        // Sort alphabetically by label (match the view's sort order)
-        allProperties.Sort((a, b) => string.Compare(a.Label, b.Label, StringComparison.Ordinal));
-
-        // Update the property count binding for the NuiList
-        SetIfChanged(View.CategoryView.PropertyCount, allProperties.Count);
-
-        // Build the property labels and costs lists for the NuiList
-        List<string> propertyLabels = allProperties.Select(p => p.Label).ToList();
-        SetListIfChanged(View.CategoryView.PropertyLabels, propertyLabels);
-
-        List<string> propertyCosts = allProperties.Select(p => p.Internal.PowerCost.ToString()).ToList();
-        SetListIfChanged(View.CategoryView.PropertyCosts, propertyCosts);
+        // Apply filters to update the display
+        ApplyFilters();
 
         // Update individual property bindings
         foreach (MythalCategoryModel.MythalCategory category in MythalCategories)
@@ -657,17 +718,18 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
                 SetIfChanged(View.CategoryView.EmphasizedProperties[property.Id], !property.Selectable);
                 SetIfChanged(View.CategoryView.PowerCostColors[property.Id], property.Color);
                 SetIfChanged(View.CategoryView.PowerCostTooltips[property.Id],
-                    property.CostLabelTooltip ?? string.Empty);
+                    property.CostLabelTooltip);
             }
         }
     }
 
     /// <summary>
-    /// Filters the properties list based on the provided search text.
+    /// Applies both text and category filters to the properties list.
     /// </summary>
-    /// <param name="filterText">The text to filter properties by.</param>
-    private void FilterProperties(string filterText)
+    private void ApplyFilters()
     {
+        _player.SendServerMessage($"[DEBUG] ApplyFilters called - Current category index: {_selectedCategoryFilterIndex}", ColorConstants.Orange);
+
         // Collect all properties from all categories
         List<MythalCategoryModel.MythalProperty> allProperties = new();
         foreach (MythalCategoryModel.MythalCategory category in MythalCategories)
@@ -675,16 +737,35 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             allProperties.AddRange(category.Properties);
         }
 
+        _player.SendServerMessage($"[DEBUG] Total properties before filtering: {allProperties.Count}", ColorConstants.Orange);
+
         // Sort alphabetically by label
         allProperties.Sort((a, b) => string.Compare(a.Label, b.Label, StringComparison.Ordinal));
 
-        // Filter properties based on search text (case-insensitive)
+        // Filter by category if a specific category is selected
+        if (_selectedCategoryFilterIndex >= 0 && _selectedCategoryFilterIndex < MythalCategories.Count)
+        {
+            MythalCategoryModel.MythalCategory selectedCategory = MythalCategories[_selectedCategoryFilterIndex];
+            _player.SendServerMessage($"[DEBUG] Filtering by category: {selectedCategory.Label} with {selectedCategory.Properties.Count} properties", ColorConstants.Orange);
+            allProperties = allProperties.Where(p => selectedCategory.Properties.Contains(p)).ToList();
+            _player.SendServerMessage($"[DEBUG] Properties after category filter: {allProperties.Count}", ColorConstants.Orange);
+        }
+        else
+        {
+            _player.SendServerMessage($"[DEBUG] No category filter (showing all)", ColorConstants.Orange);
+        }
+
+        // Filter by search text
+        string filterText = Token().GetBindValue(View.CategoryView.PropertyFilterText) ?? string.Empty;
         if (!string.IsNullOrWhiteSpace(filterText))
         {
             allProperties = allProperties.Where(p =>
                 p.Label.Contains(filterText, StringComparison.OrdinalIgnoreCase))
                 .ToList();
+            _player.SendServerMessage($"[DEBUG] Properties after text filter: {allProperties.Count}", ColorConstants.Orange);
         }
+
+        _player.SendServerMessage($"[DEBUG] Final count being displayed: {allProperties.Count}", ColorConstants.Orange);
 
         // Update the property count binding for the NuiList
         SetIfChanged(View.CategoryView.PropertyCount, allProperties.Count);
@@ -805,6 +886,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         _ledgerView.Presenter.Create();
 
         Token().SetBindValue(View.CategoryView.PropertyFilterText, string.Empty);
+        Token().SetBindValue(View.CategoryView.CategoryFilterIndex, -1);
 
         UpdateView();
 
