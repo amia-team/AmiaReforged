@@ -49,10 +49,8 @@ public class MythalCategoryModel
                 return;
             }
 
-            // Ignore this category if it is exclusive to a class and the player does not have that class
-            if (category.ExclusiveToClass)
-                if (_player.LoginCreature.Classes.All(c => c.Class.ClassType != category.ExclusiveClass))
-                    continue;
+            // All categories are now available regardless of player class
+            // Players may be crafting items for friends, so class restrictions are removed
             MythalCategory modelCategory = new()
             {
                 Label = category.Label,
@@ -125,7 +123,7 @@ public class MythalCategoryModel
 
         Dictionary<CraftingTier, int> current = ItemPropertyHelper.GetMythals(player);
         Dictionary<CraftingTier, int> looseMythals = ItemPropertyHelper.GetLooseMythals(player);
-        
+
         foreach (CraftingTier key in _mythals.Map.Keys)
         {
             Log.Info("Key: " + key);
@@ -141,7 +139,7 @@ public class MythalCategoryModel
             // First, consume loose mythals from inventory
             int looseCount = looseMythals[key];
             int looseToDestroy = Math.Min(amountToTake, looseCount);
-            
+
             if (looseToDestroy > 0)
             {
                 List<NwItem> mythals =
@@ -151,7 +149,7 @@ public class MythalCategoryModel
                 {
                     mythals[i].Destroy();
                 }
-                
+
                 amountToTake -= looseToDestroy;
                 Log.Info($"Destroyed {looseToDestroy} loose mythals, remaining to take: {amountToTake}");
             }
@@ -163,7 +161,7 @@ public class MythalCategoryModel
                 foreach (NwItem tube in tubes)
                 {
                     if (amountToTake <= 0) break;
-                    
+
                     int consumed = ItemPropertyHelper.ConsumeMythalsFromTube(tube, amountToTake);
                     amountToTake -= consumed;
                     Log.Info($"Consumed {consumed} mythals from tube, remaining to take: {amountToTake}");
