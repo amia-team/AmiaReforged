@@ -97,11 +97,12 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                     Children = new List<NuiElement>(),
                     DrawList = [new NuiDrawListImage("ui_forge", new NuiRect(-5f, -25f, 1220f, 813f))]
                 },
-                new NuiSpacer { Height = 170f },
+                new NuiSpacer { Height = 130f },
                 new NuiRow
                 {
                     Children =
                     {
+                        new NuiSpacer{ Width = 300f},
                         new NuiTextEdit(label: "Edit Name", ItemName, 100, false)
                         {
                             Width = 200f,
@@ -122,7 +123,8 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                     {
                         new NuiTextEdit(label: "Filter...", CategoryView.PropertyFilterText, 100, false)
                         {
-                            Width = 100f,
+                            Tooltip = "Filter properties by name",
+                            Width = 80f,
                             Height = 35f
                         },
                         new NuiSpacer { Width = 5f },
@@ -134,7 +136,7 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                             Entries = CategoryView.CategoryFilterOptions,
                             Selected = CategoryView.CategoryFilterIndex
                         },
-                        new NuiSpacer { Width = 10f },
+                        new NuiSpacer { Width = 5f },
                         new NuiButtonImage("isk_search")
                         {
                             Id = MythalCategoryView.SearchPropertiesButton,
@@ -177,7 +179,7 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                     Children =
                     {
                         CategoryView.RootLayout(),
-                        new NuiSpacer { Width = 50f },
+                        new NuiSpacer { Width = 20f },
                         new NuiGroup
                         {
                             Element = ActivePropertiesView.RootLayout(),

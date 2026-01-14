@@ -110,6 +110,11 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     private int _selectedCategoryFilterIndex = -1;
 
     /// <summary>
+    /// Stores the currently filtered and displayed property list for the Add button to reference.
+    /// </summary>
+    private List<MythalCategoryModel.MythalProperty> _filteredProperties = new();
+
+    /// <summary>
     /// Represents the presenter for the Mythal Forge crafting feature, responsible for managing
     /// the interaction between the view and model components for crafting operations.
     /// </summary>
@@ -227,52 +232,24 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// <param name="eventData">The event data for the button click.</param>
     private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
+        // Handle Add Property button click from the list
+        if (eventData.ElementId == MythalCategoryView.AddPropertyButton)
+        {
+            int index = eventData.ArrayIndex;
+            if (index >= 0 && index < _filteredProperties.Count)
+            {
+                MythalCategoryModel.MythalProperty selectedProperty = _filteredProperties[index];
+                AddPropertyToForge(selectedProperty);
+                // RefreshCategories is called inside AddPropertyToForge
+            }
+            // Don't return early - need to call UpdateView() at the end
+        }
+
         if (Model.MythalCategoryModel.PropertyMap.TryGetValue(eventData.ElementId,
                 out MythalCategoryModel.MythalProperty? property))
         {
-            // Guarded addition: check budget, mythals, and validation synchronously
-            int remaining = Model.RemainingPowers;
-            bool hasMythals = Model.MythalCategoryModel.HasMythals(property.Internal.CraftingTier);
-            bool canAfford = property.Internal.PowerCost <= remaining || property.Internal.PowerCost == 0;
-
-            if (!hasMythals || !canAfford)
-            {
-                property.Selectable = false;
-                property.CostLabelTooltip = !hasMythals ? "Not enough mythals." : "Not enough points left.";
-            }
-            else
-            {
-                List<ItemProperty> currentProps = Model.Item.ItemProperties.ToList();
-                List<ChangeListModel.ChangelistEntry> changeList = Model.ChangeListModel.ChangeList();
-
-                // Prevent duplicate adds in the same session
-                bool alreadyQueued = changeList.Any(e =>
-                    e.State == ChangeListModel.ChangeState.Added &&
-                    e.Property.ItemProperty.Property.PropertyType ==
-                    property.Internal.ItemProperty.Property.PropertyType &&
-                    ItemPropertyHelper.PropertiesAreSame(e.Property, property.Internal.ItemProperty));
-
-                if (alreadyQueued)
-                {
-                    property.Selectable = false;
-                    property.CostLabelTooltip = "Already queued for addition.";
-                }
-                else
-                {
-                    ValidationResult result = Model.ValidateSingle(property, currentProps, changeList);
-                    if (result.Result == ValidationEnum.Valid)
-                    {
-                        Model.AddNewProperty(property);
-                    }
-                    else
-                    {
-                        property.Selectable = false;
-                        property.CostLabelTooltip = result.ErrorMessage ?? "Validation failed.";
-                    }
-                }
-            }
-
-            Model.RefreshCategories();
+            AddPropertyToForge(property);
+            // RefreshCategories is called inside AddPropertyToForge
         }
 
         if (eventData.ElementId == MythalForgeView.ApplyNameButtonId)
@@ -369,6 +346,58 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         }
 
         UpdateView();
+    }
+
+    /// <summary>
+    /// Attempts to add a property to the forge, performing validation checks.
+    /// </summary>
+    /// <param name="property">The property to add to the forge.</param>
+    private void AddPropertyToForge(MythalCategoryModel.MythalProperty property)
+    {
+        // Guarded addition: check budget, mythals, and validation synchronously
+        int remaining = Model.RemainingPowers;
+        bool hasMythals = Model.MythalCategoryModel.HasMythals(property.Internal.CraftingTier);
+        bool canAfford = property.Internal.PowerCost <= remaining || property.Internal.PowerCost == 0;
+
+        if (!hasMythals)
+        {
+            _player.SendServerMessage("Not enough mythals for this property.", ColorConstants.Red);
+            return;
+        }
+
+        if (!canAfford)
+        {
+            _player.SendServerMessage("Not enough power points remaining.", ColorConstants.Red);
+            return;
+        }
+
+        List<ItemProperty> currentProps = Model.Item.ItemProperties.ToList();
+        List<ChangeListModel.ChangelistEntry> changeList = Model.ChangeListModel.ChangeList();
+
+        // Prevent duplicate adds in the same session
+        bool alreadyQueued = changeList.Any(e =>
+            e.State == ChangeListModel.ChangeState.Added &&
+            e.Property.ItemProperty.Property.PropertyType ==
+            property.Internal.ItemProperty.Property.PropertyType &&
+            ItemPropertyHelper.PropertiesAreSame(e.Property, property.Internal.ItemProperty));
+
+        if (alreadyQueued)
+        {
+            _player.SendServerMessage("This property is already queued for addition.", ColorConstants.Orange);
+            return;
+        }
+
+        ValidationResult result = Model.ValidateSingle(property, currentProps, changeList);
+        if (result.Result == ValidationEnum.Valid)
+        {
+            Model.AddNewProperty(property);
+            _player.SendServerMessage($"Added: {property.Label}", ColorConstants.Cyan);
+            Model.RefreshCategories();
+        }
+        else
+        {
+            _player.SendServerMessage(result.ErrorMessage ?? "Validation failed.", ColorConstants.Red);
+        }
     }
 
     /// <summary>
@@ -834,6 +863,9 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
                 p.Label.Contains(filterText, StringComparison.OrdinalIgnoreCase))
                 .ToList();
         }
+
+        // Store the filtered list for the Add button to reference
+        _filteredProperties = allProperties;
 
         // Update the property count binding for the NuiList
         SetIfChanged(View.CategoryView.PropertyCount, allProperties.Count);

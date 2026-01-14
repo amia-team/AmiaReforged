@@ -1,4 +1,4 @@
-﻿using AmiaReforged.PwEngine.Features.Crafting.Models;
+﻿using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 
@@ -29,6 +29,7 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
     public readonly Dictionary<string, NuiBind<string>> PowerCostTooltips = new();
 
     public const string SearchPropertiesButton = "search_properties";
+    public const string AddPropertyButton = "add_property_button";
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="MythalCategoryView" /> class.
@@ -72,9 +73,6 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
         // Sort alphabetically by label
         allProperties.Sort((a, b) => string.Compare(a.Label, b.Label, StringComparison.Ordinal));
 
-        // Create list template cells for the NuiList - property name and cost columns
-        List<NuiListTemplateCell> cells = new();
-
         foreach (MythalCategoryModel.MythalProperty property in allProperties)
         {
             NuiBind<bool> enableProperty = new(property.Id + "_enable");
@@ -82,7 +80,6 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
             NuiBind<string> powerCostTooltip = new(property.Id + "_tooltip");
             NuiBind<bool> emphasized = new(property.Id + "_emphasized");
 
-            string tierTooltip = property.Internal.CraftingTier.ToString();
 
             // Store bindings for presenter to use
             EnabledPropertyBindings.Add(property.Id, enableProperty);
@@ -92,7 +89,7 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
             EmphasizedProperties.Add(property.Id, emphasized);
         }
 
-        // Create two list template cells: one for property name (wider), one for power cost (narrow)
+        // Create list template cells: one for property name (wider), one for power cost (narrow), and one for add button
         List<NuiListTemplateCell> templateCells =
         [
             new NuiListTemplateCell(new NuiLabel(PropertyLabels)
@@ -100,24 +97,63 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
                 VerticalAlign = NuiVAlign.Middle,
                 HorizontalAlign = NuiHAlign.Left,
                 Tooltip = PropertyLabels
-            }) { Width = 180f },
+            }) { Width = 170f },
             new NuiListTemplateCell(new NuiLabel(PropertyCosts)
             {
                 VerticalAlign = NuiVAlign.Middle,
                 HorizontalAlign = NuiHAlign.Left
-            }) { Width = 50f }
+            }) { Width = 15f },
+            new NuiListTemplateCell(new NuiButtonImage("ui_btn_forgeadd")
+            {
+                Id = AddPropertyButton,
+                Width = 25f,
+                Height = 25f,
+                Tooltip = "Add this property."
+            }) { Width = 25f }
         ];
 
         NuiList propertyList = new(templateCells, PropertyCount)
         {
-            RowHeight = 38f,
-            Width = 230f,
+            RowHeight = 25f,
+            Width = 250f,
             Height = 250f
         };
 
-        return new NuiColumn
+        // Create a header row with column labels
+        NuiRow headerRow = new()
         {
-            Children = { propertyList }
+            Children =
+            {
+                new NuiLabel("Property")
+                {
+                    Width = 170f,
+                    Height = 25f,
+                    Tooltip = "The name of the property.",
+                    VerticalAlign = NuiVAlign.Middle,
+                    HorizontalAlign = NuiHAlign.Left
+                },
+                new NuiLabel("Cost")
+                {
+                    Width = 50f,
+                    Height = 25f,
+                    Tooltip = "The Power Cost of the property.",
+                    VerticalAlign = NuiVAlign.Middle,
+                    HorizontalAlign = NuiHAlign.Right
+                },
+                new NuiLabel("")
+                {
+                    Width = 30f,
+                    Height = 25f
+                }
+            }
         };
+
+        // Create a column with the header and list
+        NuiColumn listColumn = new()
+        {
+            Children = { headerRow, propertyList }
+        };
+
+        return listColumn;
     }
 }
