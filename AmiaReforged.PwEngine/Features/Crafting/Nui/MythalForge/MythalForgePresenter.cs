@@ -686,16 +686,24 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     {
         Model.RefreshCategories();
 
-        // Build category dropdown options (including "All Categories" option)
+         // Build category dropdown options with unique labels (including "All Categories" option)
         List<NuiComboEntry> categoryOptions = new List<NuiComboEntry> { new("All Categories", -1) };
-        for (int i = 0; i < MythalCategories.Count; i++)
+
+        // Get unique category labels, sorted alphabetically
+        List<string> uniqueLabels = MythalCategories
+            .Select(c => c.Label)
+            .Distinct()
+            .OrderBy(label => label)
+            .ToList();
+
+        for (int i = 0; i < uniqueLabels.Count; i++)
         {
-            categoryOptions.Add(new(MythalCategories[i].Label, i));
+            categoryOptions.Add(new(uniqueLabels[i], i));
         }
         SetListIfChanged(View.CategoryView.CategoryFilterOptions, categoryOptions);
 
         // Reset category filter to "All Categories" if out of bounds
-        if (_selectedCategoryFilterIndex >= MythalCategories.Count)
+        if (_selectedCategoryFilterIndex >= uniqueLabels.Count)
         {
             _selectedCategoryFilterIndex = -1;
         }
@@ -732,15 +740,27 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         // Sort alphabetically by label
         allProperties.Sort((a, b) => string.Compare(a.Label, b.Label, StringComparison.Ordinal));
 
+        // Get unique category labels for filtering
+        List<string> uniqueLabels = MythalCategories
+            .Select(c => c.Label)
+            .Distinct()
+            .OrderBy(label => label)
+            .ToList();
+
         // Filter by category if a specific category is selected
-        if (_selectedCategoryFilterIndex >= 0 && _selectedCategoryFilterIndex < MythalCategories.Count)
+        if (_selectedCategoryFilterIndex >= 0 && _selectedCategoryFilterIndex < uniqueLabels.Count)
         {
-            MythalCategoryModel.MythalCategory selectedCategory = MythalCategories[_selectedCategoryFilterIndex];
-            allProperties = allProperties.Where(p => selectedCategory.Properties.Contains(p)).ToList();
-        }
-        else
-        {
-            _player.SendServerMessage($"Showing all categories.", ColorConstants.Orange);
+            string selectedLabel = uniqueLabels[_selectedCategoryFilterIndex];
+
+            // Get all categories that match this label
+            List<MythalCategoryModel.MythalCategory> matchingCategories = MythalCategories
+                .Where(c => c.Label == selectedLabel)
+                .ToList();
+
+            // Filter to properties that belong to any of these matching categories
+            allProperties = allProperties
+                .Where(p => matchingCategories.Any(cat => cat.Properties.Contains(p)))
+                .ToList();
         }
 
         // Filter by search text
