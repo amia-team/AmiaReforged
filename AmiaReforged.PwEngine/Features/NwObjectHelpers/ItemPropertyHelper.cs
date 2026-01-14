@@ -132,7 +132,8 @@ public static class ItemPropertyHelper
             ItemPropertyType.UseLimitationRacialType,
             ItemPropertyType.UseLimitationSpecificAlignment,
             ItemPropertyType.NoDamage,
-            ItemPropertyType.CastSpell
+            ItemPropertyType.CastSpell,
+            ItemPropertyType.Light
         ];
 
         if (noCost.Any(it => it == ip.Property.PropertyType)) return 0;
