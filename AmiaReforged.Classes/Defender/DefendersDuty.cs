@@ -10,6 +10,9 @@ public class DefendersDuty
     private const float DefenderDamage = 0.25f;
     private const string ThreatAuraEffectTag = "defenders_threat_aura";
     private const string ProtectedEffectTag = "defenders_duty_protected";
+    private const string ImmunityEffectTag = "defenders_duty_immunity";
+    private const int ImmunityPerAlly = 4;
+    private const int MaxImmunityBonus = 40;
 
     private readonly ScriptHandleFactory _scriptHandleFactory;
 
@@ -78,8 +81,14 @@ public class DefendersDuty
         {
             creature.OnCreatureDamage -= SoakDamageForAlly;
             RemoveProtectedVisual(creature);
+            RemovePhysicalImmunity(creature);
         }
+
         _protectedCreatures.Clear();
+
+        // Remove immunity from defender as well
+        if (Defender.LoginCreature != null)
+            RemovePhysicalImmunity(Defender.LoginCreature);
     }
 
     private Effect? CreateThreatAuraEffect()
@@ -183,6 +192,9 @@ public class DefendersDuty
 
         // Apply a subtle visual to show they're protected
         ApplyProtectedVisual(creature);
+
+        // Update immunity for all protected creatures (including defender)
+        UpdateAllPhysicalImmunity();
     }
 
     private void RemoveProtection(NwCreature creature)
@@ -193,6 +205,10 @@ public class DefendersDuty
         _protectedCreatures.Remove(creature);
         creature.OnCreatureDamage -= SoakDamageForAlly;
         RemoveProtectedVisual(creature);
+        RemovePhysicalImmunity(creature);
+
+        // Update immunity for remaining protected creatures
+        UpdateAllPhysicalImmunity();
     }
 
     private static void ApplyProtectedVisual(NwCreature creature)
@@ -207,6 +223,53 @@ public class DefendersDuty
     {
         Effect? protectedVfx = creature.ActiveEffects.FirstOrDefault(e => e.Tag == ProtectedEffectTag);
         creature.RemoveEffect(protectedVfx);
+    }
+
+    /// <summary>
+    ///     Updates the physical damage immunity for all protected creatures and the defender.
+    ///     Each ally in the aura grants +4% immunity to slashing, piercing, and bludgeoning (max 40%).
+    /// </summary>
+    private void UpdateAllPhysicalImmunity()
+    {
+        // Count includes the defender + all protected allies
+        int allyCount = _protectedCreatures.Count + 1;
+        int immunityPercent = Math.Min(allyCount * ImmunityPerAlly, MaxImmunityBonus);
+
+        // Update defender's immunity
+        if (Defender.LoginCreature != null)
+            ApplyPhysicalImmunity(Defender.LoginCreature, immunityPercent);
+
+        // Update all protected allies' immunity
+        foreach (NwCreature creature in _protectedCreatures)
+        {
+            ApplyPhysicalImmunity(creature, immunityPercent);
+        }
+    }
+
+    private static void ApplyPhysicalImmunity(NwCreature creature, int percent)
+    {
+        // Remove existing immunity effect first
+        RemovePhysicalImmunity(creature);
+
+        if (percent <= 0) return;
+
+        // Create linked immunity effects for physical damage types
+        Effect slashImmunity = Effect.DamageImmunityIncrease(DamageType.Slashing, percent);
+        Effect pierceImmunity = Effect.DamageImmunityIncrease(DamageType.Piercing, percent);
+        Effect bludgeonImmunity = Effect.DamageImmunityIncrease(DamageType.Bludgeoning, percent);
+
+        Effect linkedImmunity = Effect.LinkEffects(slashImmunity, pierceImmunity, bludgeonImmunity);
+        linkedImmunity.Tag = ImmunityEffectTag;
+        linkedImmunity.SubType = EffectSubType.Supernatural;
+
+        creature.ApplyEffect(EffectDuration.Permanent, linkedImmunity);
+    }
+
+    private static void RemovePhysicalImmunity(NwCreature creature)
+    {
+        Effect? existingImmunity = creature.ActiveEffects.FirstOrDefault(e => e.Tag == ImmunityEffectTag);
+        if (existingImmunity != null)
+            creature.RemoveEffect(existingImmunity);
     }
 
     /// <summary>
