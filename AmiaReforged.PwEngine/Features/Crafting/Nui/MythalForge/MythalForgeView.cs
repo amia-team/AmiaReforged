@@ -79,6 +79,7 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
     public NuiBind<string> SkillTooltip { get; } = new(key: "skill_name");
     public NuiBind<bool> ToCasterWeaponEnabled { get; } = new(key: "to_caster_enabled");
     public NuiBind<string> ToCasterWeaponTooltip { get; } = new(key: "to_caster_tooltip");
+    public NuiBind<bool> IsCasterWeaponVisible { get; } = new(key: "is_caster_weapon_visible");
 
     /// <summary>
     ///     Defines the root layout of the Mythal Forge view. The layout is composed of several sub-views, which are
@@ -103,6 +104,15 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                     Children =
                     {
                         new NuiSpacer{ Width = 300f},
+                        new NuiImage("ui_forge_cw")
+                        {
+                            Width = 35f,
+                            Height = 35f,
+                            Tooltip = "This is a Caster Type Weapon",
+                            Visible = IsCasterWeaponVisible,
+                            VerticalAlign = NuiVAlign.Middle
+                        },
+                        new NuiSpacer{ Width = 5f},
                         new NuiTextEdit(label: "Edit Name", ItemName, 100, false)
                         {
                             Width = 200f,

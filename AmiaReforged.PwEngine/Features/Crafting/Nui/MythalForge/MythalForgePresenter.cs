@@ -805,6 +805,9 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             : "Convert to a caster weapon. Incompatible properties will be removed.";
 
         SetIfChanged(View.ToCasterWeaponTooltip, tooltip);
+
+        // Update caster weapon indicator visibility
+        SetIfChanged(View.IsCasterWeaponVisible, Model.IsCasterWeapon);
     }
 
     /// <summary>
