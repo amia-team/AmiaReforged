@@ -1,7 +1,6 @@
 ﻿using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using NWN.Core;
 using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Defender;
@@ -9,113 +8,28 @@ namespace AmiaReforged.Classes.Defender;
 public class DefendersDuty
 {
     private const float DefenderDamage = 0.25f;
-    private const int OneRound = 1;
     private const string ThreatAuraEffectTag = "defenders_threat_aura";
+    private const string ProtectedEffectTag = "defenders_duty_protected";
 
-    private readonly SchedulerService _scheduler;
     private readonly ScriptHandleFactory _scriptHandleFactory;
 
-    private ScheduledTask? _deleteSoakDamageTask;
+    // Track protected creatures so we can unsubscribe from their damage events
+    private readonly HashSet<NwCreature> _protectedCreatures = new();
 
     /// <summary>
-    ///     Do not construct directly. Use <see cref="DefendersDutyFactory" /> to create this object. Scheduler service
-    ///     is injected by Anvil at runtime.
+    ///     Do not construct directly. Use <see cref="DefendersDutyFactory" /> to create this object.
     /// </summary>
-    public DefendersDuty(NwPlayer defender, NwCreature target, SchedulerService scheduler,
-        ScriptHandleFactory scriptHandleFactory)
+    public DefendersDuty(NwPlayer defender, ScriptHandleFactory scriptHandleFactory)
     {
         Defender = defender;
-        Target = target;
-        _scheduler = scheduler;
         _scriptHandleFactory = scriptHandleFactory;
     }
 
     private NwPlayer Defender { get; }
-    private NwCreature Target { get; }
 
     public void Apply()
     {
-        ApplySoak();
-        ApplyStunInSmallArea();
         ToggleThreatAura();
-    }
-
-    private void ApplySoak()
-    {
-        const float duration = 7.0f;
-
-        Target.OnCreatureDamage += SoakDamage;
-
-        if (!Target.IsPlayerControlled(out NwPlayer? otherPlayer))
-        {
-            // This is a creature, not a player. We don't need to do anything special. This is just to get the player object for the OnClientLeave event.
-        }
-
-        if (otherPlayer != null)
-            otherPlayer.OnClientLeave += CancelDuty;
-        Defender.OnClientLeave += CancelDuty;
-
-        Defender.LoginCreature?.JumpToObject(Target);
-        Defender.LoginCreature?.SpeakString(message: "*jumps to protecc fren :)))))*");
-
-        _deleteSoakDamageTask =
-            _scheduler.Schedule(() =>
-            {
-                Target.OnCreatureDamage -= SoakDamage;
-                if (otherPlayer != null) otherPlayer.OnClientLeave -= CancelDuty;
-
-                Defender.OnClientLeave -= CancelDuty;
-            }, TimeSpan.FromSeconds(duration));
-    }
-
-    private void ApplyStunInSmallArea()
-    {
-        // Set up the effect and difficulty class.
-        IntPtr stunEffect = NWScript.EffectStunned();
-        int difficulty = 10 +
-                         Defender.LoginCreature!.Classes.Single(c => c.Class.ClassType == ClassType.DwarvenDefender)
-                             .Level / 2 + NWScript.GetAbilityModifier(NWScript.ABILITY_CONSTITUTION);
-
-        // The stun should only last one round. 6 seconds is a very long time in PVP and PVE.
-        float stunDur = NWScript.RoundsToSeconds(OneRound);
-
-        // NWScript's internal library is used here to make it easier for non-C# devs to understand the
-        // way that this effect is applied. Anvil actually has its own Object Oriented way of doing things, but it was
-        // felt that this is a good way to introduce new developers.
-        uint objectInShape =
-            NWScript.GetFirstObjectInShape(NWScript.SHAPE_SPHERE, NWScript.RADIUS_SIZE_LARGE,
-                NWScript.GetLocation(Defender.LoginCreature));
-        while (NWScript.GetIsObjectValid(objectInShape) == NWScript.TRUE)
-        {
-            // Skip the defender and target, but always advance to next object
-            if (objectInShape != Defender.LoginCreature && objectInShape != Target)
-            {
-                int isEnemy = NWScript.GetIsEnemy(objectInShape, Defender.LoginCreature);
-
-                if (isEnemy == NWScript.TRUE)
-                {
-                    bool failed = NWScript.WillSave(objectInShape, difficulty, NWScript.SAVING_THROW_TYPE_LAW) == 0;
-
-                    if (failed)
-                        NWScript.ApplyEffectToObject(NWScript.DURATION_TYPE_TEMPORARY, stunEffect, objectInShape,
-                            stunDur);
-                }
-            }
-
-            objectInShape = NWScript.GetNextObjectInShape(NWScript.SHAPE_SPHERE, NWScript.RADIUS_SIZE_LARGE,
-                NWScript.FALSE,
-                NWScript.OBJECT_TYPE_CREATURE);
-        }
-    }
-
-    private void CancelDuty(ModuleEvents.OnClientLeave obj)
-    {
-        Target.OnCreatureDamage -= SoakDamage;
-
-        _deleteSoakDamageTask?.Cancel();
-
-        // Remove threat aura if active
-        RemoveThreatAura();
     }
 
     /// <summary>
@@ -132,6 +46,8 @@ public class DefendersDuty
 
         if (existingAura != null)
         {
+            // Clean up all protected creatures before removing aura
+            CleanupAllProtectedCreatures();
             Defender.LoginCreature.RemoveEffect(existingAura);
             Defender.SendServerMessage("Defender's Duty aura deactivated.", ColorConstants.Orange);
             return;
@@ -141,19 +57,29 @@ public class DefendersDuty
         Effect? threatAura = CreateThreatAuraEffect();
         if (threatAura == null) return;
 
+        // Subscribe to disconnect to clean up
+        Defender.OnClientLeave += OnDefenderLeave;
+
         Defender.LoginCreature.ApplyEffect(EffectDuration.Permanent, threatAura);
-        Defender.SendServerMessage("Defender's Duty aura activated. Hostile creatures will be drawn to attack you.",
+        Defender.SendServerMessage(
+            "Defender's Duty aura activated. Allies in the aura are protected; hostiles are drawn to attack you.",
             ColorConstants.Lime);
     }
 
-    private void RemoveThreatAura()
+    private void OnDefenderLeave(ModuleEvents.OnClientLeave obj)
     {
-        if (Defender.LoginCreature == null) return;
+        CleanupAllProtectedCreatures();
+        Defender.OnClientLeave -= OnDefenderLeave;
+    }
 
-        Effect? existingAura = Defender.LoginCreature.ActiveEffects
-            .FirstOrDefault(e => e.Tag == ThreatAuraEffectTag);
-
-        Defender.LoginCreature!.RemoveEffect(existingAura);
+    private void CleanupAllProtectedCreatures()
+    {
+        foreach (NwCreature creature in _protectedCreatures.ToList())
+        {
+            creature.OnCreatureDamage -= SoakDamageForAlly;
+            RemoveProtectedVisual(creature);
+        }
+        _protectedCreatures.Clear();
     }
 
     private Effect? CreateThreatAuraEffect()
@@ -168,12 +94,13 @@ public class DefendersDuty
         NwCreature defenderCreature = Defender.LoginCreature!;
 
         ScriptCallbackHandle enterHandle =
-            _scriptHandleFactory.CreateUniqueHandler(info => OnEnterThreatAura(info, defenderCreature));
+            _scriptHandleFactory.CreateUniqueHandler(info => OnEnterAura(info, defenderCreature));
 
         ScriptCallbackHandle heartbeatHandle =
-            _scriptHandleFactory.CreateUniqueHandler(info => OnHeartbeatThreatAura(info, defenderCreature));
+            _scriptHandleFactory.CreateUniqueHandler(info => OnHeartbeatAura(info, defenderCreature));
 
-        ScriptCallbackHandle exitHandle = _scriptHandleFactory.CreateUniqueHandler(_ => ScriptHandleResult.Handled);
+        ScriptCallbackHandle exitHandle =
+            _scriptHandleFactory.CreateUniqueHandler(info => OnExitAura(info, defenderCreature));
 
         Effect threatAuraEffect = Effect.AreaOfEffect(auraVfx, enterHandle, heartbeatHandle, exitHandle);
         threatAuraEffect.SubType = EffectSubType.Supernatural;
@@ -182,37 +109,104 @@ public class DefendersDuty
         return threatAuraEffect;
     }
 
-    private static ScriptHandleResult OnEnterThreatAura(CallInfo info, NwCreature defender)
+    private ScriptHandleResult OnEnterAura(CallInfo info, NwCreature defender)
     {
         if (!info.TryGetEvent(out AreaOfEffectEvents.OnEnter? eventData)
             || eventData.Entering is not NwCreature enteringCreature)
             return ScriptHandleResult.Handled;
 
-        // Only affect hostile creatures
-        if (!defender.IsReactionTypeHostile(enteringCreature))
+        // Don't affect the defender themselves
+        if (enteringCreature == defender)
             return ScriptHandleResult.Handled;
 
-        // Attempt to taunt on entry
-        TryTauntCreature(defender, enteringCreature);
+        if (defender.IsReactionTypeHostile(enteringCreature))
+        {
+            // Hostile: attempt to taunt
+            TryTauntCreature(defender, enteringCreature);
+        }
+        else if (defender.IsReactionTypeFriendly(enteringCreature))
+        {
+            // Friendly: add protection
+            AddProtection(enteringCreature);
+        }
 
         return ScriptHandleResult.Handled;
     }
 
-    private static ScriptHandleResult OnHeartbeatThreatAura(CallInfo info, NwCreature defender)
+    private ScriptHandleResult OnHeartbeatAura(CallInfo info, NwCreature defender)
     {
         if (!info.TryGetEvent(out AreaOfEffectEvents.OnHeartbeat? eventData))
             return ScriptHandleResult.Handled;
 
         foreach (NwCreature creature in eventData.Effect.GetObjectsInEffectArea<NwCreature>())
         {
-            // Skip non-hostiles and the defender themselves
-            if (creature == defender || !defender.IsReactionTypeHostile(creature))
+            if (creature == defender)
                 continue;
 
-            TryTauntCreature(defender, creature);
+            if (defender.IsReactionTypeHostile(creature))
+            {
+                // Hostile: attempt to taunt each heartbeat
+                TryTauntCreature(defender, creature);
+            }
+            else if (defender.IsReactionTypeFriendly(creature) && !_protectedCreatures.Contains(creature))
+            {
+                // Friendly not yet protected (might have entered during combat): add protection
+                AddProtection(creature);
+            }
         }
 
         return ScriptHandleResult.Handled;
+    }
+
+    private ScriptHandleResult OnExitAura(CallInfo info, NwCreature defender)
+    {
+        if (!info.TryGetEvent(out AreaOfEffectEvents.OnExit? eventData)
+            || eventData.Exiting is not NwCreature exitingCreature)
+            return ScriptHandleResult.Handled;
+
+        // Remove protection when friendly leaves the aura
+        if (_protectedCreatures.Contains(exitingCreature))
+        {
+            RemoveProtection(exitingCreature);
+        }
+
+        return ScriptHandleResult.Handled;
+    }
+
+    private void AddProtection(NwCreature creature)
+    {
+        if (_protectedCreatures.Contains(creature))
+            return;
+
+        _protectedCreatures.Add(creature);
+        creature.OnCreatureDamage += SoakDamageForAlly;
+
+        // Apply a subtle visual to show they're protected
+        ApplyProtectedVisual(creature);
+    }
+
+    private void RemoveProtection(NwCreature creature)
+    {
+        if (!_protectedCreatures.Contains(creature))
+            return;
+
+        _protectedCreatures.Remove(creature);
+        creature.OnCreatureDamage -= SoakDamageForAlly;
+        RemoveProtectedVisual(creature);
+    }
+
+    private static void ApplyProtectedVisual(NwCreature creature)
+    {
+        Effect protectedVfx = Effect.VisualEffect(VfxType.DurCessatePositive);
+        protectedVfx.Tag = ProtectedEffectTag;
+        protectedVfx.SubType = EffectSubType.Supernatural;
+        creature.ApplyEffect(EffectDuration.Permanent, protectedVfx);
+    }
+
+    private static void RemoveProtectedVisual(NwCreature creature)
+    {
+        Effect? protectedVfx = creature.ActiveEffects.FirstOrDefault(e => e.Tag == ProtectedEffectTag);
+        creature.RemoveEffect(protectedVfx);
     }
 
     /// <summary>
@@ -243,8 +237,12 @@ public class DefendersDuty
         }
     }
 
-    private void SoakDamage(OnCreatureDamage obj)
+    private void SoakDamageForAlly(OnCreatureDamage obj)
     {
+        // Make sure defender is still valid and alive
+        if (Defender.LoginCreature == null || Defender.LoginCreature.IsDead)
+            return;
+
         // NWN splits damage up into its core damage components then sums the net damage together after resistances
         // and immunities are applied.
         DamageData defenderDamageData = new()
@@ -263,11 +261,10 @@ public class DefendersDuty
             iSonic = (int)(obj.DamageData.GetDamageByType(DamageType.Sonic) * DefenderDamage)
         };
 
-        // This is a call to the NWNX Damage Plugin.
+        // This is a call to the NWNX Damage Plugin - defender takes portion of the damage
         DamagePlugin.DealDamage(defenderDamageData, Defender.LoginCreature, obj.DamagedBy);
 
-        // This is a call to the game event's damage data. We just override the damage done to the defended
-        // target minus the damage that the defender soaked.
+        // Reduce the damage done to the protected ally
         obj.DamageData.SetDamageByType(DamageType.Bludgeoning,
             obj.DamageData.GetDamageByType(DamageType.Bludgeoning) - defenderDamageData.iBludgeoning);
         obj.DamageData.SetDamageByType(DamageType.Piercing,
