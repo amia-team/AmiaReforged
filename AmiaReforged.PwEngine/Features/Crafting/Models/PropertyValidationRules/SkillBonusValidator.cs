@@ -60,7 +60,7 @@ public class SkillBonusValidator : IValidationRule
         bool freeSkillInChangelist = skillsInChangelist.Any(x => x.Bonus == 5);
         bool freeSkillOnItem = skillsInItem.Any(x => x.Bonus == 5) && removedSkills.All(x => x.Bonus != 5 || skillsInItem.Count(s => s.Bonus == 5) > removedSkills.Count(r => r.Bonus == 5));
         bool alreadyHasFreebieSkill = freeSkillInChangelist || freeSkillOnItem;
-        
+
         // Only block if incoming is a +5 AND a freebie already exists
         bool hasMaxFreeSkill = skillBonus.Bonus == 5 && alreadyHasFreebieSkill;
 
@@ -95,33 +95,36 @@ public class SkillBonusValidator : IValidationRule
     private ValidationResult ValidateBeneficialSkill(SkillBonus skillBonus, IEnumerable<ItemProperty> itemProperties,
         List<ChangeListModel.ChangelistEntry> changelistProperties)
     {
-        ValidationEnum result = ValidationEnum.Valid;
-        string error = string.Empty;
-
-
-        // Get all the skills in the changelist that haven't been removed
+        // Get all the skills in the changelist that haven't been removed (BOTH personal and beneficial)
         List<SkillBonus> skillsInChangelist = changelistProperties
             .Where(e => e.BasePropertyType == ItemPropertyType.SkillBonus &&
                         e.State != ChangeListModel.ChangeState.Removed)
             .Select(p => SkillBonus.FromProperty(p.Property))
-            .Where(s => !_personalSkills.Contains(s.Skill))
             .ToList();
 
-        // Get all the skills in the item properties
+        // Get all the skills in the item properties (BOTH personal and beneficial)
         List<SkillBonus> skillsInItem = itemProperties
             .Where(e => e.Property.PropertyType == ItemPropertyType.SkillBonus)
             .Select(SkillBonus.FromProperty)
+            .ToList();
+
+        // Filter to only BENEFICIAL versions (not personal) for this skill
+        List<SkillBonus> beneficialInChangelist = skillsInChangelist
             .Where(s => !_personalSkills.Contains(s.Skill))
             .ToList();
 
-        // Combine the two lists
-        List<SkillBonus> allSkills = skillsInChangelist.Concat(skillsInItem).ToList();
+        List<SkillBonus> beneficialInItem = skillsInItem
+            .Where(s => !_personalSkills.Contains(s.Skill))
+            .ToList();
 
-        // Check if the incoming skill is already in the item properties or changelist
-        bool anySkill = allSkills.Any(x => x.Skill == skillBonus.Skill);
+        // Combine beneficial skills only
+        List<SkillBonus> allBeneficialSkills = beneficialInChangelist.Concat(beneficialInItem).ToList();
 
-        result = anySkill ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
-        error = anySkill ? "Skill already exists on this item." : string.Empty;
+        // Check if the incoming beneficial skill is already present as a beneficial skill
+        bool alreadyHasBeneficial = allBeneficialSkills.Any(x => x.Skill == skillBonus.Skill);
+
+        ValidationEnum result = alreadyHasBeneficial ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
+        string error = alreadyHasBeneficial ? "You already have this beneficial skill bonus on this item." : string.Empty;
 
         return new ValidationResult
         {

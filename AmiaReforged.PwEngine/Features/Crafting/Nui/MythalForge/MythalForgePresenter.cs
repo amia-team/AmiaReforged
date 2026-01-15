@@ -9,6 +9,7 @@ using AmiaReforged.PwEngine.Features.WindowingSystem.Scry.GenericWindows;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NLog;
 
 namespace AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge;
 
@@ -443,7 +444,9 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         List<ChangeListModel.ChangelistEntry> changeList = Model.ChangeListModel.ChangeList();
 
         // Prevent duplicate adds in the same session
-        bool alreadyQueued = changeList.Any(e =>
+        // Exception: Bonus Spell Slots are allowed to have multiple instances
+        bool isBonusSpellSlot = property.Internal.ItemProperty.Property.PropertyType == ItemPropertyType.BonusSpellSlotOfLevelN;
+        bool alreadyQueued = !isBonusSpellSlot && changeList.Any(e =>
             e.State == ChangeListModel.ChangeState.Added &&
             e.Property.ItemProperty.Property.PropertyType ==
             property.Internal.ItemProperty.Property.PropertyType &&
@@ -1064,7 +1067,16 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         // Allow apply if: within budget, OR if item started over budget and we're not making it worse
         int budgetFloor = Math.Min(0, Model.InitialRemainingPowers);
         bool withinBudget = Model.RemainingPowers >= budgetFloor;
-        bool validAction = hasChanges && canAfford && Model.CanMakeCheck() && withinBudget;
+        bool canMakeCheck = Model.CanMakeCheck();
+        bool validAction = hasChanges && canAfford && canMakeCheck && withinBudget;
+
+        LogManager.GetCurrentClassLogger().Info($"[PRESENTER DEBUG] UpdateGoldCost - Apply Button Check:");
+        LogManager.GetCurrentClassLogger().Info($"[PRESENTER DEBUG]   hasChanges: {hasChanges}");
+        LogManager.GetCurrentClassLogger().Info($"[PRESENTER DEBUG]   canAfford: {canAfford}");
+        LogManager.GetCurrentClassLogger().Info($"[PRESENTER DEBUG]   canMakeCheck: {canMakeCheck}");
+        LogManager.GetCurrentClassLogger().Info($"[PRESENTER DEBUG]   withinBudget: {withinBudget}");
+        LogManager.GetCurrentClassLogger().Info($"[PRESENTER DEBUG]   validAction (Apply Enabled): {validAction}");
+
         SetIfChanged(View.ApplyEnabled, validAction);
         SetIfChanged(View.EncourageGold, !canAfford);
     }
@@ -1079,8 +1091,16 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     private void UpdateDifficultyClass()
     {
         bool canMakeCheck = Model.CanMakeCheck();
-        SetIfChanged(View.SkillColor, canMakeCheck ? ColorConstants.White : ColorConstants.Red);
-        SetIfChanged(View.DifficultyClass, Model.GetCraftingDifficulty().ToString());
+        int displayedDc = Model.GetCraftingDifficulty();
+        Color skillColor = canMakeCheck ? ColorConstants.White : ColorConstants.Red;
+
+        LogManager.GetCurrentClassLogger().Info($"[PRESENTER DEBUG] UpdateDifficultyClass:");
+        LogManager.GetCurrentClassLogger().Info($"[PRESENTER DEBUG]   canMakeCheck: {canMakeCheck}");
+        LogManager.GetCurrentClassLogger().Info($"[PRESENTER DEBUG]   displayedDC: {displayedDc}");
+        LogManager.GetCurrentClassLogger().Info($"[PRESENTER DEBUG]   skillColor: {(canMakeCheck ? "White" : "Red")}");
+
+        SetIfChanged(View.SkillColor, skillColor);
+        SetIfChanged(View.DifficultyClass, displayedDc.ToString());
         SetIfChanged(View.SkillTooltip, Model.SkillToolTip());
         SetIfChanged(View.EncourageDifficulty, !canMakeCheck);
     }

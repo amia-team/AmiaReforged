@@ -459,6 +459,167 @@ public static class SkillProperties
                 GuiLabel = "+2 Use Magic Device",
                 GoldCost = SkillCost0,
                 CraftingTier = CraftingTier.Lesser
+            },
+            // Roleplay Skills (paid versions, to supplement the free +5 from Personal Skills)
+            new CraftingProperty
+            {
+                PowerCost = 4,
+                ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_APPRAISE, 10)!,
+                GuiLabel = "+10 Appraise (Roleplay)",
+                GoldCost = SkillCost2,
+                CraftingTier = CraftingTier.Greater
+            },
+            new CraftingProperty
+            {
+                PowerCost = 2,
+                ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_APPRAISE, 5)!,
+                GuiLabel = "+5 Appraise (Roleplay)",
+                GoldCost = SkillCost1,
+                CraftingTier = CraftingTier.Intermediate
+            },
+            new CraftingProperty
+            {
+                PowerCost = 4,
+                ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_BLUFF, 10)!,
+                GuiLabel = "+10 Bluff (Roleplay)",
+                GoldCost = SkillCost2,
+                CraftingTier = CraftingTier.Greater
+            },
+            new CraftingProperty
+            {
+                PowerCost = 2,
+                ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_BLUFF, 5)!,
+                GuiLabel = "+5 Bluff (Roleplay)",
+                GoldCost = SkillCost1,
+                CraftingTier = CraftingTier.Intermediate
+            },
+            new CraftingProperty
+            {
+                PowerCost = 4,
+                ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_CRAFT_ARMOR, 10)!,
+                GuiLabel = "+10 Craft Armor (Roleplay)",
+                GoldCost = SkillCost2,
+                CraftingTier = CraftingTier.Greater
+            },
+            new CraftingProperty
+            {
+                PowerCost = 2,
+                ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_CRAFT_ARMOR, 5)!,
+                GuiLabel = "+5 Craft Armor (Roleplay)",
+                GoldCost = SkillCost1,
+                CraftingTier = CraftingTier.Intermediate
+            },
+            new CraftingProperty
+            {
+                PowerCost = 4,
+                ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_CRAFT_WEAPON, 10)!,
+                GuiLabel = "+10 Craft Weapon (Roleplay)",
+                GoldCost = SkillCost2,
+                CraftingTier = CraftingTier.Greater
+            },
+            new CraftingProperty
+            {
+                PowerCost = 2,
+                ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_CRAFT_WEAPON, 5)!,
+                GuiLabel = "+5 Craft Weapon (Roleplay)",
+                GoldCost = SkillCost1,
+                CraftingTier = CraftingTier.Intermediate
+            },
+            new CraftingProperty
+            {
+                PowerCost = 4,
+                ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_INTIMIDATE, 10)!,
+                GuiLabel = "+10 Intimidate (Roleplay)",
+                GoldCost = SkillCost2,
+                CraftingTier = CraftingTier.Greater
+            },
+            new CraftingProperty
+            {
+                PowerCost = 2,
+                ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_INTIMIDATE, 5)!,
+                GuiLabel = "+5 Intimidate (Roleplay)",
+                GoldCost = SkillCost1,
+                CraftingTier = CraftingTier.Intermediate
+            },
+            new CraftingProperty
+            {
+                PowerCost = 4,
+                ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_LORE, 10)!,
+                GuiLabel = "+10 Lore (Roleplay)",
+                GoldCost = SkillCost2,
+                CraftingTier = CraftingTier.Greater
+            },
+            new CraftingProperty
+            {
+                PowerCost = 2,
+                ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_LORE, 5)!,
+                GuiLabel = "+5 Lore (Roleplay)",
+                GoldCost = SkillCost1,
+                CraftingTier = CraftingTier.Intermediate
+            },
+            new CraftingProperty
+            {
+                PowerCost = 4,
+                ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_PERSUADE, 10)!,
+                GuiLabel = "+10 Persuade (Roleplay)",
+                GoldCost = SkillCost2,
+                CraftingTier = CraftingTier.Greater
+            },
+            new CraftingProperty
+            {
+                PowerCost = 2,
+                ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_PERSUADE, 5)!,
+                GuiLabel = "+5 Persuade (Roleplay)",
+                GoldCost = SkillCost1,
+                CraftingTier = CraftingTier.Intermediate
+            },
+            new CraftingProperty
+            {
+                PowerCost = 4,
+                ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_PICK_POCKET, 10)!,
+                GuiLabel = "+10 Pick Pocket (Roleplay)",
+                GoldCost = SkillCost2,
+                CraftingTier = CraftingTier.Greater
+            },
+            new CraftingProperty
+            {
+                PowerCost = 2,
+                ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_PICK_POCKET, 5)!,
+                GuiLabel = "+5 Pick Pocket (Roleplay)",
+                GoldCost = SkillCost1,
+                CraftingTier = CraftingTier.Intermediate
+            },
+            new CraftingProperty
+            {
+                PowerCost = 4,
+                ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_RIDE, 10)!,
+                GuiLabel = "+10 Ride (Roleplay)",
+                GoldCost = SkillCost2,
+                CraftingTier = CraftingTier.Greater
+            },
+            new CraftingProperty
+            {
+                PowerCost = 2,
+                ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_RIDE, 5)!,
+                GuiLabel = "+5 Ride (Roleplay)",
+                GoldCost = SkillCost1,
+                CraftingTier = CraftingTier.Intermediate
+            },
+            new CraftingProperty
+            {
+                PowerCost = 4,
+                ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_TUMBLE, 10)!,
+                GuiLabel = "+10 Tumble (Roleplay)",
+                GoldCost = SkillCost2,
+                CraftingTier = CraftingTier.Greater
+            },
+            new CraftingProperty
+            {
+                PowerCost = 2,
+                ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_TUMBLE, 5)!,
+                GuiLabel = "+5 Tumble (Roleplay)",
+                GoldCost = SkillCost1,
+                CraftingTier = CraftingTier.Intermediate
             }
         ],
         BaseDifficulty = 8

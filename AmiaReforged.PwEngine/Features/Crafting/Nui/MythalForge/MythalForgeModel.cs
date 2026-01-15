@@ -300,20 +300,28 @@ public class MythalForgeModel
     public int GetCraftingDifficulty()
     {
         List<CraftingProperty> addedProperties = ChangeListModel.ChangeList()
-            .Where(e => e.State != ChangeListModel.ChangeState.Removed)
+            .Where(e => e.State == ChangeListModel.ChangeState.Added)
             .Select(e => e.Property)
             .ToList();
 
-        if (addedProperties.Count == 0) return 0;
+        LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] GetCraftingDifficulty called. Added properties count: {addedProperties.Count}");
+
+        if (addedProperties.Count == 0)
+        {
+            LogManager.GetCurrentClassLogger().Info("[CRAFTING DEBUG] No added properties, returning DC 0");
+            return 0;
+        }
 
         int craftingDifficulty = 0;
 
         foreach (CraftingProperty property in addedProperties)
         {
             int dc = _dcCalculator.ComputeDifficulty(property);
+            LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] Property tier {property.CraftingTier} has DC {dc}");
             craftingDifficulty = Math.Max(craftingDifficulty, dc);
         }
 
+        LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] Final crafting difficulty: {craftingDifficulty}");
         return craftingDifficulty;
     }
 
@@ -534,19 +542,28 @@ public class MythalForgeModel
     {
         int baseType = NWScript.GetBaseItemType(Item);
         string tooltip = "Skill: ";
-        if (ItemTypeConstants.EquippableItems().Contains(baseType))
-            tooltip += baseType is NWScript.BASE_ITEM_ARMOR or NWScript.BASE_ITEM_SMALLSHIELD
-                or NWScript.BASE_ITEM_LARGESHIELD or NWScript.BASE_ITEM_TOWERSHIELD or NWScript.BASE_ITEM_GLOVES
-                or NWScript.BASE_ITEM_BRACER or NWScript.BASE_ITEM_BELT
-                ? "Craft Armor"
-                : "Spellcraft";
 
+        // Check weapons first (before equippable items, since weapons are also equippable)
         if (ItemTypeConstants.RangedWeapons().Contains(baseType) ||
             ItemTypeConstants.ThrownWeapons().Contains(baseType) ||
             ItemTypeConstants.Ammo().Contains(baseType) ||
             ItemTypeConstants.Melee2HWeapons().Contains(baseType) ||
             ItemTypeConstants.MeleeWeapons().Contains(baseType))
+        {
             tooltip += "Craft Weapon";
+        }
+        else if (ItemTypeConstants.EquippableItems().Contains(baseType))
+        {
+            tooltip += baseType is NWScript.BASE_ITEM_ARMOR or NWScript.BASE_ITEM_SMALLSHIELD
+                or NWScript.BASE_ITEM_LARGESHIELD or NWScript.BASE_ITEM_TOWERSHIELD or NWScript.BASE_ITEM_GLOVES
+                or NWScript.BASE_ITEM_BRACER or NWScript.BASE_ITEM_BELT or NWScript.BASE_ITEM_HELMET
+                ? "Craft Armor"
+                : "Spellcraft";
+        }
+        else
+        {
+            tooltip += "Spellcraft";
+        }
 
         bool canCraft = CanMakeCheck();
         if (!canCraft) tooltip += " (You don't have the required skill rank)";
@@ -559,27 +576,64 @@ public class MythalForgeModel
     /// </summary>
     /// <returns>
     /// The skill constant associated with the item type:
-    /// - Returns SKILL_CRAFT_ARMOR for equippable items related to armor and shields.
-    /// - Returns SKILL_CRAFT_WEAPON for ranged, thrown weapons, or ammo.
-    /// - Defaults to SKILL_SPELLCRAFT if no specific match is found.
+    /// - Returns SKILL_CRAFT_WEAPON for all weapon types (melee, ranged, thrown, ammo).
+    /// - Returns SKILL_CRAFT_ARMOR for armor, shields, gloves, bracers, and belts.
+    /// - Defaults to SKILL_SPELLCRAFT for other equippable items (rings, amulets, cloaks, boots, helmets).
     /// </returns>
     private int GetSkill()
     {
         int baseType = NWScript.GetBaseItemType(Item);
+
+        LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] GetSkill() called for base item type: {baseType}");
+
+        // Check weapons first (before equippable items, since weapons are also equippable)
+        if (ItemTypeConstants.MeleeWeapons().Contains(baseType))
+        {
+            LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] Item is a melee weapon, using SKILL_CRAFT_WEAPON");
+            return NWScript.SKILL_CRAFT_WEAPON;
+        }
+        if (ItemTypeConstants.Melee2HWeapons().Contains(baseType))
+        {
+            LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] Item is a 2H melee weapon, using SKILL_CRAFT_WEAPON");
+            return NWScript.SKILL_CRAFT_WEAPON;
+        }
+        if (ItemTypeConstants.RangedWeapons().Contains(baseType))
+        {
+            LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] Item is a ranged weapon, using SKILL_CRAFT_WEAPON");
+            return NWScript.SKILL_CRAFT_WEAPON;
+        }
+        if (ItemTypeConstants.ThrownWeapons().Contains(baseType))
+        {
+            LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] Item is a thrown weapon, using SKILL_CRAFT_WEAPON");
+            return NWScript.SKILL_CRAFT_WEAPON;
+        }
+        if (ItemTypeConstants.Ammo().Contains(baseType))
+        {
+            LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] Item is ammo, using SKILL_CRAFT_WEAPON");
+            return NWScript.SKILL_CRAFT_WEAPON;
+        }
+
+        // Check armor and related equipment
         if (ItemTypeConstants.EquippableItems().Contains(baseType))
-            return baseType is NWScript.BASE_ITEM_ARMOR or NWScript.BASE_ITEM_SMALLSHIELD
+        {
+            bool isArmor = baseType is NWScript.BASE_ITEM_ARMOR or NWScript.BASE_ITEM_SMALLSHIELD
                 or NWScript.BASE_ITEM_LARGESHIELD or NWScript.BASE_ITEM_TOWERSHIELD or NWScript.BASE_ITEM_GLOVES
-                or NWScript.BASE_ITEM_BRACER or NWScript.BASE_ITEM_BELT
-                ? NWScript.SKILL_CRAFT_ARMOR
-                : NWScript.SKILL_SPELLCRAFT;
+                or NWScript.BASE_ITEM_BRACER or NWScript.BASE_ITEM_BELT;
 
-        if (ItemTypeConstants.RangedWeapons().Contains(baseType)) return NWScript.SKILL_CRAFT_WEAPON;
+            if (isArmor)
+            {
+                LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] Item is armor/shield/gloves/bracer/belt, using SKILL_CRAFT_ARMOR");
+                return NWScript.SKILL_CRAFT_ARMOR;
+            }
+            else
+            {
+                LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] Item is other equippable (ring/amulet/cloak/boots/helmet), using SKILL_SPELLCRAFT");
+                return NWScript.SKILL_SPELLCRAFT;
+            }
+        }
 
-        if (ItemTypeConstants.ThrownWeapons().Contains(baseType)) return NWScript.SKILL_CRAFT_WEAPON;
-
-        if (ItemTypeConstants.Ammo().Contains(baseType)) return NWScript.SKILL_CRAFT_WEAPON;
-
-        // Default fall back value
+        // Default fall back value for non-equippable items
+        LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] Item type not matched, defaulting to SKILL_SPELLCRAFT");
         return NWScript.SKILL_SPELLCRAFT;
     }
 
@@ -590,8 +644,23 @@ public class MythalForgeModel
     /// True if the player's skill rank plus a modifier is greater than or equal to the crafting difficulty;
     /// otherwise, false.
     /// </returns>
-    public bool CanMakeCheck() =>
-        NWScript.GetSkillRank(GetSkill(), _player.LoginCreature) + 20 >= GetCraftingDifficulty();
+    public bool CanMakeCheck()
+    {
+        int skillRank = NWScript.GetSkillRank(GetSkill(), _player.LoginCreature);
+        int takeTwentyBonus = 20;
+        int totalSkill = skillRank + takeTwentyBonus;
+        int craftingDc = GetCraftingDifficulty();
+        bool canCraft = totalSkill >= craftingDc;
+
+        LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] CanMakeCheck:");
+        LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG]   Skill Rank: {skillRank}");
+        LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG]   Take 20 Bonus: {takeTwentyBonus}");
+        LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG]   Total Skill: {totalSkill}");
+        LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG]   Crafting DC: {craftingDc}");
+        LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG]   Can Craft: {canCraft} ({totalSkill} >= {craftingDc})");
+
+        return canCraft;
+    }
 
     /// <summary>
     /// Removes an active crafting property from the current model and updates the changelist.
