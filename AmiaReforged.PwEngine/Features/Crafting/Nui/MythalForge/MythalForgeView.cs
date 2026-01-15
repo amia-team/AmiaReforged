@@ -103,7 +103,7 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                 {
                     Children =
                     {
-                        new NuiSpacer{ Width = 300f},
+                        new NuiSpacer { Width = 393f },
                         new NuiImage("ui_forge_cw")
                         {
                             Width = 35f,
@@ -116,8 +116,47 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                         new NuiTextEdit(label: "Edit Name", ItemName, 100, false)
                         {
                             Width = 200f,
+                            Height = 35f
+                        }
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiTextEdit(label: "Filter...", CategoryView.PropertyFilterText, 100, false)
+                        {
+                            Tooltip = "Filter properties by name",
+                            Width = 80f,
                             Height = 38f
                         },
+                        new NuiSpacer { Width = 5f },
+                        new NuiCombo
+                        {
+                            Id = MythalCategoryView.CategoryFilterChanged,
+                            Width = 120f,
+                            Height = 38f,
+                            Entries = CategoryView.CategoryFilterOptions,
+                            Selected = CategoryView.CategoryFilterIndex
+                        },
+                        new NuiSpacer { Width = 5f },
+                        new NuiButtonImage("isk_search")
+                        {
+                            Id = MythalCategoryView.SearchPropertiesButton,
+                            Width = 38f,
+                            Height = 38f,
+                            Tooltip = "Search/filter properties"
+                        },
+                        new NuiSpacer { Width = 72f },
+                        new NuiButtonImage("ui_btn_castweap")
+                        {
+                            Id = ToCasterWeapon,
+                            Width = 150f,
+                            Height = 38f,
+                            Enabled = ToCasterWeaponEnabled,
+                            Tooltip = ToCasterWeaponTooltip
+                        },
+                        new NuiSpacer { Width = 5f },
                         new NuiButtonImage("ui_btn_rename")
                         {
                             Id = ApplyNameButtonId,
@@ -131,71 +170,47 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                 {
                     Children =
                     {
-                        new NuiTextEdit(label: "Filter...", CategoryView.PropertyFilterText, 100, false)
-                        {
-                            Tooltip = "Filter properties by name",
-                            Width = 80f,
-                            Height = 35f
-                        },
-                        new NuiSpacer { Width = 5f },
-                        new NuiCombo
-                        {
-                            Id = MythalCategoryView.CategoryFilterChanged,
-                            Width = 120f,
-                            Height = 35f,
-                            Entries = CategoryView.CategoryFilterOptions,
-                            Selected = CategoryView.CategoryFilterIndex
-                        },
-                        new NuiSpacer { Width = 5f },
-                        new NuiButtonImage("isk_search")
-                        {
-                            Id = MythalCategoryView.SearchPropertiesButton,
-                            Width = 35f,
-                            Height = 35f,
-                            Tooltip = "Search/filter properties"
-                        },
-                        new NuiSpacer { Width = 20f },
-                        new NuiLabel(label: "Max Powers:")
-                        {
-                            VerticalAlign = NuiVAlign.Middle,
-                            Width = 85f,
-                            Height = 35f
-                        },
-                        new NuiSpacer { Width = 10f },
-                        new NuiLabel(MaxPowers)
-                        {
-                            VerticalAlign = NuiVAlign.Middle,
-                            Width = 50f,
-                            Height = 35f
-                        },
-                        new NuiSpacer { Width = 230f },
-                        new NuiLabel(label: "Remaining Powers:")
-                        {
-                            VerticalAlign = NuiVAlign.Middle,
-                            Width = 125f,
-                            Height = 35f
-                        },
-                        new NuiSpacer { Width = 10f },
-                        new NuiLabel(RemainingPowers)
-                        {
-                            VerticalAlign = NuiVAlign.Middle,
-                            Width = 50f,
-                            Height = 35f
-                        }
-                    }
-                },
-                new NuiRow
-                {
-                    Children =
-                    {
                         CategoryView.RootLayout(),
                         new NuiSpacer { Width = 20f },
-                        new NuiGroup
+                        new NuiColumn
                         {
-                            Element = ActivePropertiesView.RootLayout(),
-                            Border = true,
-                            Width = 900f,
-                            Height = 420f
+                            Children =
+                            {
+                                new NuiRow
+                                {
+                                    Children =
+                                    {
+                                        new NuiLabel(label: "Max Powers:")
+                                        {
+                                            VerticalAlign = NuiVAlign.Middle,
+                                            Width = 85f,
+                                            Height = 25f
+                                        },
+                                        new NuiSpacer { Width = 10f },
+                                        new NuiLabel(MaxPowers)
+                                        {
+                                            VerticalAlign = NuiVAlign.Middle,
+                                            Width = 50f,
+                                            Height = 25f
+                                        },
+                                        new NuiSpacer { Width = 45f },
+                                        new NuiLabel(label: "Remaining Powers:")
+                                        {
+                                            VerticalAlign = NuiVAlign.Middle,
+                                            Width = 125f,
+                                            Height = 25f
+                                        },
+                                        new NuiSpacer { Width = 12f },
+                                        new NuiLabel(RemainingPowers)
+                                        {
+                                            VerticalAlign = NuiVAlign.Middle,
+                                            Width = 50f,
+                                            Height = 25f
+                                        }
+                                    }
+                                },
+                                ActivePropertiesView.RootLayout()
+                            }
                         }
                     }
                 },
@@ -209,32 +224,14 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                             Width = 150f,
                             Height = 38f
                         },
-                        new NuiSpacer { Width = 20f },
-                        new NuiButtonImage("ui_btn_forge")
-                        {
-                            Id = ApplyChanges,
-                            Width = 150f,
-                            Height = 38f,
-                            Tooltip = "Forge your item!",
-                            Enabled = ApplyEnabled
-                        },
-                        new NuiSpacer { Width = 20f },
-                        new NuiButtonImage("ui_btn_castweap")
-                        {
-                            Id = ToCasterWeapon,
-                            Width = 150f,
-                            Height = 38f,
-                            Enabled = ToCasterWeaponEnabled,
-                            Tooltip = ToCasterWeaponTooltip
-                        },
-                        new NuiSpacer { Width = 20f },
+                        new NuiSpacer { Width = 10f },
                         new NuiLabel(label: "Difficulty:")
                         {
                             Width = 70f,
                             Height = 38f,
                             VerticalAlign = NuiVAlign.Middle
                         },
-                        new NuiSpacer { Width = 20f },
+                        new NuiSpacer { Width = 5f },
                         new NuiLabel(DifficultyClass)
                         {
                             Tooltip = SkillTooltip,
@@ -246,21 +243,30 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                         new NuiSpacer { Width = 20f },
                         new NuiLabel(label: "Gold Cost:")
                         {
-                            Width = 75f,
+                            Width = 70f,
                             Height = 38f,
                             VerticalAlign = NuiVAlign.Middle
                         },
-                        new NuiSpacer { Width = 20f },
+                        new NuiSpacer { Width = 50f },
                         new NuiLabel(GoldCost)
                         {
                             ForegroundColor = GoldCostColor,
                             Height = 38f,
-                            Width = 100f,
-                            HorizontalAlign = NuiHAlign.Center,
+                            Width = 50f,
+                            HorizontalAlign = NuiHAlign.Right,
                             VerticalAlign = NuiVAlign.Middle,
                             Tooltip = GoldCostTooltip,
                             Encouraged = EncourageGold
-                        }
+                        },
+                        new NuiSpacer { Width = 25f },
+                        new NuiButtonImage("ui_btn_forge")
+                        {
+                            Id = ApplyChanges,
+                            Width = 150f,
+                            Height = 38f,
+                            Tooltip = "Forge your item!",
+                            Enabled = ApplyEnabled
+                        },
                     }
                 }
             }
