@@ -22,8 +22,6 @@ public class DifficultyClassCalculator
 
         int powerLevel = Math.Max(0, (int)property.CraftingTier);
 
-        LogManager.GetCurrentClassLogger().Info($"[DC CALC DEBUG] ComputeDifficulty called for tier {property.CraftingTier}, powerLevel: {powerLevel}");
-
         // Define the difficulty range: easiest and hardest possible DCs
         const double minimumDifficulty = 10.0;  // Tier 0 items
         const double maximumDifficulty = 70.0;  // High tier items
@@ -39,14 +37,8 @@ public class DifficultyClassCalculator
         double midpointExponent = Math.Pow(midpointTier, curveSteepness);
         double scalingFactor = powerLevelExponent <= 0 ? 0.0 : powerLevelExponent / (powerLevelExponent + midpointExponent);
 
-        LogManager.GetCurrentClassLogger().Info($"[DC CALC DEBUG]   powerLevel^steepness: {powerLevelExponent}");
-        LogManager.GetCurrentClassLogger().Info($"[DC CALC DEBUG]   midpoint^steepness: {midpointExponent}");
-        LogManager.GetCurrentClassLogger().Info($"[DC CALC DEBUG]   scalingFactor: {scalingFactor}");
-
         // Apply the scaling factor to get the final DC between min and max
         int difficultyClass = (int)Math.Floor(minimumDifficulty + (maximumDifficulty - minimumDifficulty) * scalingFactor);
-
-        LogManager.GetCurrentClassLogger().Info($"[DC CALC DEBUG]   Final DC: {difficultyClass}");
 
         return difficultyClass;
     }

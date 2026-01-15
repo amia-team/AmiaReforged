@@ -1070,13 +1070,6 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         bool canMakeCheck = Model.CanMakeCheck();
         bool validAction = hasChanges && canAfford && canMakeCheck && withinBudget;
 
-        LogManager.GetCurrentClassLogger().Info($"[PRESENTER DEBUG] UpdateGoldCost - Apply Button Check:");
-        LogManager.GetCurrentClassLogger().Info($"[PRESENTER DEBUG]   hasChanges: {hasChanges}");
-        LogManager.GetCurrentClassLogger().Info($"[PRESENTER DEBUG]   canAfford: {canAfford}");
-        LogManager.GetCurrentClassLogger().Info($"[PRESENTER DEBUG]   canMakeCheck: {canMakeCheck}");
-        LogManager.GetCurrentClassLogger().Info($"[PRESENTER DEBUG]   withinBudget: {withinBudget}");
-        LogManager.GetCurrentClassLogger().Info($"[PRESENTER DEBUG]   validAction (Apply Enabled): {validAction}");
-
         SetIfChanged(View.ApplyEnabled, validAction);
         SetIfChanged(View.EncourageGold, !canAfford);
     }
@@ -1093,11 +1086,6 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         bool canMakeCheck = Model.CanMakeCheck();
         int displayedDc = Model.GetCraftingDifficulty();
         Color skillColor = canMakeCheck ? ColorConstants.White : ColorConstants.Red;
-
-        LogManager.GetCurrentClassLogger().Info($"[PRESENTER DEBUG] UpdateDifficultyClass:");
-        LogManager.GetCurrentClassLogger().Info($"[PRESENTER DEBUG]   canMakeCheck: {canMakeCheck}");
-        LogManager.GetCurrentClassLogger().Info($"[PRESENTER DEBUG]   displayedDC: {displayedDc}");
-        LogManager.GetCurrentClassLogger().Info($"[PRESENTER DEBUG]   skillColor: {(canMakeCheck ? "White" : "Red")}");
 
         SetIfChanged(View.SkillColor, skillColor);
         SetIfChanged(View.DifficultyClass, displayedDc.ToString());

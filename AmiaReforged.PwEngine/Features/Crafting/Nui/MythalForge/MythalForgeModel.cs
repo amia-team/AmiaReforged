@@ -304,11 +304,9 @@ public class MythalForgeModel
             .Select(e => e.Property)
             .ToList();
 
-        LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] GetCraftingDifficulty called. Added properties count: {addedProperties.Count}");
 
         if (addedProperties.Count == 0)
         {
-            LogManager.GetCurrentClassLogger().Info("[CRAFTING DEBUG] No added properties, returning DC 0");
             return 0;
         }
 
@@ -317,11 +315,9 @@ public class MythalForgeModel
         foreach (CraftingProperty property in addedProperties)
         {
             int dc = _dcCalculator.ComputeDifficulty(property);
-            LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] Property tier {property.CraftingTier} has DC {dc}");
             craftingDifficulty = Math.Max(craftingDifficulty, dc);
         }
 
-        LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] Final crafting difficulty: {craftingDifficulty}");
         return craftingDifficulty;
     }
 
@@ -584,32 +580,26 @@ public class MythalForgeModel
     {
         int baseType = NWScript.GetBaseItemType(Item);
 
-        LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] GetSkill() called for base item type: {baseType}");
 
         // Check weapons first (before equippable items, since weapons are also equippable)
         if (ItemTypeConstants.MeleeWeapons().Contains(baseType))
         {
-            LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] Item is a melee weapon, using SKILL_CRAFT_WEAPON");
             return NWScript.SKILL_CRAFT_WEAPON;
         }
         if (ItemTypeConstants.Melee2HWeapons().Contains(baseType))
         {
-            LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] Item is a 2H melee weapon, using SKILL_CRAFT_WEAPON");
             return NWScript.SKILL_CRAFT_WEAPON;
         }
         if (ItemTypeConstants.RangedWeapons().Contains(baseType))
         {
-            LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] Item is a ranged weapon, using SKILL_CRAFT_WEAPON");
             return NWScript.SKILL_CRAFT_WEAPON;
         }
         if (ItemTypeConstants.ThrownWeapons().Contains(baseType))
         {
-            LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] Item is a thrown weapon, using SKILL_CRAFT_WEAPON");
             return NWScript.SKILL_CRAFT_WEAPON;
         }
         if (ItemTypeConstants.Ammo().Contains(baseType))
         {
-            LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] Item is ammo, using SKILL_CRAFT_WEAPON");
             return NWScript.SKILL_CRAFT_WEAPON;
         }
 
@@ -622,18 +612,15 @@ public class MythalForgeModel
 
             if (isArmor)
             {
-                LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] Item is armor/shield/gloves/bracer/belt, using SKILL_CRAFT_ARMOR");
                 return NWScript.SKILL_CRAFT_ARMOR;
             }
             else
             {
-                LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] Item is other equippable (ring/amulet/cloak/boots/helmet), using SKILL_SPELLCRAFT");
                 return NWScript.SKILL_SPELLCRAFT;
             }
         }
 
         // Default fall back value for non-equippable items
-        LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] Item type not matched, defaulting to SKILL_SPELLCRAFT");
         return NWScript.SKILL_SPELLCRAFT;
     }
 
@@ -651,13 +638,6 @@ public class MythalForgeModel
         int totalSkill = skillRank + takeTwentyBonus;
         int craftingDc = GetCraftingDifficulty();
         bool canCraft = totalSkill >= craftingDc;
-
-        LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG] CanMakeCheck:");
-        LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG]   Skill Rank: {skillRank}");
-        LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG]   Take 20 Bonus: {takeTwentyBonus}");
-        LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG]   Total Skill: {totalSkill}");
-        LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG]   Crafting DC: {craftingDc}");
-        LogManager.GetCurrentClassLogger().Info($"[CRAFTING DEBUG]   Can Craft: {canCraft} ({totalSkill} >= {craftingDc})");
 
         return canCraft;
     }
