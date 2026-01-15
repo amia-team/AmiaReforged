@@ -32,7 +32,7 @@ public class ActivePropertiesView : IScryView
                 HorizontalAlign = NuiHAlign.Center,
                 ForegroundColor = PropertyColors
             }) { Width = 25f },
-            new NuiListTemplateCell(new NuiButtonImage(resRef: "ir_cntrspell")
+            new NuiListTemplateCell(new NuiButtonImage(resRef: "ui_btn_forgerem")
             {
                 Id = RemovePropertyConst,
                 Tooltip = "Remove this property.",
