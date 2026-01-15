@@ -1000,7 +1000,8 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         // Update bindings
         SetIfChanged(View.ActivePropertiesView.PropertyCount, _consolidatedProperties.Count);
 
-        List<string> labels = _consolidatedProperties.Select(x => x.label).ToList();
+        // Strip "Additional Property: " prefix from labels for cleaner display
+        List<string> labels = _consolidatedProperties.Select(x => StripAdditionalPropertyPrefix(x.label)).ToList();
         SetListIfChanged(View.ActivePropertiesView.PropertyNames, labels);
 
         List<string> powerCosts = _consolidatedProperties.Select(x => x.powerCost.ToString()).ToList();
@@ -1013,6 +1014,21 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         SetListIfChanged(View.ActivePropertiesView.Removable, removable);
     }
 
+    /// <summary>
+    /// Strips the "Additional Property: " prefix from property labels if present.
+    /// This cleans up the display in the consolidated properties list.
+    /// </summary>
+    /// <param name="label">The property label to clean.</param>
+    /// <returns>The label without the "Additional Property: " prefix if it was present, otherwise the original label.</returns>
+    private string StripAdditionalPropertyPrefix(string label)
+    {
+        const string prefix = "Additional Property: ";
+        if (label.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return label.Substring(prefix.Length);
+        }
+        return label;
+    }
 
     /// <summary>
     /// Updates the gold cost display and related UI bindings within the crafting interface.

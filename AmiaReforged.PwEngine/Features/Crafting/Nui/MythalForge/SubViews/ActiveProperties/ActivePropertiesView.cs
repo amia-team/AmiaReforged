@@ -19,28 +19,31 @@ public class ActivePropertiesView : IScryView
     {
         List<NuiListTemplateCell> cells =
         [
-            new(new NuiLabel(PropertyNames)
+            new NuiListTemplateCell(new NuiLabel(PropertyNames)
             {
-                Width = 400f,
+                Tooltip = PropertyNames,
+                VerticalAlign = NuiVAlign.Middle,
+                HorizontalAlign = NuiHAlign.Left,
                 ForegroundColor = PropertyColors
-            }),
-            new(new NuiLabel(PropertyPowerCosts)
-                {
-                    Width = 15f,
-                    HorizontalAlign = NuiHAlign.Center,
-                    VerticalAlign = NuiVAlign.Middle,
-                    ForegroundColor = PropertyColors
-                }),
-
-            new(new NuiButtonImage(resRef: "ir_cntrspell")
+            }) { Width = 270f },
+            new NuiListTemplateCell(new NuiLabel(PropertyPowerCosts)
+            {
+                VerticalAlign = NuiVAlign.Middle,
+                HorizontalAlign = NuiHAlign.Center,
+                ForegroundColor = PropertyColors
+            }) { Width = 25f },
+            new NuiListTemplateCell(new NuiButtonImage(resRef: "ir_cntrspell")
             {
                 Id = RemovePropertyConst,
-                Enabled = Removable
-            })
-            {
+                Tooltip = "Remove this property.",
                 Width = 25f,
-                VariableSize = false
-            }
+                Height = 25f,
+                Enabled = Removable
+            }) { Width = 25f },
+            new NuiListTemplateCell(new NuiSpacer
+            {
+                Width = 35f,
+            }) { Width = 40f }
         ];
 
         return new NuiColumn
@@ -49,11 +52,11 @@ public class ActivePropertiesView : IScryView
             {
                 new NuiList(cells, PropertyCount)
                 {
-                    RowHeight = 25f
+                    RowHeight = 25f,
+                    Width = 360f,
+                    Height = 250f
                 }
-            },
-            Width = 360f,
-            Height = 250f
+            }
         };
     }
 }

@@ -98,12 +98,12 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                     Children = new List<NuiElement>(),
                     DrawList = [new NuiDrawListImage("ui_forge", new NuiRect(-5f, -25f, 1220f, 813f))]
                 },
-                new NuiSpacer { Height = 130f },
+                new NuiSpacer { Height = 135f },
                 new NuiRow
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 393f },
+                        new NuiSpacer { Width = 333f },
                         new NuiImage("ui_forge_cw")
                         {
                             Width = 35f,
@@ -115,7 +115,7 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                         new NuiSpacer{ Width = 5f},
                         new NuiTextEdit(label: "Edit Name", ItemName, 100, false)
                         {
-                            Width = 200f,
+                            Width = 262f,
                             Height = 35f
                         }
                     }
@@ -221,6 +221,7 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                         new NuiButtonImage("ui_btn_cancelf")
                         {
                             Id = Cancel,
+                            Tooltip = "Cancel crafting and close.",
                             Width = 150f,
                             Height = 38f
                         },
@@ -258,7 +259,7 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                             Tooltip = GoldCostTooltip,
                             Encouraged = EncourageGold
                         },
-                        new NuiSpacer { Width = 25f },
+                        new NuiSpacer { Width = 27f },
                         new NuiButtonImage("ui_btn_forge")
                         {
                             Id = ApplyChanges,
