@@ -1,4 +1,4 @@
-﻿using AmiaReforged.PwEngine.Features.Crafting.ItemProperties;
+﻿﻿using AmiaReforged.PwEngine.Features.Crafting.ItemProperties;
 using AmiaReforged.PwEngine.Features.Crafting.Models;
 using Anvil.API;
 using Anvil.Services;
@@ -307,6 +307,10 @@ public class CraftingPropertyData
 
         properties.Add(VisualEffectConstants.VisualEffects);
 
+        // Add spell casting categories for weapons
+        properties.Add(CastSpellProperties.FluffSpells);
+        properties.Add(CastSpellProperties.BeneficialSpells);
+
         // Bonus spell slots (1-point cost) for all melee/thrown weapons
         properties.Add(BonusSpellSlotProperties.AssassinBonusSpells);
         properties.Add(BonusSpellSlotProperties.BardBonusSpells);
@@ -350,6 +354,8 @@ public class CraftingPropertyData
                 GenericItemProperties.Regeneration,
                 GenericItemProperties.Keen,
                 AbilityProperties.Abilities,
+                CastSpellProperties.FluffSpells,
+                CastSpellProperties.BeneficialSpells,
             ];
 
             Properties.TryAdd(weapon, properties);

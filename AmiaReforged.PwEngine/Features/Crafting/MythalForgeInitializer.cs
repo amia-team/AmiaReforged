@@ -323,10 +323,10 @@ public class MythalForgeInitializer
         NWScript.DeleteLocalString(obj.Player.LoginCreature, LvarTargetingMode);
 
         MythalForgeView itemWindow = new(_propertyData, _budget, item, obj.Player, _validator, _dcCalculator);
-        
+
         // Subscribe to caster weapon conversion event to reopen forge with new categories
         itemWindow.Presenter.CasterWeaponConversionCompleted += OnCasterWeaponConversionCompleted;
-        
+
         _windowSystem.OpenWindow(itemWindow.Presenter);
 
         obj.Player.OpenInventory();
@@ -349,7 +349,7 @@ public class MythalForgeInitializer
         NwTask.Run(async () =>
         {
             await NwTask.Delay(TimeSpan.FromMilliseconds(100));
-            
+
             // Reopen the forge with the item (now a caster weapon)
             MythalForgeView newForgeWindow = new(_propertyData, _budget, item, player, _validator, _dcCalculator);
             newForgeWindow.Presenter.CasterWeaponConversionCompleted += OnCasterWeaponConversionCompleted;
@@ -391,19 +391,8 @@ public class MythalForgeInitializer
                 baseItemType = isTwoHander ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
         }
 
-        if (!_propertyData.Properties.ContainsKey(baseItemType))
-        {
-            GenericWindow.Builder()
-                .For()
-                .SimplePopup()
-                .WithPlayer(obj.Player)
-                .WithTitle("DM Forge: Notice")
-                .WithMessage("Item base type not mapped for forge properties.")
-                .Open();
-
-            obj.Player.OnPlayerTarget -= ValidateAndSelectAsDM;
-            return;
-        }
+        // Note: We no longer block non-mapped item types for DMs.
+        // The DmForgePresenter will show Cast Spell properties for miscellaneous items.
 
         // Open DM Forge (no costs, no mythals, duplicates allowed)
         DmForgePresenter dmPresenter = new(obj.Player, item, _propertyData);

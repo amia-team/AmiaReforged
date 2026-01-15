@@ -155,10 +155,13 @@ public sealed class DmForgePresenter : ScryPresenter<DmForgeView>
         }
 
         IReadOnlyList<CraftingCategory>? availableCategories = null;
+
+        // Try to get specific categories for this item type
         if (_propertyData.Properties.TryGetValue(baseItemType, out IReadOnlyList<CraftingCategory>? categories))
         {
-            availableCategories = categories; // Store for use when converting existing properties
+            availableCategories = categories;
 
+            // Build the available properties list from the determined categories
             foreach (CraftingCategory cat in categories)
             {
                 foreach (CraftingProperty p in cat.Properties)
@@ -174,6 +177,43 @@ public sealed class DmForgePresenter : ScryPresenter<DmForgeView>
                         Removable = true,
                         Tags = p.Tags != null ? new HashSet<string>(p.Tags, StringComparer.OrdinalIgnoreCase) : new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                     });
+                }
+            }
+        }
+        else
+        {
+            // For non-equippable items (miscellaneous items), only allow Cast Spell properties
+            // This allows DMs to create custom spell-storing items, wands, scrolls, etc.
+            // Use a HashSet to prevent duplicates (same spell appears in multiple categories)
+            HashSet<string> seenSpells = new(StringComparer.OrdinalIgnoreCase);
+
+            foreach (IReadOnlyList<CraftingCategory> catList in _propertyData.Properties.Values)
+            {
+                foreach (CraftingCategory cat in catList)
+                {
+                    foreach (CraftingProperty p in cat.Properties)
+                    {
+                        // Only include Cast Spell properties for non-equippable items
+                        if (p.ItemProperty.Property.PropertyType == ItemPropertyType.CastSpell)
+                        {
+                            // Skip if we've already added this spell (prevents duplicates)
+                            if (seenSpells.Contains(p.GuiLabel))
+                                continue;
+
+                            seenSpells.Add(p.GuiLabel);
+
+                            _available.Add(new CraftingProperty
+                            {
+                                GuiLabel = p.GuiLabel,
+                                ItemProperty = p.ItemProperty,
+                                PowerCost = 0,
+                                CraftingTier = p.CraftingTier,
+                                GoldCost = 0,
+                                Removable = true,
+                                Tags = p.Tags != null ? new HashSet<string>(p.Tags, StringComparer.OrdinalIgnoreCase) : new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                            });
+                        }
+                    }
                 }
             }
         }
