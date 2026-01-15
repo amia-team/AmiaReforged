@@ -17,6 +17,7 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
     public const string ApplyChanges = "apply_changes";
     public const string? Cancel = "cancel";
     public const string ToCasterWeapon = "to_caster_weapon";
+    public const string HelpButton = "help_button";
 
     public readonly ActivePropertiesView ActivePropertiesView;
 
@@ -98,7 +99,15 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                     Children = new List<NuiElement>(),
                     DrawList = [new NuiDrawListImage("ui_forge", new NuiRect(-5f, -25f, 1220f, 813f))]
                 },
-                new NuiSpacer { Height = 135f },
+                new NuiButtonImage("ui_btn_forgehelp")
+                {
+                    Id = HelpButton,
+                    Width = 50f,
+                    Height = 50f,
+                    Encouraged = true,
+                    Tooltip = "Help me learn what to do!"
+                },
+                new NuiSpacer { Height = 80f },
                 new NuiRow
                 {
                     Children =
@@ -134,13 +143,13 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                         new NuiCombo
                         {
                             Id = MythalCategoryView.CategoryFilterChanged,
-                            Width = 120f,
+                            Width = 118f,
                             Height = 38f,
                             Entries = CategoryView.CategoryFilterOptions,
                             Selected = CategoryView.CategoryFilterIndex
                         },
                         new NuiSpacer { Width = 5f },
-                        new NuiButtonImage("isk_search")
+                        new NuiButtonImage("ui_btn_forgesrch")
                         {
                             Id = MythalCategoryView.SearchPropertiesButton,
                             Width = 38f,
@@ -193,7 +202,7 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                                             Width = 50f,
                                             Height = 25f
                                         },
-                                        new NuiSpacer { Width = 45f },
+                                        new NuiSpacer { Width = 55f },
                                         new NuiLabel(label: "Remaining Powers:")
                                         {
                                             VerticalAlign = NuiVAlign.Middle,
@@ -244,7 +253,7 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                         new NuiSpacer { Width = 20f },
                         new NuiLabel(label: "Gold Cost:")
                         {
-                            Width = 70f,
+                            Width = 75f,
                             Height = 38f,
                             VerticalAlign = NuiVAlign.Middle
                         },
@@ -259,7 +268,7 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                             Tooltip = GoldCostTooltip,
                             Encouraged = EncourageGold
                         },
-                        new NuiSpacer { Width = 27f },
+                        new NuiSpacer { Width = 23f },
                         new NuiButtonImage("ui_btn_forge")
                         {
                             Id = ApplyChanges,

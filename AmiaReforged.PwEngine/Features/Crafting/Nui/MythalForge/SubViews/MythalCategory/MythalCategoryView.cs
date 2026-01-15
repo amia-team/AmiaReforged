@@ -126,7 +126,7 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
             {
                 new NuiLabel("Property")
                 {
-                    Width = 170f,
+                    Width = 140f,
                     Height = 25f,
                     Tooltip = "The name of the property.",
                     VerticalAlign = NuiVAlign.Middle,

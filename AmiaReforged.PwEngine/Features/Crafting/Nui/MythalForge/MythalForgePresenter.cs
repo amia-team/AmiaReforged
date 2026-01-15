@@ -262,6 +262,12 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             if (ApplyName())
                 return;
 
+        if (eventData.ElementId == MythalForgeView.HelpButton)
+        {
+            OpenHelpGuide();
+            return;
+        }
+
         if (eventData.ElementId == MythalCategoryView.CategoryFilterChanged)
         {
             // Handle category dropdown selection
@@ -544,6 +550,15 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     }
 
     /// <summary>
+    /// Opens the Mythal Forge help guide window.
+    /// </summary>
+    private void OpenHelpGuide()
+    {
+        MythalForgeHelpView helpView = new(_player);
+        helpView.Presenter.Create();
+    }
+
+    /// <summary>
     /// Applies the new name to the item in the model, if the name is valid.
     /// Sends a notification to the player if the name field is empty.
     /// </summary>
@@ -581,7 +596,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     {
         _window = new NuiWindow(View.RootLayout(), WindowTitle)
         {
-            Geometry = new NuiRect(250f, 100f, 1200f, 640f)
+            Geometry = new NuiRect(250f, 100f, 1200f, 620f)
         };
     }
 
