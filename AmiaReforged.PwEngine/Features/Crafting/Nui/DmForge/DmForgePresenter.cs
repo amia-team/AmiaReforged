@@ -403,9 +403,10 @@ public sealed class DmForgePresenter : ScryPresenter<DmForgeView>
         // Name
         Token().SetBindValue(View.ItemName, _item.Name);
 
-        // Current
+        // Current - Strip "Additional Property: " prefix from labels for cleaner display
         Token().SetBindValue(View.CurrentCount, _current.Count);
-        Token().SetBindValues(View.CurrentLabels, _current.Select(c => c.cp.GuiLabel).ToList());
+        List<string> currentLabels = _current.Select(c => StripAdditionalPropertyPrefix(c.cp.GuiLabel)).ToList();
+        Token().SetBindValues(View.CurrentLabels, currentLabels);
         Token().SetBindValues(View.CurrentRemovable, _current.Select(c => c.removable).ToList());
 
         int totalPower = _current.Sum(c => c.cp.PowerCost);
@@ -428,7 +429,25 @@ public sealed class DmForgePresenter : ScryPresenter<DmForgeView>
     {
         List<CraftingProperty> visible = FilteredAvailable();
         Token().SetBindValue(View.AvailableCount, visible.Count);
-        Token().SetBindValues(View.AvailableLabels, visible.Select(a => a.GuiLabel).ToList());
+        // Strip "Additional Property: " prefix from labels for cleaner display
+        List<string> availableLabels = visible.Select(a => StripAdditionalPropertyPrefix(a.GuiLabel)).ToList();
+        Token().SetBindValues(View.AvailableLabels, availableLabels);
+    }
+
+    /// <summary>
+    /// Strips the "Additional Property: " prefix from property labels if present.
+    /// This cleans up the display in the property lists.
+    /// </summary>
+    /// <param name="label">The property label to clean.</param>
+    /// <returns>The label without the "Additional Property: " prefix if it was present, otherwise the original label.</returns>
+    private string StripAdditionalPropertyPrefix(string label)
+    {
+        const string prefix = "Additional Property: ";
+        if (label.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return label.Substring(prefix.Length);
+        }
+        return label;
     }
 
     /// Filters the available crafting properties based on the current search criteria.

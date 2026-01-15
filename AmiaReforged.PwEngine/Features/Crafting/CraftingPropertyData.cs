@@ -1,4 +1,4 @@
-﻿﻿using AmiaReforged.PwEngine.Features.Crafting.ItemProperties;
+﻿using AmiaReforged.PwEngine.Features.Crafting.ItemProperties;
 using AmiaReforged.PwEngine.Features.Crafting.Models;
 using Anvil.API;
 using Anvil.Services;

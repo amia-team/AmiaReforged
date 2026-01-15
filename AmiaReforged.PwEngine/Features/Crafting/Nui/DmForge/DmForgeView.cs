@@ -47,13 +47,13 @@ public sealed class DmForgeView : ScryView<DmForgePresenter>
         List<NuiListTemplateCell> currentCells = new List<NuiListTemplateCell>
         {
             new(new NuiLabel(CurrentLabels)),
-            new(new NuiButtonImage("ir_abort")
+            new(new NuiButtonImage("ui_btn_forgerem")
             {
                 Id = CurrentRemoveId,
                 Enabled = CurrentRemovable
             })
             {
-                Width = 30f,
+                Width = 25f,
                 VariableSize = false
             }
         };
@@ -62,12 +62,12 @@ public sealed class DmForgeView : ScryView<DmForgePresenter>
         List<NuiListTemplateCell> availableCells = new List<NuiListTemplateCell>
         {
             new(new NuiLabel(AvailableLabels)),
-            new(new NuiButtonImage("ir_craft") // same add icon style as mythal forge
+            new(new NuiButtonImage("ui_btn_forgeadd")
             {
                 Id = AvailableAddId
             })
             {
-                Width = 30f,
+                Width = 25f,
                 VariableSize = false
             }
         };
@@ -76,90 +76,116 @@ public sealed class DmForgeView : ScryView<DmForgePresenter>
         {
             Children =
             {
+                // Background image matching Mythal Forge style
                 new NuiRow
                 {
                     Width = 0f,
                     Height = 0f,
                     Children = new List<NuiElement>(),
-                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 1100f, 600f))]
+                    DrawList = [new NuiDrawListImage("ui_forge_dm", new NuiRect(-30f, -15f, 1220f, 813f))]
                 },
+                new NuiSpacer { Height = 180f },
+
                 new NuiRow
                 {
                     Children =
                     {
-                        new NuiTextEdit("Edit Name", ItemName, 100, false) { Width = 250f, Height = 40f },
-                        new NuiButton("Change Name") { Id = ApplyNameButtonId, Height = 40f, Width = 140f },
-                        new NuiSpacer(),
-                        new NuiGroup()
+                        // Name editing row with styled buttons
+                        new NuiTextEdit("Edit Name", ItemName, 100, false)
                         {
-                            Width = 60f,
-                            Height = 60f,
-                            Element = new NuiLabel(PowerTotal)
-                            {
-                                VerticalAlign = NuiVAlign.Middle,
-                                HorizontalAlign = NuiHAlign.Center
-                            }
+                            Width = 140f,
+                            Height = 38f
                         },
-                        new NuiButton("Close")
+                        new NuiSpacer { Width = 10f },
+                        new NuiButtonImage("ui_btn_rename")
                         {
-                            Id = CloseId, Height = 40f, Width = 120f
+                            Id = ApplyNameButtonId,
+                            Tooltip = "Change this item's name",
+                            Width = 150f,
+                            Height = 38f
+                        },
+                        new NuiSpacer { Width = 114f },
+                        new NuiTextEdit("Filter...", SearchBind, 64, false)
+                        {
+                            Tooltip = "Filter properties by name",
+                            Width = 200f,
+                            Height = 38f
                         }
                     }
                 },
+                // Main content: two property lists side by side
                 new NuiRow
                 {
                     Children =
                     {
-                        new NuiGroup
+                        // Current Properties column
+                        new NuiColumn
                         {
-                            Element = new NuiColumn
+                            Width = 300f,
+                            Children =
                             {
-                                Children =
+                                new NuiRow
                                 {
-                                    new NuiLabel("Current Properties")
+                                    Children =
                                     {
-                                        Height = 15f,
-                                        ForegroundColor = new Color(50, 40, 30)
-                                    },
-                                    new NuiList(currentCells, CurrentCount) { RowHeight = 28f }
-                                }
-                            },
-                            Width = 520f,
-                            Height = 500f,
-                            Border = true
-                        },
-                        new NuiGroup
-                        {
-                            Element = new NuiColumn
-                            {
-                                Children =
-                                {
-                                    new NuiRow
-                                    {
-                                        Height = 30f,
-                                        Children =
+                                        new NuiLabel("Item Power Total:")
                                         {
-                                            new NuiLabel("Search:")
-                                            {
-                                                ForegroundColor = new Color(50, 40, 30)
-                                            },
-                                            new NuiTextEdit("type to filter...", SearchBind, 64, false)
-                                            {
-                                                Width = 260f
-                                            }
+                                            Height = 25f,
+                                            Width = 140f,
+                                            VerticalAlign = NuiVAlign.Middle
+                                        },
+                                        new NuiSpacer { Width = 10f },
+                                        new NuiLabel(PowerTotal)
+                                        {
+                                            Width = 20f,
+                                            Height = 25f,
+                                            VerticalAlign = NuiVAlign.Middle,
+                                            HorizontalAlign = NuiHAlign.Center,
+                                            Tooltip = "Total power on this item"
                                         }
-                                    },
-                                    new NuiLabel("Available Properties")
-                                    {
-                                        Height = 15f,
-                                        ForegroundColor = new Color(50, 40, 30)
-                                    },
-                                    new NuiList(availableCells, AvailableCount) { RowHeight = 28f }
+                                    }
+                                },
+                                new NuiList(currentCells, CurrentCount)
+                                {
+                                    RowHeight = 25f,
+                                    Height = 250f
                                 }
-                            },
-                            Width = 520f,
-                            Height = 500f,
-                            Border = true
+                            }
+                        },
+                        new NuiSpacer { Width = 20f },
+                        // Available Properties column
+                        new NuiColumn
+                        {
+                            Width = 300f,
+                            Children =
+                            {
+                                new NuiSpacer { Height = 4f },
+                                new NuiLabel("Available Properties")
+                                {
+                                    Height = 25f,
+                                    HorizontalAlign = NuiHAlign.Center
+                                },
+                                new NuiList(availableCells, AvailableCount)
+                                {
+                                    RowHeight = 25f,
+                                    Height = 250f
+                                }
+                            }
+                        }
+                    }
+                },
+                new NuiSpacer { Height = 10f },
+                // Bottom button row
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiButtonImage("ui_btn_cancelf")
+                        {
+                            Id = CloseId,
+                            Tooltip = "Close the DM Forge",
+                            Width = 150f,
+                            Height = 38f
                         }
                     }
                 }
