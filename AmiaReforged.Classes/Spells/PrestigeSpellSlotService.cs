@@ -103,41 +103,37 @@ public class PrestigeSpellSlotService
         Log.Info($"STEP 1: Checking for equipped creature hide in skin slot...");
         NwItem? existingHide = creature.GetItemInSlot(InventorySlot.CreatureSkin);
 
-        if (existingHide != null)
+        if (existingHide != null && existingHide.ResRef == "ds_pchide")
         {
-            Log.Info($"STEP 1: ✓ Found equipped hide: Name='{existingHide.Name}', ResRef='{existingHide.ResRef}'");
+            Log.Info($"STEP 1: ✓ Found equipped PCHIDE: Name='{existingHide.Name}', ResRef='{existingHide.ResRef}' - will reuse");
+        }
+        else if (existingHide != null)
+        {
+            Log.Info($"STEP 1: Found non-PCHIDE item in skin slot: '{existingHide.Name}' - cannot modify it");
+            existingHide = null;
         }
         else
         {
             Log.Info($"STEP 1: ✗ No creature hide found in skin slot");
         }
 
-        // STEP 2: Destroy existing hide if it exists
-        if (existingHide != null)
-        {
-            Log.Info($"STEP 2: Destroying existing hide...");
-            existingHide.Destroy();
-            await NwTask.NextFrame();
-            Log.Info($"STEP 2: ✓ Existing hide destroyed");
-        }
-        else
-        {
-            Log.Info($"STEP 2: No hide to destroy (none existed)");
-        }
-
-        // Clean up any duplicate hides in inventory
+        // STEP 2: Clean up any duplicate hides in inventory (but don't touch the equipped one)
         List<NwItem> hideInInventory = creature.Inventory.Items
             .Where(item => item.ResRef == "ds_pchide")
             .ToList();
 
         if (hideInInventory.Count > 0)
         {
-            Log.Info($"STEP 2b: Found {hideInInventory.Count} duplicate hide(s) in inventory - removing them");
+            Log.Info($"STEP 2: Found {hideInInventory.Count} duplicate hide(s) in inventory - removing them");
             foreach (NwItem hide in hideInInventory)
             {
                 hide.Destroy();
             }
-            Log.Info($"STEP 2b: ✓ Inventory duplicates removed");
+            Log.Info($"STEP 2: ✓ Inventory duplicates removed");
+        }
+        else
+        {
+            Log.Info($"STEP 2: No duplicate hides in inventory");
         }
 
         // STEP 3: Analyze character classes BEFORE creating hide
@@ -170,13 +166,29 @@ public class PrestigeSpellSlotService
         // Check if we need to add spell slots - ONLY if they have DD or Blackguard
         if (prestigeClasses.Count == 0)
         {
-            Log.Info($"STEP 3: No prestige caster classes (Dragon Disciple/Blackguard) found - no hide needed");
+            Log.Info($"STEP 3: No prestige caster classes (Dragon Disciple/Blackguard) found");
+
+            // If they have a hide but no longer need it, remove it
+            if (existingHide != null)
+            {
+                Log.Info($"STEP 3: Character no longer has prestige classes - removing hide");
+                existingHide.Destroy();
+            }
+
             Log.Info($"=== FINISHED: No hide needed for {creature.Name} ===");
             return;
         }
         else if (allBaseClasses.Count == 0)
         {
-            Log.Info($"STEP 3: Has prestige class but no valid base caster classes - no hide needed");
+            Log.Info($"STEP 3: Has prestige class but no valid base caster classes");
+
+            // If they have a hide but no valid base classes, remove it
+            if (existingHide != null)
+            {
+                Log.Info($"STEP 3: Character has no valid base caster classes - removing hide");
+                existingHide.Destroy();
+            }
+
             Log.Info($"=== FINISHED: No hide needed for {creature.Name} ===");
             return;
         }
@@ -185,19 +197,28 @@ public class PrestigeSpellSlotService
             Log.Info($"STEP 3: ✓ Found {prestigeClasses.Count} prestige caster class(es) and {allBaseClasses.Count} base caster class(es)");
         }
 
-        // STEP 3b: Create new creature hide (only if needed)
-        Log.Info($"STEP 3b: Creating new creature hide...");
-        NwItem? creatureHide = await NwItem.Create("ds_pchide", creature);
+        // STEP 3b: Get or create creature hide
+        NwItem? creatureHide = existingHide;
 
         if (creatureHide == null)
         {
-            Log.Error($"STEP 3b: ✗✗✗ FAILED to create creature hide!");
-            return;
-        }
+            Log.Info($"STEP 3b: Creating new creature hide...");
+            creatureHide = await NwItem.Create("ds_pchide", creature);
 
-        Log.Info($"STEP 3b: ✓ Creature hide created successfully - Name='{creatureHide.Name}', ResRef='{creatureHide.ResRef}'");
-        creatureHide.Droppable = false;
-        Log.Info($"STEP 3b: ✓ Set hide as non-droppable");
+            if (creatureHide == null)
+            {
+                Log.Error($"STEP 3b: ✗✗✗ FAILED to create creature hide!");
+                return;
+            }
+
+            Log.Info($"STEP 3b: ✓ Creature hide created successfully - Name='{creatureHide.Name}', ResRef='{creatureHide.ResRef}'");
+            creatureHide.Droppable = false;
+            Log.Info($"STEP 3b: ✓ Set hide as non-droppable");
+        }
+        else
+        {
+            Log.Info($"STEP 3b: ✓ Reusing existing hide - will update properties");
+        }
 
         // STEP 4: Add appropriate spell slot bonuses
         Log.Info($"STEP 4: Determining which base class(es) to boost...");
@@ -288,19 +309,27 @@ public class PrestigeSpellSlotService
 
         Log.Info($"STEP 4: ✓ All spell slot bonuses applied");
 
-        // STEP 5: Equip the creature hide and verify
-        Log.Info($"STEP 5: Equipping creature hide to skin slot...");
-        await NwTask.NextFrame();
-
-        // Use AssignCommand to equip, which may bypass some item level restrictions
-        NWScript.AssignCommand(creature, () =>
-        {
-            NWScript.ActionEquipItem(creatureHide, NWScript.INVENTORY_SLOT_CARMOUR);
-        });
-
-        await NwTask.NextFrame();
-
+        // STEP 5: Equip the creature hide if it's not already equipped
         NwItem? equippedHide = creature.GetItemInSlot(InventorySlot.CreatureSkin);
+
+        if (equippedHide == null || equippedHide != creatureHide)
+        {
+            Log.Info($"STEP 5: Equipping creature hide to skin slot...");
+            await NwTask.NextFrame();
+
+            // Use AssignCommand to equip, which may bypass some item level restrictions
+            NWScript.AssignCommand(creature, () =>
+            {
+                NWScript.ActionEquipItem(creatureHide, NWScript.INVENTORY_SLOT_CARMOUR);
+            });
+
+            await NwTask.NextFrame();
+            equippedHide = creature.GetItemInSlot(InventorySlot.CreatureSkin);
+        }
+        else
+        {
+            Log.Info($"STEP 5: Hide already equipped - no need to re-equip");
+        }
 
         if (equippedHide != null && equippedHide == creatureHide)
         {
@@ -435,6 +464,26 @@ public class PrestigeSpellSlotService
         // Convert ClassType to NWScript class constant
         int classConst = GetClassConstant(baseClass);
         Log.Info($"  Class constant for {baseClass}: {classConst}");
+
+        // Remove all existing bonus spell slot properties for this class from the item
+        Log.Info($"  Removing existing spell slot properties for {baseClass}...");
+        int propertiesRemoved = 0;
+
+        foreach (ItemProperty prop in item.ItemProperties.ToList())
+        {
+            if (prop.Property.PropertyType == ItemPropertyType.BonusSpellSlotOfLevelN)
+            {
+                // Check if this property is for our class by checking the subtype
+                // SubType for BonusSpellSlotOfLevelN is the class constant
+                if (prop.SubType?.RowIndex == classConst)
+                {
+                    item.RemoveItemProperty(prop);
+                    propertiesRemoved++;
+                }
+            }
+        }
+
+        Log.Info($"  Removed {propertiesRemoved} existing spell slot properties for {baseClass}");
 
         int totalPropertiesAdded = 0;
 
