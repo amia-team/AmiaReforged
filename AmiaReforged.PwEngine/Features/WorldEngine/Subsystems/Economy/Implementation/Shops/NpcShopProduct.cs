@@ -71,7 +71,15 @@ public sealed class NpcShopProduct
     public IReadOnlyList<NpcShopLocalVariable> LocalVariables { get; }
     public SimpleModelAppearance? Appearance { get; }
 
-    public bool IsOutOfStock => CurrentStock <= 0;
+    /// <summary>
+    /// Returns true if MaxStock is 0, meaning the item has unlimited availability.
+    /// </summary>
+    public bool HasInfiniteStock => MaxStock == 0;
+
+    /// <summary>
+    /// Returns true if the item is out of stock. Items with infinite stock are never out of stock.
+    /// </summary>
+    public bool IsOutOfStock => !HasInfiniteStock && CurrentStock <= 0;
 
     public int Restock()
     {
@@ -96,6 +104,12 @@ public sealed class NpcShopProduct
         if (quantity <= 0)
         {
             return false;
+        }
+
+        // Infinite stock items always succeed without decrementing
+        if (HasInfiniteStock)
+        {
+            return true;
         }
 
         if (CurrentStock < quantity)
