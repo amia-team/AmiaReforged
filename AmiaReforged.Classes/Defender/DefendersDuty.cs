@@ -7,7 +7,7 @@ namespace AmiaReforged.Classes.Defender;
 
 public class DefendersDuty
 {
-    private const float DefenderDamage = 0.25f;
+    private const float DefenderDamage = 0.50f;
     private const string ThreatAuraEffectTag = "defenders_threat_aura";
     private const string ProtectedEffectTag = "defenders_duty_protected";
     private const string ImmunityEffectTag = "defenders_duty_immunity";
@@ -80,6 +80,7 @@ public class DefendersDuty
         foreach (NwCreature creature in _protectedCreatures.ToList())
         {
             creature.OnCreatureDamage -= SoakDamageForAlly;
+            creature.OnDeath -= OnProtectedCreatureDeath;
             RemoveProtectedVisual(creature);
             RemovePhysicalImmunity(creature);
         }
@@ -189,12 +190,18 @@ public class DefendersDuty
 
         _protectedCreatures.Add(creature);
         creature.OnCreatureDamage += SoakDamageForAlly;
+        creature.OnDeath += OnProtectedCreatureDeath;
 
         // Apply a subtle visual to show they're protected
         ApplyProtectedVisual(creature);
 
         // Update immunity for all protected creatures (including defender)
         UpdateAllPhysicalImmunity();
+    }
+
+    private void OnProtectedCreatureDeath(CreatureEvents.OnDeath obj)
+    {
+        RemoveProtection(obj.KilledCreature);
     }
 
     private void RemoveProtection(NwCreature creature)
@@ -204,6 +211,7 @@ public class DefendersDuty
 
         _protectedCreatures.Remove(creature);
         creature.OnCreatureDamage -= SoakDamageForAlly;
+        creature.OnDeath -= OnProtectedCreatureDeath;
         RemoveProtectedVisual(creature);
         RemovePhysicalImmunity(creature);
 
@@ -325,7 +333,8 @@ public class DefendersDuty
         };
 
         // This is a call to the NWNX Damage Plugin - defender takes portion of the damage
-        DamagePlugin.DealDamage(defenderDamageData, Defender.LoginCreature, obj.DamagedBy);
+        // DamagedBy can be null for environmental/script damage - use defender as source if null
+        DamagePlugin.DealDamage(defenderDamageData, Defender.LoginCreature, obj.DamagedBy ?? Defender.LoginCreature);
 
         // Reduce the damage done to the protected ally
         obj.DamageData.SetDamageByType(DamageType.Bludgeoning,
