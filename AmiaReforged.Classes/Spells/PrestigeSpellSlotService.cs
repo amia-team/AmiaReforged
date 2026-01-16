@@ -25,9 +25,7 @@ public class PrestigeSpellSlotService
     private readonly Dictionary<ClassType, Func<int, int>> _prestigeClassModifiers = new()
     {
         { ClassType.DragonDisciple, prcLevel => Math.Max(0, prcLevel) },
-        { ClassType.Blackguard, prcLevel => Math.Max(0, prcLevel) },
-        { ClassType.PaleMaster, prcLevel => Math.Max(0, prcLevel) },
-        { ClassType.ArcaneArcher, prcLevel => Math.Max(0, prcLevel / 2) }
+        { ClassType.Blackguard, prcLevel => Math.Max(0, prcLevel) }
     };
 
     // Mapping of prestige classes to their valid base caster classes
@@ -293,7 +291,13 @@ public class PrestigeSpellSlotService
         // STEP 5: Equip the creature hide and verify
         Log.Info($"STEP 5: Equipping creature hide to skin slot...");
         await NwTask.NextFrame();
-        creature.RunEquip(creatureHide, InventorySlot.CreatureSkin);
+
+        // Use AssignCommand to equip, which may bypass some item level restrictions
+        NWScript.AssignCommand(creature, () =>
+        {
+            NWScript.ActionEquipItem(creatureHide, NWScript.INVENTORY_SLOT_CARMOUR);
+        });
+
         await NwTask.NextFrame();
 
         NwItem? equippedHide = creature.GetItemInSlot(InventorySlot.CreatureSkin);
@@ -306,10 +310,28 @@ public class PrestigeSpellSlotService
         else if (equippedHide != null)
         {
             Log.Error($"STEP 5: ✗ WRONG ITEM EQUIPPED - Expected our hide but found: Name='{equippedHide.Name}', ResRef='{equippedHide.ResRef}'");
+
+            // Item level restriction likely prevented equipping - destroy the hide and notify player
+            creatureHide.Destroy();
+            if (creature.IsPlayerControlled(out NwPlayer? player))
+            {
+                player.SendServerMessage("Your prestige spell slots will be available when you reach a higher character level.", ColorConstants.Orange);
+            }
+            Log.Warn($"STEP 5: Hide could not be equipped (likely item level restriction). It has been removed.");
+            return;
         }
         else
         {
             Log.Error($"STEP 5: ✗✗✗ FAILED - Nothing equipped in skin slot!");
+
+            // Item level restriction likely prevented equipping - destroy the hide and notify player
+            creatureHide.Destroy();
+            if (creature.IsPlayerControlled(out NwPlayer? player))
+            {
+                player.SendServerMessage("Your prestige spell slots will be available when you reach a higher character level.", ColorConstants.Orange);
+            }
+            Log.Warn($"STEP 5: Hide could not be equipped (likely item level restriction). It has been removed.");
+            return;
         }
 
         // STEP 6: Schedule a delayed verification check to ensure hide stays equipped
@@ -420,11 +442,13 @@ public class PrestigeSpellSlotService
         {
             // Calculate slots at actual level vs effective level
             int actualBaseSlots = GetBaseSpellSlotsForLevel(baseClass, actualLevel, spellLevel);
-            int actualBonusSlots = GetBonusSpellSlots(abilityModifier, spellLevel);
+            // Only count ability bonus if character has access to this spell level (at least 1 base slot)
+            int actualBonusSlots = actualBaseSlots > 0 ? GetBonusSpellSlots(abilityModifier, spellLevel) : 0;
             int actualTotal = actualBaseSlots + actualBonusSlots;
 
             int effectiveBaseSlots = GetBaseSpellSlotsForLevel(baseClass, effectiveLevel, spellLevel);
-            int effectiveBonusSlots = GetBonusSpellSlots(abilityModifier, spellLevel);
+            // Only count ability bonus if character has access to this spell level (at least 1 base slot)
+            int effectiveBonusSlots = effectiveBaseSlots > 0 ? GetBonusSpellSlots(abilityModifier, spellLevel) : 0;
             int effectiveTotal = effectiveBaseSlots + effectiveBonusSlots;
 
             // The difference is how many bonus slots we need to add
@@ -463,12 +487,10 @@ public class PrestigeSpellSlotService
     {
         return classType switch
         {
-            ClassType.Wizard => NWScript.IP_CONST_CLASS_WIZARD,
             ClassType.Sorcerer => NWScript.IP_CONST_CLASS_SORCERER,
             ClassType.Bard => NWScript.IP_CONST_CLASS_BARD,
             ClassType.Cleric => NWScript.IP_CONST_CLASS_CLERIC,
             ClassType.Druid => NWScript.IP_CONST_CLASS_DRUID,
-            ClassType.Paladin => NWScript.IP_CONST_CLASS_PALADIN,
             ClassType.Ranger => NWScript.IP_CONST_CLASS_RANGER,
             _ => (int)classType
         };
@@ -478,14 +500,12 @@ public class PrestigeSpellSlotService
     {
         Ability ability = classType switch
         {
-            ClassType.Wizard => Ability.Intelligence,
             ClassType.Sorcerer => Ability.Charisma,
             ClassType.Bard => Ability.Charisma,
             ClassType.Cleric => Ability.Wisdom,
             ClassType.Druid => Ability.Wisdom,
-            ClassType.Paladin => Ability.Wisdom,
             ClassType.Ranger => Ability.Wisdom,
-            _ => Ability.Intelligence
+            _ => throw new ArgumentException($"Unsupported class type: {classType}")
         };
 
         return creature.GetAbilityModifier(ability);
@@ -506,12 +526,10 @@ public class PrestigeSpellSlotService
         return classType switch
         {
             ClassType.Bard => GetBardSpellSlots(casterLevel, spellLevel),
-            ClassType.Sorcerer => GetSorcererSpellSlots(casterLevel, spellLevel),
-            ClassType.Wizard => GetWizardSpellSlots(casterLevel, spellLevel),
             ClassType.Cleric => GetClericSpellSlots(casterLevel, spellLevel),
             ClassType.Druid => GetDruidSpellSlots(casterLevel, spellLevel),
-            ClassType.Paladin => GetPaladinSpellSlots(casterLevel, spellLevel),
             ClassType.Ranger => GetRangerSpellSlots(casterLevel, spellLevel),
+            ClassType.Sorcerer => GetSorcererSpellSlots(casterLevel, spellLevel),
             _ => 0
         };
     }
@@ -522,41 +540,37 @@ public class PrestigeSpellSlotService
         // Bard spell progression per cls_spgn_bard.2da
         return (spellLevel, casterLevel) switch
         {
-            // Level 0 (cantrips) - 2 at L1, 3 at L2-13, 4 at L14+
-            (0, >= 14) => 4,
-            (0, >= 2) => 3,
-            (0, >= 1) => 2,
-
-            // Level 1 - 0 at L1-2, 1 at L3, 2 at L4, 3 at L5-12, 4 at L13+
-            (1, >= 13) => 4,
+            // Level 1 spells
+            (1, >= 15) => 4,
             (1, >= 5) => 3,
             (1, >= 4) => 2,
             (1, >= 3) => 1,
 
-            // Level 2 - 0 at L1-4, 1 at L5, 2 at L6-14, 4 at L15+
-            (2, >= 15) => 4,
+            // Level 2 spells
+            (2, >= 16) => 4,
+            (2, >= 8) => 3,
             (2, >= 6) => 2,
             (2, >= 5) => 1,
 
-            // Level 3 - 0 at L1-7, 1 at L8, 2 at L9-13, 3 at L14, 4 at L16+
-            (3, >= 16) => 4,
-            (3, >= 14) => 3,
+            // Level 3 spells
+            (3, >= 17) => 4,
+            (3, >= 11) => 3,
             (3, >= 9) => 2,
             (3, >= 8) => 1,
 
-            // Level 4 - 0 at L1-10, 1 at L11, 2 at L12-13, 3 at L14-16, 4 at L17+
-            (4, >= 17) => 4,
+            // Level 4 spells
+            (4, >= 18) => 4,
             (4, >= 14) => 3,
             (4, >= 12) => 2,
             (4, >= 11) => 1,
 
-            // Level 5 - 0 at L1-13, 1 at L14, 2 at L15-16, 3 at L17, 4 at L18+
-            (5, >= 18) => 4,
+            // Level 5 spells
+            (5, >= 19) => 4,
             (5, >= 17) => 3,
             (5, >= 15) => 2,
             (5, >= 14) => 1,
 
-            // Level 6 - 0 at L1-16, 1 at L17, 2 at L18, 3 at L19, 4 at L20+
+            // Level 6 spells
             (6, >= 20) => 4,
             (6, >= 19) => 3,
             (6, >= 18) => 2,
@@ -571,129 +585,59 @@ public class PrestigeSpellSlotService
         // Sorcerer spell progression per cls_spgn_sorc.2da
         return (spellLevel, casterLevel) switch
         {
-            // Level 0 - 5 at L1, 6 at L2+
-            (0, >= 2) => 6,
-            (0, >= 1) => 5,
-
-            // Level 1 - 3 at L1, 4 at L2, 5 at L3, 6 at L4+
+            // Level 1 spells
             (1, >= 4) => 6,
             (1, >= 3) => 5,
             (1, >= 2) => 4,
             (1, >= 1) => 3,
 
-            // Level 2 - 0 at L1-3, 3 at L4, 4 at L5, 5 at L6, 6 at L7+
+            // Level 2 spells
             (2, >= 7) => 6,
             (2, >= 6) => 5,
             (2, >= 5) => 4,
             (2, >= 4) => 3,
 
-            // Level 3 - 0 at L1-5, 3 at L6, 4 at L7, 5 at L8, 6 at L9+
+            // Level 3 spells
             (3, >= 9) => 6,
             (3, >= 8) => 5,
             (3, >= 7) => 4,
             (3, >= 6) => 3,
 
-            // Level 4 - 0 at L1-7, 3 at L8, 4 at L9, 5 at L10, 6 at L11+
+            // Level 4 spells
             (4, >= 11) => 6,
             (4, >= 10) => 5,
             (4, >= 9) => 4,
             (4, >= 8) => 3,
 
-            // Level 5 - 0 at L1-9, 3 at L10, 4 at L11, 5 at L12, 6 at L13+
+            // Level 5 spells
             (5, >= 13) => 6,
             (5, >= 12) => 5,
             (5, >= 11) => 4,
             (5, >= 10) => 3,
 
-            // Level 6 - 0 at L1-11, 3 at L12, 4 at L13, 5 at L14, 6 at L15+
+            // Level 6 spells
             (6, >= 15) => 6,
             (6, >= 14) => 5,
             (6, >= 13) => 4,
             (6, >= 12) => 3,
 
-            // Level 7 - 0 at L1-13, 3 at L14, 4 at L15, 5 at L16, 6 at L17+
+            // Level 7 spells
             (7, >= 17) => 6,
             (7, >= 16) => 5,
             (7, >= 15) => 4,
             (7, >= 14) => 3,
 
-            // Level 8 - 0 at L1-15, 3 at L16, 4 at L17, 5 at L18, 6 at L19+
+            // Level 8 spells
             (8, >= 19) => 6,
             (8, >= 18) => 5,
             (8, >= 17) => 4,
             (8, >= 16) => 3,
 
-            // Level 9 - 0 at L1-17, 3 at L18, 4 at L19, 6 at L20+
+            // Level 9 spells
             (9, >= 20) => 6,
             (9, >= 19) => 4,
             (9, >= 18) => 3,
 
-            _ => 0
-        };
-    }
-
-    private int GetWizardSpellSlots(int casterLevel, int spellLevel)
-    {
-        // Wizard spell progression per cls_spgn_wiz.2da
-        return (spellLevel, casterLevel) switch
-        {
-            // Level 0 - 3 at L1, 4 at L2+
-            (0, >= 2) => 4,
-            (0, >= 1) => 3,
-
-            // Level 1 - 1 at L1, 2 at L2-3, 3 at L4-6, 4 at L7+
-            (1, >= 7) => 4,
-            (1, >= 4) => 3,
-            (1, >= 2) => 2,
-            (1, >= 1) => 1,
-
-            // Level 2 - 0 at L1-2, 1 at L3, 2 at L4-5, 3 at L6-8, 4 at L9+
-            (2, >= 9) => 4,
-            (2, >= 6) => 3,
-            (2, >= 4) => 2,
-            (2, >= 3) => 1,
-
-            // Level 3 - 0 at L1-4, 1 at L5, 2 at L6-7, 3 at L8-10, 4 at L11+
-            (3, >= 11) => 4,
-            (3, >= 8) => 3,
-            (3, >= 6) => 2,
-            (3, >= 5) => 1,
-
-            // Level 4 - 0 at L1-6, 1 at L7, 2 at L8-10, 3 at L11-12, 4 at L13+
-            (4, >= 13) => 4,
-            (4, >= 11) => 3,
-            (4, >= 8) => 2,
-            (4, >= 7) => 1,
-
-            // Level 5 - 0 at L1-8, 1 at L9, 2 at L10-11, 3 at L12-14, 4 at L15+
-            (5, >= 15) => 4,
-            (5, >= 12) => 3,
-            (5, >= 10) => 2,
-            (5, >= 9) => 1,
-
-            // Level 6 - 0 at L1-10, 1 at L11, 2 at L12-14, 3 at L15-16, 4 at L17+
-            (6, >= 17) => 4,
-            (6, >= 15) => 3,
-            (6, >= 12) => 2,
-            (6, >= 11) => 1,
-
-            // Level 7 - 0 at L1-12, 1 at L13, 2 at L14-16, 3 at L17-18, 4 at L19+
-            (7, >= 19) => 4,
-            (7, >= 17) => 3,
-            (7, >= 14) => 2,
-            (7, >= 13) => 1,
-
-            // Level 8 - 0 at L1-14, 1 at L15, 2 at L16-18, 3 at L19, 4 at L20+
-            (8, >= 20) => 4,
-            (8, >= 19) => 3,
-            (8, >= 16) => 2,
-            (8, >= 15) => 1,
-
-            // Level 9 - 0 at L1-16, 1 at L17, 2 at L18, 3 at L19, 4 at L20+
-            (9, >= 20) => 4,
-            (9, >= 19) => 3,
-            (9, >= 18) => 2,
-            (9, >= 17) => 1,
 
             _ => 0
         };
@@ -704,66 +648,60 @@ public class PrestigeSpellSlotService
         // Cleric spell progression per cls_spgn_cler.2da
         return (spellLevel, casterLevel) switch
         {
-            // Level 0 - 3 at L1, 4 at L2-3, 5 at L4-6, 6 at L7+
-            (0, >= 7) => 6,
-            (0, >= 4) => 5,
-            (0, >= 2) => 4,
-            (0, >= 1) => 3,
-
-            // Level 1 - 2 at L1, 3 at L2-3, 4 at L4-6, 5 at L7-10, 6 at L11+
+            // Level 1 spells
             (1, >= 11) => 6,
             (1, >= 7) => 5,
             (1, >= 4) => 4,
             (1, >= 2) => 3,
             (1, >= 1) => 2,
 
-            // Level 2 - 0 at L1-2, 2 at L3, 3 at L4-5, 4 at L6-8, 5 at L9-12, 6 at L13+
+            // Level 2 spells
             (2, >= 13) => 6,
             (2, >= 9) => 5,
             (2, >= 6) => 4,
             (2, >= 4) => 3,
             (2, >= 3) => 2,
 
-            // Level 3 - 0 at L1-4, 2 at L5, 3 at L6-7, 4 at L8-10, 5 at L11-14, 6 at L15+
+            // Level 3 spells
             (3, >= 15) => 6,
             (3, >= 11) => 5,
             (3, >= 8) => 4,
             (3, >= 6) => 3,
             (3, >= 5) => 2,
 
-            // Level 4 - 0 at L1-6, 2 at L7, 3 at L8-10, 4 at L11-12, 5 at L13-16, 6 at L17+
+            // Level 4 spells
             (4, >= 17) => 6,
             (4, >= 13) => 5,
-            (4, >= 11) => 4,
+            (4, >= 10) => 4,
             (4, >= 8) => 3,
             (4, >= 7) => 2,
 
-            // Level 5 - 0 at L1-8, 2 at L9, 3 at L10-11, 4 at L12-14, 5 at L15-18, 6 at L19+
+            // Level 5 spells
             (5, >= 19) => 6,
             (5, >= 15) => 5,
             (5, >= 12) => 4,
             (5, >= 10) => 3,
             (5, >= 9) => 2,
 
-            // Level 6 - 0 at L1-10, 2 at L11, 3 at L12-14, 4 at L15-16, 5 at L17+
+            // Level 6 spells
             (6, >= 17) => 5,
-            (6, >= 15) => 4,
+            (6, >= 14) => 4,
             (6, >= 12) => 3,
             (6, >= 11) => 2,
 
-            // Level 7 - 0 at L1-12, 2 at L13, 3 at L14-16, 4 at L17-18, 5 at L19+
+            // Level 7 spells
             (7, >= 19) => 5,
-            (7, >= 17) => 4,
+            (7, >= 16) => 4,
             (7, >= 14) => 3,
             (7, >= 13) => 2,
 
-            // Level 8 - 0 at L1-14, 2 at L15, 3 at L16-18, 4 at L19-20, 5 at L21+
-            (8, >= 21) => 5,
-            (8, >= 19) => 4,
+            // Level 8 spells
+            (8, >= 20) => 5,
+            (8, >= 18) => 4,
             (8, >= 16) => 3,
             (8, >= 15) => 2,
 
-            // Level 9 - 0 at L1-16, 2 at L17, 3 at L18, 4 at L19, 5 at L20+
+            // Level 9 spells
             (9, >= 20) => 5,
             (9, >= 19) => 4,
             (9, >= 18) => 3,
@@ -778,103 +716,65 @@ public class PrestigeSpellSlotService
         // Druid spell progression per cls_spgn_dru.2da
         return (spellLevel, casterLevel) switch
         {
-            // Level 0 - 3 at L1, 4 at L2-3, 5 at L4-6, 6 at L7+
-            (0, >= 7) => 6,
-            (0, >= 4) => 5,
-            (0, >= 2) => 4,
-            (0, >= 1) => 3,
-
-            // Level 1 - 1 at L1, 2 at L2-3, 3 at L4-6, 4 at L7-10, 5 at L11+
+            // Level 1 spells
             (1, >= 11) => 5,
             (1, >= 7) => 4,
             (1, >= 4) => 3,
             (1, >= 2) => 2,
             (1, >= 1) => 1,
 
-            // Level 2 - 0 at L1-2, 1 at L3, 2 at L4-5, 3 at L6-8, 4 at L9-12, 5 at L13+
+            // Level 2 spells
             (2, >= 13) => 5,
             (2, >= 9) => 4,
             (2, >= 6) => 3,
             (2, >= 4) => 2,
             (2, >= 3) => 1,
 
-            // Level 3 - 0 at L1-4, 1 at L5, 2 at L6-7, 3 at L8-10, 4 at L11-14, 5 at L15+
+            // Level 3 spells
             (3, >= 15) => 5,
             (3, >= 11) => 4,
             (3, >= 8) => 3,
             (3, >= 6) => 2,
             (3, >= 5) => 1,
 
-            // Level 4 - 0 at L1-6, 1 at L7, 2 at L8-10, 3 at L11-12, 4 at L13-16, 5 at L17+
+            // Level 4 spells
             (4, >= 17) => 5,
             (4, >= 13) => 4,
-            (4, >= 11) => 3,
+            (4, >= 10) => 3,
             (4, >= 8) => 2,
             (4, >= 7) => 1,
 
-            // Level 5 - 0 at L1-8, 1 at L9, 2 at L10-11, 3 at L12-14, 4 at L15-18, 5 at L19+
+            // Level 5 spells
             (5, >= 19) => 5,
             (5, >= 15) => 4,
             (5, >= 12) => 3,
             (5, >= 10) => 2,
             (5, >= 9) => 1,
 
-            // Level 6 - 0 at L1-10, 1 at L11, 2 at L12-14, 3 at L15-16, 4 at L17+
+            // Level 6 spells
             (6, >= 17) => 4,
-            (6, >= 15) => 3,
+            (6, >= 14) => 3,
             (6, >= 12) => 2,
             (6, >= 11) => 1,
 
-            // Level 7 - 0 at L1-12, 1 at L13, 2 at L14-16, 3 at L17-18, 4 at L19+
+            // Level 7 spells
             (7, >= 19) => 4,
-            (7, >= 17) => 3,
+            (7, >= 16) => 3,
             (7, >= 14) => 2,
             (7, >= 13) => 1,
 
-            // Level 8 - 0 at L1-14, 1 at L15, 2 at L16-18, 3 at L19, 4 at L20+
+            // Level 8 spells
             (8, >= 20) => 4,
-            (8, >= 19) => 3,
+            (8, >= 18) => 3,
             (8, >= 16) => 2,
             (8, >= 15) => 1,
 
-            // Level 9 - 0 at L1-16, 1 at L17, 2 at L18, 3 at L19, 4 at L20+
+            // Level 9 spells
             (9, >= 20) => 4,
             (9, >= 19) => 3,
             (9, >= 18) => 2,
             (9, >= 17) => 1,
 
-            _ => 0
-        };
-    }
-
-    private int GetPaladinSpellSlots(int casterLevel, int spellLevel)
-    {
-        // Paladin spell progression per cls_spgn_pal.2da
-        // Paladins have no level 0 spells
-        return (spellLevel, casterLevel) switch
-        {
-            // Level 1 - 0 at L4-5, 1 at L6-13, 2 at L14-17, 3 at L18+
-            (1, >= 18) => 3,
-            (1, >= 14) => 2,
-            (1, >= 6) => 1,
-            (1, >= 4) => 0,
-
-            // Level 2 - 0 at L8-9, 1 at L10-15, 2 at L16-18, 3 at L19+
-            (2, >= 19) => 3,
-            (2, >= 16) => 2,
-            (2, >= 10) => 1,
-            (2, >= 8) => 0,
-
-            // Level 3 - 0 at L11, 1 at L12-16, 2 at L17-18, 3 at L19+
-            (3, >= 19) => 3,
-            (3, >= 17) => 2,
-            (3, >= 12) => 1,
-            (3, >= 11) => 0,
-
-            // Level 4 - 0 at L14, 1 at L15-18, 2 at L19, 3 at L20+
-            (4, >= 20) => 3,
-            (4, >= 19) => 2,
-            (4, >= 15) => 1,
 
             _ => 0
         };
@@ -883,28 +783,25 @@ public class PrestigeSpellSlotService
     private int GetRangerSpellSlots(int casterLevel, int spellLevel)
     {
         // Ranger spell progression per cls_spgn_rang.2da
-        // Rangers have no level 0 spells (same progression as Paladin)
+        // Rangers have no level 0 spells
         return (spellLevel, casterLevel) switch
         {
-            // Level 1 - 0 at L4-5, 1 at L6-13, 2 at L14-17, 3 at L18+
+            // Level 1 spells
             (1, >= 18) => 3,
-            (1, >= 14) => 2,
+            (1, >= 15) => 2,
             (1, >= 6) => 1,
-            (1, >= 4) => 0,
 
-            // Level 2 - 0 at L8-9, 1 at L10-15, 2 at L16-18, 3 at L19+
+            // Level 2 spells
             (2, >= 19) => 3,
             (2, >= 16) => 2,
             (2, >= 10) => 1,
-            (2, >= 8) => 0,
 
-            // Level 3 - 0 at L11, 1 at L12-16, 2 at L17-18, 3 at L19+
+            // Level 3 spells
             (3, >= 19) => 3,
             (3, >= 17) => 2,
             (3, >= 12) => 1,
-            (3, >= 11) => 0,
 
-            // Level 4 - 0 at L14, 1 at L15-18, 2 at L19, 3 at L20+
+            // Level 4 spells
             (4, >= 20) => 3,
             (4, >= 19) => 2,
             (4, >= 15) => 1,
