@@ -191,30 +191,16 @@ public sealed class NpcShopLoader : IDefinitionLoader
                 return false;
             }
 
-            bool allowsPlayerStock = product.BaseItemType.HasValue;
-
-            if (!allowsPlayerStock && product.MaxStock <= 0)
-            {
-                _failures.Add(new FileLoadResult(ResultType.Fail,
-                    $"Product '{product.ItemTag}' must have MaxStock greater than zero.", fileName));
-                return false;
-            }
-
-            if (allowsPlayerStock && product.MaxStock < 0)
+            // MaxStock of 0 means infinite stock; only negative values are invalid
+            if (product.MaxStock < 0)
             {
                 _failures.Add(new FileLoadResult(ResultType.Fail,
                     $"Product '{product.ItemTag}' must not define a negative MaxStock.", fileName));
                 return false;
             }
 
-            if (!allowsPlayerStock && product.RestockAmount <= 0)
-            {
-                _failures.Add(new FileLoadResult(ResultType.Fail,
-                    $"Product '{product.ItemTag}' must have RestockAmount greater than zero.", fileName));
-                return false;
-            }
-
-            if (allowsPlayerStock && product.RestockAmount < 0)
+            // RestockAmount of 0 means no restocking needed (infinite stock); only negative values are invalid
+            if (product.RestockAmount < 0)
             {
                 _failures.Add(new FileLoadResult(ResultType.Fail,
                     $"Product '{product.ItemTag}' must not define a negative RestockAmount.", fileName));
