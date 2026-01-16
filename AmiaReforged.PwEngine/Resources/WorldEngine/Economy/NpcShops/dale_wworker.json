@@ -710,6 +710,20 @@
       "InitialStock": 4,
       "MaxStock": 10,
       "RestockAmount": 1
+    },
+    {
+      "ItemTag": "couch_estate",
+      "Price": 450,
+      "InitialStock": 4,
+      "MaxStock": 10,
+      "RestockAmount": 1
+    },
+    {
+      "ItemTag": "invisible_sit",
+      "Price": 1,
+      "InitialStock": 0,
+      "MaxStock": 0,
+      "RestockAmount": 0
     }
   ],
   "AcceptCategories": [],

@@ -1,0 +1,53 @@
+{
+  "ResRef": "temp_miscm1",
+  "ItemTag": "couch_estate",
+  "Name": "Couch, Estate",
+  "Description": "A beautiful couch for rich people.",
+  "Materials": [
+    "WoodOak"
+  ],
+  "BaseValue": 400,
+  "JobSystemType": "Furniture",
+  "BaseItemType": 29,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 270
+  },
+  "LocalVariables": [
+    {
+      "Name": "is_plc",
+      "Type": "Int",
+      "Value": 1
+    },
+    {
+      "Name": "health_override",
+      "Type": "Int",
+      "Value": 120
+    },
+    {
+      "Name": "is_plot",
+      "Type": "Int",
+      "Value": 0
+    },
+    {
+      "Name": "is_static",
+      "Type": "Int",
+      "Value": 0
+    },
+    {
+      "Name": "plc_resref",
+      "Type": "String",
+      "Value": "v3plc_plc120"
+    },
+    {
+      "Name": "plc_name",
+      "Type": "String",
+      "Value": "Couch, Estate"
+    },
+    {
+      "Name": "plc_appearance",
+      "Type": "Int",
+      "Value": 18661
+    }
+  ]
+}
