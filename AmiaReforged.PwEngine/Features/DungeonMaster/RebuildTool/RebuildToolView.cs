@@ -955,8 +955,8 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
 
     public NuiWindow BuildFeatSearchModal(List<(int id, string name)> feats)
     {
-        const float modalW = 600f;
-        const float modalH = 700f;
+        const float modalW = 500f;
+        const float modalH = 600f;
 
         // Build rows for each feat
         List<NuiElement> featRows = new();
@@ -977,7 +977,7 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                     },
                     new NuiLabel(feat.name)
                     {
-                        Width = 450f,
+                        Width = 350f,
                         VerticalAlign = NuiVAlign.Middle,
                         ForegroundColor = new Color(30, 20, 12)
                     },
@@ -1041,7 +1041,7 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                         },
                         new NuiTextEdit("Type feat name...", FeatSearchText, 50, false)
                         {
-                            Width = 350f,
+                            Width = 250f,
                             Tooltip = "Enter part of a feat name to search"
                         },
                         new NuiSpacer { Width = 10f },
@@ -1072,7 +1072,7 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                         },
                         new NuiLabel("Feat Name")
                         {
-                            Width = 450f,
+                            Width = 345f,
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
                         },
@@ -1089,7 +1089,7 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                 // Feat list
                 new NuiColumn
                 {
-                    Height = 520f,
+                    Height = 330f,
                     Children = featRows
                 },
 
@@ -1098,15 +1098,14 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                 // Close button
                 new NuiRow
                 {
-                    Height = 40f,
                     Children =
                     [
-                        new NuiSpacer { Width = 225f },
+                        new NuiSpacer { Width = 150f },
                         new NuiButtonImage("ui_btn_cancel")
                         {
                             Id = "btn_feat_search_close",
-                            Width = 128f,
-                            Height = 32f,
+                            Width = 150f,
+                            Height = 38f,
                             Tooltip = "Close"
                         }
                     ]
