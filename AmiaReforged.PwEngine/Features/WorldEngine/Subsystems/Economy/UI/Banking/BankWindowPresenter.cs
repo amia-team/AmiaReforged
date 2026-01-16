@@ -161,7 +161,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
 
         UpdateView();
         ResetAmountInputs();
-        
+
         // Set up watch for account selector changes
         Token().SetBindWatch(View.AccessibleAccountSelection, true);
 
@@ -220,7 +220,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
         bool showPersonalActions = !Model.HasOwnAccount;
         Token().SetBindValue(View.ShowPersonalAccountActions, showPersonalActions);
         Token().SetBindValue(View.HasActiveAccount, Model.AccountExists);
-        
+
         // Update account selector (for switching between personal and shared accounts)
         Token().SetBindValue(View.AccessibleAccountEntries, Model.AccessibleAccountOptions);
         Token().SetBindValue(View.AccessibleAccountSelection, Model.SelectedAccountIndex);
@@ -367,7 +367,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
     private async Task HandleAccountSelectionChangeAsync()
     {
         int selectedIndex = Token().GetBindValue(View.AccessibleAccountSelection);
-        
+
         if (selectedIndex == Model.SelectedAccountIndex)
         {
             return; // No change
@@ -378,18 +378,18 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
         try
         {
             await Model.SwitchToAccountAsync(selectedIndex);
-            
+
             // Reload foreclosed items and personal storage for the new account context
             Guid playerKey = CharacterService.Value.GetPlayerKey(_player);
             await LoadForeclosedItemsAsync(playerKey);
             await LoadPersonalStorageAsync(playerKey);
             await LoadInventoryItemsAsync();
-            
+
             await NwTask.SwitchToMainThread();
-            
+
             UpdateView();
             ResetAmountInputs();
-            
+
             string accountName = Model.CurrentAccount?.DisplayName ?? "account";
             Token().Player.SendServerMessage($"Now viewing: {accountName}", ColorConstants.Lime);
         }
@@ -622,6 +622,12 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
         }
 
         creature.Gold = available - requested;
+
+        // Provide feedback to player
+        Token().Player.SendServerMessage(
+            message: $"You pay {FormatCurrency(amount)}.",
+            ColorConstants.Yellow);
+
         return true;
     }
 
@@ -638,6 +644,35 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
         if (creature is not null)
         {
             creature.Gold = creature.Gold + (uint)Math.Max(amount, 0);
+
+            // Provide feedback to player
+            Token().Player.SendServerMessage(
+                message: $"You receive {FormatCurrency(amount)} back.",
+                ColorConstants.Lime);
+        }
+    }
+
+    private async Task GiveGoldAsync(int amount, bool silent = false)
+    {
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        await NwTask.SwitchToMainThread();
+
+        NwCreature? creature = _player.LoginCreature;
+        if (creature is not null)
+        {
+            creature.Gold = creature.Gold + (uint)Math.Max(amount, 0);
+
+            // Provide feedback to player (unless silent)
+            if (!silent)
+            {
+                Token().Player.SendServerMessage(
+                    message: $"You receive {FormatCurrency(amount)}.",
+                    ColorConstants.Lime);
+            }
         }
     }
 
@@ -1073,7 +1108,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
             return;
         }
 
-        await RefundGoldAsync(amount); // Reuse helper to credit coins to the player.
+        await GiveGoldAsync(amount, silent: true); // Give coins to the player silently.
 
         await NwTask.SwitchToMainThread();
         Token().Player.SendServerMessage(

@@ -2342,6 +2342,14 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         }
 
         buyer.Gold -= required;
+
+        // Provide feedback to player
+        NwPlayer? player = buyer.ControllingPlayer;
+        if (player != null && player.IsValid)
+        {
+            player.SendServerMessage($"You pay {amount:N0} gp.", ColorConstants.Yellow);
+        }
+
         return true;
     }
 
@@ -2360,6 +2368,13 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         }
 
         buyer.Gold += (uint)amount;
+
+        // Provide feedback to player
+        NwPlayer? player = buyer.ControllingPlayer;
+        if (player != null && player.IsValid)
+        {
+            player.SendServerMessage($"You receive {amount:N0} gp back.", ColorConstants.Lime);
+        }
     }
 
     private static async Task<NwItem?> TryCreateItemAsync(StallProduct product, NwCreature owner)

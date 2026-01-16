@@ -799,6 +799,14 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
         }
 
         buyer.Gold -= required;
+
+        // Provide feedback to player
+        NwPlayer? player = buyer.ControllingPlayer;
+        if (player != null && player.IsValid)
+        {
+            player.SendServerMessage($"You pay {amount:N0} gp.", ColorConstants.Yellow);
+        }
+
         return true;
     }
 
@@ -817,6 +825,13 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
         }
 
         buyer.Gold += (uint)amount;
+
+        // Provide feedback to player
+        NwPlayer? player = buyer.ControllingPlayer;
+        if (player != null && player.IsValid)
+        {
+            player.SendServerMessage($"You receive {amount:N0} gp back.", ColorConstants.Lime);
+        }
     }
 
     private HashSet<int> BuildAcceptedBaseItemSet()

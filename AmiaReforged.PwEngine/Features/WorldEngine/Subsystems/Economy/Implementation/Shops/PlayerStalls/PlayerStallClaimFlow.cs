@@ -727,6 +727,13 @@ public sealed class PlayerStallClaimFlow
         }
 
         creature.Gold -= (uint)amount.Value;
+
+        // Provide feedback to player
+        if (player.IsValid)
+        {
+            player.SendServerMessage($"You pay {amount.Value:N0} gp.", ColorConstants.Yellow);
+        }
+
         return true;
     }
 
@@ -746,6 +753,12 @@ public sealed class PlayerStallClaimFlow
         }
 
         creature.Gold += (uint)amount.Value;
+
+        // Provide feedback to player
+        if (player.IsValid)
+        {
+            player.SendServerMessage($"You receive {amount.Value:N0} gp back.", ColorConstants.Lime);
+        }
     }
 
     private static async Task SendServerMessageAsync(NwPlayer player, string message, Color color)
