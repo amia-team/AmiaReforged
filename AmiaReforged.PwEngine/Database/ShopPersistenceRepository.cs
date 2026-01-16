@@ -122,6 +122,12 @@ public sealed class ShopPersistenceRepository(PwContextFactory contextFactory) :
             return false;
         }
 
+        // MaxStock of 0 means infinite stock - always allow consumption without decrementing
+        if (product.MaxStock == 0)
+        {
+            return true;
+        }
+
         if (product.CurrentStock < quantity)
         {
             return false;
