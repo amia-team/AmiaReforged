@@ -6,4 +6,9 @@ public interface IItemDefinitionRepository
     ItemData.ItemBlueprint? GetByTag(string harvestOutputItemDefinitionTag);
     ItemData.ItemBlueprint? GetByResRef(string resRef);
     List<ItemData.ItemBlueprint> AllItems();
+    
+    /// <summary>
+    /// Finds tags that are similar to the given tag (for error message suggestions).
+    /// </summary>
+    List<string> FindSimilarTags(string tag, int maxResults = 3);
 }

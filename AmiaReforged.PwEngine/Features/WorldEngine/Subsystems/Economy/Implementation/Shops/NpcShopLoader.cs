@@ -175,8 +175,12 @@ public sealed class NpcShopLoader : IDefinitionLoader
             ItemBlueprint? blueprint = _itemDefinitions.GetByTag(product.ItemTag);
             if (string.IsNullOrWhiteSpace(product.Name) && blueprint is null)
             {
+                List<string> similarTags = _itemDefinitions.FindSimilarTags(product.ItemTag);
+                string suggestion = similarTags.Count > 0
+                    ? $" Did you mean: {string.Join(", ", similarTags.Select(t => $"'{t}'"))}?"
+                    : "";
                 _failures.Add(new FileLoadResult(ResultType.Fail,
-                    $"Product '{product.ItemTag}' must define a Name or have a matching blueprint.", fileName));
+                    $"Product '{product.ItemTag}' must define a Name or have a matching blueprint.{suggestion}", fileName));
                 return false;
             }
 

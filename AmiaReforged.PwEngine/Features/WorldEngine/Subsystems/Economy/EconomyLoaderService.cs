@@ -107,9 +107,27 @@ public class EconomyLoaderService
             return;
         }
 
-        Log.Error($"  ✗ {loaderName} had {failures.Count} failure(s):");
+        int failureCount = failures.Count(f => f.Type == ResultType.Fail);
+        int warningCount = failures.Count(f => f.Type == ResultType.Warning);
+
+        if (failureCount > 0)
+        {
+            Log.Error($"  ✗ {loaderName} had {failureCount} failure(s){(warningCount > 0 ? $" and {warningCount} warning(s)" : "")}:");
+        }
+        else if (warningCount > 0)
+        {
+            Log.Warn($"  ⚠ {loaderName} loaded with {warningCount} warning(s):");
+        }
+
         foreach (FileLoadResult failure in failures)
         {
+            if (failure.Type == ResultType.Warning)
+            {
+                Log.Warn($"    • File: {failure.FileName}");
+                Log.Warn($"      Warning: {failure.Message}");
+                continue;
+            }
+
             Log.Error($"    • File: {failure.FileName}");
             Log.Error($"      Error: {failure.Message}");
 

@@ -36,6 +36,7 @@ public sealed class ItemBlueprintLoadingService(IItemDefinitionRepository defini
         foreach (string filePath in Directory.GetFiles(blueprintsDir, "*.json", SearchOption.AllDirectories))
         {
             string fileName = Path.GetFileName(filePath);
+            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
             try
             {
                 string json = File.ReadAllText(filePath);
@@ -46,10 +47,21 @@ public sealed class ItemBlueprintLoadingService(IItemDefinitionRepository defini
                     continue;
                 }
 
+                // Set the source file for fallback lookup
+                blueprint = blueprint with { SourceFile = fileNameWithoutExtension };
+
                 if (!TryValidate(blueprint, out string? error))
                 {
                     _failures.Add(new FileLoadResult(ResultType.Fail, error, fileName));
                     continue;
+                }
+
+                // Warn if ItemTag doesn't match filename (common source of lookup failures)
+                if (!string.Equals(blueprint.ItemTag, fileNameWithoutExtension, StringComparison.OrdinalIgnoreCase))
+                {
+                    _failures.Add(new FileLoadResult(ResultType.Warning,
+                        $"ItemTag '{blueprint.ItemTag}' does not match filename '{fileNameWithoutExtension}'. " +
+                        "Consider renaming the file or updating the ItemTag to match.", fileName));
                 }
 
                 // Store blueprint as an item definition (shared model).
