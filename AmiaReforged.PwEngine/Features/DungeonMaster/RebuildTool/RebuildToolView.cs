@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.Core.UserInterface;
+using AmiaReforged.PwEngine.Features.Module;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil;
 using Anvil.API;
@@ -31,11 +32,13 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
     public readonly NuiBind<string> SubRaceInput = new("subrace_input");
     public readonly NuiBind<string> FullRebuildReturnLevel = new("full_rebuild_return_level");
     public readonly NuiBind<int> SelectedPendingRebuild = new("selected_pending_rebuild");
+    public readonly NuiBind<string> FeatSearchText = new("feat_search_text");
 
     // Buttons
     public NuiButtonImage SelectCharacterButton = null!;
     public NuiButtonImage AddFeatButton = null!;
     public NuiButtonImage RemoveFeatButton = null!;
+    public NuiButtonImage SearchFeatButton = null!;
     public NuiButtonImage InitiateRebuildButton = null!;
     public NuiButton ViewAllFeatsButton = null!;
     public NuiButtonImage RaceOptionsButton = null!;
@@ -46,10 +49,11 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
 
     public RebuildToolView(NwPlayer player)
     {
-        // Resolve IRebuildRepository from the service container
+        // Resolve dependencies from the service container
         IRebuildRepository repository = AnvilCore.GetService<IRebuildRepository>()!;
+        FeatCache featCache = AnvilCore.GetService<FeatCache>()!;
 
-        Presenter = new RebuildToolPresenter(this, player, repository);
+        Presenter = new RebuildToolPresenter(this, player, repository, featCache);
         InjectionService injector = AnvilCore.GetService<InjectionService>()!;
         injector.Inject(Presenter);
     }
@@ -311,7 +315,15 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
                             Width = 35f,
                             Height = 35f,
                             Tooltip = "Remove feat from character"
-                        }.Assign(out RemoveFeatButton)
+                        }.Assign(out RemoveFeatButton),
+                        new NuiSpacer { Width = 10f },
+                        new NuiButtonImage("isk_search")
+                        {
+                            Id = "btn_search_feat",
+                            Width = 35f,
+                            Height = 35f,
+                            Tooltip = "Search for feats in feat.2da"
+                        }.Assign(out SearchFeatButton)
                     ]
                 }
             ]
@@ -940,7 +952,180 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
             Closable = true
         };
     }
+
+    public NuiWindow BuildFeatSearchModal(List<(int id, string name)> feats)
+    {
+        const float modalW = 600f;
+        const float modalH = 700f;
+
+        // Build rows for each feat
+        List<NuiElement> featRows = new();
+
+        foreach (var feat in feats)
+        {
+            featRows.Add(new NuiRow
+            {
+                Height = 30f,
+                Children =
+                [
+                    new NuiSpacer { Width = 10f },
+                    new NuiLabel($"{feat.id}")
+                    {
+                        Width = 60f,
+                        VerticalAlign = NuiVAlign.Middle,
+                        ForegroundColor = new Color(30, 20, 12)
+                    },
+                    new NuiLabel(feat.name)
+                    {
+                        Width = 450f,
+                        VerticalAlign = NuiVAlign.Middle,
+                        ForegroundColor = new Color(30, 20, 12)
+                    },
+                    new NuiButtonImage("ui_btn_sm_plus")
+                    {
+                        Id = $"btn_add_feat_{feat.id}",
+                        Width = 25f,
+                        Height = 25f,
+                        Tooltip = $"Add {feat.name} to character"
+                    }
+                ]
+            });
+        }
+
+        NuiColumn layout = new NuiColumn
+        {
+            Width = modalW,
+            Height = modalH,
+            Children =
+            [
+                // Background
+                new NuiRow
+                {
+                    Width = 0f,
+                    Height = 0f,
+                    DrawList = new()
+                    {
+                        new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, modalW, modalH))
+                    }
+                },
+
+                // Title
+                new NuiRow
+                {
+                    Height = 40f,
+                    Children =
+                    [
+                        new NuiLabel("Feat Search - All Feats")
+                        {
+                            HorizontalAlign = NuiHAlign.Center,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 10f },
+
+                // Search field
+                new NuiRow
+                {
+                    Height = 40f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 10f },
+                        new NuiLabel("Search:")
+                        {
+                            Width = 70f,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiTextEdit("Type feat name...", FeatSearchText, 50, false)
+                        {
+                            Width = 350f,
+                            Tooltip = "Enter part of a feat name to search"
+                        },
+                        new NuiSpacer { Width = 10f },
+                        new NuiButton("Search")
+                        {
+                            Id = "btn_feat_search",
+                            Width = 100f,
+                            Height = 35f,
+                            Tooltip = "Search for feats"
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 10f },
+
+                // Column headers
+                new NuiRow
+                {
+                    Height = 30f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 10f },
+                        new NuiLabel("ID")
+                        {
+                            Width = 60f,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiLabel("Feat Name")
+                        {
+                            Width = 450f,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiLabel("Add")
+                        {
+                            Width = 35f,
+                            HorizontalAlign = NuiHAlign.Center,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
+                },
+
+                // Feat list
+                new NuiColumn
+                {
+                    Height = 520f,
+                    Children = featRows
+                },
+
+                new NuiSpacer { Height = 10f },
+
+                // Close button
+                new NuiRow
+                {
+                    Height = 40f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 225f },
+                        new NuiButtonImage("ui_btn_cancel")
+                        {
+                            Id = "btn_feat_search_close",
+                            Width = 128f,
+                            Height = 32f,
+                            Tooltip = "Close"
+                        }
+                    ]
+                }
+            ]
+        };
+
+        return new NuiWindow(layout, "Feat Search")
+        {
+            Geometry = new NuiRect(350f, 100f, modalW, modalH),
+            Resizable = true,
+            Closable = true
+        };
+    }
 }
+
+
+
+
 
 
 

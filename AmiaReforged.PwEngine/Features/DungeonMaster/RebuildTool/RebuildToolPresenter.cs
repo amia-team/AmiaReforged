@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Features.Module;
 using Anvil.API;
 using Anvil.API.Events;
 using System.Text;
@@ -13,22 +14,25 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
     private readonly NwPlayer _player;
     private readonly RebuildToolModel _model;
     private readonly IRebuildRepository _repository;
+    private readonly FeatCache _featCache;
     private NuiWindowToken _token;
     private NuiWindow? _window;
     private NuiWindowToken? _rebuildModalToken;
     private NuiWindowToken? _raceOptionsModalToken;
     private NuiWindowToken? _fullRebuildModalToken;
     private NuiWindowToken? _findRebuildModalToken;
+    private NuiWindowToken? _featSearchModalToken;
     private int? _currentRebuildId;
     private bool _isViewingAllFeats = false; // Track if user is viewing "View All Feats"
 
     public override NuiWindowToken Token() => _token;
 
-    public RebuildToolPresenter(RebuildToolView view, NwPlayer player, IRebuildRepository repository)
+    public RebuildToolPresenter(RebuildToolView view, NwPlayer player, IRebuildRepository repository, FeatCache featCache)
     {
         View = view;
         _player = player;
         _repository = repository;
+        _featCache = featCache;
         _model = new RebuildToolModel(player, repository);
 
         // Subscribe to model events
@@ -93,6 +97,10 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
 
             case var id when id == View.RemoveFeatButton.Id:
                 HandleRemoveFeat();
+                break;
+
+            case var id when id == View.SearchFeatButton.Id:
+                OpenFeatSearchModal();
                 break;
 
             case var id when id == View.InitiateRebuildButton.Id:
@@ -935,12 +943,159 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         }
     }
 
+    private void OpenFeatSearchModal()
+    {
+        if (_model.SelectedCharacter == null)
+        {
+            _player.SendServerMessage("Please select a character first.", ColorConstants.Orange);
+            return;
+        }
+
+        // Get cached feat data (already sorted alphabetically)
+        List<(int id, string name)> allFeats = _featCache.GetAllFeats();
+
+        if (allFeats.Count == 0)
+        {
+            _player.SendServerMessage("Feat cache is empty. Please report this to a developer.", ColorConstants.Red);
+            return;
+        }
+
+        // Show first 10 feats initially
+        List<(int id, string name)> displayFeats = allFeats.Take(10).ToList();
+
+        _player.SendServerMessage($"Showing first {displayFeats.Count} of {allFeats.Count} feats. Use the Search feature to find a feat by name.", ColorConstants.Lime);
+
+        // Create and open the modal
+        NuiWindow featSearchModal = View.BuildFeatSearchModal(displayFeats);
+
+        if (_player.TryCreateNuiWindow(featSearchModal, out NuiWindowToken token))
+        {
+            _featSearchModalToken = token;
+
+            // Initialize search field
+            token.SetBindValue(View.FeatSearchText, "");
+
+            // Subscribe to events
+            token.OnNuiEvent += HandleFeatSearchModalEvent;
+        }
+    }
+
+    private void HandleFeatSearchModalEvent(ModuleEvents.OnNuiEvent ev)
+    {
+        if (ev.EventType != NuiEventType.Click) return;
+
+        // Search button
+        if (ev.ElementId == "btn_feat_search")
+        {
+            HandleFeatSearch();
+            return;
+        }
+
+        // Close button
+        if (ev.ElementId == "btn_feat_search_close")
+        {
+            CloseFeatSearchModal();
+            return;
+        }
+
+        // Check if it's an add feat button (format: btn_add_feat_{featId})
+        if (ev.ElementId.StartsWith("btn_add_feat_"))
+        {
+            string featIdStr = ev.ElementId.Substring("btn_add_feat_".Length);
+            if (int.TryParse(featIdStr, out int featId))
+            {
+                // Get the current level from the Level input field
+                string levelStr = Token().GetBindValue(View.Level);
+                if (!int.TryParse(levelStr, out int level))
+                {
+                    level = 1; // Default to level 1 if not specified
+                }
+
+                // Add the feat to the character
+                _model.AddFeatToCharacter(featId, level);
+
+                // Refresh the current view
+                if (_isViewingAllFeats)
+                {
+                    DisplayAllFeats();
+                }
+                else
+                {
+                    UpdateLevelupInfo();
+                }
+            }
+        }
+    }
+
+    private void HandleFeatSearch()
+    {
+        if (!_featSearchModalToken.HasValue) return;
+
+        // Get search text
+        string searchText = _featSearchModalToken.Value.GetBindValue(View.FeatSearchText);
+
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            _player.SendServerMessage("Please enter a search term.", ColorConstants.Orange);
+            return;
+        }
+
+        // Search using the cached feat data
+        List<(int id, string name)> searchResults = _featCache.SearchFeats(searchText);
+
+        if (searchResults.Count == 0)
+        {
+            _player.SendServerMessage($"No feats found matching '{searchText}'.", ColorConstants.Orange);
+            return;
+        }
+
+        // Limit to 100 results to prevent UI overload
+        List<(int id, string name)> displayResults = searchResults.Take(100).ToList();
+
+        _player.SendServerMessage($"Found {searchResults.Count} feat(s) matching '{searchText}'. Showing first {displayResults.Count}.", ColorConstants.Lime);
+
+        // Close current modal and open new one with filtered results
+        CloseFeatSearchModal();
+
+        // Create new modal with search results
+        NuiWindow featSearchModal = View.BuildFeatSearchModal(displayResults);
+
+        if (_player.TryCreateNuiWindow(featSearchModal, out NuiWindowToken token))
+        {
+            _featSearchModalToken = token;
+
+            // Restore search text
+            token.SetBindValue(View.FeatSearchText, searchText);
+
+            // Subscribe to events
+            token.OnNuiEvent += HandleFeatSearchModalEvent;
+        }
+    }
+
+    private void CloseFeatSearchModal()
+    {
+        if (_featSearchModalToken.HasValue)
+        {
+            _featSearchModalToken.Value.OnNuiEvent -= HandleFeatSearchModalEvent;
+            try
+            {
+                _featSearchModalToken.Value.Close();
+            }
+            catch
+            {
+                // ignore
+            }
+            _featSearchModalToken = null;
+        }
+    }
+
     public override void Close()
     {
         CloseRebuildModal();
         CloseRaceOptionsModal();
         CloseFullRebuildModal();
         CloseFindRebuildModal();
+        CloseFeatSearchModal();
 
         try
         {
