@@ -1,4 +1,4 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 
 namespace AmiaReforged.Classes.Spells.SpellLearning;
@@ -41,9 +41,9 @@ public sealed class SpellLearningView : ScryView<SpellLearningPresenter>
     public readonly NuiBind<string> SpellStatusText = new("spell_status_text");
     public readonly NuiBind<string> SpellIconResRef = new("spell_icon_resref");
 
-    public SpellLearningView(NwPlayer player, ClassType baseClass, int actualLevel, int effectiveLevel)
+    public SpellLearningView(NwPlayer player, ClassType baseClass, int effectiveCasterLevel, Dictionary<int, int> spellsNeeded)
     {
-        Presenter = new SpellLearningPresenter(this, player, baseClass, actualLevel, effectiveLevel);
+        Presenter = new SpellLearningPresenter(this, player, baseClass, effectiveCasterLevel, spellsNeeded);
     }
 
     public override SpellLearningPresenter Presenter { get; protected set; }

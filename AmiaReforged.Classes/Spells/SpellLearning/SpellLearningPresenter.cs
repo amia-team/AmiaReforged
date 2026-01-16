@@ -1,4 +1,4 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 using NWN.Core.NWNX;
@@ -16,8 +16,8 @@ public sealed class SpellLearningPresenter : ScryPresenter<SpellLearningView>
 
     private readonly NwPlayer _player;
     private readonly ClassType _baseClass;
-    private readonly int _actualLevel;
-    private readonly int _effectiveLevel;
+    private readonly int _effectiveCasterLevel;
+    private readonly Dictionary<int, int> _spellsNeeded;
 
     // UI state
     private int _currentSpellLevel;
@@ -28,13 +28,13 @@ public sealed class SpellLearningPresenter : ScryPresenter<SpellLearningView>
     private readonly HashSet<int> _selectedSpellIds = new();
     private readonly HashSet<int> _knownSpellIds = new();
 
-    public SpellLearningPresenter(SpellLearningView view, NwPlayer player, ClassType baseClass, int actualLevel, int effectiveLevel)
+    public SpellLearningPresenter(SpellLearningView view, NwPlayer player, ClassType baseClass, int effectiveCasterLevel, Dictionary<int, int> spellsNeeded)
     {
         View = view;
         _player = player;
         _baseClass = baseClass;
-        _actualLevel = actualLevel;
-        _effectiveLevel = effectiveLevel;
+        _effectiveCasterLevel = effectiveCasterLevel;
+        _spellsNeeded = spellsNeeded;
     }
 
     public override NuiWindowToken Token() => _token;
@@ -249,9 +249,8 @@ public sealed class SpellLearningPresenter : ScryPresenter<SpellLearningView>
     {
         _spellsToLearnPerLevel.Clear();
 
-        Dictionary<int, int> newSpells = SpellProgressionData.GetNewSpellsToLearn(_baseClass, _actualLevel, _effectiveLevel);
-
-        foreach (var kvp in newSpells)
+        // Use the spells needed that were calculated by the service
+        foreach (var kvp in _spellsNeeded)
         {
             _spellsToLearnPerLevel[kvp.Key] = kvp.Value;
             _selectedCountPerLevel[kvp.Key] = 0;
@@ -321,7 +320,6 @@ public sealed class SpellLearningPresenter : ScryPresenter<SpellLearningView>
             _visibleSpellListRows.AddRange(spellsForLevel);
         }
 
-        Log.Debug($"Showing {_visibleSpellListRows.Count} spells for level {_currentSpellLevel}");
 
         // Update bindings (token is guaranteed to exist when this is called)
         UpdateHeaderAndList();
@@ -373,7 +371,7 @@ public sealed class SpellLearningPresenter : ScryPresenter<SpellLearningView>
     {
         string className = _baseClass == ClassType.Sorcerer ? "Sorcerer" : "Bard";
 
-        _token.SetBindValue(View.HeaderText, $"Learn {className} Spells (Effective Caster Level {_effectiveLevel})");
+        _token.SetBindValue(View.HeaderText, $"Learn {className} Spells (Effective Caster Level {_effectiveCasterLevel})");
         _token.SetBindValue(View.InstructionText, "Select the spells you want to learn.");
 
         // Set up individual spell level buttons (0-9)

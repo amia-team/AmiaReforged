@@ -193,5 +193,34 @@ public static class SpellProgressionData
             };
         }
     }
+
+    /// <summary>
+    /// Calculates how many spells need to be learned at each spell level by comparing
+    /// what the character currently knows versus what they should know at their effective caster level.
+    /// This is more robust than tracking previous levels as it self-corrects.
+    /// </summary>
+    public static Dictionary<int, int> GetSpellsNeededToReachLevel(ClassType classType, Dictionary<int, int> currentSpellsKnown, int targetCasterLevel)
+    {
+        Dictionary<int, int> spellsNeeded = new();
+
+        for (int spellLevel = 0; spellLevel <= 9; spellLevel++)
+        {
+            int shouldKnow = classType == ClassType.Sorcerer
+                ? GetSorcererSpellsKnown(targetCasterLevel, spellLevel)
+                : GetBardSpellsKnown(targetCasterLevel, spellLevel);
+
+            int currentlyKnow = currentSpellsKnown.GetValueOrDefault(spellLevel, 0);
+
+            int difference = shouldKnow - currentlyKnow;
+            if (difference > 0)
+            {
+                spellsNeeded[spellLevel] = difference;
+                NLog.LogManager.GetCurrentClassLogger().Debug(
+                    $"Spell Level {spellLevel}: Currently have {currentlyKnow}, should have {shouldKnow} at caster L{targetCasterLevel}, need {difference}");
+            }
+        }
+
+        return spellsNeeded;
+    }
 }
 

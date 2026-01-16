@@ -115,22 +115,41 @@ public class SpellLearningService
 
         Log.Info($"{creature.Name} is eligible for spell learning: Base={baseClass} L{baseLevel}, Effective L{effectiveCasterLevel}");
 
-        // Check if there are any new spells to learn
-        Dictionary<int, int> newSpells = SpellProgressionData.GetNewSpellsToLearn(baseClass, baseLevel, effectiveCasterLevel);
+        // Get current spells known for this class
+        Dictionary<int, int> currentSpellsKnown = GetCurrentSpellsKnown(creature, baseClass);
 
-        if (newSpells.Count == 0)
+        int totalKnown = currentSpellsKnown.Values.Sum();
+        Log.Info($"Current spells known (total: {totalKnown}): {string.Join(", ", currentSpellsKnown.Where(kvp => kvp.Value > 0).Select(kvp => $"L{kvp.Key}={kvp.Value}"))}");
+
+        // Check if there are any new spells to learn by comparing current to target
+        Dictionary<int, int> spellsNeeded = SpellProgressionData.GetSpellsNeededToReachLevel(baseClass, currentSpellsKnown, effectiveCasterLevel);
+
+        // Log what they should have at this effective level
+        Dictionary<int, int> shouldHave = new();
+        for (int i = 0; i <= 9; i++)
         {
-            Log.Info($"{creature.Name} has no new spells to learn (base L{baseLevel} -> effective L{effectiveCasterLevel})");
+            int count = baseClass == ClassType.Sorcerer
+                ? SpellProgressionData.GetSorcererSpellsKnown(effectiveCasterLevel, i)
+                : SpellProgressionData.GetBardSpellsKnown(effectiveCasterLevel, i);
+            if (count > 0) shouldHave[i] = count;
+        }
+        int totalShould = shouldHave.Values.Sum();
+        Log.Info($"Should have at effective L{effectiveCasterLevel} (total: {totalShould}): {string.Join(", ", shouldHave.Select(kvp => $"L{kvp.Key}={kvp.Value}"))}");
+
+
+        if (spellsNeeded.Count == 0)
+        {
+            Log.Info($"{creature.Name} has no new spells to learn at effective caster level {effectiveCasterLevel}");
             return;
         }
 
-        Log.Info($"{creature.Name} has {newSpells.Count} spell level(s) with new spells to learn");
+        Log.Info($"{creature.Name} needs to learn spells: {string.Join(", ", spellsNeeded.Select(kvp => $"L{kvp.Key}={kvp.Value}"))}");
 
         // Trigger the spell learning NUI
         NwTask.Run(async () =>
         {
             await NwTask.Delay(TimeSpan.FromMilliseconds(500)); // Small delay to let level up finish
-            ShowSpellLearningNui(player, baseClass, baseLevel, effectiveCasterLevel);
+            ShowSpellLearningNui(player, baseClass, effectiveCasterLevel, spellsNeeded);
         });
     }
 
@@ -209,6 +228,24 @@ public class SpellLearningService
         }
     }
 
+    private Dictionary<int, int> GetCurrentSpellsKnown(NwCreature creature, ClassType classType)
+    {
+        Dictionary<int, int> spellsKnown = new();
+
+        CreatureClassInfo? classInfo = creature.GetClassInfo(classType);
+        if (classInfo == null)
+            return spellsKnown;
+
+        // Count known spells at each spell level (0-9)
+        for (int spellLevel = 0; spellLevel <= 9; spellLevel++)
+        {
+            IList<NwSpell>? knownSpells = classInfo.KnownSpells.ElementAtOrDefault(spellLevel);
+            spellsKnown[spellLevel] = knownSpells?.Count ?? 0;
+        }
+
+        return spellsKnown;
+    }
+
     private ClassType? GetEligibleBaseClass(NwCreature creature, ClassType prestigeClass)
     {
         if (!PrestigeToBaseClassMap.TryGetValue(prestigeClass, out HashSet<ClassType>? validBaseClasses))
@@ -272,13 +309,13 @@ public class SpellLearningService
         return baseLevel + totalModifier;
     }
 
-    private void ShowSpellLearningNui(NwPlayer player, ClassType baseClass, int actualLevel, int effectiveLevel)
+    private void ShowSpellLearningNui(NwPlayer player, ClassType baseClass, int effectiveCasterLevel, Dictionary<int, int> spellsNeeded)
     {
-        Log.Info($"Showing spell learning NUI for {player.PlayerName}: {baseClass} Actual L{actualLevel} -> Effective L{effectiveLevel}");
+        Log.Info($"Showing spell learning NUI for {player.PlayerName}: {baseClass} at Effective L{effectiveCasterLevel}");
 
         try
         {
-            SpellLearningView view = new(player, baseClass, actualLevel, effectiveLevel);
+            SpellLearningView view = new(player, baseClass, effectiveCasterLevel, spellsNeeded);
 
             // Use WindowDirector to properly register the window for event routing
             WindowDirector.Value.OpenWindow(view.Presenter);
