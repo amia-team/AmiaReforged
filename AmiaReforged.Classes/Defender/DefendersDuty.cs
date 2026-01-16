@@ -137,6 +137,11 @@ public class DefendersDuty
         else if (defender.IsReactionTypeFriendly(enteringCreature))
         {
             // Friendly: add protection
+            if (enteringCreature.IsPlayerControlled(out NwPlayer? player))
+            {
+                player.SendServerMessage($"You are being protected by {defender.Name}.", ColorConstants.Lime);
+            }
+
             AddProtection(enteringCreature);
         }
 
