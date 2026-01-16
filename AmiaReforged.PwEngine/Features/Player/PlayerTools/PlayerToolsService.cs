@@ -14,6 +14,7 @@ public class PlayerToolsService
 {
     private const int PlayerToolsFeatId = 1337;
     private const int WeaponFinesseFeatId = 42;
+    private const int RapidReloadFeatId = 411;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly WindowDirector _windowManager;
 
@@ -24,6 +25,7 @@ public class PlayerToolsService
 
         entryArea.OnEnter += AddPlayerToolsFeat;
         entryArea.OnEnter += AddWeaponFinesseFeat;
+        entryArea.OnEnter += AddRapidReloadFeat;
 
         NwModule.Instance.OnUseFeat += OnUsePlayerTools;
     }
@@ -106,5 +108,31 @@ public class PlayerToolsService
 
         player.FloatingTextString(message: "Adding Weapon Finesse feat.", false);
         CreaturePlugin.AddFeatByLevel(character, WeaponFinesseFeatId, 1);
+    }
+
+    private void AddRapidReloadFeat(AreaEvents.OnEnter obj)
+    {
+        if (!obj.EnteringObject.IsPlayerControlled(out NwPlayer? player)) return;
+
+        NwCreature? character = player.LoginCreature;
+
+        if (character is null)
+        {
+            Log.Error($"{player.PlayerName}'s Character not found.");
+            return;
+        }
+
+        if (character.Feats.Any(f => f.Id == RapidReloadFeatId)) return;
+
+        NwFeat? rapidReload = NwFeat.FromFeatId(RapidReloadFeatId);
+
+        if (rapidReload is null)
+        {
+            Log.Error(message: "Rapid Reload feat not found.");
+            return;
+        }
+
+        player.FloatingTextString(message: "Adding Rapid Reload feat.", false);
+        CreaturePlugin.AddFeatByLevel(character, RapidReloadFeatId, 1);
     }
 }
