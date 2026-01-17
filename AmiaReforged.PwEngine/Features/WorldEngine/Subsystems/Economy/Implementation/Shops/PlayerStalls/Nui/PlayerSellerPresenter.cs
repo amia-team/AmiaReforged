@@ -68,6 +68,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
 
     // Filter state
     private string _searchTerm = string.Empty;
+    private string _inventorySearchTerm = string.Empty;
     private PlayerStallSellerSnapshot? _currentSnapshot;
 
     [Inject] private PlayerStallEventManager EventManager { get; init; } = null!;
@@ -147,6 +148,14 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
             _searchTerm = string.Empty;
             Token().SetBindValue(View.SearchFilter, string.Empty);
             RefreshProductList();
+            return;
+        }
+
+        if (eventData.ElementId == "player_stall_seller_clear_inventory_search")
+        {
+            _inventorySearchTerm = string.Empty;
+            Token().SetBindValue(View.InventorySearchFilter, string.Empty);
+            RefreshInventoryList();
             return;
         }
 
@@ -378,11 +387,13 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
             _inventoryItems.AddRange(snapshot.Inventory);
         }
 
+        IEnumerable<PlayerStallSellerInventoryItemView> filteredInventory = ApplyInventoryFilters(_inventoryItems);
+
         List<string> inventoryEntries = new(_inventoryItems.Count);
         List<string> inventoryTooltips = new(_inventoryItems.Count);
         List<bool> inventoryEnabled = new(_inventoryItems.Count);
 
-        foreach (PlayerStallSellerInventoryItemView item in _inventoryItems)
+        foreach (PlayerStallSellerInventoryItemView item in filteredInventory)
         {
             inventoryEntries.Add(FormatInventoryEntry(item));
             inventoryTooltips.Add(FormatInventoryTooltip(item));
@@ -393,7 +404,16 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         Token().SetBindValues(View.InventoryTooltips, inventoryTooltips);
         Token().SetBindValues(View.InventorySelectEnabled, inventoryEnabled);
         Token().SetBindValue(View.InventoryCount, inventoryEntries.Count);
-        Token().SetBindValue(View.InventoryEmptyVisible, inventoryEntries.Count == 0);
+
+        bool inventoryEmpty = inventoryEntries.Count == 0;
+        Token().SetBindValue(View.InventoryEmptyVisible, inventoryEmpty);
+        if (inventoryEmpty)
+        {
+            string inventoryEmptyMessage = string.IsNullOrEmpty(_inventorySearchTerm)
+                ? "No eligible items in your inventory."
+                : "No matching items.";
+            Token().SetBindValue(View.InventoryEmptyMessage, inventoryEmptyMessage);
+        }
 
         _ledgerEntries.Clear();
         if (snapshot.LedgerEntries is not null)
@@ -1883,6 +1903,8 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
     {
         Token().SetBindWatch(View.SearchFilter, true);
         Token().SetBindValue(View.SearchFilter, _searchTerm);
+        Token().SetBindWatch(View.InventorySearchFilter, true);
+        Token().SetBindValue(View.InventorySearchFilter, _inventorySearchTerm);
     }
 
     private void HandleWatchEvent(ModuleEvents.OnNuiEvent eventData)
@@ -1891,6 +1913,13 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         {
             _searchTerm = (Token().GetBindValue(View.SearchFilter) ?? string.Empty).Trim();
             RefreshProductList();
+            return;
+        }
+
+        if (eventData.ElementId == View.InventorySearchFilter.Key)
+        {
+            _inventorySearchTerm = (Token().GetBindValue(View.InventorySearchFilter) ?? string.Empty).Trim();
+            RefreshInventoryList();
         }
     }
 
@@ -1946,6 +1975,61 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
                 ? "You have no active listings."
                 : "No matching listings.";
             Token().SetBindValue(View.ProductEmptyMessage, emptyMessage);
+        }
+    }
+
+    private IEnumerable<PlayerStallSellerInventoryItemView> ApplyInventoryFilters(IReadOnlyList<PlayerStallSellerInventoryItemView> items)
+    {
+        if (string.IsNullOrEmpty(_inventorySearchTerm))
+        {
+            return items;
+        }
+
+        return items.Where(i =>
+            i.DisplayName.Contains(_inventorySearchTerm, StringComparison.OrdinalIgnoreCase) ||
+            (!string.IsNullOrEmpty(i.ResRef) && i.ResRef.Contains(_inventorySearchTerm, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private void RefreshInventoryList()
+    {
+        if (_currentSnapshot is null)
+        {
+            return;
+        }
+
+        _selectedInventoryItemId = null;
+
+        // Hide detail when list refreshes
+        Token().SetBindValue(View.InventoryDetailVisible, false);
+        Token().SetBindValue(View.InventoryDetailPlaceholderVisible, true);
+
+        IEnumerable<PlayerStallSellerInventoryItemView> filteredItems = ApplyInventoryFilters(_inventoryItems);
+
+        List<string> entries = new();
+        List<string> tooltips = new();
+        List<bool> enabled = new();
+
+        foreach (PlayerStallSellerInventoryItemView item in filteredItems)
+        {
+            entries.Add(FormatInventoryEntry(item));
+            tooltips.Add(FormatInventoryTooltip(item));
+            enabled.Add(!_isProcessing);
+        }
+
+        Token().SetBindValues(View.InventoryEntries, entries);
+        Token().SetBindValues(View.InventoryTooltips, tooltips);
+        Token().SetBindValues(View.InventorySelectEnabled, enabled);
+        Token().SetBindValue(View.InventoryCount, entries.Count);
+
+        bool isEmpty = entries.Count == 0;
+        Token().SetBindValue(View.InventoryEmptyVisible, isEmpty);
+
+        if (isEmpty)
+        {
+            string emptyMessage = string.IsNullOrEmpty(_inventorySearchTerm)
+                ? "No eligible items in your inventory."
+                : "No matching items.";
+            Token().SetBindValue(View.InventoryEmptyMessage, emptyMessage);
         }
     }
 }

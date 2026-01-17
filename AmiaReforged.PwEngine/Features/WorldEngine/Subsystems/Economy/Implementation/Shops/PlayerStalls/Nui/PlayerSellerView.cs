@@ -88,6 +88,10 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
     public readonly NuiBind<string> InventoryTooltips = new("player_stall_seller_inventory_tooltips");
     public readonly NuiBind<bool> InventorySelectEnabled = new("player_stall_seller_inventory_select_enabled");
     public readonly NuiBind<bool> InventoryEmptyVisible = new("player_stall_seller_inventory_empty_visible");
+    public readonly NuiBind<string> InventoryEmptyMessage = new("player_stall_seller_inventory_empty_message");
+
+    // Inventory filter bindings
+    public readonly NuiBind<string> InventorySearchFilter = new("player_stall_seller_inventory_search");
 
     public readonly NuiBind<bool> InventoryDetailVisible = new("player_stall_seller_inventory_detail_visible");
     public readonly NuiBind<bool> InventoryDetailPlaceholderVisible = new("player_stall_seller_inventory_detail_placeholder_visible");
@@ -544,12 +548,32 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                             Children =
                             [
                                 new NuiSpacer { Height = 4f },
-                                new NuiLabel("Your Items")
+                                new NuiRow
                                 {
-                                    Height = 20f,
-                                    HorizontalAlign = NuiHAlign.Left,
-                                    VerticalAlign = NuiVAlign.Middle,
-                                    ForegroundColor = new Color(30, 20, 12)
+                                    Children =
+                                    [
+                                        new NuiLabel("Your Items")
+                                        {
+                                            Width = 75f,
+                                            Height = 20f,
+                                            HorizontalAlign = NuiHAlign.Left,
+                                            VerticalAlign = NuiVAlign.Middle,
+                                            ForegroundColor = new Color(30, 20, 12)
+                                        },
+                                        new NuiSpacer { Width = 10f },
+                                        new NuiTextEdit("Search items...", InventorySearchFilter, 64, false)
+                                        {
+                                            Width = 180f,
+                                            Height = 26f
+                                        },
+                                        new NuiButtonImage("ir_abort")
+                                        {
+                                            Id = "player_stall_seller_clear_inventory_search",
+                                            Width = 26f,
+                                            Height = 26f,
+                                            Tooltip = "Clear search"
+                                        }
+                                    ]
                                 },
                                 new NuiSpacer { Height = 6f },
                                 new NuiList(inventoryTemplate, InventoryCount)
@@ -559,7 +583,7 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                                     Height = 234f
                                 },
                                 new NuiSpacer { Height = 6f },
-                                new NuiLabel("No eligible items in your inventory.")
+                                new NuiLabel(InventoryEmptyMessage)
                                 {
                                     Visible = InventoryEmptyVisible,
                                     Height = 20f,
