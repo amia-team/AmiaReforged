@@ -591,17 +591,8 @@ public sealed class PlayerStallClaimFlow
         CoinhouseTag tag;
         if (!TryResolveCoinhouseTag(stall, out tag))
         {
-            string status = string.IsNullOrWhiteSpace(stall.SettlementTag)
-                ? "This stall is not linked to a coinhouse yet."
-                : "We couldn't locate the settlement's coinhouse configuration. Please notify a DM.";
-
-            RentStallPaymentOptionViewModel option = CreateCoinhouseOptionModel(
-                settlementName,
-                visible: true,
-                enabled: false,
-                status: status);
-
-            return (option, null, null);
+            // No coinhouse detected - hide the option entirely
+            return (null, null, null);
         }
 
         Guid accountId = PersonaAccountId.ForCoinhouse(characterPersonaId, tag);
