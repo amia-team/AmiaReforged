@@ -16,6 +16,8 @@ public class DmTools(WindowDirector director) : IChatCommand
     {
         if (!caller.IsDM) return Task.CompletedTask;
 
+        caller.SendServerMessage("Pro Tip: You can open your DM tools by pressing R (Rest) instead!", ColorConstants.Cyan);
+
         DmToolView view = new(caller);
 
         director.OpenWindow(view.Presenter);
