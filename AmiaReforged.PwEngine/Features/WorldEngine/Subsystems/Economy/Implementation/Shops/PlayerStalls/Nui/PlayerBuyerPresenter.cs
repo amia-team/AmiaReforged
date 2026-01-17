@@ -426,16 +426,17 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 
 		try
 		{
-			// Parse and spawn the item from serialized data
-			string jsonText = Encoding.UTF8.GetString(_selectedProductItemData);
-			Json json = Json.Parse(jsonText);
-			NwItem? item = json.ToNwObject<NwItem>(copyWaypoint.Location);
+			// Deserialize item from binary data - this preserves full item state
+			NwItem? item = NwItem.Deserialize(_selectedProductItemData);
 
 			if (item is null || !item.IsValid)
 			{
 				NotifyError("Unable to examine item: failed to materialize item.");
 				return;
 			}
+
+			// Move item to staging location
+			item.Location = copyWaypoint.Location;
 
 			_examinedItem = item;
 
