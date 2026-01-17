@@ -1560,14 +1560,9 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         string? originalName = _renameService.GetOriginalName(item);
         string displayName = string.IsNullOrWhiteSpace(originalName) ? item.Name : originalName.Trim();
 
-        // Use binary serialization to preserve full item data including appearance and description
-        byte[]? itemData = item.Serialize();
-        if (itemData is null || itemData.Length == 0)
-        {
-            return PlayerStallSellerOperationResult.Fail(
-                "Failed to serialize that item.",
-                ColorConstants.Orange);
-        }
+        Json serializedItem = NWScript.ObjectToJson(item);
+        string payload = serializedItem.Dump();
+        byte[] itemData = Encoding.UTF8.GetBytes(payload);
 
         List<StallProduct> existingProducts = _shops.ProductsForShop(request.StallId) ?? new List<StallProduct>();
         int sortOrder = existingProducts.Count == 0 ? 0 : existingProducts.Max(p => p.SortOrder) + 1;

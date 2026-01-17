@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Numerics;
 using System.Text;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
@@ -401,29 +400,20 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 
 		await NwTask.SwitchToMainThread();
 
-		// Spawn item underground at player's location to ensure full description loads
-		NwCreature? playerCreature = _player.ControlledCreature;
-		NwArea? playerArea = playerCreature?.Area;
-		Location? spawnLocation = null;
-
-		if (playerArea is not null && playerCreature is not null)
+		// Find the ds_copy waypoint in core_atr area
+		NwArea? targetArea = NwModule.Instance.Areas.FirstOrDefault(a => a.ResRef == "core_atr");
+		if (targetArea is null)
 		{
-			Vector3 playerPos = playerCreature.Position;
-			// Spawn underground at Z = -10 to hide visually while ensuring proper loading
-			spawnLocation = Location.Create(playerArea, new Vector3(playerPos.X, playerPos.Y, -10f), 0f);
-		}
-		else
-		{
-			// Fallback to ds_copy waypoint if player location unavailable
-			NwArea? targetArea = NwModule.Instance.Areas.FirstOrDefault(a => a.ResRef == "core_atr");
-			NwWaypoint? copyWaypoint = targetArea?.FindObjectsOfTypeInArea<NwWaypoint>()
-				.FirstOrDefault(w => w.Tag == "ds_copy");
-			spawnLocation = copyWaypoint?.Location;
+			NotifyError("Unable to examine item: staging area not found.");
+			return;
 		}
 
-		if (spawnLocation is null)
+		NwWaypoint? copyWaypoint = targetArea.FindObjectsOfTypeInArea<NwWaypoint>()
+			.FirstOrDefault(w => w.Tag == "ds_copy");
+
+		if (copyWaypoint is null)
 		{
-			NotifyError("Unable to examine item: could not determine spawn location.");
+			NotifyError("Unable to examine item: staging waypoint not found.");
 			return;
 		}
 
@@ -436,17 +426,16 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 
 		try
 		{
-			// Deserialize item from binary data - this preserves full item state
-			NwItem? item = NwItem.Deserialize(_selectedProductItemData);
+			// Parse and spawn the item from serialized data
+			string jsonText = Encoding.UTF8.GetString(_selectedProductItemData);
+			Json json = Json.Parse(jsonText);
+			NwItem? item = json.ToNwObject<NwItem>(copyWaypoint.Location);
 
 			if (item is null || !item.IsValid)
 			{
 				NotifyError("Unable to examine item: failed to materialize item.");
 				return;
 			}
-
-			// Move item to staging location
-			item.Location = spawnLocation;
 
 			_examinedItem = item;
 
