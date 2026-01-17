@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Numerics;
 using System.Text;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
@@ -400,20 +401,29 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 
 		await NwTask.SwitchToMainThread();
 
-		// Find the ds_copy waypoint in core_atr area
-		NwArea? targetArea = NwModule.Instance.Areas.FirstOrDefault(a => a.ResRef == "core_atr");
-		if (targetArea is null)
+		// Spawn item underground at player's location to ensure full description loads
+		NwCreature? playerCreature = _player.ControlledCreature;
+		NwArea? playerArea = playerCreature?.Area;
+		Location? spawnLocation = null;
+
+		if (playerArea is not null && playerCreature is not null)
 		{
-			NotifyError("Unable to examine item: staging area not found.");
-			return;
+			Vector3 playerPos = playerCreature.Position;
+			// Spawn underground at Z = -10 to hide visually while ensuring proper loading
+			spawnLocation = Location.Create(playerArea, new Vector3(playerPos.X, playerPos.Y, -10f), 0f);
+		}
+		else
+		{
+			// Fallback to ds_copy waypoint if player location unavailable
+			NwArea? targetArea = NwModule.Instance.Areas.FirstOrDefault(a => a.ResRef == "core_atr");
+			NwWaypoint? copyWaypoint = targetArea?.FindObjectsOfTypeInArea<NwWaypoint>()
+				.FirstOrDefault(w => w.Tag == "ds_copy");
+			spawnLocation = copyWaypoint?.Location;
 		}
 
-		NwWaypoint? copyWaypoint = targetArea.FindObjectsOfTypeInArea<NwWaypoint>()
-			.FirstOrDefault(w => w.Tag == "ds_copy");
-
-		if (copyWaypoint is null)
+		if (spawnLocation is null)
 		{
-			NotifyError("Unable to examine item: staging waypoint not found.");
+			NotifyError("Unable to examine item: could not determine spawn location.");
 			return;
 		}
 
@@ -436,7 +446,7 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 			}
 
 			// Move item to staging location
-			item.Location = copyWaypoint.Location;
+			item.Location = spawnLocation;
 
 			_examinedItem = item;
 
