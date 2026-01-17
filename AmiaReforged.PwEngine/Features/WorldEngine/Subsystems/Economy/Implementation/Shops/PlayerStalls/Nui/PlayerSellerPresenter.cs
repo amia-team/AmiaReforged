@@ -66,6 +66,10 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
     private string _customDisplayName = string.Empty;
     private bool _renameEnabled;
 
+    // Filter state
+    private string _searchTerm = string.Empty;
+    private PlayerStallSellerSnapshot? _currentSnapshot;
+
     [Inject] private PlayerStallEventManager EventManager { get; init; } = null!;
     [Inject] private IHarptosTimeService HarptosTimeService { get; init; } = null!;
     [Inject] private Lazy<WorldEngine.Subsystems.Characters.Runtime.RuntimeCharacterService> CharacterService { get; init; } = null!;
@@ -120,6 +124,12 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
     {
+        if (eventData.EventType == NuiEventType.Watch)
+        {
+            HandleWatchEvent(eventData);
+            return;
+        }
+
         if (eventData.ElementId == PlayerSellerView.HoldEarningsToggleId && eventData.EventType == NuiEventType.MouseDown)
         {
             Log.Info($"Woop {eventData.EventType}");
@@ -129,6 +139,14 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
 
         if (eventData.EventType != NuiEventType.Click)
         {
+            return;
+        }
+
+        if (eventData.ElementId == "player_stall_seller_clear_search")
+        {
+            _searchTerm = string.Empty;
+            Token().SetBindValue(View.SearchFilter, string.Empty);
+            RefreshProductList();
             return;
         }
 
@@ -277,8 +295,12 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
 
         await NwTask.SwitchToMainThread();
 
+        _currentSnapshot = snapshot;
+
         _products.Clear();
         _products.AddRange(snapshot.Products);
+
+        SetupFilterWatches();
 
         Token().SetBindValue(View.StallTitle, snapshot.Summary.StallName);
 
@@ -322,11 +344,13 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         Token().SetBindValue(View.EarningsWithdrawInput, string.Empty);
         Token().SetBindValue(View.DepositInput, string.Empty);
 
+        IEnumerable<PlayerStallSellerProductView> filteredProducts = ApplyFilters(snapshot.Products);
+
         List<string> entries = new(snapshot.Products.Count);
         List<string> tooltips = new(snapshot.Products.Count);
         List<bool> managementEnabled = new(snapshot.Products.Count);
 
-        foreach (PlayerStallSellerProductView product in snapshot.Products)
+        foreach (PlayerStallSellerProductView product in filteredProducts)
         {
             entries.Add(FormatProductEntry(product));
             tooltips.Add(string.IsNullOrWhiteSpace(product.Tooltip) ? string.Empty : product.Tooltip!);
@@ -337,7 +361,16 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         Token().SetBindValues(View.ProductTooltips, tooltips);
         Token().SetBindValues(View.ProductManageEnabled, managementEnabled);
         Token().SetBindValue(View.ProductCount, entries.Count);
-        Token().SetBindValue(View.ProductEmptyVisible, entries.Count == 0);
+
+        bool isEmpty = entries.Count == 0;
+        Token().SetBindValue(View.ProductEmptyVisible, isEmpty);
+        if (isEmpty)
+        {
+            string emptyMessage = string.IsNullOrEmpty(_searchTerm)
+                ? "You have no active listings."
+                : "No matching listings.";
+            Token().SetBindValue(View.ProductEmptyMessage, emptyMessage);
+        }
 
         _inventoryItems.Clear();
         if (snapshot.Inventory is not null)
@@ -1843,6 +1876,76 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         finally
         {
             await SetProcessingStateAsync(false).ConfigureAwait(false);
+        }
+    }
+
+    private void SetupFilterWatches()
+    {
+        Token().SetBindWatch(View.SearchFilter, true);
+        Token().SetBindValue(View.SearchFilter, _searchTerm);
+    }
+
+    private void HandleWatchEvent(ModuleEvents.OnNuiEvent eventData)
+    {
+        if (eventData.ElementId == View.SearchFilter.Key)
+        {
+            _searchTerm = (Token().GetBindValue(View.SearchFilter) ?? string.Empty).Trim();
+            RefreshProductList();
+        }
+    }
+
+    private IEnumerable<PlayerStallSellerProductView> ApplyFilters(IReadOnlyList<PlayerStallSellerProductView> products)
+    {
+        if (string.IsNullOrEmpty(_searchTerm))
+        {
+            return products;
+        }
+
+        return products.Where(p =>
+            p.DisplayName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
+            (!string.IsNullOrEmpty(p.Tooltip) && p.Tooltip.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private void RefreshProductList()
+    {
+        if (_currentSnapshot is null)
+        {
+            return;
+        }
+
+        _selectedProductId = null;
+
+        // Hide detail when list refreshes
+        Token().SetBindValue(View.DetailVisible, false);
+        Token().SetBindValue(View.DetailPlaceholderVisible, true);
+
+        IEnumerable<PlayerStallSellerProductView> filteredProducts = ApplyFilters(_currentSnapshot.Products);
+
+        List<string> entries = new();
+        List<string> tooltips = new();
+        List<bool> managementEnabled = new();
+
+        foreach (PlayerStallSellerProductView product in filteredProducts)
+        {
+            entries.Add(FormatProductEntry(product));
+            tooltips.Add(string.IsNullOrWhiteSpace(product.Tooltip) ? string.Empty : product.Tooltip!);
+            managementEnabled.Add(product.CanAdjustPrice);
+        }
+
+        Token().SetBindValues(View.ProductEntries, entries);
+        Token().SetBindValues(View.ProductTooltips, tooltips);
+        Token().SetBindValues(View.ProductManageEnabled, managementEnabled);
+        Token().SetBindValue(View.ProductCount, entries.Count);
+
+        bool isEmpty = entries.Count == 0;
+        Token().SetBindValue(View.ProductEmptyVisible, isEmpty);
+
+        if (isEmpty)
+        {
+            string emptyMessage = string.IsNullOrEmpty(_searchTerm)
+                ? "You have no active listings."
+                : "No matching listings.";
+            Token().SetBindValue(View.ProductEmptyMessage, emptyMessage);
         }
     }
 }

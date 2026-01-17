@@ -64,6 +64,10 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
     public readonly NuiBind<string> ProductTooltips = new("player_stall_seller_product_tooltips");
     public readonly NuiBind<bool> ProductManageEnabled = new("player_stall_seller_product_manage_enabled");
     public readonly NuiBind<bool> ProductEmptyVisible = new("player_stall_seller_product_empty_visible");
+    public readonly NuiBind<string> ProductEmptyMessage = new("player_stall_seller_product_empty_message");
+
+    // Filter bindings
+    public readonly NuiBind<string> SearchFilter = new("player_stall_seller_search");
 
     public readonly NuiBind<bool> DetailVisible = new("player_stall_seller_detail_visible");
     public readonly NuiBind<bool> DetailPlaceholderVisible = new("player_stall_seller_detail_placeholder_visible");
@@ -479,12 +483,32 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                             Children =
                             [
                                 new NuiSpacer { Height = 4f },
-                                new NuiLabel("Listings")
+                                new NuiRow
                                 {
-                                    Height = 20f,
-                                    HorizontalAlign = NuiHAlign.Left,
-                                    VerticalAlign = NuiVAlign.Middle,
-                                    ForegroundColor = new Color(30, 20, 12)
+                                    Children =
+                                    [
+                                        new NuiLabel("Listings")
+                                        {
+                                            Width = 60f,
+                                            Height = 20f,
+                                            HorizontalAlign = NuiHAlign.Left,
+                                            VerticalAlign = NuiVAlign.Middle,
+                                            ForegroundColor = new Color(30, 20, 12)
+                                        },
+                                        new NuiSpacer { Width = 10f },
+                                        new NuiTextEdit("Search listings...", SearchFilter, 64, false)
+                                        {
+                                            Width = 180f,
+                                            Height = 26f
+                                        },
+                                        new NuiButtonImage("ir_abort")
+                                        {
+                                            Id = "player_stall_seller_clear_search",
+                                            Width = 26f,
+                                            Height = 26f,
+                                            Tooltip = "Clear search"
+                                        }
+                                    ]
                                 },
                                 new NuiSpacer { Height = 6f },
                                 new NuiList(productTemplate, ProductCount)
@@ -494,7 +518,7 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                                     Height = 250f
                                 },
                                 new NuiSpacer { Height = 3f },
-                                new NuiLabel("You have no active listings.")
+                                new NuiLabel(ProductEmptyMessage)
                                 {
                                     Visible = ProductEmptyVisible,
                                     Height = 20f,
