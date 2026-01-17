@@ -9,23 +9,22 @@ public class NpcBankService(DatabaseContextFactory factory)
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    public IEnumerable<Npc> GetNpcs(string dmKey)
+    public List<Npc> GetNpcs(string dmKey)
     {
-        AmiaDbContext ctx = factory.CreateDbContext();
-        IEnumerable<Npc> npcs = new List<Npc>();
+        using AmiaDbContext ctx = factory.CreateDbContext();
         Log.Info($"Getting NPCs for {dmKey}");
 
         try
         {
-            npcs = ctx.Npcs.Where(n => n.Public || n.DmCdKey == dmKey);
-            Log.Info($"Found {npcs.Count()} npcs");
+            List<Npc> npcs = ctx.Npcs.Where(n => n.Public || n.DmCdKey == dmKey).ToList();
+            Log.Info($"Found {npcs.Count} npcs");
+            return npcs;
         }
         catch (Exception e)
         {
             Log.Error(e);
+            return [];
         }
-
-        return npcs;
     }
 
     public void AddNpc(Npc npc)

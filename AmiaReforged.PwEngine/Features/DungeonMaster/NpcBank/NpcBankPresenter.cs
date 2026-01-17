@@ -127,17 +127,18 @@ public class NpcBankPresenter : ScryPresenter<NpcBankView>
         Model.LoadNpcs();
         Model.RefreshNpcList();
 
-        List<string> npcNames = [];
-        npcNames.AddRange(Model.VisibleNpcs.Select(n => n.DmCdKey != _player.CDKey ? $"{n.Name} (Shared)" : n.Name));
+        List<string> npcNames = Model.VisibleNpcs
+            .Select(n => n.DmCdKey != _player.CDKey ? $"{n.Name} (Shared)" : n.Name)
+            .ToList();
 
-        List<long> npcIds = Model.VisibleNpcs.Select(n => n.Id).ToList();
-
-        List<string> publicTooltips = Model.VisibleNpcs.Select(visibleNpc => visibleNpc.Public
+        List<string> publicTooltips = Model.VisibleNpcs
+            .Select(visibleNpc => visibleNpc.Public
                 ? "This NPC is visible to other DMs"
                 : "Not visible to other DMs")
             .ToList();
 
-        List<string> publicImageResrefs = Model.VisibleNpcs.Select(visibleNpc => visibleNpc.Public
+        List<string> publicImageResrefs = Model.VisibleNpcs
+            .Select(visibleNpc => visibleNpc.Public
                 ? "ir_reldom"
                 : "ief_blind")
             .ToList();
@@ -145,7 +146,7 @@ public class NpcBankPresenter : ScryPresenter<NpcBankView>
         Token().SetBindValues(View.Names, npcNames);
         Token().SetBindValues(View.PublicImageResref, publicImageResrefs);
         Token().SetBindValues(View.PublicSettings, publicTooltips);
-        Token().SetBindValue(View.NpcCount, Model.VisibleNpcs.Count());
+        Token().SetBindValue(View.NpcCount, Model.VisibleNpcs.Count);
     }
 
     public override void Close()

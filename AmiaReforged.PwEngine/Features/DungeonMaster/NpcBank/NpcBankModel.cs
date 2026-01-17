@@ -18,25 +18,23 @@ public sealed class NpcBankModel(NwPlayer player)
 
     public event NpcUpdateEventHandler? NpcUpdate;
 
-    public IEnumerable<Npc> VisibleNpcs { get; private set; } = [];
-    public IEnumerable<Npc> Npcs { get; set; } = [];
+    public List<Npc> VisibleNpcs { get; private set; } = [];
+    public List<Npc> Npcs { get; private set; } = [];
 
     public Npc? SelectedNpc { get; set; }
 
     public void LoadNpcs()
     {
-        Npcs = BankService.Value.GetNpcs(player.CDKey).OrderBy(n => n.Id);
-
-
+        Npcs = BankService.Value.GetNpcs(player.CDKey).OrderBy(n => n.Id).ToList();
         RefreshNpcList();
     }
 
-    private IEnumerable<Npc> GetVisibleNpcs()
+    private List<Npc> GetVisibleNpcs()
     {
         if (_searchTerm.IsNullOrEmpty()) return Npcs;
 
-        return Npcs.ToList().FindAll(n => n.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase))
-            .OrderBy(n => n.Id);
+        return Npcs.FindAll(n => n.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(n => n.Id).ToList();
     }
 
 
@@ -78,7 +76,8 @@ public sealed class NpcBankModel(NwPlayer player)
 
     public void PromptSpawn(int eventDataArrayIndex, NwFaction faction)
     {
-        SelectedNpc = VisibleNpcs.ToArray()[eventDataArrayIndex];
+        if (eventDataArrayIndex < 0 || eventDataArrayIndex >= VisibleNpcs.Count) return;
+        SelectedNpc = VisibleNpcs[eventDataArrayIndex];
         SelectedFaction = faction;
         player.EnterTargetMode(ValidateAndSpawn, new TargetModeSettings
         {
@@ -146,7 +145,8 @@ public sealed class NpcBankModel(NwPlayer player)
 
     public void PromptForDelete(int eventDataArrayIndex)
     {
-        Npc npc = VisibleNpcs.ToArray()[eventDataArrayIndex];
+        if (eventDataArrayIndex < 0 || eventDataArrayIndex >= VisibleNpcs.Count) return;
+        Npc npc = VisibleNpcs[eventDataArrayIndex];
 
         WindowDirector.Value.OpenPopupWithReaction(
             player,
@@ -166,7 +166,8 @@ public sealed class NpcBankModel(NwPlayer player)
 
     public void TogglePublicSetting(int eventDataArrayIndex)
     {
-        Npc npc = VisibleNpcs.ToArray()[eventDataArrayIndex];
+        if (eventDataArrayIndex < 0 || eventDataArrayIndex >= VisibleNpcs.Count) return;
+        Npc npc = VisibleNpcs[eventDataArrayIndex];
 
         bool isPublic = npc.Public;
 
