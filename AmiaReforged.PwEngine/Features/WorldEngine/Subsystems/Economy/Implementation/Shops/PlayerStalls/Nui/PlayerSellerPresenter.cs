@@ -1649,10 +1649,10 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
 
     private void ApplyStallNameBindings()
     {
-        // Show rename row only for owners
+        // Show rename row only for owners - owners can always rename their stall
         Token().SetBindValue(View.StallNameRowVisible, _isOwner);
-        Token().SetBindValue(View.StallNameInputEnabled, _renameEnabled && !_isProcessing);
-        Token().SetBindValue(View.StallNameSaveEnabled, _renameEnabled && !_isProcessing);
+        Token().SetBindValue(View.StallNameInputEnabled, _isOwner && !_isProcessing);
+        Token().SetBindValue(View.StallNameSaveEnabled, _isOwner && !_isProcessing);
         Token().SetBindValue(View.StallNameInput, _customDisplayName);
     }
 
@@ -1668,7 +1668,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
             return;
         }
 
-        if (!_renameEnabled)
+        if (!_isOwner)
         {
             await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
                 "Only the stall owner may rename the stall.",
