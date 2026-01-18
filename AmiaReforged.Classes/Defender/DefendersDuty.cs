@@ -19,8 +19,8 @@ public class DefendersDuty
     // Track protected creatures so we can unsubscribe from their damage events
     private readonly HashSet<NwCreature> _protectedCreatures = new();
 
-    // Track if we're subscribed to the module damage event
-    private bool _subscribedToModuleDamage;
+    // Track if we're subscribed to the module attack event
+    private bool _subscribedToModuleAttack;
 
     /// <summary>
     ///     Do not construct directly. Use <see cref="DefendersDutyFactory" /> to create this object.
@@ -68,12 +68,12 @@ public class DefendersDuty
         // Subscribe to disconnect to clean up
         Defender.OnClientLeave += OnDefenderLeave;
 
-        // Subscribe to module-level damage event
-        if (!_subscribedToModuleDamage)
+        // Subscribe to module-level attack event (fires when anyone is attacked, before damage is applied)
+        if (!_subscribedToModuleAttack)
         {
-            NwModule.Instance.OnCreatureDamage += SoakDamageForAlly;
-            _subscribedToModuleDamage = true;
-            Defender.SendServerMessage("[DEBUG]: Subscribed to module OnCreatureDamage event.", ColorConstants.Lime);
+            NwModule.Instance.OnCreatureAttack += SoakDamageForAlly;
+            _subscribedToModuleAttack = true;
+            Defender.SendServerMessage("[DEBUG]: Subscribed to module OnCreatureAttack event.", ColorConstants.Lime);
         }
 
         Defender.LoginCreature.ApplyEffect(EffectDuration.Permanent, threatAura);
@@ -103,12 +103,12 @@ public class DefendersDuty
         _protectedCreatures.Clear();
         Defender.SendServerMessage("[DEBUG]: Protected creatures cleared.", ColorConstants.Yellow);
 
-        // Unsubscribe from module damage event
-        if (_subscribedToModuleDamage)
+        // Unsubscribe from module attack event
+        if (_subscribedToModuleAttack)
         {
-            NwModule.Instance.OnCreatureDamage -= SoakDamageForAlly;
-            _subscribedToModuleDamage = false;
-            Defender.SendServerMessage("[DEBUG]: Unsubscribed from module OnCreatureDamage event.", ColorConstants.Yellow);
+            NwModule.Instance.OnCreatureAttack -= SoakDamageForAlly;
+            _subscribedToModuleAttack = false;
+            Defender.SendServerMessage("[DEBUG]: Unsubscribed from module OnCreatureAttack event.", ColorConstants.Yellow);
         }
 
         // Remove immunity from defender as well
@@ -370,9 +370,15 @@ public class DefendersDuty
         Defender.SendServerMessage($"[DEBUG]: Taunted {target.Name}.");
     }
 
-    private void SoakDamageForAlly(OnCreatureDamage obj)
+    private void SoakDamageForAlly(OnCreatureAttack obj)
     {
         Defender.SendServerMessage("[DEBUG]: SoakDamageForAlly triggered.", ColorConstants.Magenta);
+
+        // Only process hits that actually deal damage
+        if (obj.AttackResult != AttackResult.Hit && obj.AttackResult != AttackResult.CriticalHit)
+        {
+            return;
+        }
 
         // Validate the target creature is still valid and in our protected list
         if (obj.Target is not NwCreature targetCreature || !targetCreature.IsValid)
@@ -393,7 +399,6 @@ public class DefendersDuty
         // If this creature is not in our protected list, skip
         if (!_protectedCreatures.Contains(targetCreature))
         {
-            Defender.SendServerMessage($"[DEBUG]: {targetCreature.Name} not in protected list, skipping.", ColorConstants.Yellow);
             return;
         }
 
@@ -406,21 +411,30 @@ public class DefendersDuty
 
         Defender.SendServerMessage($"[DEBUG]: {obj.Target.Name} was hit, soaking damage for ally.", ColorConstants.Magenta);
 
-        // NWN splits damage up into its core damage components then sums the net damage together after resistances
-        // and immunities are applied.
-        // IMPORTANT: We must modify obj.DamageData directly, not a copy!
-        int bludgeoningSoak = (int)(obj.DamageData.GetDamageByType(DamageType.Bludgeoning) * DefenderDamage);
-        int piercingSoak = (int)(obj.DamageData.GetDamageByType(DamageType.Piercing) * DefenderDamage);
-        int slashingSoak = (int)(obj.DamageData.GetDamageByType(DamageType.Slashing) * DefenderDamage);
-        int magicalSoak = (int)(obj.DamageData.GetDamageByType(DamageType.Magical) * DefenderDamage);
-        int acidSoak = (int)(obj.DamageData.GetDamageByType(DamageType.Acid) * DefenderDamage);
-        int coldSoak = (int)(obj.DamageData.GetDamageByType(DamageType.Cold) * DefenderDamage);
-        int divineSoak = (int)(obj.DamageData.GetDamageByType(DamageType.Divine) * DefenderDamage);
-        int electricalSoak = (int)(obj.DamageData.GetDamageByType(DamageType.Electrical) * DefenderDamage);
-        int fireSoak = (int)(obj.DamageData.GetDamageByType(DamageType.Fire) * DefenderDamage);
-        int negativeSoak = (int)(obj.DamageData.GetDamageByType(DamageType.Negative) * DefenderDamage);
-        int positiveSoak = (int)(obj.DamageData.GetDamageByType(DamageType.Positive) * DefenderDamage);
-        int sonicSoak = (int)(obj.DamageData.GetDamageByType(DamageType.Sonic) * DefenderDamage);
+        // Debug: print all damage values
+        DamageData<short> damageData = obj.DamageData;
+        Defender.SendServerMessage($"[DEBUG]: Bludgeon={damageData.GetDamageByType(DamageType.Bludgeoning)}, " +
+            $"Pierce={damageData.GetDamageByType(DamageType.Piercing)}, " +
+            $"Slash={damageData.GetDamageByType(DamageType.Slashing)}, " +
+            $"Magical={damageData.GetDamageByType(DamageType.Magical)}", ColorConstants.Magenta);
+        Defender.SendServerMessage($"[DEBUG]: Fire={damageData.GetDamageByType(DamageType.Fire)}, " +
+            $"Cold={damageData.GetDamageByType(DamageType.Cold)}, " +
+            $"Acid={damageData.GetDamageByType(DamageType.Acid)}, " +
+            $"Elec={damageData.GetDamageByType(DamageType.Electrical)}", ColorConstants.Magenta);
+
+        // Calculate soak amounts (50% of each damage type)
+        short bludgeoningSoak = (short)(damageData.GetDamageByType(DamageType.Bludgeoning) * DefenderDamage);
+        short piercingSoak = (short)(damageData.GetDamageByType(DamageType.Piercing) * DefenderDamage);
+        short slashingSoak = (short)(damageData.GetDamageByType(DamageType.Slashing) * DefenderDamage);
+        short magicalSoak = (short)(damageData.GetDamageByType(DamageType.Magical) * DefenderDamage);
+        short acidSoak = (short)(damageData.GetDamageByType(DamageType.Acid) * DefenderDamage);
+        short coldSoak = (short)(damageData.GetDamageByType(DamageType.Cold) * DefenderDamage);
+        short divineSoak = (short)(damageData.GetDamageByType(DamageType.Divine) * DefenderDamage);
+        short electricalSoak = (short)(damageData.GetDamageByType(DamageType.Electrical) * DefenderDamage);
+        short fireSoak = (short)(damageData.GetDamageByType(DamageType.Fire) * DefenderDamage);
+        short negativeSoak = (short)(damageData.GetDamageByType(DamageType.Negative) * DefenderDamage);
+        short positiveSoak = (short)(damageData.GetDamageByType(DamageType.Positive) * DefenderDamage);
+        short sonicSoak = (short)(damageData.GetDamageByType(DamageType.Sonic) * DefenderDamage);
 
         int totalSoak = bludgeoningSoak + piercingSoak + slashingSoak + magicalSoak + acidSoak +
                         coldSoak + divineSoak + electricalSoak + fireSoak + negativeSoak + positiveSoak + sonicSoak;
@@ -433,6 +447,7 @@ public class DefendersDuty
             return;
         }
 
+        // Create damage data for the NWNX Damage Plugin to deal to defender
         DamageData defenderDamageData = new()
         {
             iBludgeoning = bludgeoningSoak,
@@ -449,40 +464,37 @@ public class DefendersDuty
             iSonic = sonicSoak
         };
 
-        // This is a call to the NWNX Damage Plugin - defender takes portion of the damage
-        // DamagedBy can be null for environmental/script damage - use defender as source if null
-        NwCreature damageSource = obj.DamagedBy is NwCreature source && source.IsValid
-            ? source
-            : Defender.LoginCreature;
+        // Attacker is the source of the damage for the defender
+        NwCreature damageSource = obj.Attacker.IsValid ? obj.Attacker : Defender.LoginCreature;
 
         Defender.SendServerMessage($"[DEBUG]: Dealing {totalSoak} damage to defender from {damageSource.Name}.", ColorConstants.Magenta);
         DamagePlugin.DealDamage(defenderDamageData, Defender.LoginCreature, damageSource);
 
-        // Reduce the damage done to the protected ally - modify obj.DamageData directly
-        obj.DamageData.SetDamageByType(DamageType.Bludgeoning,
-            obj.DamageData.GetDamageByType(DamageType.Bludgeoning) - bludgeoningSoak);
-        obj.DamageData.SetDamageByType(DamageType.Piercing,
-            obj.DamageData.GetDamageByType(DamageType.Piercing) - piercingSoak);
-        obj.DamageData.SetDamageByType(DamageType.Slashing,
-            obj.DamageData.GetDamageByType(DamageType.Slashing) - slashingSoak);
-        obj.DamageData.SetDamageByType(DamageType.Magical,
-            obj.DamageData.GetDamageByType(DamageType.Magical) - magicalSoak);
-        obj.DamageData.SetDamageByType(DamageType.Acid,
-            obj.DamageData.GetDamageByType(DamageType.Acid) - acidSoak);
-        obj.DamageData.SetDamageByType(DamageType.Cold,
-            obj.DamageData.GetDamageByType(DamageType.Cold) - coldSoak);
-        obj.DamageData.SetDamageByType(DamageType.Divine,
-            obj.DamageData.GetDamageByType(DamageType.Divine) - divineSoak);
-        obj.DamageData.SetDamageByType(DamageType.Electrical,
-            obj.DamageData.GetDamageByType(DamageType.Electrical) - electricalSoak);
-        obj.DamageData.SetDamageByType(DamageType.Fire,
-            obj.DamageData.GetDamageByType(DamageType.Fire) - fireSoak);
-        obj.DamageData.SetDamageByType(DamageType.Negative,
-            obj.DamageData.GetDamageByType(DamageType.Negative) - negativeSoak);
-        obj.DamageData.SetDamageByType(DamageType.Positive,
-            obj.DamageData.GetDamageByType(DamageType.Positive) - positiveSoak);
-        obj.DamageData.SetDamageByType(DamageType.Sonic,
-            obj.DamageData.GetDamageByType(DamageType.Sonic) - sonicSoak);
+        // Reduce the damage done to the protected ally by modifying the attack's DamageData
+        damageData.SetDamageByType(DamageType.Bludgeoning,
+            (short)(damageData.GetDamageByType(DamageType.Bludgeoning) - bludgeoningSoak));
+        damageData.SetDamageByType(DamageType.Piercing,
+            (short)(damageData.GetDamageByType(DamageType.Piercing) - piercingSoak));
+        damageData.SetDamageByType(DamageType.Slashing,
+            (short)(damageData.GetDamageByType(DamageType.Slashing) - slashingSoak));
+        damageData.SetDamageByType(DamageType.Magical,
+            (short)(damageData.GetDamageByType(DamageType.Magical) - magicalSoak));
+        damageData.SetDamageByType(DamageType.Acid,
+            (short)(damageData.GetDamageByType(DamageType.Acid) - acidSoak));
+        damageData.SetDamageByType(DamageType.Cold,
+            (short)(damageData.GetDamageByType(DamageType.Cold) - coldSoak));
+        damageData.SetDamageByType(DamageType.Divine,
+            (short)(damageData.GetDamageByType(DamageType.Divine) - divineSoak));
+        damageData.SetDamageByType(DamageType.Electrical,
+            (short)(damageData.GetDamageByType(DamageType.Electrical) - electricalSoak));
+        damageData.SetDamageByType(DamageType.Fire,
+            (short)(damageData.GetDamageByType(DamageType.Fire) - fireSoak));
+        damageData.SetDamageByType(DamageType.Negative,
+            (short)(damageData.GetDamageByType(DamageType.Negative) - negativeSoak));
+        damageData.SetDamageByType(DamageType.Positive,
+            (short)(damageData.GetDamageByType(DamageType.Positive) - positiveSoak));
+        damageData.SetDamageByType(DamageType.Sonic,
+            (short)(damageData.GetDamageByType(DamageType.Sonic) - sonicSoak));
 
         Defender.SendServerMessage($"[DEBUG]: Damage reduction applied to {targetCreature.Name}.", ColorConstants.Lime);
     }
