@@ -10,7 +10,7 @@ public class SneakRangeCommand : IChatCommand
 
     public string Command => "./sneakrange";
     public string Description =>
-        "Produces a visual effect to indicate the range of sneak attacks that is only visible to the player.";
+        "Produces an aura that is only visible to the player to indicate the range of sneak attack.";
     public string AllowedRoles => "All";
     public Task ExecuteCommand(NwPlayer caller, string[] args)
     {
