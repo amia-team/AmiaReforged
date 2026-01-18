@@ -19,6 +19,9 @@ public class DefendersDuty
     // Track protected creatures so we can unsubscribe from their damage events
     private readonly HashSet<NwCreature> _protectedCreatures = new();
 
+    // Track if we're subscribed to the module damage event
+    private bool _subscribedToModuleDamage;
+
 
     /// <summary>
     ///     Do not construct directly. Use <see cref="DefendersDutyFactory" /> to create this object.
@@ -66,6 +69,13 @@ public class DefendersDuty
         // Subscribe to disconnect to clean up
         Defender.OnClientLeave += OnDefenderLeave;
 
+        // Subscribe to module-level damage event
+        if (!_subscribedToModuleDamage)
+        {
+            NwModule.Instance.OnCreatureDamage += SoakDamageForAlly;
+            _subscribedToModuleDamage = true;
+            Defender.SendServerMessage("[DEBUG]: Subscribed to module OnCreatureDamage event.", ColorConstants.Lime);
+        }
 
         Defender.LoginCreature.ApplyEffect(EffectDuration.Permanent, threatAura);
         Defender.SendServerMessage(
@@ -75,18 +85,21 @@ public class DefendersDuty
 
     private void OnDefenderLeave(ModuleEvents.OnClientLeave obj)
     {
-        Defender.SendServerMessage("[DEBUG]: Defender leaving - cleaning up protected creatures.", ColorConstants.Orange);
+        Defender.SendServerMessage("[DEBUG]: Defender leaving - cleaning up protected creatures.",
+            ColorConstants.Orange);
         CleanupAllProtectedCreatures();
         Defender.OnClientLeave -= OnDefenderLeave;
     }
 
     private void CleanupAllProtectedCreatures()
     {
-        Defender.SendServerMessage($"[DEBUG]: CleanupAllProtectedCreatures - {_protectedCreatures.Count} creatures to clean.", ColorConstants.Yellow);
+        Defender.SendServerMessage(
+            $"[DEBUG]: CleanupAllProtectedCreatures - {_protectedCreatures.Count} creatures to clean.",
+            ColorConstants.Yellow);
         foreach (NwCreature creature in _protectedCreatures.ToList())
         {
-            Defender.SendServerMessage($"[DEBUG]: Cleaning up {creature.Name} (Valid: {creature.IsValid}).", ColorConstants.Yellow);
-            creature.OnCreatureDamage -= SoakDamageForAlly;
+            Defender.SendServerMessage($"[DEBUG]: Cleaning up {creature.Name} (Valid: {creature.IsValid}).",
+                ColorConstants.Yellow);
             creature.OnDeath -= OnProtectedCreatureDeath;
             RemoveProtectedVisual(creature);
             RemovePhysicalImmunity(creature);
@@ -95,6 +108,14 @@ public class DefendersDuty
         _protectedCreatures.Clear();
         Defender.SendServerMessage("[DEBUG]: Protected creatures cleared.", ColorConstants.Yellow);
 
+        // Unsubscribe from module damage event
+        if (_subscribedToModuleDamage)
+        {
+            NwModule.Instance.OnCreatureDamage -= SoakDamageForAlly;
+            _subscribedToModuleDamage = false;
+            Defender.SendServerMessage("[DEBUG]: Unsubscribed from module OnCreatureDamage event.",
+                ColorConstants.Yellow);
+        }
 
         // Remove immunity from defender as well
         if (Defender.LoginCreature != null)
@@ -135,11 +156,14 @@ public class DefendersDuty
         if (!info.TryGetEvent(out AreaOfEffectEvents.OnEnter? eventData)
             || eventData.Entering is not NwCreature enteringCreature)
         {
-            Defender.SendServerMessage("[DEBUG]: OnEnterAura - failed to get event or not a creature.", ColorConstants.Red);
+            Defender.SendServerMessage("[DEBUG]: OnEnterAura - failed to get event or not a creature.",
+                ColorConstants.Red);
             return ScriptHandleResult.Handled;
         }
 
-        Defender.SendServerMessage($"[DEBUG]: OnEnterAura - {enteringCreature.Name} entering (Valid: {enteringCreature.IsValid}).", ColorConstants.Cyan);
+        Defender.SendServerMessage(
+            $"[DEBUG]: OnEnterAura - {enteringCreature.Name} entering (Valid: {enteringCreature.IsValid}).",
+            ColorConstants.Cyan);
 
         // Don't affect the defender themselves
         if (enteringCreature == defender)
@@ -148,13 +172,15 @@ public class DefendersDuty
         if (defender.IsReactionTypeHostile(enteringCreature))
         {
             // Hostile: attempt to taunt
-            Defender.SendServerMessage($"[DEBUG]: {enteringCreature.Name} is hostile, attempting taunt.", ColorConstants.Cyan);
+            Defender.SendServerMessage($"[DEBUG]: {enteringCreature.Name} is hostile, attempting taunt.",
+                ColorConstants.Cyan);
             TryTauntCreature(defender, enteringCreature);
         }
         else if (defender.IsReactionTypeFriendly(enteringCreature))
         {
             // Friendly: add protection
-            Defender.SendServerMessage($"[DEBUG]: {enteringCreature.Name} is friendly, adding protection.", ColorConstants.Cyan);
+            Defender.SendServerMessage($"[DEBUG]: {enteringCreature.Name} is friendly, adding protection.",
+                ColorConstants.Cyan);
             if (enteringCreature.IsPlayerControlled(out NwPlayer? player))
             {
                 player.SendServerMessage($"You are being protected by {defender.Name}.", ColorConstants.Lime);
@@ -198,16 +224,20 @@ public class DefendersDuty
         if (!info.TryGetEvent(out AreaOfEffectEvents.OnExit? eventData)
             || eventData.Exiting is not NwCreature exitingCreature)
         {
-            Defender.SendServerMessage("[DEBUG]: OnExitAura - failed to get event or not a creature.", ColorConstants.Red);
+            Defender.SendServerMessage("[DEBUG]: OnExitAura - failed to get event or not a creature.",
+                ColorConstants.Red);
             return ScriptHandleResult.Handled;
         }
 
-        Defender.SendServerMessage($"[DEBUG]: OnExitAura - {exitingCreature.Name} exiting (Valid: {exitingCreature.IsValid}).", ColorConstants.Cyan);
+        Defender.SendServerMessage(
+            $"[DEBUG]: OnExitAura - {exitingCreature.Name} exiting (Valid: {exitingCreature.IsValid}).",
+            ColorConstants.Cyan);
 
         // Remove protection when friendly leaves the aura
         if (_protectedCreatures.Contains(exitingCreature))
         {
-            Defender.SendServerMessage($"[DEBUG]: {exitingCreature.Name} was protected, removing protection.", ColorConstants.Cyan);
+            Defender.SendServerMessage($"[DEBUG]: {exitingCreature.Name} was protected, removing protection.",
+                ColorConstants.Cyan);
             RemoveProtection(exitingCreature);
         }
 
@@ -216,7 +246,8 @@ public class DefendersDuty
 
     private void AddProtection(NwCreature creature)
     {
-        Defender.SendServerMessage($"[DEBUG]: AddProtection called for {creature.Name} (Valid: {creature.IsValid}).", ColorConstants.Lime);
+        Defender.SendServerMessage($"[DEBUG]: AddProtection called for {creature.Name} (Valid: {creature.IsValid}).",
+            ColorConstants.Lime);
 
         if (!_protectedCreatures.Add(creature))
         {
@@ -224,8 +255,7 @@ public class DefendersDuty
             return;
         }
 
-        Defender.SendServerMessage($"[DEBUG]: Subscribing to OnCreatureDamage for {creature.Name}.", ColorConstants.Lime);
-        creature.OnCreatureDamage += SoakDamageForAlly;
+        Defender.SendServerMessage($"[DEBUG]: Added {creature.Name} to protected list.", ColorConstants.Lime);
         creature.OnDeath += OnProtectedCreatureDeath;
 
         // Apply a subtle visual to show they're protected
@@ -233,38 +263,45 @@ public class DefendersDuty
 
         // Update immunity for all protected creatures (including defender)
         UpdateAllPhysicalImmunity();
-        Defender.SendServerMessage($"[DEBUG]: AddProtection complete for {creature.Name}. Total protected: {_protectedCreatures.Count}.", ColorConstants.Lime);
+        Defender.SendServerMessage(
+            $"[DEBUG]: AddProtection complete for {creature.Name}. Total protected: {_protectedCreatures.Count}.",
+            ColorConstants.Lime);
     }
 
     private void OnProtectedCreatureDeath(CreatureEvents.OnDeath obj)
     {
-        Defender.SendServerMessage($"[DEBUG]: OnProtectedCreatureDeath - {obj.KilledCreature.Name} died.", ColorConstants.Red);
+        Defender.SendServerMessage($"[DEBUG]: OnProtectedCreatureDeath - {obj.KilledCreature.Name} died.",
+            ColorConstants.Red);
         RemoveProtection(obj.KilledCreature);
     }
 
     private void RemoveProtection(NwCreature creature)
     {
-        Defender.SendServerMessage($"[DEBUG]: RemoveProtection called for {creature.Name} (Valid: {creature.IsValid}).", ColorConstants.Orange);
+        Defender.SendServerMessage($"[DEBUG]: RemoveProtection called for {creature.Name} (Valid: {creature.IsValid}).",
+            ColorConstants.Orange);
 
         if (!_protectedCreatures.Contains(creature))
         {
-            Defender.SendServerMessage($"[DEBUG]: {creature.Name} not in protected list, skipping.", ColorConstants.Yellow);
+            Defender.SendServerMessage($"[DEBUG]: {creature.Name} not in protected list, skipping.",
+                ColorConstants.Yellow);
             return;
         }
 
-        Defender.SendServerMessage($"[DEBUG]: Unsubscribing from OnCreatureDamage for {creature.Name}.", ColorConstants.Orange);
+        Defender.SendServerMessage($"[DEBUG]: Removing {creature.Name} from protected list.", ColorConstants.Orange);
         _protectedCreatures.Remove(creature);
-        creature.OnCreatureDamage -= SoakDamageForAlly;
         creature.OnDeath -= OnProtectedCreatureDeath;
 
-        Defender.SendServerMessage($"[DEBUG]: Removing visual and immunity from {creature.Name}.", ColorConstants.Orange);
+        Defender.SendServerMessage($"[DEBUG]: Removing visual and immunity from {creature.Name}.",
+            ColorConstants.Orange);
         RemoveProtectedVisual(creature);
         RemovePhysicalImmunity(creature);
 
         // Update immunity for remaining protected creatures
         UpdateAllPhysicalImmunity();
 
-        Defender.SendServerMessage($"[DEBUG]: RemoveProtection complete. Remaining protected: {_protectedCreatures.Count}.", ColorConstants.Orange);
+        Defender.SendServerMessage(
+            $"[DEBUG]: RemoveProtection complete. Remaining protected: {_protectedCreatures.Count}.",
+            ColorConstants.Orange);
     }
 
     private void ApplyProtectedVisual(NwCreature creature)
@@ -359,44 +396,28 @@ public class DefendersDuty
 
     private void SoakDamageForAlly(OnCreatureDamage obj)
     {
-        Defender.SendServerMessage("[DEBUG]: SoakDamageForAlly triggered.", ColorConstants.Magenta);
-
-        // Validate the target creature is still valid and in our protected list
-        if (obj.Target is not NwCreature targetCreature || !targetCreature.IsValid)
-        {
-            Defender.SendServerMessage("[DEBUG]: Target is not valid creature, skipping.", ColorConstants.Red);
+        // Check if the target of the damage is one of our protected creatures
+        if (obj.Target is not NwCreature target || !target.IsValid)
             return;
-        }
 
-        Defender.SendServerMessage($"[DEBUG]: Target is {targetCreature.Name}.", ColorConstants.Magenta);
-
-        // Don't soak damage for the defender themselves
-        if (targetCreature == Defender.LoginCreature)
-        {
-            Defender.SendServerMessage("[DEBUG]: Target is defender, skipping.", ColorConstants.Yellow);
+        // Skip if target is not in our protected list
+        if (!_protectedCreatures.Contains(target))
             return;
-        }
 
-        // If this creature is not in our protected list, skip
-        if (!_protectedCreatures.Contains(targetCreature))
-        {
-            Defender.SendServerMessage($"[DEBUG]: {targetCreature.Name} not in protected list, skipping.", ColorConstants.Yellow);
+        // Skip if target is the defender themselves
+        if (target == Defender.LoginCreature)
             return;
-        }
 
-        // Make sure defender is still valid and alive
+        // Make sure defender is valid and alive
         if (Defender.LoginCreature == null || !Defender.LoginCreature.IsValid || Defender.LoginCreature.IsDead)
-        {
-            Defender.SendServerMessage("[DEBUG]: Defender is invalid or dead, skipping.", ColorConstants.Red);
             return;
-        }
 
-        Defender.SendServerMessage($"[DEBUG]: {obj.Target.Name} was hit, soaking damage for ally.", ColorConstants.Magenta);
+        Defender.SendServerMessage($"[DEBUG]: {target.Name} taking damage, soaking for ally.", ColorConstants.Magenta);
 
-        // Get the damage data - this contains actual damage values after resistances
+        // Get the damage data
         DamageData<int> damageData = obj.DamageData;
 
-        // Debug: print all damage values
+        // Read all damage types
         int bludgeon = damageData.GetDamageByType(DamageType.Bludgeoning);
         int pierce = damageData.GetDamageByType(DamageType.Piercing);
         int slash = damageData.GetDamageByType(DamageType.Slashing);
@@ -410,88 +431,66 @@ public class DefendersDuty
         int positive = damageData.GetDamageByType(DamageType.Positive);
         int sonic = damageData.GetDamageByType(DamageType.Sonic);
 
-        Defender.SendServerMessage($"[DEBUG]: Bludgeon={bludgeon}, Pierce={pierce}, Slash={slash}, Magical={magical}", ColorConstants.Magenta);
-        Defender.SendServerMessage($"[DEBUG]: Fire={fire}, Cold={cold}, Acid={acid}, Elec={elec}", ColorConstants.Magenta);
-        Defender.SendServerMessage($"[DEBUG]: Divine={divine}, Neg={negative}, Pos={positive}, Sonic={sonic}", ColorConstants.Magenta);
+        Defender.SendServerMessage(
+            $"[DEBUG]: B={bludgeon} P={pierce} S={slash} M={magical} F={fire} C={cold} A={acid} E={elec}",
+            ColorConstants.Magenta);
 
-        // Calculate soak amounts (50% of each damage type, only for positive values)
-        int bludgeoningSoak = bludgeon > 0 ? (int)(bludgeon * DefenderDamage) : 0;
-        int piercingSoak = pierce > 0 ? (int)(pierce * DefenderDamage) : 0;
-        int slashingSoak = slash > 0 ? (int)(slash * DefenderDamage) : 0;
+        // Calculate soak (50% of positive damage values)
+        int bludgeonSoak = bludgeon > 0 ? (int)(bludgeon * DefenderDamage) : 0;
+        int pierceSoak = pierce > 0 ? (int)(pierce * DefenderDamage) : 0;
+        int slashSoak = slash > 0 ? (int)(slash * DefenderDamage) : 0;
         int magicalSoak = magical > 0 ? (int)(magical * DefenderDamage) : 0;
-        int acidSoak = acid > 0 ? (int)(acid * DefenderDamage) : 0;
-        int coldSoak = cold > 0 ? (int)(cold * DefenderDamage) : 0;
-        int divineSoak = divine > 0 ? (int)(divine * DefenderDamage) : 0;
-        int electricalSoak = elec > 0 ? (int)(elec * DefenderDamage) : 0;
         int fireSoak = fire > 0 ? (int)(fire * DefenderDamage) : 0;
+        int coldSoak = cold > 0 ? (int)(cold * DefenderDamage) : 0;
+        int acidSoak = acid > 0 ? (int)(acid * DefenderDamage) : 0;
+        int elecSoak = elec > 0 ? (int)(elec * DefenderDamage) : 0;
+        int divineSoak = divine > 0 ? (int)(divine * DefenderDamage) : 0;
         int negativeSoak = negative > 0 ? (int)(negative * DefenderDamage) : 0;
         int positiveSoak = positive > 0 ? (int)(positive * DefenderDamage) : 0;
         int sonicSoak = sonic > 0 ? (int)(sonic * DefenderDamage) : 0;
 
-        int totalSoak = bludgeoningSoak + piercingSoak + slashingSoak + magicalSoak + acidSoak +
-                        coldSoak + divineSoak + electricalSoak + fireSoak + negativeSoak + positiveSoak + sonicSoak;
+        int totalSoak = bludgeonSoak + pierceSoak + slashSoak + magicalSoak + fireSoak + coldSoak +
+                        acidSoak + elecSoak + divineSoak + negativeSoak + positiveSoak + sonicSoak;
 
-        Defender.SendServerMessage($"[DEBUG]: Total damage to soak: {totalSoak}.", ColorConstants.Magenta);
+        Defender.SendServerMessage($"[DEBUG]: Total soak: {totalSoak}", ColorConstants.Magenta);
 
         if (totalSoak <= 0)
-        {
-            Defender.SendServerMessage("[DEBUG]: No damage to soak, skipping.", ColorConstants.Yellow);
             return;
-        }
 
-        // Create damage data for the NWNX Damage Plugin - defender takes the soaked damage
-        // This respects all damage types so defender gets the same type of damage
-        DamageData defenderDamageData = new()
+        // Deal soaked damage to defender (respecting damage types)
+        DamageData defenderDamage = new()
         {
-            iBludgeoning = bludgeoningSoak,
-            iPierce = piercingSoak,
-            iSlash = slashingSoak,
+            iBludgeoning = bludgeonSoak,
+            iPierce = pierceSoak,
+            iSlash = slashSoak,
             iMagical = magicalSoak,
-            iAcid = acidSoak,
-            iCold = coldSoak,
-            iDivine = divineSoak,
-            iElectrical = electricalSoak,
             iFire = fireSoak,
+            iCold = coldSoak,
+            iAcid = acidSoak,
+            iElectrical = elecSoak,
+            iDivine = divineSoak,
             iNegative = negativeSoak,
             iPositive = positiveSoak,
             iSonic = sonicSoak
         };
 
-        // DamagedBy is the source of the damage
-        NwCreature damageSource = obj.DamagedBy is NwCreature source && source.IsValid
-            ? source
-            : Defender.LoginCreature;
+        NwCreature damageSource = obj.DamagedBy is NwCreature src && src.IsValid ? src : Defender.LoginCreature;
+        DamagePlugin.DealDamage(defenderDamage, Defender.LoginCreature, damageSource);
 
-        Defender.SendServerMessage($"[DEBUG]: Dealing {totalSoak} damage to defender from {damageSource.Name}.", ColorConstants.Magenta);
-        DamagePlugin.DealDamage(defenderDamageData, Defender.LoginCreature, damageSource);
+        // Reduce damage to ally
+        if (bludgeonSoak > 0) damageData.SetDamageByType(DamageType.Bludgeoning, bludgeon - bludgeonSoak);
+        if (pierceSoak > 0) damageData.SetDamageByType(DamageType.Piercing, pierce - pierceSoak);
+        if (slashSoak > 0) damageData.SetDamageByType(DamageType.Slashing, slash - slashSoak);
+        if (magicalSoak > 0) damageData.SetDamageByType(DamageType.Magical, magical - magicalSoak);
+        if (fireSoak > 0) damageData.SetDamageByType(DamageType.Fire, fire - fireSoak);
+        if (coldSoak > 0) damageData.SetDamageByType(DamageType.Cold, cold - coldSoak);
+        if (acidSoak > 0) damageData.SetDamageByType(DamageType.Acid, acid - acidSoak);
+        if (elecSoak > 0) damageData.SetDamageByType(DamageType.Electrical, elec - elecSoak);
+        if (divineSoak > 0) damageData.SetDamageByType(DamageType.Divine, divine - divineSoak);
+        if (negativeSoak > 0) damageData.SetDamageByType(DamageType.Negative, negative - negativeSoak);
+        if (positiveSoak > 0) damageData.SetDamageByType(DamageType.Positive, positive - positiveSoak);
+        if (sonicSoak > 0) damageData.SetDamageByType(DamageType.Sonic, sonic - sonicSoak);
 
-        // Reduce the damage done to the protected ally - modify the event's DamageData directly
-        // This should reduce the damage the ally actually takes
-        if (bludgeoningSoak > 0)
-            damageData.SetDamageByType(DamageType.Bludgeoning, bludgeon - bludgeoningSoak);
-        if (piercingSoak > 0)
-            damageData.SetDamageByType(DamageType.Piercing, pierce - piercingSoak);
-        if (slashingSoak > 0)
-            damageData.SetDamageByType(DamageType.Slashing, slash - slashingSoak);
-        if (magicalSoak > 0)
-            damageData.SetDamageByType(DamageType.Magical, magical - magicalSoak);
-        if (acidSoak > 0)
-            damageData.SetDamageByType(DamageType.Acid, acid - acidSoak);
-        if (coldSoak > 0)
-            damageData.SetDamageByType(DamageType.Cold, cold - coldSoak);
-        if (divineSoak > 0)
-            damageData.SetDamageByType(DamageType.Divine, divine - divineSoak);
-        if (electricalSoak > 0)
-            damageData.SetDamageByType(DamageType.Electrical, elec - electricalSoak);
-        if (fireSoak > 0)
-            damageData.SetDamageByType(DamageType.Fire, fire - fireSoak);
-        if (negativeSoak > 0)
-            damageData.SetDamageByType(DamageType.Negative, negative - negativeSoak);
-        if (positiveSoak > 0)
-            damageData.SetDamageByType(DamageType.Positive, positive - positiveSoak);
-        if (sonicSoak > 0)
-            damageData.SetDamageByType(DamageType.Sonic, sonic - sonicSoak);
-
-        Defender.SendServerMessage($"[DEBUG]: Damage reduction applied to {targetCreature.Name}.", ColorConstants.Lime);
+        Defender.SendServerMessage($"[DEBUG]: Soaked {totalSoak} damage for {target.Name}.", ColorConstants.Lime);
     }
 }
