@@ -2,6 +2,11 @@
 using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core.NWNX;
+using NWN.Native.API;
+using DamageType = Anvil.API.DamageType;
+using EffectSubType = Anvil.API.EffectSubType;
+using InventorySlot = Anvil.API.InventorySlot;
+using Skill = Anvil.API.Skill;
 
 namespace AmiaReforged.Classes.Defender;
 
@@ -396,6 +401,10 @@ public class DefendersDuty
 
     private void SoakDamageForAlly(OnCreatureDamage obj)
     {
+        // Ignore the environment or weird damage sources...check if DamagedBy is CREATURE
+        if (obj.DamagedBy is not NwCreature enemy)
+            return;
+
         // Check if the target of the damage is one of our protected creatures
         if (obj.Target is not NwCreature target || !target.IsValid)
             return;
@@ -414,7 +423,13 @@ public class DefendersDuty
 
         Defender.SendServerMessage($"[DEBUG]: {target.Name} taking damage, soaking for ally.", ColorConstants.Magenta);
 
-        // Get the damage data
+
+        // There's a fairly stupid interaction between DamageType and Base weapons. Despite them having an actual
+        // physical damage type like Slashing, Piercing, or Bludgeoning, damage from the weapons is reported as
+        // "base weapon" damage type. So we have to read all damage types and soak them accordingly.
+        // In short, we need to see what their weapon is doing and soak that damage type as well...
+
+
 
         // Read all damage types
         int baseWeapon = obj.DamageData.GetDamageByType(DamageType.BaseWeapon);
@@ -436,6 +451,7 @@ public class DefendersDuty
             ColorConstants.Magenta);
 
         // Calculate soak (50% of positive damage values)
+        int weaponSoak = baseWeapon > 0 ? (int)(baseWeapon * DefenderDamage) : 0;
         int bludgeonSoak = bludgeon > 0 ? (int)(bludgeon * DefenderDamage) : 0;
         int pierceSoak = pierce > 0 ? (int)(pierce * DefenderDamage) : 0;
         int slashSoak = slash > 0 ? (int)(slash * DefenderDamage) : 0;
@@ -449,20 +465,27 @@ public class DefendersDuty
         int positiveSoak = positive > 0 ? (int)(positive * DefenderDamage) : 0;
         int sonicSoak = sonic > 0 ? (int)(sonic * DefenderDamage) : 0;
 
-        int totalSoak = bludgeonSoak + pierceSoak + slashSoak + magicalSoak + fireSoak + coldSoak +
+        // Include weapon soak in total
+        int totalSoak = weaponSoak + bludgeonSoak + pierceSoak + slashSoak + magicalSoak + fireSoak + coldSoak +
                         acidSoak + elecSoak + divineSoak + negativeSoak + positiveSoak + sonicSoak;
 
-        Defender.SendServerMessage($"[DEBUG]: Total soak: {totalSoak}", ColorConstants.Magenta);
+        Defender.SendServerMessage($"[DEBUG]: WeaponSoak={weaponSoak} Total soak: {totalSoak}", ColorConstants.Magenta);
 
         if (totalSoak <= 0)
             return;
 
+        // Split base weapon soak evenly across physical damage types for NWNX DamagePlugin
+        // This is a workaround since DamagePlugin doesn't have a "base weapon" field
+        int weaponSoakPerType = weaponSoak / 3;
+        int weaponSoakRemainder = weaponSoak % 3;
+
         // Deal soaked damage to defender (respecting damage types)
+        // Add the split weapon soak to each physical type, plus any bonus physical damage
         DamageData defenderDamage = new()
         {
-            iBludgeoning = bludgeonSoak,
-            iPierce = pierceSoak,
-            iSlash = slashSoak,
+            iBludgeoning = bludgeonSoak + weaponSoakPerType + (weaponSoakRemainder > 0 ? 1 : 0),
+            iPierce = pierceSoak + weaponSoakPerType + (weaponSoakRemainder > 1 ? 1 : 0),
+            iSlash = slashSoak + weaponSoakPerType,
             iMagical = magicalSoak,
             iFire = fireSoak,
             iCold = coldSoak,
@@ -477,7 +500,8 @@ public class DefendersDuty
         NwCreature damageSource = obj.DamagedBy is NwCreature src && src.IsValid ? src : Defender.LoginCreature;
         DamagePlugin.DealDamage(defenderDamage, Defender.LoginCreature, damageSource);
 
-        // Reduce damage to ally
+        // Reduce damage to ally - including base weapon damage
+        if (weaponSoak > 0) obj.DamageData.SetDamageByType(DamageType.BaseWeapon, baseWeapon - weaponSoak);
         if (bludgeonSoak > 0) obj.DamageData.SetDamageByType(DamageType.Bludgeoning, bludgeon - bludgeonSoak);
         if (pierceSoak > 0) obj.DamageData.SetDamageByType(DamageType.Piercing, pierce - pierceSoak);
         if (slashSoak > 0) obj.DamageData.SetDamageByType(DamageType.Slashing, slash - slashSoak);
