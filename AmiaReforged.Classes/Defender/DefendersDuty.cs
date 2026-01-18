@@ -222,14 +222,20 @@ public class DefendersDuty
 
         // Update immunity for remaining protected creatures
         UpdateAllPhysicalImmunity();
+
+        Defender.SendServerMessage($"[DEBUG]: Not Defending {creature.Name}.");
+
     }
 
-    private static void ApplyProtectedVisual(NwCreature creature)
+    private void ApplyProtectedVisual(NwCreature creature)
     {
-        Effect protectedVfx = Effect.VisualEffect(VfxType.DurCessatePositive);
+        Effect protectedVfx = Effect.VisualEffect(VfxType.ImpPdkHeroicShield);
         protectedVfx.Tag = ProtectedEffectTag;
         protectedVfx.SubType = EffectSubType.Supernatural;
         creature.ApplyEffect(EffectDuration.Permanent, protectedVfx);
+
+        Defender.SendServerMessage($"[DEBUG]: Defending {creature.Name}.");
+
     }
 
     private static void RemoveProtectedVisual(NwCreature creature)
@@ -289,7 +295,7 @@ public class DefendersDuty
     ///     Attempts to force a creature to attack the defender.
     ///     The creature gets a Will save vs the defender's Taunt skill.
     /// </summary>
-    private static void TryTauntCreature(NwCreature defender, NwCreature target)
+    private void TryTauntCreature(NwCreature defender, NwCreature target)
     {
         // Don't retarget if already attacking the defender
         if (target.AttackTarget == defender)
@@ -298,19 +304,17 @@ public class DefendersDuty
         // DC = 10 + Defender's Taunt skill ranks
         int tauntDc = 10 + defender.GetSkillRank(Skill.Taunt);
 
-        // Will save to resist
-        SavingThrowResult saveResult = target.RollSavingThrow(
-            SavingThrow.Will,
-            tauntDc,
-            SavingThrowType.None,
-            defender);
 
-        if (saveResult == SavingThrowResult.Failure)
-        {
-            // Force the creature to attack the defender
-            target.ClearActionQueue();
-            target.ActionAttackTarget(defender);
-        }
+        // Concentration check to resist instead.
+        bool taunted = target.DoSkillCheck(Skill.Concentration, tauntDc);
+
+        if (!taunted) return;
+        // Force the creature to attack the defender
+
+        target.ClearActionQueue();
+        target.ActionAttackTarget(defender);
+
+        Defender.SendServerMessage($"[DEBUG]: Taunted {target.Name}.");
     }
 
     private void SoakDamageForAlly(OnCreatureDamage obj)
@@ -319,22 +323,26 @@ public class DefendersDuty
         if (Defender.LoginCreature == null || Defender.LoginCreature.IsDead)
             return;
 
+        Defender.SendServerMessage($"[DEBUG]: {obj.Target.Name} was hit.");
+
+
         // NWN splits damage up into its core damage components then sums the net damage together after resistances
         // and immunities are applied.
+        DamageData<int> eventDamage = obj.DamageData;
         DamageData defenderDamageData = new()
         {
-            iBludgeoning = (int)(obj.DamageData.GetDamageByType(DamageType.Bludgeoning) * DefenderDamage),
-            iPierce = (int)(obj.DamageData.GetDamageByType(DamageType.Piercing) * DefenderDamage),
-            iSlash = (int)(obj.DamageData.GetDamageByType(DamageType.Slashing) * DefenderDamage),
-            iMagical = (int)(obj.DamageData.GetDamageByType(DamageType.Magical) * DefenderDamage),
-            iAcid = (int)(obj.DamageData.GetDamageByType(DamageType.Acid) * DefenderDamage),
-            iCold = (int)(obj.DamageData.GetDamageByType(DamageType.Cold) * DefenderDamage),
-            iDivine = (int)(obj.DamageData.GetDamageByType(DamageType.Divine) * DefenderDamage),
-            iElectrical = (int)(obj.DamageData.GetDamageByType(DamageType.Electrical) * DefenderDamage),
-            iFire = (int)(obj.DamageData.GetDamageByType(DamageType.Fire) * DefenderDamage),
-            iNegative = (int)(obj.DamageData.GetDamageByType(DamageType.Negative) * DefenderDamage),
-            iPositive = (int)(obj.DamageData.GetDamageByType(DamageType.Positive) * DefenderDamage),
-            iSonic = (int)(obj.DamageData.GetDamageByType(DamageType.Sonic) * DefenderDamage)
+            iBludgeoning = (int)(eventDamage.GetDamageByType(DamageType.Bludgeoning) * DefenderDamage),
+            iPierce = (int)(eventDamage.GetDamageByType(DamageType.Piercing) * DefenderDamage),
+            iSlash = (int)(eventDamage.GetDamageByType(DamageType.Slashing) * DefenderDamage),
+            iMagical = (int)(eventDamage.GetDamageByType(DamageType.Magical) * DefenderDamage),
+            iAcid = (int)(eventDamage.GetDamageByType(DamageType.Acid) * DefenderDamage),
+            iCold = (int)(eventDamage.GetDamageByType(DamageType.Cold) * DefenderDamage),
+            iDivine = (int)(eventDamage.GetDamageByType(DamageType.Divine) * DefenderDamage),
+            iElectrical = (int)(eventDamage.GetDamageByType(DamageType.Electrical) * DefenderDamage),
+            iFire = (int)(eventDamage.GetDamageByType(DamageType.Fire) * DefenderDamage),
+            iNegative = (int)(eventDamage.GetDamageByType(DamageType.Negative) * DefenderDamage),
+            iPositive = (int)(eventDamage.GetDamageByType(DamageType.Positive) * DefenderDamage),
+            iSonic = (int)(eventDamage.GetDamageByType(DamageType.Sonic) * DefenderDamage)
         };
 
         // This is a call to the NWNX Damage Plugin - defender takes portion of the damage
@@ -342,29 +350,29 @@ public class DefendersDuty
         DamagePlugin.DealDamage(defenderDamageData, Defender.LoginCreature, obj.DamagedBy ?? Defender.LoginCreature);
 
         // Reduce the damage done to the protected ally
-        obj.DamageData.SetDamageByType(DamageType.Bludgeoning,
-            obj.DamageData.GetDamageByType(DamageType.Bludgeoning) - defenderDamageData.iBludgeoning);
-        obj.DamageData.SetDamageByType(DamageType.Piercing,
-            obj.DamageData.GetDamageByType(DamageType.Piercing) - defenderDamageData.iPierce);
-        obj.DamageData.SetDamageByType(DamageType.Slashing,
-            obj.DamageData.GetDamageByType(DamageType.Slashing) - defenderDamageData.iSlash);
-        obj.DamageData.SetDamageByType(DamageType.Magical,
-            obj.DamageData.GetDamageByType(DamageType.Magical) - defenderDamageData.iMagical);
-        obj.DamageData.SetDamageByType(DamageType.Acid,
-            obj.DamageData.GetDamageByType(DamageType.Acid) - defenderDamageData.iAcid);
-        obj.DamageData.SetDamageByType(DamageType.Cold,
-            obj.DamageData.GetDamageByType(DamageType.Cold) - defenderDamageData.iCold);
-        obj.DamageData.SetDamageByType(DamageType.Divine,
-            obj.DamageData.GetDamageByType(DamageType.Divine) - defenderDamageData.iDivine);
-        obj.DamageData.SetDamageByType(DamageType.Electrical,
-            obj.DamageData.GetDamageByType(DamageType.Electrical) - defenderDamageData.iElectrical);
-        obj.DamageData.SetDamageByType(DamageType.Fire,
-            obj.DamageData.GetDamageByType(DamageType.Fire) - defenderDamageData.iFire);
-        obj.DamageData.SetDamageByType(DamageType.Negative,
-            obj.DamageData.GetDamageByType(DamageType.Negative) - defenderDamageData.iNegative);
-        obj.DamageData.SetDamageByType(DamageType.Positive,
-            obj.DamageData.GetDamageByType(DamageType.Positive) - defenderDamageData.iPositive);
-        obj.DamageData.SetDamageByType(DamageType.Sonic,
-            obj.DamageData.GetDamageByType(DamageType.Sonic) - defenderDamageData.iSonic);
+        eventDamage.SetDamageByType(DamageType.Bludgeoning,
+            eventDamage.GetDamageByType(DamageType.Bludgeoning) - defenderDamageData.iBludgeoning);
+        eventDamage.SetDamageByType(DamageType.Piercing,
+            eventDamage.GetDamageByType(DamageType.Piercing) - defenderDamageData.iPierce);
+        eventDamage.SetDamageByType(DamageType.Slashing,
+            eventDamage.GetDamageByType(DamageType.Slashing) - defenderDamageData.iSlash);
+        eventDamage.SetDamageByType(DamageType.Magical,
+            eventDamage.GetDamageByType(DamageType.Magical) - defenderDamageData.iMagical);
+        eventDamage.SetDamageByType(DamageType.Acid,
+            eventDamage.GetDamageByType(DamageType.Acid) - defenderDamageData.iAcid);
+        eventDamage.SetDamageByType(DamageType.Cold,
+            eventDamage.GetDamageByType(DamageType.Cold) - defenderDamageData.iCold);
+        eventDamage.SetDamageByType(DamageType.Divine,
+            eventDamage.GetDamageByType(DamageType.Divine) - defenderDamageData.iDivine);
+        eventDamage.SetDamageByType(DamageType.Electrical,
+            eventDamage.GetDamageByType(DamageType.Electrical) - defenderDamageData.iElectrical);
+        eventDamage.SetDamageByType(DamageType.Fire,
+            eventDamage.GetDamageByType(DamageType.Fire) - defenderDamageData.iFire);
+        eventDamage.SetDamageByType(DamageType.Negative,
+            eventDamage.GetDamageByType(DamageType.Negative) - defenderDamageData.iNegative);
+        eventDamage.SetDamageByType(DamageType.Positive,
+            eventDamage.GetDamageByType(DamageType.Positive) - defenderDamageData.iPositive);
+        eventDamage.SetDamageByType(DamageType.Sonic,
+            eventDamage.GetDamageByType(DamageType.Sonic) - defenderDamageData.iSonic);
     }
 }
