@@ -50,7 +50,9 @@ public class DefendersDuty
         if (existingAura != null)
         {
             // Clean up all protected creatures before removing aura
+            Defender.SendServerMessage("[DEBUG]: Toggling aura OFF - starting cleanup.", ColorConstants.Orange);
             CleanupAllProtectedCreatures();
+            Defender.SendServerMessage("[DEBUG]: Cleanup complete, removing aura effect.", ColorConstants.Orange);
             Defender.LoginCreature.RemoveEffect(existingAura);
             Defender.SendServerMessage("Defender's Duty aura deactivated.", ColorConstants.Orange);
             return;
@@ -71,14 +73,17 @@ public class DefendersDuty
 
     private void OnDefenderLeave(ModuleEvents.OnClientLeave obj)
     {
+        Defender.SendServerMessage("[DEBUG]: Defender leaving - cleaning up protected creatures.", ColorConstants.Orange);
         CleanupAllProtectedCreatures();
         Defender.OnClientLeave -= OnDefenderLeave;
     }
 
     private void CleanupAllProtectedCreatures()
     {
+        Defender.SendServerMessage($"[DEBUG]: CleanupAllProtectedCreatures - {_protectedCreatures.Count} creatures to clean.", ColorConstants.Yellow);
         foreach (NwCreature creature in _protectedCreatures.ToList())
         {
+            Defender.SendServerMessage($"[DEBUG]: Cleaning up {creature.Name} (Valid: {creature.IsValid}).", ColorConstants.Yellow);
             creature.OnCreatureDamage -= SoakDamageForAlly;
             creature.OnDeath -= OnProtectedCreatureDeath;
             RemoveProtectedVisual(creature);
@@ -86,6 +91,7 @@ public class DefendersDuty
         }
 
         _protectedCreatures.Clear();
+        Defender.SendServerMessage("[DEBUG]: Protected creatures cleared.", ColorConstants.Yellow);
 
         // Remove immunity from defender as well
         if (Defender.LoginCreature != null)
@@ -121,9 +127,16 @@ public class DefendersDuty
 
     private ScriptHandleResult OnEnterAura(CallInfo info, NwCreature defender)
     {
+        Defender.SendServerMessage("[DEBUG]: OnEnterAura triggered.", ColorConstants.Cyan);
+
         if (!info.TryGetEvent(out AreaOfEffectEvents.OnEnter? eventData)
             || eventData.Entering is not NwCreature enteringCreature)
+        {
+            Defender.SendServerMessage("[DEBUG]: OnEnterAura - failed to get event or not a creature.", ColorConstants.Red);
             return ScriptHandleResult.Handled;
+        }
+
+        Defender.SendServerMessage($"[DEBUG]: OnEnterAura - {enteringCreature.Name} entering (Valid: {enteringCreature.IsValid}).", ColorConstants.Cyan);
 
         // Don't affect the defender themselves
         if (enteringCreature == defender)
@@ -132,11 +145,13 @@ public class DefendersDuty
         if (defender.IsReactionTypeHostile(enteringCreature))
         {
             // Hostile: attempt to taunt
+            Defender.SendServerMessage($"[DEBUG]: {enteringCreature.Name} is hostile, attempting taunt.", ColorConstants.Cyan);
             TryTauntCreature(defender, enteringCreature);
         }
         else if (defender.IsReactionTypeFriendly(enteringCreature))
         {
             // Friendly: add protection
+            Defender.SendServerMessage($"[DEBUG]: {enteringCreature.Name} is friendly, adding protection.", ColorConstants.Cyan);
             if (enteringCreature.IsPlayerControlled(out NwPlayer? player))
             {
                 player.SendServerMessage($"You are being protected by {defender.Name}.", ColorConstants.Lime);
@@ -175,13 +190,21 @@ public class DefendersDuty
 
     private ScriptHandleResult OnExitAura(CallInfo info, NwCreature defender)
     {
+        Defender.SendServerMessage("[DEBUG]: OnExitAura triggered.", ColorConstants.Cyan);
+
         if (!info.TryGetEvent(out AreaOfEffectEvents.OnExit? eventData)
             || eventData.Exiting is not NwCreature exitingCreature)
+        {
+            Defender.SendServerMessage("[DEBUG]: OnExitAura - failed to get event or not a creature.", ColorConstants.Red);
             return ScriptHandleResult.Handled;
+        }
+
+        Defender.SendServerMessage($"[DEBUG]: OnExitAura - {exitingCreature.Name} exiting (Valid: {exitingCreature.IsValid}).", ColorConstants.Cyan);
 
         // Remove protection when friendly leaves the aura
         if (_protectedCreatures.Contains(exitingCreature))
         {
+            Defender.SendServerMessage($"[DEBUG]: {exitingCreature.Name} was protected, removing protection.", ColorConstants.Cyan);
             RemoveProtection(exitingCreature);
         }
 
@@ -190,9 +213,15 @@ public class DefendersDuty
 
     private void AddProtection(NwCreature creature)
     {
-        if (!_protectedCreatures.Add(creature))
-            return;
+        Defender.SendServerMessage($"[DEBUG]: AddProtection called for {creature.Name} (Valid: {creature.IsValid}).", ColorConstants.Lime);
 
+        if (!_protectedCreatures.Add(creature))
+        {
+            Defender.SendServerMessage($"[DEBUG]: {creature.Name} already in protected list.", ColorConstants.Yellow);
+            return;
+        }
+
+        Defender.SendServerMessage($"[DEBUG]: Subscribing to OnCreatureDamage for {creature.Name}.", ColorConstants.Lime);
         creature.OnCreatureDamage += SoakDamageForAlly;
         creature.OnDeath += OnProtectedCreatureDeath;
 
@@ -201,28 +230,38 @@ public class DefendersDuty
 
         // Update immunity for all protected creatures (including defender)
         UpdateAllPhysicalImmunity();
+        Defender.SendServerMessage($"[DEBUG]: AddProtection complete for {creature.Name}. Total protected: {_protectedCreatures.Count}.", ColorConstants.Lime);
     }
 
     private void OnProtectedCreatureDeath(CreatureEvents.OnDeath obj)
     {
+        Defender.SendServerMessage($"[DEBUG]: OnProtectedCreatureDeath - {obj.KilledCreature.Name} died.", ColorConstants.Red);
         RemoveProtection(obj.KilledCreature);
     }
 
     private void RemoveProtection(NwCreature creature)
     {
-        if (!_protectedCreatures.Contains(creature))
-            return;
+        Defender.SendServerMessage($"[DEBUG]: RemoveProtection called for {creature.Name} (Valid: {creature.IsValid}).", ColorConstants.Orange);
 
+        if (!_protectedCreatures.Contains(creature))
+        {
+            Defender.SendServerMessage($"[DEBUG]: {creature.Name} not in protected list, skipping.", ColorConstants.Yellow);
+            return;
+        }
+
+        Defender.SendServerMessage($"[DEBUG]: Unsubscribing from OnCreatureDamage for {creature.Name}.", ColorConstants.Orange);
         _protectedCreatures.Remove(creature);
         creature.OnCreatureDamage -= SoakDamageForAlly;
         creature.OnDeath -= OnProtectedCreatureDeath;
+
+        Defender.SendServerMessage($"[DEBUG]: Removing visual and immunity from {creature.Name}.", ColorConstants.Orange);
         RemoveProtectedVisual(creature);
         RemovePhysicalImmunity(creature);
 
         // Update immunity for remaining protected creatures
         UpdateAllPhysicalImmunity();
 
-        Defender.SendServerMessage($"[DEBUG]: Not Defending {creature.Name}.");
+        Defender.SendServerMessage($"[DEBUG]: RemoveProtection complete. Remaining protected: {_protectedCreatures.Count}.", ColorConstants.Orange);
     }
 
     private void ApplyProtectedVisual(NwCreature creature)
@@ -238,7 +277,8 @@ public class DefendersDuty
     private static void RemoveProtectedVisual(NwCreature creature)
     {
         Effect? protectedVfx = creature.ActiveEffects.FirstOrDefault(e => e.Tag == ProtectedEffectTag);
-        creature.RemoveEffect(protectedVfx);
+        if (protectedVfx != null)
+            creature.RemoveEffect(protectedVfx);
     }
 
     /// <summary>
@@ -316,13 +356,26 @@ public class DefendersDuty
 
     private void SoakDamageForAlly(OnCreatureDamage obj)
     {
-        // Make sure defender is still valid and alive
-        if (Defender.LoginCreature == null || Defender.LoginCreature.IsDead){
-            Defender.SendServerMessage("What the hell?");
+        // Validate the target creature is still valid and in our protected list
+        if (obj.Target is not NwCreature targetCreature || !targetCreature.IsValid)
+            return;
+
+        // Don't soak damage for the defender themselves
+        if (targetCreature == Defender.LoginCreature)
+            return;
+
+        // If this creature is no longer in our protected list, unsubscribe and bail out
+        if (!_protectedCreatures.Contains(targetCreature))
+        {
+            targetCreature.OnCreatureDamage -= SoakDamageForAlly;
             return;
         }
 
-        Defender.SendServerMessage($"[DEBUG]: {obj.Target.Name} was hit.");
+        // Make sure defender is still valid and alive
+        if (Defender.LoginCreature == null || !Defender.LoginCreature.IsValid || Defender.LoginCreature.IsDead)
+            return;
+
+        Defender.SendServerMessage($"[DEBUG]: {obj.Target.Name} was hit, soaking damage for ally.");
 
         // NWN splits damage up into its core damage components then sums the net damage together after resistances
         // and immunities are applied.
@@ -345,7 +398,10 @@ public class DefendersDuty
 
         // This is a call to the NWNX Damage Plugin - defender takes portion of the damage
         // DamagedBy can be null for environmental/script damage - use defender as source if null
-        DamagePlugin.DealDamage(defenderDamageData, Defender.LoginCreature, obj.DamagedBy ?? Defender.LoginCreature);
+        NwCreature damageSource = obj.DamagedBy is NwCreature source && source.IsValid
+            ? source
+            : Defender.LoginCreature;
+        DamagePlugin.DealDamage(defenderDamageData, Defender.LoginCreature, damageSource);
 
         // Reduce the damage done to the protected ally
         eventDamage.SetDamageByType(DamageType.Bludgeoning,
