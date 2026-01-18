@@ -190,10 +190,9 @@ public class DefendersDuty
 
     private void AddProtection(NwCreature creature)
     {
-        if (_protectedCreatures.Contains(creature))
+        if (!_protectedCreatures.Add(creature))
             return;
 
-        _protectedCreatures.Add(creature);
         creature.OnCreatureDamage += SoakDamageForAlly;
         creature.OnDeath += OnProtectedCreatureDeath;
 
@@ -224,7 +223,6 @@ public class DefendersDuty
         UpdateAllPhysicalImmunity();
 
         Defender.SendServerMessage($"[DEBUG]: Not Defending {creature.Name}.");
-
     }
 
     private void ApplyProtectedVisual(NwCreature creature)
@@ -235,7 +233,6 @@ public class DefendersDuty
         creature.ApplyEffect(EffectDuration.Permanent, protectedVfx);
 
         Defender.SendServerMessage($"[DEBUG]: Defending {creature.Name}.");
-
     }
 
     private static void RemoveProtectedVisual(NwCreature creature)
@@ -320,11 +317,12 @@ public class DefendersDuty
     private void SoakDamageForAlly(OnCreatureDamage obj)
     {
         // Make sure defender is still valid and alive
-        if (Defender.LoginCreature == null || Defender.LoginCreature.IsDead)
+        if (Defender.LoginCreature == null || Defender.LoginCreature.IsDead){
+            Defender.SendServerMessage("What the hell?");
             return;
+        }
 
         Defender.SendServerMessage($"[DEBUG]: {obj.Target.Name} was hit.");
-
 
         // NWN splits damage up into its core damage components then sums the net damage together after resistances
         // and immunities are applied.
