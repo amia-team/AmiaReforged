@@ -1,4 +1,3 @@
-using System.Text;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 using Anvil.API;
@@ -141,10 +140,9 @@ public sealed class StallProductBackfillService
 
         try
         {
-            string jsonText = Encoding.UTF8.GetString(product.ItemData);
-            Json json = Json.Parse(jsonText);
-
-            tempItem = json.ToNwObject<NwItem>(startingLocation);
+            // Deserialize the item using the centralized helper that handles both
+            // binary GFF (preferred) and legacy JSON formats
+            tempItem = PlayerStallEventManager.DeserializeItem(product.ItemData, startingLocation);
 
             if (tempItem is null || !tempItem.IsValid)
             {

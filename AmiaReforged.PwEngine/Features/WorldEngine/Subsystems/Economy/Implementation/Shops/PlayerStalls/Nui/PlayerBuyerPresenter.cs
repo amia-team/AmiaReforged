@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
@@ -426,10 +425,9 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 
 		try
 		{
-			// Parse and spawn the item from serialized data
-			string jsonText = Encoding.UTF8.GetString(_selectedProductItemData);
-			Json json = Json.Parse(jsonText);
-			NwItem? item = json.ToNwObject<NwItem>(copyWaypoint.Location);
+			// Deserialize the item using the centralized helper that handles both
+			// binary GFF (preferred) and legacy JSON formats
+			NwItem? item = PlayerStallEventManager.DeserializeItem(_selectedProductItemData, copyWaypoint.Location);
 
 			if (item is null || !item.IsValid)
 			{

@@ -1,4 +1,3 @@
-using System.Text;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 using Anvil.API;
 using NLog;
@@ -47,13 +46,10 @@ internal static class StallProductRestorer
 
         try
         {
-            string jsonText = Encoding.UTF8.GetString(product.ItemData);
-            Json json = Json.Parse(jsonText);
-
             // Create the item on the ground first (not directly in inventory).
             // This prevents auto-stacking with existing inventory items before
             // we can set the correct stack size for partial purchases.
-            NwItem? item = json.ToNwObject<NwItem>(location);
+            NwItem? item = PlayerStallEventManager.DeserializeItem(product.ItemData, location);
 
             if (item is not null && item.IsValid)
             {

@@ -1188,10 +1188,9 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
 
         try
         {
-            // Parse and spawn the item from serialized data
-            string jsonText = Encoding.UTF8.GetString(itemData);
-            Json json = Json.Parse(jsonText);
-            NwItem? item = json.ToNwObject<NwItem>(copyWaypoint.Location);
+            // Deserialize the item using the centralized helper that handles both
+            // binary GFF (preferred) and legacy JSON formats
+            NwItem? item = PlayerStallEventManager.DeserializeItem(itemData, copyWaypoint.Location);
 
             if (item is null || !item.IsValid)
             {

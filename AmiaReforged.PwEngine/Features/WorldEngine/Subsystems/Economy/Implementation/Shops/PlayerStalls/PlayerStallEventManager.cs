@@ -1560,9 +1560,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         string? originalName = _renameService.GetOriginalName(item);
         string displayName = string.IsNullOrWhiteSpace(originalName) ? item.Name : originalName.Trim();
 
-        Json serializedItem = NWScript.ObjectToJson(item);
-        string payload = serializedItem.Dump();
-        byte[] itemData = Encoding.UTF8.GetBytes(payload);
+        byte[] itemData = item.Serialize();
 
         List<StallProduct> existingProducts = _shops.ProductsForShop(request.StallId) ?? new List<StallProduct>();
         int sortOrder = existingProducts.Count == 0 ? 0 : existingProducts.Max(p => p.SortOrder) + 1;
@@ -2394,9 +2392,11 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 
         try
         {
-            string jsonText = Encoding.UTF8.GetString(product.ItemData);
-            Json json = Json.Parse(jsonText);
-            NwItem? restored = json.ToNwObject<NwItem>(location, owner);
+            NwItem? restored = DeserializeItem(product.ItemData, location);
+            if (restored is { IsValid: true })
+            {
+                owner.AcquireItem(restored);
+            }
             return restored;
         }
         catch (Exception ex)
@@ -2413,6 +2413,41 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         if (item.IsValid)
         {
             item.Destroy();
+        }
+    }
+
+    /// <summary>
+    /// Deserializes an item from byte data. Handles both binary GFF format (preferred)
+    /// and legacy JSON format for backward compatibility with existing database records.
+    /// </summary>
+    /// <param name="itemData">The serialized item data.</param>
+    /// <param name="location">The location where the item should be created.</param>
+    /// <returns>The deserialized item, or null if deserialization failed.</returns>
+    internal static NwItem? DeserializeItem(byte[] itemData, Location location)
+    {
+        if (itemData is not { Length: > 0 })
+        {
+            return null;
+        }
+
+        // Try binary GFF deserialization first (preferred format)
+        NwItem? item = NwItem.Deserialize(itemData);
+        if (item is { IsValid: true })
+        {
+            item.Location = location;
+            return item;
+        }
+
+        // Fall back to legacy JSON deserialization for existing database records
+        try
+        {
+            string jsonText = Encoding.UTF8.GetString(itemData);
+            Json json = Json.Parse(jsonText);
+            return json.ToNwObject<NwItem>(location);
+        }
+        catch
+        {
+            return null;
         }
     }
 

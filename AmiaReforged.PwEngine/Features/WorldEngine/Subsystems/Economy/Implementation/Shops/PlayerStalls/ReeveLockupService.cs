@@ -543,13 +543,9 @@ internal sealed class NwReeveLockupRecipient : IReeveLockupRecipient
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            string jsonText = Encoding.UTF8.GetString(rawItemData);
-            Json json = Json.Parse(jsonText);
-
-            // Create the item on the ground first (not directly in inventory).
-            // This prevents auto-stacking with existing inventory items before
-            // we can set the correct stack size.
-            NwItem? item = json.ToNwObject<NwItem>(location);
+            // Deserialize the item using the centralized helper that handles both
+            // binary GFF (preferred) and legacy JSON formats
+            NwItem? item = PlayerStallEventManager.DeserializeItem(rawItemData, location);
             if (item is null)
             {
                 return false;
