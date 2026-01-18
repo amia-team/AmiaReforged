@@ -418,7 +418,8 @@ public class DefendersDuty
         DamageData<int> damageData = obj.DamageData;
 
         // Read all damage types
-        int bludgeon = damageData.GetDamageByType(DamageType.Bludgeoning);
+        int baseWeapon = obj.DamageData.GetDamageByType(DamageType.BaseWeapon);
+        int bludgeon = obj.DamageData.GetDamageByType(DamageType.Bludgeoning);
         int pierce = damageData.GetDamageByType(DamageType.Piercing);
         int slash = damageData.GetDamageByType(DamageType.Slashing);
         int magical = damageData.GetDamageByType(DamageType.Magical);
@@ -432,7 +433,7 @@ public class DefendersDuty
         int sonic = damageData.GetDamageByType(DamageType.Sonic);
 
         Defender.SendServerMessage(
-            $"[DEBUG]: B={bludgeon} P={pierce} S={slash} M={magical} F={fire} C={cold} A={acid} E={elec}",
+            $"[DEBUG]: Base={baseWeapon} B={bludgeon} P={pierce} S={slash} M={magical} F={fire} C={cold} A={acid} E={elec}",
             ColorConstants.Magenta);
 
         // Calculate soak (50% of positive damage values)
