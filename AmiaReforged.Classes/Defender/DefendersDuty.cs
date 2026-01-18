@@ -415,22 +415,21 @@ public class DefendersDuty
         Defender.SendServerMessage($"[DEBUG]: {target.Name} taking damage, soaking for ally.", ColorConstants.Magenta);
 
         // Get the damage data
-        DamageData<int> damageData = obj.DamageData;
 
         // Read all damage types
         int baseWeapon = obj.DamageData.GetDamageByType(DamageType.BaseWeapon);
         int bludgeon = obj.DamageData.GetDamageByType(DamageType.Bludgeoning);
-        int pierce = damageData.GetDamageByType(DamageType.Piercing);
-        int slash = damageData.GetDamageByType(DamageType.Slashing);
-        int magical = damageData.GetDamageByType(DamageType.Magical);
-        int fire = damageData.GetDamageByType(DamageType.Fire);
-        int cold = damageData.GetDamageByType(DamageType.Cold);
-        int acid = damageData.GetDamageByType(DamageType.Acid);
-        int elec = damageData.GetDamageByType(DamageType.Electrical);
-        int divine = damageData.GetDamageByType(DamageType.Divine);
-        int negative = damageData.GetDamageByType(DamageType.Negative);
-        int positive = damageData.GetDamageByType(DamageType.Positive);
-        int sonic = damageData.GetDamageByType(DamageType.Sonic);
+        int pierce = obj.DamageData.GetDamageByType(DamageType.Piercing);
+        int slash = obj.DamageData.GetDamageByType(DamageType.Slashing);
+        int magical = obj.DamageData.GetDamageByType(DamageType.Magical);
+        int fire = obj.DamageData.GetDamageByType(DamageType.Fire);
+        int cold = obj.DamageData.GetDamageByType(DamageType.Cold);
+        int acid = obj.DamageData.GetDamageByType(DamageType.Acid);
+        int elec = obj.DamageData.GetDamageByType(DamageType.Electrical);
+        int divine = obj.DamageData.GetDamageByType(DamageType.Divine);
+        int negative = obj.DamageData.GetDamageByType(DamageType.Negative);
+        int positive = obj.DamageData.GetDamageByType(DamageType.Positive);
+        int sonic = obj.DamageData.GetDamageByType(DamageType.Sonic);
 
         Defender.SendServerMessage(
             $"[DEBUG]: Base={baseWeapon} B={bludgeon} P={pierce} S={slash} M={magical} F={fire} C={cold} A={acid} E={elec}",
@@ -479,18 +478,18 @@ public class DefendersDuty
         DamagePlugin.DealDamage(defenderDamage, Defender.LoginCreature, damageSource);
 
         // Reduce damage to ally
-        if (bludgeonSoak > 0) damageData.SetDamageByType(DamageType.Bludgeoning, bludgeon - bludgeonSoak);
-        if (pierceSoak > 0) damageData.SetDamageByType(DamageType.Piercing, pierce - pierceSoak);
-        if (slashSoak > 0) damageData.SetDamageByType(DamageType.Slashing, slash - slashSoak);
-        if (magicalSoak > 0) damageData.SetDamageByType(DamageType.Magical, magical - magicalSoak);
-        if (fireSoak > 0) damageData.SetDamageByType(DamageType.Fire, fire - fireSoak);
-        if (coldSoak > 0) damageData.SetDamageByType(DamageType.Cold, cold - coldSoak);
-        if (acidSoak > 0) damageData.SetDamageByType(DamageType.Acid, acid - acidSoak);
-        if (elecSoak > 0) damageData.SetDamageByType(DamageType.Electrical, elec - elecSoak);
-        if (divineSoak > 0) damageData.SetDamageByType(DamageType.Divine, divine - divineSoak);
-        if (negativeSoak > 0) damageData.SetDamageByType(DamageType.Negative, negative - negativeSoak);
-        if (positiveSoak > 0) damageData.SetDamageByType(DamageType.Positive, positive - positiveSoak);
-        if (sonicSoak > 0) damageData.SetDamageByType(DamageType.Sonic, sonic - sonicSoak);
+        if (bludgeonSoak > 0) obj.DamageData.SetDamageByType(DamageType.Bludgeoning, bludgeon - bludgeonSoak);
+        if (pierceSoak > 0) obj.DamageData.SetDamageByType(DamageType.Piercing, pierce - pierceSoak);
+        if (slashSoak > 0) obj.DamageData.SetDamageByType(DamageType.Slashing, slash - slashSoak);
+        if (magicalSoak > 0) obj.DamageData.SetDamageByType(DamageType.Magical, magical - magicalSoak);
+        if (fireSoak > 0) obj.DamageData.SetDamageByType(DamageType.Fire, fire - fireSoak);
+        if (coldSoak > 0) obj.DamageData.SetDamageByType(DamageType.Cold, cold - coldSoak);
+        if (acidSoak > 0) obj.DamageData.SetDamageByType(DamageType.Acid, acid - acidSoak);
+        if (elecSoak > 0) obj.DamageData.SetDamageByType(DamageType.Electrical, elec - elecSoak);
+        if (divineSoak > 0) obj.DamageData.SetDamageByType(DamageType.Divine, divine - divineSoak);
+        if (negativeSoak > 0) obj.DamageData.SetDamageByType(DamageType.Negative, negative - negativeSoak);
+        if (positiveSoak > 0) obj.DamageData.SetDamageByType(DamageType.Positive, positive - positiveSoak);
+        if (sonicSoak > 0) obj.DamageData.SetDamageByType(DamageType.Sonic, sonic - sonicSoak);
 
         Defender.SendServerMessage($"[DEBUG]: Soaked {totalSoak} damage for {target.Name}.", ColorConstants.Lime);
     }
