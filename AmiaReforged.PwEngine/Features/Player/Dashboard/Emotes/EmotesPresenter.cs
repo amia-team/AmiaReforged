@@ -51,6 +51,15 @@ public sealed class EmotesPresenter : ScryPresenter<EmotesView>
 
         _player.TryCreateNuiWindow(_window, out _token);
 
+        // Save the current Z translation to PC key for later restoration
+        NwCreature? creature = _player.LoginCreature;
+        if (creature != null)
+        {
+            string pcKey = creature.GetObjectVariable<LocalVariableString>("pc_key").Value ?? "";
+            float currentZ = creature.VisualTransform.Translation.Z;
+            creature.GetObjectVariable<LocalVariableFloat>($"{pcKey}_emote_saved_z").Value = currentZ;
+        }
+
         UpdateView();
     }
 
@@ -79,6 +88,9 @@ public sealed class EmotesPresenter : ScryPresenter<EmotesView>
                 break;
             case "btn_perform_mutual":
                 HandlePerformMutual();
+                break;
+            case "btn_transform":
+                HandleTransformButton();
                 break;
         }
     }
@@ -861,8 +873,48 @@ public sealed class EmotesPresenter : ScryPresenter<EmotesView>
         Token().SetBindWatch(View.SelectedMutual, true);
     }
 
+    private void HandleTransformButton()
+    {
+        NwCreature? creature = _player.LoginCreature;
+        if (creature == null)
+        {
+            _player.SendServerMessage("Error: Could not find your character.", ColorConstants.Red);
+            return;
+        }
+
+        // Get WindowDirector from AnvilCore service locator
+        WindowDirector? windowDirector = AnvilCore.GetService<WindowDirector>();
+        if (windowDirector == null)
+        {
+            _player.SendServerMessage("Failed to open transform window. Please report this bug.", ColorConstants.Red);
+            return;
+        }
+
+        // Check if Transform window is already open - if so, close it (toggle behavior)
+        if (windowDirector.IsWindowOpen(_player, typeof(EmoteTransformPresenter)))
+        {
+            windowDirector.CloseWindow(_player, typeof(EmoteTransformPresenter));
+            return;
+        }
+
+        // Create the Transform window
+        EmoteTransformView transformView = new();
+        EmoteTransformPresenter transformPresenter = new(transformView, _player);
+        windowDirector.OpenWindow(transformPresenter);
+    }
+
     public override void Close()
     {
+        // Reset X and Y to 0, restore saved Z before closing
+        NwCreature? creature = _player.LoginCreature;
+        if (creature != null)
+        {
+            string pcKey = creature.GetObjectVariable<LocalVariableString>("pc_key").Value ?? "";
+            float savedZ = creature.GetObjectVariable<LocalVariableFloat>($"{pcKey}_emote_saved_z").Value;
+
+            creature.VisualTransform.Translation = new System.Numerics.Vector3(0f, 0f, savedZ);
+        }
+
         _token.Close();
     }
 }

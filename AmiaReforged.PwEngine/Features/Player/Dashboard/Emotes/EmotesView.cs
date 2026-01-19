@@ -156,7 +156,25 @@ public sealed class EmotesView : IScryView
                         }
                     }
                 },
-                new NuiSpacer{ Height = 50f}
+                new NuiSpacer{ Height = 10f },
+
+                // Transform button
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer(),
+                        new NuiButton("Transform")
+                        {
+                            Id = "btn_transform",
+                            Width = 100f,
+                            Height = 30f,
+                            Tooltip = "Adjust your position"
+                        },
+                        new NuiSpacer()
+                    }
+                },
+                new NuiSpacer{ Height = 25f}
             }
         };
         return root;
