@@ -34,7 +34,7 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
     {
         _window = new NuiWindow(View.RootLayout(), title: "Player Tools")
         {
-            Geometry = new NuiRect(120f, 100f, 680f, 680f),
+            Geometry = new NuiRect(0f, 100f, 680f, 680f),
             Resizable = true
         };
     }

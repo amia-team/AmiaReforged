@@ -24,7 +24,7 @@ public sealed class HideEquipmentPresenter : ScryPresenter<HideEquipmentView>
     {
         _window = new NuiWindow(View.RootLayout(), null!)
         {
-            Geometry = new NuiRect(115f, 145f, 170f, 70f),
+            Geometry = new NuiRect(25f, 85f, 170f, 70f),
             Transparent = true,
             Resizable = false,
             Closable = false,

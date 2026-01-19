@@ -40,7 +40,7 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
     {
         _window = new NuiWindow(View.RootLayout(), null!)
         {
-            Geometry = new NuiRect(0f, 40f, 230f, 170f),
+            Geometry = new NuiRect(0f, 40f, 280f, 80f),
             Transparent = true,
             Resizable = false,
             Closable = false,

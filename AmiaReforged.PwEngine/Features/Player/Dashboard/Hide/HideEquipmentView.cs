@@ -24,22 +24,25 @@ public sealed class HideEquipmentView : IScryView
                         {
                             Id = "btn_toggle_helmet",
                             Tooltip = HelmetTooltip,
-                            Width = 50f,
-                            Height = 50f
+                            Width = 40f,
+                            Height = 40f,
+                            ImageAspect = NuiAspect.Fit
                         },
                         new NuiImage("ui_dash_shield")
                         {
                             Id = "btn_toggle_shield",
                             Tooltip = ShieldTooltip,
-                            Width = 50f,
-                            Height = 50f
+                            Width = 40f,
+                            Height = 40f,
+                            ImageAspect = NuiAspect.Fit
                         },
                         new NuiImage("ui_dash_cloak")
                         {
                             Id = "btn_toggle_cloak",
                             Tooltip = CloakTooltip,
-                            Width = 50f,
-                            Height = 50f
+                            Width = 40f,
+                            Height = 40f,
+                            ImageAspect = NuiAspect.Fit
                         }
                     }
                 }

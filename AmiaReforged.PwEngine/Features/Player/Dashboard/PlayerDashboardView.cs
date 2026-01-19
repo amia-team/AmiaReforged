@@ -23,22 +23,6 @@ public sealed class PlayerDashboardView : ScryView<PlayerDashboardPresenter>
                 {
                     Children =
                     [
-                        // Close button row
-                        new NuiRow
-                        {
-                            Children =
-                            {
-                                new NuiSpacer { Width = 1f },
-                                new NuiImage("ui_dash_close")
-                                {
-                                    Id = "btn_close",
-                                    Width = 25f,
-                                    Height = 25f,
-                                    Tooltip = "Close Dashboard"
-                                }
-                            }
-                        },
-                        // Row 1: Rest, Pray, Emotes, Hide
                         new NuiRow
                         {
                             Children =
@@ -46,57 +30,63 @@ public sealed class PlayerDashboardView : ScryView<PlayerDashboardPresenter>
                                 new NuiImage("ui_dash_rest")
                                 {
                                     Id = "btn_rest",
-                                    Width = 50f,
-                                    Height = 50f,
+                                    Width = 40f,
+                                    Height = 40f,
+                                    ImageAspect = NuiAspect.Fit,
                                     Tooltip = "Character Rest"
                                 },
                                 new NuiImage("ui_dash_pray")
                                 {
                                     Id = "btn_pray",
-                                    Width = 50f,
-                                    Height = 50f,
+                                    Width = 40f,
+                                    Height = 40f,
+                                    ImageAspect = NuiAspect.Fit,
                                     Tooltip = "Character Prayer"
                                 },
                                 new NuiImage("ui_dash_emote")
                                 {
                                     Id = "btn_emotes",
-                                    Width = 50f,
-                                    Height = 50f,
+                                    Width = 40f,
+                                    Height = 40f,
+                                    ImageAspect = NuiAspect.Fit,
                                     Tooltip = "Perform an Emote"
                                 },
                                 new NuiImage("ui_dash_hide")
                                 {
                                     Id = "btn_hide",
-                                    Width = 50f,
-                                    Height = 50f,
+                                    Width = 40f,
+                                    Height = 40f,
+                                    ImageAspect = NuiAspect.Fit,
                                     Tooltip = "Hide Equipment"
-                                }
-                            }
-                        },
-
-                        // Row 2: Player Tools, Utilities
-                        new NuiRow
-                        {
-                            Children =
-                            {
-                                new NuiImage("ui_dash_tools")
-                                {
-                                    Id = "btn_player_tools",
-                                    Width = 50f,
-                                    Height = 50f,
-                                    Tooltip = "Open Player Tools"
                                 },
                                 new NuiImage("ui_dash_util")
                                 {
                                     Id = "btn_utilities",
-                                    Width = 50f,
-                                    Height = 50f,
+                                    Width = 40f,
+                                    Height = 40f,
+                                    ImageAspect = NuiAspect.Fit,
                                     Tooltip = "Open Other Utilities"
+                                },
+                                new NuiImage("ui_dash_tools")
+                                {
+                                    Id = "btn_player_tools",
+                                    Width = 40f,
+                                    Height = 40f,
+                                    ImageAspect = NuiAspect.Fit,
+                                    Tooltip = "Open Player Tools"
                                 }
                             }
+                        },
+                        new NuiImage("ui_dash_close")
+                        {
+                            Id = "btn_close",
+                            Width = 15f,
+                            Height = 15f,
+                            ImageAspect = NuiAspect.Fit,
+                            Tooltip = "Close Dashboard"
                         }
                     ]
-                },
+                }
             ]
         };
         return root;
