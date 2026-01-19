@@ -36,11 +36,14 @@ public sealed class EmoteConsentPresenter : ScryPresenter<EmoteConsentView>
 
     public override void InitBefore()
     {
-        _window = new NuiWindow(View.RootLayout(), "Emote Consent")
+        _window = new NuiWindow(View.RootLayout(), null!)
         {
-            Geometry = new NuiRect(300f, 200f, 300f, 150f),
+            Geometry = new NuiRect(400f, 200f, 300f, 300f),
+            Transparent = true,
             Resizable = false,
-            Closable = true
+            Closable = false,
+            Collapsed = false,
+            Border = false
         };
     }
 
@@ -55,6 +58,12 @@ public sealed class EmoteConsentPresenter : ScryPresenter<EmoteConsentView>
         }
 
         _targetPlayer.TryCreateNuiWindow(_window, out _token);
+
+        // Set the requester's portrait (medium size with _m suffix)
+        string basePortraitResRef = _requesterCreature.PortraitResRef ?? "po_hu_m_01_";
+        // Ensure we have the _m suffix for medium portrait
+        string portraitResRef = basePortraitResRef.EndsWith("_") ? basePortraitResRef + "m" : basePortraitResRef + "_m";
+        Token().SetBindValue(View.RequesterPortrait, portraitResRef);
 
         // Set the consent message
         string requesterName = _requesterCreature.Name;

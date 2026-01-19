@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using Anvil;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -13,8 +14,6 @@ public sealed class EmotesPresenter : ScryPresenter<EmotesView>
 
     private EmotesModel Model { get; }
 
-    [Inject]
-    private Lazy<WindowDirector> WindowDirector { get; init; } = null!;
 
     public EmotesPresenter(EmotesView view, NwPlayer player)
     {
@@ -208,7 +207,11 @@ public sealed class EmotesPresenter : ScryPresenter<EmotesView>
     private void RequestMutualEmotePermission(NwCreature target, EmoteOption emote)
     {
         NwPlayer? targetPlayer = target.ControllingPlayer;
-        if (targetPlayer == null || _player.LoginCreature == null) return;
+        if (targetPlayer == null || _player.LoginCreature == null)
+        {
+            _player.SendServerMessage("Failed to send emote request. Target player not found.", ColorConstants.Red);
+            return;
+        }
 
         // Create and show the consent popup to the target player
         EmoteConsentView consentView = new();
@@ -227,8 +230,16 @@ public sealed class EmotesPresenter : ScryPresenter<EmotesView>
                 }
             });
 
+        // Get WindowDirector from AnvilCore service locator
+        WindowDirector? windowDirector = AnvilCore.GetService<WindowDirector>();
+        if (windowDirector == null)
+        {
+            _player.SendServerMessage("Failed to open consent window. Please report this bug.", ColorConstants.Red);
+            return;
+        }
+
         // Use WindowDirector to open the consent window
-        WindowDirector.Value.OpenWindow(consentPresenter);
+        windowDirector.OpenWindow(consentPresenter);
 
         // Notify the requester
         _player.SendServerMessage($"Requesting {emote.Name} with {target.Name}...", ColorConstants.Yellow);
@@ -457,8 +468,11 @@ public sealed class EmotesPresenter : ScryPresenter<EmotesView>
 
             // Make user uncontrollable briefly for camera effect
             await Task.Delay(300);
+            await NwTask.SwitchToMainThread();
             user.Commandable = false;
+
             await Task.Delay(1700);
+            await NwTask.SwitchToMainThread();
             user.Commandable = true;
         }).ContinueWith(t => { if (t.IsFaulted && t.Exception != null) throw t.Exception; });
     }
