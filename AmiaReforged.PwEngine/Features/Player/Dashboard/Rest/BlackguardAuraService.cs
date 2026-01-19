@@ -2,7 +2,7 @@
 using Anvil.Services;
 using NWN.Core;
 
-namespace AmiaReforged.PwEngine.Features.Player.Dashboard;
+namespace AmiaReforged.PwEngine.Features.Player.Dashboard.Rest;
 
 /// <summary>
 /// Handles Blackguard Aura of Despair functionality.

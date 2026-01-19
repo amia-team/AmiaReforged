@@ -2,7 +2,7 @@
 using Anvil.Services;
 using NWN.Core;
 
-namespace AmiaReforged.PwEngine.Features.Player.Dashboard;
+namespace AmiaReforged.PwEngine.Features.Player.Dashboard.Pray;
 
 /// <summary>
 /// Handles the prayer system for clerics, druids, and laypeople to pray to their deities.

@@ -1,5 +1,8 @@
 ﻿using AmiaReforged.PwEngine.Features.Player.Dashboard.Hide;
+using AmiaReforged.PwEngine.Features.Player.Dashboard.Pray;
+using AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using Anvil;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -174,8 +177,30 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
 
     private void HandlePlayerToolsButtonClick()
     {
-        _player.SendServerMessage("Player Tools feature - Coming soon!", ColorConstants.Orange);
-        // TODO: Open Player Tools NUI instead of using feat
+        // Check if Player Tools window is already open - if so, close it (toggle behavior)
+        if (WindowDirector.Value.IsWindowOpen(_player, typeof(PlayerToolsWindowPresenter)))
+        {
+            WindowDirector.Value.CloseWindow(_player, typeof(PlayerToolsWindowPresenter));
+            return;
+        }
+
+        // Get the injection service
+        InjectionService? injector = AnvilCore.GetService<InjectionService>();
+        if (injector is null)
+        {
+            _player.SendServerMessage(
+                "Failed to load the player tools due to missing DI container. Screenshot this and report it as a bug.",
+                ColorConstants.Red);
+            return;
+        }
+
+        // Create the Player Tools window
+        PlayerToolsWindowView window = new(_player);
+        PlayerToolsWindowPresenter presenter = window.Presenter;
+
+        // Inject dependencies and open the window
+        injector.Inject(presenter);
+        WindowDirector.Value.OpenWindow(presenter);
     }
 
     private void HandleUtilitiesButtonClick()

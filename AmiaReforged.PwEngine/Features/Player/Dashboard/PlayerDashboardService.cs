@@ -5,6 +5,7 @@ using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core;
 using System.Numerics;
+using AmiaReforged.PwEngine.Features.Player.Dashboard.Rest;
 
 namespace AmiaReforged.PwEngine.Features.Player.Dashboard;
 
