@@ -6,12 +6,9 @@ namespace AmiaReforged.PwEngine.Features.Player.Dashboard.Hide;
 public sealed class HideEquipmentView : IScryView
 {
     public NuiBind<string> Title { get; } = new("title");
-    public NuiBind<string> HelmetButtonLabel { get; } = new("helmet_button_label");
-    public NuiBind<string> CloakButtonLabel { get; } = new("cloak_button_label");
-    public NuiBind<string> ShieldButtonLabel { get; } = new("shield_button_label");
-    public NuiBind<bool> HelmetButtonEnabled { get; } = new("helmet_button_enabled");
-    public NuiBind<bool> CloakButtonEnabled { get; } = new("cloak_button_enabled");
-    public NuiBind<bool> ShieldButtonEnabled { get; } = new("shield_button_enabled");
+    public NuiBind<string> HelmetTooltip { get; } = new("helmet_tooltip");
+    public NuiBind<string> CloakTooltip { get; } = new("cloak_tooltip");
+    public NuiBind<string> ShieldTooltip { get; } = new("shield_tooltip");
 
     public NuiLayout RootLayout()
     {
@@ -19,26 +16,32 @@ public sealed class HideEquipmentView : IScryView
         {
             Children = new List<NuiElement>
             {
-                new NuiButton(HelmetButtonLabel)
+                new NuiRow
                 {
-                    Id = "btn_toggle_helmet",
-                    Enabled = HelmetButtonEnabled,
-                    Width = 120f,
-                    Height = 25f
-                },
-                new NuiButton(ShieldButtonLabel)
-                {
-                    Id = "btn_toggle_shield",
-                    Enabled = ShieldButtonEnabled,
-                    Width = 120f,
-                    Height = 25f
-                },
-                new NuiButton(CloakButtonLabel)
-                {
-                    Id = "btn_toggle_cloak",
-                    Enabled = CloakButtonEnabled,
-                    Width = 120f,
-                    Height = 25f
+                    Children = new List<NuiElement>
+                    {
+                        new NuiImage("ui_dash_helm")
+                        {
+                            Id = "btn_toggle_helmet",
+                            Tooltip = HelmetTooltip,
+                            Width = 50f,
+                            Height = 50f
+                        },
+                        new NuiImage("ui_dash_shield")
+                        {
+                            Id = "btn_toggle_shield",
+                            Tooltip = ShieldTooltip,
+                            Width = 50f,
+                            Height = 50f
+                        },
+                        new NuiImage("ui_dash_cloak")
+                        {
+                            Id = "btn_toggle_cloak",
+                            Tooltip = CloakTooltip,
+                            Width = 50f,
+                            Height = 50f
+                        }
+                    }
                 }
             }
         };

@@ -1,4 +1,4 @@
-﻿﻿using AmiaReforged.PwEngine.Features.Player.Dashboard.Emotes;
+﻿using AmiaReforged.PwEngine.Features.Player.Dashboard.Emotes;
 using AmiaReforged.PwEngine.Features.Player.Dashboard.Hide;
 using AmiaReforged.PwEngine.Features.Player.Dashboard.Pray;
 using AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui;
@@ -40,7 +40,7 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
     {
         _window = new NuiWindow(View.RootLayout(), null!)
         {
-            Geometry = new NuiRect(0f, 50f, 120f, 250f),
+            Geometry = new NuiRect(0f, 40f, 230f, 170f),
             Transparent = true,
             Resizable = false,
             Closable = false,
@@ -68,7 +68,8 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent obj)
     {
-        if (obj.EventType != NuiEventType.Click) return;
+        // NuiImage elements fire MouseUp events instead of Click
+        if (obj.EventType != NuiEventType.Click && obj.EventType != NuiEventType.MouseUp) return;
 
         switch (obj.ElementId)
         {

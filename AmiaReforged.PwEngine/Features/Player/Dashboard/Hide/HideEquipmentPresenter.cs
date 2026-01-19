@@ -24,7 +24,7 @@ public sealed class HideEquipmentPresenter : ScryPresenter<HideEquipmentView>
     {
         _window = new NuiWindow(View.RootLayout(), null!)
         {
-            Geometry = new NuiRect(115f, 110f, 150f, 120f),
+            Geometry = new NuiRect(115f, 145f, 170f, 70f),
             Transparent = true,
             Resizable = false,
             Closable = false,
@@ -53,7 +53,8 @@ public sealed class HideEquipmentPresenter : ScryPresenter<HideEquipmentView>
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent ev)
     {
-        if (ev.EventType != NuiEventType.Click) return;
+        // NuiImage elements fire MouseUp events instead of Click
+        if (ev.EventType != NuiEventType.Click && ev.EventType != NuiEventType.MouseUp) return;
 
         switch (ev.ElementId)
         {
@@ -159,56 +160,48 @@ public sealed class HideEquipmentPresenter : ScryPresenter<HideEquipmentView>
     {
         if (_player.LoginCreature == null)
         {
-            Token().SetBindValue(View.HelmetButtonLabel, "Hide Helmet");
-            Token().SetBindValue(View.ShieldButtonLabel, "Hide Shield");
-            Token().SetBindValue(View.CloakButtonLabel, "Hide Cloak");
-            Token().SetBindValue(View.HelmetButtonEnabled, false);
-            Token().SetBindValue(View.ShieldButtonEnabled, false);
+            Token().SetBindValue(View.HelmetTooltip, "Hide/Show Helmet");
+            Token().SetBindValue(View.ShieldTooltip, "Hide/Show Shield");
+            Token().SetBindValue(View.CloakTooltip, "Hide/Show Cloak");
             return;
         }
 
-        // Update helmet button
+        // Update helmet tooltip
         NwItem? helmet = _player.LoginCreature.GetItemInSlot(InventorySlot.Head);
         if (helmet != null)
         {
             bool isHelmetHidden = helmet.HiddenWhenEquipped == 1;
-            Token().SetBindValue(View.HelmetButtonLabel, isHelmetHidden ? "Show Helmet" : "Hide Helmet");
-            Token().SetBindValue(View.HelmetButtonEnabled, true);
+            Token().SetBindValue(View.HelmetTooltip, isHelmetHidden ? "Show Helmet" : "Hide Helmet");
         }
         else
         {
-            Token().SetBindValue(View.HelmetButtonLabel, "Hide Helmet");
-            Token().SetBindValue(View.HelmetButtonEnabled, false);
+            Token().SetBindValue(View.HelmetTooltip, "No Helmet Equipped");
         }
 
-        // Update cloak button
+        // Update cloak tooltip
         NwItem? cloak = _player.LoginCreature.GetItemInSlot(InventorySlot.Cloak);
         if (cloak != null)
         {
             bool isCloakHidden = cloak.HiddenWhenEquipped == 1;
-            Token().SetBindValue(View.CloakButtonLabel, isCloakHidden ? "Show Cloak" : "Hide Cloak");
-            Token().SetBindValue(View.CloakButtonEnabled, true);
+            Token().SetBindValue(View.CloakTooltip, isCloakHidden ? "Show Cloak" : "Hide Cloak");
         }
         else
         {
-            Token().SetBindValue(View.CloakButtonLabel, "Hide Cloak");
-            Token().SetBindValue(View.CloakButtonEnabled, false);
+            Token().SetBindValue(View.CloakTooltip, "No Cloak Equipped");
         }
 
-        // Update shield button
+        // Update shield tooltip
         NwItem? shield = _player.LoginCreature.GetItemInSlot(InventorySlot.LeftHand);
         bool hasShield = shield?.BaseItem.Category == BaseItemCategory.Shield;
 
         if (hasShield)
         {
             bool isShieldHidden = shield!.HiddenWhenEquipped == 1;
-            Token().SetBindValue(View.ShieldButtonLabel, isShieldHidden ? "Show Shield" : "Hide Shield");
-            Token().SetBindValue(View.ShieldButtonEnabled, true);
+            Token().SetBindValue(View.ShieldTooltip, isShieldHidden ? "Show Shield" : "Hide Shield");
         }
         else
         {
-            Token().SetBindValue(View.ShieldButtonLabel, "Hide Shield");
-            Token().SetBindValue(View.ShieldButtonEnabled, false);
+            Token().SetBindValue(View.ShieldTooltip, "No Shield Equipped");
         }
     }
 
