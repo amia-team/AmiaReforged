@@ -18,7 +18,10 @@ public class CasterLevelOverrideService
     private readonly Dictionary<ClassType, Func<int, int>> _prestigeClassModifiers = new()
     {
         { ClassType.PaleMaster, prcLevel => Math.Max(0, prcLevel - 5) },
-        { ClassType.DragonDisciple, prcLevel => Math.Max(0, prcLevel - 6) }
+        { ClassType.DragonDisciple, prcLevel => Math.Max(0, prcLevel - 5) },
+        { ClassType.Blackguard, prcLevel => Math.Max(0, prcLevel - 5) },
+        { ClassType.DivineChampion, prcLevel => Math.Max(0, prcLevel - 5) },
+        { ClassType.ArcaneArcher, prcLevel => Math.Max(0, prcLevel - 5) }
     };
 
     private readonly Dictionary<NwCreature, bool> _casterLevelOverridesApplied = new();
@@ -31,7 +34,8 @@ public class CasterLevelOverrideService
         ClassType.Bard,
         ClassType.Assassin,
         ClassType.Druid,
-        ClassType.Cleric
+        ClassType.Cleric,
+        ClassType.Paladin
     };
 
     public CasterLevelOverrideService(ShifterDcService shifterDcService)
