@@ -6,24 +6,51 @@ namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.DomainChanger;
 public sealed class DomainChangerView : IScryView
 {
     public NuiBind<string> Title { get; } = new("title");
-    public NuiBind<string> CharacterInfo { get; } = new("char_info");
-    public NuiBind<string> CurrentDomains { get; } = new("current_domains");
-    public NuiBind<string> AvailableDomains { get; } = new("available_domains");
+    public NuiBind<string> CharacterName { get; } = new("char_name");
+    public NuiBind<string> DeityName { get; } = new("deity_name");
+    public NuiBind<string> Domain1Name { get; } = new("domain1_name");
+    public NuiBind<string> Domain2Name { get; } = new("domain2_name");
+    public NuiBind<int> SelectedDomainIndex { get; } = new("selected_domain_index");
+    public NuiBind<List<NuiComboEntry>> DomainOptions { get; } = new("domain_options");
     public NuiBind<bool> ChangeButtonsEnabled { get; } = new("change_buttons_enabled");
-    public NuiBind<int> SelectedDomainSlot { get; } = new("selected_domain_slot"); // 1 or 2
-    public NuiBind<int> SelectedNewDomain { get; } = new("selected_new_domain"); // Domain ID
+    public NuiBind<string> ErrorMessage { get; } = new("error_message");
+    public NuiBind<bool> ShowError { get; } = new("show_error");
 
     public NuiLayout RootLayout()
     {
+        // Background layer
+        NuiRow bgLayer = new NuiRow
+        {
+            Width = 0f,
+            Height = 0f,
+            Children = new List<NuiElement>(),
+            DrawList = new List<NuiDrawListItem> { new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 500f, 380f)) }
+        };
+
         NuiColumn root = new()
         {
             Children = new List<NuiElement>
             {
+                bgLayer,
+                new NuiSpacer { Height = 20f },
+                // Character Label
                 new NuiRow
                 {
                     Children = new List<NuiElement>
                     {
-                        new NuiLabel(CharacterInfo) { Height = 20f }
+                        new NuiSpacer { Width = 30f },
+                        new NuiLabel("Character:") { Width = 100f, Height = 20f, ForegroundColor = new Color(30, 20, 12) },
+                        new NuiLabel(CharacterName) { Height = 20f, ForegroundColor = new Color(30, 20, 12) }
+                    }
+                },
+                // Deity Label
+                new NuiRow
+                {
+                    Children = new List<NuiElement>
+                    {
+                        new NuiSpacer { Width = 30f },
+                        new NuiLabel("Deity:") { Width = 100f, Height = 20f, ForegroundColor = new Color(30, 20, 12) },
+                        new NuiLabel(DeityName) { Height = 20f, ForegroundColor = new Color(30, 20, 12) }
                     }
                 },
                 new NuiRow
@@ -32,109 +59,90 @@ public sealed class DomainChangerView : IScryView
                     {
                         new NuiSpacer()
                     },
-                    Height = 10f
+                    Height = 5f
                 },
+                // Current Domains Header
                 new NuiRow
                 {
                     Children = new List<NuiElement>
                     {
-                        new NuiLabel(CurrentDomains) { Height = 60f }
+                        new NuiSpacer { Width = 30f },
+                        new NuiLabel("Current Domains:") { Height = 20f, ForegroundColor = new Color(30, 20, 12) }
                     }
                 },
+                // Domain 1
                 new NuiRow
                 {
                     Children = new List<NuiElement>
                     {
-                        new NuiSpacer()
-                    },
-                    Height = 10f
-                },
-                new NuiRow
-                {
-                    Children = new List<NuiElement>
-                    {
-                        new NuiLabel(AvailableDomains) { Height = 200f }
+                        new NuiSpacer { Width = 30f },
+                        new NuiLabel("  Domain 1:") { Width = 100f, Height = 20f, ForegroundColor = new Color(30, 20, 12) },
+                        new NuiLabel(Domain1Name) { Height = 20f, ForegroundColor = new Color(30, 20, 12) }
                     }
                 },
+                // Domain 2
                 new NuiRow
                 {
                     Children = new List<NuiElement>
                     {
-                        new NuiSpacer()
-                    },
-                    Height = 10f
+                        new NuiSpacer { Width = 30f },
+                        new NuiLabel("  Domain 2:") { Width = 100f, Height = 20f, ForegroundColor = new Color(30, 20, 12) },
+                        new NuiLabel(Domain2Name) { Height = 20f, ForegroundColor = new Color(30, 20, 12) }
+                    }
                 },
+                // Domain Selection Dropdown
                 new NuiRow
                 {
                     Children = new List<NuiElement>
                     {
-                        new NuiButton("Change First Domain")
+                        new NuiSpacer { Width = 30f },
+                        new NuiLabel("Select New Domain:")
                         {
-                            Id = "btn_change_first_domain",
-                            Enabled = ChangeButtonsEnabled,
-                            Width = 200f,
-                            Height = 35f
+                            Width = 150f,
+                            Height = 30f,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+
                         },
-                        new NuiSpacer(),
-                        new NuiButton("Change Second Domain")
+                        new NuiCombo
                         {
-                            Id = "btn_change_second_domain",
+                            Entries = DomainOptions,
+                            Selected = SelectedDomainIndex,
+                            Width = 120f,
+                            Height = 30f,
+                            Enabled = ChangeButtonsEnabled
+                        },
+                        new NuiButton("Domain 1")
+                        {
+                            Id = "btn_change_domain_1",
                             Enabled = ChangeButtonsEnabled,
-                            Width = 200f,
-                            Height = 35f
+                            Tooltip = "Change Domain 1",
+                            Width = 80f,
+                            Height = 30f
+                        },
+                        new NuiButton("Domain 2")
+                        {
+                            Id = "btn_change_domain_2",
+                            Enabled = ChangeButtonsEnabled,
+                            Tooltip = "Change Domain 2",
+                            Width = 80f,
+                            Height = 30f
                         }
                     }
-                }
+                },
+                // Error message (conditionally shown)
+                new NuiRow
+                {
+                    Children = new List<NuiElement>
+                    {
+                        new NuiSpacer { Width = 30f },
+                        new NuiLabel(ErrorMessage) { Height = 40f, ForegroundColor = new Color(30, 20, 12) }
+                    },
+                    Visible = ShowError
+                },
             }
         };
 
         return root;
-    }
-
-    public NuiBind<string> ModalMessage { get; } = new("modal_message");
-
-    public NuiWindow BuildConfirmModal(string oldDomainName, string newDomainName, int domainSlot)
-    {
-        NuiColumn layout = new()
-        {
-            Children = new List<NuiElement>
-            {
-                new NuiRow
-                {
-                    Children = new List<NuiElement>
-                    {
-                        new NuiLabel(ModalMessage)
-                        {
-                            Height = 80f
-                        }
-                    }
-                },
-                new NuiRow
-                {
-                    Children = new List<NuiElement>
-                    {
-                        new NuiButton("Confirm")
-                        {
-                            Id = "btn_domain_confirm",
-                            Width = 100f,
-                            Height = 35f
-                        },
-                        new NuiSpacer(),
-                        new NuiButton("Cancel")
-                        {
-                            Id = "btn_domain_cancel",
-                            Width = 100f,
-                            Height = 35f
-                        }
-                    }
-                }
-            }
-        };
-
-        return new NuiWindow(layout, "Confirm Domain Change")
-        {
-            Geometry = new NuiRect(400f, 300f, 350f, 160f),
-            Resizable = false
-        };
     }
 }

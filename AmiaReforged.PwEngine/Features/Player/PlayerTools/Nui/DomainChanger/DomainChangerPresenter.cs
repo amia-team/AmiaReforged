@@ -13,11 +13,7 @@ public sealed class DomainChangerPresenter : ScryPresenter<DomainChangerView>
     private readonly NwPlayer _player;
     private NuiWindowToken _token;
     private NuiWindow? _window;
-    private NuiWindowToken? _confirmModalToken;
-    private int _pendingDomainSlot;
-    private int _pendingNewDomainId;
-    private string _pendingOldDomainName = "";
-    private string _pendingNewDomainName = "";
+    private List<(int id, string name)> _availableDomains = new();
 
     public override NuiWindowToken Token() => _token;
 
@@ -31,8 +27,8 @@ public sealed class DomainChangerPresenter : ScryPresenter<DomainChangerView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(300f, 100f, 500f, 450f),
-            Resizable = false
+            Geometry = new NuiRect(50f, 100f, 540f, 300f),
+            Resizable = true
         };
     }
 
@@ -52,12 +48,20 @@ public sealed class DomainChangerPresenter : ScryPresenter<DomainChangerView>
         // Initialize bind values
         Token().SetBindValue(View.Title, "Domain Changer");
         Token().SetBindValue(View.ChangeButtonsEnabled, true);
+        Token().SetBindValue(View.ShowError, false);
+        Token().SetBindValue(View.ErrorMessage, "");
 
         if (_player.LoginCreature == null)
         {
-            Token().SetBindValue(View.CharacterInfo, "No character available");
-            Token().SetBindValue(View.CurrentDomains, "You must be logged in to change domains.");
-            Token().SetBindValue(View.AvailableDomains, "");
+            Token().SetBindValue(View.CharacterName, "N/A");
+            Token().SetBindValue(View.DeityName, "N/A");
+            Token().SetBindValue(View.Domain1Name, "N/A");
+            Token().SetBindValue(View.Domain2Name, "N/A");
+            Token().SetBindValue(View.DomainOptions, new List<NuiComboEntry> { new NuiComboEntry("No character available", 0) });
+            Token().SetBindValue(View.SelectedDomainIndex, 0);
+            Token().SetBindValue(View.ChangeButtonsEnabled, false);
+            Token().SetBindValue(View.ShowError, true);
+            Token().SetBindValue(View.ErrorMessage, "You must be logged in to change domains.");
             return;
         }
 
@@ -65,10 +69,15 @@ public sealed class DomainChangerPresenter : ScryPresenter<DomainChangerView>
         int clericLevels = NWN.Core.NWScript.GetLevelByClass(NWN.Core.NWScript.CLASS_TYPE_CLERIC, _player.LoginCreature);
         if (clericLevels == 0)
         {
-            Token().SetBindValue(View.CharacterInfo, $"Character: {_player.LoginCreature.Name}");
-            Token().SetBindValue(View.CurrentDomains, "You must be a Cleric to change domains.");
-            Token().SetBindValue(View.AvailableDomains, "");
+            Token().SetBindValue(View.CharacterName, _player.LoginCreature.Name);
+            Token().SetBindValue(View.DeityName, "N/A");
+            Token().SetBindValue(View.Domain1Name, "N/A");
+            Token().SetBindValue(View.Domain2Name, "N/A");
+            Token().SetBindValue(View.DomainOptions, new List<NuiComboEntry> { new NuiComboEntry("Not available", 0) });
+            Token().SetBindValue(View.SelectedDomainIndex, 0);
             Token().SetBindValue(View.ChangeButtonsEnabled, false);
+            Token().SetBindValue(View.ShowError, true);
+            Token().SetBindValue(View.ErrorMessage, "You must be a Cleric to change domains.");
             return;
         }
 
@@ -92,10 +101,21 @@ public sealed class DomainChangerPresenter : ScryPresenter<DomainChangerView>
             {
                 int remainingSeconds = oneMonthInSeconds - timeSinceLastChange;
                 int remainingDays = remainingSeconds / (60 * 60 * 24);
-                Token().SetBindValue(View.CharacterInfo, $"Character: {_player.LoginCreature.Name}");
-                Token().SetBindValue(View.CurrentDomains, $"You must wait {remainingDays} more days before changing domains again.");
-                Token().SetBindValue(View.AvailableDomains, "");
+
+                Token().SetBindValue(View.CharacterName, _player.LoginCreature.Name);
+                string deity = NWN.Core.NWScript.GetDeity(_player.LoginCreature);
+                Token().SetBindValue(View.DeityName, deity);
+
+                int domain1 = NWN.Core.NWScript.GetDomain(_player.LoginCreature, 1);
+                int domain2 = NWN.Core.NWScript.GetDomain(_player.LoginCreature, 2);
+                Token().SetBindValue(View.Domain1Name, GetDomainName(domain1));
+                Token().SetBindValue(View.Domain2Name, GetDomainName(domain2));
+
+                Token().SetBindValue(View.DomainOptions, new List<NuiComboEntry> { new NuiComboEntry("Nope", 0) });
+                Token().SetBindValue(View.SelectedDomainIndex, 0);
                 Token().SetBindValue(View.ChangeButtonsEnabled, false);
+                Token().SetBindValue(View.ShowError, true);
+                Token().SetBindValue(View.ErrorMessage, $"{remainingDays} days until you can change domains again.");
                 return;
             }
         }
@@ -109,11 +129,11 @@ public sealed class DomainChangerPresenter : ScryPresenter<DomainChangerView>
 
         switch (ev.ElementId)
         {
-            case "btn_change_first_domain":
+            case "btn_change_domain_1":
                 HandleChangeDomain(1);
                 break;
 
-            case "btn_change_second_domain":
+            case "btn_change_domain_2":
                 HandleChangeDomain(2);
                 break;
         }
@@ -130,144 +150,76 @@ public sealed class DomainChangerPresenter : ScryPresenter<DomainChangerView>
         string domain1Name = GetDomainName(domain1);
         string domain2Name = GetDomainName(domain2);
 
-        Token().SetBindValue(View.CharacterInfo, $"Character: {_player.LoginCreature.Name} | Deity: {deity}");
-
-        StringBuilder currentDomainsText = new();
-        currentDomainsText.AppendLine("=== Current Domains ===");
-        currentDomainsText.AppendLine($"First Domain: {domain1Name} (ID: {domain1})");
-        currentDomainsText.AppendLine($"Second Domain: {domain2Name} (ID: {domain2})");
-        Token().SetBindValue(View.CurrentDomains, currentDomainsText.ToString());
+        // Set character and deity info
+        Token().SetBindValue(View.CharacterName, _player.LoginCreature.Name);
+        Token().SetBindValue(View.DeityName, deity);
+        Token().SetBindValue(View.Domain1Name, domain1Name);
+        Token().SetBindValue(View.Domain2Name, domain2Name);
 
         // Get available domains from deity's idol
         NwPlaceable? idol = FindIdol(deity);
         if (idol == null)
         {
-            Token().SetBindValue(View.AvailableDomains, $"{deity} has no idol in Amia...");
+            Token().SetBindValue(View.DomainOptions, new List<NuiComboEntry> { new NuiComboEntry($"{deity} has no idol in Amia...", 0) });
+            Token().SetBindValue(View.SelectedDomainIndex, 0);
             Token().SetBindValue(View.ChangeButtonsEnabled, false);
             return;
         }
 
-        StringBuilder availableDomainsText = new();
-        availableDomainsText.AppendLine("=== Available Domains from Your Deity ===");
-
+        // Build available domains list
+        _availableDomains.Clear();
         for (int i = 1; i <= 6; i++)
         {
             int domainId = NWN.Core.NWScript.GetLocalInt(idol, $"dom_{i}");
             if (domainId > 0)
             {
-                string domainName = GetDomainName(domainId);
-                availableDomainsText.AppendLine($"{i}. {domainName} (ID: {domainId})");
+                _availableDomains.Add((domainId, GetDomainName(domainId)));
             }
         }
 
-        Token().SetBindValue(View.AvailableDomains, availableDomainsText.ToString());
+        if (_availableDomains.Count == 0)
+        {
+            Token().SetBindValue(View.DomainOptions, new List<NuiComboEntry> { new NuiComboEntry("No domains available", 0) });
+            Token().SetBindValue(View.SelectedDomainIndex, 0);
+            Token().SetBindValue(View.ChangeButtonsEnabled, false);
+            return;
+        }
+
+        // Populate dropdown with domain entries
+        List<NuiComboEntry> domainEntries = _availableDomains.Select((d, index) => new NuiComboEntry(d.name, index)).ToList();
+        Token().SetBindValue(View.DomainOptions, domainEntries);
+        Token().SetBindValue(View.SelectedDomainIndex, 0);
     }
 
     private void HandleChangeDomain(int domainSlot)
     {
         if (_player.LoginCreature == null) return;
 
-        // Show a modal to select which domain to change to
-        OpenDomainSelectionModal(domainSlot);
-    }
+        // Get the selected index from the dropdown
+        int selectedIndex = Token().GetBindValue(View.SelectedDomainIndex);
 
-    private void OpenDomainSelectionModal(int domainSlot)
-    {
-        if (_player.LoginCreature == null) return;
+        if (selectedIndex < 0 || selectedIndex >= _availableDomains.Count)
+        {
+            _player.SendServerMessage("Invalid domain selection.", ColorConstants.Orange);
+            return;
+        }
 
-        string deity = NWN.Core.NWScript.GetDeity(_player.LoginCreature);
-        NwPlaceable? idol = FindIdol(deity);
-        if (idol == null) return;
-
+        int newDomainId = _availableDomains[selectedIndex].id;
         int currentDomain = NWN.Core.NWScript.GetDomain(_player.LoginCreature, domainSlot);
-        int otherDomain = NWN.Core.NWScript.GetDomain(_player.LoginCreature, domainSlot == 1 ? 2 : 1);
+        int otherDomainSlot = domainSlot == 1 ? 2 : 1;
+        int otherDomain = NWN.Core.NWScript.GetDomain(_player.LoginCreature, otherDomainSlot);
 
-        // Build available domain list
-        List<(int id, string name)> availableDomains = new();
-        for (int i = 1; i <= 6; i++)
+        // Check if trying to change to the same domain
+        if (newDomainId == currentDomain)
         {
-            int domainId = NWN.Core.NWScript.GetLocalInt(idol, $"dom_{i}");
-            if (domainId > 0 && domainId != currentDomain && domainId != otherDomain)
-            {
-                availableDomains.Add((domainId, GetDomainName(domainId)));
-            }
-        }
-
-        if (availableDomains.Count == 0)
-        {
-            _player.SendServerMessage("No available domains to change to.", ColorConstants.Orange);
+            _player.SendServerMessage($"You already have {GetDomainName(newDomainId)} in that slot!", ColorConstants.Orange);
             return;
         }
 
-        // For now, let's show a simple selection by having them type the domain ID
-        // In the future, this could be a dropdown or list selection
-        string slotText = domainSlot == 1 ? "First" : "Second";
-        StringBuilder message = new();
-        message.AppendLine($"Available domains to change your {slotText} domain to:");
-        foreach (var (id, name) in availableDomains)
+        // Check if trying to change to the same domain as the other slot
+        if (newDomainId == otherDomain)
         {
-            message.AppendLine($"  {id} - {name}");
-        }
-        message.AppendLine("\nClick the domain buttons below to select:");
-
-        // For now, we'll use the first available domain as an example
-        // In a full implementation, you'd create buttons for each domain
-        if (availableDomains.Count > 0)
-        {
-            int newDomainId = availableDomains[0].id;
-            string newDomainName = availableDomains[0].name;
-            string oldDomainName = GetDomainName(currentDomain);
-
-            _pendingDomainSlot = domainSlot;
-            _pendingNewDomainId = newDomainId;
-            _pendingOldDomainName = oldDomainName;
-            _pendingNewDomainName = newDomainName;
-
-            OpenConfirmModal();
-        }
-    }
-
-    private void OpenConfirmModal()
-    {
-        if (_confirmModalToken.HasValue)
-            return;
-
-        NuiWindow modal = View.BuildConfirmModal(_pendingOldDomainName, _pendingNewDomainName, _pendingDomainSlot);
-        if (_player.TryCreateNuiWindow(modal, out NuiWindowToken modalToken))
-        {
-            _confirmModalToken = modalToken;
-
-            string slotText = _pendingDomainSlot == 1 ? "First" : "Second";
-            string message = $"Change your {slotText} domain from:\n\n" +
-                           $"{_pendingOldDomainName}\n\nto:\n\n{_pendingNewDomainName}\n\n" +
-                           $"This action can only be done once per month.\n\nAre you sure?";
-
-            _confirmModalToken.Value.SetBindValue(View.ModalMessage, message);
-            _confirmModalToken.Value.OnNuiEvent += HandleConfirmModalEvent;
-        }
-    }
-
-    private void HandleConfirmModalEvent(ModuleEvents.OnNuiEvent ev)
-    {
-        if (ev.EventType != NuiEventType.Click) return;
-
-        switch (ev.ElementId)
-        {
-            case "btn_domain_confirm":
-                ConfirmDomainChange();
-                break;
-
-            case "btn_domain_cancel":
-                CloseConfirmModal();
-                break;
-        }
-    }
-
-    private void ConfirmDomainChange()
-    {
-        if (_player.LoginCreature == null)
-        {
-            CloseConfirmModal();
+            _player.SendServerMessage($"You already have {GetDomainName(otherDomain)} in your other domain slot!", ColorConstants.Red);
             return;
         }
 
@@ -275,7 +227,7 @@ public sealed class DomainChangerPresenter : ScryPresenter<DomainChangerView>
         Token().SetBindValue(View.ChangeButtonsEnabled, false);
 
         // Perform the domain change
-        ChangeDomain(_player.LoginCreature, _pendingDomainSlot, _pendingNewDomainId);
+        ChangeDomain(_player.LoginCreature, domainSlot, newDomainId);
 
         // Update timestamp on PC Key
         NwItem? pcKey = _player.LoginCreature.FindItemWithTag("ds_pckey");
@@ -286,17 +238,6 @@ public sealed class DomainChangerPresenter : ScryPresenter<DomainChangerView>
             _player.SendServerMessage("Domain change timestamp recorded. You can change domains again in 30 days.", ColorConstants.Cyan);
         }
 
-        // Reset the change flags
-        if (pcKey != null)
-        {
-            if (_pendingDomainSlot == 1)
-                NWN.Core.NWScript.SetLocalInt(pcKey, "jj_changed_domain_1", 0);
-            else
-                NWN.Core.NWScript.SetLocalInt(pcKey, "jj_changed_domain_2", 0);
-        }
-
-        CloseConfirmModal();
-
         // Refresh display
         UpdateDomainInfo();
 
@@ -304,22 +245,6 @@ public sealed class DomainChangerPresenter : ScryPresenter<DomainChangerView>
         Token().SetBindValue(View.ChangeButtonsEnabled, true);
     }
 
-    private void CloseConfirmModal()
-    {
-        if (_confirmModalToken.HasValue)
-        {
-            _confirmModalToken.Value.OnNuiEvent -= HandleConfirmModalEvent;
-            try
-            {
-                _confirmModalToken.Value.Close();
-            }
-            catch
-            {
-                // ignore
-            }
-            _confirmModalToken = null;
-        }
-    }
 
     private void ChangeDomain(NwCreature creature, int domainSlot, int newDomainId)
     {
@@ -489,7 +414,6 @@ public sealed class DomainChangerPresenter : ScryPresenter<DomainChangerView>
 
     public override void Close()
     {
-        CloseConfirmModal();
 
         try
         {
