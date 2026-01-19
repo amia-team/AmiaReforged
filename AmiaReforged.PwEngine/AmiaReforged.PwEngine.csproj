@@ -34,7 +34,6 @@
     <ItemGroup>
         <Folder Include="Features\Codex\" />
         <Folder Include="Features\EventBus\" />
-        <Folder Include="Features\Player\Dashboard\Emotes\" />
         <Folder Include="Features\Player\Dashboard\Utilities\" />
         <Folder Include="Features\WorldEngine\Subsystems\Harvesting\Tests\" />
         <Folder Include="Migrations\" />

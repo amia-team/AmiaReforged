@@ -1,4 +1,5 @@
-﻿using AmiaReforged.PwEngine.Features.Player.Dashboard.Hide;
+﻿﻿using AmiaReforged.PwEngine.Features.Player.Dashboard.Emotes;
+using AmiaReforged.PwEngine.Features.Player.Dashboard.Hide;
 using AmiaReforged.PwEngine.Features.Player.Dashboard.Pray;
 using AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
@@ -171,8 +172,23 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
 
     private void HandleEmotesButtonClick()
     {
-        _player.SendServerMessage("Emotes feature - Coming soon!", ColorConstants.Orange);
-        // TODO: Implement emotes/animations system
+        if (_player.LoginCreature == null)
+        {
+            _player.SendServerMessage("Error: Could not find your character.", ColorConstants.Red);
+            return;
+        }
+
+        // Check if Emotes window is already open - if so, close it (toggle behavior)
+        if (WindowDirector.Value.IsWindowOpen(_player, typeof(EmotesPresenter)))
+        {
+            WindowDirector.Value.CloseWindow(_player, typeof(EmotesPresenter));
+            return;
+        }
+
+        // Create the Emotes window and let WindowDirector manage it
+        EmotesView emotesView = new();
+        EmotesPresenter emotesPresenter = new(emotesView, _player);
+        WindowDirector.Value.OpenWindow(emotesPresenter);
     }
 
     private void HandlePlayerToolsButtonClick()
