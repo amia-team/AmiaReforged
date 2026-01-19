@@ -14,8 +14,7 @@ public sealed class PlayerDashboardView : ScryView<PlayerDashboardPresenter>
     public PlayerDashboardView(NwPlayer player)
     {
         Presenter = new PlayerDashboardPresenter(this, player);
-        InjectionService injector = AnvilCore.GetService<InjectionService>()!;
-        injector.Inject(Presenter);
+        // Injection is handled by PlayerDashboardService.OpenDashboard()
     }
 
     public override NuiLayout RootLayout()

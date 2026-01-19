@@ -19,6 +19,9 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
     [Inject]
     private PrayerService PrayerService { get; init; } = null!;
 
+    [Inject]
+    private Lazy<WindowDirector> WindowDirector { get; init; } = null!;
+
     public PlayerDashboardPresenter(PlayerDashboardView view, NwPlayer player)
     {
         _player = player;
@@ -34,17 +37,17 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
         _window = new NuiWindow(View.RootLayout(), null!)
         {
             Geometry = new NuiRect(0f, 50f, 120f, 250f),
-            Collapsed = false,
             Transparent = true,
             Resizable = false,
             Closable = false,
+            Collapsed = false,
             Border = false
         };
     }
 
     public override void Create()
     {
-
+        // WindowDirector calls InitBefore() before calling Create(), so _window should already exist
         if (_window == null)
         {
             _player.SendServerMessage(
@@ -54,7 +57,9 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
         }
 
         _player.TryCreateNuiWindow(_window, out _token);
-        _token.OnNuiEvent += ProcessEvent;
+
+        // Don't subscribe to OnNuiEvent here - WindowDirector.HandleNuiEvents already handles this
+        // and calls presenter.ProcessEvent(obj) when events occur
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent obj)
@@ -82,7 +87,7 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
                 HandleUtilitiesButtonClick();
                 break;
             case "btn_close":
-                Close();
+                RaiseCloseEvent();
                 break;
         }
     }
@@ -93,12 +98,12 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
 
         if (creature == null)
         {
-            _player.SendServerMessage("Error: Could not find your character.", ColorConstants.Red);
             return;
         }
 
         // Check if on rest cooldown
         int cooldownRemaining = DashboardService.GetRestCooldownRemaining(creature);
+
         if (cooldownRemaining > 0)
         {
             int minutes = cooldownRemaining / 60;
@@ -109,11 +114,11 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
 
         // Set AR_RestChoice to 1 so the rest system knows this is a player-initiated rest
         NWScript.SetLocalInt(creature, sVarName: "AR_RestChoice", 1);
+        int checkValue = NWScript.GetLocalInt(creature, "AR_RestChoice");
 
-        // Raise the close event to notify WindowDirector to properly clean up
-        RaiseCloseEvent();
-
-        // Trigger rest action - this will call OnRestStarted again, but AR_RestChoice is now 1
+        // Clear action queue and trigger rest
+        // Dashboard stays open so player can continue to use it during rest
+        creature.ClearActionQueue();
         creature.ActionRest();
 
         // Check for death from debuffs (from ca_rest_rest script)
@@ -147,11 +152,18 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
             return;
         }
 
+        // Check if Hide Equipment window is already open - if so, close it (toggle behavior)
+        if (WindowDirector.Value.IsWindowOpen(_player, typeof(HideEquipmentPresenter)))
+        {
+            WindowDirector.Value.CloseWindow(_player, typeof(HideEquipmentPresenter));
+            return;
+        }
 
-        // Create and show the Hide Equipment window
+        // Create the Hide Equipment window and let WindowDirector manage it
         HideEquipmentView hideView = new();
         HideEquipmentPresenter hidePresenter = new(hideView, _player);
-        hidePresenter.Create();
+        // Don't call InitBefore/Create - WindowDirector.OpenWindow does that
+        WindowDirector.Value.OpenWindow(hidePresenter);
     }
 
     private void HandleEmotesButtonClick()
@@ -179,7 +191,7 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
 
     public override void Close()
     {
-        _token.OnNuiEvent -= ProcessEvent;
+        // WindowDirector handles event routing, so we don't need to unsubscribe
         _token.Close();
     }
 }

@@ -169,7 +169,6 @@ public class PlayerDashboardService
             return;
         }
 
-
         // If we get here, AR_RestChoice = 1, meaning the player clicked Rest in the dashboard
         // The Presenter already checked the cooldown, so we can proceed with other checks
 
@@ -583,12 +582,11 @@ public class PlayerDashboardService
         // Test against d100 - if successful, spawn ambush IMMEDIATELY to interrupt rest
         if (roll <= possibility)
         {
-            player.SendServerMessage("[AMBUSH DEBUG] Roll success! Spawning ambush NOW...", ColorConstants.Green);
             DoAmbush(player, creature, area, spawnPoint);
         }
         else
         {
-            player.SendServerMessage("[AMBUSH DEBUG] Roll failed - no ambush", ColorConstants.Yellow);
+            player.SendServerMessage("Roll completed: No ambush", ColorConstants.Yellow);
         }
     }
 
