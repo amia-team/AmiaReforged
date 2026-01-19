@@ -30,7 +30,7 @@ public sealed class EmotesPresenter : ScryPresenter<EmotesView>
     {
         _window = new NuiWindow(View.RootLayout(), null!)
         {
-            Geometry = new NuiRect(115f, 145f, 350f, 320f),
+            Geometry = new NuiRect(25f, 90f, 350f, 320f),
             Transparent = true,
             Closable = false,
             Border = false,
@@ -125,8 +125,42 @@ public sealed class EmotesPresenter : ScryPresenter<EmotesView>
             return;
         }
 
-        Model.SelectedTarget = targetEvent.TargetObject as NwGameObject;
-        UpdateView();
+        // Validate that the target is acceptable
+        if (targetEvent.TargetObject is NwCreature targetCreature)
+        {
+            NwCreature? playerCreature = _player.LoginCreature;
+
+            // Check if target is: self, an associate, a bottled companion, or another player
+            bool isSelf = targetCreature == playerCreature;
+            bool isAssociate = playerCreature != null && targetCreature.Master == playerCreature;
+            bool isBottledCompanion = IsBottledCompanion(targetCreature);
+            bool isOtherPlayer = targetCreature.IsPlayerControlled(out NwPlayer? _);
+
+            if (isSelf || isAssociate || isBottledCompanion || isOtherPlayer)
+            {
+                Model.SelectedTarget = targetEvent.TargetObject as NwGameObject;
+                UpdateView();
+            }
+            else
+            {
+                _player.SendServerMessage("You can only target yourself, your associates, your bottled companions, or another player.", ColorConstants.Orange);
+            }
+        }
+        else
+        {
+            _player.SendServerMessage("You can only target yourself, your associates, your bottled companions, or another player.", ColorConstants.Orange);
+        }
+    }
+
+    private bool IsBottledCompanion(NwCreature creature)
+    {
+        NwItem? pcKey = _player.ControlledCreature?.Inventory.Items.FirstOrDefault(item => item.Tag == "ds_pckey");
+
+        if (pcKey == null) return false;
+
+        string publicKey = pcKey.Name.Length >= 8 ? pcKey.Name.Substring(0, 8) : pcKey.Name;
+        string expectedTag = $"ds_npc_{publicKey}";
+        return creature.Tag == expectedTag;
     }
 
     private void HandlePerformIndividual()
@@ -157,12 +191,12 @@ public sealed class EmotesPresenter : ScryPresenter<EmotesView>
 
         EmoteOption selectedEmote = Model.IndividualEmotes[emoteIndex];
 
-        // Determine the target - use selected target if it's the player's associate
+        // Determine the target - use selected target if it's the player's associate or bottled companion
         NwGameObject target = creature;
         if (Model.SelectedTarget != null && Model.SelectedTarget is NwCreature targetCreature)
         {
-            // Check if target is an associate of the player
-            if (targetCreature.Master == creature)
+            // Check if target is an associate of the player OR a bottled companion
+            if (targetCreature.Master == creature || IsBottledCompanion(targetCreature))
             {
                 target = targetCreature;
             }
@@ -897,9 +931,20 @@ public sealed class EmotesPresenter : ScryPresenter<EmotesView>
             return;
         }
 
-        // Create the Transform window
+        // Determine the target creature - use selected target if it's an associate or bottled companion
+        NwCreature targetCreature = creature;
+        if (Model.SelectedTarget != null && Model.SelectedTarget is NwCreature selectedCreature)
+        {
+            // Check if target is an associate of the player OR a bottled companion
+            if (selectedCreature.Master == creature || IsBottledCompanion(selectedCreature))
+            {
+                targetCreature = selectedCreature;
+            }
+        }
+
+        // Create the Transform window with the correct target
         EmoteTransformView transformView = new();
-        EmoteTransformPresenter transformPresenter = new(transformView, _player);
+        EmoteTransformPresenter transformPresenter = new(transformView, _player, targetCreature);
         windowDirector.OpenWindow(transformPresenter);
     }
 
