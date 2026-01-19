@@ -207,14 +207,352 @@ public sealed class EmotesPresenter : ScryPresenter<EmotesView>
 
     private void RequestMutualEmotePermission(NwCreature target, EmoteOption emote)
     {
-        // For now, just send a message - we'll need to implement a consent system later
-        _player.SendServerMessage($"Requesting {emote.Name} with {target.Name}...", ColorConstants.Yellow);
-        target.ControllingPlayer?.SendServerMessage(
-            $"{_player.LoginCreature?.Name} wants to perform '{emote.Name}' with you. (Consent system coming soon)",
-            ColorConstants.Yellow);
+        NwPlayer? targetPlayer = target.ControllingPlayer;
+        if (targetPlayer == null || _player.LoginCreature == null) return;
 
-        // TODO: Implement proper consent dialog and execution
-        _player.SendServerMessage("Mutual emote consent system is not yet implemented. Coming soon!", ColorConstants.Orange);
+        // Create and show the consent popup to the target player
+        EmoteConsentView consentView = new();
+        EmoteConsentPresenter consentPresenter = new(
+            consentView,
+            targetPlayer,
+            _player,
+            _player.LoginCreature,
+            emote,
+            (consented) =>
+            {
+                if (consented)
+                {
+                    // Perform the mutual emote
+                    PerformMutualEmote(_player.LoginCreature, target, emote.Id);
+                }
+            });
+
+        // Use WindowDirector to open the consent window
+        WindowDirector.Value.OpenWindow(consentPresenter);
+
+        // Notify the requester
+        _player.SendServerMessage($"Requesting {emote.Name} with {target.Name}...", ColorConstants.Yellow);
+    }
+
+    private void PerformMutualEmote(NwCreature user, NwCreature target, int emoteId)
+    {
+        switch (emoteId)
+        {
+            case 38: // Kiss Standing
+                PerformKiss(target, user, false);
+                break;
+            case 39: // Kiss Lying Down
+                PerformKissLyingDown(user, target);
+                break;
+            case 40: // Hug
+                PerformKiss(target, user, true);
+                break;
+            case 41: // Hug from Behind
+                PerformGetCloseTo(user, target, true);
+                break;
+            case 42: // Back Close
+                PerformGetCloseTo(user, target, false);
+                break;
+            case 43: // Waltz
+                PerformWaltz(user, target);
+                break;
+            case 44: // Lap Sit (Ground, Facing)
+                PerformLapSit(user, target, true);
+                break;
+            case 45: // Lap Sit (Ground, Away)
+                PerformLapSit(user, target, false);
+                break;
+            case 46: // Lap Sit (Chair, Facing)
+            case 47: // Lap Sit (Chair, Away)
+                // Chair lap sit is more complex and requires placeable creation
+                // For now, use ground lap sit behavior
+                PerformLapSit(user, target, emoteId == 46);
+                break;
+            default:
+                _player.SendServerMessage("Unknown mutual emote.", ColorConstants.Red);
+                break;
+        }
+    }
+
+    // Helper method to calculate opposite direction
+    private float GetOppositeDirection(float facing)
+    {
+        return (facing + 180.0f) % 360.0f;
+    }
+
+    // Helper method to normalize direction
+    private float NormalizeDirection(float angle)
+    {
+        while (angle < 0) angle += 360.0f;
+        while (angle >= 360.0f) angle -= 360.0f;
+        return angle;
+    }
+
+    private void PerformKiss(NwCreature kisser, NwCreature kissee, bool isHug)
+    {
+        TimeSpan ghostDuration = TimeSpan.FromSeconds(8);
+        TimeSpan emoteDuration = TimeSpan.FromSeconds(9999);
+
+        // Apply ghost effect (makes them non-blocking)
+        Effect ghost = Effect.CutsceneGhost();
+        kisser.ApplyEffect(EffectDuration.Temporary, ghost, ghostDuration);
+        kissee.ApplyEffect(EffectDuration.Temporary, ghost, ghostDuration);
+
+        Location? kisseeLocation = kissee.Location;
+        if (kisseeLocation == null) return;
+
+        Location? kisserSaveLocation = kisser.Location;
+
+        // Calculate distance based on gender
+        float kisserDistance = 1.0f;
+        if (kisser.Gender == kissee.Gender && kisser.Gender == Gender.Male)
+            kisserDistance += 0.34f;
+        else if (kisser.Gender == kissee.Gender && kisser.Gender == Gender.Female)
+            kisserDistance -= 0.3f;
+
+        float kisseeFacing = kisseeLocation.Rotation;
+        float kisserFacing = GetOppositeDirection(kisseeFacing);
+
+        // Calculate kisser position
+        System.Numerics.Vector3 kisseePos = kisseeLocation.Position;
+        System.Numerics.Vector3 direction = new System.Numerics.Vector3(
+            (float)Math.Cos(kisseeFacing * Math.PI / 180.0f),
+            (float)Math.Sin(kisseeFacing * Math.PI / 180.0f),
+            0f
+        );
+        System.Numerics.Vector3 kisserPos = kisseePos + direction * kisserDistance;
+        Location kisserLocation = Location.Create(kisseeLocation.Area, kisserPos, kisserFacing);
+
+        // Move kisser to position
+        kisser.ActionJumpToLocation(kisserLocation);
+
+        // Perform animations after delay
+        Animation animation = isHug ? Animation.LoopingCustom14 : Animation.LoopingCustom11;
+
+        Task.Run(async () =>
+        {
+            await Task.Delay(3000);
+            await NwTask.SwitchToMainThread();
+
+            await kisser.PlayAnimation(animation, 1.0f, true, emoteDuration);
+            await kissee.PlayAnimation(animation, 1.0f, true, emoteDuration);
+
+            // Return to saved location after duration
+            if (kisserSaveLocation != null)
+            {
+                await Task.Delay((int)emoteDuration.TotalMilliseconds);
+                await kisser.ActionJumpToLocation(kisserSaveLocation);
+            }
+        }).ContinueWith(t => { if (t.IsFaulted && t.Exception != null) throw t.Exception; });
+    }
+
+    private void PerformKissLyingDown(NwCreature user, NwCreature target)
+    {
+        NwCreature kisser, kissee;
+        Animation kisserAnim, kisseeAnim;
+
+        // Male lies on top
+        if (target.Gender == Gender.Male)
+        {
+            kissee = user;
+            kisser = target;
+        }
+        else
+        {
+            kisser = user;
+            kissee = target;
+        }
+
+        // Set animations based on gender
+        kisserAnim = kisser.Gender == Gender.Female ? Animation.LoopingCustom13 : Animation.LoopingCustom12;
+        kisseeAnim = kissee.Gender == Gender.Male ? Animation.LoopingCustom13 : Animation.LoopingCustom12;
+
+        // Calculate distance based on race
+        float kisserDistance = 0.25f;
+        if ((kisser.Race.RacialType == RacialType.Human && kissee.Race.RacialType == RacialType.HalfElf) ||
+            (kisser.Race.RacialType == RacialType.HalfElf && kissee.Race.RacialType == RacialType.Human) ||
+            (kisser.Race.RacialType == kissee.Race.RacialType))
+        {
+            kisserDistance = 0.25f;
+        }
+        else if (kissee.Race.RacialType == RacialType.Elf)
+            kisserDistance = 0.4f;
+        else if (kisser.Race.RacialType == RacialType.Elf)
+            kisserDistance = 0.15f;
+
+        // Adjust for same gender
+        if (kisser.Gender == kissee.Gender)
+        {
+            if (kisser.Gender == Gender.Female) kisserDistance += 0.1f;
+            else kisserDistance -= 0.1f;
+        }
+
+        TimeSpan ghostDuration = TimeSpan.FromSeconds(8);
+        Effect ghost = Effect.CutsceneGhost();
+        kisser.ApplyEffect(EffectDuration.Temporary, ghost, ghostDuration);
+        kissee.ApplyEffect(EffectDuration.Temporary, ghost, ghostDuration);
+
+        Location? targetLocation = target.Location;
+        if (targetLocation == null) return;
+
+        float kisserFacing = targetLocation.Rotation;
+        float kisseeFacing = GetOppositeDirection(kisserFacing);
+
+        // Calculate positions
+        System.Numerics.Vector3 targetPos = targetLocation.Position;
+        System.Numerics.Vector3 direction = new System.Numerics.Vector3(
+            (float)Math.Cos(kisserFacing * Math.PI / 180.0f),
+            (float)Math.Sin(kisserFacing * Math.PI / 180.0f),
+            0f
+        );
+        System.Numerics.Vector3 kisseePos = targetPos + direction * kisserDistance;
+
+        Location kisseeLocation = Location.Create(targetLocation.Area, kisseePos, kisseeFacing);
+
+        kissee.ActionJumpToLocation(kisseeLocation);
+        kisser.ActionJumpToLocation(targetLocation);
+
+        Task.Run(async () =>
+        {
+            await Task.Delay(2000);
+            await NwTask.SwitchToMainThread();
+
+            await kissee.PlayAnimation(kisseeAnim, 1.0f, true, TimeSpan.FromHours(2.77));
+            await kisser.PlayAnimation(kisserAnim, 1.0f, true, TimeSpan.FromHours(2.77));
+        }).ContinueWith(t => { if (t.IsFaulted && t.Exception != null) throw t.Exception; });
+    }
+
+    private void PerformWaltz(NwCreature user, NwCreature target)
+    {
+        TimeSpan ghostDuration = TimeSpan.FromSeconds(5);
+        Effect ghost = Effect.CutsceneGhost();
+        user.ApplyEffect(EffectDuration.Temporary, ghost, ghostDuration);
+        target.ApplyEffect(EffectDuration.Temporary, ghost, ghostDuration);
+
+        Location? targetLocation = target.Location;
+        if (targetLocation == null) return;
+
+        float targetFacing = targetLocation.Rotation;
+        float userFacing = GetOppositeDirection(targetFacing);
+        float distance = 0.3f;
+
+        System.Numerics.Vector3 targetPos = targetLocation.Position;
+        System.Numerics.Vector3 direction = new System.Numerics.Vector3(
+            (float)Math.Cos(targetFacing * Math.PI / 180.0f),
+            (float)Math.Sin(targetFacing * Math.PI / 180.0f),
+            0f
+        );
+        System.Numerics.Vector3 userPos = targetPos + direction * distance;
+        Location userLocation = Location.Create(targetLocation.Area, userPos, userFacing);
+
+        user.ActionJumpToLocation(userLocation);
+
+        Task.Run(async () =>
+        {
+            await Task.Delay(3000);
+            await NwTask.SwitchToMainThread();
+
+            await user.PlayAnimation(Animation.LoopingCustom20, 1.0f, true, TimeSpan.FromHours(2.77));
+            await target.PlayAnimation(Animation.LoopingCustom20, 1.0f, true, TimeSpan.FromHours(2.77));
+
+            // Make user uncontrollable briefly for camera effect
+            await Task.Delay(300);
+            user.Commandable = false;
+            await Task.Delay(1700);
+            user.Commandable = true;
+        }).ContinueWith(t => { if (t.IsFaulted && t.Exception != null) throw t.Exception; });
+    }
+
+    private void PerformLapSit(NwCreature user, NwCreature target, bool facing)
+    {
+        // Target sits first
+        target.PlayAnimation(Animation.LoopingSitCross, 1.0f, true, TimeSpan.FromHours(2.77));
+
+        TimeSpan ghostDuration = TimeSpan.FromSeconds(15);
+        Effect ghost = Effect.CutsceneGhost();
+        user.ApplyEffect(EffectDuration.Temporary, ghost, ghostDuration);
+        target.ApplyEffect(EffectDuration.Temporary, ghost, ghostDuration);
+
+        Location? targetLocation = target.Location;
+        if (targetLocation == null) return;
+
+        float targetFacing = targetLocation.Rotation;
+        float userFacing;
+        System.Numerics.Vector3 targetPos = targetLocation.Position;
+        System.Numerics.Vector3 userPos;
+
+        if (facing) // Facing target
+        {
+            userFacing = GetOppositeDirection(targetFacing);
+            targetFacing = NormalizeDirection(targetFacing + 20.0f);
+            userFacing = NormalizeDirection(userFacing - 10.0f);
+
+            System.Numerics.Vector3 direction = new System.Numerics.Vector3(
+                (float)Math.Cos(targetFacing * Math.PI / 180.0f),
+                (float)Math.Sin(targetFacing * Math.PI / 180.0f),
+                0f
+            );
+            userPos = targetPos - direction * 0.25f;
+        }
+        else // Facing away
+        {
+            userFacing = targetFacing;
+            System.Numerics.Vector3 direction = new System.Numerics.Vector3(
+                (float)Math.Cos(targetFacing * Math.PI / 180.0f),
+                (float)Math.Sin(targetFacing * Math.PI / 180.0f),
+                0f
+            );
+            userPos = targetPos + direction * 0.25f;
+        }
+
+        Location userLocation = Location.Create(targetLocation.Area, userPos, userFacing);
+        user.ActionJumpToLocation(userLocation);
+
+        Task.Run(async () =>
+        {
+            await Task.Delay(1000);
+            await NwTask.SwitchToMainThread();
+            await user.PlayAnimation(Animation.LoopingSitCross, 1.0f, true, TimeSpan.FromHours(2.77));
+        }).ContinueWith(t => { if (t.IsFaulted && t.Exception != null) throw t.Exception; });
+    }
+
+    private void PerformGetCloseTo(NwCreature user, NwCreature target, bool fromBehind)
+    {
+        TimeSpan ghostDuration = TimeSpan.FromSeconds(15);
+        Effect ghost = Effect.CutsceneGhost();
+        user.ApplyEffect(EffectDuration.Temporary, ghost, ghostDuration);
+        target.ApplyEffect(EffectDuration.Temporary, ghost, ghostDuration);
+
+        Location? targetLocation = target.Location;
+        if (targetLocation == null) return;
+
+        float targetFacing;
+        float userFacing;
+        float vectorMod;
+
+        if (fromBehind) // Hug from behind
+        {
+            targetFacing = GetOppositeDirection(target.Rotation);
+            userFacing = target.Rotation;
+            vectorMod = 0.25f;
+        }
+        else // Back close
+        {
+            targetFacing = target.Rotation;
+            userFacing = targetFacing;
+            vectorMod = 0.30f;
+        }
+
+        System.Numerics.Vector3 targetPos = targetLocation.Position;
+        System.Numerics.Vector3 direction = new System.Numerics.Vector3(
+            (float)Math.Cos(targetFacing * Math.PI / 180.0f),
+            (float)Math.Sin(targetFacing * Math.PI / 180.0f),
+            0f
+        );
+        System.Numerics.Vector3 userPos = targetPos + direction * vectorMod;
+        Location userLocation = Location.Create(targetLocation.Area, userPos, userFacing);
+
+        user.ActionJumpToLocation(userLocation);
     }
 
     private void PerformIndividualEmote(NwCreature target, int emoteId)
@@ -282,8 +620,8 @@ public sealed class EmotesPresenter : ScryPresenter<EmotesView>
                 target.PlayAnimation(Animation.LoopingPauseDrunk, 1.0f, true, loopDuration);
                 break;
             case 24:
-                // Sit in nearest chair - TODO: implement chair finding logic
-                _player.SendServerMessage("Sit in Chair not yet fully implemented.", ColorConstants.Orange);
+                // Sit in chair animation
+                target.PlayAnimation(Animation.LoopingSitChair, 1.0f, true, loopDuration);
                 break;
             case 25:
                 // Sit and drink
@@ -313,8 +651,8 @@ public sealed class EmotesPresenter : ScryPresenter<EmotesView>
                 target.PlayAnimation(Animation.LoopingSpasm, 1.0f, true, loopDuration);
                 break;
             case 28:
-                // Smoke pipe - TODO: implement smoke pipe effect
-                _player.SendServerMessage("Smoke Pipe not yet fully implemented.", ColorConstants.Orange);
+                // Smoke pipe
+                PerformSmokePipe(target);
                 break;
             case 48:
                 target.PlayAnimation(Animation.LoopingCustom19, 1.0f, true, loopDuration);
@@ -365,6 +703,108 @@ public sealed class EmotesPresenter : ScryPresenter<EmotesView>
             await Task.Delay(7000);
             if (leftHand != null) target.RunEquip(leftHand, InventorySlot.LeftHand);
             if (rightHand != null) target.RunEquip(rightHand, InventorySlot.RightHand);
+        });
+    }
+
+    private void PerformSmokePipe(NwCreature target)
+    {
+        // Calculate height and distance based on race and gender (from dmfi script)
+        float height = 1.7f;
+        float distance = 0.1f;
+
+        if (target.Gender == Gender.Male)
+        {
+            switch (target.Race.RacialType)
+            {
+                case RacialType.Human:
+                case RacialType.HalfElf:
+                    height = 1.7f;
+                    distance = 0.12f;
+                    break;
+                case RacialType.Elf:
+                    height = 1.55f;
+                    distance = 0.08f;
+                    break;
+                case RacialType.Gnome:
+                case RacialType.Halfling:
+                    height = 1.15f;
+                    distance = 0.12f;
+                    break;
+                case RacialType.Dwarf:
+                    height = 1.2f;
+                    distance = 0.12f;
+                    break;
+                case RacialType.HalfOrc:
+                    height = 1.9f;
+                    distance = 0.2f;
+                    break;
+            }
+        }
+        else // Female
+        {
+            switch (target.Race.RacialType)
+            {
+                case RacialType.Human:
+                case RacialType.HalfElf:
+                    height = 1.6f;
+                    distance = 0.12f;
+                    break;
+                case RacialType.Elf:
+                    height = 1.45f;
+                    distance = 0.12f;
+                    break;
+                case RacialType.Gnome:
+                case RacialType.Halfling:
+                    height = 1.1f;
+                    distance = 0.075f;
+                    break;
+                case RacialType.Dwarf:
+                    height = 1.2f;
+                    distance = 0.1f;
+                    break;
+                case RacialType.HalfOrc:
+                    height = 1.8f;
+                    distance = 0.13f;
+                    break;
+            }
+        }
+
+        Location? targetLoc = target.Location;
+        if (targetLoc == null) return;
+
+        // Calculate location above and in front of character's head
+        System.Numerics.Vector3 position = targetLoc.Position;
+        position.Z += height;
+
+        float facing = targetLoc.Rotation;
+        System.Numerics.Vector3 forward = new System.Numerics.Vector3(
+            (float)Math.Cos(facing) * -distance,
+            (float)Math.Sin(facing) * -distance,
+            0f
+        );
+
+        position += forward;
+        Location smokeLocation = Location.Create(targetLoc.Area, position, facing);
+
+        // Apply red glow effect briefly
+        Effect redGlow = Effect.VisualEffect(VfxType.DurLightRed5);
+        target.ApplyEffect(EffectDuration.Temporary, redGlow, TimeSpan.FromSeconds(0.15));
+
+        // Schedule smoke puff after a delay
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(3000);
+            await NwTask.SwitchToMainThread();
+
+            // Apply smoke puff VFX at the calculated location
+            Effect smokePuff = Effect.VisualEffect(VfxType.FnfSmokePuff);
+            smokeLocation.ApplyEffect(EffectDuration.Instant, smokePuff);
+
+            // If female and not dwarf, turn head to left
+            if (target.Gender == Gender.Female && target.Race.RacialType != RacialType.Dwarf)
+            {
+                await target.PlayAnimation(Animation.FireForgetHeadTurnLeft, 1.0f);
+            }
         });
     }
 
