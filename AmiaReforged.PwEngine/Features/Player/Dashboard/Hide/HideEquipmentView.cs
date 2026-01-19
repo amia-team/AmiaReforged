@@ -7,8 +7,10 @@ public sealed class HideEquipmentView : IScryView
 {
     public NuiBind<string> Title { get; } = new("title");
     public NuiBind<string> HelmetButtonLabel { get; } = new("helmet_button_label");
+    public NuiBind<string> CloakButtonLabel { get; } = new("cloak_button_label");
     public NuiBind<string> ShieldButtonLabel { get; } = new("shield_button_label");
     public NuiBind<bool> HelmetButtonEnabled { get; } = new("helmet_button_enabled");
+    public NuiBind<bool> CloakButtonEnabled { get; } = new("cloak_button_enabled");
     public NuiBind<bool> ShieldButtonEnabled { get; } = new("shield_button_enabled");
 
     public NuiLayout RootLayout()
@@ -17,33 +19,26 @@ public sealed class HideEquipmentView : IScryView
         {
             Children = new List<NuiElement>
             {
-                new NuiRow
+                new NuiButton(HelmetButtonLabel)
                 {
-                    Children = new List<NuiElement>
-                    {
-                        new NuiSpacer { Width = 30f },
-                        new NuiButton(HelmetButtonLabel)
-                        {
-                            Id = "btn_toggle_helmet",
-                            Enabled = HelmetButtonEnabled,
-                            Width = 120f,
-                            Height = 25f
-                        }
-                    }
+                    Id = "btn_toggle_helmet",
+                    Enabled = HelmetButtonEnabled,
+                    Width = 120f,
+                    Height = 25f
                 },
-                new NuiRow
+                new NuiButton(ShieldButtonLabel)
                 {
-                    Children = new List<NuiElement>
-                    {
-                        new NuiSpacer { Width = 30f },
-                        new NuiButton(ShieldButtonLabel)
-                        {
-                            Id = "btn_toggle_shield",
-                            Enabled = ShieldButtonEnabled,
-                            Width = 120f,
-                            Height = 25f
-                        }
-                    }
+                    Id = "btn_toggle_shield",
+                    Enabled = ShieldButtonEnabled,
+                    Width = 120f,
+                    Height = 25f
+                },
+                new NuiButton(CloakButtonLabel)
+                {
+                    Id = "btn_toggle_cloak",
+                    Enabled = CloakButtonEnabled,
+                    Width = 120f,
+                    Height = 25f
                 }
             }
         };
