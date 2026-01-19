@@ -1,4 +1,5 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿using AmiaReforged.PwEngine.Features.Player.Dashboard.Hide;
+using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -30,12 +31,14 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
 
     public override void InitBefore()
     {
-        _window = new NuiWindow(View.RootLayout(), "Player Dashboard")
+        _window = new NuiWindow(View.RootLayout(), null!)
         {
-            Geometry = new NuiRect(0f, 50f, 400f, 300f),
+            Geometry = new NuiRect(0f, 50f, 120f, 250f),
+            Collapsed = false,
+            Transparent = true,
             Resizable = false,
-            Closable = true,
-            Collapsed = false
+            Closable = false,
+            Border = false
         };
     }
 
@@ -77,6 +80,9 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
                 break;
             case "btn_utilities":
                 HandleUtilitiesButtonClick();
+                break;
+            case "btn_close":
+                Close();
                 break;
         }
     }
@@ -135,8 +141,17 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
 
     private void HandleHideButtonClick()
     {
-        _player.SendServerMessage("Hide feature - Coming soon!", ColorConstants.Orange);
-        // TODO: Implement equipment hiding system
+        if (_player.LoginCreature == null)
+        {
+            _player.SendServerMessage("Error: Could not find your character.", ColorConstants.Red);
+            return;
+        }
+
+
+        // Create and show the Hide Equipment window
+        HideEquipmentView hideView = new();
+        HideEquipmentPresenter hidePresenter = new(hideView, _player);
+        hidePresenter.Create();
     }
 
     private void HandleEmotesButtonClick()

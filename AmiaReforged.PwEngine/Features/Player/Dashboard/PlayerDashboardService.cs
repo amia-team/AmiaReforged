@@ -155,6 +155,14 @@ public class PlayerDashboardService
 
         if (restChoice == 0)
         {
+            // Check if dashboard is already open - if so, close it (toggle behavior)
+            if (_director.IsWindowOpen(player, typeof(PlayerDashboardPresenter)))
+            {
+                creature.ClearActionQueue();
+                _director.CloseWindow(player, typeof(PlayerDashboardPresenter));
+                return;
+            }
+
             // Open the dashboard instead of allowing rest
             creature.ClearActionQueue();
             _ = OpenDashboard(player);
