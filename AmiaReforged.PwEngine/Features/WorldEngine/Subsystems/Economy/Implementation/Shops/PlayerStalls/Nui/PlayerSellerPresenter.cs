@@ -1210,7 +1210,6 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
             item.Position = item.Position with { Z = -20f }; // Lower item below ground to hide it from view
             _examinedItem = item;
 
-            VisibilityPlugin.SetVisibilityOverride(_player.LoginCreature, item, VisibilityPlugin.NWNX_VISIBILITY_DM_ONLY);
 
 
             // Small delay before examining to ensure the item is fully created
@@ -1219,6 +1218,8 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
             if (_player.IsValid && _examinedItem is not null && _examinedItem.IsValid)
             {
                 _player.ForceExamine(_examinedItem);
+                VisibilityPlugin.SetVisibilityOverride(_player.LoginCreature, item, VisibilityPlugin.NWNX_VISIBILITY_DM_ONLY);
+
             }
         }
         catch (Exception ex)
