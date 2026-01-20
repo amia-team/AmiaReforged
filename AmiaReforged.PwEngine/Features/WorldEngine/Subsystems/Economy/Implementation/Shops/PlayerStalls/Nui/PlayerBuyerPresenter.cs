@@ -427,13 +427,22 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 		{
 			// Deserialize the item using the centralized helper that handles both
 			// binary GFF (preferred) and legacy JSON formats
-			NwItem? item = PlayerStallEventManager.DeserializeItem(_selectedProductItemData, copyWaypoint.Location);
+			Location? loginCreatureLocation = _player.LoginCreature?.Location;
+			if (loginCreatureLocation is null)
+			{
+				_player.SendServerMessage("Something went wrong while trying to examine the item.", ColorConstants.Red);
+				return;
+			}
+
+			NwItem? item = PlayerStallEventManager.DeserializeItem(_selectedProductItemData, loginCreatureLocation);
 
 			if (item is null || !item.IsValid)
 			{
 				NotifyError("Unable to examine item: failed to materialize item.");
 				return;
 			}
+
+			item.Position = item.Position with { Z = -20f }; // Lower item below ground to hide it from view
 
 			_examinedItem = item;
 
