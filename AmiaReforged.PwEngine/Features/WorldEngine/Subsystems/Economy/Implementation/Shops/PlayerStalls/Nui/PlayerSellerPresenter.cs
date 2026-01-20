@@ -1213,7 +1213,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
 
 
             // Small delay before examining to ensure the item is fully created
-            await NwTask.Delay(TimeSpan.FromMilliseconds(200));
+            await NwTask.Delay(TimeSpan.FromMilliseconds(100));
 
             if (_player.IsValid && _examinedItem is not null && _examinedItem.IsValid)
             {
