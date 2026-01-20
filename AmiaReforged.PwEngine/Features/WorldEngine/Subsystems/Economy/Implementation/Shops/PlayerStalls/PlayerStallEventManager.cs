@@ -2434,6 +2434,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         NwItem? item = NwItem.Deserialize(itemData);
         if (item is { IsValid: true })
         {
+            Log.Info("Deserialized item {ItemName} using binary GFF format.", item.Name);
             item.Location = location;
             return item;
         }

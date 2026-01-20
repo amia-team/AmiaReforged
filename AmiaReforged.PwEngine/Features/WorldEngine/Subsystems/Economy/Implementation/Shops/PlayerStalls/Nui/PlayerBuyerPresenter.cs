@@ -442,7 +442,8 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 				return;
 			}
 
-			item.Position = item.Position with { Z = -20f }; // Lower item below ground to hide it from view
+			// item.Position = item.Position with { Z = -20f }; // Lower item below ground to hide it from view
+			item.Position = item.Position; // Lower item below ground to hide it from view
 
 			_examinedItem = item;
 
