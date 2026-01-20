@@ -1,4 +1,4 @@
-﻿using AmiaReforged.PwEngine.Features.Player.Dashboard.Emotes;
+﻿﻿using AmiaReforged.PwEngine.Features.Player.Dashboard.Emotes;
 using AmiaReforged.PwEngine.Features.Player.Dashboard.Hide;
 using AmiaReforged.PwEngine.Features.Player.Dashboard.Pray;
 using AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui;
@@ -222,8 +222,24 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
 
     private void HandleUtilitiesButtonClick()
     {
-        _player.SendServerMessage("Utilities feature - Coming soon!", ColorConstants.Orange);
-        // TODO: Implement utilities menu
+        NwCreature? creature = _player.LoginCreature;
+        if (creature == null)
+        {
+            _player.SendServerMessage("Error: Could not find your character.", ColorConstants.Red);
+            return;
+        }
+
+        // Check if Utilities window is already open - if so, close it (toggle behavior)
+        if (WindowDirector.Value.IsWindowOpen(_player, typeof(Utilities.UtilitiesPresenter)))
+        {
+            WindowDirector.Value.CloseWindow(_player, typeof(Utilities.UtilitiesPresenter));
+            return;
+        }
+
+        // Create the Utilities window
+        Utilities.UtilitiesView utilitiesView = new();
+        Utilities.UtilitiesPresenter utilitiesPresenter = new(utilitiesView, _player);
+        WindowDirector.Value.OpenWindow(utilitiesPresenter);
     }
 
     public override void UpdateView()
