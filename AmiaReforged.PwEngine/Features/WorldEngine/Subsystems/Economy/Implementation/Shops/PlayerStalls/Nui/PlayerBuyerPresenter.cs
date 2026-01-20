@@ -450,6 +450,8 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 
 
             item.Location = loginCreatureLocation;
+            _player.LoginCreature?.AcquireItem(item);
+            
             // item.Position = item.Position with { Z = -20f }; // Lower item below ground to hide it from view
 
             await NwTask.SwitchToMainThread();
