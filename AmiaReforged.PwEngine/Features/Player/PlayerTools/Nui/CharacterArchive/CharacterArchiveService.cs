@@ -4,6 +4,11 @@ using NLog;
 namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.CharacterArchive;
 
 /// <summary>
+/// Result of a character move operation.
+/// </summary>
+public record MoveResult(bool Success, string? ErrorMessage = null);
+
+/// <summary>
 /// Service to handle character file operations and BIC file reading.
 /// </summary>
 [ServiceBinding(typeof(CharacterArchiveService))]
@@ -34,47 +39,101 @@ public class CharacterArchiveService
     /// <summary>
     /// Moves a character file from vault to archive.
     /// </summary>
-    public bool MoveToArchive(string cdkey, string fileName)
+    public MoveResult MoveToArchive(string cdkey, string fileName)
     {
         try
         {
             string sourcePath = VaultDir + cdkey + "/" + fileName;
             string destPath = VaultDir + cdkey + ArchiveDir;
 
+            if (!File.Exists(sourcePath))
+            {
+                return new MoveResult(false, "Character file not found.");
+            }
+
             if (!Directory.Exists(destPath))
             {
                 Directory.CreateDirectory(destPath);
             }
 
-            File.Move(sourcePath, destPath + fileName);
+            string destFilePath = destPath + fileName;
+
+            // Overwrite if exists
+            if (File.Exists(destFilePath))
+            {
+                File.Delete(destFilePath);
+            }
+
+            File.Move(sourcePath, destFilePath);
             Log.Info($"Moved {fileName} to archive for {cdkey}");
-            return true;
+            return new MoveResult(true);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Log.Error($"Permission denied moving {fileName} to archive for {cdkey}");
+            return new MoveResult(false, "Permission denied. The file may be protected.");
+        }
+        catch (IOException ex) when (ex.Message.Contains("being used"))
+        {
+            Log.Error(ex, $"File in use: {fileName} for {cdkey}");
+            return new MoveResult(false, "File is in use. Make sure the character is not logged in.");
+        }
+        catch (IOException ex)
+        {
+            Log.Error(ex, $"IO error moving {fileName} to archive for {cdkey}");
+            return new MoveResult(false, $"File system error: {ex.Message}");
         }
         catch (Exception ex)
         {
             Log.Error(ex, $"Failed to move {fileName} to archive for {cdkey}");
-            return false;
+            return new MoveResult(false, $"Unexpected error: {ex.Message}");
         }
     }
 
     /// <summary>
     /// Moves a character file from archive to vault.
     /// </summary>
-    public bool MoveToVault(string cdkey, string fileName)
+    public MoveResult MoveToVault(string cdkey, string fileName)
     {
         try
         {
             string sourcePath = VaultDir + cdkey + ArchiveDir + fileName;
             string destPath = VaultDir + cdkey + "/" + fileName;
 
+            if (!File.Exists(sourcePath))
+            {
+                return new MoveResult(false, "Character file not found in archive.");
+            }
+
+            // Overwrite if exists
+            if (File.Exists(destPath))
+            {
+                File.Delete(destPath);
+            }
+
             File.Move(sourcePath, destPath);
             Log.Info($"Moved {fileName} to vault for {cdkey}");
-            return true;
+            return new MoveResult(true);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Log.Error($"Permission denied moving {fileName} to vault for {cdkey}");
+            return new MoveResult(false, "Permission denied. The file may be protected.");
+        }
+        catch (IOException ex) when (ex.Message.Contains("being used"))
+        {
+            Log.Error(ex, $"File in use: {fileName} for {cdkey}");
+            return new MoveResult(false, "File is in use. Make sure the character is not logged in.");
+        }
+        catch (IOException ex)
+        {
+            Log.Error(ex, $"IO error moving {fileName} to vault for {cdkey}");
+            return new MoveResult(false, $"File system error: {ex.Message}");
         }
         catch (Exception ex)
         {
             Log.Error(ex, $"Failed to move {fileName} to vault for {cdkey}");
-            return false;
+            return new MoveResult(false, $"Unexpected error: {ex.Message}");
         }
     }
 

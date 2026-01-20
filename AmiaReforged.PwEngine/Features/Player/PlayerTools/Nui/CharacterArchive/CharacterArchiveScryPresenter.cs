@@ -222,36 +222,36 @@ public class CharacterArchiveScryPresenter : ScryPresenter<CharacterArchiveView>
             return;
         }
 
-        bool success;
+        MoveResult result;
         if (_showingVault)
         {
-            success = _service.MoveToArchive(_player.CDKey, character.FileName);
-            if (success)
+            result = _service.MoveToArchive(_player.CDKey, character.FileName);
+            if (result.Success)
             {
                 _player.SendServerMessage($"Moved '{character.CharacterName}' to archive.");
                 ShowVault(); // Refresh vault view and reset to page 0
             }
             else
             {
-                _player.SendServerMessage($"Failed to move '{character.CharacterName}' to archive.");
+                _player.SendServerMessage($"Failed to archive '{character.CharacterName}': {result.ErrorMessage}");
             }
         }
         else
         {
-            success = _service.MoveToVault(_player.CDKey, character.FileName);
-            if (success)
+            result = _service.MoveToVault(_player.CDKey, character.FileName);
+            if (result.Success)
             {
                 _player.SendServerMessage($"Restored '{character.CharacterName}' to vault.");
                 ShowArchive(); // Refresh archive view and reset to page 0
             }
             else
             {
-                _player.SendServerMessage($"Failed to restore '{character.CharacterName}' to vault.");
+                _player.SendServerMessage($"Failed to restore '{character.CharacterName}': {result.ErrorMessage}");
             }
         }
 
         Log.Info($"{_player.PlayerName} moved {character.CharacterName} " +
-                 $"from {(_showingVault ? "vault to archive" : "archive to vault")}: {success}");
+                 $"from {(_showingVault ? "vault to archive" : "archive to vault")}: {result.Success}");
     }
 
     public override void Close()
