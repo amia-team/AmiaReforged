@@ -16,8 +16,8 @@ public class DefendersDuty
     private const string ThreatAuraEffectTag = "defenders_threat_aura";
     private const string ProtectedEffectTag = "defenders_duty_protected";
     private const string ImmunityEffectTag = "defenders_duty_immunity";
-    private const int ImmunityPerAlly = 4;
-    private const int MaxImmunityBonus = 40;
+    private const int ImmunityPerAlly = 2;
+    private const int MaxImmunityBonus = 16;
 
     private readonly ScriptHandleFactory _scriptHandleFactory;
 
