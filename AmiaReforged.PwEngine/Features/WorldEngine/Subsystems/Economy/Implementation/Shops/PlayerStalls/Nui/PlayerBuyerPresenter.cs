@@ -458,11 +458,13 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
             _examinedItem = item;
 
             // Small delay before examining to ensure the item is fully created
-            await NwTask.Delay(TimeSpan.FromMilliseconds(50));
+            await NwTask.Delay(TimeSpan.FromMilliseconds(100));
 
             if (_player.IsValid && _examinedItem is not null && _examinedItem.IsValid)
             {
                 _player.ForceExamine(_examinedItem);
+                item.VisualTransform.Scale = 0.001f; // Make the item nearly invisible to others
+
             }
         }
         catch (Exception ex)
