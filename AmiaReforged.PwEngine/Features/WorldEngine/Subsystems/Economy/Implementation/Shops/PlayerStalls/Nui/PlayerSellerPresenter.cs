@@ -1205,10 +1205,13 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
                 return;
             }
 
+
+            item.Position = item.Position with { Z = -20f }; // Lower item below ground to hide it from view
             _examinedItem = item;
 
+
             // Small delay before examining to ensure the item is fully created
-            await NwTask.Delay(TimeSpan.FromMilliseconds(50));
+            await NwTask.Delay(TimeSpan.FromMilliseconds(200));
 
             if (_player.IsValid && _examinedItem is not null && _examinedItem.IsValid)
             {
