@@ -1190,7 +1190,14 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         {
             // Deserialize the item using the centralized helper that handles both
             // binary GFF (preferred) and legacy JSON formats
-            NwItem? item = PlayerStallEventManager.DeserializeItem(itemData, copyWaypoint.Location);
+            Location? loginCreatureLocation = _player.LoginCreature.Location;
+            if (loginCreatureLocation is null)
+            {
+                _player.SendServerMessage("Unable to examine item: your character has no valid location.", ColorConstants.Red);
+                return;
+            }
+
+            NwItem? item = PlayerStallEventManager.DeserializeItem(itemData, loginCreatureLocation);
 
             if (item is null || !item.IsValid)
             {
@@ -1632,8 +1639,8 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
 
         foreach (PlayerStallMemberView member in _members)
         {
-            string displayName = member.IsOwner 
-                ? $"{member.DisplayName} (Owner)" 
+            string displayName = member.IsOwner
+                ? $"{member.DisplayName} (Owner)"
                 : member.DisplayName;
             memberNames.Add(displayName);
             memberTooltips.Add(BuildMemberTooltip(member));

@@ -426,8 +426,8 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
         // Destroy any previously spawned examine item
         if (_examinedItem is not null && _examinedItem.IsValid)
         {
-            // _examinedItem.Destroy();
-            // _examinedItem = null;
+            _examinedItem.Destroy();
+            _examinedItem = null;
         }
 
         try
@@ -451,7 +451,6 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 
 
             item.Location = loginCreatureLocation;
-            _player.LoginCreature?.AcquireItem(item);
 
             // item.Position = item.Position with { Z = -20f }; // Lower item below ground to hide it from view
 
