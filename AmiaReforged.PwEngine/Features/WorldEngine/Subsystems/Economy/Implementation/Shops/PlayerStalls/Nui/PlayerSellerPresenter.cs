@@ -9,6 +9,7 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops.PlayerStalls.Nui;
 
@@ -1190,8 +1191,14 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         {
             // Deserialize the item using the centralized helper that handles both
             // binary GFF (preferred) and legacy JSON formats
+            Location? loginCreatureLocation = _player.LoginCreature.Location;
+            if (loginCreatureLocation is null)
+            {
+                _player.SendServerMessage("Unable to examine item: your character has no valid location.", ColorConstants.Red);
+                return;
+            }
 
-            NwItem? item = PlayerStallEventManager.DeserializeItem(itemData, copyWaypoint.Location);
+            NwItem? item = PlayerStallEventManager.DeserializeItem(itemData, loginCreatureLocation);
 
             if (item is null || !item.IsValid)
             {
@@ -1202,6 +1209,8 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
 
             item.Position = item.Position with { Z = -20f }; // Lower item below ground to hide it from view
             _examinedItem = item;
+
+            VisibilityPlugin.SetVisibilityOverride(_player.LoginCreature, item, VisibilityPlugin.NWNX_VISIBILITY_DM_ONLY);
 
 
             // Small delay before examining to ensure the item is fully created
