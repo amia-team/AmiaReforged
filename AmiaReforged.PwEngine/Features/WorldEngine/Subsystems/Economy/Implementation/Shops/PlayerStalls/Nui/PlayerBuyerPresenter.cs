@@ -4,6 +4,7 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops.PlayerStalls.Nui;
 
@@ -451,7 +452,7 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 
             item.Location = loginCreatureLocation;
             _player.LoginCreature?.AcquireItem(item);
-            
+
             // item.Position = item.Position with { Z = -20f }; // Lower item below ground to hide it from view
 
             await NwTask.SwitchToMainThread();

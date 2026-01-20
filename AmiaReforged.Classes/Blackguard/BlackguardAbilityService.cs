@@ -7,7 +7,7 @@ namespace AmiaReforged.Classes.Blackguard;
 /// <summary>
 /// Governs modifications to abilities like Dark Blessing or Smite Good
 /// </summary>
-[ServiceBinding(typeof(BlackguardAbilityService))]
+// [ServiceBinding(typeof(BlackguardAbilityService))]
 public class BlackguardAbilityService
 {
     public string BlackguardSaveOffsetTag = "BLACKGUARD_SAVE_OFFSET";
