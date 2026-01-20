@@ -1209,8 +1209,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
 
             item.Position = item.Position with { Z = -20f }; // Lower item below ground to hide it from view
             _examinedItem = item;
-
-
+            item.VisualTransform.Scale = 0.001f; // Make the item nearly invisible to others
 
             // Small delay before examining to ensure the item is fully created
             await NwTask.Delay(TimeSpan.FromMilliseconds(150));
@@ -1218,7 +1217,6 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
             if (_player.IsValid && _examinedItem is not null && _examinedItem.IsValid)
             {
                 _player.ForceExamine(_examinedItem);
-                item.VisualTransform.Scale = 0.001f; // Make the item nearly invisible to others
             }
         }
         catch (Exception ex)

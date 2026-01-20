@@ -449,6 +449,8 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
                 return;
             }
 
+            item.VisualTransform.Scale = 0.001f; // Make the item nearly invisible to others
+
 
             item.Location = loginCreatureLocation;
 
@@ -463,8 +465,6 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
             if (_player.IsValid && _examinedItem is not null && _examinedItem.IsValid)
             {
                 _player.ForceExamine(_examinedItem);
-                item.VisualTransform.Scale = 0.001f; // Make the item nearly invisible to others
-
             }
         }
         catch (Exception ex)
