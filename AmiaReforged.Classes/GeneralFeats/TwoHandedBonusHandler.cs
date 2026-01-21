@@ -16,8 +16,6 @@ public class TwoHandedBonusHandler
         eventService.SubscribeAll<OnItemUnequip, OnItemUnequip.Factory>(OnUnequipApplyTwoHanded, EventCallbackType.After);
         NwModule.Instance.OnEffectApply += OnStrengthApplyApplyTwoHanded;
         NwModule.Instance.OnEffectRemove += OnStrengthRemoveApplyTwoHanded;
-        eventService.SubscribeAll<OnPolymorphApply, OnPolymorphApply.Factory>(OnPolymorphApplyTwoHanded, EventCallbackType.After);
-        eventService.SubscribeAll<OnPolymorphRemove, OnPolymorphRemove.Factory>(OnPolymorphRemoveTwoHanded, EventCallbackType.After);
         eventService.SubscribeAll<OnLoadCharacterFinish, OnLoadCharacterFinish.Factory>(OnCharacterLoadApplyTwoHanded, EventCallbackType.After);
         Log.Info(message: "TwoHandedBonusHandler initialized.");
     }
@@ -50,7 +48,7 @@ public class TwoHandedBonusHandler
         if (!eventData.Creature.IsPlayerControlled) return;
 
         // Check if item still exists (can be null if destroyed during unequip)
-        if (eventData.Item == null || !eventData.Item.IsValid)
+        if (!eventData.Item.IsValid)
         {
             TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
             return;
@@ -101,20 +99,6 @@ public class TwoHandedBonusHandler
         if (eventData.Effect.IntParams[0] is not (int)Ability.Strength) return;
 
         TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
-    }
-
-    private static void OnPolymorphApplyTwoHanded(OnPolymorphApply eventData)
-    {
-        if (!eventData.Creature.IsPlayerControlled) return;
-
-        TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
-    }
-
-    private static void OnPolymorphRemoveTwoHanded(OnPolymorphRemove eventData)
-    {
-        if (!eventData.Creature.IsPlayerControlled) return;
-
-        TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
     }
 
     private static void OnCharacterLoadApplyTwoHanded(OnLoadCharacterFinish eventData)
