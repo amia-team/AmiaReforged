@@ -34,8 +34,6 @@ public class PolymorphMergeService
     {
         NwModule.Instance.OnPolymorphApply += OnApplyPolymorphBefore;
         eventService.SubscribeAll<OnPolymorphApply, OnPolymorphApply.Factory>(OnApplyPolymorphAfter, EventCallbackType.After);
-        // NwModule.Instance.OnPolymorphRemove += OnRemovePolymorphBefore;
-        // eventService.SubscribeAll<OnPolymorphRemove, OnPolymorphRemove.Factory>(OnRemovePolymorphAfter, EventCallbackType.After);
 
         Log.Info("Polymorph Merge Service initialized.");
     }
@@ -143,10 +141,7 @@ public class PolymorphMergeService
     }
 
     private static ItemProperty[] GetItemPropertiesFromSlot(NwCreature creature, InventorySlot slot)
-    {
-        NwItem? item = creature.GetItemInSlot(slot);
-        return item?.ItemProperties.ToArray() ?? [];
-    }
+        => creature.GetItemInSlot(slot)?.ItemProperties.ToArray() ?? [];
 
     private static ItemProperty[] GetItemPropertiesFromSlots(NwCreature creature, InventorySlot[] slots, out bool? hasWaterBreathing)
     {
@@ -170,7 +165,7 @@ public class PolymorphMergeService
                 return group.Key.Property.PropertyType
                     is ItemPropertyType.Regeneration or ItemPropertyType.RegenerationVampiric ? group :
                     // For all other types, only return the one with the highest value
-                    group.OrderByDescending(ip => ip.CostTableValue).Take(1);
+                    group.OrderByDescending(ip => ip.CostTableValue?.RowIndex).Take(1);
             })
             .ToArray();
     }
