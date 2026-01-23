@@ -1,68 +1,94 @@
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+              using NLog;
 
 namespace AmiaReforged.Classes.Blackguard;
 
 /// <summary>
 /// Governs modifications to abilities like Dark Blessing or Smite Good
 /// </summary>
-// [ServiceBinding(typeof(BlackguardAbilityService))]
+[ServiceBinding(typeof(BlackguardAbilityService))]
 public class BlackguardAbilityService
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
     public string BlackguardSaveOffsetTag = "BLACKGUARD_SAVE_OFFSET";
 
-    public BlackguardAbilityService()
+    public BlackguardAbilityService(EventService eventService)
     {
-        NwModule.Instance.OnLevelUp += AdjustOnLevelUp;
+        eventService.SubscribeAll<OnLevelUp, OnLevelUp.Factory>(AdjustOnLevelUp, EventCallbackType.After);
+        eventService.SubscribeAll<OnItemEquip, OnItemEquip.Factory>(AdjustOnItemEquip, EventCallbackType.After);
+        eventService.SubscribeAll<OnItemUnequip, OnItemUnequip.Factory>(AdjustOnItemUnequip, EventCallbackType.After);
+        eventService.SubscribeAll<OnLoadCharacterFinish, OnLoadCharacterFinish.Factory>(AdjustOnCharacterLoad, EventCallbackType.After);
         NwModule.Instance.OnLevelDown += AdjustOnLevelDown;
-        NwModule.Instance.OnItemEquip += AdjustOnItemEquip;
-        NwModule.Instance.OnItemUnequip += AdjustOnItemUnequip;
         NwModule.Instance.OnEffectRemove += AdjustOnEffectRemove;
         NwModule.Instance.OnEffectApply += AdjustOnEffectApply;
+
+        Log.Info("Blackguard Ability Service initialized.");
+    }
+
+    private void AdjustOnCharacterLoad(OnLoadCharacterFinish obj)
+    {
+        if (obj.Player.ControlledCreature is not { } creature) return;
+        if (!IsBlackguard(creature)) return;
+
+        OffsetCharismaNegatives(creature);
     }
 
     private void AdjustOnEffectApply(OnEffectApply obj)
     {
-        if (!obj.Object.IsPlayerControlled(out NwPlayer? player)) return;
-        if (player.LoginCreature != obj.Object) return;
-        if (player.LoginCreature is null) return;
+        if (obj.Object is not NwCreature creature) return;
+        if (!creature.IsLoginPlayerCharacter) return;
+        if (!IsBlackguard(creature)) return;
+        if (obj.Effect.EffectType is not (EffectType.AbilityIncrease or EffectType.AbilityDecrease)) return;
+        if (obj.Effect.IntParams[0] != (int)Ability.Charisma) return;
 
-        OffsetCharismaNegatives(player.LoginCreature);
+        OffsetCharismaNegatives(creature);
     }
 
     private void AdjustOnEffectRemove(OnEffectRemove obj)
     {
-        if (!obj.Object.IsPlayerControlled(out NwPlayer? player)) return;
-        if (player.LoginCreature != obj.Object) return;
-        if (player.LoginCreature is null) return;
+        if (obj.Object is not NwCreature creature) return;
+        if (!creature.IsLoginPlayerCharacter) return;
+        if (!IsBlackguard(creature)) return;
+        if (obj.Effect.EffectType is not (EffectType.AbilityIncrease or EffectType.AbilityDecrease)) return;
+        if (obj.Effect.IntParams[0] != (int)Ability.Charisma) return;
 
-        OffsetCharismaNegatives(player.LoginCreature);
+        OffsetCharismaNegatives(creature);
     }
 
     private void AdjustOnItemUnequip(OnItemUnequip obj)
     {
+        if (!IsBlackguard(obj.Creature)) return;
         OffsetCharismaNegatives(obj.Creature);
     }
 
     private void AdjustOnItemEquip(OnItemEquip obj)
     {
+        if (!IsBlackguard(obj.EquippedBy)) return;
         OffsetCharismaNegatives(obj.EquippedBy);
     }
 
     private void AdjustOnLevelUp(OnLevelUp obj)
     {
+        if (!IsBlackguard(obj.Creature)) return;
         OffsetCharismaNegatives(obj.Creature);
     }
 
     private void AdjustOnLevelDown(OnLevelDown obj)
     {
+        if (!IsBlackguard(obj.Creature)) return;
         OffsetCharismaNegatives(obj.Creature);
+    }
+
+    private static bool IsBlackguard(NwCreature creature)
+    {
+        return creature.Classes.Any(c => c.Class.ClassType == ClassType.Blackguard);
     }
 
     private void OffsetCharismaNegatives(NwCreature creature)
     {
-        if (creature.Classes.All(c => c.Class.ClassType != ClassType.Blackguard)) return;
 
         Effect? existingOffset = creature.ActiveEffects.FirstOrDefault(e => e.Tag == BlackguardSaveOffsetTag);
 
