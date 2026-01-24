@@ -1,4 +1,4 @@
-﻿using AmiaReforged.Core.Models;
+﻿﻿using AmiaReforged.Core.Models;
 using AmiaReforged.Core.Models.DmModels;
 using AmiaReforged.Core.Models.Faction;
 using AmiaReforged.Core.Models.World;
@@ -32,6 +32,8 @@ public class AmiaDbContext : DbContext
     public DbSet<WorldConfiguration> WorldEngineConfig { get; set; }
 
     public DbSet<DmArea> DmAreas { get; set; } = null!;
+    public DbSet<PlayerPlaytimeRecord> PlayerPlaytimeRecords { get; set; } = null!;
+    public DbSet<DmPlaytimeRecord> DmPlaytimeRecords { get; set; } = null!;
 
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -100,6 +102,58 @@ public class AmiaDbContext : DbContext
             entity.Property(e => e.CdKey)
                 .HasColumnType("character varying")
                 .HasColumnName("cd_key");
+        });
+
+        modelBuilder.Entity<PlayerPlaytimeRecord>(entity =>
+        {
+            entity.HasKey(e => e.Id)
+                .HasName("player_playtime_records_pkey");
+
+            entity.ToTable("player_playtime_records");
+
+            entity.HasIndex(e => new { e.CdKey, e.WeekStart }, "player_playtime_records_cdkey_weekstart_key")
+                .IsUnique();
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CdKey)
+                .HasColumnType("character varying")
+                .HasColumnName("cd_key");
+            entity.Property(e => e.WeekStart).HasColumnName("week_start");
+            entity.Property(e => e.MinutesPlayed).HasColumnName("minutes_played");
+            entity.Property(e => e.MinutesTowardNextDc).HasColumnName("minutes_toward_next_dc");
+            entity.Property(e => e.LastUpdated).HasColumnName("last_updated");
+
+            entity.HasOne(d => d.Player)
+                .WithMany(p => p.PlaytimeRecords)
+                .HasForeignKey(d => d.CdKey)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("player_playtime_records_cd_key_fkey");
+        });
+
+        modelBuilder.Entity<DmPlaytimeRecord>(entity =>
+        {
+            entity.HasKey(e => e.Id)
+                .HasName("dm_playtime_records_pkey");
+
+            entity.ToTable("dm_playtime_records");
+
+            entity.HasIndex(e => new { e.CdKey, e.WeekStart }, "dm_playtime_records_cdkey_weekstart_key")
+                .IsUnique();
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CdKey)
+                .HasColumnType("character varying")
+                .HasColumnName("cd_key");
+            entity.Property(e => e.WeekStart).HasColumnName("week_start");
+            entity.Property(e => e.MinutesPlayed).HasColumnName("minutes_played");
+            entity.Property(e => e.MinutesTowardNextDc).HasColumnName("minutes_toward_next_dc");
+            entity.Property(e => e.LastUpdated).HasColumnName("last_updated");
+
+            entity.HasOne(d => d.Dm)
+                .WithMany(p => p.PlaytimeRecords)
+                .HasForeignKey(d => d.CdKey)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("dm_playtime_records_cd_key_fkey");
         });
     }
 }

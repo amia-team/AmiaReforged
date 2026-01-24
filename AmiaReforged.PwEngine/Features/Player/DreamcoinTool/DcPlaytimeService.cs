@@ -8,7 +8,7 @@ namespace AmiaReforged.PwEngine.Features.Player.DreamcoinTool;
 /// <summary>
 ///   Service that tracks player playtime and awards Dreamcoins.
 ///   Awards 1 DC per 2 hours (120 minutes) of playtime.
-///   Uses a single scheduler tick and in-memory tracking per session.
+///   Uses persistent database storage for weekly playtime tracking.
 /// </summary>
 [ServiceBinding(typeof(DcPlaytimeService))]
 public sealed class DcPlaytimeService
@@ -18,23 +18,25 @@ public sealed class DcPlaytimeService
     private const int TickIntervalMinutes = 5;
 
     private readonly DreamcoinService _dreamcoinService;
+    private readonly PlayerPlaytimeService _playtimeService;
     private readonly SchedulerService _schedulerService;
 
     /// <summary>
-    ///   In-memory tracking of accumulated playtime per CD key.
-    ///   Resets on server restart - playtime only counts per session.
+    ///   In-memory cache of accumulated minutes for quick access during ticks.
+    ///   Synchronized with database on each tick.
     /// </summary>
-    private readonly Dictionary<string, int> _accumulatedMinutes = new();
+    private readonly Dictionary<string, int> _cachedMinutes = new();
 
-    public DcPlaytimeService(DreamcoinService dreamcoinService, SchedulerService schedulerService)
+    public DcPlaytimeService(DreamcoinService dreamcoinService, PlayerPlaytimeService playtimeService, SchedulerService schedulerService)
     {
         _dreamcoinService = dreamcoinService;
+        _playtimeService = playtimeService;
         _schedulerService = schedulerService;
 
         // Register a single repeating task for all players
         _schedulerService.ScheduleRepeating(OnPlaytimeTick, TimeSpan.FromMinutes(TickIntervalMinutes));
 
-        Log.Info("DcPlaytimeService initialized. Tracking player playtime for DC awards.");
+        Log.Info("DcPlaytimeService initialized. Tracking player playtime for DC awards with persistent storage.");
     }
 
     /// <summary>
@@ -44,11 +46,42 @@ public sealed class DcPlaytimeService
     /// <returns>Minutes remaining, or the full MinutesPerDc if not tracked yet.</returns>
     public int GetMinutesUntilNextDc(string cdKey)
     {
-        if (_accumulatedMinutes.TryGetValue(cdKey, out int accumulated))
+        if (_cachedMinutes.TryGetValue(cdKey, out int accumulated))
         {
-            return MinutesPerDc - accumulated;
+            return Math.Max(0, MinutesPerDc - accumulated);
         }
         return MinutesPerDc;
+    }
+
+    /// <summary>
+    ///   Gets the remaining minutes until the next DC award for a player (async version that queries DB).
+    /// </summary>
+    /// <param name="cdKey">The player's CD key.</param>
+    /// <returns>Minutes remaining until next DC.</returns>
+    public async Task<int> GetMinutesUntilNextDcAsync(string cdKey)
+    {
+        int accumulated = await _playtimeService.GetMinutesTowardNextDc(cdKey);
+        return Math.Max(0, MinutesPerDc - accumulated);
+    }
+
+    /// <summary>
+    ///   Gets the total minutes played this week for a player.
+    /// </summary>
+    /// <param name="cdKey">The player's CD key.</param>
+    /// <returns>Total minutes played this week.</returns>
+    public async Task<int> GetWeeklyMinutesPlayed(string cdKey)
+    {
+        return await _playtimeService.GetWeeklyMinutesPlayed(cdKey);
+    }
+
+    /// <summary>
+    ///   Gets the total all-time minutes played for a player.
+    /// </summary>
+    /// <param name="cdKey">The player's CD key.</param>
+    /// <returns>Total minutes played across all time.</returns>
+    public async Task<int> GetTotalMinutesPlayed(string cdKey)
+    {
+        return await _playtimeService.GetTotalMinutesPlayed(cdKey);
     }
 
     private async void OnPlaytimeTick()
@@ -62,44 +95,53 @@ public sealed class DcPlaytimeService
         {
             string cdKey = player.CDKey;
 
-            // Initialize if not tracked yet
-            if (!_accumulatedMinutes.ContainsKey(cdKey))
+            try
             {
-                _accumulatedMinutes[cdKey] = 0;
-            }
-
-            // Increment playtime
-            _accumulatedMinutes[cdKey] += TickIntervalMinutes;
-
-            // Check if DC should be awarded
-            if (_accumulatedMinutes[cdKey] >= MinutesPerDc)
-            {
-                _accumulatedMinutes[cdKey] = 0;
-
-                int newBalance = await _dreamcoinService.AddDreamcoins(cdKey, 1);
+                // Add playtime to persistent storage and get updated record
+                var record = await _playtimeService.AddPlaytimeMinutes(cdKey, TickIntervalMinutes);
                 await NwTask.SwitchToMainThread();
 
-                if (newBalance >= 0)
+                // Update cache
+                _cachedMinutes[cdKey] = record.MinutesTowardNextDc;
+
+                // Check if DC should be awarded
+                if (record.MinutesTowardNextDc >= MinutesPerDc)
                 {
-                    player.SendServerMessage("You have been awarded 1 Dreamcoin for 2 hours of playtime!", ColorConstants.Yellow);
-                    Log.Info($"Awarded 1 DC to {player.PlayerName} ({cdKey}) for playtime. New balance: {newBalance}");
+                    await _playtimeService.ResetMinutesTowardNextDc(cdKey, MinutesPerDc);
+                    await NwTask.SwitchToMainThread();
+
+                    // Update cache after reset
+                    _cachedMinutes[cdKey] = record.MinutesTowardNextDc - MinutesPerDc;
+
+                    int newBalance = await _dreamcoinService.AddDreamcoins(cdKey, 1);
+                    await NwTask.SwitchToMainThread();
+
+                    if (newBalance >= 0)
+                    {
+                        player.SendServerMessage("You have been awarded 1 Dreamcoin for 2 hours of playtime!", ColorConstants.Yellow);
+                        Log.Info($"Awarded 1 DC to {player.PlayerName} ({cdKey}) for playtime. New balance: {newBalance}");
+                    }
+                    else
+                    {
+                        Log.Warn($"Failed to award DC to {player.PlayerName} ({cdKey})");
+                    }
                 }
-                else
-                {
-                    Log.Warn($"Failed to award DC to {player.PlayerName} ({cdKey})");
-                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Error processing playtime tick for {player.PlayerName} ({cdKey}): {ex.Message}");
             }
         }
 
-        // Clean up disconnected players from dictionary
+        // Clean up disconnected players from cache
         List<string> onlineCdKeys = onlinePlayers.Select(p => p.CDKey).ToList();
-        List<string> disconnectedKeys = _accumulatedMinutes.Keys
+        List<string> disconnectedKeys = _cachedMinutes.Keys
             .Where(k => !onlineCdKeys.Contains(k))
             .ToList();
 
         foreach (string key in disconnectedKeys)
         {
-            _accumulatedMinutes.Remove(key);
+            _cachedMinutes.Remove(key);
         }
     }
 }

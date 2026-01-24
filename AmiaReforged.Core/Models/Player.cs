@@ -9,4 +9,6 @@ public partial class Player
     public virtual DreamcoinRecord? DreamcoinRecord { get; set; }
 
     public virtual List<PlayerCharacter>? PlayerCharacters { get; }
+
+    public virtual List<PlayerPlaytimeRecord> PlaytimeRecords { get; set; } = new();
 }
