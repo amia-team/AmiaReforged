@@ -125,7 +125,7 @@ public sealed class DmDcPlaytimeService
                     await NwTask.SwitchToMainThread();
 
                     // Update cache after reset
-                    _cachedMinutes[cdKey] = record.MinutesTowardNextDc - MinutesPerDc;
+                    _cachedMinutes[cdKey] = Math.Max(0, record.MinutesTowardNextDc - MinutesPerDc);
 
                     int newBalance = await _dreamcoinService.AddDreamcoins(cdKey, DcPerAward);
                     await NwTask.SwitchToMainThread();
