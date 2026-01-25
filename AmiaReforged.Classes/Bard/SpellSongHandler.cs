@@ -75,7 +75,8 @@ public class SpellSongHandler
             return;
         }
 
-        if (_bardSongFeat == null) return;
+        // Return early for normal Bard Song, since that feat handles itself
+        if (eventData.Spell == NwSpell.FromSpellType(SongConstants.BardSong) || _bardSongFeat == null) return;
 
         if (NWScript.GetFeatRemainingUses(_bardSongFeat.Id, bard) == 0)
         {
@@ -83,9 +84,6 @@ public class SpellSongHandler
             eventData.PreventSpellCast = true;
             return;
         }
-
-        // Return early for normal Bard Song, since that one spends a charge on its own
-        if (eventData.Spell == NwSpell.FromSpellType(SongConstants.BardSong)) return;
 
         bard.DecrementRemainingFeatUses(_bardSongFeat);
     }
