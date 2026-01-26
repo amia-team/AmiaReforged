@@ -4,21 +4,17 @@ using Anvil.API;
 
 namespace AmiaReforged.Classes.Monk.Nui.MonkPath;
 
-public sealed class ConfirmPathView : ScryView<MonkPathPresenter>
+public sealed class ConfirmPathView(MonkPathPresenter presenter) : ScryView<MonkPathPresenter>
 {
-    public NuiBind<string> PathLabel = new(key: "path_label");
-    public NuiBind<string> PathIcon = new(key: "path_icon");
-    public NuiBind<string> PathText = new(key: "path_text");
+    private readonly NuiBind<string> _pathLabel = new(key: "path_label");
+    private readonly NuiBind<string> _pathIcon = new(key: "path_icon");
+    private readonly NuiBind<string> _pathText = new(key: "path_text");
 
     public NuiButton ConfirmPathButton = null!;
     public NuiButton BackButton = null!;
-    public ConfirmPathView(MonkPathPresenter presenter)
-    {
-        Presenter = presenter;
-    }
 
 
-    public override MonkPathPresenter Presenter { get; protected set; }
+    public override MonkPathPresenter Presenter { get; protected set; } = presenter;
 
     public override NuiLayout RootLayout() =>
         new NuiColumn
@@ -27,21 +23,14 @@ public sealed class ConfirmPathView : ScryView<MonkPathPresenter>
             {
                 new NuiRow
                 {
-                    Width = 0f,
-                    Height = 0f,
-                    Children = new List<NuiElement>(),
-                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 500f, 600f))]
-                },
-                new NuiRow
-                {
                     Children =
                     {
-                        new NuiImage(PathIcon)
+                        new NuiImage(_pathIcon)
                         {
                             Height = 64,
                             Width = 64
                         },
-                        new NuiLabel(PathLabel)
+                        new NuiLabel(_pathLabel)
                         {
                             VerticalAlign = NuiVAlign.Middle,
                             HorizontalAlign = NuiHAlign.Center,
@@ -55,7 +44,7 @@ public sealed class ConfirmPathView : ScryView<MonkPathPresenter>
                 {
                     Children =
                     {
-                        new NuiText(PathText)
+                        new NuiText(_pathText)
                         {
                             Height = 450,
                             Scrollbars = NuiScrollbars.None,

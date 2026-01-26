@@ -7,13 +7,13 @@ namespace AmiaReforged.Classes.Monk.Nui.MonkPath;
 
 public sealed class MonkPathView : ScryView<MonkPathPresenter>
 {
-    public NuiBind<PathType> PathBind = new(key: "path_type");
-    public NuiBind<bool> IsConfirmViewOpen = new(key: "is_confirm_view_open");
-    public NuiBind<string> PathLabel = new(key: "path_label");
-    public NuiBind<string> PathIcon = new(key: "path_icon");
-    public NuiBind<string> PathText = new(key: "path_text");
+    public readonly NuiBind<PathType> PathBind = new(key: "path_type");
+    public readonly NuiBind<bool> IsConfirmViewOpen = new(key: "is_confirm_view_open");
+    public readonly NuiBind<string> PathLabel = new(key: "path_label");
+    public readonly NuiBind<string> PathIcon = new(key: "path_icon");
+    public readonly NuiBind<string> PathText = new(key: "path_text");
     public NuiButton ConfirmPathButton = null!;
-    public NuiButton BackButton = null!;
+    public readonly NuiButton BackButton = null!;
 
     public MonkPathView(NwPlayer player)
     {
@@ -27,13 +27,6 @@ public sealed class MonkPathView : ScryView<MonkPathPresenter>
         {
             Children =
             {
-                new NuiRow
-                {
-                    Width = 0f,
-                    Height = 0f,
-                    Children = new List<NuiElement>(),
-                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 600f, 700f))]
-                },
                 new NuiColumn
                 {
                     Children =
@@ -44,7 +37,7 @@ public sealed class MonkPathView : ScryView<MonkPathPresenter>
                             {
                                 new NuiButtonImage(MonkPathNuiElements.CrashingMeteorIcon)
                                 {
-                                    Id = PathType.CrashingMeteor.ToString(),
+                                    Id = nameof(PathType.CrashingMeteor),
                                     Height = 64,
                                     Width = 64
                                 },
@@ -62,7 +55,7 @@ public sealed class MonkPathView : ScryView<MonkPathPresenter>
                             {
                                 new NuiButtonImage(MonkPathNuiElements.EchoingValleyIcon)
                                 {
-                                    Id = PathType.EchoingValley.ToString(),
+                                    Id = nameof(PathType.EchoingValley),
                                     Height = 64,
                                     Width = 64
                                 },
@@ -80,7 +73,7 @@ public sealed class MonkPathView : ScryView<MonkPathPresenter>
                             {
                                 new NuiButtonImage(MonkPathNuiElements.FickleStrandIcon)
                                 {
-                                    Id = PathType.FickleStrand.ToString(),
+                                    Id = nameof(PathType.FickleStrand),
                                     Height = 64,
                                     Width = 64
                                 },
@@ -98,7 +91,7 @@ public sealed class MonkPathView : ScryView<MonkPathPresenter>
                             {
                                 new NuiButtonImage(MonkPathNuiElements.FloatingLeafIcon)
                                 {
-                                    Id = PathType.FloatingLeaf.ToString(),
+                                    Id = nameof(PathType.FloatingLeaf),
                                     Height = 64,
                                     Width = 64
                                 },
@@ -116,7 +109,7 @@ public sealed class MonkPathView : ScryView<MonkPathPresenter>
                             {
                                 new NuiButtonImage(MonkPathNuiElements.IroncladBullIcon)
                                 {
-                                    Id = PathType.IroncladBull.ToString(),
+                                    Id = nameof(PathType.IroncladBull),
                                     Height = 64,
                                     Width = 64
                                 },
@@ -134,7 +127,7 @@ public sealed class MonkPathView : ScryView<MonkPathPresenter>
                             {
                                 new NuiButtonImage(MonkPathNuiElements.SplinteredChaliceIcon)
                                 {
-                                    Id = PathType.SplinteredChalice.ToString(),
+                                    Id = nameof(PathType.SplinteredChalice),
                                     Height = 64,
                                     Width = 64
                                 },
@@ -152,15 +145,14 @@ public sealed class MonkPathView : ScryView<MonkPathPresenter>
                             {
                                 new NuiButtonImage(MonkPathNuiElements.SwingingCenserIcon)
                                 {
-                                    Id = PathType.SwingingCenser.ToString(),
+                                    Id = nameof(PathType.SwingingCenser),
                                     Height = 64,
                                     Width = 64
                                 },
                                 new NuiText(text: MonkPathNuiElements.SwingingCenserDescription)
                                 {
                                     Border = false,
-                                    Scrollbars = NuiScrollbars.None,
-                                    ForegroundColor = new Color(50, 40, 30)
+                                    Scrollbars = NuiScrollbars.None
                                 }
                             }
                         }
