@@ -48,13 +48,6 @@ public class CastTechniqueService
         string techniqueName = castData.Spell.FeatReference.Name.ToString();
         TechniqueType castTechnique = (TechniqueType)castData.Spell.FeatReference.Id;
 
-        // Intercept code here to try weightless leap for Floating Leaf monk
-        if (castTechnique == TechniqueType.EmptyBody && MonkUtils.GetMonkPath(monk) == PathType.FloatingLeaf)
-        {
-            if (FloatingLeaf.TryWeightlessLeap(monk))
-                return;
-        }
-
         string techniqueCdTag = GetCooldownTag(castTechnique);
 
         if (TechniqueOnCooldown(monk, techniqueCdTag, techniqueName)) return;

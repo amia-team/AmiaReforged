@@ -12,6 +12,7 @@ public class FloatingLeaf : IAugmentation
 {
     private const string FloatingEagleStrikeTag = nameof(PathType.FloatingLeaf) +  nameof(TechniqueType.EagleStrike);
     private const string FloatingEmptyBodyTag = nameof(PathType.FloatingLeaf) + nameof(TechniqueType.EmptyBody);
+    private const string FLoatingLeapTag = nameof(PathType.FloatingLeaf) + "Leaping";
     public PathType PathType => PathType.FloatingLeaf;
 
     public void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData)
@@ -180,29 +181,60 @@ public class FloatingLeaf : IAugmentation
     public static bool TryWeightlessLeap(NwCreature monk)
     {
         bool hasEmptyBody = monk.ActiveEffects.Any(e => e.Tag == FloatingEmptyBodyTag);
-        if (!hasEmptyBody || IsNoFlyArea(monk)) return false;
+        if (!hasEmptyBody || IsNoFlyArea(monk) || IsLeaping(monk)) return false;
 
-        monk.ControllingPlayer?.EnterTargetMode(Leap, new TargetModeSettings
+        monk.ControllingPlayer?.EnterTargetMode(targetingData => DoLeap(monk, targetingData),
+            new TargetModeSettings
         {
             ValidTargets = ObjectTypes.Placeable | ObjectTypes.Creature | ObjectTypes.Door | ObjectTypes.Tile
         });
 
         return true;
+    }
 
-        void Leap(ModuleEvents.OnPlayerTarget targetingData)
+    private static void DoLeap(NwCreature monk, ModuleEvents.OnPlayerTarget targetingData)
+    {
+        if (monk.Area == null || monk.Location == null) return;
+
+        Location targetLocation = Location.Create(monk.Area, targetingData.TargetPosition, monk.Location.Rotation);
+
+        if (monk.Location.Distance(targetLocation) > 20)
         {
-            if (monk.Area == null || monk.Location == null) return;
+            monk.ControllingPlayer?.FloatingTextString("You can only leap within 20 meters",
+                false, false);
 
-            Location targetLocation = Location.Create(monk.Area, targetingData.TargetPosition, monk.Location.Rotation);
+            return;
+        }
+        NwPlaceable? dummy = NwPlaceable.Create("x2_plc_psheet", targetLocation);
+        if (dummy == null)
+        {
+            monk.ControllingPlayer?.SendServerMessage("DEBUG: Dummy creature failed to materialize for " +
+                                                      "Floating Leaf leap, please do a bug report!");
+            return;
+        }
+        if (!monk.HasLineOfSight(dummy))
+        {
+            monk.ControllingPlayer?.SendServerMessage("You don't have line of sight to where you want to leap");
+            dummy.Destroy();
+            return;
+        }
+        dummy.Destroy();
 
-            if (monk.Location.Distance(targetLocation) > 20)
-            {
-                monk.ControllingPlayer?.FloatingTextString("You can only jump within 20 meters", false, false);
-                return;
-            }
+        monk.ClearActionQueue();
+        monk.ApplyEffect(EffectDuration.Temporary, Effect.CutsceneImmobilize(), TimeSpan.FromSeconds(1.9));
+        monk.FaceToPoint(targetLocation.Position);
 
-            Effect flyEffect = Effect.DisappearAppear(targetLocation);
-            monk.ApplyEffect(EffectDuration.Temporary, flyEffect, TimeSpan.FromSeconds(2));
+        _ = DelayedLeap();
+
+        return;
+
+        async Task DelayedLeap()
+        {
+            await NwTask.Delay(TimeSpan.FromMilliseconds(100));
+
+            Effect leapEffect = Effect.DisappearAppear(targetLocation);
+            leapEffect.Tag = FLoatingLeapTag;
+            monk.ApplyEffect(EffectDuration.Temporary, leapEffect, TimeSpan.FromSeconds(2));
         }
     }
 
@@ -215,4 +247,7 @@ public class FloatingLeaf : IAugmentation
 
         return true;
     }
+
+    private static bool IsLeaping(NwCreature monk)
+        => monk.ActiveEffects.Any(e => e.Tag == FLoatingLeapTag);
 }
