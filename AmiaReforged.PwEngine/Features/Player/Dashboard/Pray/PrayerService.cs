@@ -1,4 +1,6 @@
-﻿using Anvil.API;
+﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using Anvil.API;
+using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core;
 
@@ -13,6 +15,61 @@ public class PrayerService
 {
     private const int PRAYER_COOLDOWN_MINUTES = 60;
     private readonly HashSet<uint> _processingPrayers = new();
+    private readonly WindowDirector _windowDirector;
+
+    public PrayerService(WindowDirector windowDirector)
+    {
+        _windowDirector = windowDirector;
+
+        // Subscribe to placeable OnUsed events to intercept idol usage
+        NwModule.Instance.OnUseFeat += OnModuleUseFeat;
+
+        // Register idol usage handler for all idols
+        RegisterIdolHandlers();
+    }
+
+    private void RegisterIdolHandlers()
+    {
+        // Find all idol placeables and subscribe to their OnUsed event
+        foreach (NwArea area in NwModule.Instance.Areas)
+        {
+            foreach (NwPlaceable placeable in area.FindObjectsOfTypeInArea<NwPlaceable>())
+            {
+                if (placeable.Tag?.StartsWith("idol2_", StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    placeable.OnUsed += OnIdolUsed;
+                }
+            }
+        }
+    }
+
+    private void OnModuleUseFeat(OnUseFeat obj)
+    {
+        // This is here in case we need to handle feat-based interactions in the future
+    }
+
+    private void OnIdolUsed(PlaceableEvents.OnUsed obj)
+    {
+        NwPlaceable idol = obj.Placeable;
+        NwCreature? user = obj.UsedBy;
+
+        if (user == null || !user.IsPlayerControlled) return;
+
+        NwPlayer? player = user.ControllingPlayer;
+        if (player == null) return;
+
+        // Check if the deity selection window is already open - if so, close it (toggle)
+        if (_windowDirector.IsWindowOpen(player, typeof(DeitySelectionPresenter)))
+        {
+            _windowDirector.CloseWindow(player, typeof(DeitySelectionPresenter));
+            return;
+        }
+
+        // Open the deity selection NUI
+        DeitySelectionView view = new();
+        DeitySelectionPresenter presenter = new(view, player, idol, this);
+        _windowDirector.OpenWindow(presenter);
+    }
 
     /// <summary>
     /// Handles when a player clicks the Pray button in the dashboard.
@@ -192,7 +249,7 @@ public class PrayerService
                 NwTask.Run(async () =>
                 {
                     await NwTask.Delay(TimeSpan.FromSeconds(5));
-                    player.SendServerMessage($"{deity} ignores your prayer...", ColorConstants.Orange);
+                    player.SendServerMessage($"{deity} does not answer your prayer this time...", ColorConstants.Orange);
                     player.SendServerMessage($"[Your chance on a blessing is {successRate}%]", ColorConstants.Gray);
                 });
             }
