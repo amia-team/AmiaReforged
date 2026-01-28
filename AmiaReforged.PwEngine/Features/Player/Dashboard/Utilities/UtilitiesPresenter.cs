@@ -12,6 +12,10 @@ public sealed class UtilitiesPresenter : ScryPresenter<UtilitiesView>
     private NuiWindowToken _token;
     private NuiWindow? _window;
 
+    // Geometry bind to force window position
+    private readonly NuiBind<NuiRect> _geometryBind = new("window_geometry");
+    private static readonly NuiRect WindowPosition = new(25f, 85f, 220f, 70f);
+
     public override UtilitiesView View { get; }
 
     public override NuiWindowToken Token() => _token;
@@ -26,7 +30,7 @@ public sealed class UtilitiesPresenter : ScryPresenter<UtilitiesView>
     {
         _window = new NuiWindow(View.RootLayout(), null!)
         {
-            Geometry = new NuiRect(25f, 85f, 220f, 70f),
+            Geometry = _geometryBind,
             Transparent = true,
             Resizable = false,
             Closable = false,
@@ -44,6 +48,9 @@ public sealed class UtilitiesPresenter : ScryPresenter<UtilitiesView>
         }
 
         _player.TryCreateNuiWindow(_window, out _token);
+
+        // Force the window position using the bind
+        Token().SetBindValue(_geometryBind, WindowPosition);
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent ev)
@@ -114,7 +121,25 @@ public sealed class UtilitiesPresenter : ScryPresenter<UtilitiesView>
 
     private void HandleSummonOptions()
     {
-        _player.SendServerMessage("Summon Options coming soon!", ColorConstants.Yellow);
+        // Get WindowDirector from AnvilCore
+        WindowDirector? windowDirector = AnvilCore.GetService<WindowDirector>();
+        if (windowDirector == null)
+        {
+            _player.SendServerMessage("Failed to open summon options. Please report this bug.", ColorConstants.Red);
+            return;
+        }
+
+        // Check if SummonOptions window is already open - if so, close it (toggle)
+        if (windowDirector.IsWindowOpen(_player, typeof(SummonOptions.SummonOptionsPresenter)))
+        {
+            windowDirector.CloseWindow(_player, typeof(SummonOptions.SummonOptionsPresenter));
+            return;
+        }
+
+        // Create and open SummonOptions window
+        SummonOptions.SummonOptionsView summonView = new();
+        SummonOptions.SummonOptionsPresenter summonPresenter = new(summonView, _player);
+        windowDirector.OpenWindow(summonPresenter);
     }
 
     private void HandleSelfSettings()
@@ -170,6 +195,8 @@ public sealed class UtilitiesPresenter : ScryPresenter<UtilitiesView>
 
     public override void Close()
     {
+        // Don't call RaiseCloseEvent() here - it causes infinite recursion
+        // The WindowDirector handles cleanup when CloseWindow() is called
         _token.Close();
     }
 }
