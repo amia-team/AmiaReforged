@@ -19,12 +19,13 @@ public sealed class HurtYourselfView : IScryView
                     Width = 0f,
                     Height = 0f,
                     Children = new List<NuiElement>(),
-                    DrawList = new List<NuiDrawListItem> { new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 280f, 200f)) }
+                    DrawList = new List<NuiDrawListItem> { new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 320f, 250f)) }
                 },
                 new NuiSpacer { Height = 10f },
                 new NuiLabel("Select Damage Amount:")
                 {
                     Height = 20f,
+                    ForegroundColor = new Color(30, 20, 12),
                     HorizontalAlign = NuiHAlign.Center
                 },
                 new NuiSpacer { Height = 10f },

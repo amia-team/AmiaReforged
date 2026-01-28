@@ -11,6 +11,10 @@ public sealed class SelfSettingsPresenter : ScryPresenter<SelfSettingsView>
     private NuiWindowToken _token;
     private NuiWindow? _window;
 
+    // Geometry bind to force window position
+    private readonly NuiBind<NuiRect> _geometryBind = new("window_geometry");
+    private static readonly NuiRect WindowPosition = new(45f, 130f, 170f, 70f);
+
     public override SelfSettingsView View { get; }
 
     public override NuiWindowToken Token() => _token;
@@ -25,7 +29,7 @@ public sealed class SelfSettingsPresenter : ScryPresenter<SelfSettingsView>
     {
         _window = new NuiWindow(View.RootLayout(), null!)
         {
-            Geometry = new NuiRect(25f, 160f, 170f, 70f),
+            Geometry = _geometryBind,
             Transparent = true,
             Resizable = false,
             Closable = false,
@@ -43,6 +47,10 @@ public sealed class SelfSettingsPresenter : ScryPresenter<SelfSettingsView>
         }
 
         _player.TryCreateNuiWindow(_window, out _token);
+
+        // Force the window position using the bind
+        Token().SetBindValue(_geometryBind, WindowPosition);
+
         UpdateBubbleTooltip();
     }
 
@@ -151,8 +159,17 @@ public sealed class SelfSettingsPresenter : ScryPresenter<SelfSettingsView>
             return;
         }
 
-        _player.SendServerMessage("ACP menu coming soon!", ColorConstants.Yellow);
-        // TODO: Implement ACP modal
+        // Check if ACP window is already open - if so, close it (toggle)
+        if (windowDirector.IsWindowOpen(_player, typeof(AcpPresenter)))
+        {
+            windowDirector.CloseWindow(_player, typeof(AcpPresenter));
+            return;
+        }
+
+        // Create and open ACP window
+        AcpView acpView = new();
+        AcpPresenter acpPresenter = new(acpView, _player);
+        windowDirector.OpenWindow(acpPresenter);
     }
 
     public override void UpdateView()
@@ -162,6 +179,8 @@ public sealed class SelfSettingsPresenter : ScryPresenter<SelfSettingsView>
 
     public override void Close()
     {
+        // Don't call RaiseCloseEvent() here - it causes infinite recursion
+        // The WindowDirector handles cleanup when CloseWindow() is called
         _token.Close();
     }
 }

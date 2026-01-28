@@ -36,7 +36,7 @@ public sealed class SelfSettingsView : IScryView
                         new NuiImage("ui_util_acp")
                         {
                             Id = "btn_acp",
-                            Tooltip = "Animation Combat Phenotype",
+                            Tooltip = "Phenotype Changer",
                             Width = 40f,
                             Height = 40f,
                             ImageAspect = NuiAspect.Fit

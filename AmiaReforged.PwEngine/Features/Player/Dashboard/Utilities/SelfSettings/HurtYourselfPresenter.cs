@@ -10,6 +10,10 @@ public sealed class HurtYourselfPresenter : ScryPresenter<HurtYourselfView>
     private NuiWindowToken _token;
     private NuiWindow? _window;
 
+    // Geometry bind to force window position
+    private readonly NuiBind<NuiRect> _geometryBind = new("window_geometry");
+    private static readonly NuiRect WindowPosition = new(360f, 100f, 320f, 220f);
+
     public override HurtYourselfView View { get; }
     public override NuiWindowToken Token() => _token;
 
@@ -21,10 +25,10 @@ public sealed class HurtYourselfPresenter : ScryPresenter<HurtYourselfView>
 
     public override void InitBefore()
     {
-        _window = new NuiWindow(View.RootLayout(), "Hurt Yourself")
+        _window = new NuiWindow(View.RootLayout(), "Hurt Yourself (WIP)")
         {
-            Geometry = new NuiRect(400f, 200f, 280f, 200f),
-            Resizable = false,
+            Geometry = _geometryBind,
+            Resizable = true,
             Closable = true,
             Collapsed = false
         };
@@ -39,6 +43,9 @@ public sealed class HurtYourselfPresenter : ScryPresenter<HurtYourselfView>
         }
 
         _player.TryCreateNuiWindow(_window, out _token);
+
+        // Force the window position using the bind
+        Token().SetBindValue(_geometryBind, WindowPosition);
 
         // Populate damage options based on ds_emotes.nss
         List<NuiComboEntry> damageOptions = new()
@@ -92,8 +99,6 @@ public sealed class HurtYourselfPresenter : ScryPresenter<HurtYourselfView>
             creature.ApplyEffect(EffectDuration.Instant, damageEffect);
             _player.SendServerMessage($"You hurt yourself for {damageAmount} damage.", ColorConstants.Orange);
         }
-
-        Close();
     }
 
     private int CalculateDamage(NwCreature creature, int option)
@@ -148,6 +153,8 @@ public sealed class HurtYourselfPresenter : ScryPresenter<HurtYourselfView>
 
     public override void Close()
     {
+        // Don't call RaiseCloseEvent() here - it causes infinite recursion
+        // The WindowDirector handles cleanup when CloseWindow() is called
         _token.Close();
     }
 }
