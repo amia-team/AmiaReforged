@@ -100,15 +100,14 @@ public sealed class DmDcPlaytimeService
 
     private async void OnPlaytimeTick()
     {
-        // Get all online DMs
-        List<NwPlayer> onlineDms = NwModule.Instance.Players
+        // Capture all DM data while on main thread
+        List<(NwPlayer dm, string cdKey, string playerName)> dmData = NwModule.Instance.Players
             .Where(p => p.IsValid && p.IsDM)
+            .Select(p => (dm: p, cdKey: p.CDKey, playerName: p.PlayerName))
             .ToList();
 
-        foreach (NwPlayer dm in onlineDms)
+        foreach (var (dm, cdKey, playerName) in dmData)
         {
-            string cdKey = dm.CDKey;
-
             try
             {
                 // Add playtime to persistent storage and get updated record
@@ -130,25 +129,26 @@ public sealed class DmDcPlaytimeService
                     int newBalance = await _dreamcoinService.AddDreamcoins(cdKey, DcPerAward);
                     await NwTask.SwitchToMainThread();
 
-                    if (newBalance >= 0)
+                    if (newBalance >= 0 && dm.IsValid)
                     {
                         dm.SendServerMessage($"You have been awarded {DcPerAward} Dreamcoins for 2 hours of DM time!", ColorConstants.Yellow);
-                        Log.Info($"Awarded {DcPerAward} DC to DM {dm.PlayerName} ({cdKey}) for playtime. New balance: {newBalance}");
+                        Log.Info($"Awarded {DcPerAward} DC to DM {playerName} ({cdKey}) for playtime. New balance: {newBalance}");
                     }
-                    else
+                    else if (newBalance < 0)
                     {
-                        Log.Warn($"Failed to award DC to DM {dm.PlayerName} ({cdKey})");
+                        Log.Warn($"Failed to award DC to DM {playerName} ({cdKey})");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Log.Error($"Error processing DM playtime tick for {dm.PlayerName} ({cdKey}): {ex.Message}");
+                Log.Error($"Error processing DM playtime tick for {playerName} ({cdKey}): {ex.Message}");
+                await NwTask.SwitchToMainThread();
             }
         }
 
         // Clean up disconnected DMs from cache
-        List<string> onlineCdKeys = onlineDms.Select(p => p.CDKey).ToList();
+        HashSet<string> onlineCdKeys = dmData.Select(p => p.cdKey).ToHashSet();
         List<string> disconnectedKeys = _cachedMinutes.Keys
             .Where(k => !onlineCdKeys.Contains(k))
             .ToList();

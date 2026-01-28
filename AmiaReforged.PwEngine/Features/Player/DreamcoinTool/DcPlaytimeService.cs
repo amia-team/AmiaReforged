@@ -86,15 +86,14 @@ public sealed class DcPlaytimeService
 
     private async void OnPlaytimeTick()
     {
-        // Get all online players (excluding DMs)
-        List<NwPlayer> onlinePlayers = NwModule.Instance.Players
+        // Capture all player data while on main thread
+        List<(NwPlayer player, string cdKey, string playerName)> playerData = NwModule.Instance.Players
             .Where(p => p.IsValid && !p.IsDM)
+            .Select(p => (player: p, cdKey: p.CDKey, playerName: p.PlayerName))
             .ToList();
 
-        foreach (NwPlayer player in onlinePlayers)
+        foreach (var (player, cdKey, playerName) in playerData)
         {
-            string cdKey = player.CDKey;
-
             try
             {
                 // Add playtime to persistent storage and get updated record
@@ -116,25 +115,26 @@ public sealed class DcPlaytimeService
                     int newBalance = await _dreamcoinService.AddDreamcoins(cdKey, 1);
                     await NwTask.SwitchToMainThread();
 
-                    if (newBalance >= 0)
+                    if (newBalance >= 0 && player.IsValid)
                     {
                         player.SendServerMessage("You have been awarded 1 Dreamcoin for 2 hours of playtime!", ColorConstants.Yellow);
-                        Log.Info($"Awarded 1 DC to {player.PlayerName} ({cdKey}) for playtime. New balance: {newBalance}");
+                        Log.Info($"Awarded 1 DC to {playerName} ({cdKey}) for playtime. New balance: {newBalance}");
                     }
-                    else
+                    else if (newBalance < 0)
                     {
-                        Log.Warn($"Failed to award DC to {player.PlayerName} ({cdKey})");
+                        Log.Warn($"Failed to award DC to {playerName} ({cdKey})");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Log.Error($"Error processing playtime tick for {player.PlayerName} ({cdKey}): {ex.Message}");
+                Log.Error($"Error processing playtime tick for {playerName} ({cdKey}): {ex.Message}");
+                await NwTask.SwitchToMainThread();
             }
         }
 
         // Clean up disconnected players from cache
-        List<string> onlineCdKeys = onlinePlayers.Select(p => p.CDKey).ToList();
+        HashSet<string> onlineCdKeys = playerData.Select(p => p.cdKey).ToHashSet();
         List<string> disconnectedKeys = _cachedMinutes.Keys
             .Where(k => !onlineCdKeys.Contains(k))
             .ToList();

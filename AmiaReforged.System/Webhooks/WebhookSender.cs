@@ -1,5 +1,4 @@
-﻿using AmiaReforged.Core.Helpers;
-using Anvil.API;
+﻿using Anvil.API;
 using NLog;
 
 namespace AmiaReforged.System.Webhooks;

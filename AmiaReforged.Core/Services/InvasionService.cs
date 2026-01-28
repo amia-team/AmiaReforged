@@ -1,7 +1,6 @@
 using System.Linq.Expressions;
-using AmiaReforged.Core.Helpers;
 using AmiaReforged.Core.Models;
-using Anvil.Services;
+using Anvil.API;
 using Microsoft.EntityFrameworkCore;
 using NLog;
 
@@ -12,12 +11,10 @@ public class InvasionService
 {
     private readonly DatabaseContextFactory _ctxFactory;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    private readonly NwTaskHelper _nwTaskHelper;
 
-    public InvasionService(DatabaseContextFactory ctxFactory, NwTaskHelper nwTaskHelper)
+    public InvasionService(DatabaseContextFactory ctxFactory)
     {
         _ctxFactory = ctxFactory;
-        _nwTaskHelper = nwTaskHelper;
     }
 
     public async Task AddInvasionArea(InvasionRecord invasionRecord)
@@ -48,7 +45,7 @@ public class InvasionService
             Log.Error(e, "Error updating invasion record");
         }
 
-        await _nwTaskHelper.TrySwitchToMainThread();
+        await NwTask.SwitchToMainThread();
     }
 
     public async Task DeleteInvasionRecord(InvasionRecord invasionRecord)
@@ -65,7 +62,7 @@ public class InvasionService
             Log.Error(e, "Error deleting invasion record");
         }
 
-        await _nwTaskHelper.TrySwitchToMainThread();
+        await NwTask.SwitchToMainThread();
     }
 
     public async Task<List<InvasionRecord>> GetAllInvasionRecords()
@@ -81,7 +78,7 @@ public class InvasionService
         {
             Log.Error(e, "Error getting all invasion records");
         }
-        await _nwTaskHelper.TrySwitchToMainThread();
+        await NwTask.SwitchToMainThread();
         return invasions;
     }
 
@@ -101,7 +98,7 @@ public class InvasionService
             Log.Error(e, "Error getting certain invasion record");
         }
 
-        await _nwTaskHelper.TrySwitchToMainThread();
+        await NwTask.SwitchToMainThread();
         return invasions;
     }
     public async Task<bool> InvasionRecordExists(string invasionId)
@@ -118,7 +115,7 @@ public class InvasionService
             Log.Error(e, "Error checking if invasion record exists");
         }
 
-        await _nwTaskHelper.TrySwitchToMainThread();
+        await NwTask.SwitchToMainThread();
 
         return exists;
     }
