@@ -156,10 +156,11 @@ public class PlayerDashboardService
 
         if (restChoice == 0)
         {
-            // Check if dashboard is already open - if so, close it (toggle behavior)
+            // Check if dashboard is already open - if so, close it and all sub-menus (toggle behavior)
             if (_director.IsWindowOpen(player, typeof(PlayerDashboardPresenter)))
             {
                 creature.ClearActionQueue();
+                CloseAllDashboardSubMenus(player);
                 _director.CloseWindow(player, typeof(PlayerDashboardPresenter));
                 return;
             }
@@ -241,6 +242,7 @@ public class PlayerDashboardService
 
         // Export player (persist)
         NWScript.ExportSingleCharacter(creature);
+        player.SendServerMessage("- Your character has been saved. -", ColorConstants.Cyan);
 
         // Delete various temporary local ints
         NWScript.DeleteLocalInt(creature, sVarName: "cs_vampirefang1");
@@ -381,6 +383,39 @@ public class PlayerDashboardService
         _director.OpenWindow(presenter);
 
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Closes all dashboard sub-menu windows for the specified player.
+    /// Called when the dashboard is closed via R key to ensure all related windows are closed.
+    /// </summary>
+    private void CloseAllDashboardSubMenus(NwPlayer player)
+    {
+        // Close all sub-menu windows that may be open
+        var subMenuTypes = new[]
+        {
+            typeof(Hide.HideEquipmentPresenter),
+            typeof(Emotes.EmotesPresenter),
+            typeof(Emotes.EmoteTransformPresenter),
+            typeof(Utilities.UtilitiesPresenter),
+            typeof(Utilities.SelfSettings.SelfSettingsPresenter),
+            typeof(Utilities.SelfSettings.AcpPresenter),
+            typeof(Utilities.SelfSettings.HurtYourselfPresenter),
+            typeof(Utilities.GameSettings.GameSettingsPresenter),
+            typeof(Utilities.GameSettings.EmoteSymbolPresenter),
+            typeof(Utilities.GameSettings.PartyAdvertiserPresenter),
+            typeof(Utilities.GameSettings.PvpToolPresenter),
+            typeof(Utilities.SummonOptions.SummonOptionsPresenter),
+            typeof(PlayerTools.Nui.PlayerToolsWindowPresenter)
+        };
+
+        foreach (var type in subMenuTypes)
+        {
+            if (_director.IsWindowOpen(player, type))
+            {
+                _director.CloseWindow(player, type);
+            }
+        }
     }
 
     /// <summary>

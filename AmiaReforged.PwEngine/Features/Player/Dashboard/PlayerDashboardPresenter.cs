@@ -1,4 +1,4 @@
-﻿﻿using AmiaReforged.PwEngine.Features.Player.Dashboard.Emotes;
+﻿using AmiaReforged.PwEngine.Features.Player.Dashboard.Emotes;
 using AmiaReforged.PwEngine.Features.Player.Dashboard.Hide;
 using AmiaReforged.PwEngine.Features.Player.Dashboard.Pray;
 using AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui;
@@ -16,6 +16,10 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
     private readonly NwPlayer _player;
     private NuiWindowToken _token;
     private NuiWindow? _window;
+
+    // Geometry bind to force window position
+    private readonly NuiBind<NuiRect> _geometryBind = new("window_geometry");
+    private static readonly NuiRect DashboardPosition = new(0f, 40f, 280f, 80f);
 
     [Inject]
     private PlayerDashboardService DashboardService { get; init; } = null!;
@@ -40,7 +44,7 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
     {
         _window = new NuiWindow(View.RootLayout(), null!)
         {
-            Geometry = new NuiRect(0f, 40f, 280f, 80f),
+            Geometry = _geometryBind,
             Transparent = true,
             Resizable = false,
             Closable = false,
@@ -61,6 +65,9 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
         }
 
         _player.TryCreateNuiWindow(_window, out _token);
+
+        // Force the window position using the bind
+        Token().SetBindValue(_geometryBind, DashboardPosition);
 
         // Don't subscribe to OnNuiEvent here - WindowDirector.HandleNuiEvents already handles this
         // and calls presenter.ProcessEvent(obj) when events occur
@@ -249,7 +256,9 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
 
     public override void Close()
     {
-        // WindowDirector handles event routing, so we don't need to unsubscribe
+        // Don't call RaiseCloseEvent() here - it causes infinite recursion
+        // The WindowDirector handles cleanup when CloseWindow() is called
+        // Sub-menu closing is handled by PlayerDashboardService.CloseAllDashboardSubMenus()
         _token.Close();
     }
 }
