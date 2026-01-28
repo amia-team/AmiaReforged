@@ -11,6 +11,10 @@ public sealed class EmoteTransformPresenter : ScryPresenter<EmoteTransformView>
     private NuiWindowToken _token;
     private NuiWindow? _window;
 
+    // Geometry bind to force window position
+    private readonly NuiBind<NuiRect> _geometryBind = new("window_geometry");
+    private static readonly NuiRect WindowPosition = new(350f, 100f, 220f, 180f);
+
     public EmoteTransformPresenter(EmoteTransformView view, NwPlayer player, NwCreature targetCreature)
     {
         View = view;
@@ -26,7 +30,7 @@ public sealed class EmoteTransformPresenter : ScryPresenter<EmoteTransformView>
     {
         _window = new NuiWindow(View.RootLayout(), null!)
         {
-            Geometry = new NuiRect(350f, 100f, 220f, 180f),
+            Geometry = _geometryBind,
             Transparent = true,
             Resizable = false,
             Border = false,
@@ -46,6 +50,9 @@ public sealed class EmoteTransformPresenter : ScryPresenter<EmoteTransformView>
         }
 
         _player.TryCreateNuiWindow(_window, out _token);
+
+        // Force the window position using the bind
+        Token().SetBindValue(_geometryBind, WindowPosition);
 
         // Get current transform values from the target creature
         float currentX = _targetCreature.VisualTransform.Translation.X;
@@ -111,6 +118,8 @@ public sealed class EmoteTransformPresenter : ScryPresenter<EmoteTransformView>
 
     public override void Close()
     {
+        // Don't call RaiseCloseEvent() here - it causes infinite recursion
+        // The WindowDirector handles cleanup when CloseWindow() is called
         _token.Close();
     }
 }

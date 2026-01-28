@@ -35,7 +35,7 @@ public sealed class EmoteTransformView : IScryView
                             Height = 25f,
                             VerticalAlign = NuiVAlign.Middle
                         },
-                        new NuiSliderFloat(TranslateX, -0.8f, 0.8f)
+                        new NuiSliderFloat(TranslateX, -1.0f, 1.0f)
                         {
                             Width = 150f,
                             Height = 25f
@@ -56,7 +56,7 @@ public sealed class EmoteTransformView : IScryView
                             Height = 25f,
                             VerticalAlign = NuiVAlign.Middle
                         },
-                        new NuiSliderFloat(TranslateY, -0.8f, 0.8f)
+                        new NuiSliderFloat(TranslateY, -1.0f, 1.0f)
                         {
                             Width = 150f,
                             Height = 25f
@@ -77,7 +77,7 @@ public sealed class EmoteTransformView : IScryView
                             Height = 25f,
                             VerticalAlign = NuiVAlign.Middle
                         },
-                        new NuiSliderFloat(TranslateZ, -0.5f, 0.8f)
+                        new NuiSliderFloat(TranslateZ, -1.0f, 1.5f)
                         {
                             Width = 150f,
                             Height = 25f

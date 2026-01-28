@@ -12,6 +12,10 @@ public sealed class EmotesPresenter : ScryPresenter<EmotesView>
     private NuiWindowToken _token;
     private NuiWindow? _window;
 
+    // Geometry bind to force window position
+    private readonly NuiBind<NuiRect> _geometryBind = new("window_geometry");
+    private static readonly NuiRect WindowPosition = new(25f, 90f, 350f, 320f);
+
     private EmotesModel Model { get; }
 
 
@@ -30,7 +34,7 @@ public sealed class EmotesPresenter : ScryPresenter<EmotesView>
     {
         _window = new NuiWindow(View.RootLayout(), null!)
         {
-            Geometry = new NuiRect(25f, 90f, 350f, 320f),
+            Geometry = _geometryBind,
             Transparent = true,
             Closable = false,
             Border = false,
@@ -51,14 +55,8 @@ public sealed class EmotesPresenter : ScryPresenter<EmotesView>
 
         _player.TryCreateNuiWindow(_window, out _token);
 
-        // Save the current Z translation to PC key for later restoration
-        NwCreature? creature = _player.LoginCreature;
-        if (creature != null)
-        {
-            string pcKey = creature.GetObjectVariable<LocalVariableString>("pc_key").Value ?? "";
-            float currentZ = creature.VisualTransform.Translation.Z;
-            creature.GetObjectVariable<LocalVariableFloat>($"{pcKey}_emote_saved_z").Value = currentZ;
-        }
+        // Force the window position using the bind
+        Token().SetBindValue(_geometryBind, WindowPosition);
 
         UpdateView();
     }
@@ -143,12 +141,12 @@ public sealed class EmotesPresenter : ScryPresenter<EmotesView>
             }
             else
             {
-                _player.SendServerMessage("You can only target yourself, your associates, your bottled companions, or another player.", ColorConstants.Orange);
+                _player.SendServerMessage("You can only target yourself, your associates, or another player.", ColorConstants.Orange);
             }
         }
         else
         {
-            _player.SendServerMessage("You can only target yourself, your associates, your bottled companions, or another player.", ColorConstants.Orange);
+            _player.SendServerMessage("You can only target yourself, your associates, or another player.", ColorConstants.Orange);
         }
     }
 
@@ -950,16 +948,9 @@ public sealed class EmotesPresenter : ScryPresenter<EmotesView>
 
     public override void Close()
     {
-        // Reset X and Y to 0, restore saved Z before closing
-        NwCreature? creature = _player.LoginCreature;
-        if (creature != null)
-        {
-            string pcKey = creature.GetObjectVariable<LocalVariableString>("pc_key").Value ?? "";
-            float savedZ = creature.GetObjectVariable<LocalVariableFloat>($"{pcKey}_emote_saved_z").Value;
 
-            creature.VisualTransform.Translation = new System.Numerics.Vector3(0f, 0f, savedZ);
-        }
-
+        // Don't call RaiseCloseEvent() here - it causes infinite recursion
+        // The WindowDirector handles cleanup when CloseWindow() is called
         _token.Close();
     }
 }

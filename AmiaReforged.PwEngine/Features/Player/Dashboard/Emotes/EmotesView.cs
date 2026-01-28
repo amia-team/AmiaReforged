@@ -30,7 +30,8 @@ public sealed class EmotesView : IScryView
             Children = new List<NuiElement>
             {
                 bgLayer,
-                new NuiRow { Children =
+                new NuiRow {
+                    Children =
                     {
                         new NuiSpacer { Width = 27f },
                         new NuiLabel("Select Self (Default), an Associate,")
