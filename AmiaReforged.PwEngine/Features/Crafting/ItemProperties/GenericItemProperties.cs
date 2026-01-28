@@ -453,7 +453,7 @@ public static class GenericItemProperties
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyKeen()!,
-                GuiLabel = "Keen",
+                GuiLabel = "Keen (Thrown)",
                 GoldCost = MythalKeenCost,
                 CraftingTier = CraftingTier.Perfect
             }

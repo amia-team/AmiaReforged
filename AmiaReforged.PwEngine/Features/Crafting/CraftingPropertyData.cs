@@ -333,7 +333,31 @@ public class CraftingPropertyData
                 GenericItemProperties.KeenThrown
             ];
 
-            AddSharedWeaponProperties(properties);
+            // Add shared weapon properties manually, excluding the regular Keen (1-point)
+            // since thrown weapons should only have KeenThrown (2-point)
+            properties.Add(DamageProperties.MassiveCriticals);
+            properties.Add(AttackBonusProperties.AttackBonus);
+            properties.Add(AttackBonusProperties.EnhancementBonus);
+            properties.Add(GenericItemProperties.VampiricRegeneration);
+            properties.Add(GenericItemProperties.Armor);
+            properties.Add(GenericItemProperties.Regeneration);
+            // Note: GenericItemProperties.Keen is intentionally excluded for thrown weapons
+            properties.Add(SkillProperties.Personal);
+            properties.Add(SkillProperties.Advantageous);
+            properties.Add(AbilityProperties.Abilities);
+            properties.Add(MeleeOnHitProperties.OnHits);
+            properties.Add(VisualEffectConstants.VisualEffects);
+            properties.Add(CastSpellProperties.FluffSpells);
+            properties.Add(CastSpellProperties.BeneficialSpells);
+            properties.Add(BonusSpellSlotProperties.AssassinBonusSpells);
+            properties.Add(BonusSpellSlotProperties.BardBonusSpells);
+            properties.Add(BonusSpellSlotProperties.BlackguardBonusSpells);
+            properties.Add(BonusSpellSlotProperties.ClericBonusSpells);
+            properties.Add(BonusSpellSlotProperties.DruidBonusSpells);
+            properties.Add(BonusSpellSlotProperties.PaladinBonusSpells);
+            properties.Add(BonusSpellSlotProperties.RangerBonusSpells);
+            properties.Add(BonusSpellSlotProperties.SorcererBonusSpells);
+            properties.Add(BonusSpellSlotProperties.WizardBonusSpells);
 
             Properties.TryAdd(weapon, properties);
         }

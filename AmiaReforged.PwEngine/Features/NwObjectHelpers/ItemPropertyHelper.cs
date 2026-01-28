@@ -76,6 +76,17 @@ public static class ItemPropertyHelper
                 {
                     LogManager.GetCurrentClassLogger().Info($"✓ MATCH FOUND via GameLabel! Label: '{ipGameLabel}', PowerCost: {matchingProperty.PowerCost}");
                 }
+                // Special case: If it's a Keen property and we still haven't found a match,
+                // look for any Keen property in the categories (handles both Keen and KeenThrown)
+                else if (ip.Property.PropertyType == ItemPropertyType.Keen)
+                {
+                    LogManager.GetCurrentClassLogger().Info($"Keen property detected - searching for any Keen in categories...");
+                    matchingProperty = allProperties.FirstOrDefault(p => p.ItemProperty.Property.PropertyType == ItemPropertyType.Keen);
+                    if (matchingProperty != null)
+                    {
+                        LogManager.GetCurrentClassLogger().Info($"✓ MATCH FOUND via Keen type matching! PowerCost: {matchingProperty.PowerCost}");
+                    }
+                }
             }
             else
             {
@@ -144,6 +155,17 @@ public static class ItemPropertyHelper
         ];
 
         if (noCost.Any(it => it == ip.Property.PropertyType)) return 0;
+
+        // Special handling for Keen property - it's 1 point for most weapons, 2 for thrown weapons
+        // This ensures Keen is always recognized correctly regardless of whether it matches a category
+        if (ip.Property.PropertyType == ItemPropertyType.Keen)
+        {
+            // Default is 1 point (for melee/ranged weapons)
+            // Note: The item context isn't available here, so we return 1 as the default
+            // The actual item type check happens in ToCraftingProperty where categories are available
+            LogManager.GetCurrentClassLogger().Info("Keen property detected - using default PowerCost of 1");
+            return 1;
+        }
 
         // Default fallback - this should rarely be used if categories are comprehensive
         // The ToCraftingProperty method should find matching properties in categories first
