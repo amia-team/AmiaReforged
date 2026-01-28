@@ -12,6 +12,10 @@ public sealed class HideEquipmentPresenter : ScryPresenter<HideEquipmentView>
     private NuiWindowToken _token;
     private NuiWindow? _window;
 
+    // Geometry bind to force window position
+    private readonly NuiBind<NuiRect> _geometryBind = new("window_geometry");
+    private static readonly NuiRect WindowPosition = new(25f, 85f, 170f, 70f);
+
     public override NuiWindowToken Token() => _token;
 
     public HideEquipmentPresenter(HideEquipmentView view, NwPlayer player)
@@ -24,7 +28,7 @@ public sealed class HideEquipmentPresenter : ScryPresenter<HideEquipmentView>
     {
         _window = new NuiWindow(View.RootLayout(), null!)
         {
-            Geometry = new NuiRect(25f, 85f, 170f, 70f),
+            Geometry = _geometryBind,
             Transparent = true,
             Resizable = false,
             Closable = false,
@@ -44,6 +48,9 @@ public sealed class HideEquipmentPresenter : ScryPresenter<HideEquipmentView>
 
         if (!_player.TryCreateNuiWindow(_window, out _token))
             return;
+
+        // Force the window position using the bind
+        Token().SetBindValue(_geometryBind, WindowPosition);
 
         // Don't subscribe to OnNuiEvent here - WindowDirector.HandleNuiEvents already handles this
         // and calls presenter.ProcessEvent(obj) when events occur
@@ -207,7 +214,8 @@ public sealed class HideEquipmentPresenter : ScryPresenter<HideEquipmentView>
 
     public override void Close()
     {
-        // WindowDirector handles event routing, so we don't need to unsubscribe
+        // Don't call RaiseCloseEvent() here - it causes infinite recursion
+        // The WindowDirector handles cleanup when CloseWindow() is called
         _token.Close();
     }
 }
