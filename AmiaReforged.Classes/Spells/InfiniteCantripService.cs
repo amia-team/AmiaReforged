@@ -17,7 +17,7 @@ public class InfiniteCantripService
         { ClassType.DragonDisciple, prcLevel => Math.Max(0, prcLevel) },
         { ClassType.Blackguard, prcLevel => Math.Max(0, prcLevel) },
         { ClassType.DivineChampion, prcLevel => Math.Max(0, prcLevel) },
-        { ClassType.ArcaneArcher, prcLevel => Math.Max(0, prcLevel / 2) }
+        { ClassType.ArcaneArcher, prcLevel => Math.Max(0, prcLevel) }
     };
 
     // Mapping of prestige classes to their valid base caster classes
