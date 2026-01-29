@@ -46,6 +46,7 @@ internal sealed class JobResourceManagerModel
         "js_bla_adin",
         "js_bla_carb",
         "js_bla_goin",
+        "js_bla_irin",
         "js_bla_miin",
         "js_bla_plin",
         "js_bla_siin",
