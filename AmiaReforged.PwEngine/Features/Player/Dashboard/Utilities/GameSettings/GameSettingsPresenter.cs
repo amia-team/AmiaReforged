@@ -11,6 +11,10 @@ public sealed class GameSettingsPresenter : ScryPresenter<GameSettingsView>
     private NuiWindowToken _token;
     private NuiWindow? _window;
 
+    // Geometry bind to force window position
+    private readonly NuiBind<NuiRect> _geometryBind = new("window_geometry");
+    private static readonly NuiRect WindowPosition = new(177f, 130f, 220f, 70f);
+
     public override GameSettingsView View { get; }
 
     public override NuiWindowToken Token() => _token;
@@ -25,7 +29,7 @@ public sealed class GameSettingsPresenter : ScryPresenter<GameSettingsView>
     {
         _window = new NuiWindow(View.RootLayout(), null!)
         {
-            Geometry = new NuiRect(25f, 160f, 220f, 70f),
+            Geometry = _geometryBind,
             Transparent = true,
             Resizable = false,
             Closable = false,
@@ -43,6 +47,10 @@ public sealed class GameSettingsPresenter : ScryPresenter<GameSettingsView>
         }
 
         _player.TryCreateNuiWindow(_window, out _token);
+
+        // Force the window position using the bind
+        Token().SetBindValue(_geometryBind, WindowPosition);
+
         UpdateXpBlockTooltip();
     }
 
@@ -138,8 +146,17 @@ public sealed class GameSettingsPresenter : ScryPresenter<GameSettingsView>
             return;
         }
 
-        _player.SendServerMessage("Party Advertiser coming soon!", ColorConstants.Yellow);
-        // TODO: Implement party advertiser modal
+        // Check if PartyAdvertiser window is already open - if so, close it (toggle)
+        if (windowDirector.IsWindowOpen(_player, typeof(PartyAdvertiserPresenter)))
+        {
+            windowDirector.CloseWindow(_player, typeof(PartyAdvertiserPresenter));
+            return;
+        }
+
+        // Create and open PartyAdvertiser window
+        PartyAdvertiserView partyView = new();
+        PartyAdvertiserPresenter partyPresenter = new(partyView, _player);
+        windowDirector.OpenWindow(partyPresenter);
     }
 
     private void HandlePvpTool()
@@ -152,8 +169,17 @@ public sealed class GameSettingsPresenter : ScryPresenter<GameSettingsView>
             return;
         }
 
-        _player.SendServerMessage("PvP Tool coming soon!", ColorConstants.Yellow);
-        // TODO: Implement PvP tool modal
+        // Check if PvpTool window is already open - if so, close it (toggle)
+        if (windowDirector.IsWindowOpen(_player, typeof(PvpToolPresenter)))
+        {
+            windowDirector.CloseWindow(_player, typeof(PvpToolPresenter));
+            return;
+        }
+
+        // Create and open PvpTool window
+        PvpToolView pvpView = new();
+        PvpToolPresenter pvpPresenter = new(pvpView, _player);
+        windowDirector.OpenWindow(pvpPresenter);
     }
 
     public override void UpdateView()
@@ -163,6 +189,8 @@ public sealed class GameSettingsPresenter : ScryPresenter<GameSettingsView>
 
     public override void Close()
     {
+        // Don't call RaiseCloseEvent() here - it causes infinite recursion
+        // The WindowDirector handles cleanup when CloseWindow() is called
         _token.Close();
     }
 }

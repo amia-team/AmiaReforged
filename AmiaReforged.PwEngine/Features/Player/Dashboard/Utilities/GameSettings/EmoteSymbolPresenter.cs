@@ -10,6 +10,10 @@ public sealed class EmoteSymbolPresenter : ScryPresenter<EmoteSymbolView>
     private NuiWindowToken _token;
     private NuiWindow? _window;
 
+    // Geometry bind to force window position
+    private readonly NuiBind<NuiRect> _geometryBind = new("window_geometry");
+    private static readonly NuiRect WindowPosition = new(360f, 100f, 370f, 270f);
+
     public override EmoteSymbolView View { get; }
     public override NuiWindowToken Token() => _token;
 
@@ -21,9 +25,9 @@ public sealed class EmoteSymbolPresenter : ScryPresenter<EmoteSymbolView>
 
     public override void InitBefore()
     {
-        _window = new NuiWindow(View.RootLayout(), "Emote Symbol")
+        _window = new NuiWindow(View.RootLayout(), "Emote Symbol (WIP)")
         {
-            Geometry = new NuiRect(350f, 200f, 320f, 220f),
+            Geometry = _geometryBind,
             Resizable = false,
             Closable = true,
             Collapsed = false
@@ -39,6 +43,9 @@ public sealed class EmoteSymbolPresenter : ScryPresenter<EmoteSymbolView>
         }
 
         _player.TryCreateNuiWindow(_window, out _token);
+
+        // Force the window position using the bind
+        Token().SetBindValue(_geometryBind, WindowPosition);
 
         // Get current emote symbol if set
         NwCreature? creature = _player.LoginCreature;
@@ -96,8 +103,6 @@ public sealed class EmoteSymbolPresenter : ScryPresenter<EmoteSymbolView>
 
         // Set the emote symbol
         creature.GetObjectVariable<LocalVariableString>("chat_emote").Value = symbol;
-
-        Close();
     }
 
     public override void UpdateView()
@@ -107,6 +112,8 @@ public sealed class EmoteSymbolPresenter : ScryPresenter<EmoteSymbolView>
 
     public override void Close()
     {
+        // Don't call RaiseCloseEvent() here - it causes infinite recursion
+        // The WindowDirector handles cleanup when CloseWindow() is called
         _token.Close();
     }
 }

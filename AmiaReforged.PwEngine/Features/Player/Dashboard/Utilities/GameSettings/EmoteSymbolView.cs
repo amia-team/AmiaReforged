@@ -18,20 +18,21 @@ public sealed class EmoteSymbolView : IScryView
                     Width = 0f,
                     Height = 0f,
                     Children = new List<NuiElement>(),
-                    DrawList = new List<NuiDrawListItem> { new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 320f, 220f)) }
+                    DrawList = new List<NuiDrawListItem> { new NuiDrawListImage("ui_bg", new NuiRect(-10f, -10f, 390f, 290f)) }
                 },
                 new NuiSpacer { Height = 10f },
                 new NuiLabel("Set Emote Symbol:")
                 {
                     Height = 20f,
+                    ForegroundColor = new Color(30, 20, 12),
                     HorizontalAlign = NuiHAlign.Center
                 },
                 new NuiSpacer { Height = 5f },
-                new NuiLabel("Enter a single character to denote narrative emotes.")
+                new NuiLabel("Enter a single character to denote emotes.")
                 {
                     Height = 35f,
                     HorizontalAlign = NuiHAlign.Center,
-                    ForegroundColor = new Color(180, 180, 180)
+                    ForegroundColor = new Color(30, 20, 12)
                 },
                 new NuiSpacer { Height = 10f },
                 new NuiRow
@@ -48,11 +49,11 @@ public sealed class EmoteSymbolView : IScryView
                     }
                 },
                 new NuiSpacer { Height = 5f },
-                new NuiLabel("(Use \" for double-quotes)")
+                new NuiLabel("(Double-quotes are supported.)")
                 {
                     Height = 20f,
                     HorizontalAlign = NuiHAlign.Center,
-                    ForegroundColor = new Color(150, 150, 150)
+                    ForegroundColor = new Color(30, 20, 12)
                 },
                 new NuiSpacer { Height = 15f },
                 new NuiRow
