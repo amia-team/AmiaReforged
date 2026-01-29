@@ -140,6 +140,7 @@ public static class ItemPropertyHelper
             ItemPropertyType.DecreasedSkillModifier,
             ItemPropertyType.DecreasedDamage,
             ItemPropertyType.DecreasedAttackModifier,
+            ItemPropertyType.DamageVulnerability,
             ItemPropertyType.WeightIncrease,
             ItemPropertyType.Material,
             ItemPropertyType.Quality,
@@ -151,6 +152,9 @@ public static class ItemPropertyHelper
             ItemPropertyType.UseLimitationSpecificAlignment,
             ItemPropertyType.NoDamage,
             ItemPropertyType.CastSpell,
+            ItemPropertyType.DecreasedEnhancementModifier,
+            ItemPropertyType.DecreasedSavingThrowsSpecific,
+            ItemPropertyType.VisualEffect,
             ItemPropertyType.Light
         ];
 
@@ -193,6 +197,8 @@ public static class ItemPropertyHelper
             ItemPropertyType.UseLimitationRacialType => false,
             ItemPropertyType.UseLimitationSpecificAlignment => false,
             ItemPropertyType.Additional => false,
+            ItemPropertyType.DecreasedEnhancementModifier => false,
+            ItemPropertyType.DecreasedSavingThrowsSpecific => false,
             _ => true
         };
     }
