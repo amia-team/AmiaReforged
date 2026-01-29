@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WorldSimulator.Tests", "Wor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.BackupService", "AmiaReforged.BackupService\AmiaReforged.BackupService.csproj", "{D0E485C0-BE20-4AE5-8E91-232712C1D0A1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.AdminPanel", "AmiaReforged.AdminPanel\AmiaReforged.AdminPanel.csproj", "{07C2450A-14A3-42CF-8066-4AA98B26B591}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -67,5 +69,9 @@ Global
 		{D0E485C0-BE20-4AE5-8E91-232712C1D0A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D0E485C0-BE20-4AE5-8E91-232712C1D0A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D0E485C0-BE20-4AE5-8E91-232712C1D0A1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{07C2450A-14A3-42CF-8066-4AA98B26B591}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{07C2450A-14A3-42CF-8066-4AA98B26B591}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{07C2450A-14A3-42CF-8066-4AA98B26B591}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{07C2450A-14A3-42CF-8066-4AA98B26B591}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

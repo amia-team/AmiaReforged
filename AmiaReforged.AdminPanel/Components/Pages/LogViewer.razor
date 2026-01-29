@@ -1,0 +1,143 @@
+@page "/logs/{ContainerId}"
+@using Microsoft.AspNetCore.Authorization
+@using AmiaReforged.AdminPanel.Services
+@attribute [Authorize]
+@inject IDockerMonitorService DockerService
+@implements IAsyncDisposable
+@rendermode InteractiveServer
+
+<PageTitle>Logs - @_containerName</PageTitle>
+
+<div class="log-viewer">
+    <div class="log-header">
+        <div class="header-left">
+            <a href="/" class="btn btn-secondary">← Back</a>
+            <h1>@_containerName</h1>
+        </div>
+        <div class="header-actions">
+            <label>
+                <input type="checkbox" @bind="_autoScroll" /> Auto-scroll
+            </label>
+            <button class="btn btn-secondary" @onclick="ClearLogs">Clear</button>
+            <button class="btn btn-primary" @onclick="ToggleStreaming">
+                @(_isStreaming ? "Stop" : "Start") Streaming
+            </button>
+        </div>
+    </div>
+
+    @if (_error != null)
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+
+    <div class="log-container">
+        <pre class="log-content">@foreach (var line in _logLines)
+{<span class="log-line @GetLogClass(line)">@line</span>
+}</pre>
+    </div>
+
+    <div class="log-footer">
+        <span>@_logLines.Count lines</span>
+        <span>@(_isStreaming ? "Streaming..." : "Stopped")</span>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string ContainerId { get; set; } = string.Empty;
+
+    private string _containerName = "Loading...";
+    private List<string> _logLines = new();
+    private bool _isStreaming;
+    private bool _autoScroll = true;
+    private string? _error;
+    private CancellationTokenSource? _streamCts;
+    private const int MaxLogLines = 1000;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var container = await DockerService.GetContainerAsync(ContainerId);
+        if (container == null)
+        {
+            _error = "Container not found";
+            return;
+        }
+        _containerName = container.Name;
+        await StartStreaming();
+    }
+
+    private async Task StartStreaming()
+    {
+        if (_isStreaming) return;
+
+        _isStreaming = true;
+        _streamCts = new CancellationTokenSource();
+        _error = null;
+
+        try
+        {
+            await foreach (var line in DockerService.StreamLogsAsync(
+                ContainerId, follow: true, tail: 100, ct: _streamCts.Token))
+            {
+                _logLines.Add(line);
+
+                // Trim old lines if we exceed the limit
+                while (_logLines.Count > MaxLogLines)
+                {
+                    _logLines.RemoveAt(0);
+                }
+
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when stopping
+        }
+        catch (Exception ex)
+        {
+            _error = $"Streaming error: {ex.Message}";
+        }
+        finally
+        {
+            _isStreaming = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task ToggleStreaming()
+    {
+        if (_isStreaming)
+        {
+            _streamCts?.Cancel();
+        }
+        else
+        {
+            await StartStreaming();
+        }
+    }
+
+    private void ClearLogs()
+    {
+        _logLines.Clear();
+    }
+
+    private string GetLogClass(string line)
+    {
+        var lower = line.ToLowerInvariant();
+        if (lower.Contains("error") || lower.Contains("fail") || lower.Contains("exception"))
+            return "log-error";
+        if (lower.Contains("warn"))
+            return "log-warn";
+        if (lower.Contains("segfault") || lower.Contains("sigsegv") || lower.Contains("core dumped"))
+            return "log-crash";
+        return "";
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        _streamCts?.Cancel();
+        _streamCts?.Dispose();
+        return ValueTask.CompletedTask;
+    }
+}

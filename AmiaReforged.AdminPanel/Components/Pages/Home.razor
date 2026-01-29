@@ -1,0 +1,255 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Authorization
+@using AmiaReforged.AdminPanel.Services
+@attribute [Authorize]
+@inject IDockerMonitorService DockerService
+@inject IMonitoringConfigService MonitoringService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Dashboard - Amia Admin Panel</PageTitle>
+
+<div class="dashboard">
+    <div class="dashboard-header">
+        <h1>Amia Admin Panel</h1>
+        <div class="header-actions">
+            <button class="btn btn-secondary" @onclick="RefreshContainers">
+                <span class="oi oi-reload"></span> Refresh
+            </button>
+            <a href="/Account/Logout" class="btn btn-outline-danger">Logout</a>
+        </div>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="loading">Loading containers...</div>
+    }
+    else if (_error != null)
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+    else
+    {
+        <div class="container-grid">
+            <div class="section">
+                <h2>All Containers (@_containers.Count)</h2>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Image</th>
+                            <th>State</th>
+                            <th>Status</th>
+                            <th>Monitored</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var container in _containers)
+                        {
+                            var isMonitored = _monitoredIds.Contains(container.Id);
+                            <tr class="@(container.State == "running" ? "running" : "stopped")">
+                                <td>@container.Name</td>
+                                <td class="image-cell">@TruncateImage(container.Image)</td>
+                                <td>
+                                    <span class="state-badge @container.State">@container.State</span>
+                                </td>
+                                <td>@container.Status</td>
+                                <td>
+                                    <input type="checkbox" checked="@isMonitored"
+                                           @onchange="() => ToggleMonitoring(container)" />
+                                </td>
+                                <td class="actions">
+                                    <button class="btn btn-sm btn-info" @onclick="() => ViewLogs(container)">
+                                        Logs
+                                    </button>
+                                    @if (container.State == "running")
+                                    {
+                                        <button class="btn btn-sm btn-warning" @onclick="() => RestartContainer(container)">
+                                            Restart
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" @onclick="() => StopContainer(container)">
+                                            Stop
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-sm btn-success" @onclick="() => StartContainer(container)">
+                                            Start
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (_monitoredContainers.Any())
+            {
+                <div class="section monitored-section">
+                    <h2>Monitored Containers (@_monitoredContainers.Count)</h2>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Watch Patterns</th>
+                                <th>Auto-Restart</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var mc in _monitoredContainers)
+                            {
+                                <tr>
+                                    <td>@mc.DisplayName</td>
+                                    <td class="patterns-cell">@mc.WatchPatterns</td>
+                                    <td>
+                                        <input type="checkbox" checked="@mc.AutoRestartEnabled"
+                                               @onchange="() => ToggleAutoRestart(mc)" />
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-secondary" @onclick="() => ConfigureMonitoring(mc)">
+                                            Configure
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<ContainerInfo> _containers = new();
+    private List<Data.MonitoredContainer> _monitoredContainers = new();
+    private HashSet<string> _monitoredIds = new();
+    private bool _isLoading = true;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshContainers();
+    }
+
+    private async Task RefreshContainers()
+    {
+        _isLoading = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            var containersTask = DockerService.GetContainersAsync();
+            var monitoredTask = MonitoringService.GetMonitoredContainersAsync();
+
+            await Task.WhenAll(containersTask, monitoredTask);
+
+            _containers = (await containersTask).ToList();
+            _monitoredContainers = (await monitoredTask).ToList();
+            _monitoredIds = _monitoredContainers.Select(m => m.ContainerId).ToHashSet();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load containers: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleMonitoring(ContainerInfo container)
+    {
+        try
+        {
+            if (_monitoredIds.Contains(container.Id))
+            {
+                await MonitoringService.DisableMonitoringAsync(container.Id);
+            }
+            else
+            {
+                await MonitoringService.EnableMonitoringAsync(container.Id, container.Name);
+            }
+            await RefreshContainers();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to toggle monitoring: {ex.Message}";
+        }
+    }
+
+    private async Task ToggleAutoRestart(Data.MonitoredContainer mc)
+    {
+        try
+        {
+            await MonitoringService.UpdateMonitoringSettingsAsync(
+                mc.ContainerId, !mc.AutoRestartEnabled, mc.WatchPatterns);
+            await RefreshContainers();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to update settings: {ex.Message}";
+        }
+    }
+
+    private void ViewLogs(ContainerInfo container)
+    {
+        Navigation.NavigateTo($"/logs/{container.Id}");
+    }
+
+    private void ConfigureMonitoring(Data.MonitoredContainer mc)
+    {
+        Navigation.NavigateTo($"/configure/{mc.ContainerId}");
+    }
+
+    private async Task RestartContainer(ContainerInfo container)
+    {
+        try
+        {
+            await DockerService.RestartContainerAsync(container.Id);
+            await RefreshContainers();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to restart container: {ex.Message}";
+        }
+    }
+
+    private async Task StopContainer(ContainerInfo container)
+    {
+        try
+        {
+            await DockerService.StopContainerAsync(container.Id);
+            await RefreshContainers();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to stop container: {ex.Message}";
+        }
+    }
+
+    private async Task StartContainer(ContainerInfo container)
+    {
+        try
+        {
+            await DockerService.StartContainerAsync(container.Id);
+            await RefreshContainers();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to start container: {ex.Message}";
+        }
+    }
+
+    private string TruncateImage(string image)
+    {
+        if (image.Length > 40)
+            return image[..37] + "...";
+        return image;
+    }
+}

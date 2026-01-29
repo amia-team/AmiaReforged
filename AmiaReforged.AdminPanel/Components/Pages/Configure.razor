@@ -1,0 +1,159 @@
+@page "/configure/{ContainerId}"
+@using Microsoft.AspNetCore.Authorization
+@using AmiaReforged.AdminPanel.Services
+@using AmiaReforged.AdminPanel.Data
+@attribute [Authorize]
+@inject IMonitoringConfigService MonitoringService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Configure Monitoring</PageTitle>
+
+<div class="configure-page">
+    <div class="page-header">
+        <a href="/" class="btn btn-secondary">← Back</a>
+        <h1>Configure Monitoring: @_container?.DisplayName</h1>
+    </div>
+
+    @if (_error != null)
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+
+    @if (_success != null)
+    {
+        <div class="alert alert-success">@_success</div>
+    }
+
+    @if (_container == null)
+    {
+        <div class="loading">Loading...</div>
+    }
+    else
+    {
+        <div class="config-form">
+            <div class="form-group">
+                <label for="patterns">Watch Patterns (pipe-separated regex patterns)</label>
+                <textarea id="patterns" @bind="_watchPatterns" class="form-control" rows="3"
+                    placeholder="segfault|SIGSEGV|core dumped"></textarea>
+                <small class="form-text">
+                    Enter regex patterns separated by | (pipe). The monitor will watch for these patterns in logs.
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" @bind="_autoRestartEnabled" />
+                    Enable Auto-Restart on Pattern Match
+                </label>
+                <small class="form-text">
+                    When enabled, the container will automatically restart when a watch pattern is detected.
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" @bind="_isMonitoringEnabled" />
+                    Monitoring Enabled
+                </label>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn btn-primary" @onclick="SaveSettings" disabled="@_isSaving">
+                    @(_isSaving ? "Saving..." : "Save Settings")
+                </button>
+                <button class="btn btn-danger" @onclick="DisableMonitoring">
+                    Remove from Monitoring
+                </button>
+            </div>
+
+            <div class="pattern-examples">
+                <h3>Common Patterns</h3>
+                <ul>
+                    <li><code>segfault|SIGSEGV|core dumped</code> - Crash detection</li>
+                    <li><code>OutOfMemoryException|OOM</code> - Memory issues</li>
+                    <li><code>FATAL|CRITICAL</code> - Fatal errors</li>
+                    <li><code>Connection refused|timeout</code> - Network issues</li>
+                </ul>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string ContainerId { get; set; } = string.Empty;
+
+    private MonitoredContainer? _container;
+    private string _watchPatterns = string.Empty;
+    private bool _autoRestartEnabled;
+    private bool _isMonitoringEnabled;
+    private bool _isSaving;
+    private string? _error;
+    private string? _success;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadContainer();
+    }
+
+    private async Task LoadContainer()
+    {
+        _container = await MonitoringService.GetMonitoredContainerAsync(ContainerId);
+        if (_container == null)
+        {
+            _error = "Container not found in monitoring list";
+            return;
+        }
+
+        _watchPatterns = _container.WatchPatterns;
+        _autoRestartEnabled = _container.AutoRestartEnabled;
+        _isMonitoringEnabled = _container.IsMonitoringEnabled;
+    }
+
+    private async Task SaveSettings()
+    {
+        _isSaving = true;
+        _error = null;
+        _success = null;
+
+        try
+        {
+            await MonitoringService.UpdateMonitoringSettingsAsync(
+                ContainerId, _autoRestartEnabled, _watchPatterns);
+
+            if (!_isMonitoringEnabled && _container!.IsMonitoringEnabled)
+            {
+                await MonitoringService.DisableMonitoringAsync(ContainerId);
+            }
+            else if (_isMonitoringEnabled && !_container!.IsMonitoringEnabled)
+            {
+                await MonitoringService.EnableMonitoringAsync(ContainerId, _container.DisplayName);
+            }
+
+            _success = "Settings saved successfully!";
+            await LoadContainer();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to save settings: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task DisableMonitoring()
+    {
+        try
+        {
+            await MonitoringService.DisableMonitoringAsync(ContainerId);
+            Navigation.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to disable monitoring: {ex.Message}";
+        }
+    }
+}
