@@ -19,6 +19,9 @@ public class DefendersDuty
     private const int ImmunityPerAlly = 2;
     private const int MaxImmunityBonus = 16;
 
+    // Colossal-sized AOE (MobHorrificapp = ID 33 in vfx_persistent.2da)
+    private const PersistentVfxType ColossalAuraVfx = (PersistentVfxType)33;
+
     private readonly ScriptHandleFactory _scriptHandleFactory;
 
     // Track protected creatures so we can unsubscribe from their damage events
@@ -107,7 +110,6 @@ public class DefendersDuty
                 ColorConstants.Yellow);
             creature.OnDeath -= OnProtectedCreatureDeath;
             RemoveProtectedVisual(creature);
-            RemovePhysicalImmunity(creature);
         }
 
         _protectedCreatures.Clear();
@@ -129,7 +131,7 @@ public class DefendersDuty
 
     private Effect? CreateThreatAuraEffect()
     {
-        PersistentVfxTableEntry? auraVfx = PersistentVfxType.MobCircgood;
+        PersistentVfxTableEntry? auraVfx = ColossalAuraVfx;
         if (auraVfx == null)
         {
             Defender.SendServerMessage("Error: Could not find VFX for Defender's Duty aura.", ColorConstants.Red);
@@ -296,12 +298,11 @@ public class DefendersDuty
         _protectedCreatures.Remove(creature);
         creature.OnDeath -= OnProtectedCreatureDeath;
 
-        Defender.SendServerMessage($"[DEBUG]: Removing visual and immunity from {creature.Name}.",
+        Defender.SendServerMessage($"[DEBUG]: Removing visual from {creature.Name}.",
             ColorConstants.Orange);
         RemoveProtectedVisual(creature);
-        RemovePhysicalImmunity(creature);
 
-        // Update immunity for remaining protected creatures
+        // Update defender's immunity for remaining protected creatures
         UpdateAllPhysicalImmunity();
 
         Defender.SendServerMessage(
@@ -327,24 +328,18 @@ public class DefendersDuty
     }
 
     /// <summary>
-    ///     Updates the physical damage immunity for all protected creatures and the defender.
-    ///     Each ally in the aura grants +4% immunity to slashing, piercing, and bludgeoning (max 40%).
+    ///     Updates the physical damage immunity for the defender only.
+    ///     Each ally in the aura grants +2% immunity to slashing, piercing, and bludgeoning (max 16%) to the defender.
     /// </summary>
     private void UpdateAllPhysicalImmunity()
     {
-        // Count includes the defender + all protected allies
-        int allyCount = _protectedCreatures.Count + 1;
+        // Immunity is based on number of protected allies (not counting defender)
+        int allyCount = _protectedCreatures.Count;
         int immunityPercent = Math.Min(allyCount * ImmunityPerAlly, MaxImmunityBonus);
 
-        // Update defender's immunity
+        // Only update defender's immunity - allies do not receive the buff
         if (Defender.LoginCreature != null)
             ApplyPhysicalImmunity(Defender.LoginCreature, immunityPercent);
-
-        // Update all protected allies' immunity
-        foreach (NwCreature creature in _protectedCreatures)
-        {
-            ApplyPhysicalImmunity(creature, immunityPercent);
-        }
     }
 
     private static void ApplyPhysicalImmunity(NwCreature creature, int percent)
@@ -375,7 +370,7 @@ public class DefendersDuty
 
     /// <summary>
     ///     Attempts to force a creature to attack the defender.
-    ///     The creature gets a Will save vs the defender's Taunt skill.
+    ///     The creature gets a Concentration check vs the defender's Taunt skill.
     /// </summary>
     private void TryTauntCreature(NwCreature defender, NwCreature target)
     {
