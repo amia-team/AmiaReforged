@@ -64,13 +64,13 @@ public static class DuelistBonusEffect
             return Effect.LinkEffects
             (
                 Effect.ACIncrease(bonusAc, ACBonus.ShieldEnchantment),
-                Effect.DamageIncrease(bonusDamage)
+                Effect.DamageIncrease(bonusDamage, DamageType.BaseWeapon)
             );
 
         return Effect.LinkEffects
         (
             Effect.ACIncrease(bonusAc, ACBonus.ShieldEnchantment),
-            Effect.DamageIncrease(bonusDamage),
+            Effect.DamageIncrease(bonusDamage, DamageType.BaseWeapon),
             Effect.AttackIncrease(bonusAb)
         );
     }
