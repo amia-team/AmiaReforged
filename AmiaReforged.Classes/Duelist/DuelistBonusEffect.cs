@@ -56,9 +56,9 @@ public static class DuelistBonusEffect
             _ => 0
         };
 
-        message = $"Applied Duelist +{bonusAc} shield AC and +{bonusDamage} damage bonus.";
+        message = $"Duelist bonuses applied: +{bonusAc} shield AC and +{bonusDamage} damage";
         if (bonusAb != 0)
-            message = $"Applied Duelist +{bonusAc} shield AC, +{bonusDamage} damage, and +{bonusAb} attack bonus.";
+            message = $"Duelist bonuses applied: +{bonusAc} shield AC, +{bonusDamage} damage, and +{bonusAb} attack bonus.";
 
         if (bonusAb == 0)
             return Effect.LinkEffects
