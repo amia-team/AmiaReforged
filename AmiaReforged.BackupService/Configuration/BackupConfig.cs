@@ -92,6 +92,26 @@ public class BackupConfig
     public string DiscordWebhookUrlEnvVar { get; set; } = "DISCORD_WEBHOOK_URL";
 
     /// <summary>
+    /// URL for the server health check endpoint.
+    /// </summary>
+    public string ServerHealthEndpoint { get; set; } = "http://localhost:8080/api/worldengine/health";
+
+    /// <summary>
+    /// Environment variable name for server health endpoint URL.
+    /// </summary>
+    public string ServerHealthEndpointEnvVar { get; set; } = "SERVER_HEALTH_ENDPOINT";
+
+    /// <summary>
+    /// Timeout in seconds for server health check.
+    /// </summary>
+    public int HealthCheckTimeoutSeconds { get; set; } = 10;
+
+    /// <summary>
+    /// Whether to skip character vault backup when server is unhealthy.
+    /// </summary>
+    public bool SkipCharacterBackupOnUnhealthyServer { get; set; } = true;
+
+    /// <summary>
     /// Gets the server vault source path from environment variable or default.
     /// </summary>
     public string GetServerVaultSourcePath() =>
@@ -102,4 +122,10 @@ public class BackupConfig
     /// </summary>
     public string? GetDiscordWebhookUrl() =>
         Environment.GetEnvironmentVariable(DiscordWebhookUrlEnvVar);
+
+    /// <summary>
+    /// Gets the server health endpoint URL from environment variable or default.
+    /// </summary>
+    public string GetServerHealthEndpoint() =>
+        Environment.GetEnvironmentVariable(ServerHealthEndpointEnvVar) ?? ServerHealthEndpoint;
 }

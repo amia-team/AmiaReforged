@@ -13,6 +13,8 @@ public class BackupWorker : BackgroundService
     private readonly IPostgresBackupService _backupService;
     private readonly IGitBackupService _gitService;
     private readonly ICharacterVaultBackupService _characterVaultService;
+    private readonly IServerHealthService _healthService;
+    private readonly IDiscordNotificationService _discordService;
     private readonly BackupConfig _backupConfig;
 
     public BackupWorker(
@@ -21,6 +23,8 @@ public class BackupWorker : BackgroundService
         IPostgresBackupService backupService,
         IGitBackupService gitService,
         ICharacterVaultBackupService characterVaultService,
+        IServerHealthService healthService,
+        IDiscordNotificationService discordService,
         BackupConfig backupConfig)
     {
         _logger = logger;
@@ -28,6 +32,8 @@ public class BackupWorker : BackgroundService
         _backupService = backupService;
         _gitService = gitService;
         _characterVaultService = characterVaultService;
+        _healthService = healthService;
+        _discordService = discordService;
         _backupConfig = backupConfig;
     }
 
@@ -132,6 +138,28 @@ public class BackupWorker : BackgroundService
         bool characterVaultSuccess = true;
         if (_backupConfig.EnableCharacterVaultBackup)
         {
+            // Check server health before backing up characters
+            if (_backupConfig.SkipCharacterBackupOnUnhealthyServer)
+            {
+                _logger.LogInformation("Checking server health before character backup");
+                ServerHealthResult healthResult = await _healthService.CheckHealthAsync(cancellationToken);
+
+                if (!healthResult.IsHealthy)
+                {
+                    characterVaultSuccess = false;
+                    string errorMessage = $"Skipping character vault backup - server is unhealthy: {healthResult.ErrorMessage}";
+                    _logger.LogWarning(errorMessage);
+
+                    await _discordService.SendWarningAsync(
+                        "⚠️ Character Backup Skipped",
+                        $"Server health check failed. Character vault backup was skipped to avoid potentially corrupted data.\n\n**Reason:** {healthResult.ErrorMessage}",
+                        cancellationToken);
+
+                    // Skip character backup but continue with git commit of database backups
+                    goto GitCommit;
+                }
+            }
+
             _logger.LogInformation("Starting character vault backup");
             CharacterVaultBackupResult vaultResult = await _characterVaultService.BackupCharacterVaultAsync(cancellationToken);
 
@@ -145,15 +173,14 @@ public class BackupWorker : BackgroundService
                 characterVaultSuccess = false;
                 _logger.LogWarning("Character vault backup failed: {Error}", vaultResult.ErrorMessage);
 
-                // TODO: Send Discord webhook notification
-                // string? webhookUrl = _backupConfig.GetDiscordWebhookUrl();
-                // if (!string.IsNullOrEmpty(webhookUrl))
-                // {
-                //     await SendDiscordNotificationAsync(webhookUrl, vaultResult.ErrorMessage);
-                // }
+                await _discordService.SendErrorAsync(
+                    "❌ Character Backup Failed",
+                    $"Character vault backup encountered an error.\n\n**Error:** {vaultResult.ErrorMessage}",
+                    cancellationToken);
             }
         }
 
+        GitCommit:
         if (successCount > 0 || (characterVaultSuccess && _backupConfig.EnableCharacterVaultBackup))
         {
             // Commit and push to git

@@ -26,6 +26,9 @@
         <!-- Configuration -->
         <PackageReference Include="DotNetEnv" Version="3.1.1" />
 
+        <!-- HTTP Client -->
+        <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
+
         <!-- Git Operations -->
         <PackageReference Include="LibGit2Sharp" Version="0.30.0" />
     </ItemGroup>

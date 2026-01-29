@@ -40,10 +40,16 @@ public class Program
                     context.Configuration.GetSection("Backup").Bind(backupConfig);
                     services.AddSingleton(backupConfig);
 
+                    // Register HTTP clients
+                    services.AddHttpClient("ServerHealth");
+                    services.AddHttpClient("Discord");
+
                     // Register services
                     services.AddSingleton<IPostgresBackupService, PostgresBackupService>();
                     services.AddSingleton<IGitBackupService, GitBackupService>();
                     services.AddSingleton<ICharacterVaultBackupService, CharacterVaultBackupService>();
+                    services.AddSingleton<IServerHealthService, ServerHealthService>();
+                    services.AddSingleton<IDiscordNotificationService, DiscordNotificationService>();
 
                     // Register the background worker
                     services.AddHostedService<BackupWorker>();
