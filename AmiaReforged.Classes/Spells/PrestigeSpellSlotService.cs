@@ -24,19 +24,14 @@ public class PrestigeSpellSlotService
     // Dictionary mapping prestige classes to their caster level modifier formulas
     private readonly Dictionary<ClassType, Func<int, int>> _prestigeClassModifiers = new()
     {
-        { ClassType.DragonDisciple, prcLevel => Math.Max(0, prcLevel) },
         { ClassType.Blackguard, prcLevel => Math.Max(0, prcLevel) }
     };
 
     // Mapping of prestige classes to their valid base caster classes
-    // NOTE: Only Dragon Disciple and Blackguard need custom spell slot handling
-    // Other prestige classes (Pale Master, Arcane Archer) are handled correctly by Classes.2da
+    // NOTE: Only Blackguard needs custom spell slot handling due to classes.2da limitations
+    // Other prestige classes (Pale Master, Arcane Archer, Dragon Disciple) are handled correctly by Classes.2da
     private static readonly Dictionary<ClassType, HashSet<ClassType>> PrestigeToBaseCasterMap = new()
     {
-        {
-            ClassType.DragonDisciple,
-            new HashSet<ClassType> { ClassType.Sorcerer, ClassType.Bard }
-        },
         {
             ClassType.Blackguard,
             new HashSet<ClassType> { ClassType.Cleric, ClassType.Druid, ClassType.Ranger }
@@ -163,10 +158,10 @@ public class PrestigeSpellSlotService
             }
         }
 
-        // Check if we need to add spell slots - ONLY if they have DD or Blackguard
+        // Check if we need to add spell slots - ONLY if they have Blackguard
         if (prestigeClasses.Count == 0)
         {
-            Log.Info($"STEP 3: No prestige caster classes (Dragon Disciple/Blackguard) found");
+            Log.Info($"STEP 3: No prestige caster classes (Blackguard) found");
 
             // If they have a hide but no longer need it, remove it
             if (existingHide != null)
@@ -536,8 +531,6 @@ public class PrestigeSpellSlotService
     {
         return classType switch
         {
-            ClassType.Sorcerer => NWScript.IP_CONST_CLASS_SORCERER,
-            ClassType.Bard => NWScript.IP_CONST_CLASS_BARD,
             ClassType.Cleric => NWScript.IP_CONST_CLASS_CLERIC,
             ClassType.Druid => NWScript.IP_CONST_CLASS_DRUID,
             ClassType.Ranger => NWScript.IP_CONST_CLASS_RANGER,
@@ -549,8 +542,6 @@ public class PrestigeSpellSlotService
     {
         Ability ability = classType switch
         {
-            ClassType.Sorcerer => Ability.Charisma,
-            ClassType.Bard => Ability.Charisma,
             ClassType.Cleric => Ability.Wisdom,
             ClassType.Druid => Ability.Wisdom,
             ClassType.Ranger => Ability.Wisdom,
@@ -574,124 +565,14 @@ public class PrestigeSpellSlotService
     {
         return classType switch
         {
-            ClassType.Bard => GetBardSpellSlots(casterLevel, spellLevel),
             ClassType.Cleric => GetClericSpellSlots(casterLevel, spellLevel),
             ClassType.Druid => GetDruidSpellSlots(casterLevel, spellLevel),
             ClassType.Ranger => GetRangerSpellSlots(casterLevel, spellLevel),
-            ClassType.Sorcerer => GetSorcererSpellSlots(casterLevel, spellLevel),
             _ => 0
         };
     }
 
     // NWN spell slot progression tables
-    private int GetBardSpellSlots(int casterLevel, int spellLevel)
-    {
-        // Bard spell progression per cls_spgn_bard.2da
-        return (spellLevel, casterLevel) switch
-        {
-            // Level 1 spells
-            (1, >= 15) => 4,
-            (1, >= 5) => 3,
-            (1, >= 4) => 2,
-            (1, >= 3) => 1,
-
-            // Level 2 spells
-            (2, >= 16) => 4,
-            (2, >= 8) => 3,
-            (2, >= 6) => 2,
-            (2, >= 5) => 1,
-
-            // Level 3 spells
-            (3, >= 17) => 4,
-            (3, >= 11) => 3,
-            (3, >= 9) => 2,
-            (3, >= 8) => 1,
-
-            // Level 4 spells
-            (4, >= 18) => 4,
-            (4, >= 14) => 3,
-            (4, >= 12) => 2,
-            (4, >= 11) => 1,
-
-            // Level 5 spells
-            (5, >= 19) => 4,
-            (5, >= 17) => 3,
-            (5, >= 15) => 2,
-            (5, >= 14) => 1,
-
-            // Level 6 spells
-            (6, >= 20) => 4,
-            (6, >= 19) => 3,
-            (6, >= 18) => 2,
-            (6, >= 17) => 1,
-
-            _ => 0
-        };
-    }
-
-    private int GetSorcererSpellSlots(int casterLevel, int spellLevel)
-    {
-        // Sorcerer spell progression per cls_spgn_sorc.2da
-        return (spellLevel, casterLevel) switch
-        {
-            // Level 1 spells
-            (1, >= 4) => 6,
-            (1, >= 3) => 5,
-            (1, >= 2) => 4,
-            (1, >= 1) => 3,
-
-            // Level 2 spells
-            (2, >= 7) => 6,
-            (2, >= 6) => 5,
-            (2, >= 5) => 4,
-            (2, >= 4) => 3,
-
-            // Level 3 spells
-            (3, >= 9) => 6,
-            (3, >= 8) => 5,
-            (3, >= 7) => 4,
-            (3, >= 6) => 3,
-
-            // Level 4 spells
-            (4, >= 11) => 6,
-            (4, >= 10) => 5,
-            (4, >= 9) => 4,
-            (4, >= 8) => 3,
-
-            // Level 5 spells
-            (5, >= 13) => 6,
-            (5, >= 12) => 5,
-            (5, >= 11) => 4,
-            (5, >= 10) => 3,
-
-            // Level 6 spells
-            (6, >= 15) => 6,
-            (6, >= 14) => 5,
-            (6, >= 13) => 4,
-            (6, >= 12) => 3,
-
-            // Level 7 spells
-            (7, >= 17) => 6,
-            (7, >= 16) => 5,
-            (7, >= 15) => 4,
-            (7, >= 14) => 3,
-
-            // Level 8 spells
-            (8, >= 19) => 6,
-            (8, >= 18) => 5,
-            (8, >= 17) => 4,
-            (8, >= 16) => 3,
-
-            // Level 9 spells
-            (9, >= 20) => 6,
-            (9, >= 19) => 4,
-            (9, >= 18) => 3,
-
-
-            _ => 0
-        };
-    }
-
     private int GetClericSpellSlots(int casterLevel, int spellLevel)
     {
         // Cleric spell progression per cls_spgn_cler.2da
