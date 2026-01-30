@@ -20,7 +20,7 @@ public static class DuelistBonusEffect
             if (existingDuelistEffect == null) return;
 
             creature.RemoveEffect(existingDuelistEffect);
-            player?.SendServerMessage("Removed Duelist bonus effect.");
+            player?.SendServerMessage("Duelist bonuses removed.");
 
             return;
         }
@@ -48,7 +48,7 @@ public static class DuelistBonusEffect
             _ => 0
         };
 
-        message = $"Duelist bonuses applied: +{bonusAc} shield AC and +{bonusDamage} damage";
+        message = $"Duelist bonuses applied: +{bonusAc} shield AC and +{bonusDamage} damage.";
         if (bonusAb != 0)
             message = $"Duelist bonuses applied: +{bonusAc} shield AC, +{bonusDamage} damage, and +{bonusAb} attack bonus.";
 
