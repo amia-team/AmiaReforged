@@ -20,7 +20,7 @@ public class DefendersDuty
     private const int MaxImmunityBonus = 16;
 
     // Colossal-sized AOE (MobHorrificapp = ID 33 in vfx_persistent.2da)
-    private const PersistentVfxType ColossalAuraVfx = PersistentVfxType.PerInvisSphere;
+    private const PersistentVfxType ColossalAuraVfx = PersistentVfxType.MobMenace;
 
     private readonly ScriptHandleFactory _scriptHandleFactory;
 
