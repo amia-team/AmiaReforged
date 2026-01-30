@@ -216,25 +216,23 @@ public class DefendersDuty
         if (enteringCreature == defender)
             return;
 
-        // Check debounce to prevent bumping exploit
-        if (IsDebounced(enteringCreature))
-        {
-            Defender.SendServerMessage($"[DEBUG]: {enteringCreature.Name} is debounced, skipping.", ColorConstants.Yellow);
-            return;
-        }
-
-        SetDebounced(enteringCreature);
-
         if (defender.IsReactionTypeHostile(enteringCreature))
         {
-            // Hostile: attempt to taunt
+            // Hostile: attempt to taunt (with debounce to prevent bumping exploit)
+            if (IsDebounced(enteringCreature))
+            {
+                Defender.SendServerMessage($"[DEBUG]: {enteringCreature.Name} is debounced, skipping taunt.", ColorConstants.Yellow);
+                return;
+            }
+
+            SetDebounced(enteringCreature);
             Defender.SendServerMessage($"[DEBUG]: {enteringCreature.Name} is hostile, attempting taunt.",
                 ColorConstants.Cyan);
             TryTauntCreature(defender, enteringCreature);
         }
         else if (defender.IsReactionTypeFriendly(enteringCreature))
         {
-            // Friendly: add protection
+            // Friendly: add protection immediately (no debounce)
             Defender.SendServerMessage($"[DEBUG]: {enteringCreature.Name} is friendly, adding protection.",
                 ColorConstants.Cyan);
             if (enteringCreature.IsPlayerControlled(out NwPlayer? player))
@@ -282,6 +280,8 @@ public class DefendersDuty
     /// </summary>
     public void OnExitAura(NwCreature exitingCreature)
     {
+        NwCreature? defender = Defender.LoginCreature;
+
         Defender.SendServerMessage($"[DEBUG]: OnExitAura - {exitingCreature.Name} exiting.", ColorConstants.Cyan);
 
         // Remove protection when friendly leaves the aura
@@ -292,8 +292,11 @@ public class DefendersDuty
             RemoveProtection(exitingCreature);
         }
 
-        // Clear debounce on exit so re-entry after cooldown works properly
-        ClearDebounceVar(exitingCreature);
+        // Clear debounce on exit for hostiles so re-entry after cooldown works properly
+        if (defender != null && defender.IsReactionTypeHostile(exitingCreature))
+        {
+            ClearDebounceVar(exitingCreature);
+        }
     }
 
     #endregion
