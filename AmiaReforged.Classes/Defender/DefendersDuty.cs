@@ -1,11 +1,9 @@
 ﻿using Anvil.API;
 using Anvil.API.Events;
-using Anvil.Services;
 using NWN.Core.NWNX;
 using NWN.Native.API;
 using DamageType = Anvil.API.DamageType;
 using EffectSubType = Anvil.API.EffectSubType;
-using InventorySlot = Anvil.API.InventorySlot;
 using Skill = Anvil.API.Skill;
 
 namespace AmiaReforged.Classes.Defender;
@@ -19,10 +17,11 @@ public class DefendersDuty
     private const int ImmunityPerAlly = 2;
     private const int MaxImmunityBonus = 16;
 
-    // Colossal-sized AOE (MobHorrificapp = ID 33 in vfx_persistent.2da)
-    private const PersistentVfxType ColossalAuraVfx = PersistentVfxType.MobMenace;
+    private const PersistentVfxType ColossalAuraVfx = (PersistentVfxType)58;
 
-    private readonly ScriptHandleFactory _scriptHandleFactory;
+    // Debounce constants - 6 second cooldown per creature
+    private const string DebounceVarPrefix = "def_duty_debounce_";
+    private const int DebounceCooldownSeconds = 6;
 
     // Track protected creatures so we can unsubscribe from their damage events
     private readonly HashSet<NwCreature> _protectedCreatures = new();
@@ -34,13 +33,17 @@ public class DefendersDuty
     /// <summary>
     ///     Do not construct directly. Use <see cref="DefendersDutyFactory" /> to create this object.
     /// </summary>
-    public DefendersDuty(NwPlayer defender, ScriptHandleFactory scriptHandleFactory)
+    public DefendersDuty(NwPlayer defender)
     {
         Defender = defender;
-        _scriptHandleFactory = scriptHandleFactory;
     }
 
     private NwPlayer Defender { get; }
+
+    /// <summary>
+    ///     Gets the defender creature for this instance.
+    /// </summary>
+    public NwCreature? DefenderCreature => Defender.LoginCreature;
 
     public void Apply()
     {
@@ -66,6 +69,10 @@ public class DefendersDuty
             CleanupAllProtectedCreatures();
             Defender.SendServerMessage("[DEBUG]: Cleanup complete, removing aura effect.", ColorConstants.Orange);
             Defender.LoginCreature.RemoveEffect(existingAura);
+
+            // Unregister from factory
+            DefendersDutyFactory.Unregister(Defender.LoginCreature);
+
             Defender.SendServerMessage("Defender's Duty aura deactivated.", ColorConstants.Orange);
             return;
         }
@@ -73,6 +80,9 @@ public class DefendersDuty
         // Create and apply the threat aura
         Effect? threatAura = CreateThreatAuraEffect();
         if (threatAura == null) return;
+
+        // Register with factory so script handlers can find us
+        DefendersDutyFactory.Register(Defender.LoginCreature, this);
 
         // Subscribe to disconnect to clean up
         Defender.OnClientLeave += OnDefenderLeave;
@@ -110,6 +120,7 @@ public class DefendersDuty
                 ColorConstants.Yellow);
             creature.OnDeath -= OnProtectedCreatureDeath;
             RemoveProtectedVisual(creature);
+            ClearDebounceVar(creature);
         }
 
         _protectedCreatures.Clear();
@@ -126,7 +137,11 @@ public class DefendersDuty
 
         // Remove immunity from defender as well
         if (Defender.LoginCreature != null)
+        {
             RemovePhysicalImmunity(Defender.LoginCreature);
+            // Unregister from factory
+            DefendersDutyFactory.Unregister(Defender.LoginCreature);
+        }
     }
 
     private Effect? CreateThreatAuraEffect()
@@ -138,43 +153,77 @@ public class DefendersDuty
             return null;
         }
 
-        NwCreature defenderCreature = Defender.LoginCreature!;
-
-        ScriptCallbackHandle enterHandle =
-            _scriptHandleFactory.CreateUniqueHandler(info => OnEnterAura(info, defenderCreature));
-
-        ScriptCallbackHandle heartbeatHandle =
-            _scriptHandleFactory.CreateUniqueHandler(info => OnHeartbeatAura(info, defenderCreature));
-
-        ScriptCallbackHandle exitHandle =
-            _scriptHandleFactory.CreateUniqueHandler(info => OnExitAura(info, defenderCreature));
-
-        Effect threatAuraEffect = Effect.AreaOfEffect(auraVfx, enterHandle, heartbeatHandle, exitHandle);
+        // Use the pre-defined AOE scripts from vfx_persistent.2da entry 58
+        // Scripts: def_duty_enter, def_duty_hb, def_duty_exit
+        Effect threatAuraEffect = Effect.AreaOfEffect(auraVfx);
         threatAuraEffect.SubType = EffectSubType.Supernatural;
         threatAuraEffect.Tag = ThreatAuraEffectTag;
 
         return threatAuraEffect;
     }
 
-    private ScriptHandleResult OnEnterAura(CallInfo info, NwCreature defender)
+    #region Debounce Helpers
+
+    /// <summary>
+    ///     Gets the debounce variable name for a specific creature.
+    /// </summary>
+    private string GetDebounceVar(NwCreature creature) => $"{DebounceVarPrefix}{Defender.LoginCreature?.ObjectId}";
+
+    /// <summary>
+    ///     Checks if a creature is currently debounced (recently processed).
+    /// </summary>
+    private bool IsDebounced(NwCreature creature)
     {
-        Defender.SendServerMessage("[DEBUG]: OnEnterAura triggered.", ColorConstants.Cyan);
+        int lastProcessed = creature.GetObjectVariable<LocalVariableInt>(GetDebounceVar(creature)).Value;
+        if (lastProcessed == 0) return false;
 
-        if (!info.TryGetEvent(out AreaOfEffectEvents.OnEnter? eventData)
-            || eventData.Entering is not NwCreature enteringCreature)
-        {
-            Defender.SendServerMessage("[DEBUG]: OnEnterAura - failed to get event or not a creature.",
-                ColorConstants.Red);
-            return ScriptHandleResult.Handled;
-        }
+        int now = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
+        return now - lastProcessed < DebounceCooldownSeconds;
+    }
 
-        Defender.SendServerMessage(
-            $"[DEBUG]: OnEnterAura - {enteringCreature.Name} entering (Valid: {enteringCreature.IsValid}).",
-            ColorConstants.Cyan);
+    /// <summary>
+    ///     Sets the debounce timestamp for a creature.
+    /// </summary>
+    private void SetDebounced(NwCreature creature)
+    {
+        int now = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
+        creature.GetObjectVariable<LocalVariableInt>(GetDebounceVar(creature)).Value = now;
+    }
+
+    /// <summary>
+    ///     Clears the debounce variable from a creature.
+    /// </summary>
+    private void ClearDebounceVar(NwCreature creature)
+    {
+        creature.GetObjectVariable<LocalVariableInt>(GetDebounceVar(creature)).Delete();
+    }
+
+    #endregion
+
+    #region Aura Event Handlers (called by DefenderScriptHandlers)
+
+    /// <summary>
+    ///     Called when a creature enters the aura. Used by script handlers.
+    /// </summary>
+    public void OnEnterAura(NwCreature enteringCreature)
+    {
+        NwCreature? defender = Defender.LoginCreature;
+        if (defender == null) return;
+
+        Defender.SendServerMessage($"[DEBUG]: OnEnterAura - {enteringCreature.Name} entering.", ColorConstants.Cyan);
 
         // Don't affect the defender themselves
         if (enteringCreature == defender)
-            return ScriptHandleResult.Handled;
+            return;
+
+        // Check debounce to prevent bumping exploit
+        if (IsDebounced(enteringCreature))
+        {
+            Defender.SendServerMessage($"[DEBUG]: {enteringCreature.Name} is debounced, skipping.", ColorConstants.Yellow);
+            return;
+        }
+
+        SetDebounced(enteringCreature);
 
         if (defender.IsReactionTypeHostile(enteringCreature))
         {
@@ -195,24 +244,30 @@ public class DefendersDuty
 
             AddProtection(enteringCreature);
         }
-
-        return ScriptHandleResult.Handled;
     }
 
-    private ScriptHandleResult OnHeartbeatAura(CallInfo info, NwCreature defender)
+    /// <summary>
+    ///     Called on aura heartbeat. Used by script handlers.
+    /// </summary>
+    public void OnHeartbeatAura(NwAreaOfEffect aoe)
     {
-        if (!info.TryGetEvent(out AreaOfEffectEvents.OnHeartbeat? eventData))
-            return ScriptHandleResult.Handled;
+        NwCreature? defender = Defender.LoginCreature;
+        if (defender == null) return;
 
-        foreach (NwCreature creature in eventData.Effect.GetObjectsInEffectArea<NwCreature>())
+        foreach (NwCreature creature in aoe.GetObjectsInEffectArea<NwCreature>())
         {
             if (creature == defender)
                 continue;
 
+            // Check per-creature debounce for taunt attempts
             if (defender.IsReactionTypeHostile(creature))
             {
-                // Hostile: attempt to taunt each heartbeat
-                TryTauntCreature(defender, creature);
+                // Hostile: attempt to taunt each heartbeat (with per-creature debounce)
+                if (!IsDebounced(creature))
+                {
+                    SetDebounced(creature);
+                    TryTauntCreature(defender, creature);
+                }
             }
             else if (defender.IsReactionTypeFriendly(creature) && !_protectedCreatures.Contains(creature))
             {
@@ -220,25 +275,14 @@ public class DefendersDuty
                 AddProtection(creature);
             }
         }
-
-        return ScriptHandleResult.Handled;
     }
 
-    private ScriptHandleResult OnExitAura(CallInfo info, NwCreature defender)
+    /// <summary>
+    ///     Called when a creature exits the aura. Used by script handlers.
+    /// </summary>
+    public void OnExitAura(NwCreature exitingCreature)
     {
-        Defender.SendServerMessage("[DEBUG]: OnExitAura triggered.", ColorConstants.Cyan);
-
-        if (!info.TryGetEvent(out AreaOfEffectEvents.OnExit? eventData)
-            || eventData.Exiting is not NwCreature exitingCreature)
-        {
-            Defender.SendServerMessage("[DEBUG]: OnExitAura - failed to get event or not a creature.",
-                ColorConstants.Red);
-            return ScriptHandleResult.Handled;
-        }
-
-        Defender.SendServerMessage(
-            $"[DEBUG]: OnExitAura - {exitingCreature.Name} exiting (Valid: {exitingCreature.IsValid}).",
-            ColorConstants.Cyan);
+        Defender.SendServerMessage($"[DEBUG]: OnExitAura - {exitingCreature.Name} exiting.", ColorConstants.Cyan);
 
         // Remove protection when friendly leaves the aura
         if (_protectedCreatures.Contains(exitingCreature))
@@ -248,8 +292,11 @@ public class DefendersDuty
             RemoveProtection(exitingCreature);
         }
 
-        return ScriptHandleResult.Handled;
+        // Clear debounce on exit so re-entry after cooldown works properly
+        ClearDebounceVar(exitingCreature);
     }
+
+    #endregion
 
     private void AddProtection(NwCreature creature)
     {
