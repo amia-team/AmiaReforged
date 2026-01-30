@@ -38,15 +38,7 @@ public static class DuelistBonusEffect
 
     private static Effect GetDuelistBonusEffect(int duelistLevel, out string message)
     {
-        int bonusAc = duelistLevel switch
-        {
-            1 => 1,
-            2 => 3,
-            3 => 4,
-            4 => 5,
-            5 => 7,
-            _ => 0
-        };
+        int bonusAc = duelistLevel + 2;
 
         int bonusDamage = duelistLevel;
 
