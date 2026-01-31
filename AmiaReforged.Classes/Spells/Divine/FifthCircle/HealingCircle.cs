@@ -65,6 +65,8 @@ public class HealingCircle(ShifterDcService shifterDcService) : ISpell
         {
             if (targetCreature.Race.RacialType == RacialType.Undead)
             {
+                CreatureEvents.OnSpellCastAt.Signal(eventData.Caster, targetCreature, eventData.Spell);
+                
                 if (ResistedSpell)
                     continue;
 
