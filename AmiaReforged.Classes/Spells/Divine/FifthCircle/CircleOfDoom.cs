@@ -80,6 +80,7 @@ public class CircleOfDoom(ShifterDcService shifterDcService) : ISpell
                     continue;
             }
 
+            CreatureEvents.OnSpellCastAt.Signal(eventData.Caster, targetCreature, eventData.Spell);
             _ = ApplyDamage(eventData.Caster, targetCreature, damageVfx, dc, casterLevel, dice, eventData.MetaMagicFeat);
         }
     }
