@@ -421,9 +421,14 @@ public class DefendersDuty
     /// <summary>
     ///     Attempts to force a creature to attack the defender.
     ///     The creature gets a Concentration check vs the defender's Taunt skill.
+    ///     Players cannot be taunted.
     /// </summary>
     private void TryTauntCreature(NwCreature defender, NwCreature target)
     {
+        // Don't taunt player-controlled creatures
+        if (target.IsPlayerControlled)
+            return;
+
         // Don't retarget if already attacking the defender
         if (target.AttackTarget == defender)
             return;
