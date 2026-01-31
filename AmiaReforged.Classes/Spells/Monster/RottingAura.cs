@@ -91,7 +91,7 @@ public class RottingAura(ShifterDcService shifterDcService, ScriptHandleFactory 
 
         TimeSpan duration = NwTimeSpan.FromHours(casterLevel);
 
-        Effect? rottingAuraEffect = RottingAuraEffect(eventData.Caster, dc);
+        Effect? rottingAuraEffect = RottingAuraEffect(eventData.Caster, dc, eventData.Spell);
         if (rottingAuraEffect == null) return;
 
         eventData.Caster.ApplyEffect(EffectDuration.Temporary, rottingAuraEffect, duration);
@@ -102,7 +102,7 @@ public class RottingAura(ShifterDcService shifterDcService, ScriptHandleFactory 
         // This spell doesn't allow Spell Resistance
     }
 
-    private Effect? RottingAuraEffect(NwGameObject caster, int dc)
+    private Effect? RottingAuraEffect(NwGameObject caster, int dc, NwSpell spell)
     {
         PersistentVfxTableEntry? rottingAuraVfx = MobRottingVfx;
         if (rottingAuraVfx == null)
@@ -121,11 +121,11 @@ public class RottingAura(ShifterDcService shifterDcService, ScriptHandleFactory 
 
         ScriptCallbackHandle rottingAuraEnter =
             scriptHandleFactory.CreateUniqueHandler(info
-                => OnEnterRottingAura(info, caster, appearanceType));
+                => OnEnterRottingAura(info, caster, appearanceType, spell));
 
         ScriptCallbackHandle rottingAuraHeartbeat =
             scriptHandleFactory.CreateUniqueHandler(info
-                => OnHeartbeatRottingAura(info, caster, appearanceType, dc));
+                => OnHeartbeatRottingAura(info, caster, appearanceType, dc, spell));
 
         ScriptCallbackHandle rottingAuraExit = scriptHandleFactory.CreateUniqueHandler(OnExitRottingAura);
 
@@ -138,7 +138,7 @@ public class RottingAura(ShifterDcService shifterDcService, ScriptHandleFactory 
     }
 
     private static ScriptHandleResult OnEnterRottingAura(CallInfo info, NwGameObject caster,
-        AppearanceTableEntry? appearanceType)
+        AppearanceTableEntry? appearanceType, NwSpell spell)
     {
         if (!info.TryGetEvent(out AreaOfEffectEvents.OnEnter? eventData)
             || eventData.Entering is not NwCreature targetCreature
@@ -157,6 +157,8 @@ public class RottingAura(ShifterDcService shifterDcService, ScriptHandleFactory 
                 return ScriptHandleResult.Handled;
         }
 
+        CreatureEvents.OnSpellCastAt.Signal(caster, targetCreature, spell);
+
         targetCreature.ApplyEffect(EffectDuration.Instant, SickenedVfx);
         targetCreature.ApplyEffect(EffectDuration.Permanent, SickenedEffect());
 
@@ -164,7 +166,7 @@ public class RottingAura(ShifterDcService shifterDcService, ScriptHandleFactory 
     }
 
     private static ScriptHandleResult OnHeartbeatRottingAura(CallInfo info, NwGameObject caster,
-        AppearanceTableEntry? appearanceType, int dc)
+        AppearanceTableEntry? appearanceType, int dc, NwSpell spell)
     {
         if (!info.TryGetEvent(out AreaOfEffectEvents.OnHeartbeat? eventData))
             return ScriptHandleResult.Handled;
@@ -180,6 +182,8 @@ public class RottingAura(ShifterDcService shifterDcService, ScriptHandleFactory 
             if (!IsValidCreature(targetCreature)) continue;
 
             if (caster is NwCreature creature && creature.IsReactionTypeFriendly(targetCreature)) continue;
+
+            CreatureEvents.OnSpellCastAt.Signal(caster, targetCreature, spell);
 
             SavingThrowResult savingThrowResult
                 = targetCreature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Disease, caster);
