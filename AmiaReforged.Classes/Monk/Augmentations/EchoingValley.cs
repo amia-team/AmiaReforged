@@ -167,15 +167,18 @@ public sealed class EchoingValley : IAugmentation
     {
         AxiomaticStrike.DoAxiomaticStrike(monk, attackData);
 
-        NwCreature[] echoes = monk.Associates
-            .Where(associate => associate.ResRef == SummonEchoResRef)
-            .ToArray();
-
-        if (echoes.Length == 0) return;
-        int bonusDamage = echoes.Length;
+        AxiomaticStrike.DoAxiomaticStrike(monk, attackData);
 
         DamageData<short> damageData = attackData.DamageData;
         short sonicDamage = damageData.GetDamageByType(DamageType.Sonic);
+
+        int bonusDamage = MonkUtils.GetKiFocus(monk) switch
+        {
+            KiFocus.KiFocus1 => 2,
+            KiFocus.KiFocus2 => 3,
+            KiFocus.KiFocus3 => 4,
+            _ => 1
+        };
 
         if (attackData.AttackResult == AttackResult.CriticalHit)
             bonusDamage *= MonkUtils.GetCritMultiplier(attackData, monk);
