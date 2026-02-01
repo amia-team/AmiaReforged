@@ -24,6 +24,26 @@ pipeline{
                 }
             }
         }
+        stage('Build AdminPanel Docker Image') {
+            when {
+                changeset "AmiaReforged.AdminPanel/**"
+            }
+            steps {
+                script {
+                    echo 'Changes detected in AdminPanel, building Docker image...'
+                    discordSend description: "Changes detected in AdminPanel, building Docker image...", footer: "New version detected", link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: params.webhookURL
+
+                    // Read version from version.txt
+                    def version = readFile('AmiaReforged.AdminPanel/version.txt').trim()
+                    echo "Building AdminPanel version ${version}"
+
+                    // Build Docker image with version tag (Dockerfile expects repo root as context)
+                    sh "docker build -f AmiaReforged.AdminPanel/Dockerfile -t amia-admin-panel:${version} -t amia-admin-panel:latest ."
+
+                    echo "Docker image built successfully: amia-admin-panel:${version}"
+                }
+            }
+        }
         stage('Deploy Test') {
             when {
                     expression {

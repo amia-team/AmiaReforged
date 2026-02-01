@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  admin-panel:
+    image: amia-admin-panel:latest
+    container_name: admin-panel
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=admin_panel;Username=amia;Password=${DB_PASSWORD:-amia}
+      - AdminPanel__DefaultAdminPassword=${ADMIN_PASSWORD:-ChangeMe123!}
+      - DOTNET_ENVIRONMENT=Production
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - admin-network
+    expose:
+      - "8080"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - ADMIN_DOMAIN=${ADMIN_DOMAIN:-admin.example.com}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - admin-network
+    depends_on:
+      - admin-panel
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: admin-panel-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=amia
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-amia}
+      - POSTGRES_DB=admin_panel
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - admin-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U amia -d admin_panel"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  admin-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
