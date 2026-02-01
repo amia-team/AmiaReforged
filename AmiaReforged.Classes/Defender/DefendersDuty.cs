@@ -29,6 +29,9 @@ public class DefendersDuty
     // Track if we're subscribed to the module damage event
     private bool _subscribedToModuleDamage;
 
+    // Track if we're subscribed to the module client leave event (for protected creatures disconnecting)
+    private bool _subscribedToModuleClientLeave;
+
 
     /// <summary>
     ///     Do not construct directly. Use <see cref="DefendersDutyFactory" /> to create this object.
@@ -95,6 +98,14 @@ public class DefendersDuty
             Defender.SendServerMessage("[DEBUG]: Subscribed to module OnCreatureDamage event.", ColorConstants.Lime);
         }
 
+        // Subscribe to module client leave event
+        if (!_subscribedToModuleClientLeave)
+        {
+            NwModule.Instance.OnClientLeave += OnModuleClientLeave;
+            _subscribedToModuleClientLeave = true;
+            Defender.SendServerMessage("[DEBUG]: Subscribed to module OnClientLeave event.", ColorConstants.Lime);
+        }
+
         Defender.LoginCreature.ApplyEffect(EffectDuration.Permanent, threatAura);
         Defender.SendServerMessage(
             "Defender's Duty aura activated. Allies in the aura are protected; hostiles are drawn to attack you.",
@@ -126,12 +137,29 @@ public class DefendersDuty
         _protectedCreatures.Clear();
         Defender.SendServerMessage("[DEBUG]: Protected creatures cleared.", ColorConstants.Yellow);
 
+        // Release all protected targets from global registry
+        if (Defender.LoginCreature != null)
+        {
+            DefendersDutyFactory.ReleaseAllProtectedBy(Defender.LoginCreature);
+            Defender.SendServerMessage("[DEBUG]: Released all protected targets from global registry.",
+                ColorConstants.Yellow);
+        }
+
         // Unsubscribe from module damage event
         if (_subscribedToModuleDamage)
         {
             NwModule.Instance.OnCreatureDamage -= SoakDamageForAlly;
             _subscribedToModuleDamage = false;
             Defender.SendServerMessage("[DEBUG]: Unsubscribed from module OnCreatureDamage event.",
+                ColorConstants.Yellow);
+        }
+
+        // Unsubscribe from module client leave event
+        if (_subscribedToModuleClientLeave)
+        {
+            NwModule.Instance.OnClientLeave -= OnModuleClientLeave;
+            _subscribedToModuleClientLeave = false;
+            Defender.SendServerMessage("[DEBUG]: Unsubscribed from module OnClientLeave event.",
                 ColorConstants.Yellow);
         }
 
@@ -142,6 +170,55 @@ public class DefendersDuty
             // Unregister from factory
             DefendersDutyFactory.Unregister(Defender.LoginCreature);
         }
+    }
+
+    /// <summary>
+    ///     Handles when any player leaves the module.
+    ///     If the leaving player was being protected by this defender, remove their protection.
+    /// </summary>
+    private void OnModuleClientLeave(ModuleEvents.OnClientLeave obj)
+    {
+        NwCreature? leavingCreature = obj.Player.LoginCreature;
+        if (leavingCreature == null) return;
+
+        // If the leaving player was being protected by this defender, remove their protection
+        if (_protectedCreatures.Contains(leavingCreature))
+        {
+            Defender.SendServerMessage(
+                $"[DEBUG]: Protected creature {leavingCreature.Name} left the module, removing protection.",
+                ColorConstants.Orange);
+            RemoveProtection(leavingCreature);
+        }
+    }
+
+    /// <summary>
+    ///     Removes any invalid creatures from the protected list.
+    ///     This handles edge cases where a creature reference becomes invalid
+    ///     (e.g., disconnection wasn't caught by event handlers).
+    /// </summary>
+    private void PruneInvalidProtectedCreatures()
+    {
+        var invalidCreatures = _protectedCreatures.Where(c => !c.IsValid).ToList();
+
+        if (invalidCreatures.Count == 0) return;
+
+        Defender.SendServerMessage(
+            $"[DEBUG]: Pruning {invalidCreatures.Count} invalid creature(s) from protected list.",
+            ColorConstants.Yellow);
+
+        foreach (NwCreature invalid in invalidCreatures)
+        {
+            _protectedCreatures.Remove(invalid);
+
+            // Release from global registry
+            if (Defender.LoginCreature != null)
+            {
+                DefendersDutyFactory.ReleaseProtection(invalid, Defender.LoginCreature);
+            }
+        }
+
+        // Update immunity after pruning
+        UpdateAllPhysicalImmunity();
     }
 
     private Effect? CreateThreatAuraEffect()
@@ -252,6 +329,9 @@ public class DefendersDuty
         NwCreature? defender = Defender.LoginCreature;
         if (defender == null) return;
 
+        // Prune any invalid creatures from the protected list (e.g., disconnected players)
+        PruneInvalidProtectedCreatures();
+
         foreach (NwCreature creature in aoe.GetObjectsInEffectArea<NwCreature>())
         {
             if (creature == defender)
@@ -306,9 +386,36 @@ public class DefendersDuty
         Defender.SendServerMessage($"[DEBUG]: AddProtection called for {creature.Name} (Valid: {creature.IsValid}).",
             ColorConstants.Lime);
 
+        // Check if already being protected by another defender (first come, first served)
+        if (DefendersDutyFactory.IsBeingProtected(creature))
+        {
+            NwCreature? existingProtector = DefendersDutyFactory.GetProtector(creature);
+            Defender.SendServerMessage(
+                $"[DEBUG]: {creature.Name} is already being protected by {existingProtector?.Name ?? "unknown"}.",
+                ColorConstants.Yellow);
+
+            if (creature.IsPlayerControlled(out NwPlayer? player))
+            {
+                player.SendServerMessage(
+                    $"You are already being protected by {existingProtector?.Name ?? "another defender"}.",
+                    ColorConstants.Orange);
+            }
+
+            return;
+        }
+
+        // Try to claim protection in the global registry
+        if (Defender.LoginCreature == null || !DefendersDutyFactory.TryClaimProtection(creature, Defender.LoginCreature))
+        {
+            Defender.SendServerMessage($"[DEBUG]: Failed to claim protection for {creature.Name} (race condition).",
+                ColorConstants.Yellow);
+            return;
+        }
+
         if (!_protectedCreatures.Add(creature))
         {
             Defender.SendServerMessage($"[DEBUG]: {creature.Name} already in protected list.", ColorConstants.Yellow);
+            DefendersDutyFactory.ReleaseProtection(creature, Defender.LoginCreature);
             return;
         }
 
@@ -347,6 +454,12 @@ public class DefendersDuty
         Defender.SendServerMessage($"[DEBUG]: Removing {creature.Name} from protected list.", ColorConstants.Orange);
         _protectedCreatures.Remove(creature);
         creature.OnDeath -= OnProtectedCreatureDeath;
+
+        // Release from global registry
+        if (Defender.LoginCreature != null)
+        {
+            DefendersDutyFactory.ReleaseProtection(creature, Defender.LoginCreature);
+        }
 
         Defender.SendServerMessage($"[DEBUG]: Removing visual from {creature.Name}.",
             ColorConstants.Orange);
