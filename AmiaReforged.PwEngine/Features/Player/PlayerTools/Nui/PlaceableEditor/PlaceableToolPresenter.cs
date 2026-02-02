@@ -135,7 +135,6 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             }
         }
 
-
         _blueprints.Clear();
         _pendingSpawn = null;
         _lastSelection = null;
@@ -165,8 +164,6 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         UpdateHousingAreaStatus();
 
         ResetEditFields();
-
-        // Leave watchers disabled until a selection is active to avoid idle watch spam.
     }
 
     private void HandleClick(ModuleEvents.OnNuiEvent eventData)
@@ -2009,7 +2006,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             for (int i = 0; i < _availableLayouts.Count; i++)
             {
                 Database.Entities.PlayerHousing.PlcLayoutConfiguration layout = _availableLayouts[i];
-                string label = $"{layout.Name} ({layout.Items.Count} items)";
+                string label = $"{layout.Name}";
                 options.Add(new NuiComboEntry(label, i));
             }
 
