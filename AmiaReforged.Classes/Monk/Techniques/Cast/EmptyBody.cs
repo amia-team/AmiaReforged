@@ -7,26 +7,36 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Techniques.Cast;
 
 [ServiceBinding(typeof(ITechnique))]
-public class EmptyBody(AugmentationFactory augmentationFactory) : ITechnique
+public class EmptyBody(AugmentationFactory augmentationFactory) : ICastTechnique
 {
-    public TechniqueType TechniqueType => TechniqueType.EmptyBody;
+    public TechniqueType Technique => TechniqueType.EmptyBody;
 
     public void HandleCastTechnique(NwCreature monk, OnSpellCast castData)
     {
         PathType? path = MonkUtils.GetMonkPath(monk);
 
-        IAugmentation? augmentation = path.HasValue ? augmentationFactory.GetAugmentation(path.Value) : null;
+        IAugmentation? augmentation = path.HasValue
+            ? augmentationFactory.GetAugmentation(path.Value, Technique)
+            : null;
 
-        if (augmentation != null)
-            augmentation.ApplyCastAugmentation(monk, TechniqueType, castData);
+        if (augmentation is IAugmentation.ICastAugment castAugment)
+        {
+            castAugment.ApplyCastAugmentation(monk, castData, BaseTechnique);
+        }
         else
-            DoEmptyBody(monk);
+        {
+            BaseTechnique();
+        }
+
+        return;
+
+        void BaseTechnique() => DoEmptyBody(monk);
     }
 
     /// <summary>
     ///     The monk is given 50% concealment for rounds per monk level. Each use depletes a Body Ki Point.
     /// </summary>
-    public static void DoEmptyBody(NwCreature monk)
+    private static void DoEmptyBody(NwCreature monk)
     {
         byte monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
 
@@ -40,7 +50,4 @@ public class EmptyBody(AugmentationFactory augmentationFactory) : ITechnique
 
         monk.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect, effectDuration);
     }
-
-    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData) { }
-    public void HandleDamageTechnique(NwCreature monk, OnCreatureDamage damageData) { }
 }

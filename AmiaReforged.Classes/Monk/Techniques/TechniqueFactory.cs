@@ -10,7 +10,7 @@ public class TechniqueFactory
 
     public TechniqueFactory(IEnumerable<ITechnique> techniques)
     {
-        _techniques = techniques.ToDictionary(t => t.TechniqueType);
+        _techniques = techniques.ToDictionary(t => t.Technique);
     }
 
     public ITechnique? GetTechnique(TechniqueType techniqueType)

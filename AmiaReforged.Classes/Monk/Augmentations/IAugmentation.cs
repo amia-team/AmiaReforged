@@ -6,8 +6,21 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 
 public interface IAugmentation
 {
-    PathType PathType { get; }
-    void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData);
-    void ApplyDamageAugmentation(NwCreature monk, TechniqueType technique, OnCreatureDamage damageData);
-    void ApplyCastAugmentation(NwCreature monk, TechniqueType technique, OnSpellCast castData);
+    PathType Path { get; }
+    TechniqueType Technique { get; }
+
+    public interface IAttackAugment : IAugmentation
+    {
+        void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData, BaseTechniqueCallback baseTechnique);
+    }
+
+    public interface ICastAugment : IAugmentation
+    {
+        void ApplyCastAugmentation(NwCreature monk, OnSpellCast castData, BaseTechniqueCallback baseTechnique);
+    }
+
+    public interface IDamageAugment : IAugmentation
+    {
+        void ApplyDamageAugmentation(NwCreature monk, OnCreatureDamage damageData, BaseTechniqueCallback baseTechnique);
+    }
 }

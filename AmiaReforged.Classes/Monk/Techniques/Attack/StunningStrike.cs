@@ -7,20 +7,29 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Techniques.Attack;
 
 [ServiceBinding(typeof(ITechnique))]
-public class StunningStrike(AugmentationFactory augmentationFactory) : ITechnique
+public class StunningStrike(AugmentationFactory augmentationFactory) : IDamageTechnique
 {
-    public TechniqueType TechniqueType => TechniqueType.StunningStrike;
+    public TechniqueType Technique => TechniqueType.StunningStrike;
 
     public void HandleDamageTechnique(NwCreature monk, OnCreatureDamage damageData)
     {
         PathType? path = MonkUtils.GetMonkPath(monk);
 
-        IAugmentation? augmentation = path.HasValue ? augmentationFactory.GetAugmentation(path.Value) : null;
+        IAugmentation? augmentation = path.HasValue ? augmentationFactory.GetAugmentation(path.Value, Technique) : null;
 
-        if (augmentation != null)
-            augmentation.ApplyDamageAugmentation(monk, TechniqueType, damageData);
+        if (augmentation is IAugmentation.IDamageAugment damageAugment)
+        {
+            damageAugment.ApplyDamageAugmentation(monk, damageData, BaseTechnique);
+        }
         else
-            DoStunningStrike(damageData);
+        {
+            BaseTechnique();
+        }
+
+        return;
+
+        void BaseTechnique() => DoStunningStrike(damageData);
+
     }
 
     public static SavingThrowResult DoStunningStrike(OnCreatureDamage damageData)
@@ -54,7 +63,4 @@ public class StunningStrike(AugmentationFactory augmentationFactory) : ITechniqu
 
         return savingThrowResult;
     }
-
-    public void HandleCastTechnique(NwCreature monk, OnSpellCast castData) { }
-    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData) { }
 }

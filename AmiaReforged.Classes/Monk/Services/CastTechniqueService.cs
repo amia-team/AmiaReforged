@@ -1,4 +1,3 @@
-using AmiaReforged.Classes.Monk.Augmentations;
 using AmiaReforged.Classes.Monk.Techniques;
 using AmiaReforged.Classes.Monk.Types;
 using AmiaReforged.Classes.Spells;
@@ -64,7 +63,15 @@ public class CastTechniqueService
 
         ITechnique? techniqueHandler = _techniqueFactory.GetTechnique(castTechnique);
 
-        techniqueHandler?.HandleCastTechnique(monk, castData);
+        if (techniqueHandler is ICastTechnique castHandler)
+        {
+            Log.Info($"Spell Cast Detected: {castData.Spell?.Name.ToString()}");
+            castHandler.HandleCastTechnique(monk, castData);
+        }
+        else
+        {
+            Log.Info($"No Cast Detected: {castData.Spell?.Name.ToString()}");
+        }
     }
 
     private static bool TechniqueOnCooldown(NwCreature monk, string cdTag, string techniqueName)

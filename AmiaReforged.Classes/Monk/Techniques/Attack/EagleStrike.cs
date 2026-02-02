@@ -7,21 +7,29 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Techniques.Attack;
 
 [ServiceBinding(typeof(ITechnique))]
-public class EagleStrike(AugmentationFactory augmentationFactory) : ITechnique
+public class EagleStrike(AugmentationFactory augmentationFactory) : IDamageTechnique
 {
     private const string EagleEffectTag = nameof(TechniqueType.EagleStrike) + "Effect";
-    public TechniqueType TechniqueType => TechniqueType.EagleStrike;
+    public TechniqueType Technique => TechniqueType.EagleStrike;
 
     public void HandleDamageTechnique(NwCreature monk, OnCreatureDamage damageData)
     {
         PathType? path = MonkUtils.GetMonkPath(monk);
 
-        IAugmentation? augmentation = path.HasValue ? augmentationFactory.GetAugmentation(path.Value) : null;
+        IAugmentation? augmentation = path.HasValue ? augmentationFactory.GetAugmentation(path.Value, Technique) : null;
 
-        if (augmentation != null)
-            augmentation.ApplyDamageAugmentation(monk, TechniqueType, damageData);
+        if (augmentation is IAugmentation.IDamageAugment damageAugment)
+        {
+            damageAugment.ApplyDamageAugmentation(monk, damageData, BaseTechnique);
+        }
         else
-            DoEagleStrike(monk, damageData);
+        {
+            BaseTechnique();
+        }
+
+        return;
+
+        void BaseTechnique() => DoEagleStrike(monk, damageData);
     }
 
     /// <summary>
@@ -64,7 +72,4 @@ public class EagleStrike(AugmentationFactory augmentationFactory) : ITechnique
         targetCreature.ApplyEffect(EffectDuration.Temporary, eagleStrikeEffect, NwTimeSpan.FromRounds(2));
         targetCreature.ApplyEffect(EffectDuration.Instant, eagleStrikeVfx);
     }
-
-    public void HandleCastTechnique(NwCreature monk, OnSpellCast castData) { }
-    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData) { }
 }

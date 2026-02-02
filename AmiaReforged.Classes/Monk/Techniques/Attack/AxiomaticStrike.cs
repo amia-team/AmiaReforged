@@ -7,25 +7,35 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Techniques.Attack;
 
 [ServiceBinding(typeof(ITechnique))]
-public class AxiomaticStrike(AugmentationFactory augmentationFactory) : ITechnique
+public class AxiomaticStrike(AugmentationFactory augmentationFactory) : IAttackTechnique
 {
-    public TechniqueType TechniqueType => TechniqueType.AxiomaticStrike;
+    public TechniqueType Technique => TechniqueType.AxiomaticStrike;
     public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData)
     {
         PathType? path = MonkUtils.GetMonkPath(monk);
 
-        IAugmentation? augmentation = path.HasValue ? augmentationFactory.GetAugmentation(path.Value) : null;
+        IAugmentation? augmentation = path.HasValue
+            ? augmentationFactory.GetAugmentation(path.Value, Technique)
+            : null;
 
-        if (augmentation != null)
-            augmentation.ApplyAttackAugmentation(monk, attackData);
+        if (augmentation is IAugmentation.IAttackAugment damageAugment)
+        {
+            damageAugment.ApplyAttackAugmentation(monk, attackData, BaseTechnique);
+        }
         else
-            DoAxiomaticStrike(monk, attackData);
+        {
+            BaseTechnique();
+        }
+
+        return;
+
+        void BaseTechnique() => DoAxiomaticStrike(monk, attackData);
     }
 
     /// <summary>
     /// Each successful hit deals +1 bonus physical damage. Every 10 monk levels increases the damage by +1.
     /// </summary>
-    public static void DoAxiomaticStrike(NwCreature monk, OnCreatureAttack attackData)
+    private void DoAxiomaticStrike(NwCreature monk, OnCreatureAttack attackData)
     {
         DamageData<short> damageData = attackData.DamageData;
 
@@ -46,6 +56,4 @@ public class AxiomaticStrike(AugmentationFactory augmentationFactory) : ITechniq
         bludgeoningDamage += (short)bonusDamage;
         damageData.SetDamageByType(DamageType.Bludgeoning, bludgeoningDamage);
     }
-    public void HandleCastTechnique(NwCreature monk, OnSpellCast castData) { }
-    public void HandleDamageTechnique(NwCreature monk, OnCreatureDamage damageData) { }
 }

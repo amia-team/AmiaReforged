@@ -6,16 +6,17 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 [ServiceBinding(typeof(AugmentationFactory))]
 public class AugmentationFactory
 {
-    private readonly Dictionary<PathType, IAugmentation>? _augmentations;
+    private readonly Dictionary<(PathType Path, TechniqueType Technique), IAugmentation> _augments;
 
     public AugmentationFactory(IEnumerable<IAugmentation> augmentations)
     {
-        _augmentations = augmentations.ToDictionary(t => t.PathType);
+        // Index by both Path and Technique to ensure uniqueness
+        _augments = augmentations.ToDictionary(a => (a.Path, a.Technique));
     }
 
-    public IAugmentation? GetAugmentation(PathType path)
+    public IAugmentation? GetAugmentation(PathType path, TechniqueType technique)
     {
-        return _augmentations?.GetValueOrDefault(path);
+        return _augments.GetValueOrDefault((path, technique));
     }
 }
 

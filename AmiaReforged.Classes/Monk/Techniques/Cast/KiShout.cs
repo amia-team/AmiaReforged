@@ -7,26 +7,38 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Techniques.Cast;
 
 [ServiceBinding(typeof(ITechnique))]
-public class KiShout(AugmentationFactory augmentationFactory) : ITechnique
+public class KiShout(AugmentationFactory augmentationFactory) : ICastTechnique
 {
-    public TechniqueType TechniqueType => TechniqueType.KiShout;
+    public TechniqueType Technique => TechniqueType.KiShout;
+
     public void HandleCastTechnique(NwCreature monk, OnSpellCast castData)
     {
         PathType? path = MonkUtils.GetMonkPath(monk);
 
-        IAugmentation? augmentation = path.HasValue ? augmentationFactory.GetAugmentation(path.Value) : null;
+        IAugmentation? augmentation = path.HasValue
+            ? augmentationFactory.GetAugmentation(path.Value, Technique)
+            : null;
 
-        if (augmentation != null)
-            augmentation.ApplyCastAugmentation(monk, TechniqueType, castData);
+        if (augmentation is IAugmentation.ICastAugment castAugment)
+        {
+            castAugment.ApplyCastAugmentation(monk, castData, BaseTechnique);
+        }
         else
-            DoKiShout(monk);
+        {
+            BaseTechnique();
+        }
+
+        return;
+
+        void BaseTechnique() => DoKiShout(monk);
     }
 
     /// <summary>
     ///     Stuns enemies within colossal range for three rounds if they fail a will save. In addition,
     ///     all enemies take 1d4 sonic damage per monk level. Each use depletes a Spirit Ki Point.
     /// </summary>
-    public static void DoKiShout(NwCreature monk, DamageType damageType = DamageType.Sonic, VfxType damageVfx = VfxType.ImpSonic)
+    public static void DoKiShout(NwCreature monk, DamageType damageType = DamageType.Sonic,
+        VfxType damageVfx = VfxType.ImpSonic)
     {
         if (monk.Location == null) return;
         Effect kiShoutVfx = Effect.VisualEffect(VfxType.FnfHowlMind);
@@ -89,7 +101,4 @@ public class KiShout(AugmentationFactory augmentationFactory) : ITechnique
         TimeSpan effectDuration = NwTimeSpan.FromRounds(3);
         target.ApplyEffect(EffectDuration.Temporary, kiShoutEffect, effectDuration);
     }
-
-    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData) { }
-    public void HandleDamageTechnique(NwCreature monk, OnCreatureDamage damageData) { }
 }

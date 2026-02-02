@@ -6,7 +6,7 @@ using Anvil.Services;
 using NLog;
 using NWN.Core.NWNX;
 
-namespace AmiaReforged.Classes.Monk.Services;
+namespace AmiaReforged.Classes.Monk.Augmentations.CrashingMeteor;
 
 [ServiceBinding(typeof(ElementalTypeToggler))]
 public class ElementalTypeToggler

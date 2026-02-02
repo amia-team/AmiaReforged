@@ -7,20 +7,31 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Techniques.Cast;
 
 [ServiceBinding(typeof(ITechnique))]
-public class WholenessOfBody(AugmentationFactory augmentationFactory) : ITechnique
+public class WholenessOfBody(AugmentationFactory augmentationFactory) : ICastTechnique
 {
-    public TechniqueType TechniqueType => TechniqueType.WholenessOfBody;
+    public TechniqueType Technique => TechniqueType.WholenessOfBody;
 
     public void HandleCastTechnique(NwCreature monk, OnSpellCast castData)
     {
         PathType? path = MonkUtils.GetMonkPath(monk);
 
-        IAugmentation? augmentation = path.HasValue ? augmentationFactory.GetAugmentation(path.Value) : null;
+        IAugmentation? augmentation
+            = path.HasValue
+            ? augmentationFactory.GetAugmentation(path.Value, Technique)
+            : null;
 
-        if (augmentation != null)
-            augmentation.ApplyCastAugmentation(monk, TechniqueType, castData);
+        if (augmentation is IAugmentation.ICastAugment castAugment)
+        {
+            castAugment.ApplyCastAugmentation(monk, castData, BaseTechnique);
+        }
         else
-            DoWholenessOfBody(monk);
+        {
+            BaseTechnique();
+        }
+
+        return;
+
+        void BaseTechnique() => DoWholenessOfBody(monk);
     }
 
     /// <summary>
@@ -37,7 +48,4 @@ public class WholenessOfBody(AugmentationFactory augmentationFactory) : ITechniq
         monk.ApplyEffect(EffectDuration.Instant, wholenessEffect);
         monk.ApplyEffect(EffectDuration.Instant, wholenessVfx);
     }
-
-    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData) { }
-    public void HandleDamageTechnique(NwCreature monk, OnCreatureDamage damageData) { }
 }

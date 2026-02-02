@@ -147,7 +147,10 @@ public class AttackTechniqueService
             if (effect.Tag is not AxiomaticTag) continue;
 
             ITechnique? axiomaticTechniqueHandler = _techniqueFactory.GetTechnique(TechniqueType.AxiomaticStrike);
-            axiomaticTechniqueHandler?.HandleAttackTechnique(monk, attackData);
+
+            if (axiomaticTechniqueHandler is not IAttackTechnique attackTechniqueHandler) continue;
+
+            attackTechniqueHandler.HandleAttackTechnique(monk, attackData);
             return;
         }
     }
@@ -166,7 +169,10 @@ public class AttackTechniqueService
             return;
 
         ITechnique? techniqueHandler = _techniqueFactory.GetTechnique(techniqueType);
-        techniqueHandler?.HandleDamageTechnique(monk, damageData);
+        if (techniqueHandler is IDamageTechnique damageTechniqueHandler)
+        {
+            damageTechniqueHandler.HandleDamageTechnique(monk, damageData);
+        }
 
         ApplyTechniqueCooldown(monk, techniqueTag);
     }

@@ -7,27 +7,37 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Techniques.Cast;
 
 [ServiceBinding(typeof(ITechnique))]
-public class KiBarrier(AugmentationFactory augmentationFactory) : ITechnique
+public class KiBarrier(AugmentationFactory augmentationFactory) : ICastTechnique
 {
     private const string KiBarrierTag = nameof(TechniqueType.KiBarrier);
-    public TechniqueType TechniqueType => TechniqueType.KiBarrier;
+    public TechniqueType Technique => TechniqueType.KiBarrier;
 
     public void HandleCastTechnique(NwCreature monk, OnSpellCast castData)
     {
         PathType? path = MonkUtils.GetMonkPath(monk);
 
-        IAugmentation? augmentation = path.HasValue ? augmentationFactory.GetAugmentation(path.Value) : null;
+        IAugmentation? augmentation = path.HasValue
+            ? augmentationFactory.GetAugmentation(path.Value, Technique)
+            : null;
 
-        if (augmentation != null)
-            augmentation.ApplyCastAugmentation(monk, TechniqueType, castData);
+        if (augmentation is IAugmentation.ICastAugment castAugment)
+        {
+            castAugment.ApplyCastAugmentation(monk, castData, BaseTechnique);
+        }
         else
-            DoKiBarrier(monk);
+        {
+            BaseTechnique();
+        }
+
+        return;
+
+        void BaseTechnique() => DoKiBarrier(monk);
     }
 
     /// <summary>
     /// The monk gains a +1 wisdom bonus. Each Ki Focus increases the bonus by +1, to a maximum of +4 at level 30 monk.
     /// </summary>
-    public static void DoKiBarrier(NwCreature monk)
+    private void DoKiBarrier(NwCreature monk)
     {
         Effect? existingKiBarrier = monk.ActiveEffects.FirstOrDefault(e => e.Tag == KiBarrierTag);
         if (existingKiBarrier != null) monk.RemoveEffect(existingKiBarrier);
@@ -54,7 +64,4 @@ public class KiBarrier(AugmentationFactory augmentationFactory) : ITechnique
         monk.ApplyEffect(EffectDuration.Temporary, kiBarrier, NwTimeSpan.FromTurns(monkLevel));
         monk.ApplyEffect(EffectDuration.Instant, kiBarrierVfx);
     }
-
-    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData) { }
-    public void HandleDamageTechnique(NwCreature monk, OnCreatureDamage damageData) { }
 }

@@ -6,8 +6,20 @@ namespace AmiaReforged.Classes.Monk.Techniques;
 
 public interface ITechnique
 {
-    TechniqueType TechniqueType { get; }
-    void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData);
-    void HandleDamageTechnique(NwCreature monk, OnCreatureDamage damageData);
+    TechniqueType Technique { get; }
+}
+
+public interface ICastTechnique : ITechnique
+{
     void HandleCastTechnique(NwCreature monk, OnSpellCast castData);
+}
+
+public interface IDamageTechnique : ITechnique
+{
+    void HandleDamageTechnique(NwCreature monk, OnCreatureDamage damageData);
+}
+
+public interface IAttackTechnique : ITechnique
+{
+    void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData);
 }
