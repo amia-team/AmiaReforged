@@ -417,7 +417,7 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
         return new NuiGroup
         {
             Border = true,
-            Height = 80f,
+            Height = 120f,
             Width = ContentWidth,
             Enabled = IsInHousingArea,
             Tooltip = "Layout management is only available in housing areas",

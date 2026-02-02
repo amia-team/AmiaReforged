@@ -802,6 +802,98 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
     }
 
+    /// <summary>
+    /// Recovers all placeables in the current area and returns the result.
+    /// Used by layout loading to clear the area before restoring a layout.
+    /// </summary>
+    private async Task<(int recovered, int skippedNoFit, int skippedNoData, int failed)> RecoverAllPlaceablesInAreaAsync(NwArea area)
+    {
+        Guid characterId = PcKeyUtils.GetPcKey(_player);
+        if (characterId == Guid.Empty)
+        {
+            return (0, 0, 0, 0);
+        }
+
+        string areaResRef = area.ResRef;
+        bool hasPropertyAccess = IsPlayerPropertyOwner(area);
+
+        int recoveredCount = 0;
+        int skippedNoData = 0;
+        int skippedNoFit = 0;
+        int failedCount = 0;
+
+        // If player has property access, get all placeables in area; otherwise only their own
+        List<PersistentObject> placeables = hasPropertyAccess
+            ? ObjectRepository.Value.GetObjectsForArea(areaResRef)
+                .Where(o => o.Type == (int)ObjectTypes.Placeable).ToList()
+            : ObjectRepository.Value.GetPlaceablesForCharacterInArea(characterId, areaResRef);
+
+        if (placeables.Count == 0)
+        {
+            return (0, 0, 0, 0);
+        }
+
+        foreach (PersistentObject persistentObject in placeables)
+        {
+            try
+            {
+                await NwTask.SwitchToMainThread();
+
+                // Check if there's source item data
+                if (persistentObject.SourceItemData == null || persistentObject.SourceItemData.Length == 0)
+                {
+                    Log.Warn($"Placeable {persistentObject.Id} has no source item data, skipping recovery.");
+                    skippedNoData++;
+                    continue;
+                }
+
+                // Deserialize the item at a safe location
+                NwItem? item = NwItem.Deserialize(persistentObject.SourceItemData);
+                if (item == null)
+                {
+                    Log.Error($"Failed to deserialize item for placeable {persistentObject.Id}");
+                    failedCount++;
+                    continue;
+                }
+
+                // Move item to starting location temporarily
+                item.Location = NwModule.Instance.StartingLocation;
+
+                // Check if it fits in player's inventory
+                if (!_player.LoginCreature.Inventory.CheckFit(item))
+                {
+                    Log.Info($"Item from placeable {persistentObject.Id} does not fit in player inventory, destroying.");
+                    item.Destroy();
+                    skippedNoFit++;
+                    continue;
+                }
+
+                // Acquire the item
+                _player.LoginCreature.AcquireItem(item);
+
+                // Delete from database
+                await ObjectRepository.Value.DeleteObject(persistentObject.Id);
+
+                // Find and destroy the in-game placeable
+                await NwTask.SwitchToMainThread();
+                NwPlaceable? inGamePlaceable = FindPlaceableByDatabaseId(area, persistentObject.Id);
+                if (inGamePlaceable != null && inGamePlaceable.IsValid)
+                {
+                    inGamePlaceable.Destroy();
+                }
+
+                recoveredCount++;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"Failed to recover placeable {persistentObject.Id}");
+                failedCount++;
+            }
+        }
+
+        return (recoveredCount, skippedNoFit, skippedNoData, failedCount);
+    }
+
     private NwPlaceable? FindPlaceableByDatabaseId(NwArea area, long databaseId)
     {
         const string DatabaseIdLocalInt = "db_id";
@@ -1986,6 +2078,26 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         {
             Token().SetBindValue(View.StatusMessage, "You must be in an area to load a layout.");
             return;
+        }
+
+        // First, recover all existing placeables in the area
+        Token().SetBindValue(View.StatusMessage, "Recovering existing placeables before loading layout...");
+
+        var (recovered, skippedNoFit, skippedNoData, failed) = await RecoverAllPlaceablesInAreaAsync(area);
+
+        await NwTask.SwitchToMainThread();
+
+        if (!Token().Player.IsValid)
+        {
+            return;
+        }
+
+        if (recovered > 0 || skippedNoFit > 0 || skippedNoData > 0 || failed > 0)
+        {
+            string recoveryMsg = $"Recovered {recovered} existing placeable(s)";
+            if (skippedNoFit > 0) recoveryMsg += $", {skippedNoFit} skipped (no space)";
+            if (failed > 0) recoveryMsg += $", {failed} failed";
+            _player.SendServerMessage(recoveryMsg, ColorConstants.Cyan);
         }
 
         Token().SetBindValue(View.StatusMessage, "Restoring layout...");
