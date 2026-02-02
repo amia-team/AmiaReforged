@@ -88,7 +88,7 @@ Custom patterns can be added via the Configure page for each monitored container
 
 ## Development
 
-### Local Development
+### Local Development (Without Docker)
 
 ```bash
 # Restore and build
@@ -98,6 +98,30 @@ dotnet build
 # Run with hot reload
 dotnet watch run
 ```
+
+### Docker Dev Mode (No TLS/Let's Encrypt)
+
+For local testing with Docker but without Caddy/Let's Encrypt:
+
+1. Copy the dev environment file:
+
+```bash
+cp .env.dev .env
+```
+
+2. Start with the dev override:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+```
+
+3. Access the panel at `http://localhost:8080`
+
+This configuration:
+- Exposes the admin panel directly on port 8080 (no Caddy proxy)
+- Disables HTTPS/TLS entirely
+- Uses development-friendly default credentials
+- Sets `DOTNET_ENVIRONMENT=Development` for detailed error pages
 
 ### Database Migrations
 

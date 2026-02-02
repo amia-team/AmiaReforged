@@ -1,0 +1,18 @@
+# =============================================================================
+      - disabled
+    profiles:
+  caddy:
+  # Disable Caddy entirely in dev mode
+
+      - ASPNETCORE_URLS=http://+:8080
+      - DOTNET_ENVIRONMENT=Development
+    environment:
+      - "8080:8080"
+    ports:
+  admin-panel:
+services:
+
+# =============================================================================
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# =============================================================================
+# Development Override - Disables Caddy/Let's Encrypt

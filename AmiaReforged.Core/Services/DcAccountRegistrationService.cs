@@ -9,16 +9,19 @@ namespace AmiaReforged.Core.Services;
 
 /// <summary>
 ///   Service that ensures DreamcoinRecord accounts exist for players when they enter the module.
+///   Depends on PlayerAccountRegistrationService to ensure Player records exist first.
 /// </summary>
 [ServiceBinding(typeof(DcAccountRegistrationService))]
 public class DcAccountRegistrationService
 {
     private readonly DatabaseContextFactory _factory;
+    private readonly PlayerAccountRegistrationService _playerAccountService;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    public DcAccountRegistrationService(DatabaseContextFactory factory)
+    public DcAccountRegistrationService(DatabaseContextFactory factory, PlayerAccountRegistrationService playerAccountService)
     {
         _factory = factory;
+        _playerAccountService = playerAccountService;
         NwModule.Instance.OnClientEnter += HandleClientEnter;
         Log.Info("DcAccountRegistrationService initialized.");
     }
@@ -28,7 +31,7 @@ public class DcAccountRegistrationService
         if (eventData.Player.IsDM) return;
 
         string cdKey = eventData.Player.CDKey;
-        
+
         await EnsureDreamcoinAccountExists(cdKey);
     }
 
@@ -38,6 +41,9 @@ public class DcAccountRegistrationService
     /// </summary>
     private async Task EnsureDreamcoinAccountExists(string cdKey)
     {
+        // First ensure the player record exists
+        await _playerAccountService.EnsurePlayerExists(cdKey);
+
         await using AmiaDbContext context = _factory.CreateDbContext();
         try
         {
@@ -46,17 +52,6 @@ public class DcAccountRegistrationService
 
             if (exists)
             {
-                await NwTask.SwitchToMainThread();
-                return;
-            }
-
-            // First ensure the player record exists
-            bool playerExists = await context.Players
-                .AnyAsync(p => p.CdKey == cdKey);
-
-            if (!playerExists)
-            {
-                Log.Warn($"Player record does not exist for {cdKey}, cannot create Dreamcoin account yet.");
                 await NwTask.SwitchToMainThread();
                 return;
             }
