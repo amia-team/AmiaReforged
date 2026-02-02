@@ -44,6 +44,7 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
     // Layout management buttons
     public NuiButton SaveLayoutButton = null!;
     public NuiButton LoadLayoutButton = null!;
+    public NuiButton DeleteLayoutButton = null!;
     public NuiButton ManageLayoutsButton = null!;
 
     public readonly NuiBind<int> BlueprintCount = new("player_plc_bp_count");
@@ -417,8 +418,8 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
 
     private NuiGroup BuildLayoutManagementSection()
     {
-        const float inputWidth = ContentWidth - 130f;
-        const float buttonWidth = 110f;
+        const float inputWidth = ContentWidth - 190f;
+        const float buttonWidth = 80f;
 
         return new NuiGroup
         {
@@ -445,7 +446,7 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                         {
                             new NuiTextEdit("Enter layout name...", LayoutNameInput, 64, false)
                             {
-                                Width = inputWidth,
+                                Width = inputWidth + buttonWidth + 8f,
                                 Height = 32f,
                                 Tooltip = "Enter a name for your layout (max 64 characters)"
                             },
@@ -460,7 +461,7 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                         }
                     },
                     new NuiSpacer { Height = 4f },
-                    // Load layout row: combo box + load button
+                    // Load layout row: combo box + load button + delete button
                     new NuiRow
                     {
                         Height = 36f,
@@ -468,12 +469,13 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                         {
                             new NuiCombo
                             {
+                                Id = "combo_layout_select",
                                 Width = inputWidth,
                                 Height = 32f,
                                 Entries = LayoutOptions,
                                 Selected = SelectedLayoutIndex,
                                 Enabled = HasSavedLayouts,
-                                Tooltip = "Select a saved layout to load"
+                                Tooltip = "Select a saved layout to load or delete"
                             },
                             new NuiSpacer { Width = 8f },
                             new NuiButton("Load")
@@ -483,7 +485,16 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                                 Width = buttonWidth,
                                 Enabled = HasSavedLayouts,
                                 Tooltip = "Restore the selected layout from your inventory items"
-                            }.Assign(out LoadLayoutButton)
+                            }.Assign(out LoadLayoutButton),
+                            new NuiSpacer { Width = 8f },
+                            new NuiButton("Delete")
+                            {
+                                Id = "btn_delete_layout",
+                                Height = 32f,
+                                Width = buttonWidth,
+                                Enabled = HasSavedLayouts,
+                                Tooltip = "Delete the selected layout"
+                            }.Assign(out DeleteLayoutButton)
                         }
                     },
                     new NuiSpacer { Height = 4f },

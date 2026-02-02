@@ -249,6 +249,13 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         {
             Trace("HandleClick dispatching HandleManageLayoutsClick().");
             HandleManageLayoutsClick();
+            return;
+        }
+
+        if (eventData.ElementId == View.DeleteLayoutButton.Id)
+        {
+            Trace("HandleClick dispatching HandleDeleteLayoutClick().");
+            HandleDeleteLayoutClick();
         }
     }
 
@@ -2250,6 +2257,72 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             Log.Error(ex, "Failed to manage layouts");
             await NwTask.SwitchToMainThread();
             Token().SetBindValue(View.StatusMessage, "An error occurred while loading layouts.");
+        }
+    }
+
+    private async void HandleDeleteLayoutClick()
+    {
+        if (_currentPropertyId is null)
+        {
+            Token().SetBindValue(View.StatusMessage, "Layout management is only available in housing areas.");
+            return;
+        }
+
+        if (!CharacterService.Value.TryGetPlayerKey(_player, out Guid characterId))
+        {
+            Token().SetBindValue(View.StatusMessage, "Unable to determine your character. Please relog.");
+            return;
+        }
+
+        if (_availableLayouts.Count == 0)
+        {
+            Token().SetBindValue(View.StatusMessage, "No saved layouts available to delete.");
+            return;
+        }
+
+        // Get the selected layout index from the combo box
+        int selectedIndex = Token().GetBindValue(View.SelectedLayoutIndex);
+
+        if (selectedIndex < 0 || selectedIndex >= _availableLayouts.Count)
+        {
+            Token().SetBindValue(View.StatusMessage, "Please select a layout to delete.");
+            return;
+        }
+
+        Database.Entities.PlayerHousing.PlcLayoutConfiguration selectedLayout = _availableLayouts[selectedIndex];
+
+        Token().SetBindValue(View.StatusMessage, $"Deleting layout: {selectedLayout.Name}...");
+
+        try
+        {
+            bool success = await LayoutService.Value.DeleteLayoutAsync(selectedLayout.Id, characterId);
+
+            await NwTask.SwitchToMainThread();
+
+            if (!Token().Player.IsValid)
+            {
+                return;
+            }
+
+            if (success)
+            {
+                _player.SendServerMessage($"Layout '{selectedLayout.Name}' deleted successfully.", ColorConstants.Green);
+                Token().SetBindValue(View.StatusMessage, $"Layout '{selectedLayout.Name}' deleted.");
+
+                // Refresh the layout options
+                RefreshLayoutOptionsAsync();
+            }
+            else
+            {
+                Token().SetBindValue(View.StatusMessage, "Failed to delete the layout.");
+                _player.SendServerMessage("Failed to delete the layout.", ColorConstants.Red);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to delete layout");
+            await NwTask.SwitchToMainThread();
+            Token().SetBindValue(View.StatusMessage, "An error occurred while deleting the layout.");
         }
     }
 
