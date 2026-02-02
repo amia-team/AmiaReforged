@@ -89,6 +89,10 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
     public readonly NuiBind<bool> IsInHousingArea = new("player_plc_in_housing");
     public readonly NuiBind<int> LayoutCount = new("player_plc_layout_count");
     public readonly NuiBind<string> LayoutNames = new("player_plc_layout_names");
+    public readonly NuiBind<string> LayoutNameInput = new("player_plc_layout_name_input");
+    public readonly NuiBind<List<NuiComboEntry>> LayoutOptions = new("player_plc_layout_options");
+    public readonly NuiBind<int> SelectedLayoutIndex = new("player_plc_selected_layout");
+    public readonly NuiBind<bool> HasSavedLayouts = new("player_plc_has_layouts");
 
     public override NuiLayout RootLayout()
     {
@@ -413,11 +417,13 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
 
     private NuiGroup BuildLayoutManagementSection()
     {
-        const float buttonWidth = (ContentWidth - 16f) / 3f;
+        const float inputWidth = ContentWidth - 130f;
+        const float buttonWidth = 110f;
+
         return new NuiGroup
         {
             Border = true,
-            Height = 120f,
+            Height = 160f,
             Width = ContentWidth,
             Enabled = IsInHousingArea,
             Tooltip = "Layout management is only available in housing areas",
@@ -431,34 +437,71 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                         ForegroundColor = ColorConstants.White,
                         HorizontalAlign = NuiHAlign.Center
                     },
+                    // Save layout row: text input + save button
                     new NuiRow
                     {
-                        Height = 42f,
+                        Height = 36f,
                         Children =
                         {
-                            new NuiButton("Save Layout")
+                            new NuiTextEdit("Enter layout name...", LayoutNameInput, 64, false)
+                            {
+                                Width = inputWidth,
+                                Height = 32f,
+                                Tooltip = "Enter a name for your layout (max 64 characters)"
+                            },
+                            new NuiSpacer { Width = 8f },
+                            new NuiButton("Save")
                             {
                                 Id = "btn_save_layout",
                                 Height = 32f,
                                 Width = buttonWidth,
-                                Tooltip = "Save current placeable positions as a named layout"
-                            }.Assign(out SaveLayoutButton),
+                                Tooltip = "Save current placeable positions with the entered name"
+                            }.Assign(out SaveLayoutButton)
+                        }
+                    },
+                    new NuiSpacer { Height = 4f },
+                    // Load layout row: combo box + load button
+                    new NuiRow
+                    {
+                        Height = 36f,
+                        Children =
+                        {
+                            new NuiCombo
+                            {
+                                Width = inputWidth,
+                                Height = 32f,
+                                Entries = LayoutOptions,
+                                Selected = SelectedLayoutIndex,
+                                Enabled = HasSavedLayouts,
+                                Tooltip = "Select a saved layout to load"
+                            },
                             new NuiSpacer { Width = 8f },
-                            new NuiButton("Load Layout")
+                            new NuiButton("Load")
                             {
                                 Id = "btn_load_layout",
                                 Height = 32f,
                                 Width = buttonWidth,
-                                Tooltip = "Restore a saved layout from your inventory items"
-                            }.Assign(out LoadLayoutButton),
-                            new NuiSpacer { Width = 8f },
-                            new NuiButton("Manage")
+                                Enabled = HasSavedLayouts,
+                                Tooltip = "Restore the selected layout from your inventory items"
+                            }.Assign(out LoadLayoutButton)
+                        }
+                    },
+                    new NuiSpacer { Height = 4f },
+                    // Manage button row
+                    new NuiRow
+                    {
+                        Height = 36f,
+                        Children =
+                        {
+                            new NuiSpacer(),
+                            new NuiButton("Manage Layouts")
                             {
                                 Id = "btn_manage_layouts",
                                 Height = 32f,
-                                Width = buttonWidth,
+                                Width = 150f,
                                 Tooltip = "View and delete saved layouts"
-                            }.Assign(out ManageLayoutsButton)
+                            }.Assign(out ManageLayoutsButton),
+                            new NuiSpacer()
                         }
                     }
                 }

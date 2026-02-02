@@ -1941,6 +1941,10 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         if (area is null)
         {
             Token().SetBindValue(View.IsInHousingArea, false);
+            Token().SetBindValue(View.HasSavedLayouts, false);
+            Token().SetBindValue(View.LayoutNameInput, "");
+            Token().SetBindValue(View.SelectedLayoutIndex, 0);
+            Token().SetBindValue(View.LayoutOptions, new List<NuiComboEntry>());
             _currentPropertyId = null;
             return;
         }
@@ -1949,12 +1953,70 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         if (!MetadataResolver.Value.TryCapture(area, out PropertyAreaMetadata metadata))
         {
             Token().SetBindValue(View.IsInHousingArea, false);
+            Token().SetBindValue(View.HasSavedLayouts, false);
+            Token().SetBindValue(View.LayoutNameInput, "");
+            Token().SetBindValue(View.SelectedLayoutIndex, 0);
+            Token().SetBindValue(View.LayoutOptions, new List<NuiComboEntry>());
             _currentPropertyId = null;
             return;
         }
 
         _currentPropertyId = PropertySynchronizer.Value.ResolvePropertyId(metadata);
         Token().SetBindValue(View.IsInHousingArea, true);
+        Token().SetBindValue(View.LayoutNameInput, "");
+
+        // Refresh available layouts for the combo box
+        RefreshLayoutOptionsAsync();
+    }
+
+    private async void RefreshLayoutOptionsAsync()
+    {
+        if (_currentPropertyId is null)
+        {
+            Token().SetBindValue(View.HasSavedLayouts, false);
+            Token().SetBindValue(View.LayoutOptions, new List<NuiComboEntry>());
+            _availableLayouts = [];
+            return;
+        }
+
+        if (!CharacterService.Value.TryGetPlayerKey(_player, out Guid characterId))
+        {
+            Token().SetBindValue(View.HasSavedLayouts, false);
+            Token().SetBindValue(View.LayoutOptions, new List<NuiComboEntry>());
+            _availableLayouts = [];
+            return;
+        }
+
+        try
+        {
+            _availableLayouts = await LayoutService.Value.GetLayoutsAsync(_currentPropertyId.Value, characterId);
+
+            await NwTask.SwitchToMainThread();
+
+            if (!Token().Player.IsValid)
+            {
+                return;
+            }
+
+            List<NuiComboEntry> options = new List<NuiComboEntry>();
+            for (int i = 0; i < _availableLayouts.Count; i++)
+            {
+                Database.Entities.PlayerHousing.PlcLayoutConfiguration layout = _availableLayouts[i];
+                string label = $"{layout.Name} ({layout.Items.Count} items)";
+                options.Add(new NuiComboEntry(label, i));
+            }
+
+            Token().SetBindValue(View.LayoutOptions, options);
+            Token().SetBindValue(View.HasSavedLayouts, _availableLayouts.Count > 0);
+            Token().SetBindValue(View.SelectedLayoutIndex, 0);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to refresh layout options");
+            Token().SetBindValue(View.HasSavedLayouts, false);
+            Token().SetBindValue(View.LayoutOptions, new List<NuiComboEntry>());
+            _availableLayouts = [];
+        }
     }
 
     private async void HandleSaveLayoutClick()
@@ -1978,9 +2040,24 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             return;
         }
 
-        // Prompt for layout name using a simple naming convention
-        // For now, we'll auto-generate a name based on timestamp
-        string layoutName = $"Layout {DateTime.UtcNow:yyyy-MM-dd HH:mm}";
+        // Get the layout name from the text input
+        string layoutName = Token().GetBindValue(View.LayoutNameInput)?.Trim() ?? "";
+
+        // Validate: require at least 1 character
+        if (string.IsNullOrWhiteSpace(layoutName))
+        {
+            Token().SetBindValue(View.StatusMessage, "Please enter a name for your layout.");
+            return;
+        }
+
+        // Check for duplicate names
+        bool nameExists = _availableLayouts.Any(l =>
+            string.Equals(l.Name, layoutName, StringComparison.OrdinalIgnoreCase));
+        if (nameExists)
+        {
+            Token().SetBindValue(View.StatusMessage, $"A layout named '{layoutName}' already exists. Choose a different name.");
+            return;
+        }
 
         Token().SetBindValue(View.StatusMessage, "Saving layout...");
 
@@ -2004,6 +2081,10 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             if (result.IsSuccess)
             {
                 _player.SendServerMessage($"Layout '{layoutName}' saved with {result.ItemCount} items.", ColorConstants.Green);
+
+                // Clear the input field and refresh layout options
+                Token().SetBindValue(View.LayoutNameInput, "");
+                RefreshLayoutOptionsAsync();
             }
         }
         catch (Exception ex)
@@ -2022,53 +2103,26 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             return;
         }
 
-        if (!CharacterService.Value.TryGetPlayerKey(_player, out Guid characterId))
+        if (_availableLayouts.Count == 0)
         {
-            Token().SetBindValue(View.StatusMessage, "Unable to determine your character. Please relog.");
+            Token().SetBindValue(View.StatusMessage, "No saved layouts available to load.");
             return;
         }
 
-        Token().SetBindValue(View.StatusMessage, "Loading available layouts...");
+        // Get the selected layout index from the combo box
+        int selectedIndex = Token().GetBindValue(View.SelectedLayoutIndex);
 
-        try
+        if (selectedIndex < 0 || selectedIndex >= _availableLayouts.Count)
         {
-            _availableLayouts = await LayoutService.Value.GetLayoutsAsync(_currentPropertyId.Value, characterId);
-
-            await NwTask.SwitchToMainThread();
-
-            if (!Token().Player.IsValid)
-            {
-                return;
-            }
-
-            if (_availableLayouts.Count == 0)
-            {
-                Token().SetBindValue(View.StatusMessage, "No saved layouts found for this property.");
-                return;
-            }
-
-            // For now, show layout options in chat and use the first one
-            // A proper UI would show a selection dialog
-            _player.SendServerMessage("Available layouts:", ColorConstants.Cyan);
-            for (int i = 0; i < _availableLayouts.Count; i++)
-            {
-                Database.Entities.PlayerHousing.PlcLayoutConfiguration layout = _availableLayouts[i];
-                _player.SendServerMessage($"  [{i + 1}] {layout.Name} ({layout.Items.Count} items, saved {layout.UpdatedUtc:yyyy-MM-dd})", ColorConstants.White);
-            }
-
-            // Load the most recent layout automatically for simplicity
-            Database.Entities.PlayerHousing.PlcLayoutConfiguration mostRecent = _availableLayouts
-                .OrderByDescending(l => l.UpdatedUtc)
-                .First();
-
-            await LoadLayoutAsync(mostRecent.Id);
+            Token().SetBindValue(View.StatusMessage, "Please select a layout to load.");
+            return;
         }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Failed to load layouts");
-            await NwTask.SwitchToMainThread();
-            Token().SetBindValue(View.StatusMessage, "An error occurred while loading layouts.");
-        }
+
+        Database.Entities.PlayerHousing.PlcLayoutConfiguration selectedLayout = _availableLayouts[selectedIndex];
+
+        _player.SendServerMessage($"Loading layout: {selectedLayout.Name} ({selectedLayout.Items.Count} items)", ColorConstants.Cyan);
+
+        await LoadLayoutAsync(selectedLayout.Id);
     }
 
     private async Task LoadLayoutAsync(long layoutId)
