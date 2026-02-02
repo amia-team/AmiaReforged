@@ -1,6 +1,7 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.PlayerHousing;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.AreaPersistence;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Properties;
 using Anvil.API;
@@ -29,15 +30,18 @@ public sealed class PlcLayoutService
     private readonly IPlcLayoutRepository _layoutRepository;
     private readonly IRentablePropertyRepository _propertyRepository;
     private readonly RuntimeCharacterService _characterService;
+    private readonly PlaceablePersistenceService _persistenceService;
 
     public PlcLayoutService(
         IPlcLayoutRepository layoutRepository,
         IRentablePropertyRepository propertyRepository,
-        RuntimeCharacterService characterService)
+        RuntimeCharacterService characterService,
+        PlaceablePersistenceService persistenceService)
     {
         _layoutRepository = layoutRepository;
         _propertyRepository = propertyRepository;
         _characterService = characterService;
+        _persistenceService = persistenceService;
     }
 
     /// <summary>
@@ -198,6 +202,12 @@ public sealed class PlcLayoutService
             return LayoutRestoreResult.Failed("You must be the tenant or owner of this property to restore layouts.");
         }
 
+        // Get the current player's character ID - this is who will own the spawned placeables
+        if (!_characterService.TryGetPlayerKey(player, out Guid currentCharacterId))
+        {
+            return LayoutRestoreResult.Failed("Unable to determine your character. Please relog.");
+        }
+
         await NwTask.SwitchToMainThread();
 
         NwCreature? creature = player.ControlledCreature;
@@ -267,15 +277,26 @@ public sealed class PlcLayoutService
                 placeable.VisualTransform.Scale = layoutItem.Scale;
             }
 
-            // Mark as persistent and set character association
+            // Mark as persistent and set character association to the CURRENT player
             placeable.GetObjectVariable<LocalVariableInt>(PersistPlcLocalInt).Value = 1;
-            placeable.GetObjectVariable<LocalVariableString>(CharacterIdLocalString).Value = layout.CharacterId.ToString();
+            placeable.GetObjectVariable<LocalVariableString>(CharacterIdLocalString).Value = currentCharacterId.ToString();
 
             // Store source item data for recovery
             if (matchingItem.SerializedData is not null && matchingItem.SerializedData.Length > 0)
             {
                 string base64Data = Convert.ToBase64String(matchingItem.SerializedData);
                 placeable.GetObjectVariable<LocalVariableString>("source_item_data").Value = base64Data;
+            }
+
+            // Persist the placeable to the database
+            try
+            {
+                await _persistenceService.SaveSinglePlaceable(placeable);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to persist placeable {PlaceableName} during layout restore", placeable.Name);
+                // Continue with the rest of the layout even if one fails to persist
             }
 
             // Destroy the inventory item
