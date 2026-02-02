@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.Monk.Constants;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
@@ -24,26 +25,50 @@ public class WholenessOfBody : IAugmentation.ICastAugment
     {
         if (monk.Location == null || !monk.IsInCombat) return;
 
-        int diceAmount = MonkUtils.GetKiFocus(monk) switch
-        {
-            KiFocus.KiFocus1 => 20,
-            KiFocus.KiFocus2 => 15,
-            KiFocus.KiFocus3 => 10,
-            _ => 5
-        };
-
+        bool hasOverflow = Overflow.HasOverflow(monk);
+        KiFocus? kiFocus = MonkUtils.GetKiFocus(monk);
         int dc = MonkUtils.CalculateMonkDc(monk);
 
-        Effect aoeVfx = MonkUtils.ResizedVfx(VfxType.FnfLosEvil30, RadiusSize.Large);
+        int damageAmount = hasOverflow switch
+        {
+            true => kiFocus switch
+            {
+                KiFocus.KiFocus1 => 40,
+                KiFocus.KiFocus2 => 60,
+                KiFocus.KiFocus3 => 80,
+                _ => 20
+            },
+            false => kiFocus switch
+            {
+                KiFocus.KiFocus1 => 20,
+                KiFocus.KiFocus2 => 30,
+                KiFocus.KiFocus3 => 40,
+                _ => 10
+            }
+        };
 
-        monk.ApplyEffect(EffectDuration.Instant, aoeVfx);
-        foreach (NwCreature hostileCreature in monk.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Large, false))
+        DamageType damageType = hasOverflow switch
+        {
+            true => DamageType.Divine,
+            false => DamageType.Negative
+        };
+
+        VfxType aoeVfx = hasOverflow switch
+        {
+            true => MonkVfx.ImpPulseHolyChest,
+            false => MonkVfx.ImpPulseNegativeChest
+        };
+
+        Effect useFortVfx = Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse);
+
+        monk.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(aoeVfx));
+
+        foreach (NwCreature hostileCreature in monk.Location.GetObjectsInShapeByType<NwCreature>
+                     (Shape.Sphere, RadiusSize.Large, false))
         {
             if (!monk.IsReactionTypeHostile(hostileCreature)) continue;
 
             CreatureEvents.OnSpellCastAt.Signal(monk, hostileCreature, NwSpell.FromSpellType(Spell.NegativeEnergyBurst)!);
-
-            int damageAmount = Random.Shared.Roll(10, diceAmount);
 
             SavingThrowResult savingThrowResult =
                 hostileCreature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Negative, monk);
@@ -51,22 +76,10 @@ public class WholenessOfBody : IAugmentation.ICastAugment
             if (savingThrowResult == SavingThrowResult.Success)
             {
                 damageAmount /= 2;
-                hostileCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse));
+                hostileCreature.ApplyEffect(EffectDuration.Instant, useFortVfx);
             }
 
-            _ = ApplyWholenessDamage(hostileCreature, monk, damageAmount);
+            hostileCreature.ApplyEffect(EffectDuration.Instant, Effect.Damage(damageAmount, damageType));
         }
-    }
-
-    private static async Task ApplyWholenessDamage(NwCreature hostileCreature, NwCreature monk, int damageAmount)
-    {
-        await monk.WaitForObjectContext();
-        Effect wholenessEffect = Effect.LinkEffects(
-            Effect.Damage(damageAmount, DamageType.Negative),
-            Effect.Damage(damageAmount, DamageType.Piercing),
-            Effect.VisualEffect(VfxType.ImpNegativeEnergy)
-        );
-
-        hostileCreature.ApplyEffect(EffectDuration.Instant, wholenessEffect);
     }
 }

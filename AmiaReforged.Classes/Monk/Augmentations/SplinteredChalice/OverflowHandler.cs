@@ -32,7 +32,7 @@ public class OverflowHandler
         NwCreature? monk = eventData.Caster as NwCreature;
         if (monk == null) return;
 
-        Effect? overflow = monk.ActiveEffects.FirstOrDefault(e => e.Tag == OverflowConstant.EffectTag);
+        Effect? overflow = monk.ActiveEffects.FirstOrDefault(e => e.Tag == Overflow.EffectTag);
         if (overflow != null)
         {
             monk.RemoveEffect(overflow);
@@ -68,7 +68,7 @@ public class OverflowHandler
 
         overflowEffect = Effect.LinkEffects(overflowEffect, Effect.Icon(EffectIcon.Invulnerable!));
         overflowEffect.SubType = EffectSubType.Extraordinary;
-        overflowEffect.Tag = OverflowConstant.EffectTag;
+        overflowEffect.Tag = Overflow.EffectTag;
 
         return overflowEffect;
     }

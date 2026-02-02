@@ -22,26 +22,37 @@ public class AxiomaticStrike : IAugmentation.IAttackAugment
     /// </summary>
     private static void AugmentAxiomaticStrike(NwCreature monk, OnCreatureAttack attackData)
     {
-        DamageData<short> damageData = attackData.DamageData;
+        bool hasOverflow = Overflow.HasOverflow(monk);
+        KiFocus? kiFocus = MonkUtils.GetKiFocus(monk);
 
-        DamageType bonusDamageType = DamageType.Negative;
-        int bonusDamage = MonkUtils.GetKiFocus(monk) switch
+        int bonusDamage = hasOverflow switch
         {
-            KiFocus.KiFocus1 => 2,
-            KiFocus.KiFocus2 => 3,
-            KiFocus.KiFocus3 => 4,
-            _ => 1
+            true => kiFocus switch
+            {
+                KiFocus.KiFocus1 => 4,
+                KiFocus.KiFocus2 => 6,
+                KiFocus.KiFocus3 => 8,
+                _ => 2
+            },
+            false => kiFocus switch
+            {
+                KiFocus.KiFocus1 => 2,
+                KiFocus.KiFocus2 => 3,
+                KiFocus.KiFocus3 => 4,
+                _ => 1
+            }
         };
 
-        if (OverflowConstant.HasOverflow(monk))
+        DamageType bonusDamageType = hasOverflow switch
         {
-            bonusDamageType = DamageType.Divine;
-            bonusDamage *= 2;
-        }
+            true => DamageType.Divine,
+            false => DamageType.Negative
+        };
 
         if (attackData.AttackResult == AttackResult.CriticalHit)
             bonusDamage *= MonkUtils.GetCritMultiplier(attackData, monk);
 
+        DamageData<short> damageData = attackData.DamageData;
         short baseDamage = damageData.GetDamageByType(bonusDamageType);
 
         if (baseDamage == -1) bonusDamage++;

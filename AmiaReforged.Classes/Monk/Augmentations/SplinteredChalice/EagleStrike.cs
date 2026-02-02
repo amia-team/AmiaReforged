@@ -8,6 +8,7 @@ namespace AmiaReforged.Classes.Monk.Augmentations.SplinteredChalice;
 [ServiceBinding(typeof(IAugmentation))]
 public class EagleStrike : IAugmentation.IDamageAugment
 {
+    private const string SplinteredEagleTag = nameof(PathType.SplinteredChalice) + nameof(TechniqueType.EagleStrike);
     public PathType Path => PathType.SplinteredChalice;
     public TechniqueType Technique => TechniqueType.EagleStrike;
     public void ApplyDamageAugmentation(NwCreature monk, OnCreatureDamage damageData, BaseTechniqueCallback baseTechnique)
@@ -21,6 +22,59 @@ public class EagleStrike : IAugmentation.IDamageAugment
     /// </summary>
     private void AugmentEagleStrike(NwCreature monk, OnCreatureDamage damageData)
     {
-        throw new NotImplementedException();
+        SavingThrowResult savingThrowResult = Techniques.Attack.EagleStrike.DoEagleStrike(monk, damageData);
+
+        if (savingThrowResult != SavingThrowResult.Success
+            || damageData.Target is not NwCreature targetCreature) return;
+
+        KiFocus? kiFocus = MonkUtils.GetKiFocus(monk);
+        bool hasOverflow = Overflow.HasOverflow(monk);
+
+        int pctVulnerability = hasOverflow switch
+        {
+            true => kiFocus switch
+            {
+                KiFocus.KiFocus1 => 10,
+                KiFocus.KiFocus2 => 15,
+                KiFocus.KiFocus3 => 20,
+                _ => 5
+            },
+            false => kiFocus switch
+            {
+                KiFocus.KiFocus1 => 6,
+                KiFocus.KiFocus2 => 9,
+                KiFocus.KiFocus3 => 12,
+                _ => 3
+            }
+        };
+
+        DamageType bonusDamageType = hasOverflow switch
+        {
+            true => DamageType.Divine,
+            false => DamageType.Negative
+        };
+
+        VfxType vfxType = hasOverflow switch
+        {
+            true => VfxType.ImpSunstrike,
+            false => VfxType.ImpNegativeEnergy
+        };
+
+        Effect? splinteredEagle = targetCreature.ActiveEffects.FirstOrDefault(e => e.Tag == SplinteredEagleTag);
+        if (splinteredEagle != null)
+            targetCreature.RemoveEffect(splinteredEagle);
+
+        splinteredEagle = Effect.LinkEffects
+        (
+            Effect.DamageImmunityDecrease(DamageType.Bludgeoning, pctVulnerability),
+            Effect.DamageImmunityDecrease(DamageType.Slashing, pctVulnerability),
+            Effect.DamageImmunityDecrease(DamageType.Piercing, pctVulnerability),
+            Effect.DamageImmunityDecrease(bonusDamageType, pctVulnerability)
+        );
+        splinteredEagle.SubType = EffectSubType.Extraordinary;
+        splinteredEagle.Tag = SplinteredEagleTag;
+
+        targetCreature.ApplyEffect(EffectDuration.Temporary, splinteredEagle, NwTimeSpan.FromRounds(2));
+        targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(vfxType));
     }
 }
