@@ -461,7 +461,7 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                         }
                     },
                     new NuiSpacer { Height = 4f },
-                    // Load layout row: combo box + load button + delete button
+                    // Load layout row: combo box + load button
                     new NuiRow
                     {
                         Height = 36f,
@@ -470,7 +470,7 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                             new NuiCombo
                             {
                                 Id = "combo_layout_select",
-                                Width = inputWidth,
+                                Width = inputWidth + buttonWidth + 8f,
                                 Height = 32f,
                                 Entries = LayoutOptions,
                                 Selected = SelectedLayoutIndex,
@@ -485,8 +485,17 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                                 Width = buttonWidth,
                                 Enabled = HasSavedLayouts,
                                 Tooltip = "Restore the selected layout from your inventory items"
-                            }.Assign(out LoadLayoutButton),
-                            new NuiSpacer { Width = 8f },
+                            }.Assign(out LoadLayoutButton)
+                        }
+                    },
+                    new NuiSpacer { Height = 4f },
+                    // Manage/Delete button row
+                    new NuiRow
+                    {
+                        Height = 36f,
+                        Children =
+                        {
+                            new NuiSpacer(),
                             new NuiButton("Delete")
                             {
                                 Id = "btn_delete_layout",
@@ -494,17 +503,8 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                                 Width = buttonWidth,
                                 Enabled = HasSavedLayouts,
                                 Tooltip = "Delete the selected layout"
-                            }.Assign(out DeleteLayoutButton)
-                        }
-                    },
-                    new NuiSpacer { Height = 4f },
-                    // Manage button row
-                    new NuiRow
-                    {
-                        Height = 36f,
-                        Children =
-                        {
-                            new NuiSpacer(),
+                            }.Assign(out DeleteLayoutButton),
+                            new NuiSpacer { Width = 8f },
                             new NuiButton("Manage Layouts")
                             {
                                 Id = "btn_manage_layouts",
