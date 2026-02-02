@@ -72,6 +72,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
     [Inject] private Lazy<PropertyDefinitionSynchronizer> PropertySynchronizer { get; init; } = null!;
     [Inject] private Lazy<IRentablePropertyRepository> PropertyRepository { get; init; } = null!;
     [Inject] private Lazy<RuntimeCharacterService> CharacterService { get; init; } = null!;
+    [Inject] private Lazy<PlcLayoutService> LayoutService { get; init; } = null!;
 
     public override NuiWindowToken Token() => _token;
 
@@ -160,6 +161,9 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         Token().SetBindValue(View.BlueprintSearch, string.Empty);
         Token().SetBindWatch(View.BlueprintSearch, true);
 
+        // Initialize layout management bindings
+        UpdateHousingAreaStatus();
+
         ResetEditFields();
 
         // Leave watchers disabled until a selection is active to avoid idle watch spam.
@@ -224,6 +228,27 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         {
             Trace("HandleClick dispatching RecoverAllPlaceablesInArea().");
             HandleRecoverAllClick();
+            return;
+        }
+
+        if (eventData.ElementId == View.SaveLayoutButton.Id)
+        {
+            Trace("HandleClick dispatching HandleSaveLayoutClick().");
+            HandleSaveLayoutClick();
+            return;
+        }
+
+        if (eventData.ElementId == View.LoadLayoutButton.Id)
+        {
+            Trace("HandleClick dispatching HandleLoadLayoutClick().");
+            HandleLoadLayoutClick();
+            return;
+        }
+
+        if (eventData.ElementId == View.ManageLayoutsButton.Id)
+        {
+            Trace("HandleClick dispatching HandleManageLayoutsClick().");
+            HandleManageLayoutsClick();
         }
     }
 
@@ -1812,6 +1837,257 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             }
         });
     }
+
+    #region Layout Management
+
+    private PropertyId? _currentPropertyId;
+    private List<Database.Entities.PlayerHousing.PlcLayoutConfiguration> _availableLayouts = [];
+
+    private void UpdateHousingAreaStatus()
+    {
+        NwArea? area = _player.ControlledCreature?.Area;
+        if (area is null)
+        {
+            Token().SetBindValue(View.IsInHousingArea, false);
+            _currentPropertyId = null;
+            return;
+        }
+
+        // Check if this area is a housing property
+        if (!MetadataResolver.Value.TryCapture(area, out PropertyAreaMetadata metadata))
+        {
+            Token().SetBindValue(View.IsInHousingArea, false);
+            _currentPropertyId = null;
+            return;
+        }
+
+        _currentPropertyId = PropertySynchronizer.Value.ResolvePropertyId(metadata);
+        Token().SetBindValue(View.IsInHousingArea, true);
+    }
+
+    private async void HandleSaveLayoutClick()
+    {
+        if (_currentPropertyId is null)
+        {
+            Token().SetBindValue(View.StatusMessage, "Layout management is only available in housing areas.");
+            return;
+        }
+
+        if (!CharacterService.Value.TryGetPlayerKey(_player, out Guid characterId))
+        {
+            Token().SetBindValue(View.StatusMessage, "Unable to determine your character. Please relog.");
+            return;
+        }
+
+        NwArea? area = _player.ControlledCreature?.Area;
+        if (area is null)
+        {
+            Token().SetBindValue(View.StatusMessage, "You must be in an area to save a layout.");
+            return;
+        }
+
+        // Prompt for layout name using a simple naming convention
+        // For now, we'll auto-generate a name based on timestamp
+        string layoutName = $"Layout {DateTime.UtcNow:yyyy-MM-dd HH:mm}";
+
+        Token().SetBindValue(View.StatusMessage, "Saving layout...");
+
+        try
+        {
+            LayoutSaveResult result = await LayoutService.Value.SaveCurrentLayoutAsync(
+                _currentPropertyId.Value,
+                characterId,
+                layoutName,
+                area);
+
+            await NwTask.SwitchToMainThread();
+
+            if (!Token().Player.IsValid)
+            {
+                return;
+            }
+
+            Token().SetBindValue(View.StatusMessage, result.Message);
+
+            if (result.IsSuccess)
+            {
+                _player.SendServerMessage($"Layout '{layoutName}' saved with {result.ItemCount} items.", ColorConstants.Green);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to save layout");
+            await NwTask.SwitchToMainThread();
+            Token().SetBindValue(View.StatusMessage, "An error occurred while saving the layout.");
+        }
+    }
+
+    private async void HandleLoadLayoutClick()
+    {
+        if (_currentPropertyId is null)
+        {
+            Token().SetBindValue(View.StatusMessage, "Layout management is only available in housing areas.");
+            return;
+        }
+
+        if (!CharacterService.Value.TryGetPlayerKey(_player, out Guid characterId))
+        {
+            Token().SetBindValue(View.StatusMessage, "Unable to determine your character. Please relog.");
+            return;
+        }
+
+        Token().SetBindValue(View.StatusMessage, "Loading available layouts...");
+
+        try
+        {
+            _availableLayouts = await LayoutService.Value.GetLayoutsAsync(_currentPropertyId.Value, characterId);
+
+            await NwTask.SwitchToMainThread();
+
+            if (!Token().Player.IsValid)
+            {
+                return;
+            }
+
+            if (_availableLayouts.Count == 0)
+            {
+                Token().SetBindValue(View.StatusMessage, "No saved layouts found for this property.");
+                return;
+            }
+
+            // For now, show layout options in chat and use the first one
+            // A proper UI would show a selection dialog
+            _player.SendServerMessage("Available layouts:", ColorConstants.Cyan);
+            for (int i = 0; i < _availableLayouts.Count; i++)
+            {
+                Database.Entities.PlayerHousing.PlcLayoutConfiguration layout = _availableLayouts[i];
+                _player.SendServerMessage($"  [{i + 1}] {layout.Name} ({layout.Items.Count} items, saved {layout.UpdatedUtc:yyyy-MM-dd})", ColorConstants.White);
+            }
+
+            // Load the most recent layout automatically for simplicity
+            Database.Entities.PlayerHousing.PlcLayoutConfiguration mostRecent = _availableLayouts
+                .OrderByDescending(l => l.UpdatedUtc)
+                .First();
+
+            await LoadLayoutAsync(mostRecent.Id);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to load layouts");
+            await NwTask.SwitchToMainThread();
+            Token().SetBindValue(View.StatusMessage, "An error occurred while loading layouts.");
+        }
+    }
+
+    private async Task LoadLayoutAsync(long layoutId)
+    {
+        NwArea? area = _player.ControlledCreature?.Area;
+        if (area is null)
+        {
+            Token().SetBindValue(View.StatusMessage, "You must be in an area to load a layout.");
+            return;
+        }
+
+        Token().SetBindValue(View.StatusMessage, "Restoring layout...");
+
+        try
+        {
+            LayoutRestoreResult result = await LayoutService.Value.RestoreLayoutAsync(layoutId, _player, area);
+
+            await NwTask.SwitchToMainThread();
+
+            if (!Token().Player.IsValid)
+            {
+                return;
+            }
+
+            Token().SetBindValue(View.StatusMessage, result.Message);
+
+            if (result.IsSuccess)
+            {
+                if (result.MissingItems is not null && result.MissingItems.Count > 0)
+                {
+                    _player.SendServerMessage($"Layout restored with {result.PlacedCount} items. Some items were missing:", ColorConstants.Orange);
+                    foreach (string missing in result.MissingItems.Take(10))
+                    {
+                        _player.SendServerMessage($"  - {missing}", ColorConstants.Orange);
+                    }
+
+                    if (result.MissingItems.Count > 10)
+                    {
+                        _player.SendServerMessage($"  ... and {result.MissingItems.Count - 10} more.", ColorConstants.Orange);
+                    }
+                }
+                else
+                {
+                    _player.SendServerMessage($"Layout restored successfully with {result.PlacedCount} items.", ColorConstants.Green);
+                }
+
+                // Refresh blueprints since items were consumed
+                RefreshBlueprints();
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to restore layout");
+            await NwTask.SwitchToMainThread();
+            Token().SetBindValue(View.StatusMessage, "An error occurred while restoring the layout.");
+        }
+    }
+
+    private async void HandleManageLayoutsClick()
+    {
+        if (_currentPropertyId is null)
+        {
+            Token().SetBindValue(View.StatusMessage, "Layout management is only available in housing areas.");
+            return;
+        }
+
+        if (!CharacterService.Value.TryGetPlayerKey(_player, out Guid characterId))
+        {
+            Token().SetBindValue(View.StatusMessage, "Unable to determine your character. Please relog.");
+            return;
+        }
+
+        Token().SetBindValue(View.StatusMessage, "Loading layouts...");
+
+        try
+        {
+            _availableLayouts = await LayoutService.Value.GetLayoutsAsync(_currentPropertyId.Value, characterId);
+
+            await NwTask.SwitchToMainThread();
+
+            if (!Token().Player.IsValid)
+            {
+                return;
+            }
+
+            if (_availableLayouts.Count == 0)
+            {
+                Token().SetBindValue(View.StatusMessage, "No saved layouts found for this property.");
+                _player.SendServerMessage("You have no saved layouts for this property.", ColorConstants.Orange);
+                return;
+            }
+
+            // Display layout info in chat
+            _player.SendServerMessage($"=== Your Layouts ({_availableLayouts.Count}/{PlcLayoutService.MaxLayoutsPerProperty}) ===", ColorConstants.Cyan);
+            foreach (Database.Entities.PlayerHousing.PlcLayoutConfiguration layout in _availableLayouts)
+            {
+                _player.SendServerMessage($"  • {layout.Name}", ColorConstants.White);
+                _player.SendServerMessage($"    Items: {layout.Items.Count} | Created: {layout.CreatedUtc:yyyy-MM-dd} | Updated: {layout.UpdatedUtc:yyyy-MM-dd}", ColorConstants.Gray);
+            }
+
+            Token().SetBindValue(View.StatusMessage, $"You have {_availableLayouts.Count} saved layout(s).");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to manage layouts");
+            await NwTask.SwitchToMainThread();
+            Token().SetBindValue(View.StatusMessage, "An error occurred while loading layouts.");
+        }
+    }
+
+    #endregion
 
     private void Trace(string message)
     {

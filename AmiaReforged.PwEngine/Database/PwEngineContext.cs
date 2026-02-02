@@ -1,4 +1,4 @@
-﻿using AmiaReforged.PwEngine.Database.Entities;
+﻿﻿using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Database.Entities.Admin;
 using AmiaReforged.PwEngine.Database.Entities.Economy;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Properties;
@@ -85,6 +85,16 @@ public class PwEngineContext : DbContext
     /// </summary>
     public DbSet<DreamcoinRental> DreamcoinRentals { get; set; } = null!;
 
+    /// <summary>
+    /// Saved PLC layout configurations for properties.
+    /// </summary>
+    public DbSet<PlcLayoutConfiguration> PlcLayoutConfigurations { get; set; } = null!;
+
+    /// <summary>
+    /// Individual items within PLC layout configurations.
+    /// </summary>
+    public DbSet<PlcLayoutItem> PlcLayoutItems { get; set; } = null!;
+
 
     public PwEngineContext()
     {
@@ -153,5 +163,7 @@ public class PwEngineContext : DbContext
         modelBuilder.ApplyConfiguration(new CharacterRebuildConfiguration());
         modelBuilder.ApplyConfiguration(new RebuildItemRecordConfiguration());
         modelBuilder.ApplyConfiguration(new DreamcoinRentalConfiguration());
+        modelBuilder.ApplyConfiguration(new PlcLayoutConfigurationConfiguration());
+        modelBuilder.ApplyConfiguration(new PlcLayoutItemConfiguration());
     }
 }

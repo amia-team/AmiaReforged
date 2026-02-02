@@ -41,6 +41,11 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
     public NuiButton DiscardButton = null!;
     public NuiButton ApplyTransformButton = null!;
 
+    // Layout management buttons
+    public NuiButton SaveLayoutButton = null!;
+    public NuiButton LoadLayoutButton = null!;
+    public NuiButton ManageLayoutsButton = null!;
+
     public readonly NuiBind<int> BlueprintCount = new("player_plc_bp_count");
     public readonly NuiBind<string> BlueprintNames = new("player_plc_bp_names");
     public readonly NuiBind<string> BlueprintResRefs = new("player_plc_bp_resrefs");
@@ -80,6 +85,11 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
     public readonly NuiBind<float> Orientation = new("player_plc_orientation");
     public readonly NuiBind<string> OrientationString = new("player_plc_orientation_str");
 
+    // Layout management bindings
+    public readonly NuiBind<bool> IsInHousingArea = new("player_plc_in_housing");
+    public readonly NuiBind<int> LayoutCount = new("player_plc_layout_count");
+    public readonly NuiBind<string> LayoutNames = new("player_plc_layout_names");
+
     public override NuiLayout RootLayout()
     {
         return BuildContent();
@@ -114,6 +124,8 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                     Id = "btn_recover_all",
                     Height = 32f
                 }.Assign(out RecoverAllButton),
+                new NuiSpacer { Height = SectionSpacing },
+                BuildLayoutManagementSection(),
                 new NuiSpacer { Height = SectionSpacing },
                 new NuiLabel(StatusMessage)
                 {
@@ -394,6 +406,61 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                     Width = ContentWidth - 250f,
                     Enabled = SelectionAvailable,
                     Id = sliderId
+                }
+            }
+        };
+    }
+
+    private NuiGroup BuildLayoutManagementSection()
+    {
+        const float buttonWidth = (ContentWidth - 16f) / 3f;
+        return new NuiGroup
+        {
+            Border = true,
+            Height = 80f,
+            Width = ContentWidth,
+            Enabled = IsInHousingArea,
+            Tooltip = "Layout management is only available in housing areas",
+            Element = new NuiColumn
+            {
+                Children =
+                {
+                    new NuiLabel("Layout Management")
+                    {
+                        Height = 18f,
+                        ForegroundColor = ColorConstants.White,
+                        HorizontalAlign = NuiHAlign.Center
+                    },
+                    new NuiRow
+                    {
+                        Height = 42f,
+                        Children =
+                        {
+                            new NuiButton("Save Layout")
+                            {
+                                Id = "btn_save_layout",
+                                Height = 32f,
+                                Width = buttonWidth,
+                                Tooltip = "Save current placeable positions as a named layout"
+                            }.Assign(out SaveLayoutButton),
+                            new NuiSpacer { Width = 8f },
+                            new NuiButton("Load Layout")
+                            {
+                                Id = "btn_load_layout",
+                                Height = 32f,
+                                Width = buttonWidth,
+                                Tooltip = "Restore a saved layout from your inventory items"
+                            }.Assign(out LoadLayoutButton),
+                            new NuiSpacer { Width = 8f },
+                            new NuiButton("Manage")
+                            {
+                                Id = "btn_manage_layouts",
+                                Height = 32f,
+                                Width = buttonWidth,
+                                Tooltip = "View and delete saved layouts"
+                            }.Assign(out ManageLayoutsButton)
+                        }
+                    }
                 }
             }
         };
