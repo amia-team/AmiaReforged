@@ -427,7 +427,6 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
             Height = 160f,
             Width = ContentWidth,
             Enabled = IsInHousingArea,
-            Tooltip = "Layout management is only available in housing areas",
             Element = new NuiColumn
             {
                 Children =
@@ -475,7 +474,6 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                                 Entries = LayoutOptions,
                                 Selected = SelectedLayoutIndex,
                                 Enabled = HasSavedLayouts,
-                                Tooltip = "Select a saved layout to load or delete"
                             },
                             new NuiSpacer { Width = 8f },
                             new NuiButton("Load")
