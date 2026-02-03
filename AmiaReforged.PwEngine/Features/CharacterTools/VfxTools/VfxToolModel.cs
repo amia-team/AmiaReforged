@@ -23,9 +23,8 @@ public sealed class VfxToolModel
     private void InitializeValidVfxIds()
     {
         // Build list of valid VFX IDs from the visual effect table
-        // Filter only Duration type VFX as they're most commonly used for dolls
         _validVfxIds = NwGameTables.VisualEffectTable.Rows
-            .Where(row => row.TypeFd == "D" && !string.IsNullOrEmpty(row.Label))
+            .Where(row => !string.IsNullOrEmpty(row.Label))
             .Select(row => row.RowIndex)
             .ToList();
 
