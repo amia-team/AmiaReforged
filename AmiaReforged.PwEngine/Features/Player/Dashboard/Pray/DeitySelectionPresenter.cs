@@ -138,25 +138,20 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
         else
         {
             // Non-divine casters can choose any deity but have varying prayer chances
-            if (alignmentMatches)
+            if (alignmentMatches || axisMatches)
             {
-                Token().SetBindValue(View.AlignmentStatus, "Your alignment matches: 40% prayer chance.");
-                Token().SetBindValue(View.AlignmentStatusColor, ColorConstants.Green);
-            }
-            else if (axisMatches)
-            {
-                Token().SetBindValue(View.AlignmentStatus, "Your alignment axis matches: 40% prayer chance.");
-                Token().SetBindValue(View.AlignmentStatusColor, ColorConstants.Yellow);
+                Token().SetBindValue(View.AlignmentStatus, "Your alignment is valid: 60% prayer chance, 30% party-wide.");
+                Token().SetBindValue(View.AlignmentStatusColor, ColorConstants.Navy);
             }
             else if (isOpposingAxis)
             {
-                Token().SetBindValue(View.AlignmentStatus, "Opposing alignment: You may be smited if you pray.");
+                Token().SetBindValue(View.AlignmentStatus, "Opposing alignment: You will be smited if you pray!");
                 Token().SetBindValue(View.AlignmentStatusColor, ColorConstants.Maroon);
             }
             else
             {
-                Token().SetBindValue(View.AlignmentStatus, "Incompatible alignment: 0% prayer chance.");
-                Token().SetBindValue(View.AlignmentStatusColor, ColorConstants.Maroon);
+                Token().SetBindValue(View.AlignmentStatus, "Other Alighment: 40% prayer chance (personal).");
+                Token().SetBindValue(View.AlignmentStatusColor, ColorConstants.Yellow);
             }
         }
 

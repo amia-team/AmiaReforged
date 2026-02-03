@@ -1,6 +1,5 @@
 ﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
-using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
@@ -106,7 +105,7 @@ public class PrayerService
         // On your knees!
         NWScript.AssignCommand(creature, () =>
         {
-            NWScript.ActionPlayAnimation(NWScript.ANIMATION_LOOPING_MEDITATE, 1.0f, 12.0f);
+            NWScript.ActionPlayAnimation(NWScript.ANIMATION_LOOPING_MEDITATE, 0.4f, 8.0f);
         });
 
         // Get deity
@@ -157,7 +156,7 @@ public class PrayerService
         // Divine casters with wrong alignment become Fallen
         if (isDivineCaster && !alignmentMatches)
         {
-            MakeFallen(player, creature, idol, deity, "Your alignment no longer pleases your deity!");
+            MakeFallen(player, creature, idol, deity, $"Your alignment displeases {deity}!");
             return;
         }
 
@@ -167,15 +166,15 @@ public class PrayerService
             bool hasMatchingDomain = HasMatchingDomain(creature, idol);
             if (!hasMatchingDomain)
             {
-                MakeFallen(player, creature, idol, deity, "None of your domains match your deity's domains!");
+                MakeFallen(player, creature, idol, deity, $"None of your Domains match {deity}'s Domains!");
                 return;
             }
         }
 
-        // For non-divine casters, check alignment axis
+        // For non-divine casters, check for opposing alignment (Good vs Evil) which triggers a smite
         if (!isDivineCaster && !alignmentMatches)
         {
-            // First check if they have an OPPOSING alignment (Good vs Evil) - this triggers a smite!
+            // Check if they have an OPPOSING alignment (Good vs Evil) - this triggers a smite!
             bool isOpposingAxis = IsOpposingGoodEvilAxis(creature, idol);
 
             if (isOpposingAxis)
@@ -184,17 +183,7 @@ public class PrayerService
                 SmiteHeretic(player, creature, idol, deity);
                 return;
             }
-
-            // Check if they at least share the same Good/Evil axis
-            bool axisMatches = MatchAlignmentAxis(creature, idol);
-
-            if (!axisMatches)
-            {
-                // Wrong alignment entirely! Don't set cooldown for invalid prayers
-                player.SendServerMessage($"{deity} isn't pleased. Nothing happens...", ColorConstants.Red);
-                player.SendServerMessage("[Your alignment is not valid for this god.]", ColorConstants.Gray);
-                return;
-            }
+            // Non-opposing laypersons continue to the prayer section below for their % chance
         }
 
         // Check prayer cooldown AFTER alignment check
@@ -212,7 +201,7 @@ public class PrayerService
         SetPrayerCooldown(creature);
 
         // Get the creature's actual domains (not matched domains)
-        int creatureDomain1 = NWScript.GetDomain(creature, 1);
+        int creatureDomain1 = NWScript.GetDomain(creature);
         int creatureDomain2 = NWScript.GetDomain(creature, 2);
 
         // Calculate total divine level (sum of all divine class levels)
@@ -263,39 +252,40 @@ public class PrayerService
         else if (isDivineCaster && alignmentMatches)
         {
             // Other divine casters (Ranger, Paladin, Blackguard, Divine Champion) with matching alignment
-            // They get individual blessing (not party-wide) using total divine level
-            NwTask.Run(async () =>
-            {
-                await NwTask.Delay(TimeSpan.FromSeconds(5));
-                player.SendServerMessage($"{deity}'s power is demonstrated through your prayer!", ColorConstants.Green);
-                player.SendServerMessage($"[Divine Level: {totalDivineLevel}]", ColorConstants.Gray);
+            // Success rate: 40% base + 2% per divine level (caps at 100%)
+            // Party-wide chance: 50%
+            int successRate = Math.Min(100, 40 + (totalDivineLevel * 2));
+            int successRoll = Random.Shared.Next(1, 101);
 
-                await NwTask.Delay(TimeSpan.FromSeconds(1));
-                // Apply only to self for non-cleric/druid divine casters
-                CastAlignmentEffectSelf(creature, idol, totalDivineLevel);
-            });
-        }
-        else
-        {
-            // Non-divine caster with axis match - layperson prayer with success rate
-            if (!alignmentMatches)
+            if (successRoll <= successRate)
             {
-                player.SendServerMessage($"You honor {deity} through your actions, if not your exact path...", ColorConstants.Yellow);
-            }
+                int partyWideRoll = Random.Shared.Next(1, 101);
+                bool isPartyWide = partyWideRoll <= 50;
 
-            int successRate = GetSuccessRate(creature);
-            int roll = Random.Shared.Next(1, 101);
-
-            if (roll <= successRate)
-            {
                 NwTask.Run(async () =>
                 {
                     await NwTask.Delay(TimeSpan.FromSeconds(5));
-                    player.SendServerMessage($"{deity} blesses you!", ColorConstants.Green);
-                    player.SendServerMessage($"[Your chance on a blessing is {successRate}%]", ColorConstants.Gray);
+                    player.SendServerMessage($"{deity}'s power is demonstrated through your prayer!", ColorConstants.Green);
+
+                    if (isPartyWide)
+                    {
+                        player.SendServerMessage($"[Success Rate: {successRate}%. Roll: {successRoll}. Party-wide! Roll: {partyWideRoll}/50]", ColorConstants.Gray);
+                    }
+                    else
+                    {
+                        player.SendServerMessage($"[Success Rate: {successRate}%. Roll: {successRoll}. Personal. Roll: {partyWideRoll}/50]", ColorConstants.Gray);
+                    }
 
                     await NwTask.Delay(TimeSpan.FromSeconds(1));
-                    CastAlignmentEffect(creature, idol, 0);
+
+                    if (isPartyWide)
+                    {
+                        CastAlignmentEffect(creature, idol, totalDivineLevel);
+                    }
+                    else
+                    {
+                        CastAlignmentEffectSelf(creature, idol, totalDivineLevel);
+                    }
                 });
             }
             else
@@ -304,7 +294,82 @@ public class PrayerService
                 {
                     await NwTask.Delay(TimeSpan.FromSeconds(5));
                     player.SendServerMessage($"{deity} does not answer your prayer this time...", ColorConstants.Orange);
-                    player.SendServerMessage($"[Your chance on a blessing is {successRate}%]", ColorConstants.Gray);
+                    player.SendServerMessage($"[Success Rate: {successRate}%. Roll: {successRoll}]", ColorConstants.Gray);
+                });
+            }
+        }
+        else
+        {
+            // Layperson prayer - determine success rate based on alignment
+            bool axisMatches = MatchAlignmentAxis(creature, idol);
+            int successRate;
+            int partyWideChance = 0;
+
+            if (alignmentMatches)
+            {
+                // Exact alignment match - same as axis match for laypeople
+                successRate = 60;
+                partyWideChance = 30;
+            }
+            else if (axisMatches)
+            {
+                // Same Good/Evil axis - 60% success, 30% party-wide
+                successRate = 60;
+                partyWideChance = 30;
+                player.SendServerMessage($"You honor {deity} through your actions, if not your exact path...", ColorConstants.Yellow);
+            }
+            else
+            {
+                // No axis match (e.g., TN following LG Bahamut) - 40% success, personal only
+                successRate = 40;
+                partyWideChance = 0;
+                player.SendServerMessage($"Your devotion to {deity} is tested by your divergent path...", ColorConstants.Yellow);
+            }
+
+            int roll = Random.Shared.Next(1, 101);
+            int partyWideRoll = Random.Shared.Next(1, 101);
+
+            if (roll <= successRate)
+            {
+                // Success! Now check if it's party-wide
+                bool isPartyWide = partyWideChance > 0 && partyWideRoll <= partyWideChance;
+
+                NwTask.Run(async () =>
+                {
+                    await NwTask.Delay(TimeSpan.FromSeconds(5));
+
+                    if (isPartyWide)
+                    {
+                        player.SendServerMessage($"{deity} blesses you and your companions!", ColorConstants.Green);
+                        player.SendServerMessage($"[Success Rate: {successRate}%. Roll: {roll}. Party-wide chance: {partyWideChance}%. Roll: {partyWideRoll}]", ColorConstants.Gray);
+                    }
+                    else
+                    {
+                        player.SendServerMessage($"{deity} blesses you!", ColorConstants.Green);
+                        player.SendServerMessage($"[Success Rate: {successRate}%. Roll: {roll}]", ColorConstants.Gray);
+                    }
+
+                    await NwTask.Delay(TimeSpan.FromSeconds(1));
+
+                    if (isPartyWide)
+                    {
+                        // Use party-wide effect but with 0 divine level for duration
+                        CastAlignmentEffectPartyWide(creature, idol, 0);
+                    }
+                    else
+                    {
+                        // Personal effect only
+                        CastAlignmentEffectSelf(creature, idol, 0);
+                    }
+                });
+            }
+            else
+            {
+                NwTask.Run(async () =>
+                {
+                    await NwTask.Delay(TimeSpan.FromSeconds(5));
+                    player.SendServerMessage($"{deity} does not answer your prayer this time...", ColorConstants.Orange);
+                    player.SendServerMessage($"[Success Rate: {successRate}%. Roll: {roll}]", ColorConstants.Gray);
                 });
             }
         }
@@ -342,7 +407,7 @@ public class PrayerService
     private bool HasMatchingDomain(NwCreature creature, NwPlaceable idol)
     {
         // Get the creature's domains
-        int pcDomain1 = NWScript.GetDomain(creature, 1);
+        int pcDomain1 = NWScript.GetDomain(creature);
         int pcDomain2 = NWScript.GetDomain(creature, 2);
 
         // Check if either domain matches any of the idol's domains
@@ -397,7 +462,7 @@ public class PrayerService
         foreach (NwArea area in NwModule.Instance.Areas)
         {
             NwPlaceable? idol = area.FindObjectsOfTypeInArea<NwPlaceable>()
-                .FirstOrDefault(p => p.Tag?.Equals(idolTag, StringComparison.OrdinalIgnoreCase) == true);
+                .FirstOrDefault(p => p.Tag.Equals(idolTag, StringComparison.OrdinalIgnoreCase));
 
             if (idol != null)
                 return idol;
@@ -688,7 +753,7 @@ public class PrayerService
             // Apply AC bonuses
             if (vsGood > 0)
             {
-                Effect eVsGood = Effect.ACIncrease(vsGood, ACBonus.Dodge);
+                Effect eVsGood = Effect.ACIncrease(vsGood);
                 eVsGood.SubType = EffectSubType.Supernatural;
                 eVsGood.Tag = "PrayerVsGood";
                 player?.SendServerMessage($" - Extra AC vs Good, {vsGood}", ColorConstants.Cyan);
@@ -697,7 +762,7 @@ public class PrayerService
 
             if (vsEvil > 0)
             {
-                Effect eVsEvil = Effect.ACIncrease(vsEvil, ACBonus.Dodge);
+                Effect eVsEvil = Effect.ACIncrease(vsEvil);
                 eVsEvil.SubType = EffectSubType.Supernatural;
                 eVsEvil.Tag = "PrayerVsEvil";
                 player?.SendServerMessage($" - Extra AC vs Evil, {vsEvil}", ColorConstants.Cyan);
@@ -754,7 +819,7 @@ public class PrayerService
         // Apply AC bonuses to self only
         if (vsGood > 0)
         {
-            Effect eVsGood = Effect.ACIncrease(vsGood, ACBonus.Dodge);
+            Effect eVsGood = Effect.ACIncrease(vsGood);
             eVsGood.SubType = EffectSubType.Supernatural;
             eVsGood.Tag = "PrayerVsGood";
             player?.SendServerMessage($" - Extra AC vs Good, {vsGood}", ColorConstants.Cyan);
@@ -763,11 +828,92 @@ public class PrayerService
 
         if (vsEvil > 0)
         {
-            Effect eVsEvil = Effect.ACIncrease(vsEvil, ACBonus.Dodge);
+            Effect eVsEvil = Effect.ACIncrease(vsEvil);
             eVsEvil.SubType = EffectSubType.Supernatural;
             eVsEvil.Tag = "PrayerVsEvil";
             player?.SendServerMessage($" - Extra AC vs Evil, {vsEvil}", ColorConstants.Cyan);
             creature.ApplyEffect(EffectDuration.Temporary, eVsEvil, TimeSpan.FromSeconds(duration));
+        }
+    }
+
+    private void CastAlignmentEffectPartyWide(NwCreature creature, NwPlaceable idol, int divineLevel)
+    {
+        // Party-wide alignment effect for laypersons (uses ApplyPrayerEffectsToPCs logic but with correct duration)
+        string alignment = NWScript.GetLocalString(idol, sVarName: "alignment");
+        int vsGood = 0;
+        int vsEvil = 0;
+        int visual = 0;
+        float duration = 300.0f + (divineLevel * 20.0f);
+        int levelBonus = divineLevel > 9 ? 1 : 0;
+
+        // Determine effects based on alignment
+        if (alignment is "LG" or "NG" or "CG")
+        {
+            visual = NWScript.VFX_IMP_GOOD_HELP;
+            vsEvil = 2 + levelBonus;
+        }
+        else if (alignment is "LN" or "NN" or "CN")
+        {
+            visual = NWScript.VFX_IMP_UNSUMMON;
+            vsGood = 1 + levelBonus;
+            vsEvil = 1 + levelBonus;
+        }
+        else if (alignment is "LE" or "NE" or "CE")
+        {
+            visual = NWScript.VFX_IMP_EVIL_HELP;
+            vsGood = 2 + levelBonus;
+        }
+
+        NwPlayer? player = creature.ControllingPlayer;
+        if (player != null)
+        {
+            player.SendServerMessage($"Adding {alignment} alignment effects (Party-wide):", ColorConstants.Cyan);
+            player.SendServerMessage($" - Duration: {duration:F0} seconds", ColorConstants.Cyan);
+        }
+
+        // Apply visual effect
+        Effect visualEffect = Effect.VisualEffect((VfxType)visual);
+        ApplyLaypersonEffectToParty(creature, visualEffect, duration, fullDuration: false);
+
+        // Apply AC bonuses
+        if (vsGood > 0)
+        {
+            Effect eVsGood = Effect.ACIncrease(vsGood);
+            eVsGood.SubType = EffectSubType.Supernatural;
+            eVsGood.Tag = "PrayerVsGood";
+            player?.SendServerMessage($" - Extra AC vs Good, {vsGood}", ColorConstants.Cyan);
+            ApplyLaypersonEffectToParty(creature, eVsGood, duration, fullDuration: true);
+        }
+
+        if (vsEvil > 0)
+        {
+            Effect eVsEvil = Effect.ACIncrease(vsEvil);
+            eVsEvil.SubType = EffectSubType.Supernatural;
+            eVsEvil.Tag = "PrayerVsEvil";
+            player?.SendServerMessage($" - Extra AC vs Evil, {vsEvil}", ColorConstants.Cyan);
+            ApplyLaypersonEffectToParty(creature, eVsEvil, duration, fullDuration: true);
+        }
+    }
+
+    private void ApplyLaypersonEffectToParty(NwCreature creature, Effect effect, float duration, bool fullDuration)
+    {
+        float effectDuration = fullDuration ? duration : 3.0f;
+
+        // Apply to caster
+        creature.ApplyEffect(EffectDuration.Temporary, effect, TimeSpan.FromSeconds(effectDuration));
+
+        // Apply to party members in area
+        NwPlayer? player = creature.ControllingPlayer;
+        if (player?.LoginCreature != null)
+        {
+            foreach (NwPlayer partyMember in player.PartyMembers)
+            {
+                NwCreature? partyCreature = partyMember.ControlledCreature;
+                if (partyCreature != null && partyCreature.Area == creature.Area && partyCreature != creature)
+                {
+                    partyCreature.ApplyEffect(EffectDuration.Temporary, effect, TimeSpan.FromSeconds(effectDuration));
+                }
+            }
         }
     }
 
@@ -860,7 +1006,7 @@ public class PrayerService
                 amount = 1 + ((clericLevel - 1) / 5);
                 player.SendServerMessage("Adding Knowledge domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadMind), clericLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.AllSkills, amount), clericLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.AllSkills!, amount), clericLevel);
                 player.SendServerMessage($" - Skill boost, +{amount}", ColorConstants.Cyan);
                 break;
 
@@ -961,7 +1107,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Chaos domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadOdd), clericLevel, fullDuration: false);
                 // Note: VersusAlignment not available - applying as general damage
-                Effect chaosDamage = Effect.DamageIncrease(amount, DamageType.Magical);
+                Effect chaosDamage = Effect.DamageIncrease(amount);
                 chaosDamage.Tag = "PrayerChaosVsLaw";
                 ApplyPrayerEffectsToPCs(creature, chaosDamage, clericLevel);
                 player.SendServerMessage($" - Extra Damage vs Law, {amount}", ColorConstants.Cyan);
@@ -1137,8 +1283,8 @@ public class PrayerService
                 amount = 1 + ((clericLevel - 1) / 7);
                 player.SendServerMessage("Adding Halfling domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.DurGhostlyVisageNoSound), clericLevel);
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Hide, amount), clericLevel);
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.MoveSilently, amount), clericLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Hide!, amount), clericLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.MoveSilently!, amount), clericLevel);
                 player.SendServerMessage($" - Hide/Move Silently +{amount}", ColorConstants.Cyan);
                 break;
 
@@ -1162,7 +1308,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Law domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadOdd), clericLevel, fullDuration: false);
                 // Note: VersusAlignment not available - applying as general damage
-                Effect lawDamage = Effect.DamageIncrease(amount, DamageType.Magical);
+                Effect lawDamage = Effect.DamageIncrease(amount);
                 lawDamage.Tag = "PrayerLawVsChaos";
                 ApplyPrayerEffectsToPCs(creature, lawDamage, clericLevel);
                 player.SendServerMessage($" - Extra Damage vs Chaos, {amount}", ColorConstants.Cyan);
@@ -1204,7 +1350,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Moon domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadHoly), clericLevel, fullDuration: false);
                 // Note: VersusRacialType (shapechangers) not available - applying as general damage
-                Effect moonDamage = Effect.DamageIncrease(amount, DamageType.Magical);
+                Effect moonDamage = Effect.DamageIncrease(amount);
                 moonDamage.Tag = "PrayerMoonVsShapechangers";
                 ApplyPrayerEffectsToPCs(creature, moonDamage, clericLevel);
                 player.SendServerMessage($" - Extra Damage vs Shapechangers, {amount}", ColorConstants.Cyan);
@@ -1214,9 +1360,9 @@ public class PrayerService
                 amount = 1 + ((clericLevel - 1) / 5);
                 player.SendServerMessage("Adding Nobility domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpCharm), clericLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate, amount), clericLevel);
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade, amount), clericLevel);
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff, amount), clericLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, amount), clericLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, amount), clericLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, amount), clericLevel);
                 player.SendServerMessage($" - Persuade/Intimidate/Bluff +{amount}", ColorConstants.Cyan);
                 break;
 
@@ -1225,7 +1371,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Orc domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadEvil), clericLevel, fullDuration: false);
                 // Note: VersusRacialType (elves) not available - applying as general damage
-                Effect orcDamage = Effect.DamageIncrease(amount, DamageType.Magical);
+                Effect orcDamage = Effect.DamageIncrease(amount);
                 orcDamage.Tag = "PrayerOrcVsElves";
                 ApplyPrayerEffectsToPCs(creature, orcDamage, clericLevel);
                 player.SendServerMessage($" - Extra Damage vs Elves, {amount}", ColorConstants.Cyan);
