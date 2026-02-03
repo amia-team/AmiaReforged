@@ -15,7 +15,7 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
 
     // Geometry bind to force window position
     private readonly NuiBind<NuiRect> _geometryBind = new("window_geometry");
-    private static readonly NuiRect WindowPosition = new(300f, 150f, 380f, 400f);
+    private static readonly NuiRect WindowPosition = new(50f, 50f, 500f, 480f);
 
     public override DeitySelectionView View { get; }
     public override NuiWindowToken Token() => _token;
@@ -35,7 +35,7 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
         _window = new NuiWindow(View.RootLayout(), $"Idol of {deityName}")
         {
             Geometry = _geometryBind,
-            Resizable = false,
+            Resizable = true,
             Closable = true,
             Collapsed = false
         };
@@ -95,58 +95,124 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
             currentDeity = "(None)";
 
         string playerAlignment = GetPlayerAlignmentString(creature);
+        string playerHeader = $"{creature.Name} - Details";
 
         Token().SetBindValue(View.PlayerDeity, currentDeity);
         Token().SetBindValue(View.PlayerAlignment, playerAlignment);
+        Token().SetBindValue(View.PlayerHeader, playerHeader);
 
         // Check alignment compatibility
         bool alignmentMatches = MatchAlignment(creature);
         bool axisMatches = MatchAlignmentAxis(creature);
         bool isDivineCaster = IsDivineCaster(creature);
         bool isOpposingAxis = IsOpposingGoodEvilAxis(creature);
+        bool isDruid = NWScript.GetLevelByClass(NWScript.CLASS_TYPE_DRUID, creature) > 0;
+        bool isCleric = NWScript.GetLevelByClass(NWScript.CLASS_TYPE_CLERIC, creature) > 0;
+        bool hasDomainMatch = HasMatchingDomain(creature);
 
-        // Set alignment status
-        if (alignmentMatches)
+        // Set alignment status based on divine caster vs layperson
+        if (isDivineCaster)
         {
-            Token().SetBindValue(View.AlignmentStatus, "Your alignment is compatible with this deity.");
-            Token().SetBindValue(View.AlignmentStatusColor, ColorConstants.Green);
-        }
-        else if (axisMatches)
-        {
-            Token().SetBindValue(View.AlignmentStatus, "Your alignment partially matches this deity.");
-            Token().SetBindValue(View.AlignmentStatusColor, ColorConstants.Yellow);
-        }
-        else if (isOpposingAxis)
-        {
-            // Good trying to worship Evil or vice versa
-            Token().SetBindValue(View.AlignmentStatus, "WARNING: This deity opposes your moral alignment!");
-            Token().SetBindValue(View.AlignmentStatusColor, ColorConstants.Red);
+            // Divine casters have strict requirements
+            if (isDruid && !IsValidDruidGod())
+            {
+                Token().SetBindValue(View.AlignmentStatus, "This deity does not accept druids.");
+                Token().SetBindValue(View.AlignmentStatusColor, ColorConstants.Maroon);
+            }
+            else if (!alignmentMatches)
+            {
+                Token().SetBindValue(View.AlignmentStatus, "Divine casters must have a compatible alignment.");
+                Token().SetBindValue(View.AlignmentStatusColor, ColorConstants.Maroon);
+            }
+            else if (isCleric && !hasDomainMatch)
+            {
+                Token().SetBindValue(View.AlignmentStatus, "Clerics must have at least one matching domain.");
+                Token().SetBindValue(View.AlignmentStatusColor, ColorConstants.Maroon);
+            }
+            else
+            {
+                Token().SetBindValue(View.AlignmentStatus, "Your alignment is compatible with this deity.");
+                Token().SetBindValue(View.AlignmentStatusColor, ColorConstants.Green);
+            }
         }
         else
         {
-            Token().SetBindValue(View.AlignmentStatus, "Your alignment differs from this deity (0% prayer chance).");
-            Token().SetBindValue(View.AlignmentStatusColor, ColorConstants.Orange);
+            // Non-divine casters can choose any deity but have varying prayer chances
+            if (alignmentMatches)
+            {
+                Token().SetBindValue(View.AlignmentStatus, "Your alignment matches: 40% prayer chance.");
+                Token().SetBindValue(View.AlignmentStatusColor, ColorConstants.Green);
+            }
+            else if (axisMatches)
+            {
+                Token().SetBindValue(View.AlignmentStatus, "Your alignment axis matches: 40% prayer chance.");
+                Token().SetBindValue(View.AlignmentStatusColor, ColorConstants.Yellow);
+            }
+            else if (isOpposingAxis)
+            {
+                Token().SetBindValue(View.AlignmentStatus, "Opposing alignment: You may be smited if you pray.");
+                Token().SetBindValue(View.AlignmentStatusColor, ColorConstants.Maroon);
+            }
+            else
+            {
+                Token().SetBindValue(View.AlignmentStatus, "Incompatible alignment: 0% prayer chance.");
+                Token().SetBindValue(View.AlignmentStatusColor, ColorConstants.Maroon);
+            }
         }
 
         // Set button states
-        // Divine casters MUST have matching alignment to change deity
-        // Laypeople can worship anyone (but may face consequences)
         bool canChangeDeity = CanChangeDeity(creature, alignmentMatches, isDivineCaster);
-        bool canPray = alignmentMatches || axisMatches || !isDivineCaster; // Laypeople can always try to pray
+        // Divine casters can only pray if alignment matches; laypeople can always try
+        bool canPray = isDivineCaster ? alignmentMatches : true;
 
         Token().SetBindValue(View.CanChangeDeity, canChangeDeity);
         Token().SetBindValue(View.CanPray, canPray);
+
+        // Set change deity tooltip based on why it might be disabled
+        string changeDeityTooltip = GetChangeDeityTooltip(creature, alignmentMatches, isDivineCaster, isDruid);
+        Token().SetBindValue(View.ChangeDeityTooltip, changeDeityTooltip);
 
         // Set change deity button label based on current state
         string existingDeity = NWScript.GetDeity(creature);
         if (string.IsNullOrEmpty(existingDeity))
         {
-            Token().SetBindValue(View.ChangeDeityLabel, "Choose Deity");
+            Token().SetBindValue(View.ChangeDeityLabel, "Worship Deity");
         }
         else
         {
             Token().SetBindValue(View.ChangeDeityLabel, "Change Deity");
         }
+    }
+
+    private string GetChangeDeityTooltip(NwCreature creature, bool alignmentMatches, bool isDivineCaster, bool isDruid)
+    {
+        // Check if over level 10 with existing deity
+        if (creature.Level > 10 && !string.IsNullOrEmpty(NWScript.GetDeity(creature)))
+        {
+            return "You cannot change your deity after level 10 without a request.";
+        }
+
+        // Divine caster alignment check
+        if (isDivineCaster && !alignmentMatches)
+        {
+            return "Divine casters must have a compatible alignment.";
+        }
+
+        // Druid deity check
+        if (isDruid && !IsValidDruidGod())
+        {
+            return "This deity does not accept druids.";
+        }
+
+        // Cleric domain check
+        int clericLevels = NWScript.GetLevelByClass(NWScript.CLASS_TYPE_CLERIC, creature);
+        if (clericLevels > 0 && !HasMatchingDomain(creature))
+        {
+            return "Clerics must have at least one matching domain.";
+        }
+
+        // Default tooltip when enabled
+        return "Set this deity as your patron.";
     }
 
     private void HandlePray()
@@ -179,13 +245,10 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
         string deityName = NWScript.GetLocalString(_idol, "name");
         int creatureGoodEvil = NWScript.GetAlignmentGoodEvil(creature);
 
-        // Determine if this is a good or evil deity based on accepted alignments
-        bool deityIsGood = NWScript.GetLocalInt(_idol, "al_LG") == 1 ||
-                          NWScript.GetLocalInt(_idol, "al_NG") == 1 ||
-                          NWScript.GetLocalInt(_idol, "al_CG") == 1;
-        bool deityIsEvil = NWScript.GetLocalInt(_idol, "al_LE") == 1 ||
-                          NWScript.GetLocalInt(_idol, "al_NE") == 1 ||
-                          NWScript.GetLocalInt(_idol, "al_CE") == 1;
+        // Get the deity's alignment
+        string deityAlignment = NWScript.GetLocalString(_idol, "alignment");
+        bool deityIsGood = deityAlignment.Length >= 2 && deityAlignment[1] == 'G';
+        bool deityIsEvil = deityAlignment.Length >= 2 && deityAlignment[1] == 'E';
 
         // Delay the smite for dramatic effect
         NwTask.Run(async () =>
@@ -196,9 +259,26 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
             int damage = creature.HP / 2;
             if (damage < 1) damage = 1;
 
-            // Apply lightning strike VFX
-            Effect lightningVfx = Effect.VisualEffect(VfxType.ImpLightningS);
-            creature.ApplyEffect(EffectDuration.Instant, lightningVfx);
+            // Apply VFX based on deity alignment
+            if (deityIsGood)
+            {
+                // Good deity smite VFX: 41, 74, 184
+                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect((VfxType)41));
+                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect((VfxType)74));
+                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect((VfxType)184));
+            }
+            else if (deityIsEvil)
+            {
+                // Evil deity smite VFX: 673, 235, 246
+                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect((VfxType)673));
+                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect((VfxType)235));
+                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect((VfxType)246));
+            }
+            else
+            {
+                // Neutral deity - use lightning
+                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpLightningM));
+            }
 
             // Apply damage
             Effect damageEffect = Effect.Damage(damage, DamageType.Divine);
@@ -230,6 +310,7 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
         if (creature == null) return;
 
         string deityName = NWScript.GetLocalString(_idol, "name");
+        bool isDivineCaster = IsDivineCaster(creature);
 
         // Check if player can change deity
         if (creature.Level > 10 && !string.IsNullOrEmpty(NWScript.GetDeity(creature)))
@@ -238,10 +319,28 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
             return;
         }
 
-        if (!MatchAlignment(creature))
+        // Divine casters have strict alignment requirements
+        if (isDivineCaster)
         {
-            _player.SendServerMessage("You do not have the right alignment for this god!", ColorConstants.Orange);
-            return;
+            if (!MatchAlignment(creature))
+            {
+                _player.SendServerMessage("Divine casters must have a compatible alignment for this deity!", ColorConstants.Orange);
+                return;
+            }
+
+            // Druids can only choose deities who accept druids
+            if (NWScript.GetLevelByClass(NWScript.CLASS_TYPE_DRUID, creature) > 0 && !IsValidDruidGod())
+            {
+                _player.SendServerMessage("This deity does not accept druids!", ColorConstants.Orange);
+                return;
+            }
+
+            // Clerics must have at least one matching domain
+            if (NWScript.GetLevelByClass(NWScript.CLASS_TYPE_CLERIC, creature) > 0 && !HasMatchingDomain(creature))
+            {
+                _player.SendServerMessage("Clerics must have at least one matching domain!", ColorConstants.Orange);
+                return;
+            }
         }
 
         // Set the new deity
@@ -311,14 +410,54 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
             return false;
         }
 
-        // Divine casters MUST have matching alignment
+        // Divine casters have strict requirements
         if (isDivineCaster)
         {
-            return alignmentMatches;
+            // Must have matching alignment
+            if (!alignmentMatches)
+            {
+                return false;
+            }
+
+            // Druids can only choose deities who accept druids
+            int druidLevels = NWScript.GetLevelByClass(NWScript.CLASS_TYPE_DRUID, creature);
+            if (druidLevels > 0 && !IsValidDruidGod())
+            {
+                return false;
+            }
+
+            // Clerics must have at least one matching domain
+            int clericLevels = NWScript.GetLevelByClass(NWScript.CLASS_TYPE_CLERIC, creature);
+            if (clericLevels > 0 && !HasMatchingDomain(creature))
+            {
+                return false;
+            }
+
+            return true;
         }
 
-        // Laypeople can worship any deity (they just won't get benefits if misaligned)
+        // Non-divine casters can choose any deity
         return true;
+    }
+
+    private bool HasMatchingDomain(NwCreature creature)
+    {
+        // Get the creature's domains
+        int pcDomain1 = NWScript.GetDomain(creature, 1);
+        int pcDomain2 = NWScript.GetDomain(creature, 2);
+
+        // Check if either domain matches any of the idol's domains
+        for (int i = 1; i <= 6; i++)
+        {
+            int idolDomain = NWScript.GetLocalInt(_idol, $"dom_{i}");
+
+            if (pcDomain1 == idolDomain || pcDomain2 == idolDomain)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private bool MatchAlignment(NwCreature creature)
@@ -350,34 +489,25 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
 
     private bool MatchAlignmentAxis(NwCreature creature)
     {
-        int goodEvil = NWScript.GetAlignmentGoodEvil(creature);
-        string axis = "";
+        // Get the deity's actual alignment from the idol (e.g., "LG", "NE", "CN")
+        string deityAlignment = NWScript.GetLocalString(_idol, "alignment");
+        if (string.IsNullOrEmpty(deityAlignment) || deityAlignment.Length < 2)
+            return false;
 
-        if (goodEvil == NWScript.ALIGNMENT_GOOD)
-            axis = "G";
-        else if (goodEvil == NWScript.ALIGNMENT_EVIL)
-            axis = "E";
-        else
-            axis = "N";
+        // Get the Good/Evil axis character from the deity's alignment (second character)
+        char deityAxis = deityAlignment[1]; // G, N, or E
 
-        if (axis == "G")
+        // Get the creature's Good/Evil alignment
+        int creatureGoodEvil = NWScript.GetAlignmentGoodEvil(creature);
+
+        // Check if the creature's axis matches the deity's axis
+        return deityAxis switch
         {
-            return NWScript.GetLocalInt(_idol, "al_LG") == 1 ||
-                   NWScript.GetLocalInt(_idol, "al_NG") == 1 ||
-                   NWScript.GetLocalInt(_idol, "al_CG") == 1;
-        }
-        else if (axis == "E")
-        {
-            return NWScript.GetLocalInt(_idol, "al_LE") == 1 ||
-                   NWScript.GetLocalInt(_idol, "al_NE") == 1 ||
-                   NWScript.GetLocalInt(_idol, "al_CE") == 1;
-        }
-        else
-        {
-            return NWScript.GetLocalInt(_idol, "al_LN") == 1 ||
-                   NWScript.GetLocalInt(_idol, "al_NN") == 1 ||
-                   NWScript.GetLocalInt(_idol, "al_CN") == 1;
-        }
+            'G' => creatureGoodEvil == NWScript.ALIGNMENT_GOOD,
+            'E' => creatureGoodEvil == NWScript.ALIGNMENT_EVIL,
+            'N' => creatureGoodEvil == NWScript.ALIGNMENT_NEUTRAL,
+            _ => false
+        };
     }
 
     private bool IsDivineCaster(NwCreature creature)
@@ -388,30 +518,33 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
         int paladinLevels = NWScript.GetLevelByClass(NWScript.CLASS_TYPE_PALADIN, creature);
         int rangerLevels = NWScript.GetLevelByClass(NWScript.CLASS_TYPE_RANGER, creature);
         int blackguardLevels = NWScript.GetLevelByClass(NWScript.CLASS_TYPE_BLACKGUARD, creature);
+        int divineChampionLevels = NWScript.GetLevelByClass(NWScript.CLASS_TYPE_DIVINECHAMPION, creature);
 
-        return clericLevels > 0 || druidLevels > 0 || paladinLevels > 0 || rangerLevels > 0 || blackguardLevels > 0;
+        return clericLevels > 0 || druidLevels > 0 || paladinLevels > 0 ||
+               rangerLevels > 0 || blackguardLevels > 0 || divineChampionLevels > 0;
     }
 
     private bool IsOpposingGoodEvilAxis(NwCreature creature)
     {
+        // Get the deity's actual alignment from the idol (e.g., "LG", "NE", "CN")
+        string deityAlignment = NWScript.GetLocalString(_idol, "alignment");
+        if (string.IsNullOrEmpty(deityAlignment) || deityAlignment.Length < 2)
+            return false;
+
+        // Get the Good/Evil axis character from the deity's alignment (second character)
+        char deityAxis = deityAlignment[1]; // G, N, or E
+
+        // Get the creature's Good/Evil alignment
         int creatureGoodEvil = NWScript.GetAlignmentGoodEvil(creature);
 
-        // Check what alignments the deity accepts
-        bool deityAcceptsGood = NWScript.GetLocalInt(_idol, "al_LG") == 1 ||
-                                NWScript.GetLocalInt(_idol, "al_NG") == 1 ||
-                                NWScript.GetLocalInt(_idol, "al_CG") == 1;
-        bool deityAcceptsEvil = NWScript.GetLocalInt(_idol, "al_LE") == 1 ||
-                                NWScript.GetLocalInt(_idol, "al_NE") == 1 ||
-                                NWScript.GetLocalInt(_idol, "al_CE") == 1;
-
-        // Good creature trying to worship evil-only deity
-        if (creatureGoodEvil == NWScript.ALIGNMENT_GOOD && deityAcceptsEvil && !deityAcceptsGood)
+        // Good creature trying to worship Evil deity
+        if (creatureGoodEvil == NWScript.ALIGNMENT_GOOD && deityAxis == 'E')
         {
             return true;
         }
 
-        // Evil creature trying to worship good-only deity
-        if (creatureGoodEvil == NWScript.ALIGNMENT_EVIL && deityAcceptsGood && !deityAcceptsEvil)
+        // Evil creature trying to worship Good deity
+        if (creatureGoodEvil == NWScript.ALIGNMENT_EVIL && deityAxis == 'G')
         {
             return true;
         }
@@ -457,15 +590,36 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
     {
         List<string> domains = new();
 
+        // First, check if any domain slot has a non-zero value
+        // This tells us if the idol has domains configured at all
+        bool hasAnyNonZeroDomain = false;
+        for (int i = 1; i <= 6; i++)
+        {
+            if (NWScript.GetLocalInt(_idol, $"dom_{i}") > 0)
+            {
+                hasAnyNonZeroDomain = true;
+                break;
+            }
+        }
+
+        // Now collect domains
         for (int i = 1; i <= 6; i++)
         {
             int domainId = NWScript.GetLocalInt(_idol, $"dom_{i}");
+
             if (domainId > 0)
             {
+                // Non-zero domain ID, add it
                 string domainName = GetDomainName(domainId);
                 if (!string.IsNullOrEmpty(domainName))
                     domains.Add(domainName);
             }
+            else if (domainId == 0 && hasAnyNonZeroDomain)
+            {
+                // Domain ID is 0 and other domains exist, so this is intentionally Air
+                domains.Add("Air");
+            }
+            // If domainId == 0 and no other domains exist, it's unset - skip it
         }
 
         return domains.Count > 0 ? string.Join(", ", domains) : "None";
@@ -477,7 +631,7 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
         {
             0 => "Air",
             1 => "Animal",
-            2 => "Chaos",
+            //2 => "Chaos",
             3 => "Death",
             4 => "Destruction",
             5 => "Earth",
@@ -486,8 +640,8 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
             8 => "Good",
             9 => "Healing",
             10 => "Knowledge",
-            11 => "Law",
-            12 => "Luck",
+            //11 => "Law",
+            //12 => "Luck",
             13 => "Magic",
             14 => "Plant",
             15 => "Protection",
@@ -497,14 +651,43 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
             19 => "Trickery",
             20 => "War",
             21 => "Water",
-            40 => "Darkness",
-            41 => "Drow",
-            42 => "Elf",
+            22 => "Balance",
+            23 => "Cavern",
+            24 => "Chaos",
+            25 => "Charm",
+            26 => "Cold",
+            27 => "Community",
+            28 => "Courage",
+            29 => "Craft",
+            30 => "Darkness",
+            31 => "Dragon",
+            32 => "Dream",
+            33 => "Drow",
+            34 => "Dwarf",
+            35 => "Elf",
+            36 => "Fate",
+            37 => "Gnome",
+            38 => "Halfling",
+            39 => "Hatred",
+            40 => "Illusion",
+            41 => "Law",
+            42 => "Luck",
             43 => "Moon",
-            44 => "Orc",
-            45 => "Scalykind",
-            46 => "Spider",
-            47 => "Undeath",
+            44 => "Nobility",
+            45 => "Orc",
+            46 => "Portal",
+            47 => "Renewal",
+            48 => "Repose",
+            49 => "Retribution",
+            50 => "Rune",
+            51 => "Scalykind",
+            52 => "Slime",
+            53 => "Spell",
+            54 => "Time",
+            55 => "Trade",
+            56 => "Tyranny",
+            57 => "Undeath",
+            58 => "Suffering",
             _ => ""
         };
     }

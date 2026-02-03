@@ -2,6 +2,7 @@
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NLog;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.Player.Dashboard.Pray;
@@ -13,6 +14,7 @@ namespace AmiaReforged.PwEngine.Features.Player.Dashboard.Pray;
 [ServiceBinding(typeof(PrayerService))]
 public class PrayerService
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private const int PRAYER_COOLDOWN_MINUTES = 60;
     private readonly HashSet<uint> _processingPrayers = new();
     private readonly WindowDirector _windowDirector;
@@ -21,42 +23,37 @@ public class PrayerService
     {
         _windowDirector = windowDirector;
 
-        // Subscribe to placeable OnUsed events to intercept idol usage
-        NwModule.Instance.OnUseFeat += OnModuleUseFeat;
-
-        // Register idol usage handler for all idols
-        RegisterIdolHandlers();
+        // Note: We use the [ScriptHandler("ds_gods_idol")] attribute to handle idol usage
+        // No need to manually register event handlers
     }
 
-    private void RegisterIdolHandlers()
+    /// <summary>
+    /// Script handler for ds_gods_idol - triggers when a player uses an idol placeable with this script assigned
+    /// </summary>
+    [ScriptHandler("ds_gods_idol")]
+    public void OnIdolScriptCalled(CallInfo callInfo)
     {
-        // Find all idol placeables and subscribe to their OnUsed event
-        foreach (NwArea area in NwModule.Instance.Areas)
+        // Get the placeable (idol) that was used - OBJECT_SELF in NWScript context is callInfo.ObjectSelf
+        NwPlaceable? idol = callInfo.ObjectSelf as NwPlaceable;
+        if (idol == null || !idol.IsValid)
         {
-            foreach (NwPlaceable placeable in area.FindObjectsOfTypeInArea<NwPlaceable>())
-            {
-                if (placeable.Tag?.StartsWith("idol2_", StringComparison.OrdinalIgnoreCase) == true)
-                {
-                    placeable.OnUsed += OnIdolUsed;
-                }
-            }
+            return;
         }
-    }
 
-    private void OnModuleUseFeat(OnUseFeat obj)
-    {
-        // This is here in case we need to handle feat-based interactions in the future
-    }
+        // Get the player who used the idol
+        uint userObject = NWScript.GetLastUsedBy();
+        NwCreature? user = userObject.ToNwObject<NwCreature>();
 
-    private void OnIdolUsed(PlaceableEvents.OnUsed obj)
-    {
-        NwPlaceable idol = obj.Placeable;
-        NwCreature? user = obj.UsedBy;
-
-        if (user == null || !user.IsPlayerControlled) return;
+        if (user == null || !user.IsPlayerControlled)
+        {
+            return;
+        }
 
         NwPlayer? player = user.ControllingPlayer;
-        if (player == null) return;
+        if (player == null)
+        {
+            return;
+        }
 
         // Check if the deity selection window is already open - if so, close it (toggle)
         if (_windowDirector.IsWindowOpen(player, typeof(DeitySelectionPresenter)))
@@ -85,6 +82,12 @@ public class PrayerService
 
         try
         {
+            // Check if the deity selection window is already open - if so, close it before processing prayer
+            if (_windowDirector.IsWindowOpen(player, typeof(DeitySelectionPresenter)))
+            {
+                _windowDirector.CloseWindow(player, typeof(DeitySelectionPresenter));
+            }
+
             ProcessPrayer(player, creature);
         }
         finally
@@ -128,39 +131,74 @@ public class PrayerService
             return;
         }
 
-        // Check if fallen
-        int fallen = NWScript.GetLocalInt(creature, sVarName: "Fallen");
-        if (fallen != 0)
+        // Check if character has the Fallen item (ds_fall)
+        bool hasFallenItem = creature.Inventory.Items.Any(i => i.ResRef == "ds_fall");
+        if (hasFallenItem)
         {
-            NwTask.Run(async () =>
-            {
-                await NwTask.Delay(TimeSpan.FromSeconds(5));
-                player.SendServerMessage($"{deity} does not answer your prayer for now...", ColorConstants.Orange);
-            });
+            player.SendServerMessage("You are Fallen and must Atone before you can seek your god's blessings.", ColorConstants.Red);
+            SmiteHeretic(player, creature, idol, deity);
             return;
         }
 
-        // Check alignment vs god BEFORE setting cooldown
-        bool alignmentMatches = MatchAlignment(creature, idol);
-        bool axisMatches = false;
+        // Get class levels for divine caster checks
+        int clericLevels = NWScript.GetLevelByClass(NWScript.CLASS_TYPE_CLERIC, creature);
+        int druidLevels = NWScript.GetLevelByClass(NWScript.CLASS_TYPE_DRUID, creature);
+        int rangerLevels = NWScript.GetLevelByClass(NWScript.CLASS_TYPE_RANGER, creature);
+        int paladinLevels = NWScript.GetLevelByClass(NWScript.CLASS_TYPE_PALADIN, creature);
+        int blackguardLevels = NWScript.GetLevelByClass(NWScript.CLASS_TYPE_BLACKGUARD, creature);
+        int divineChampionLevels = NWScript.GetLevelByClass(NWScript.CLASS_TYPE_DIVINECHAMPION, creature);
 
-        if (!alignmentMatches)
+        bool isDivineCaster = clericLevels > 0 || druidLevels > 0 || rangerLevels > 0 ||
+                              paladinLevels > 0 || blackguardLevels > 0 || divineChampionLevels > 0;
+
+        // Check alignment vs god
+        bool alignmentMatches = MatchAlignment(creature, idol);
+
+        // Divine casters with wrong alignment become Fallen
+        if (isDivineCaster && !alignmentMatches)
         {
+            MakeFallen(player, creature, idol, deity, "Your alignment no longer pleases your deity!");
+            return;
+        }
+
+        // Clerics must have at least one matching domain
+        if (clericLevels > 0)
+        {
+            bool hasMatchingDomain = HasMatchingDomain(creature, idol);
+            if (!hasMatchingDomain)
+            {
+                MakeFallen(player, creature, idol, deity, "None of your domains match your deity's domains!");
+                return;
+            }
+        }
+
+        // For non-divine casters, check alignment axis
+        if (!isDivineCaster && !alignmentMatches)
+        {
+            // First check if they have an OPPOSING alignment (Good vs Evil) - this triggers a smite!
+            bool isOpposingAxis = IsOpposingGoodEvilAxis(creature, idol);
+
+            if (isOpposingAxis)
+            {
+                // Smite the heretic!
+                SmiteHeretic(player, creature, idol, deity);
+                return;
+            }
+
             // Check if they at least share the same Good/Evil axis
-            axisMatches = MatchAlignmentAxis(creature, idol);
+            bool axisMatches = MatchAlignmentAxis(creature, idol);
 
             if (!axisMatches)
             {
                 // Wrong alignment entirely! Don't set cooldown for invalid prayers
-                player.SendServerMessage($"Apparently {deity} isn't too happy with you...", ColorConstants.Red);
-                player.SendServerMessage("[Your alignment is no longer valid for this god]", ColorConstants.Gray);
+                player.SendServerMessage($"{deity} isn't pleased. Nothing happens...", ColorConstants.Red);
+                player.SendServerMessage("[Your alignment is not valid for this god.]", ColorConstants.Gray);
                 return;
             }
         }
 
         // Check prayer cooldown AFTER alignment check
         int cooldownRemaining = GetPrayerCooldownRemaining(creature);
-
 
         if (cooldownRemaining > 0)
         {
@@ -173,59 +211,75 @@ public class PrayerService
         // Set prayer cooldown (60 minutes) - only if prayer will actually happen
         SetPrayerCooldown(creature);
 
-        // Check domains vs god
-        int domain1 = MatchDomain(creature, idol, false);
-        int domain2 = MatchDomain(creature, idol, true);
+        // Get the creature's actual domains (not matched domains)
+        int creatureDomain1 = NWScript.GetDomain(creature, 1);
+        int creatureDomain2 = NWScript.GetDomain(creature, 2);
 
-        // Get cleric + druid levels
-        int clericLevels = NWScript.GetLevelByClass(NWScript.CLASS_TYPE_CLERIC, creature);
-        int druidLevels = NWScript.GetLevelByClass(NWScript.CLASS_TYPE_DRUID, creature);
+        // Calculate total divine level (sum of all divine class levels)
+        int totalDivineLevel = clericLevels + druidLevels + rangerLevels + paladinLevels + blackguardLevels + divineChampionLevels;
 
-        // If exact alignment matches, divine casters get full power
+        // Process prayer based on class
         if (clericLevels > 0 && clericLevels >= druidLevels && alignmentMatches)
         {
-            // Is cleric and has compatible alignment
+            // Is cleric and has compatible alignment and at least one matching domain
+            // Party-wide blessing using total divine level
             NwTask.Run(async () =>
             {
                 await NwTask.Delay(TimeSpan.FromSeconds(5));
                 player.SendServerMessage($"{deity}'s power is demonstrated through your prayer!", ColorConstants.Green);
+                player.SendServerMessage($"[Divine Level: {totalDivineLevel} - Party-wide blessing]", ColorConstants.Gray);
 
                 await NwTask.Delay(TimeSpan.FromSeconds(1));
-                CastAlignmentEffect(creature, idol, clericLevels);
+                CastAlignmentEffect(creature, idol, totalDivineLevel);
 
-                if (domain1 != -1)
+                // Grant BOTH domain bonuses (even if only one matches the deity)
+                if (creatureDomain1 > 0)
                 {
                     await NwTask.Delay(TimeSpan.FromMilliseconds(300));
-                    CastDomainEffect(player, creature, domain1, clericLevels);
+                    CastDomainEffect(player, creature, creatureDomain1, totalDivineLevel);
                 }
 
-                if (domain2 != -1)
+                if (creatureDomain2 > 0)
                 {
                     await NwTask.Delay(TimeSpan.FromMilliseconds(300));
-                    CastDomainEffect(player, creature, domain2, clericLevels);
+                    CastDomainEffect(player, creature, creatureDomain2, totalDivineLevel);
                 }
             });
         }
         else if (druidLevels > 0 && alignmentMatches && IsValidDruidGod(idol))
         {
             // Is druid and has compatible alignment and valid druid god
+            // Party-wide blessing using total divine level
             NwTask.Run(async () =>
             {
                 await NwTask.Delay(TimeSpan.FromSeconds(5));
                 player.SendServerMessage($"{deity}'s power is demonstrated through your prayer!", ColorConstants.Green);
+                player.SendServerMessage($"[Divine Level: {totalDivineLevel} - Party-wide blessing]", ColorConstants.Gray);
 
                 await NwTask.Delay(TimeSpan.FromSeconds(1));
-                CastAlignmentEffect(creature, idol, druidLevels);
+                CastAlignmentEffect(creature, idol, totalDivineLevel);
+            });
+        }
+        else if (isDivineCaster && alignmentMatches)
+        {
+            // Other divine casters (Ranger, Paladin, Blackguard, Divine Champion) with matching alignment
+            // They get individual blessing (not party-wide) using total divine level
+            NwTask.Run(async () =>
+            {
+                await NwTask.Delay(TimeSpan.FromSeconds(5));
+                player.SendServerMessage($"{deity}'s power is demonstrated through your prayer!", ColorConstants.Green);
+                player.SendServerMessage($"[Divine Level: {totalDivineLevel}]", ColorConstants.Gray);
+
+                await NwTask.Delay(TimeSpan.FromSeconds(1));
+                // Apply only to self for non-cleric/druid divine casters
+                CastAlignmentEffectSelf(creature, idol, totalDivineLevel);
             });
         }
         else
         {
-            // Either not a divine caster, OR alignment axis only matches (not exact)
-            // Both cases result in layperson prayer with success rate
-
-            if (!alignmentMatches && axisMatches)
+            // Non-divine caster with axis match - layperson prayer with success rate
+            if (!alignmentMatches)
             {
-                // Alignment axis matches but not exact - acknowledge their devotion
                 player.SendServerMessage($"You honor {deity} through your actions, if not your exact path...", ColorConstants.Yellow);
             }
 
@@ -254,7 +308,74 @@ public class PrayerService
                 });
             }
         }
-        // Note: Alignment check now happens earlier, before cooldown is set
+    }
+
+    private void MakeFallen(NwPlayer player, NwCreature creature, NwPlaceable idol, string deityName, string reason)
+    {
+        // Check if they already have the Fallen item
+        bool hasFallenItem = creature.Inventory.Items.Any(i => i.ResRef == "ds_fall");
+
+        if (!hasFallenItem)
+        {
+            // Create the Fallen item in their inventory
+            NwTask.Run(async () =>
+            {
+                NwItem? fallenItem = await NwItem.Create("ds_fall", creature);
+                if (fallenItem != null)
+                {
+                    await NwTask.SwitchToMainThread();
+                    player.SendServerMessage("You have become Fallen!", ColorConstants.Red);
+                }
+            });
+        }
+
+        // Set the Fallen local int
+        NWScript.SetLocalInt(creature, "Fallen", 1);
+
+        player.SendServerMessage(reason, ColorConstants.Red);
+        player.SendServerMessage("You must Atone before you can seek your god's blessings.", ColorConstants.Orange);
+
+        // Smite the fallen divine caster
+        SmiteHeretic(player, creature, idol, deityName);
+    }
+
+    private bool HasMatchingDomain(NwCreature creature, NwPlaceable idol)
+    {
+        // Get the creature's domains
+        int pcDomain1 = NWScript.GetDomain(creature, 1);
+        int pcDomain2 = NWScript.GetDomain(creature, 2);
+
+        // Check if either domain matches any of the idol's domains
+        for (int i = 1; i <= 6; i++)
+        {
+            int idolDomain = NWScript.GetLocalInt(idol, $"dom_{i}");
+
+            if ((pcDomain1 > 0 && pcDomain1 == idolDomain) || (pcDomain2 > 0 && pcDomain2 == idolDomain))
+            {
+                return true;
+            }
+
+            // Also check for Air domain (ID 0) - need to verify it's intentionally set
+            if (idolDomain == 0 && i == 1)
+            {
+                // Check if any other domain is set to know if this idol has domains configured
+                bool hasOtherDomains = false;
+                for (int j = 2; j <= 6; j++)
+                {
+                    if (NWScript.GetLocalInt(idol, $"dom_{j}") > 0)
+                    {
+                        hasOtherDomains = true;
+                        break;
+                    }
+                }
+                if (hasOtherDomains && (pcDomain1 == 0 || pcDomain2 == 0))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private NwPlaceable? FindIdol(string godName)
@@ -335,45 +456,118 @@ public class PrayerService
 
     private bool MatchAlignmentAxis(NwCreature creature, NwPlaceable idol)
     {
-        // Check if the Good/Evil axis matches any of the idol's accepted alignments
-        // e.g., CG character can pray to LG god if they share the Good axis
+        // Get the deity's actual alignment from the idol (e.g., "LG", "NE", "CN")
+        string deityAlignment = NWScript.GetLocalString(idol, "alignment");
+        if (string.IsNullOrEmpty(deityAlignment) || deityAlignment.Length < 2)
+            return false;
 
-        int goodEvil = NWScript.GetAlignmentGoodEvil(creature);
-        string axis = "";
+        // Get the Good/Evil axis character from the deity's alignment (second character)
+        char deityAxis = deityAlignment[1]; // G, N, or E
 
-        if (goodEvil == NWScript.ALIGNMENT_GOOD)
-            axis = "G";
-        else if (goodEvil == NWScript.ALIGNMENT_EVIL)
-            axis = "E";
-        else
-            axis = "N";
+        // Get the creature's Good/Evil alignment
+        int creatureGoodEvil = NWScript.GetAlignmentGoodEvil(creature);
 
-        // Check all possible alignments with this Good/Evil axis
-        // For Good: LG, NG, CG
-        // For Evil: LE, NE, CE
-        // For Neutral: LN, NN, CN
-
-        if (axis == "G")
+        // Check if the creature's axis matches the deity's axis
+        return deityAxis switch
         {
-            // Check if idol accepts any Good alignment
-            return NWScript.GetLocalInt(idol, sVarName: "al_LG") == 1 ||
-                   NWScript.GetLocalInt(idol, sVarName: "al_NG") == 1 ||
-                   NWScript.GetLocalInt(idol, sVarName: "al_CG") == 1;
-        }
-        else if (axis == "E")
+            'G' => creatureGoodEvil == NWScript.ALIGNMENT_GOOD,
+            'E' => creatureGoodEvil == NWScript.ALIGNMENT_EVIL,
+            'N' => creatureGoodEvil == NWScript.ALIGNMENT_NEUTRAL,
+            _ => false
+        };
+    }
+
+    private bool IsOpposingGoodEvilAxis(NwCreature creature, NwPlaceable idol)
+    {
+        // Get the deity's actual alignment from the idol (e.g., "LG", "NE", "CN")
+        string deityAlignment = NWScript.GetLocalString(idol, "alignment");
+        if (string.IsNullOrEmpty(deityAlignment) || deityAlignment.Length < 2)
+            return false;
+
+        // Get the Good/Evil axis character from the deity's alignment (second character)
+        char deityAxis = deityAlignment[1]; // G, N, or E
+
+        // Get the creature's Good/Evil alignment
+        int creatureGoodEvil = NWScript.GetAlignmentGoodEvil(creature);
+
+        // Good creature trying to worship Evil deity
+        if (creatureGoodEvil == NWScript.ALIGNMENT_GOOD && deityAxis == 'E')
         {
-            // Check if idol accepts any Evil alignment
-            return NWScript.GetLocalInt(idol, sVarName: "al_LE") == 1 ||
-                   NWScript.GetLocalInt(idol, sVarName: "al_NE") == 1 ||
-                   NWScript.GetLocalInt(idol, sVarName: "al_CE") == 1;
+            return true;
         }
-        else
+
+        // Evil creature trying to worship Good deity
+        if (creatureGoodEvil == NWScript.ALIGNMENT_EVIL && deityAxis == 'G')
         {
-            // Check if idol accepts any Neutral (on Good/Evil axis) alignment
-            return NWScript.GetLocalInt(idol, sVarName: "al_LN") == 1 ||
-                   NWScript.GetLocalInt(idol, sVarName: "al_NN") == 1 ||
-                   NWScript.GetLocalInt(idol, sVarName: "al_CN") == 1;
+            return true;
         }
+
+        return false;
+    }
+
+    private void SmiteHeretic(NwPlayer player, NwCreature creature, NwPlaceable idol, string deityName)
+    {
+        int creatureGoodEvil = NWScript.GetAlignmentGoodEvil(creature);
+
+        // Get the deity's alignment
+        string deityAlignment = NWScript.GetLocalString(idol, "alignment");
+        bool deityIsGood = deityAlignment.Length >= 2 && deityAlignment[1] == 'G';
+        bool deityIsEvil = deityAlignment.Length >= 2 && deityAlignment[1] == 'E';
+
+        // Delay the smite for dramatic effect
+        NwTask.Run(async () =>
+        {
+            await NwTask.Delay(TimeSpan.FromSeconds(3));
+
+            // Calculate damage - half current HP
+            int damage = creature.HP + 3;
+            if (damage < 1) damage = 1;
+
+            // Apply VFX based on deity alignment
+            if (deityIsGood)
+            {
+                // Good deity smite VFX: 41, 74, 184
+                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect((VfxType)41));
+                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect((VfxType)74));
+                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect((VfxType)184));
+            }
+            else if (deityIsEvil)
+            {
+                // Evil deity smite VFX: 673, 235, 246
+                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect((VfxType)673));
+                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect((VfxType)235));
+                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect((VfxType)246));
+                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect((VfxType)356));
+                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect((VfxType)54));
+            }
+            else
+            {
+                // Neutral deity - use lightning
+                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpLightningM));
+            }
+
+            // Apply damage
+            Effect damageEffect = Effect.Damage(damage, DamageType.Divine);
+            creature.ApplyEffect(EffectDuration.Instant, damageEffect);
+
+            // Send appropriate message based on deity alignment
+            if (deityIsGood && creatureGoodEvil == NWScript.ALIGNMENT_EVIL)
+            {
+                player.SendServerMessage($"{deityName} smites you for your wickedness!", ColorConstants.Red);
+                player.SendServerMessage("The righteous fury of the heavens strikes you down!", ColorConstants.Orange);
+            }
+            else if (deityIsEvil && creatureGoodEvil == NWScript.ALIGNMENT_GOOD)
+            {
+                player.SendServerMessage($"{deityName} punishes your pathetic plea for mercy!", ColorConstants.Red);
+                player.SendServerMessage("Dark powers lash out at your foolish piety!", ColorConstants.Orange);
+            }
+            else
+            {
+                player.SendServerMessage($"{deityName} rejects your prayer with violent displeasure!", ColorConstants.Red);
+            }
+
+            player.SendServerMessage($"[You took {damage} divine damage]", ColorConstants.Gray);
+        });
     }
 
     private int MatchDomain(NwCreature creature, NwPlaceable idol, bool getSecondDomain)
@@ -515,6 +709,65 @@ public class PrayerService
             // Just visuals for deity info display
             Effect visualEffect = Effect.VisualEffect((VfxType)visual);
             creature.ApplyEffect(EffectDuration.Temporary, visualEffect, TimeSpan.FromSeconds(3));
+        }
+    }
+
+    private void CastAlignmentEffectSelf(NwCreature creature, NwPlaceable idol, int divineLevel)
+    {
+        // Same as CastAlignmentEffect but only applies to self (for Rangers, Paladins, Blackguards, Divine Champions)
+        string alignment = NWScript.GetLocalString(idol, sVarName: "alignment");
+        int vsGood = 0;
+        int vsEvil = 0;
+        int visual = 0;
+        float duration = 300.0f + (divineLevel * 20.0f);
+        int levelBonus = divineLevel > 9 ? 1 : 0;
+
+        // Determine effects based on alignment
+        if (alignment is "LG" or "NG" or "CG")
+        {
+            visual = NWScript.VFX_IMP_GOOD_HELP;
+            vsEvil = 2 + levelBonus;
+        }
+        else if (alignment is "LN" or "NN" or "CN")
+        {
+            visual = NWScript.VFX_IMP_UNSUMMON;
+            vsGood = 1 + levelBonus;
+            vsEvil = 1 + levelBonus;
+        }
+        else if (alignment is "LE" or "NE" or "CE")
+        {
+            visual = NWScript.VFX_IMP_EVIL_HELP;
+            vsGood = 2 + levelBonus;
+        }
+
+        NwPlayer? player = creature.ControllingPlayer;
+        if (player != null)
+        {
+            player.SendServerMessage($"Adding {alignment} alignment effects:", ColorConstants.Cyan);
+            player.SendServerMessage($" - Duration: {duration:F0} seconds", ColorConstants.Cyan);
+        }
+
+        // Apply visual effect to self only
+        Effect visualEffect = Effect.VisualEffect((VfxType)visual);
+        creature.ApplyEffect(EffectDuration.Temporary, visualEffect, TimeSpan.FromSeconds(3));
+
+        // Apply AC bonuses to self only
+        if (vsGood > 0)
+        {
+            Effect eVsGood = Effect.ACIncrease(vsGood, ACBonus.Dodge);
+            eVsGood.SubType = EffectSubType.Supernatural;
+            eVsGood.Tag = "PrayerVsGood";
+            player?.SendServerMessage($" - Extra AC vs Good, {vsGood}", ColorConstants.Cyan);
+            creature.ApplyEffect(EffectDuration.Temporary, eVsGood, TimeSpan.FromSeconds(duration));
+        }
+
+        if (vsEvil > 0)
+        {
+            Effect eVsEvil = Effect.ACIncrease(vsEvil, ACBonus.Dodge);
+            eVsEvil.SubType = EffectSubType.Supernatural;
+            eVsEvil.Tag = "PrayerVsEvil";
+            player?.SendServerMessage($" - Extra AC vs Evil, {vsEvil}", ColorConstants.Cyan);
+            creature.ApplyEffect(EffectDuration.Temporary, eVsEvil, TimeSpan.FromSeconds(duration));
         }
     }
 
