@@ -161,9 +161,9 @@ public class PolymorphMergeService
             .GroupBy(ip => new { ip.Property, ip.SubType })
             .SelectMany(group =>
             {
-                // Regeneration and Vampiric Regeneration stack in NWN, so return all of them
-                return group.Key.Property.PropertyType
-                    is ItemPropertyType.Regeneration or ItemPropertyType.RegenerationVampiric ? group :
+                // Regen, Vamp Regen, and Damage Immunity/Vulnerability stack on a single item so group these
+                return group.Key.Property.PropertyType is ItemPropertyType.Regeneration or ItemPropertyType.RegenerationVampiric
+                    or ItemPropertyType.ImmunityDamageType or ItemPropertyType.DamageVulnerability ? group :
                     // For all other types, only return the one with the highest value
                     group.OrderByDescending(ip => ip.CostTableValue?.RowIndex).Take(1);
             })
