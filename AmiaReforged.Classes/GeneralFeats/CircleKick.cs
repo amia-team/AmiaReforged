@@ -9,7 +9,7 @@ namespace AmiaReforged.Classes.GeneralFeats;
 
 public class CircleKick
 {
-    private const int CircleKickId = 0;
+    private const int CircleKickId = 1368;
 
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
