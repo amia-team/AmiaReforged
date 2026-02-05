@@ -1,4 +1,4 @@
-﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem;
+﻿using AmiaReforged.PwEngine.Features.WindowingSystem;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.Services;
@@ -45,6 +45,12 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>
     public readonly NuiBind<string>[] HairColorResRef = new NuiBind<string>[176];
     public readonly NuiBind<string>[] TattooColorResRef = new NuiBind<string>[176];
 
+    // Skin search modal binds
+    public readonly NuiBind<string> SkinSearchText = new("tf_skin_search_text");
+    public readonly NuiBind<int> SkinListCount = new("tf_skin_list_count");
+    public readonly NuiBind<string> SkinListIds = new("tf_skin_list_ids");
+    public readonly NuiBind<string> SkinListLabels = new("tf_skin_list_labels");
+
     // Button references
     public NuiButtonImage HeadModelLeft10Button = null!;
     public NuiButtonImage HeadModelLeftButton = null!;
@@ -60,6 +66,7 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>
     public NuiButtonImage AppearanceModelSetButton = null!;
     public NuiTextEdit AppearanceModelInputField = null!;
     public NuiButtonImage SwapGenderButton = null!;
+    public NuiButton SearchSkinButton = null!;
 
     public NuiButtonImage ScaleMinButton = null!;
     public NuiButtonImage ScaleDecrease10Button = null!;
@@ -509,8 +516,10 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 270f },
-                        new NuiButton("Swap Gender") { Id = "btn_swap_gender", Width = 150f, Height = 30f, Tooltip = "Swap Gender" }
+                        new NuiSpacer { Width = 200f },
+                        new NuiButton("Swap Gender") { Id = "btn_swap_gender", Width = 130f, Height = 30f, Tooltip = "Swap Gender" },
+                        new NuiSpacer { Width = 10f },
+                        new NuiButton("Search Skin") { Id = "btn_search_skin", Width = 130f, Height = 30f, Tooltip = "Search for a skin by name" }.Assign(out SearchSkinButton)
                     }
                 }
             }
@@ -735,6 +744,184 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>
             {
                 btn
             }
+        };
+    }
+
+    /// <summary>
+    /// Builds the skin search modal window for finding appearances by label.
+    /// Uses NuiList with bindings so the list can be updated without recreating the window.
+    /// </summary>
+    public NuiWindow BuildSkinSearchModal()
+    {
+        const float modalW = 550f;
+        const float modalH = 600f;
+
+        // Define the list row template using bindings
+        List<NuiListTemplateCell> skinListTemplate =
+        [
+            new NuiListTemplateCell(new NuiLabel(SkinListIds)
+            {
+                HorizontalAlign = NuiHAlign.Left,
+                VerticalAlign = NuiVAlign.Middle
+            })
+            {
+                Width = 60f,
+                VariableSize = false
+            },
+            new NuiListTemplateCell(new NuiLabel(SkinListLabels)
+            {
+                HorizontalAlign = NuiHAlign.Left,
+                VerticalAlign = NuiVAlign.Middle
+            })
+            {
+                Width = 320f,
+                VariableSize = true
+            },
+            new NuiListTemplateCell(new NuiButtonImage("ui_btn_sm_check")
+            {
+                Id = "btn_set_skin",
+                Tooltip = "Set this appearance"
+            })
+            {
+                Width = 30f,
+                VariableSize = false
+            }
+        ];
+
+        NuiColumn layout = new NuiColumn
+        {
+            Width = modalW,
+            Height = modalH,
+            Children =
+            [
+                // Background
+                new NuiRow
+                {
+                    Width = 0f,
+                    Height = 0f,
+                    DrawList = new()
+                    {
+                        new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, modalW, modalH))
+                    }
+                },
+
+                // Title
+                new NuiRow
+                {
+                    Height = 40f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 140f },
+                        new NuiLabel("Skin Search - Find Appearance")
+                        {
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 10f },
+
+                // Search field
+                new NuiRow
+                {
+                    Height = 40f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 45f },
+                        new NuiLabel("Search:")
+                        {
+                            Width = 70f,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiTextEdit("Type skin name (e.g. Cat)...", SkinSearchText, 50, false)
+                        {
+                            Width = 280f,
+                            Tooltip = "Enter part of a skin name to search"
+                        },
+                        new NuiSpacer { Width = 10f },
+                        new NuiButtonImage("isk_search")
+                        {
+                            Id = "btn_skin_search",
+                            Width = 35f,
+                            Height = 35f,
+                            Tooltip = "Search for skins"
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 10f },
+
+                // Column headers
+                new NuiRow
+                {
+                    Height = 30f,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 35f },
+                        new NuiLabel("ID")
+                        {
+                            Width = 60f,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiLabel("Appearance Name")
+                        {
+                            Width = 345f,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiLabel("Set")
+                        {
+                            Width = 35f,
+                            HorizontalAlign = NuiHAlign.Center,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
+                },
+
+                // Scrollable appearance list using NuiList
+                new NuiRow
+                {
+                    Children =
+                    [
+                        new NuiSpacer { Width = 25f },
+                        new NuiList(skinListTemplate, SkinListCount)
+                        {
+                            Width = 480f,
+                            Height = 350f,
+                            RowHeight = 30f
+                        }
+                    ]
+                },
+
+                new NuiSpacer { Height = 10f },
+
+                // Close button
+                new NuiRow
+                {
+                    Children =
+                    [
+                        new NuiSpacer { Width = 175f },
+                        new NuiButtonImage("ui_btn_cancel")
+                        {
+                            Id = "btn_skin_search_close",
+                            Width = 150f,
+                            Height = 38f,
+                            Tooltip = "Close"
+                        }
+                    ]
+                }
+            ]
+        };
+
+        return new NuiWindow(layout, "Skin Search")
+        {
+            Geometry = new NuiRect(400f, 100f, modalW, modalH),
+            Resizable = true,
+            Closable = true
         };
     }
 }

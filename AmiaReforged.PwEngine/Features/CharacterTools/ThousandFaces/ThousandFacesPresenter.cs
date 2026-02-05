@@ -1,4 +1,6 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿using AmiaReforged.PwEngine.Features.Module;
+using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using Anvil;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -11,7 +13,10 @@ public sealed class ThousandFacesPresenter(ThousandFacesView view, NwPlayer play
     public override ThousandFacesView View { get; } = view;
 
     private readonly ThousandFacesModel _model = new(player, playerNameOverrideService);
+    private readonly AppearanceCache _appearanceCache = AnvilCore.GetService<AppearanceCache>()!;
     private NuiWindowToken _token;
+    private NuiWindowToken? _skinSearchModalToken;
+    private List<(int id, string label)> _currentSkinSearchResults = new();
     private bool _initializing;
 
     public override NuiWindowToken Token() => _token;
@@ -205,6 +210,11 @@ public sealed class ThousandFacesPresenter(ThousandFacesView view, NwPlayer play
                 UpdateAppearanceDisplay();
                 break;
 
+            // Skin Search control
+            case "btn_search_skin":
+                OpenSkinSearchModal();
+                break;
+
             // Scale controls
             case "btn_scale_min":
                 _model.SetScale(0.4f); // MinScale
@@ -386,5 +396,138 @@ public sealed class ThousandFacesPresenter(ThousandFacesView view, NwPlayer play
         UpdateSoundsetDisplay();
         UpdatePortraitDisplay();
     }
-}
 
+    private void OpenSkinSearchModal()
+    {
+        // Close existing modal if open
+        CloseSkinSearchModal();
+
+        // Ensure cache is initialized
+        _appearanceCache.EnsureInitialized();
+
+        // Create the modal window (only done once)
+        NuiWindow modal = View.BuildSkinSearchModal();
+        if (player.TryCreateNuiWindow(modal, out NuiWindowToken modalToken))
+        {
+            _skinSearchModalToken = modalToken;
+            // Initialize the search text bind
+            _skinSearchModalToken.Value.SetBindValue(View.SkinSearchText, "");
+            // Subscribe to modal events
+            _skinSearchModalToken.Value.OnNuiEvent += HandleSkinSearchModalEvent;
+
+            // Load first 20 appearances by default
+            List<(int id, string label)> appearances = _appearanceCache.GetAllAppearances();
+
+            if (appearances.Count == 0)
+            {
+                player.SendServerMessage("No valid appearances found in cache. The cache may not have initialized properly.", ColorConstants.Red);
+                return;
+            }
+
+            // Show first 20 by default
+            appearances = appearances.Take(20).ToList();
+            player.SendServerMessage($"Showing first 20 of {_appearanceCache.AllAppearances.Count} valid appearances. Use search to find specific skins.", ColorConstants.Cyan);
+
+            // Update the list bindings
+            UpdateSkinSearchList(appearances);
+        }
+    }
+
+    private void HandleSkinSearchModalEvent(ModuleEvents.OnNuiEvent ev)
+    {
+        if (ev.EventType != NuiEventType.Click) return;
+
+        switch (ev.ElementId)
+        {
+            case "btn_skin_search":
+                string skinSearchTerm = _skinSearchModalToken.HasValue
+                    ? _skinSearchModalToken.Value.GetBindValue(View.SkinSearchText) ?? ""
+                    : "";
+                if (!string.IsNullOrWhiteSpace(skinSearchTerm))
+                {
+                    PerformSkinSearch(skinSearchTerm);
+                }
+                else
+                {
+                    player.SendServerMessage("Please enter a search term (e.g. 'Cat', 'Dragon', 'Wolf').", ColorConstants.Orange);
+                }
+                break;
+            case "btn_skin_search_close":
+                CloseSkinSearchModal();
+                break;
+            case "btn_set_skin":
+                // NuiList button click - get the row index from the event
+                int rowIndex = ev.ArrayIndex;
+                if (rowIndex >= 0 && rowIndex < _currentSkinSearchResults.Count)
+                {
+                    int appearanceId = _currentSkinSearchResults[rowIndex].id;
+                    _model.SetAppearance(appearanceId);
+                    UpdateAppearanceDisplay();
+                    player.SendServerMessage($"Appearance set to {_currentSkinSearchResults[rowIndex].label} (ID: {appearanceId})", ColorConstants.Green);
+                }
+                break;
+        }
+    }
+
+    private void CloseSkinSearchModal()
+    {
+        if (_skinSearchModalToken.HasValue)
+        {
+            // Unsubscribe from events
+            _skinSearchModalToken.Value.OnNuiEvent -= HandleSkinSearchModalEvent;
+            try
+            {
+                _skinSearchModalToken.Value.Close();
+            }
+            catch
+            {
+                // ignore
+            }
+            _skinSearchModalToken = null;
+        }
+        _currentSkinSearchResults.Clear();
+    }
+
+    /// <summary>
+    /// Performs a skin search and updates the list without recreating the window.
+    /// </summary>
+    private void PerformSkinSearch(string searchTerm)
+    {
+        if (!_skinSearchModalToken.HasValue) return;
+
+        // Get filtered appearances
+        List<(int id, string label)> appearances = _appearanceCache.SearchAppearances(searchTerm);
+
+        if (appearances.Count == 0)
+        {
+            player.SendServerMessage($"No appearances found matching '{searchTerm}'.", ColorConstants.Orange);
+        }
+        else
+        {
+            player.SendServerMessage($"Found {appearances.Count} appearances matching '{searchTerm}'.", ColorConstants.Green);
+        }
+
+        // Update the list bindings (without recreating the window)
+        UpdateSkinSearchList(appearances);
+    }
+
+    /// <summary>
+    /// Updates the NuiList bindings to display the given appearances.
+    /// </summary>
+    private void UpdateSkinSearchList(List<(int id, string label)> appearances)
+    {
+        if (!_skinSearchModalToken.HasValue) return;
+
+        // Store the current results for row index lookup when clicking
+        _currentSkinSearchResults = appearances;
+
+        // Build the bind arrays
+        List<string> ids = appearances.Select(a => a.id.ToString()).ToList();
+        List<string> labels = appearances.Select(a => a.label).ToList();
+
+        // Update the bindings
+        _skinSearchModalToken.Value.SetBindValues(View.SkinListIds, ids);
+        _skinSearchModalToken.Value.SetBindValues(View.SkinListLabels, labels);
+        _skinSearchModalToken.Value.SetBindValue(View.SkinListCount, appearances.Count);
+    }
+}
