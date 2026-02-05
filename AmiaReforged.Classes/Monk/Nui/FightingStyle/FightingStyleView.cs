@@ -61,7 +61,7 @@ public sealed class FightingStyleView : ScryView<FightingStylePresenter>
             }
         };
 
-    private NuiRow CreateStyleRow(string name, string tooltip, string id, NuiBind<bool> bind, out NuiButtonSelect button)
+    private static NuiRow CreateStyleRow(string name, string tooltip, string id, NuiBind<bool> bind, out NuiButtonSelect button)
     {
         return new NuiRow
         {
@@ -71,13 +71,14 @@ public sealed class FightingStyleView : ScryView<FightingStylePresenter>
                 new NuiButtonSelect(name, bind)
                 {
                     Id = id,
-                    Width = 120f
+                    Width = 120f,
+                    Encouraged = bind
                 }.Assign(out button),
                 new NuiText(tooltip)
                 {
                     Border = false,
                     Scrollbars = NuiScrollbars.None,
-                    ForegroundColor = new Color(50, 40, 30)
+                    Width = 260f
                 }
             }
         };

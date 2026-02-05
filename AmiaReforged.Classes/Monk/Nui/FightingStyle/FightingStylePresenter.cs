@@ -29,12 +29,35 @@ public sealed class FightingStylePresenter(FightingStyleView view, NwPlayer play
 
     private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
-        if (eventData.ElementId == View.KnockdownStyleButton.Id)
-            ChooseStyle(KnockdownStyleName);
-        else if (eventData.ElementId == View.DisarmStyleButton.Id)
-            ChooseStyle(DisarmStyleName);
-        else if (eventData.ElementId == View.RangedStyleButton.Id)
-            ChooseStyle(RangedStyleName);
+        int token = eventData.Token.Token;
+
+        if (eventData.ElementId == View.KnockdownStyleButton.Id ||
+            eventData.ElementId == View.DisarmStyleButton.Id ||
+            eventData.ElementId == View.RangedStyleButton.Id)
+        {
+            View.IsKnockdownSelected.SetBindValue(player, token, eventData.ElementId == View.KnockdownStyleButton.Id);
+            View.IsDisarmSelected.SetBindValue(player, token, eventData.ElementId == View.DisarmStyleButton.Id);
+            View.IsRangedSelected.SetBindValue(player, token, eventData.ElementId == View.RangedStyleButton.Id);
+
+            View.ShowConfirm.SetBindValue(player, token, true);
+            return;
+        }
+
+        if (eventData.ElementId == View.ConfirmButton.Id)
+        {
+            if (View.IsKnockdownSelected.GetBindValue(player, token))
+            {
+                ChooseStyle(KnockdownStyleName);
+            }
+            else if (View.IsDisarmSelected.GetBindValue(player, token))
+            {
+                ChooseStyle(DisarmStyleName);
+            }
+            else if (View.IsRangedSelected.GetBindValue(player, token))
+            {
+                ChooseStyle(RangedStyleName);
+            }
+        }
     }
 
     private void ChooseStyle(string styleName)
@@ -42,7 +65,6 @@ public sealed class FightingStylePresenter(FightingStyleView view, NwPlayer play
         if (!FightingStyleFeats.TryGetValue(styleName, out NwFeat[]? featsToAdd))
         {
             player.SendServerMessage("Fighting style feats not found.");
-
             return;
         }
 
@@ -66,7 +88,6 @@ public sealed class FightingStylePresenter(FightingStyleView view, NwPlayer play
         if (featsToAdd.Any(f => monk.KnowsFeat(f)))
         {
             player.SendServerMessage($"You already know one feat of the {styleName} fighting style. Select another style.");
-
             return;
         }
 
@@ -110,7 +131,7 @@ public sealed class FightingStylePresenter(FightingStyleView view, NwPlayer play
     {
         _window = new NuiWindow(View.RootLayout(), WindowTitle)
         {
-            Geometry = new NuiRect(400f, 400f, 460f, 240f)
+            Geometry = new NuiRect(400f, 400f, 460f, 300f)
         };
     }
 
