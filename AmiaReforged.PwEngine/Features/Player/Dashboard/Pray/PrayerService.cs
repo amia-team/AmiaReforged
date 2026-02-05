@@ -15,6 +15,8 @@ public class PrayerService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private const int PRAYER_COOLDOWN_MINUTES = 60;
+    private const string PRAYER_EFFECT_TAG = "PrayerEffect";
+    private const string ILLUSION_PORTAL_SUMMON_VAR = "IllusionPortalSummonActive";
     private readonly HashSet<uint> _processingPrayers = new();
     private readonly WindowDirector _windowDirector;
 
@@ -212,9 +214,14 @@ public class PrayerService
         {
             // Is cleric and has compatible alignment and at least one matching domain
             // Party-wide blessing using total divine level
+            // Clerics override ALL existing prayer effects party-wide
             NwTask.Run(async () =>
             {
                 await NwTask.Delay(TimeSpan.FromSeconds(5));
+
+                // Remove existing prayer effects from entire party (clerics override all prayers)
+                RemovePrayerEffectsFromParty(creature);
+
                 player.SendServerMessage($"{deity}'s power is demonstrated through your prayer!", ColorConstants.Green);
                 player.SendServerMessage($"[Divine Level: {totalDivineLevel} - Party-wide blessing]", ColorConstants.Gray);
 
@@ -239,9 +246,14 @@ public class PrayerService
         {
             // Is druid and has compatible alignment and valid druid god
             // Party-wide blessing using total divine level
+            // Druids only override their own prayer effects (not party-wide like clerics)
             NwTask.Run(async () =>
             {
                 await NwTask.Delay(TimeSpan.FromSeconds(5));
+
+                // Remove only the druid's own prayer effects
+                RemovePrayerEffects(creature);
+
                 player.SendServerMessage($"{deity}'s power is demonstrated through your prayer!", ColorConstants.Green);
                 player.SendServerMessage($"[Divine Level: {totalDivineLevel} - Party-wide blessing]", ColorConstants.Gray);
 
@@ -261,6 +273,10 @@ public class PrayerService
             NwTask.Run(async () =>
             {
                 await NwTask.Delay(TimeSpan.FromSeconds(5));
+
+                // Non-cleric divine casters only remove their own prayer effects
+                RemovePrayerEffects(creature);
+
                 player.SendServerMessage($"{deity}'s power is demonstrated through your prayer!", ColorConstants.Green);
 
                 if (isPartyWide)
@@ -323,6 +339,9 @@ public class PrayerService
                 NwTask.Run(async () =>
                 {
                     await NwTask.Delay(TimeSpan.FromSeconds(5));
+
+                    // Laypeople only remove their own prayer effects
+                    RemovePrayerEffects(creature);
 
                     if (isPartyWide)
                     {
@@ -2078,7 +2097,7 @@ public class PrayerService
         {
             Effect eVsGood = Effect.ACIncrease(vsGood);
             eVsGood.SubType = EffectSubType.Supernatural;
-            eVsGood.Tag = "PrayerVsGood";
+            eVsGood.Tag = PRAYER_EFFECT_TAG;
             player?.SendServerMessage($" - Extra AC vs Good, {vsGood}", ColorConstants.Cyan);
             creature.ApplyEffect(EffectDuration.Temporary, eVsGood, TimeSpan.FromSeconds(duration));
         }
@@ -2087,7 +2106,7 @@ public class PrayerService
         {
             Effect eVsEvil = Effect.ACIncrease(vsEvil);
             eVsEvil.SubType = EffectSubType.Supernatural;
-            eVsEvil.Tag = "PrayerVsEvil";
+            eVsEvil.Tag = PRAYER_EFFECT_TAG;
             player?.SendServerMessage($" - Extra AC vs Evil, {vsEvil}", ColorConstants.Cyan);
             creature.ApplyEffect(EffectDuration.Temporary, eVsEvil, TimeSpan.FromSeconds(duration));
         }
@@ -2147,7 +2166,7 @@ public class PrayerService
         {
             Effect eVsGood = Effect.ACIncrease(vsGood);
             eVsGood.SubType = EffectSubType.Supernatural;
-            eVsGood.Tag = "PrayerVsGood";
+            eVsGood.Tag = PRAYER_EFFECT_TAG;
             player?.SendServerMessage($" - Extra AC vs Good, {vsGood}", ColorConstants.Cyan);
             ApplyLaypersonEffectToParty(creature, eVsGood, duration, fullDuration: true);
         }
@@ -2156,7 +2175,7 @@ public class PrayerService
         {
             Effect eVsEvil = Effect.ACIncrease(vsEvil);
             eVsEvil.SubType = EffectSubType.Supernatural;
-            eVsEvil.Tag = "PrayerVsEvil";
+            eVsEvil.Tag = PRAYER_EFFECT_TAG;
             player?.SendServerMessage($" - Extra AC vs Evil, {vsEvil}", ColorConstants.Cyan);
             ApplyLaypersonEffectToParty(creature, eVsEvil, duration, fullDuration: true);
         }
@@ -2165,6 +2184,9 @@ public class PrayerService
     private void ApplyLaypersonEffectToParty(NwCreature creature, Effect effect, float duration, bool fullDuration)
     {
         float effectDuration = fullDuration ? duration : 3.0f;
+
+        // Tag all prayer effects so they can be removed later
+        effect.Tag = PRAYER_EFFECT_TAG;
 
         // Apply to caster
         creature.ApplyEffect(EffectDuration.Temporary, effect, TimeSpan.FromSeconds(effectDuration));
@@ -2575,11 +2597,18 @@ public class PrayerService
 
             case 40: // DOMAIN_ILLUSION
                 player.SendServerMessage("Adding Illusion domain effects:", ColorConstants.Cyan);
-                ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHealingS), clericLevel, fullDuration: false);
+                // Illusion domain is personal only - apply visual effect only to caster
+                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpHealingS));
+
+                // Set protection flag so other clerics' prayers don't remove this player's effects
+                NWScript.SetLocalInt(creature, ILLUSION_PORTAL_SUMMON_VAR, 1);
 
                 // Create illusory duplicate henchman
                 CreateIllusionHenchman(creature, player, clericLevel);
                 player.SendServerMessage(" - Illusory Duplicate Summoned", ColorConstants.Cyan);
+
+                // Schedule clearing of protection flag when summon duration expires
+                ScheduleIllusionPortalProtectionClear(creature, clericLevel);
                 break;
 
             case 41: // DOMAIN_LAW
@@ -2658,11 +2687,18 @@ public class PrayerService
 
             case 46: // DOMAIN_PORTAL
                 player.SendServerMessage("Adding Portal domain effects:", ColorConstants.Cyan);
-                ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.FnfSummonMonster3), clericLevel, fullDuration: false);
+                // Portal domain is personal only - apply visual effect only to caster
+                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfSummonMonster3));
+
+                // Set protection flag so other clerics' prayers don't remove this player's effects
+                NWScript.SetLocalInt(creature, ILLUSION_PORTAL_SUMMON_VAR, 1);
 
                 // Create portal creature henchman
                 CreatePortalHenchman(creature, player, clericLevel);
                 player.SendServerMessage(" - Portal Creature Summoned", ColorConstants.Cyan);
+
+                // Schedule clearing of protection flag when summon duration expires
+                ScheduleIllusionPortalProtectionClear(creature, clericLevel);
                 break;
 
             case 47: // DOMAIN_RENEWAL
@@ -2777,9 +2813,78 @@ public class PrayerService
         }
     }
 
+    /// <summary>
+    /// Removes all prayer effects from a single creature.
+    /// </summary>
+    private void RemovePrayerEffects(NwCreature creature)
+    {
+        foreach (Effect effect in creature.ActiveEffects.ToList())
+        {
+            if (effect.Tag == PRAYER_EFFECT_TAG)
+            {
+                creature.RemoveEffect(effect);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Removes all prayer effects from the creature and all party members in the same area.
+    /// Used when a cleric prays to override all existing prayers party-wide.
+    /// Skips party members who have Illusion or Portal domain summons active to protect their summons.
+    /// </summary>
+    private void RemovePrayerEffectsFromParty(NwCreature creature)
+    {
+        // Remove from the caster first (caster always gets their effects replaced)
+        RemovePrayerEffects(creature);
+
+        // Remove from caster's associates
+        foreach (NwCreature associate in creature.Associates)
+        {
+            if (associate.Area == creature.Area)
+            {
+                RemovePrayerEffects(associate);
+            }
+        }
+
+        // Clear caster's Illusion/Portal protection since they're praying again
+        NWScript.DeleteLocalInt(creature, ILLUSION_PORTAL_SUMMON_VAR);
+
+        // Remove from all party members in the same area
+        NwPlayer? player = creature.ControllingPlayer;
+        if (player?.LoginCreature != null)
+        {
+            foreach (NwPlayer partyMember in player.PartyMembers)
+            {
+                NwCreature? partyCreature = partyMember.ControlledCreature;
+                if (partyCreature != null && partyCreature.Area == creature.Area && partyCreature != creature)
+                {
+                    // Skip party members who have Illusion or Portal domain summons active
+                    if (NWScript.GetLocalInt(partyCreature, ILLUSION_PORTAL_SUMMON_VAR) == 1)
+                    {
+                        continue;
+                    }
+
+                    RemovePrayerEffects(partyCreature);
+
+                    // Remove from party member's associates
+                    foreach (NwCreature associate in partyCreature.Associates)
+                    {
+                        if (associate.Area == creature.Area)
+                        {
+                            RemovePrayerEffects(associate);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private void ApplyPrayerEffectsToPCs(NwCreature creature, Effect effect, int divineLevel, bool fullDuration = true)
     {
         float duration = fullDuration ? 300.0f + (divineLevel * 20.0f) : 3.0f;
+
+        // Tag all prayer effects so they can be removed later
+        effect.Tag = PRAYER_EFFECT_TAG;
 
         if (divineLevel > 0)
         {
@@ -2790,6 +2895,15 @@ public class PrayerService
                 // Apply to caster
                 creature.ApplyEffect(EffectDuration.Temporary, effect, TimeSpan.FromSeconds(duration));
 
+                // Apply to caster's associates
+                foreach (NwCreature associate in creature.Associates)
+                {
+                    if (associate.Area == creature.Area)
+                    {
+                        associate.ApplyEffect(EffectDuration.Temporary, effect, TimeSpan.FromSeconds(duration));
+                    }
+                }
+
                 // Apply to party
                 foreach (NwPlayer partyMember in player.PartyMembers)
                 {
@@ -2797,6 +2911,15 @@ public class PrayerService
                     if (partyCreature != null && partyCreature.Area == creature.Area && partyCreature != creature)
                     {
                         partyCreature.ApplyEffect(EffectDuration.Temporary, effect, TimeSpan.FromSeconds(duration));
+
+                        // Apply to party member's associates
+                        foreach (NwCreature associate in partyCreature.Associates)
+                        {
+                            if (associate.Area == creature.Area)
+                            {
+                                associate.ApplyEffect(EffectDuration.Temporary, effect, TimeSpan.FromSeconds(duration));
+                            }
+                        }
                     }
                 }
             }
@@ -2805,6 +2928,15 @@ public class PrayerService
         {
             // Just apply to self (laypeople)
             creature.ApplyEffect(EffectDuration.Temporary, effect, TimeSpan.FromSeconds(duration));
+
+            // Apply to self's associates (laypeople still get benefits on their associates)
+            foreach (NwCreature associate in creature.Associates)
+            {
+                if (associate.Area == creature.Area)
+                {
+                    associate.ApplyEffect(EffectDuration.Temporary, effect, TimeSpan.FromSeconds(duration));
+                }
+            }
         }
     }
 
@@ -2831,6 +2963,24 @@ public class PrayerService
         // Store current Unix timestamp
         int currentTime = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         NWScript.SetLocalInt(creature, sVarName: "PrayBlock", currentTime);
+    }
+
+    /// <summary>
+    /// Schedules the clearing of the Illusion/Portal domain protection flag when the summon duration expires.
+    /// This allows other clerics' prayers to affect this creature again after the summon is gone.
+    /// </summary>
+    private void ScheduleIllusionPortalProtectionClear(NwCreature creature, int clericLevel)
+    {
+        float duration = 300.0f + (clericLevel * 20.0f);
+
+        _ = NwTask.Run(async () =>
+        {
+            await NwTask.Delay(TimeSpan.FromSeconds(duration));
+            if (creature.IsValid)
+            {
+                NWScript.DeleteLocalInt(creature, ILLUSION_PORTAL_SUMMON_VAR);
+            }
+        });
     }
 
     /// <summary>
