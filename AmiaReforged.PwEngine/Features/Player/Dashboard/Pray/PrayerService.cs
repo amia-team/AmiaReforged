@@ -1950,17 +1950,8 @@ public class PrayerService
 
     private void CastAlignmentEffect(NwCreature creature, NwPlaceable idol, int divineLevel)
     {
-        // Get deity name and use deity-specific effects
-        string deityName = NWScript.GetLocalString(idol, "deity_name");
-        if (string.IsNullOrEmpty(deityName))
-        {
-            // Try to get deity name from idol tag
-            string tag = idol.Tag;
-            if (tag.StartsWith("idol2_"))
-            {
-                deityName = tag.Substring(6); // Remove "idol2_" prefix
-            }
-        }
+        // Get deity name directly from the creature's deity field
+        string deityName = NWScript.GetDeity(creature);
 
         if (!string.IsNullOrEmpty(deityName))
         {
@@ -1968,7 +1959,7 @@ public class PrayerService
             return;
         }
 
-        // Original alignment-based fallback
+        // Original alignment-based fallback (only if creature has no deity set)
         string alignment = NWScript.GetLocalString(idol, sVarName: "alignment");
         int vsGood = 0;
         int vsEvil = 0;
@@ -2036,17 +2027,8 @@ public class PrayerService
 
     private void CastAlignmentEffectSelf(NwCreature creature, NwPlaceable idol, int divineLevel)
     {
-        // Get deity name and use deity-specific effects (self only)
-        string deityName = NWScript.GetLocalString(idol, "deity_name");
-        if (string.IsNullOrEmpty(deityName))
-        {
-            // Try to get deity name from idol tag
-            string tag = idol.Tag;
-            if (tag.StartsWith("idol2_"))
-            {
-                deityName = tag.Substring(6); // Remove "idol2_" prefix
-            }
-        }
+        // Get deity name directly from the creature's deity field
+        string deityName = NWScript.GetDeity(creature);
 
         if (!string.IsNullOrEmpty(deityName))
         {
@@ -2113,17 +2095,8 @@ public class PrayerService
 
     private void CastAlignmentEffectPartyWide(NwCreature creature, NwPlaceable idol, int divineLevel)
     {
-        // Get deity name and use deity-specific effects (party-wide for laypersons)
-        string deityName = NWScript.GetLocalString(idol, "deity_name");
-        if (string.IsNullOrEmpty(deityName))
-        {
-            // Try to get deity name from idol tag
-            string tag = idol.Tag;
-            if (tag.StartsWith("idol2_"))
-            {
-                deityName = tag.Substring(6); // Remove "idol2_" prefix
-            }
-        }
+        // Get deity name directly from the creature's deity field
+        string deityName = NWScript.GetDeity(creature);
 
         if (!string.IsNullOrEmpty(deityName))
         {
