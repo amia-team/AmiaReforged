@@ -19,7 +19,6 @@ public sealed class DeitySelectionView : IScryView
 
     // Button state bindings
     public NuiBind<bool> CanChangeDeity { get; } = new("can_change_deity");
-    public NuiBind<bool> CanPray { get; } = new("can_pray");
     public NuiBind<string> ChangeDeityLabel { get; } = new("change_deity_label");
     public NuiBind<string> ChangeDeityTooltip { get; } = new("change_deity_tooltip");
 

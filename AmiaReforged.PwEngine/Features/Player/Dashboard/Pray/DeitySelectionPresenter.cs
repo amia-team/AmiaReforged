@@ -9,7 +9,6 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
 {
     private readonly NwPlayer _player;
     private readonly NwPlaceable _idol;
-    private readonly PrayerService _prayerService;
     private NuiWindowToken _token;
     private NuiWindow? _window;
 
@@ -25,7 +24,7 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
         View = view;
         _player = player;
         _idol = idol;
-        _prayerService = prayerService;
+        // prayerService parameter kept for backwards compatibility but no longer used
     }
 
     public override void InitBefore()
@@ -63,9 +62,6 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
 
         switch (ev.ElementId)
         {
-            case "btn_pray":
-                HandlePray();
-                break;
             case "btn_change_deity":
                 HandleChangeDeity();
                 break;
@@ -138,9 +134,14 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
         else
         {
             // Non-divine casters can choose any deity but have varying prayer chances
-            if (alignmentMatches || axisMatches)
+            if (alignmentMatches)
             {
-                Token().SetBindValue(View.AlignmentStatus, "Your alignment is valid: 60% prayer chance, 30% party-wide.");
+                Token().SetBindValue(View.AlignmentStatus, "Exact alignment match: 60% prayer chance, 40% party-wide.");
+                Token().SetBindValue(View.AlignmentStatusColor, ColorConstants.Green);
+            }
+            else if (axisMatches)
+            {
+                Token().SetBindValue(View.AlignmentStatus, "Same Good/Evil axis: 50% prayer chance, 25% party-wide.");
                 Token().SetBindValue(View.AlignmentStatusColor, ColorConstants.Navy);
             }
             else if (isOpposingAxis)
@@ -157,11 +158,8 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
 
         // Set button states
         bool canChangeDeity = CanChangeDeity(creature, alignmentMatches, isDivineCaster);
-        // Divine casters can only pray if alignment matches; laypeople can always try
-        bool canPray = isDivineCaster ? alignmentMatches : true;
 
         Token().SetBindValue(View.CanChangeDeity, canChangeDeity);
-        Token().SetBindValue(View.CanPray, canPray);
 
         // Set change deity tooltip based on why it might be disabled
         string changeDeityTooltip = GetChangeDeityTooltip(creature, alignmentMatches, isDivineCaster, isDruid);
@@ -210,94 +208,6 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
         return "Set this deity as your patron.";
     }
 
-    private void HandlePray()
-    {
-        NwCreature? creature = _player.LoginCreature;
-        if (creature == null) return;
-
-        // Play worship animation
-        NWScript.AssignCommand(creature, () =>
-        {
-            NWScript.ActionPlayAnimation(NWScript.ANIMATION_LOOPING_WORSHIP, 1.0f, 30.0f);
-        });
-
-        // Check for opposing alignment - deity smites the heretic!
-        if (IsOpposingGoodEvilAxis(creature))
-        {
-            SmiteHeretic(creature);
-            Close();
-            return;
-        }
-
-        // Use the prayer service to handle the prayer
-        _prayerService.PrayFromDashboard(_player, creature);
-
-        Close();
-    }
-
-    private void SmiteHeretic(NwCreature creature)
-    {
-        string deityName = NWScript.GetLocalString(_idol, "name");
-        int creatureGoodEvil = NWScript.GetAlignmentGoodEvil(creature);
-
-        // Get the deity's alignment
-        string deityAlignment = NWScript.GetLocalString(_idol, "alignment");
-        bool deityIsGood = deityAlignment.Length >= 2 && deityAlignment[1] == 'G';
-        bool deityIsEvil = deityAlignment.Length >= 2 && deityAlignment[1] == 'E';
-
-        // Delay the smite for dramatic effect
-        NwTask.Run(async () =>
-        {
-            await NwTask.Delay(TimeSpan.FromSeconds(3));
-
-            // Calculate damage - half current HP
-            int damage = creature.HP / 2;
-            if (damage < 1) damage = 1;
-
-            // Apply VFX based on deity alignment
-            if (deityIsGood)
-            {
-                // Good deity smite VFX: 41, 74, 184
-                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect((VfxType)41));
-                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect((VfxType)74));
-                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect((VfxType)184));
-            }
-            else if (deityIsEvil)
-            {
-                // Evil deity smite VFX: 673, 235, 246
-                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect((VfxType)673));
-                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect((VfxType)235));
-                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect((VfxType)246));
-            }
-            else
-            {
-                // Neutral deity - use lightning
-                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpLightningM));
-            }
-
-            // Apply damage
-            Effect damageEffect = Effect.Damage(damage, DamageType.Divine);
-            creature.ApplyEffect(EffectDuration.Instant, damageEffect);
-
-            // Send appropriate message based on deity alignment
-            if (deityIsGood && creatureGoodEvil == NWScript.ALIGNMENT_EVIL)
-            {
-                _player.SendServerMessage($"{deityName} smites you for your wickedness!", ColorConstants.Red);
-                _player.SendServerMessage("The righteous fury of the heavens strikes you down!", ColorConstants.Orange);
-            }
-            else if (deityIsEvil && creatureGoodEvil == NWScript.ALIGNMENT_GOOD)
-            {
-                _player.SendServerMessage($"{deityName} punishes your pathetic plea for mercy!", ColorConstants.Red);
-                _player.SendServerMessage("Dark powers lash out at your foolish piety!", ColorConstants.Orange);
-            }
-            else
-            {
-                _player.SendServerMessage($"{deityName} rejects your prayer with violent displeasure!", ColorConstants.Red);
-            }
-
-            _player.SendServerMessage($"[You took {damage} divine damage]", ColorConstants.Gray);
-        });
-    }
 
     private void HandleChangeDeity()
     {
