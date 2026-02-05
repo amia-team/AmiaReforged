@@ -10,6 +10,7 @@ namespace AmiaReforged.Classes.Monk.Nui.MonkPath;
 public sealed class MonkPathPresenter(MonkPathView pathView, NwPlayer player) : ScryPresenter<MonkPathView>
 {
     public override MonkPathView View { get; } = pathView;
+    private MonkPathModel Model { get; } = new();
 
     public override NuiWindowToken Token() => _token;
     private NuiWindowToken _token;
@@ -26,12 +27,21 @@ public sealed class MonkPathPresenter(MonkPathView pathView, NwPlayer player) : 
 
     private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
+        int token = eventData.Token.Token;
+
         if (Enum.TryParse(eventData.ElementId, out PathType path))
         {
             Token().SetBindValue(View.PathBind, path);
-            UpdateConfirmPath();
+            UpdateConfirmPath(path);
 
             Token().SetBindValue(View.IsConfirmViewOpen, true);
+
+            foreach (MonkPathModel.MonkPathData pathData in Model.Paths)
+            {
+                NuiBind<bool> glowBind = new($"glow_{pathData.Type}");
+
+                glowBind.SetBindValue(player, token, pathData.Type == path);
+            }
         }
         else if (eventData.ElementId == View.ConfirmPathButton.Id)
         {
@@ -67,18 +77,18 @@ public sealed class MonkPathPresenter(MonkPathView pathView, NwPlayer player) : 
         _token.Close();
     }
 
-    private void UpdateConfirmPath()
+    private void UpdateConfirmPath(PathType path)
     {
-        PathType? pathType = Token().GetBindValue(View.PathBind);
-        if (pathType == null)
+        var pathData = Model.Get(path);
+        if (pathData == null)
         {
-            player.SendServerMessage("Could not find path!");
+            player.SendServerMessage("Could not find path data!");
             return;
         }
 
-        Token().SetBindValue(View.PathIcon, MonkPathMap.PathMap[pathType.Value].PathIcon);
-        Token().SetBindValue(View.PathLabel, MonkPathMap.PathMap[pathType.Value].PathName);
-        Token().SetBindValue(View.PathText, MonkPathMap.PathMap[pathType.Value].PathAbilities);
+        Token().SetBindValue(View.PathIcon, pathData.Icon);
+        Token().SetBindValue(View.PathLabel, pathData.Name);
+        Token().SetBindValue(View.PathText, pathData.Abilities);
     }
 
     private void ChoosePath()
@@ -91,7 +101,15 @@ public sealed class MonkPathPresenter(MonkPathView pathView, NwPlayer player) : 
             return;
         }
 
-        if (!MonkPathMap.PathToFeat.TryGetValue(selectedPath.Value, out NwFeat? selectedPathFeat) || selectedPathFeat == null)
+        var pathData = Model.Get(selectedPath.Value);
+        if (pathData == null)
+        {
+            player.SendServerMessage("Could not find path data!");
+            return;
+        }
+
+        NwFeat? selectedPathFeat = NwFeat.FromFeatId(pathData.FeatId);
+        if (selectedPathFeat == null)
         {
             player.SendServerMessage("Could not find path feat!");
             return;
@@ -116,11 +134,13 @@ public sealed class MonkPathPresenter(MonkPathView pathView, NwPlayer player) : 
             return;
         }
 
-        NwFeat? existingPathFeat = monkCharacter.Feats.FirstOrDefault(f => MonkPathMap.PathToFeat.ContainsValue(f));
-        if (existingPathFeat != null)
+        foreach (var path in Model.Paths)
         {
-            player.SendServerMessage($"{existingPathFeat.Name} removed");
-            monkCharacter.RemoveFeat(existingPathFeat);
+            NwFeat? feat = NwFeat.FromFeatId(path.FeatId);
+            if (feat == null || !monkCharacter.KnowsFeat(feat)) continue;
+
+            player.SendServerMessage($"{feat.Name} removed");
+            monkCharacter.RemoveFeat(feat);
         }
 
         monkCharacter.AddFeat(selectedPathFeat, 12);

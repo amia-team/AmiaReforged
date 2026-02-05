@@ -3,88 +3,81 @@
 public static class MonkPathNuiElements
 {
     public const string CrashingMeteorDescription =
-        "Crashing Meteor: Become as the elements and an unstoppable force of nature. " +
-        "This path channels Ki through elemental forces to deliver devastating strikes.";
+        "Crashing Meteor: The monk becomes an unstoppable force of nature, channeling Ki through the elements to deliver destructive strikes.";
 
     public const string CrashingMeteorIcon = "ife_poe_meteor";
 
     public const string CrashingMeteorAbilities =
-        "\nStunning Strike deals 2d6 elemental damage in a large area, with a successful reflex save halving the damage. Each Ki Focus adds 2d6 damage." +
-        "\n\nAxiomatic Strike deals +1 bonus elemental damage to the target, with an additional +1 for every Ki Focus." +
-        "\n\nWholeness of Body deals 2d6 elemental damage in a large area, with a successful reflex save halving the damage. Each Ki Focus adds 2d6 damage." +
-        "\n\nKi Shout deals damage type of the chosen element. In addition, it incurs 5 % elemental vulnerability for three rounds, with every Ki Focus increasing it by 5 %.";
+        "Stunning Strike: Deals 2d6 elemental damage in a large radius (reflex halves). Each Ki Focus adds +2d6 damage." +
+        "\n\nAxiomatic Strike: Deals +1 elemental damage. Each Ki Focus adds +1." +
+        "\n\nWholeness of Body: Deals 2d6 elemental damage in a large radius (reflex halves). Each Ki Focus adds +2d6 damage." +
+        "\n\nKi Shout: Damage type matches the chosen element and inflicts 5% elemental vulnerability for 3 rounds. Each Ki Focus adds +5% vulnerability.";
 
     public const string EchoingValleyDescription =
-        "Echoing Valley: Become a conduit for the Ki of all living things which yearn to manifest through " +
-        "your will. This path summons Echoes - fractions of Ki that travel and fight by your side.";
+        "Echoing Valley: The monk becomes a conduit for the Ki of all living things, manifesting Echoes that aid them in combat.";
 
     public const string  EchoingValleyIcon = "ife_poe_echoing";
 
     public const string EchoingValleyAbilities =
-        "\nStunning Strike summons an Echo and makes summoned Echoes deal 1d6 sonic damage in a medium radius. Echoes last for two turns. Each Ki Focus allows for an additional Echo to be summoned." +
-        "\n\nAxiomatic Strike deals +1 bonus sonic damage for each Echo." +
-        "\n\nEmpty Body grants +1 bonus dodge AC for each Echo." +
-        "\n\nKi Shout releases the Echoes, each Echo exploding and dealing 10d6 sonic damage in a large area. If the target passes a fortitude save, they take half damage and avoid being stunned for 1 round.";
+        "Stunning Strike: Summons an Echo for 2 turns and causes existing Echoes to deal 1d6 sonic damage in a medium radius. Each Ki Focus allows one additional Echo." +
+        "\n\nAxiomatic Strike: Deals +1 sonic damage. Each Ki Focus adds +1." +
+        "\n\nEmpty Body: Grants +1 Dodge AC for each active Echo." +
+        "\n\nKi Shout: Detonates all Echoes for 10d6 sonic damage each in a large area radius (fortitude halves damage and negates stun for 1 round).";
 
     public const string FickleStrandDescription =
-        "Fickle Strand: Like pulling a loose thread, you tug at the Weave with your Ki. This path unravels " +
-        "magical defenses and reshapes magic into unpredictable magical strikes.";
+        "Fickle Strand: Like pulling a loose thread, the monk tugs at the Weave, unraveling magical defenses and shaping Ki into unpredictable strikes.";
 
     public const string FickleStrandIcon = "ife_poe_fickle";
 
     public const string FickleStrandAbilities =
-        "\nEagle Strike has a 30 % chance to impart a wild magic effect. Each Ki Focus increases the chances of more potent effects." +
-        "\n\nAxiomatic Strike deals +1 bonus magical damage. Each Ki Focus increases this by 1." +
-        "\n\nEmpty Body grants a spell mantle that absorbs up to 2d3 spell levels before collapsing. Each Ki Focus gives an additional 2d3 to the spell level absorption." +
-        "\n\nQuivering Palm strips the enemy creature of a magical defense according to the breach list, with a 50% chance to steal the magical defense. Each Ki Focus allows for an additional magical defense to be stripped and stolen.";
+        "Eagle Strike: 30% chance to trigger a Wild Magic effect. Ki Focus increases the potency of effects (Weak to Strong)." +
+        "\n\nAxiomatic Strike: Deals +1 magical damage. Each Ki Focus adds +1." +
+        "\n\nEmpty Body: Grants a Spell Mantle that absorbs 2d3 spell levels. Each Ki Focus adds +2d3 levels." +
+        "\n\nQuivering Palm: 50% chance to strip and steal a magical defense according to the breach list. Each Ki Focus allows stealing one additional defense.";
 
     public const string FloatingLeafDescription =
-        "Floating Leaf: Adrift in the clear currents of Ki, you awaken an inner sight. " +
-        "This path lets you anticipate the future flow of the fight and strike with peerless foresight.";
+        "Floating Leaf: Adrift in the currents of Ki, the monk awakens their inner sight to anticipate the flow of combat with peerless precision.";
 
     public const string  FloatingLeafIcon = "ife_poe_leaf";
 
     public const string FloatingLeafAbilities =
-        "\nAttacks apply the monk's wisdom modifier instead of strength or dexterity, and allow the use of Martial Techniques with ranged weapons." +
-        "\n\nStunning Strike bypasses mind immunity with secondary effects. Ki Focus I pacifies, Ki Focus II dazes, and Ki Focus III stuns." +
-        "\n\nEagle Strike incurs a -1 attack bonus penalty for each Ki Focus." +
-        "\n\nAxiomatic Strike deals +1 bonus positive damage, with each Ki Focus granting an additional +1." +
-        "\n\nEmpty Body gives +2 to fortitude and reflex saving throws, with each Ki Focus granting an additional +2 bonus.";
+        "Passive: Melee attacks use wisdom for attack rolls. Stunning, Eagle, and Axiomatic Strike work with ranged weapons." +
+        "\n\nStunning Strike: Bypasses mind immunity, causing a weaker effect. Ki Focus I pacifies, II dazes, and III stuns." +
+        "\n\nEagle Strike: Inflicts -1 AB penalty. Each Ki Focus adds -1." +
+        "\n\nAxiomatic Strike: Deals +1 positive damage. Each Ki Focus adds +1." +
+        "\n\nEmpty Body: Ki Focus I allows the monk to perform Weightless Leaps, II grants Haste, III grants Epic Dodge.";
 
     public const string IroncladBullDescription =
-        "Ironclad Bull: Like a stalwart gorgon, swords bounce off your skin from the sheer flow of Ki. " +
-        "This path seperates body from mind, turning you into an impenetrable fortress.";
+        "Ironclad Bull: Like a stalwart gorgon, the monk's skin becomes an impenetrable fortress through the sheer flow of Ki.";
 
     public const string IroncladBullIcon = "ife_poe_ironbull";
 
     public const string IroncladBullAbilities =
-        "\nEagle Strike incurs a -1 physical damage penalty. Each Ki Focus increases this by 1." +
-        "\n\nWholeness of Body grants overheal as temporary hit points and heals for 20 more damage. Each Ki Focus heals for an additional 20 damage." +
-        "\n\nKi Barrier grants 6/- physical damage resistance, with each Ki Focus increasing it by 3." +
-        "\n\nQuivering Palm binds the target with Stonehold for one round if they fail a reflex saving throw. Each Ki Focus increases the duration by one round.";
+        "Eagle Strike: Inflicts -1 physical damage penalty on the enemy. Each Ki Focus adds -1." +
+        "\n\nWholeness of Body: Heals an additional 20 HP and converts excess healing into temporary HP. Each Ki Focus adds +20 healing." +
+        "\n\nKi Barrier: Grants 6/- Physical Damage Resistance. Each Ki Focus adds +3." +
+        "\n\nQuivering Palm: Binds the target with Stonehold for 1 round (reflex negates). Each Ki Focus adds +1 round.";
 
     public const string SplinteredChaliceDescription =
-        "Splintered Chalice: Seek clarity and power through the ritual infliction of pain. " +
-        "This path shares your suffering with foes, dividing your own to multiply theirs.";
+        "Splintered Chalice: Like sunlight piercing the canopy, the monk radiates an overflow of Ki through their wounds and scars.";
 
     public const string SplinteredChaliceIcon = "ife_poe_splinter";
 
     public const string SplinteredChaliceAbilities =
-        "\n(X is based on the monk's injuries: injured = 1, badly wounded = 2, near death = 3)" +
-        "\n\nAxiomatic Strike deals 1dX bonus negative energy. Each Ki Focus grants an additional 1dX damage." +
-        "\n\nWholeness of Body unleashes 5dX negative and piercing damage in a large area, with a successful fortitude save halving the damage. Each Ki Focus grants an additional 5dX damage." +
-        "\n\nWhile in combat, Empty Body grants X times 5 % physical damage immunity. Each Ki Focus adds a further 5 % immunity." +
-        "\n\nQuivering Palm inflicts an additional 30dX negative damage. Each Ki Focus inflicts 30 % negative energy vulnerability against attack.";
+        "Passive (Sacred Overflow): Activate to take damage (2x Hit Dice), gain 10% Physical Vulnerability, and -2 AC/Saves to empower techniques." +
+        "\n\nAxiomatic Strike: Deals +1 negative damage (+1 per Focus). Overflow: Deals +2 divine damage (+2 per Focus)." +
+        "\n\nEagle Strike: Inflicts 3% Physical/Negative vulnerability (+3% per Focus). Overflow: Inflicts 5% Physical/Divine vulnerability (+5% per Focus)." +
+        "\n\nWholeness of Body: Deals 10 negative damage in a large radius (+10 per Focus). Overflow: Deals 20 divine damage (+20 per Focus)." +
+        "\n\nQuivering Palm: Deals negative damage (25% multiplier per Focus). Overflow: Deals divine damage (25% multiplier per Focus) and heals the monk for 50% of missing HP.";
 
     public const string SwingingCenserDescription =
-        "Swinging Censer: Listen to the heartbeat of Ki that courses through all living things. " +
-        "This path is about striking powerful rhythmic stances that bolster allies and mend wounds.";
+        "Swinging Censer: Listening to the heartbeat of Ki, the monk strikes rhythmic stances to strengthen and heal their allies.";
 
     public const string SwingingCenserIcon = "ife_poe_censer";
 
     public const string SwingingCenserAbilities =
-        "\nStunning Fist heals the monk or a nearby ally for 1d6 damage. Each Ki Focus heals for an additional 1d6 damage." +
-        "\n\nWholeness of Body pulses in a large area healing allies. Each Ki Focus adds another healing pulse." +
-        "\n\nEmpty Body creates soothing winds in a large area, granting allies 50% concealment and 2 regeneration. Each Ki Focus increases the regeneration by 2." +
-        "\n\nKi Shout exhorts allies with +1 bonus to attack rolls, with an additional +1 for every Ki Focus.";
+        "Stunning Strike: Heals the monk and nearby allies for 1d6 in a medium radius. Each Ki Focus adds +1d6." +
+        "\n\nWholeness of Body: Becomes a healing pulse in a large radius. Each Ki Focus adds one additional pulse." +
+        "\n\nEmpty Body: Creates soothing winds in a large radius, granting allies 50% concealment and 2 regeneration. Each Ki Focus adds +2 regeneration." +
+        "\n\nKi Shout: Grants allies +1 bonus to attack rolls for three rounds. Each Ki Focus adds +1.";
 }

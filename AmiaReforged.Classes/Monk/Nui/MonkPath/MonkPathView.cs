@@ -7,6 +7,8 @@ namespace AmiaReforged.Classes.Monk.Nui.MonkPath;
 
 public sealed class MonkPathView : ScryView<MonkPathPresenter>
 {
+    private MonkPathModel Model { get; } = new();
+
     public readonly NuiBind<PathType> PathBind = new(key: "path_type");
     public readonly NuiBind<bool> IsConfirmViewOpen = new(key: "is_confirm_view_open");
     public readonly NuiBind<string> PathLabel = new(key: "path_label");
@@ -27,136 +29,20 @@ public sealed class MonkPathView : ScryView<MonkPathPresenter>
         {
             Children =
             {
+                new NuiRow
+                {
+                    Width = 0f,
+                    Height = 0f,
+                    Children = [],
+                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 600f, 640f))]
+                },
+
                 new NuiColumn
                 {
-                    Children =
-                    {
-                        new NuiRow
-                        {
-                            Children =
-                            {
-                                new NuiButtonImage(MonkPathNuiElements.CrashingMeteorIcon)
-                                {
-                                    Id = nameof(PathType.CrashingMeteor),
-                                    Height = 64,
-                                    Width = 64
-                                },
-                                new NuiText(MonkPathNuiElements.CrashingMeteorDescription)
-                                {
-                                    Border = false,
-                                    Scrollbars = NuiScrollbars.None
-                                }
-                            }
-                        },
-
-                        new NuiRow
-                        {
-                            Children =
-                            {
-                                new NuiButtonImage(MonkPathNuiElements.EchoingValleyIcon)
-                                {
-                                    Id = nameof(PathType.EchoingValley),
-                                    Height = 64,
-                                    Width = 64
-                                },
-                                new NuiText(text: MonkPathNuiElements.EchoingValleyDescription)
-                                {
-                                    Border = false,
-                                    Scrollbars = NuiScrollbars.None
-                                }
-                            }
-                        },
-
-                        new NuiRow
-                        {
-                            Children =
-                            {
-                                new NuiButtonImage(MonkPathNuiElements.FickleStrandIcon)
-                                {
-                                    Id = nameof(PathType.FickleStrand),
-                                    Height = 64,
-                                    Width = 64
-                                },
-                                new NuiText(text: MonkPathNuiElements.FickleStrandDescription)
-                                {
-                                    Border = false,
-                                    Scrollbars = NuiScrollbars.None
-                                }
-                            }
-                        },
-
-                        new NuiRow
-                        {
-                            Children =
-                            {
-                                new NuiButtonImage(MonkPathNuiElements.FloatingLeafIcon)
-                                {
-                                    Id = nameof(PathType.FloatingLeaf),
-                                    Height = 64,
-                                    Width = 64
-                                },
-                                new NuiText(text: MonkPathNuiElements.FloatingLeafDescription)
-                                {
-                                    Border = false,
-                                    Scrollbars = NuiScrollbars.None
-                                }
-                            }
-                        },
-
-                        new NuiRow
-                        {
-                            Children =
-                            {
-                                new NuiButtonImage(MonkPathNuiElements.IroncladBullIcon)
-                                {
-                                    Id = nameof(PathType.IroncladBull),
-                                    Height = 64,
-                                    Width = 64
-                                },
-                                new NuiText(text: MonkPathNuiElements.IroncladBullDescription)
-                                {
-                                    Border = false,
-                                    Scrollbars = NuiScrollbars.None
-                                }
-                            }
-                        },
-
-                        new NuiRow
-                        {
-                            Children =
-                            {
-                                new NuiButtonImage(MonkPathNuiElements.SplinteredChaliceIcon)
-                                {
-                                    Id = nameof(PathType.SplinteredChalice),
-                                    Height = 64,
-                                    Width = 64
-                                },
-                                new NuiText(text: MonkPathNuiElements.SplinteredChaliceDescription)
-                                {
-                                    Border = false,
-                                    Scrollbars = NuiScrollbars.None
-                                }
-                            }
-                        },
-
-                        new NuiRow
-                        {
-                            Children =
-                            {
-                                new NuiButtonImage(MonkPathNuiElements.SwingingCenserIcon)
-                                {
-                                    Id = nameof(PathType.SwingingCenser),
-                                    Height = 64,
-                                    Width = 64
-                                },
-                                new NuiText(text: MonkPathNuiElements.SwingingCenserDescription)
-                                {
-                                    Border = false,
-                                    Scrollbars = NuiScrollbars.None
-                                }
-                            }
-                        }
-                    }
+                    Children = Model.Paths
+                        .Select(p => CreatePathRow(p.Type, p.Icon, p.Description))
+                        .Cast<NuiElement>()
+                        .ToList()
                 },
 
                 new NuiColumn
@@ -210,4 +96,30 @@ public sealed class MonkPathView : ScryView<MonkPathPresenter>
                 }
             }
         };
+
+    private static NuiRow CreatePathRow(PathType type, string icon, string description)
+    {
+        NuiBind<bool> glowBind = new($"glow_{type}");
+
+        return new NuiRow
+        {
+            Children =
+            {
+                new NuiButtonImage(icon)
+                {
+                    Id = type.ToString(),
+                    Height = 64,
+                    Width = 64,
+                    Encouraged = glowBind
+                },
+                new NuiText(description)
+                {
+                    Height = 64,
+                    Width = 400,
+                    Border = false,
+                    Scrollbars = NuiScrollbars.None
+                }
+            }
+        };
+    }
 }
