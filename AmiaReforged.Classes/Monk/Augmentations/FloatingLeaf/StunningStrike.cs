@@ -23,8 +23,9 @@ public class StunningStrike : IAugmentation.IDamageAugment
     {
         SavingThrowResult stunningStrikeResult = Techniques.Attack.StunningStrike.DoStunningStrike(damageData);
 
-        if (damageData.Target is not NwCreature targetCreature ||
-            damageData.DamagedBy is not NwCreature monk || stunningStrikeResult != SavingThrowResult.Immune)
+        if (damageData.Target is not NwCreature targetCreature
+            || damageData.DamagedBy is not NwCreature monk
+            || stunningStrikeResult != SavingThrowResult.Immune)
             return;
 
         Effect? stunningEffect = MonkUtils.GetKiFocus(monk) switch
