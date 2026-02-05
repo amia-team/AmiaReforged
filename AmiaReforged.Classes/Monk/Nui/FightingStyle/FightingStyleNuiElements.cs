@@ -8,6 +8,6 @@ public static class FightingStyleNuiElements
     public const string DisarmStyleName = "Grabbing Monkey";
     public const string DisarmStyleDescription = "Learn Improved Disarm";
 
-    public const string RangedStyleName = "Leaping Manticore";
-    public const string RangedStyleDescription = "Learn Mobility and Called Shot";
+    public const string RangedStyleName = "Seeking Falcon";
+    public const string RangedStyleDescription = "Learn Zen Archery and Called Shot";
 }

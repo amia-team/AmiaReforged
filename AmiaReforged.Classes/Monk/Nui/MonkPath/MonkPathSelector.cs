@@ -1,12 +1,11 @@
 ﻿using AmiaReforged.Classes.Monk.Constants;
-using AmiaReforged.Classes.Monk.Nui.MonkPath;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core.NWNX;
 
-namespace AmiaReforged.Classes.Monk.Services;
+namespace AmiaReforged.Classes.Monk.Nui.MonkPath;
 
 [ServiceBinding(typeof(MonkPathSelector))]
 public class MonkPathSelector
@@ -20,10 +19,10 @@ public class MonkPathSelector
         string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
         if (environment == "live") return;
 
-        NwModule.Instance.OnUseFeat += OpenPathSelectorWindow;
+        NwModule.Instance.OnUseFeat += OpenPathSelectionWindow;
     }
 
-    private void OpenPathSelectorWindow(OnUseFeat eventData)
+    private void OpenPathSelectionWindow(OnUseFeat eventData)
     {
         if (eventData.Feat.Id is not MonkFeat.PoeBase) return;
         if (!eventData.Creature.IsPlayerControlled(out NwPlayer? player)) return;

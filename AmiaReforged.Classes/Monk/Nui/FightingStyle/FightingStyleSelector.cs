@@ -1,12 +1,11 @@
 ﻿using AmiaReforged.Classes.Monk.Constants;
-using AmiaReforged.Classes.Monk.Nui.FightingStyle;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core.NWNX;
 
-namespace AmiaReforged.Classes.Monk.Services;
+namespace AmiaReforged.Classes.Monk.Nui.FightingStyle;
 
 [ServiceBinding(typeof(FightingStyleSelector))]
 public class FightingStyleSelector
@@ -20,10 +19,10 @@ public class FightingStyleSelector
         string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
         if (environment == "live") return;
 
-        NwModule.Instance.OnUseFeat += OpenPathSelectorWindow;
+        NwModule.Instance.OnUseFeat += OpenFightingStyleSelectionWindow;
     }
 
-    private void OpenPathSelectorWindow(OnUseFeat eventData)
+    private void OpenFightingStyleSelectionWindow(OnUseFeat eventData)
     {
         if (eventData.Feat.Id is not MonkFeat.MonkFightingStyle) return;
         if (!eventData.Creature.IsPlayerControlled(out NwPlayer? player)) return;

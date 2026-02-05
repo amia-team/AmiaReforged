@@ -1,4 +1,5 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿using AmiaReforged.Classes.Monk.Constants;
+using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 using static AmiaReforged.Classes.Monk.Nui.FightingStyle.FightingStyleNuiElements;
@@ -17,7 +18,7 @@ public sealed class FightingStylePresenter(FightingStyleView view, NwPlayer play
     {
         { KnockdownStyleName, [NwFeat.FromFeatType(Feat.Knockdown)!, NwFeat.FromFeatType(Feat.ImprovedKnockdown)!] },
         { DisarmStyleName, [NwFeat.FromFeatType(Feat.Disarm)!, NwFeat.FromFeatType(Feat.ImprovedDisarm)!] },
-        { RangedStyleName, [NwFeat.FromFeatType(Feat.CalledShot)!, NwFeat.FromFeatType(Feat.Mobility)!] }
+        { RangedStyleName, [NwFeat.FromFeatType(Feat.CalledShot)!, NwFeat.FromFeatType(Feat.ZenArchery)!] }
     };
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
@@ -48,8 +49,19 @@ public sealed class FightingStylePresenter(FightingStyleView view, NwPlayer play
         NwCreature? monk = player.ControlledCreature;
         if (monk == null) return;
 
+        NwFeat? fightingStyleFeat = monk.Feats.FirstOrDefault(f => f.Id == MonkFeat.MonkFightingStyle);
+        if (fightingStyleFeat == null)
+        {
+            player.SendServerMessage("Could not find the feat required to open the selection window!");
+            return;
+        }
+
         byte monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
-        if (monkLevel < 6) return;
+        if (monkLevel < 6)
+        {
+            player.SendServerMessage("You need to be level 6 to learn your Fighting Style.");
+            return;
+        }
 
         if (featsToAdd.Any(f => monk.KnowsFeat(f)))
         {
@@ -68,6 +80,8 @@ public sealed class FightingStylePresenter(FightingStyleView view, NwPlayer play
         RaiseCloseEvent();
 
         player.FloatingTextString($"Added feats {featsToAdd[0].Name} and {featsToAdd[1].Name}", false);
+
+        monk.RemoveFeat(fightingStyleFeat, true);
     }
 
     private bool HasMonkFightingStyle(NwCreature monk)
