@@ -42,8 +42,7 @@ public sealed class SimplePopupView : ScryView<SimplePopupPresenter>
                 {
                     Element = new NuiText(_message)
                     {
-                        Scrollbars = NuiScrollbars.Auto,
-                        ForegroundColor = new Color(50, 40, 30)
+                        Scrollbars = NuiScrollbars.Auto
                     },
                     Border = true,
                     Width = 300,

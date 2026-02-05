@@ -47,7 +47,20 @@ public static class ItemTypeConstants
         NWScript.BASE_ITEM_TRIDENT,
         NWScript.BASE_ITEM_WARHAMMER,
         NWScript.BASE_ITEM_WHIP,
-        NWScript.BASE_ITEM_MAGICSTAFF
+        NWScript.BASE_ITEM_MAGICSTAFF,
+        116, // Tools, Right
+        117, // Holdable Chair
+        204, // Baby, etc.
+        208, // Hand Flower
+        209, // Hand Bouquet
+        210, // Crystal Flower
+        211, // Crystal Bouquet
+        212, // Drinks/Quill
+        213, // Tools, Trade
+        214, // Tome, Light
+        215, // Tome, Dark
+        219, // Pipes, Spyglass
+        221  // Play Cards
     ];
 
     public static List<int> Melee2HWeapons() =>
@@ -61,7 +74,9 @@ public static class ItemTypeConstants
         NWScript.BASE_ITEM_DOUBLEAXE,
         NWScript.BASE_ITEM_SCYTHE,
         NWScript.BASE_ITEM_SHORTSPEAR,
-        NWScript.BASE_ITEM_QUARTERSTAFF
+        NWScript.BASE_ITEM_QUARTERSTAFF,
+        114, // Tools, Pole
+        220 // 2H Magic Staff
     ];
 
     public static List<int> ThrownWeapons() =>
@@ -105,6 +120,13 @@ public static class ItemTypeConstants
         // NWScript.BASE_ITEM_MAGICSTAFF, SPECIAL CASE, HANDLED SEPARATELY
         NWScript.BASE_ITEM_RING,
         NWScript.BASE_ITEM_SMALLSHIELD,
-        NWScript.BASE_ITEM_TOWERSHIELD
+        NWScript.BASE_ITEM_TOWERSHIELD,
+        // Custom Equippable items that are not weapons
+        93,  // Trumpet
+        15,  // Torch
+        94,  // Moon On A Stick
+        113, // Tools, Left
+        222, // Focus
+        223  // Umbrella
     ];
 }

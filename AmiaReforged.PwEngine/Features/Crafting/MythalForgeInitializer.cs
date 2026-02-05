@@ -2,12 +2,10 @@
 using AmiaReforged.PwEngine.Features.Crafting.Nui.DmForge;
 using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
-using AmiaReforged.PwEngine.Features.WindowingSystem.Scry.GenericWindows;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core;
-using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Features.Crafting;
 
@@ -272,13 +270,8 @@ public class MythalForgeInitializer
             !_propertyData.Properties.TryGetValue(baseItemType, out IReadOnlyList<CraftingCategory>? categories);
         if (itemListingNotFound)
         {
-            GenericWindow.Builder()
-                .For()
-                .SimplePopup()
-                .WithPlayer(obj.Player)
-                .WithTitle(title: "Mythal Forge: Notice")
-                .WithMessage(message: "Item not supported by Mythal forge")
-                .Open();
+            ForgeNoticeView noticeWindow = new(obj.Player, "Mythal Forge: Notice", "Item not supported by Mythal forge");
+            _windowSystem.OpenWindow(noticeWindow.Presenter);
 
             obj.Player.OnPlayerTarget -= ValidateAndSelectPlayer;
 
@@ -291,28 +284,16 @@ public class MythalForgeInitializer
 
         if (item.Possessor != null && item.Possessor.ObjectId != obj.Player.LoginCreature.ObjectId)
         {
-            GenericWindow.Builder()
-                .For()
-                .SimplePopup()
-                .WithPlayer(obj.Player)
-                .WithTitle(title: "Mythal Forge: Notice")
-                .WithMessage(message: "That doesn't belong to you. Pick an item from your inventory.")
-                .Open();
+            ForgeNoticeView ownershipNotice = new(obj.Player, "Mythal Forge: Notice", "That doesn't belong to you. Pick an item from your inventory.");
+            _windowSystem.OpenWindow(ownershipNotice.Presenter);
             obj.Player.OpenInventory();
             return;
         }
 
         if (categories == null)
         {
-            GenericWindow.Builder()
-                .For()
-                .SimplePopup()
-                .WithPlayer(obj.Player)
-                .WithTitle(title: "Mythal Forge: Error")
-                .WithMessage(
-                    message:
-                    "Item supported by the Mythal forge, but has no properties. This is a bug and should be reported.")
-                .Open();
+            ForgeNoticeView errorNotice = new(obj.Player, "Mythal Forge: Error", "Item supported but has no properties. This is a bug.", isError: true);
+            _windowSystem.OpenWindow(errorNotice.Presenter);
 
             obj.Player.OnPlayerTarget -= ValidateAndSelectPlayer;
             NWScript.DeleteLocalString(obj.Player.LoginCreature, LvarTargetingMode);
