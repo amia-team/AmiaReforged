@@ -122,7 +122,7 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
             }
             else if (isCleric && !hasDomainMatch)
             {
-                Token().SetBindValue(View.AlignmentStatus, "Clerics must have at least one matching domain.");
+                Token().SetBindValue(View.AlignmentStatus, "Clerics must have both domains match this deity.");
                 Token().SetBindValue(View.AlignmentStatusColor, ColorConstants.Maroon);
             }
             else
@@ -201,7 +201,7 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
         int clericLevels = NWScript.GetLevelByClass(NWScript.CLASS_TYPE_CLERIC, creature);
         if (clericLevels > 0 && !HasMatchingDomain(creature))
         {
-            return "Clerics must have at least one matching domain.";
+            return "Clerics must have both domains match this deity.";
         }
 
         // Default tooltip when enabled
@@ -240,10 +240,10 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
                 return;
             }
 
-            // Clerics must have at least one matching domain
+            // Clerics must have both domains matching
             if (NWScript.GetLevelByClass(NWScript.CLASS_TYPE_CLERIC, creature) > 0 && !HasMatchingDomain(creature))
             {
-                _player.SendServerMessage("Clerics must have at least one matching domain!", ColorConstants.Orange);
+                _player.SendServerMessage("Clerics must have both domains match the deity!", ColorConstants.Orange);
                 return;
             }
         }
@@ -331,7 +331,7 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
                 return false;
             }
 
-            // Clerics must have at least one matching domain
+            // Clerics must have both domains matching
             int clericLevels = NWScript.GetLevelByClass(NWScript.CLASS_TYPE_CLERIC, creature);
             if (clericLevels > 0 && !HasMatchingDomain(creature))
             {
@@ -351,18 +351,49 @@ public sealed class DeitySelectionPresenter : ScryPresenter<DeitySelectionView>
         int pcDomain1 = NWScript.GetDomain(creature, 1);
         int pcDomain2 = NWScript.GetDomain(creature, 2);
 
-        // Check if either domain matches any of the idol's domains
+        // Both domains must match the deity's domains
+        bool domain1Matches = false;
+        bool domain2Matches = false;
+
+        // Collect all idol domains
+        List<int> idolDomains = new();
+
         for (int i = 1; i <= 6; i++)
         {
             int idolDomain = NWScript.GetLocalInt(_idol, $"dom_{i}");
-
-            if (pcDomain1 == idolDomain || pcDomain2 == idolDomain)
+            if (idolDomain > 0)
             {
-                return true;
+                idolDomains.Add(idolDomain);
+            }
+            else if (idolDomain == 0 && i == 1)
+            {
+                // Check if any other domain is set to know if Air (ID 0) is intentionally set
+                for (int j = 2; j <= 6; j++)
+                {
+                    if (NWScript.GetLocalInt(_idol, $"dom_{j}") > 0)
+                    {
+                        idolDomains.Add(0); // Add Air domain
+                        break;
+                    }
+                }
             }
         }
 
-        return false;
+        // Check if each PC domain matches any idol domain
+        foreach (int idolDomain in idolDomains)
+        {
+            if (pcDomain1 == idolDomain)
+            {
+                domain1Matches = true;
+            }
+            if (pcDomain2 == idolDomain)
+            {
+                domain2Matches = true;
+            }
+        }
+
+        // Both domains must match
+        return domain1Matches && domain2Matches;
     }
 
     private bool MatchAlignment(NwCreature creature)

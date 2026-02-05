@@ -160,13 +160,13 @@ public class PrayerService
             return;
         }
 
-        // Clerics must have at least one matching domain
+        // Clerics must have both domains matching the deity
         if (clericLevels > 0)
         {
             bool hasMatchingDomain = HasMatchingDomain(creature, idol);
             if (!hasMatchingDomain)
             {
-                MakeFallen(player, creature, idol, deity, $"None of your Domains match {deity}'s Domains!");
+                MakeFallen(player, creature, idol, deity, $"Both of your Domains must match {deity}'s Domains!");
                 return;
             }
         }
@@ -396,37 +396,49 @@ public class PrayerService
         int pcDomain1 = NWScript.GetDomain(creature);
         int pcDomain2 = NWScript.GetDomain(creature, 2);
 
-        // Check if either domain matches any of the idol's domains
+        // Both domains must match the deity's domains
+        bool domain1Matches = false;
+        bool domain2Matches = false;
+
+        // Collect all idol domains
+        List<int> idolDomains = new();
+
         for (int i = 1; i <= 6; i++)
         {
             int idolDomain = NWScript.GetLocalInt(idol, $"dom_{i}");
-
-            if ((pcDomain1 > 0 && pcDomain1 == idolDomain) || (pcDomain2 > 0 && pcDomain2 == idolDomain))
+            if (idolDomain > 0)
             {
-                return true;
+                idolDomains.Add(idolDomain);
             }
-
-            // Also check for Air domain (ID 0) - need to verify it's intentionally set
-            if (idolDomain == 0 && i == 1)
+            else if (idolDomain == 0 && i == 1)
             {
-                // Check if any other domain is set to know if this idol has domains configured
-                bool hasOtherDomains = false;
+                // Check if any other domain is set to know if Air (ID 0) is intentionally set
                 for (int j = 2; j <= 6; j++)
                 {
                     if (NWScript.GetLocalInt(idol, $"dom_{j}") > 0)
                     {
-                        hasOtherDomains = true;
+                        idolDomains.Add(0); // Add Air domain
                         break;
                     }
-                }
-                if (hasOtherDomains && (pcDomain1 == 0 || pcDomain2 == 0))
-                {
-                    return true;
                 }
             }
         }
 
-        return false;
+        // Check if each PC domain matches any idol domain
+        foreach (int idolDomain in idolDomains)
+        {
+            if (pcDomain1 == idolDomain)
+            {
+                domain1Matches = true;
+            }
+            if (pcDomain2 == idolDomain)
+            {
+                domain2Matches = true;
+            }
+        }
+
+        // Both domains must match
+        return domain1Matches && domain2Matches;
     }
 
     private NwPlaceable? FindIdol(string godName)
