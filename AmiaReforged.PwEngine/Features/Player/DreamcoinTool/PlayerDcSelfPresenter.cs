@@ -53,6 +53,8 @@ public sealed class PlayerDcSelfPresenter : ScryPresenter<PlayerDcSelfView>
         int balance = await _dreamcoinService.GetDreamcoins(_player.CDKey);
         await NwTask.SwitchToMainThread();
 
+        Log.Info($"RefreshDisplay for {_player.CDKey}: showing balance={balance}");
+
         NwCreature? creature = _player.LoginCreature;
         int level = creature?.Level ?? 1;
         int gold = 1500 * level;

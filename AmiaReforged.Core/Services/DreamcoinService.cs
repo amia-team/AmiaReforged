@@ -33,10 +33,14 @@ public class DreamcoinService
         try
         {
             DreamcoinRecord? record = await context.DreamcoinRecords
+                .AsNoTracking()
                 .FirstOrDefaultAsync(r => r.CdKey == cdKey);
 
+            int balance = record?.Amount ?? 0;
+            Log.Info($"GetDreamcoins for {cdKey}: balance={balance}");
+
             await NwTask.SwitchToMainThread();
-            return record?.Amount ?? 0;
+            return balance;
         }
         catch (Exception e)
         {
@@ -137,7 +141,7 @@ public class DreamcoinService
 
             int currentAmount = record.Amount ?? 0;
             int newAmount = currentAmount - amount;
-            
+
             if (newAmount < 0)
             {
                 Log.Warn($"Cannot remove {amount} Dreamcoins from {cdKey}, only has {currentAmount}.");
