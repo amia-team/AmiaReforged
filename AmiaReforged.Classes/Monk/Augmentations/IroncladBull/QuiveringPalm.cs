@@ -37,7 +37,7 @@ public class QuiveringPalm : IAugmentation.ICastAugment
             return;
         }
 
-        Effect quiveringEffect = Effect.LinkEffects(Effect.CutsceneParalyze(),
+        Effect quiveringEffect = Effect.LinkEffects(Effect.Petrify(),
             Effect.VisualEffect(VfxType.DurStonehold));
 
         TimeSpan quiveringDuration = MonkUtils.GetKiFocus(monk) switch
