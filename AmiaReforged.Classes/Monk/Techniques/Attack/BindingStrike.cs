@@ -28,31 +28,34 @@ public class BindingStrike(AugmentationFactory augmentationFactory) : IDamageTec
 
         return;
 
-        void BaseTechnique() => DoBindingStrike(damageData);
+        void BaseTechnique() => DoBindingStrike(monk, damageData);
 
     }
 
-    public static SavingThrowResult DoBindingStrike(OnCreatureDamage damageData)
+    public static SavingThrowResult DoBindingStrike(NwCreature monk, OnCreatureDamage damageData)
     {
-        if (damageData.Target is not NwCreature targetCreature || damageData.DamagedBy is not NwCreature monk)
+        if (damageData.Target is not NwCreature targetCreature)
             return SavingThrowResult.Immune;
 
         Effect bindingStrikeEffect = Effect.LinkEffects(
-            Effect.Stunned(),
-            Effect.VisualEffect(VfxType.DurCessateNegative)
+            Effect.Paralyze(),
+            Effect.VisualEffect(VfxType.DurParalyzeHold),
+            Effect.VisualEffect(VfxType.DurFreezeAnimation)
         );
-
+        bindingStrikeEffect.IgnoreImmunity = true; // default paralysis fails against mind immune
         bindingStrikeEffect.SubType = EffectSubType.Extraordinary;
 
         int dc = MonkUtils.CalculateMonkDc(monk);
+
+        // since we bypass the mind immunity by ignoring immunity, check again here for paralysis immunity
+        if (targetCreature.IsImmuneTo(ImmunityType.Paralysis))
+            return SavingThrowResult.Immune;
 
         SavingThrowResult savingThrowResult =
             targetCreature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.None, monk);
 
         switch (savingThrowResult)
         {
-            case SavingThrowResult.Immune:
-                break;
             case SavingThrowResult.Failure:
                 targetCreature.ApplyEffect(EffectDuration.Temporary, bindingStrikeEffect, NwTimeSpan.FromRounds(1));
                 break;
