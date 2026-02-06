@@ -24,4 +24,5 @@ public static class MonkFeat
     public const int PoeFloatingLeaf = 1366;
     public const int WholenessOfBodyNew = 1364;
     public const int EmptyBodyNew = 1365;
+    public const int CircleKickNew = 1368;
 }
