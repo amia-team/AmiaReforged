@@ -56,7 +56,7 @@ public static class MonkPathNuiElements
         "Eagle Strike: Inflicts -1 physical damage penalty on the enemy. Each Ki Focus adds -1." +
         "\n\nWholeness of Body: Heals an additional 20 HP and converts excess healing into temporary HP. Each Ki Focus adds +20 healing." +
         "\n\nKi Barrier: Grants 6/- Physical Damage Resistance. Each Ki Focus adds +3." +
-        "\n\nQuivering Palm: Binds the target with Stonehold for 1 round (reflex negates). Each Ki Focus adds +1 round.";
+        "\n\nQuivering Palm: Petrifies the target for 1 round (reflex negates). Each Ki Focus adds +1 round.";
 
     public const string SplinteredChaliceDescription =
         "Splintered Chalice: Like sunlight piercing the canopy, the monk radiates an overflow of Ki through their wounds and scars.";

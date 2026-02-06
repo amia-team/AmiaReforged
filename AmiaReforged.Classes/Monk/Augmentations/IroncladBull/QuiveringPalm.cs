@@ -16,7 +16,7 @@ public class QuiveringPalm : IAugmentation.ICastAugment
     }
 
     /// <summary>
-    /// Quivering Palm binds the target with Stonehold for one round if they fail a reflex saving throw.
+    /// Quivering Palm petrifies the target for one round if they fail a reflex saving throw.
     /// Each Ki Focus increases the duration by one round, to a maximum of four rounds.
     /// </summary>
     private static void AugmentQuiveringPalm(NwCreature monk, OnSpellCast castData)
