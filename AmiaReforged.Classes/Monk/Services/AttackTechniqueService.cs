@@ -80,17 +80,15 @@ public class AttackTechniqueService
     {
         string? newTechniqueTag = Enum.GetName((TechniqueType)techniqueId);
 
-        Effect? activeTechnique = GetActiveTechniqueEffect(monk);
-
-        // If the old technique was the same as the new one, we're just toggling it off.
-        if (activeTechnique is { Tag: { } tag } && tag == newTechniqueTag)
+        foreach (Effect effect in monk.ActiveEffects)
         {
-            monk.RemoveEffect(activeTechnique);
-            return;
-        }
+            if (effect.Tag is BindingTag or EagleTag or AxiomaticTag)
+                monk.RemoveEffect(effect);
 
-        if (activeTechnique != null)
-            monk.RemoveEffect(activeTechnique);
+            // if the same technique is being activated again, then just deactivate and return
+            if (effect.Tag == newTechniqueTag)
+                return;
+        }
 
         Effect newTechnique = Effect.VisualEffect(VfxType.None);
         newTechnique.SubType = EffectSubType.Unyielding;
@@ -157,10 +155,11 @@ public class AttackTechniqueService
 
     private void OnDamageApplyTechnique(OnCreatureDamage damageData)
     {
-        if (damageData.DamagedBy is not NwCreature monk || !monk.KnowsFeat(BindingStrikeFeat!)) return;
-        if (!monk.ActiveEffects.Any(effect => effect.Tag is BindingTag or EagleTag))
-            return;
-        if (monk.ActiveEffects.Any(effect => effect.Tag is AttackCooldownTag))
+        if (damageData.DamagedBy is not NwCreature monk
+            || !monk.KnowsFeat(BindingStrikeFeat!)
+            || damageData.Target == monk
+            || !monk.ActiveEffects.Any(effect => effect.Tag is BindingTag or EagleTag)
+            || monk.ActiveEffects.Any(effect => effect.Tag is AttackCooldownTag))
             return;
 
         string? techniqueTag = GetActiveTechniqueEffect(monk)?.Tag;

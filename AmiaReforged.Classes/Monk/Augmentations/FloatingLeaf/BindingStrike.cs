@@ -12,19 +12,18 @@ public class BindingStrike : IAugmentation.IDamageAugment
     public TechniqueType Technique => TechniqueType.BindingStrike;
     public void ApplyDamageAugmentation(NwCreature monk, OnCreatureDamage damageData, BaseTechniqueCallback baseTechnique)
     {
-        AugmentBindingStrike(damageData);
+        AugmentBindingStrike(monk, damageData);
     }
 
     /// <summary>
     /// Binding Strike does weaker effects if the target is immune to stun. Ki Focus I pacifies (making the
     /// target unable to attack), Ki Focus II dazes, and Ki Focus III paralyzes the target.
     /// </summary>
-    private static void AugmentBindingStrike(OnCreatureDamage damageData)
+    private static void AugmentBindingStrike(NwCreature monk, OnCreatureDamage damageData)
     {
-        SavingThrowResult bindingStrikeResult = Techniques.Attack.BindingStrike.DoBindingStrike(damageData);
+        SavingThrowResult bindingStrikeResult = Techniques.Attack.BindingStrike.DoBindingStrike(monk, damageData);
 
         if (damageData.Target is not NwCreature targetCreature
-            || damageData.DamagedBy is not NwCreature monk
             || bindingStrikeResult != SavingThrowResult.Immune)
             return;
 
