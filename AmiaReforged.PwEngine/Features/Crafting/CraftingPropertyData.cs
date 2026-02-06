@@ -98,7 +98,7 @@ public class CraftingPropertyData
                     },
                     new CraftingProperty
                     {
-                        PowerCost = 1,
+                        PowerCost = 2,
                         ItemProperty = NWScript.ItemPropertyACBonus(4)!,
                         GuiLabel = "+4 Armor Class",
                         CraftingTier = CraftingTier.Greater,
@@ -106,7 +106,7 @@ public class CraftingPropertyData
                     },
                     new CraftingProperty
                     {
-                        PowerCost = 2,
+                        PowerCost = 3,
                         ItemProperty = NWScript.ItemPropertyACBonus(5)!,
                         GuiLabel = "+5 Armor Class",
                         CraftingTier = CraftingTier.Flawless,
