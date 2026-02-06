@@ -189,7 +189,7 @@ public class LootGenerationService : ILootGenerator
         // Notify player of loot
         if (generatedItems.Count > 0 && resolvedKiller is NwCreature notifyCreature)
         {
-            NWScript.FloatingTextStringOnCreature("<c�  >Your defeated foe drops some loot!</c>", notifyCreature);
+            NWScript.FloatingTextStringOnCreature("<c¥  >Your defeated foe drops some loot!</c>", notifyCreature);
         }
 
         return new LootGenerationResult
