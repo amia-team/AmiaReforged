@@ -3011,6 +3011,73 @@ public class PrayerService
         illusion.Description = creature.Description;
         illusion.PortraitResRef = creature.PortraitResRef;
 
+        // Copy creature appearance type
+        NWScript.SetCreatureAppearanceType(illusion, NWScript.GetAppearanceType(creature));
+
+        // Copy visual transform (scale)
+        float scale = NWScript.GetObjectVisualTransform(creature, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE);
+        NWScript.SetObjectVisualTransform(illusion, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scale);
+
+        // Copy head model
+        NWScript.SetCreatureBodyPart(NWScript.CREATURE_PART_HEAD, NWScript.GetCreatureBodyPart(NWScript.CREATURE_PART_HEAD, creature), illusion);
+
+        // Copy colors
+        NWScript.SetColor(illusion, NWScript.COLOR_CHANNEL_SKIN, NWScript.GetColor(creature, NWScript.COLOR_CHANNEL_SKIN));
+        NWScript.SetColor(illusion, NWScript.COLOR_CHANNEL_HAIR, NWScript.GetColor(creature, NWScript.COLOR_CHANNEL_HAIR));
+        NWScript.SetColor(illusion, NWScript.COLOR_CHANNEL_TATTOO_1, NWScript.GetColor(creature, NWScript.COLOR_CHANNEL_TATTOO_1));
+        NWScript.SetColor(illusion, NWScript.COLOR_CHANNEL_TATTOO_2, NWScript.GetColor(creature, NWScript.COLOR_CHANNEL_TATTOO_2));
+
+        // Copy soundset
+        NWScript.SetSoundset(illusion, NWScript.GetSoundset(creature));
+
+        // Copy wings if present
+        int wings = NWScript.GetCreatureWingType(creature);
+        if (wings != NWScript.CREATURE_WING_TYPE_NONE)
+        {
+            NWScript.SetCreatureWingType(wings, illusion);
+        }
+
+        // Copy tail if present
+        int tail = NWScript.GetCreatureTailType(creature);
+        if (tail != NWScript.CREATURE_TAIL_TYPE_NONE)
+        {
+            NWScript.SetCreatureTailType(tail, illusion);
+        }
+
+        // Copy body parts if they differ from default (1)
+        int[] bodyParts = [
+            NWScript.CREATURE_PART_LEFT_BICEP,
+            NWScript.CREATURE_PART_LEFT_FOREARM,
+            NWScript.CREATURE_PART_LEFT_HAND,
+            NWScript.CREATURE_PART_RIGHT_BICEP,
+            NWScript.CREATURE_PART_RIGHT_FOREARM,
+            NWScript.CREATURE_PART_RIGHT_HAND,
+            NWScript.CREATURE_PART_LEFT_THIGH,
+            NWScript.CREATURE_PART_LEFT_SHIN,
+            NWScript.CREATURE_PART_LEFT_FOOT,
+            NWScript.CREATURE_PART_RIGHT_THIGH,
+            NWScript.CREATURE_PART_RIGHT_SHIN,
+            NWScript.CREATURE_PART_RIGHT_FOOT
+        ];
+
+        foreach (int part in bodyParts)
+        {
+            int partAppearance = NWScript.GetCreatureBodyPart(part, creature);
+            if (partAppearance != 1)
+            {
+                NWScript.SetCreatureBodyPart(part, partAppearance, illusion);
+            }
+        }
+
+        // Copy any permanent VFX from the cleric
+        foreach (Effect effect in creature.ActiveEffects)
+        {
+            if (effect.EffectType == EffectType.VisualEffect && effect.DurationType == EffectDuration.Permanent)
+            {
+                illusion.ApplyEffect(EffectDuration.Permanent, effect);
+            }
+        }
+
         // Adjust challenge rating to match cleric level
         illusion.ChallengeRating = clericLevel;
 
@@ -3152,15 +3219,7 @@ public class PrayerService
         {
             InventorySlot.Head,
             InventorySlot.Chest,
-            InventorySlot.Boots,
-            InventorySlot.Arms,
-            InventorySlot.RightHand,
-            InventorySlot.LeftHand,
-            InventorySlot.Cloak,
-            InventorySlot.Belt,
-            InventorySlot.Neck,
-            InventorySlot.RightRing,
-            InventorySlot.LeftRing
+            InventorySlot.Cloak
         };
 
         foreach (InventorySlot slot in slots)
