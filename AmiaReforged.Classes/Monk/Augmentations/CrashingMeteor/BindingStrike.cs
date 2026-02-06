@@ -7,24 +7,24 @@ using static AmiaReforged.Classes.Monk.Augmentations.CrashingMeteor.CrashingMete
 namespace AmiaReforged.Classes.Monk.Augmentations.CrashingMeteor;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class StunningStrike : IAugmentation.IDamageAugment
+public class BindingStrike : IAugmentation.IDamageAugment
 {
     public PathType Path => PathType.CrashingMeteor;
-    public TechniqueType Technique => TechniqueType.StunningStrike;
+    public TechniqueType Technique => TechniqueType.BindingStrike;
 
     public void ApplyDamageAugmentation(NwCreature monk, OnCreatureDamage damageData,
         BaseTechniqueCallback baseTechnique)
     {
         baseTechnique();
-        AugmentStunningStrike(monk, damageData);
+        AugmentBindingStrike(monk, damageData);
     }
 
     /// <summary>
-    ///     Stunning Strike deals 2d6 elemental damage in a large area around the target. The damage isn’t multiplied by
+    ///     Binding Strike deals 2d6 elemental damage in a large area around the target. The damage isn’t multiplied by
     ///     critical hits and a successful reflex save halves the damage. Each Ki Focus adds 2d6 to a maximum of 8d6 elemental
     ///     damage.
     /// </summary>
-    private void AugmentStunningStrike(NwCreature monk, OnCreatureDamage damageData)
+    private void AugmentBindingStrike(NwCreature monk, OnCreatureDamage damageData)
     {
         if (damageData.Target.Location is not { } location) return;
 

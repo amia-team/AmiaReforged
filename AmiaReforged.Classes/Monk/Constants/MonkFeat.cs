@@ -5,7 +5,7 @@ public static class MonkFeat
     public const int KiStrike = 213;
     public const int KiStrike2 = 343;
     public const int KiStrike3 = 344;
-    public const int StunningStrike = 1341;
+    public const int BindingStrike = 1341;
     public const int EagleStrike = 1342;
     public const int AxiomaticStrike = 1343;
     public const int KiBarrier = 1344;

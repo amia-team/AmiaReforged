@@ -21,9 +21,9 @@ public class EagleStrike : IAugmentation.IDamageAugment
     /// </summary>
     private static void AugmentEagleStrike(NwCreature monk, OnCreatureDamage damageData)
     {
-        SavingThrowResult stunningStrikeResult = Techniques.Attack.EagleStrike.DoEagleStrike(monk, damageData);
+        SavingThrowResult bindingStrikeResult = Techniques.Attack.EagleStrike.DoEagleStrike(monk, damageData);
 
-        if (damageData.Target is not NwCreature targetCreature || stunningStrikeResult != SavingThrowResult.Failure)
+        if (damageData.Target is not NwCreature targetCreature || bindingStrikeResult != SavingThrowResult.Failure)
             return;
 
         int abDecrease = MonkUtils.GetKiFocus(monk) switch

@@ -18,11 +18,11 @@ public class AttackTechniqueService
 
     private readonly Effect _attackCooldownEffect = Effect.VisualEffect(VfxType.None);
 
-    private static readonly NwFeat? StunningStrikeFeat = NwFeat.FromFeatId(MonkFeat.StunningStrike);
+    private static readonly NwFeat? BindingStrikeFeat = NwFeat.FromFeatId(MonkFeat.BindingStrike);
 
     private const string AttackCooldownTag = "attack_technique_cooldown";
     private const string AttackTechnique = "attack_technique";
-    private const string StunningTag = nameof(TechniqueType.StunningStrike);
+    private const string BindingTag = nameof(TechniqueType.BindingStrike);
     private const string EagleTag = nameof(TechniqueType.EagleStrike);
     private const string AxiomaticTag = nameof(TechniqueType.AxiomaticStrike);
     private const string EagleStrikeCounter = "eagle_strike_counter";
@@ -51,7 +51,7 @@ public class AttackTechniqueService
     /// </summary>
     private void AttackTechniqueUseFeat(OnUseFeat eventData)
     {
-        if (eventData.Feat.Id is not (MonkFeat.StunningStrike or MonkFeat.EagleStrike or MonkFeat.AxiomaticStrike))
+        if (eventData.Feat.Id is not (MonkFeat.BindingStrike or MonkFeat.EagleStrike or MonkFeat.AxiomaticStrike))
             return;
         if (eventData.Creature.GetClassInfo(ClassType.Monk) is null) return;
 
@@ -104,7 +104,7 @@ public class AttackTechniqueService
     /// </summary>
     private void EnterAttackTechnique(OnCombatRoundStart eventData)
     {
-        if (!eventData.Creature.KnowsFeat(StunningStrikeFeat!)) return;
+        if (!eventData.Creature.KnowsFeat(BindingStrikeFeat!)) return;
 
         NwCreature monk = eventData.Creature;
         LocalVariableInt queuedTechnique = monk.GetObjectVariable<LocalVariableInt>(AttackTechnique);
@@ -134,7 +134,7 @@ public class AttackTechniqueService
     /// </summary>
     private void OnHitApplyAxiomatic(OnCreatureAttack attackData)
     {
-        if (!attackData.Attacker.KnowsFeat(StunningStrikeFeat!)) return;
+        if (!attackData.Attacker.KnowsFeat(BindingStrikeFeat!)) return;
 
         if (attackData.AttackResult is not (AttackResult.Hit or AttackResult.AutomaticHit or AttackResult.CriticalHit
             or AttackResult.DevastatingCritical)) return;
@@ -157,8 +157,8 @@ public class AttackTechniqueService
 
     private void OnDamageApplyTechnique(OnCreatureDamage damageData)
     {
-        if (damageData.DamagedBy is not NwCreature monk || !monk.KnowsFeat(StunningStrikeFeat!)) return;
-        if (!monk.ActiveEffects.Any(effect => effect.Tag is StunningTag or EagleTag))
+        if (damageData.DamagedBy is not NwCreature monk || !monk.KnowsFeat(BindingStrikeFeat!)) return;
+        if (!monk.ActiveEffects.Any(effect => effect.Tag is BindingTag or EagleTag))
             return;
         if (monk.ActiveEffects.Any(effect => effect.Tag is AttackCooldownTag))
             return;
@@ -181,7 +181,7 @@ public class AttackTechniqueService
     {
         switch (techniqueTag)
         {
-            case StunningTag:
+            case BindingTag:
                 monk.ApplyEffect(EffectDuration.Permanent, _attackCooldownEffect);
                 break;
 
@@ -201,7 +201,7 @@ public class AttackTechniqueService
     private static void CueAttackTechniqueActivated(OnEffectApply eventData)
     {
         if (!eventData.Object.IsPlayerControlled(out NwPlayer? player) ||
-            eventData.Effect.Tag is not (StunningTag or EagleTag or AxiomaticTag)) return;
+            eventData.Effect.Tag is not (BindingTag or EagleTag or AxiomaticTag)) return;
 
         player.FloatingTextString($"*{GetSpacedTag(eventData.Effect.Tag)} Activated*", false, false);
     }
@@ -212,7 +212,7 @@ public class AttackTechniqueService
     private static void CueAttackTechniqueDeactivated(OnEffectRemove eventData)
     {
         if (!eventData.Object.IsPlayerControlled(out NwPlayer? player) ||
-            eventData.Effect.Tag is not (StunningTag or EagleTag or AxiomaticTag)) return;
+            eventData.Effect.Tag is not (BindingTag or EagleTag or AxiomaticTag)) return;
 
         player.FloatingTextString($"*{GetSpacedTag(eventData.Effect.Tag)} Deactivated*", false, false);
     }
@@ -221,7 +221,7 @@ public class AttackTechniqueService
     {
         return tag switch
         {
-            StunningTag => "Stunning Strike",
+            BindingTag => "Binding Strike",
             EagleTag    => "Eagle Strike",
             AxiomaticTag => "Axiomatic Strike",
             _ => tag
@@ -252,7 +252,7 @@ public class AttackTechniqueService
     }
 
     private static Effect? GetActiveTechniqueEffect(NwCreature monk) =>
-        monk.ActiveEffects.FirstOrDefault(effect => effect.Tag is StunningTag or EagleTag or AxiomaticTag);
+        monk.ActiveEffects.FirstOrDefault(effect => effect.Tag is BindingTag or EagleTag or AxiomaticTag);
 
     private static void ResetTechniqueCooldownAndCounter(NwCreature monk)
     {

@@ -4,7 +4,7 @@ namespace AmiaReforged.Classes.Monk.Types;
 
 public enum TechniqueType
 {
-    StunningStrike = MonkFeat.StunningStrike,
+    BindingStrike = MonkFeat.BindingStrike,
     EagleStrike = MonkFeat.EagleStrike,
     AxiomaticStrike = MonkFeat.AxiomaticStrike,
     WholenessOfBody = MonkFeat.WholenessOfBodyNew,

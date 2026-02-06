@@ -8,22 +8,22 @@ using NWN.Core.NWNX;
 namespace AmiaReforged.Classes.Monk.Augmentations.EchoingValley;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class StunningStrike : IAugmentation.IDamageAugment
+public class BindingStrike : IAugmentation.IDamageAugment
 {
     public PathType Path => PathType.EchoingValley;
-    public TechniqueType Technique => TechniqueType.StunningStrike;
+    public TechniqueType Technique => TechniqueType.BindingStrike;
 
     public void ApplyDamageAugmentation(NwCreature monk, OnCreatureDamage damageData, BaseTechniqueCallback baseTechnique)
     {
         baseTechnique();
-        AugmentStunningStrike(monk, damageData);
+        AugmentBindingStrike(monk, damageData);
     }
 
     /// <summary>
-    /// Stunning Strike summons an Echo and makes summoned Echoes deal 1d6 sonic damage in a medium radius.
+    /// Binding Strike summons an Echo and makes summoned Echoes deal 1d6 sonic damage in a medium radius.
     /// Echoes last for two turns. Each Ki Focus allows an additional Echo to be summoned.
     /// </summary>
-    private void AugmentStunningStrike(NwCreature monk, OnCreatureDamage damageData)
+    private void AugmentBindingStrike(NwCreature monk, OnCreatureDamage damageData)
     {
         if (damageData.Target is not NwCreature targetCreature
             || !targetCreature.IsReactionTypeHostile(monk)) return;

@@ -7,20 +7,20 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations.SwingingCenser;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class StunningStrike : IAugmentation.IDamageAugment
+public class BindingStrike : IAugmentation.IDamageAugment
 {
     public PathType Path => PathType.SwingingCenser;
-    public TechniqueType Technique => TechniqueType.StunningStrike;
+    public TechniqueType Technique => TechniqueType.BindingStrike;
     public void ApplyDamageAugmentation(NwCreature monk, OnCreatureDamage damageData, BaseTechniqueCallback baseTechnique)
     {
         baseTechnique();
-        AugmentStunningStrike(monk, damageData);
+        AugmentBindingStrike(monk, damageData);
     }
 
     /// <summary>
-    /// Stunning Strike heals the monk or a nearby ally for 1d6 damage. Each Ki Focus heals for an additional 1d6, to a maximum of 4d6 damage.
+    /// Binding Strike heals the monk or a nearby ally for 1d6 damage. Each Ki Focus heals for an additional 1d6, to a maximum of 4d6 damage.
     /// </summary>
-    private static void AugmentStunningStrike(NwCreature monk, OnCreatureDamage damageData)
+    private static void AugmentBindingStrike(NwCreature monk, OnCreatureDamage damageData)
     {
         if (damageData.Target is not NwCreature targetCreature
             || !monk.IsReactionTypeHostile(targetCreature)

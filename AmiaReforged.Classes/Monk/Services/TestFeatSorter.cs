@@ -14,7 +14,7 @@ public class TestFeatSorter
 
     private static readonly Dictionary<int, List<NwFeat?>> MonkFeatsByLevel = new()
     {
-        [2] = [NwFeat.FromFeatId(MonkFeat.StunningStrike)],
+        [2] = [NwFeat.FromFeatId(MonkFeat.BindingStrike)],
         [3] = [NwFeat.FromFeatId(MonkFeat.MonkDefense)],
         [4] = [NwFeat.FromFeatId(MonkFeat.MonkSpeedNew)],
         [5] = [NwFeat.FromFeatId(MonkFeat.EagleStrike)],
