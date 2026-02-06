@@ -3066,6 +3066,7 @@ public class PrayerService
         int appearanceId;
         int alignmentVfxId;
         string alignmentName;
+        int? portraitId = null;
         int portalGoodEvil = NWScript.GetAlignmentGoodEvil(creature);
 
         if (portalGoodEvil == NWScript.ALIGNMENT_GOOD) // Good
@@ -3079,16 +3080,34 @@ public class PrayerService
             appearanceId = 1973;
             alignmentVfxId = 561;
             alignmentName = "Evil";
+            portraitId = 1525;
         }
         else // Neutral
         {
             appearanceId = 1971;
             alignmentVfxId = 559;
             alignmentName = "Neutral";
+            portraitId = 1522;
         }
 
         // Set appearance
         NWScript.SetCreatureAppearanceType(portalCreature, appearanceId);
+
+        // Set portrait if specified
+        if (portraitId.HasValue)
+        {
+            NWScript.SetPortraitId(portalCreature, portraitId.Value);
+        }
+
+        // Adjust alignment based on cleric's alignment
+        if (portalGoodEvil == NWScript.ALIGNMENT_GOOD)
+        {
+            NWScript.AdjustAlignment(portalCreature, NWScript.ALIGNMENT_GOOD, 50, NWScript.FALSE);
+        }
+        else if (portalGoodEvil == NWScript.ALIGNMENT_EVIL)
+        {
+            NWScript.AdjustAlignment(portalCreature, NWScript.ALIGNMENT_EVIL, 50, NWScript.FALSE);
+        }
 
         // Adjust challenge rating based on cleric level
         portalCreature.ChallengeRating = clericLevel;
