@@ -46,7 +46,7 @@ public class EagleStrike(AugmentationFactory augmentationFactory) : IDamageTechn
         SavingThrowResult savingThrowResult =
             targetCreature.RollSavingThrow(SavingThrow.Reflex, dc, SavingThrowType.None, monk);
 
-        if (savingThrowResult == SavingThrowResult.Success)
+        if (savingThrowResult == SavingThrowResult.Failure)
             ApplyEagleStrike(targetCreature);
 
         return savingThrowResult;
