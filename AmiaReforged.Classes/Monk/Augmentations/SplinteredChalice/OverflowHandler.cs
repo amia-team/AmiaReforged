@@ -32,16 +32,27 @@ public class OverflowHandler
         NwCreature? monk = eventData.Caster as NwCreature;
         if (monk == null) return;
 
+        VisualEffectTableEntry? overflowVisual = VfxType.DurProtectionGoodMajor;
+        if (overflowVisual == null)
+        {
+            player.SendServerMessage("Cannot find the vfx for the overflow ability!");
+            return;
+        }
+
         Effect? overflow = monk.ActiveEffects.FirstOrDefault(e => e.Tag == Overflow.EffectTag);
         if (overflow != null)
         {
             monk.RemoveEffect(overflow);
             player.GetLoopingVisualEffects(monk)?
-                .RemoveAll(vfx => vfx.RowIndex == (int)VfxType.DurProtectionGoodMajor);
+                .RemoveAll(vfx => vfx == overflowVisual);
+
+            eventData.PreventSpellCast = true; // This way we don't get the server message "monk embraces pain",
+                                               // when they're doing the opposite
             return;
         }
 
         overflow = GetOverflowEffect(monk);
+        player.AddLoopingVisualEffect(monk, overflowVisual);
         monk.ApplyEffect(EffectDuration.Permanent, overflow);
     }
 
@@ -64,9 +75,6 @@ public class OverflowHandler
             Effect.SavingThrowDecrease(SavingThrow.All, 2)
         );
 
-        overflowEffect.ShowIcon = false;
-
-        overflowEffect = Effect.LinkEffects(overflowEffect, Effect.Icon(EffectIcon.Invulnerable!));
         overflowEffect.SubType = EffectSubType.Extraordinary;
         overflowEffect.Tag = Overflow.EffectTag;
 
