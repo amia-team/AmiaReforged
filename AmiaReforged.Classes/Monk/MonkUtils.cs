@@ -78,18 +78,6 @@ public static class MonkUtils
     }
 
     /// <summary>
-    ///     Sends debug message to player as "DEBUG: {debugString1} {debugString2}", debugString2 is colored
-    /// </summary>
-    public static void MonkDebug(NwPlayer player, string debugString1, string debugString2)
-    {
-        if (!player.IsValid) return;
-        if (player.ControlledCreature is null) return;
-        if (player.ControlledCreature.GetObjectVariable<LocalVariableInt>(name: "monk_debug").Value != 1) return;
-
-        player.SendServerMessage($"DEBUG: {debugString1} {debugString2}");
-    }
-
-    /// <summary>
     /// A helper function for elements monk, gets the elemental type local variable whose value is used to switch the type.
     /// </summary>
     public static LocalVariableEnum<ElementalType> GetElementalTypeVar(NwCreature monk)
@@ -147,21 +135,6 @@ public static class MonkUtils
 
     private static bool HasShield(this NwCreature monk) =>
         monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category == BaseItemCategory.Shield;
-
-    public static bool IsMonkLevel(this NwCreature monk, int minLevel) =>
-        NWScript.GetLevelByClass((int)ClassType.Monk, monk) >= minLevel;
-
-    public static double GetRandomDoubleInRange(double min, double max)
-    {
-        if (min > max)
-        {
-            return 0;
-        }
-
-        Random random = new();
-        double randomDouble = random.NextDouble();
-        return min + randomDouble * (max - min);
-    }
 
     public static async Task GetObjectContext(NwCreature monk, Effect effect)
     {
