@@ -107,22 +107,29 @@ public sealed class FightingStylePresenter(FightingStyleView view, NwPlayer play
 
     private bool HasMonkFightingStyle(NwCreature monk)
     {
-        NwFeat[] level6Feats = monk.LevelInfo[5].Feats.ToArray();
+        int monkLevelCount = 0;
+        CreatureLevelInfo? monkLevelSixInfo = null;
 
-        if (FightingStyleFeats[KnockdownStyleName].All(styleFeat => level6Feats.Any(charFeat => charFeat.Id == styleFeat.Id)))
+        foreach (CreatureLevelInfo levelInfo in monk.LevelInfo)
         {
-            player.SendServerMessage($"You have already selected {KnockdownStyleName} for your Fighting Style.");
-            return true;
+            if (levelInfo.ClassInfo.Class.ClassType != ClassType.Monk) continue;
+
+            monkLevelCount++;
+            if (monkLevelCount != 6) continue;
+
+            monkLevelSixInfo = levelInfo;
+            break;
         }
-        if (FightingStyleFeats[DisarmStyleName].All(styleFeat => level6Feats.Any(charFeat => charFeat.Id == styleFeat.Id)))
+
+        if (monkLevelSixInfo == null) return false;
+
+        foreach (var style in FightingStyleFeats)
         {
-            player.SendServerMessage($"You have already selected {DisarmStyleName} for your Fighting Style.");
-            return true;
-        }
-        if (FightingStyleFeats[RangedStyleName].All(styleFeat => level6Feats.Any(charFeat => charFeat.Id == styleFeat.Id)))
-        {
-            player.SendServerMessage($"You have already selected {RangedStyleName} for your Fighting Style.");
-            return true;
+            if (style.Value.All(styleFeat => monkLevelSixInfo.Feats.Any(f => f.Id == styleFeat.Id)))
+            {
+                monk.ControllingPlayer?.SendServerMessage($"You already selected {style.Key} at Monk Level 6.");
+                return true;
+            }
         }
         return false;
     }
