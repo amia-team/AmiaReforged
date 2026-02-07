@@ -4,7 +4,6 @@ using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
-using NWN.Native.API;
 using ClassType = Anvil.API.ClassType;
 using Feat = Anvil.API.Feat;
 
@@ -12,11 +11,12 @@ namespace AmiaReforged.Classes.Monk.Services;
 
 /// <summary>
 /// This service is meant to do all the feat shuffling for existing monks so they match the current monk feat progression.
-/// For buildy reasons, monks may still want to rebuild.
+/// For buildy reasons, monks may still want to rebuild. Also removes the obsolete POE prestige class.
 /// </summary>
-[ServiceBinding(typeof(MonkFeatSorter))]
-public class MonkFeatSorter
+[ServiceBinding(typeof(MonkValidator))]
+public class MonkValidator
 {
+    private static readonly NwClass? ObsoletePoeClass = NwClass.FromClassId(50);
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     private static readonly Dictionary<int, NwFeat?> MonkFeatsByLevel = new()
@@ -48,10 +48,10 @@ public class MonkFeatSorter
         NwFeat.FromFeatType(Feat.QuiveringPalm)
     ];
 
-    public MonkFeatSorter(EventService eventService)
+    public MonkValidator(EventService eventService)
     {
         eventService.SubscribeAll<OnLoadCharacterFinish, OnLoadCharacterFinish.Factory>(SortFeats, EventCallbackType.After);
-        Log.Info(message: "Monk Feat Sorter Service initialized.");
+        Log.Info(message: "Monk Validator Service initialized.");
     }
 
     private void SortFeats(OnLoadCharacterFinish eventData)
@@ -68,14 +68,21 @@ public class MonkFeatSorter
         PurgeInvalidFeats(monk, totalMonkLevel, removalReport);
 
         int monkLevelCounter = 0;
+        int firstPoeLevel = 0;
         for (int i = 0; i < monk.Level; i++)
         {
             CreatureLevelInfo levelInfo = monk.LevelInfo[i];
+            int currentCharacterLevel = i + 1;
+
+            if (levelInfo.ClassInfo.Class == ObsoletePoeClass && firstPoeLevel == 0)
+            {
+                firstPoeLevel = currentCharacterLevel;
+                RelevelToLastLevelBeforePoe(monk, eventData.Player, currentCharacterLevel);
+            }
+
             if (levelInfo.ClassInfo.Class != NwClass.FromClassType(ClassType.Monk)) continue;
 
             monkLevelCounter++;
-
-            int currentCharacterLevel = i + 1;
 
             CheckStunningFistRemoval(levelInfo, monkLevelCounter, eventData.Player, monk);
             CheckImpKnockdownRemoval(levelInfo, monkLevelCounter, eventData.Player, monk);
@@ -97,6 +104,19 @@ public class MonkFeatSorter
             string addedFeatsString = string.Join("\n", additionReport).ColorString(ColorConstants.Cyan);
             eventData.Player.SendServerMessage($"{messageBase}{addedFeatsString}");
         }
+    }
+
+    private static void RelevelToLastLevelBeforePoe(NwCreature monk, NwPlayer player, int currentCharacterLevel)
+    {
+        int targetLevel = currentCharacterLevel - 1;
+        int targetXp = targetLevel * (targetLevel - 1) * 500;
+        int originalXp = monk.Xp;
+
+        monk.Xp = targetXp;
+        monk.Xp = originalXp;
+
+        player.FloatingTextString("Obsolete Path of Enlightenment prestige class found and removed!",
+            false);
     }
 
     private static void PurgeInvalidFeats(NwCreature monk, int totalMonkLevel, List<string> removalReport)
