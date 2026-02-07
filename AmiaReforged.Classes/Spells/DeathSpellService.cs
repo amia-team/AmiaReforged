@@ -22,6 +22,11 @@ public class DeathSpellService
     public const int FingerOfDeathPercentPerFocus = 8;
 
     /// <summary>
+    /// Deathless Master Touch flat percentage of max health dealt as damage (no spell focus scaling).
+    /// </summary>
+    public const int DeathlessMasterTouchPercent = 40;
+
+    /// <summary>
     /// Gets the number of necromancy spell focus tiers the caster has.
     /// </summary>
     /// <param name="caster">The creature casting the spell</param>
@@ -150,5 +155,68 @@ public class DeathSpellService
         // Check for death immunity effect
         return creature.ActiveEffects.Any(e => e.EffectType == EffectType.Immunity
             && e.IntParams.Contains((int)ImmunityType.Death));
+    }
+
+    /// <summary>
+    /// Calculates flat percentage damage based on target's max health (no spell focus scaling).
+    /// </summary>
+    /// <param name="target">The target creature</param>
+    /// <param name="percent">Flat percentage of max health to deal as damage</param>
+    /// <returns>The amount of negative energy damage to deal</returns>
+    public int CalculateFlatPercentDamage(NwCreature target, int percent)
+    {
+        if (percent <= 0)
+            return 0;
+
+        int maxHealth = target.MaxHP;
+        int damage = (maxHealth * percent) / 100;
+
+        return Math.Max(damage, 1);
+    }
+
+    /// <summary>
+    /// Applies flat percentage-based negative energy damage (no spell focus scaling).
+    /// Undead are healed instead, and death-immune creatures are unaffected.
+    /// </summary>
+    /// <param name="caster">The creature using the ability</param>
+    /// <param name="target">The target creature</param>
+    /// <param name="percent">Flat percentage of max health to deal as damage</param>
+    /// <param name="applyVfx">Whether to apply a visual effect (default true)</param>
+    public void ApplyFlatPercentDamage(NwCreature caster, NwCreature target, int percent, bool applyVfx = true)
+    {
+        // Death immunity negates the effect completely
+        if (IsDeathImmune(target))
+            return;
+
+        // Undead are healed by negative energy
+        if (target.Race.RacialType == RacialType.Undead)
+        {
+            int healing = CalculateFlatPercentDamage(target, percent);
+            if (healing <= 0)
+                return;
+
+            Effect healEffect = Effect.Heal(healing);
+            target.ApplyEffect(EffectDuration.Instant, healEffect);
+
+            if (applyVfx)
+            {
+                Effect healVfx = Effect.VisualEffect(VfxType.ImpHealingM);
+                target.ApplyEffect(EffectDuration.Instant, healVfx);
+            }
+            return;
+        }
+
+        int damage = CalculateFlatPercentDamage(target, percent);
+        if (damage <= 0)
+            return;
+
+        Effect damageEffect = Effect.Damage(damage, DamageType.Negative);
+        target.ApplyEffect(EffectDuration.Instant, damageEffect);
+
+        if (applyVfx)
+        {
+            Effect vfx = Effect.VisualEffect(VfxType.ImpNegativeEnergy);
+            target.ApplyEffect(EffectDuration.Instant, vfx);
+        }
     }
 }
