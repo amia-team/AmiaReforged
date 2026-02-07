@@ -3,26 +3,21 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
-using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Monk.Nui.EyeGlow;
 
 [ServiceBinding(typeof(EyeGlowSelector))]
 public class EyeGlowSelector
 {
-    private readonly Logger _log = LogManager.GetCurrentClassLogger();
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly WindowDirector _windowDirector;
 
     public EyeGlowSelector(WindowDirector windowDirector)
     {
         _windowDirector = windowDirector;
-
-        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
-        if (environment == "live") return;
-
         NwModule.Instance.OnUseFeat += OpenEyeGlowSelectionWindow;
 
-        _log.Info("Monk Eye Glow Selector initialized.");
+        Log.Info("Monk Eye Glow Selector initialized.");
     }
 
     private void OpenEyeGlowSelectionWindow(OnUseFeat eventData)

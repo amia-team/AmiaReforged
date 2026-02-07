@@ -6,7 +6,6 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
-using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Monk.Services;
 
@@ -31,9 +30,6 @@ public class CastTechniqueService
     public CastTechniqueService(TechniqueFactory techniqueFactory)
     {
         _techniqueFactory = techniqueFactory;
-
-        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
-        if (environment == "live") return;
 
         NwModule.Instance.OnSpellCast += CastBodyTechnique;
         Log.Info(message: "Cast Technique Service initialized.");
@@ -67,12 +63,7 @@ public class CastTechniqueService
 
         if (techniqueHandler is ICastTechnique castHandler)
         {
-            Log.Info($"Spell Cast Detected: {castData.Spell?.Name.ToString()}");
             castHandler.HandleCastTechnique(monk, castData);
-        }
-        else
-        {
-            Log.Info($"No Cast Detected: {castData.Spell?.Name.ToString()}");
         }
     }
 

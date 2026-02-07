@@ -15,10 +15,6 @@ public class ElementalTypeToggler
 
     public ElementalTypeToggler()
     {
-        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
-
-        if (environment == "live") return;
-
         NwModule.Instance.OnUseFeat += ToggleElementalType;
         Log.Info(message: "Monk Elemental Type Toggler initialized.");
     }

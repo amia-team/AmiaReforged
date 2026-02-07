@@ -3,7 +3,6 @@ using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Monk.Nui.FightingStyle;
 
@@ -15,10 +14,6 @@ public class FightingStyleSelector
     public FightingStyleSelector(WindowDirector windowManager)
     {
         _windowManager = windowManager;
-
-        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
-        if (environment == "live") return;
-
         NwModule.Instance.OnUseFeat += OpenFightingStyleSelectionWindow;
     }
 

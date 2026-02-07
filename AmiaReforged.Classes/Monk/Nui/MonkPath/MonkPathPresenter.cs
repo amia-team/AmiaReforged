@@ -151,9 +151,8 @@ public sealed class MonkPathPresenter(MonkPathView pathView, NwPlayer player) : 
         RaiseCloseEvent();
 
         // Allow people to switch the path feat on test
-        if (environment != "live")
-            return;
+        if (environment != "live") return;
 
-        monkCharacter.RemoveFeat(poeBaseFeat, true);
+        monkCharacter.RemoveFeat(poeBaseFeat);
     }
 }

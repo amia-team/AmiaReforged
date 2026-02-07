@@ -3,7 +3,6 @@ using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Monk.Nui.MonkPath;
 
@@ -15,10 +14,6 @@ public class MonkPathSelector
     public MonkPathSelector(WindowDirector windowManager)
     {
         _windowManager = windowManager;
-
-        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
-        if (environment == "live") return;
-
         NwModule.Instance.OnUseFeat += OpenPathSelectionWindow;
     }
 
@@ -30,17 +25,6 @@ public class MonkPathSelector
         if (_windowManager.IsWindowOpen(player, typeof(MonkPathPresenter)))
         {
             player.FloatingTextString(message: "Path of Enlightenment selection is already open.", false);
-            return;
-        }
-
-        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
-
-        if (player.ControlledCreature != null && MonkUtils.GetMonkPath(player.ControlledCreature) != null && environment == "live")
-        {
-            player.FloatingTextString
-            ("Path of Enlightenment has already been selected. " +
-             "Rebuilding allows you to reselect your path.", false);
-
             return;
         }
 

@@ -4,7 +4,6 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
-using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Monk.Services;
 
@@ -16,10 +15,6 @@ public class StaticBuffService
 
     public StaticBuffService(EventService eventService)
     {
-        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
-
-        if (environment == "live") return;
-
         eventService.SubscribeAll<OnLoadCharacterFinish, OnLoadCharacterFinish.Factory>(OnLoadAdjustBuff,
             EventCallbackType.After);
         eventService.SubscribeAll<OnItemEquip, OnItemEquip.Factory>(OnEquipAdjustBuff, EventCallbackType.After);

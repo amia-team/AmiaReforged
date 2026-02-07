@@ -5,7 +5,6 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
-using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Monk.Services;
 
@@ -33,9 +32,6 @@ public class AttackTechniqueService
 
         _attackCooldownEffect.SubType = EffectSubType.Unyielding;
         _attackCooldownEffect.Tag = AttackCooldownTag;
-
-        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
-        if (environment == "live") return;
 
         NwModule.Instance.OnUseFeat += AttackTechniqueUseFeat;
         NwModule.Instance.OnCombatRoundStart += EnterAttackTechnique;

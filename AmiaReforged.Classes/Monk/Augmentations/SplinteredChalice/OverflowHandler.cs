@@ -2,11 +2,7 @@ using AmiaReforged.Classes.Monk.Constants;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using NWN.Core.NWNX;
 using NLog;
-using DamageType = Anvil.API.DamageType;
-using EffectSubType = Anvil.API.EffectSubType;
-using SavingThrow = Anvil.API.SavingThrow;
 
 namespace AmiaReforged.Classes.Monk.Augmentations.SplinteredChalice;
 
@@ -17,9 +13,6 @@ public class OverflowHandler
 
     public OverflowHandler()
     {
-        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
-        if (environment == "live") return;
-
         NwModule.Instance.OnSpellCast += ToggleOverflow;
         Log.Info(message: "Cast Technique Service initialized.");
     }
