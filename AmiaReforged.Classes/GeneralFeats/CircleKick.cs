@@ -32,7 +32,7 @@ public class CircleKick
         if (circleKickEffect != null)
         {
             kicker.RemoveEffect(circleKickEffect);
-            player.FloatingTextString("*Circle Kick deactivated*", false, false);
+            player.FloatingTextString("*Circle Kick Deactivated*", false, false);
             return;
         }
 
@@ -41,6 +41,6 @@ public class CircleKick
 
         kicker.ApplyEffect(EffectDuration.Permanent, circleKickEffect);
 
-        player.FloatingTextString("*Circle Kick activated*", false, false);
+        player.FloatingTextString("*Circle Kick Activated*", false, false);
     }
 }
