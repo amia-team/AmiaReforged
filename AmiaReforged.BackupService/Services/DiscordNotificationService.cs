@@ -18,6 +18,16 @@ public interface IDiscordNotificationService
     /// Sends a warning notification to Discord.
     /// </summary>
     Task SendWarningAsync(string title, string message, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sends a success notification to Discord.
+    /// </summary>
+    Task SendSuccessAsync(string title, string message, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sends an info notification to Discord.
+    /// </summary>
+    Task SendInfoAsync(string title, string message, CancellationToken cancellationToken = default);
 }
 
 public class DiscordNotificationService : IDiscordNotificationService
@@ -44,6 +54,16 @@ public class DiscordNotificationService : IDiscordNotificationService
     public async Task SendWarningAsync(string title, string message, CancellationToken cancellationToken = default)
     {
         await SendWebhookAsync(title, message, 0xFFA500, cancellationToken); // Orange
+    }
+
+    public async Task SendSuccessAsync(string title, string message, CancellationToken cancellationToken = default)
+    {
+        await SendWebhookAsync(title, message, 0x00FF00, cancellationToken); // Green
+    }
+
+    public async Task SendInfoAsync(string title, string message, CancellationToken cancellationToken = default)
+    {
+        await SendWebhookAsync(title, message, 0x0099FF, cancellationToken); // Blue
     }
 
     private async Task SendWebhookAsync(string title, string message, int color, CancellationToken cancellationToken)

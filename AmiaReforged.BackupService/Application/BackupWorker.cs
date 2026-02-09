@@ -14,6 +14,7 @@ public class BackupWorker : BackgroundService
     private readonly IGitBackupService _gitService;
     private readonly ICharacterVaultBackupService _characterVaultService;
     private readonly IServerHealthService _healthService;
+    private readonly IServerHealthMonitor _healthMonitor;
     private readonly IDiscordNotificationService _discordService;
     private readonly BackupConfig _backupConfig;
 
@@ -24,6 +25,7 @@ public class BackupWorker : BackgroundService
         IGitBackupService gitService,
         ICharacterVaultBackupService characterVaultService,
         IServerHealthService healthService,
+        IServerHealthMonitor healthMonitor,
         IDiscordNotificationService discordService,
         BackupConfig backupConfig)
     {
@@ -33,6 +35,7 @@ public class BackupWorker : BackgroundService
         _gitService = gitService;
         _characterVaultService = characterVaultService;
         _healthService = healthService;
+        _healthMonitor = healthMonitor;
         _discordService = discordService;
         _backupConfig = backupConfig;
     }
@@ -97,15 +100,34 @@ public class BackupWorker : BackgroundService
     {
         _logger.LogInformation("Starting backup cycle at {Time}", DateTime.UtcNow);
 
+        // Check if server is available before starting
+        if (!_healthMonitor.IsServerAvailable)
+        {
+            _logger.LogWarning("Server is unavailable, skipping backup cycle");
+            return;
+        }
+
+        // Create a linked token that cancels if either the application stops OR the server goes down
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            _healthMonitor.ServerAvailableToken);
+        CancellationToken linkedToken = linkedCts.Token;
+
         DateTime backupTime = DateTime.UtcNow;
         string timestamp = backupTime.ToString("yyyy-MM-dd_HH-mm-ss");
         int successCount = 0;
         int failCount = 0;
+        bool abortedDueToServerDown = false;
 
         foreach (DatabaseConfig dbConfig in _backupConfig.Databases)
         {
-            if (cancellationToken.IsCancellationRequested)
+            if (linkedToken.IsCancellationRequested)
             {
+                if (!cancellationToken.IsCancellationRequested && !_healthMonitor.IsServerAvailable)
+                {
+                    _logger.LogWarning("Server became unavailable during backup cycle, aborting remaining database backups");
+                    abortedDueToServerDown = true;
+                }
                 break;
             }
 
@@ -114,7 +136,7 @@ public class BackupWorker : BackgroundService
 
             try
             {
-                bool success = await _backupService.BackupDatabaseAsync(dbConfig, outputPath, cancellationToken);
+                bool success = await _backupService.BackupDatabaseAsync(dbConfig, outputPath, linkedToken);
 
                 if (success)
                 {
@@ -125,6 +147,12 @@ public class BackupWorker : BackgroundService
                     failCount++;
                 }
             }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                _logger.LogWarning("Database backup for {Database} cancelled - server may have gone down", dbConfig.Name);
+                abortedDueToServerDown = true;
+                break;
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Exception backing up {Database}", dbConfig.Name);
@@ -133,6 +161,18 @@ public class BackupWorker : BackgroundService
         }
 
         _logger.LogInformation("Backup phase complete. Success: {Success}, Failed: {Failed}", successCount, failCount);
+
+        if (abortedDueToServerDown)
+        {
+            await _discordService.SendWarningAsync(
+                "⚠️ Backup Cycle Aborted",
+                $"The backup cycle was aborted because the server became unavailable.\n\n" +
+                $"**Databases backed up before abort:** {successCount}\n" +
+                $"**Databases failed:** {failCount}\n\n" +
+                "Backup operations will resume when the server recovers.",
+                cancellationToken);
+            return;
+        }
 
         // Backup character vault files
         bool characterVaultSuccess = true;

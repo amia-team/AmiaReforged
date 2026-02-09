@@ -8,6 +8,9 @@ A background service for automated database backups with Git-based version contr
 - Git-based version control for backup files
 - Configurable backup schedules
 - Multiple database support
+- **Continuous Server Health Monitoring** - Pings the server every 30 seconds and halts backups if unreachable
+- **Automatic Git Lock Recovery** - Detects and removes stale `.git/index.lock` files from crashed processes
+- **Discord Notifications** - Alerts for errors, warnings, and server status changes
 - Structured logging with Serilog
 - Docker containerization
 
@@ -143,6 +146,57 @@ Backup__GitBranch=develop
 # Override database-specific settings (0-indexed array)
 Backup__Databases__0__DefaultHost=custom-db-host
 ```
+
+## Server Health Monitoring
+
+The backup service continuously monitors server health to avoid backing up corrupted data or running git operations when the server has crashed.
+
+### How It Works
+
+1. **Continuous Ping**: The `ServerHealthMonitor` pings the server health endpoint every 30 seconds (configurable)
+2. **Debouncing**: The server is only considered "down" after 2+ consecutive failures (configurable)
+3. **Immediate Abort**: When the server goes down, in-progress backup operations are cancelled via linked cancellation tokens
+4. **Cycle Skip**: If the server is down when a backup cycle starts, the entire cycle is skipped
+5. **Recovery Notification**: When the server comes back up, a Discord notification is sent
+
+### Configuration Options
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `HealthPingIntervalSeconds` | 30 | How often to ping the server health endpoint |
+| `ConsecutiveFailuresBeforeUnhealthy` | 2 | Number of consecutive failures before marking server as down |
+| `ServerHealthEndpoint` | `http://localhost:8080/api/worldengine/health` | URL to ping for health checks |
+| `HealthCheckTimeoutSeconds` | 10 | Timeout for each health check request |
+| `ServerApiKeyEnvVar` | `SERVER_API_KEY` | Environment variable name for the API key |
+| `DefaultServerApiKey` | (empty) | Default API key if env var not set |
+
+### API Key Authentication
+
+The health check endpoint may require an API key. Set it via environment variable:
+
+```env
+# API key for WorldEngine server health endpoint
+SERVER_API_KEY=your-api-key-here
+```
+
+The service sends the API key in the `X-API-Key` header with each health check request.
+
+## Git Lock File Recovery
+
+If the server crashes during a git operation, it may leave a stale `.git/index.lock` file that prevents future git commands. The service automatically detects and removes these stale locks.
+
+### How It Works
+
+1. Before each git operation, the service checks for `.git/index.lock`
+2. If the lock file exists and is older than 5 minutes (configurable), it's automatically deleted
+3. A Discord notification is sent when a stale lock is removed
+4. If the lock is newer than the threshold, the backup is skipped to avoid conflicts
+
+### Configuration
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `GitLockStaleThresholdMinutes` | 5 | How old a lock file must be before auto-removal |
 
 ## Development
 

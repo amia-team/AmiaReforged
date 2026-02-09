@@ -51,6 +51,11 @@ public class Program
                     services.AddSingleton<IServerHealthService, ServerHealthService>();
                     services.AddSingleton<IDiscordNotificationService, DiscordNotificationService>();
 
+                    // Register the health monitor as both singleton (for DI) and hosted service (to start it)
+                    services.AddSingleton<ServerHealthMonitor>();
+                    services.AddSingleton<IServerHealthMonitor>(sp => sp.GetRequiredService<ServerHealthMonitor>());
+                    services.AddHostedService(sp => sp.GetRequiredService<ServerHealthMonitor>());
+
                     // Register the background worker
                     services.AddHostedService<BackupWorker>();
                 })

@@ -20,11 +20,16 @@ public interface IGitBackupService
 public class GitBackupService : IGitBackupService
 {
     private readonly ILogger<GitBackupService> _logger;
+    private readonly IDiscordNotificationService _discordService;
     private readonly BackupConfig _config;
 
-    public GitBackupService(ILogger<GitBackupService> logger, BackupConfig config)
+    public GitBackupService(
+        ILogger<GitBackupService> logger,
+        IDiscordNotificationService discordService,
+        BackupConfig config)
     {
         _logger = logger;
+        _discordService = discordService;
         _config = config;
     }
 
@@ -37,6 +42,12 @@ public class GitBackupService : IGitBackupService
             if (!Repository.IsValid(repoPath))
             {
                 _logger.LogError("Invalid git repository at {Path}", repoPath);
+                return false;
+            }
+
+            // Check for and clean up stale lock file before proceeding
+            if (!await HandleStaleLockFileAsync(repoPath, cancellationToken))
+            {
                 return false;
             }
 
@@ -108,6 +119,88 @@ public class GitBackupService : IGitBackupService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to commit and push backup");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Checks for a stale .git/index.lock file and removes it if it exists and is older than the threshold.
+    /// This handles situations where a previous git process crashed or the service was killed mid-operation.
+    /// </summary>
+    private async Task<bool> HandleStaleLockFileAsync(string repoPath, CancellationToken cancellationToken)
+    {
+        string lockFilePath = Path.Combine(repoPath, ".git", "index.lock");
+
+        if (!File.Exists(lockFilePath))
+        {
+            return true; // No lock file, all good
+        }
+
+        try
+        {
+            FileInfo lockFileInfo = new(lockFilePath);
+            TimeSpan lockAge = DateTime.UtcNow - lockFileInfo.LastWriteTimeUtc;
+            int thresholdMinutes = _config.GitLockStaleThresholdMinutes;
+
+            _logger.LogWarning("Found git index.lock file at {Path}, age: {Age}",
+                lockFilePath, lockAge);
+
+            if (lockAge.TotalMinutes >= thresholdMinutes)
+            {
+                _logger.LogWarning("Lock file is stale (older than {Threshold} minutes), removing it",
+                    thresholdMinutes);
+
+                File.Delete(lockFilePath);
+
+                string message = $"A stale git index.lock file was found and removed.\n\n" +
+                                 $"**Path:** `{lockFilePath}`\n" +
+                                 $"**Age:** {lockAge.TotalMinutes:F1} minutes\n" +
+                                 $"**Threshold:** {thresholdMinutes} minutes\n\n" +
+                                 "This typically happens when the server crashes during a backup operation. " +
+                                 "The lock has been cleaned up and backup operations will continue.";
+
+                await _discordService.SendWarningAsync(
+                    "🔓 Stale Git Lock Removed",
+                    message,
+                    cancellationToken);
+
+                _logger.LogInformation("Stale lock file removed successfully");
+                return true;
+            }
+            else
+            {
+                // Lock file exists but isn't old enough to be considered stale
+                // This could mean another git process is legitimately running
+                _logger.LogError(
+                    "Git index.lock exists but is only {Age} minutes old (threshold: {Threshold} minutes). " +
+                    "Another git process may be running. Aborting to avoid conflicts.",
+                    lockAge.TotalMinutes, thresholdMinutes);
+
+                await _discordService.SendErrorAsync(
+                    "⚠️ Git Lock Conflict",
+                    $"A git index.lock file exists but is not old enough to be considered stale.\n\n" +
+                    $"**Path:** `{lockFilePath}`\n" +
+                    $"**Age:** {lockAge.TotalMinutes:F1} minutes\n" +
+                    $"**Threshold:** {thresholdMinutes} minutes\n\n" +
+                    "This backup cycle will be skipped. If no other git process should be running, " +
+                    "the lock will be automatically removed once it exceeds the stale threshold.",
+                    cancellationToken);
+
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error handling git lock file at {Path}", lockFilePath);
+
+            await _discordService.SendErrorAsync(
+                "❌ Git Lock Error",
+                $"Failed to handle git index.lock file.\n\n" +
+                $"**Path:** `{lockFilePath}`\n" +
+                $"**Error:** {ex.Message}\n\n" +
+                "Manual intervention may be required.",
+                cancellationToken);
+
             return false;
         }
     }

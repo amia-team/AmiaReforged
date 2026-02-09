@@ -107,9 +107,36 @@ public class BackupConfig
     public int HealthCheckTimeoutSeconds { get; set; } = 10;
 
     /// <summary>
+    /// Environment variable name for the API key used for server health checks.
+    /// </summary>
+    public string ServerApiKeyEnvVar { get; set; } = "SERVER_API_KEY";
+
+    /// <summary>
+    /// Default API key for server health checks (used if env var not set).
+    /// </summary>
+    public string DefaultServerApiKey { get; set; } = string.Empty;
+
+    /// <summary>
     /// Whether to skip character vault backup when server is unhealthy.
     /// </summary>
     public bool SkipCharacterBackupOnUnhealthyServer { get; set; } = true;
+
+    /// <summary>
+    /// Interval in seconds between server health pings.
+    /// </summary>
+    public int HealthPingIntervalSeconds { get; set; } = 30;
+
+    /// <summary>
+    /// Number of consecutive health check failures before the server is considered unhealthy.
+    /// This provides debouncing to avoid false positives from transient network issues.
+    /// </summary>
+    public int ConsecutiveFailuresBeforeUnhealthy { get; set; } = 2;
+
+    /// <summary>
+    /// Threshold in minutes after which a git index.lock file is considered stale
+    /// and can be safely removed.
+    /// </summary>
+    public int GitLockStaleThresholdMinutes { get; set; } = 5;
 
     /// <summary>
     /// Gets the server vault source path from environment variable or default.
@@ -128,4 +155,12 @@ public class BackupConfig
     /// </summary>
     public string GetServerHealthEndpoint() =>
         Environment.GetEnvironmentVariable(ServerHealthEndpointEnvVar) ?? ServerHealthEndpoint;
+
+    /// <summary>
+    /// Gets the server API key from environment variable or default.
+    /// </summary>
+    public string? GetServerApiKey() =>
+        Environment.GetEnvironmentVariable(ServerApiKeyEnvVar) is { Length: > 0 } envKey
+            ? envKey
+            : (string.IsNullOrEmpty(DefaultServerApiKey) ? null : DefaultServerApiKey);
 }

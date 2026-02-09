@@ -55,7 +55,20 @@ public class ServerHealthService : IServerHealthService
 
             _logger.LogDebug("Checking server health at {Endpoint}", endpoint);
 
-            HttpResponseMessage response = await _httpClient.GetAsync(endpoint, cts.Token);
+            // Create request with API key header if configured
+            using var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
+
+            string? apiKey = _config.GetServerApiKey();
+            if (!string.IsNullOrEmpty(apiKey))
+            {
+                request.Headers.Add("X-API-Key", apiKey);
+            }
+            else
+            {
+                _logger.LogDebug("No API key configured for server health check");
+            }
+
+            HttpResponseMessage response = await _httpClient.SendAsync(request, cts.Token);
 
             if (response.IsSuccessStatusCode)
             {

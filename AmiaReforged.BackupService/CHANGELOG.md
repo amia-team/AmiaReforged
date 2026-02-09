@@ -1,5 +1,27 @@
 # AmiaReforged.BackupService Changelog
 
+## [1.1.0] - 2026-02-09
+
+### Added
+- **Continuous Server Health Monitoring**: New `ServerHealthMonitor` background service that pings the server every 30 seconds (configurable via `HealthPingIntervalSeconds`)
+- **Automatic Backup Abort**: When the server becomes unreachable, in-progress backup operations are immediately aborted via linked cancellation tokens
+- **Git Lock File Recovery**: Automatic detection and cleanup of stale `.git/index.lock` files that may remain after server crashes
+- **Server Recovery Notifications**: Discord notifications when the server recovers after being down
+- **Success/Info Discord Notifications**: Added `SendSuccessAsync` and `SendInfoAsync` methods to the Discord notification service
+
+### Configuration Options
+- `HealthPingIntervalSeconds` (default: 30) - How often to ping the server health endpoint
+- `ConsecutiveFailuresBeforeUnhealthy` (default: 2) - Number of consecutive failures before considering the server down (debouncing)
+- `GitLockStaleThresholdMinutes` (default: 5) - How old a `.git/index.lock` file must be before it's considered stale and auto-removed
+
+### Changed
+- `BackupWorker` now uses a linked cancellation token that triggers when either the application stops OR the server goes down
+- Database backups are skipped entirely when the server is unavailable at cycle start
+- Git operations now check for and clean up stale lock files before proceeding
+
+### Fixed
+- Resolved issue where `git add` could fail with "index.lock: File exists" after server crashes mid-backup
+
 ## [1.0.2] - 2025-12-15
 
 ### Added
