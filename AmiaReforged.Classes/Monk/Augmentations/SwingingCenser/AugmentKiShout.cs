@@ -6,21 +6,17 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations.SwingingCenser;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class KiShout : IAugmentation.ICastAugment
+public class AugmentKiShout : IAugmentation.ICastAugment
 {
-    public PathType Path { get; }
-    public TechniqueType Technique { get; }
-    public void ApplyCastAugmentation(NwCreature monk, OnSpellCast castData, BaseTechniqueCallback baseTechnique)
-    {
-        baseTechnique();
-        AugmentKiShout(monk);
-    }
-
+    public PathType Path => PathType.SwingingCenser;
+    public TechniqueType Technique => TechniqueType.KiShout;
     /// <summary>
     /// Ki Shout exhorts allies with +1 bonus to attack rolls for one turn, with an additional +1 bonus for every Ki Focus.
     /// </summary>
-    private static void AugmentKiShout(NwCreature monk)
+    public void ApplyCastAugmentation(NwCreature monk, OnSpellCast castData, BaseTechniqueCallback baseTechnique)
     {
+        baseTechnique();
+
         if (monk.Location == null) return;
 
         int abBonus = MonkUtils.GetKiFocus(monk) switch

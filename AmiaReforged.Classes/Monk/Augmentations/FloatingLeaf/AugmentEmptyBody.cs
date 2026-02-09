@@ -6,24 +6,19 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations.FloatingLeaf;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class EmptyBody : IAugmentation.ICastAugment
+public class AugmentEmptyBody : IAugmentation.ICastAugment
 {
     private const string FloatingEmptyBodyTag = nameof(PathType.FloatingLeaf) + nameof(TechniqueType.EmptyBody);
-    private const string FLoatingLeapTag = nameof(PathType.FloatingLeaf) + "Leaping";
     public PathType Path => PathType.FloatingLeaf;
     public TechniqueType Technique => TechniqueType.EmptyBody;
+
+    /// <summary>
+    /// Ki Focus I allows the monk to perform Weightless Leaps, II grants Haste, III grants Epic Dodge.
+    /// </summary>
     public void ApplyCastAugmentation(NwCreature monk, OnSpellCast castData, BaseTechniqueCallback baseTechnique)
     {
         baseTechnique();
-        AugmentEmptyBody(monk);
-    }
 
-    /// <summary>
-    /// While affected by Empty Body, Ki Focus I grants the ability to take weightless leaps.
-    /// Ki Focus II grants haste. Ki Focus III grants Epic Dodge.
-    /// </summary>
-    private static void AugmentEmptyBody(NwCreature monk)
-    {
         KiFocus? kiFocus = MonkUtils.GetKiFocus(monk);
         if (kiFocus == null) return;
 
@@ -49,5 +44,4 @@ public class EmptyBody : IAugmentation.ICastAugment
 
         monk.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect, NwTimeSpan.FromRounds(monkLevel));
     }
-
 }

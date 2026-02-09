@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.Monk.Techniques.Cast;
 using AmiaReforged.Classes.Monk.Types;
 using AmiaReforged.Classes.Spells;
 using Anvil.API;
@@ -7,22 +8,18 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations.FickleStrand;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class QuiveringPalm : IAugmentation.ICastAugment
+public class AugmentQuiveringPalm : IAugmentation.ICastAugment
 {
     public PathType Path => PathType.FickleStrand;
     public TechniqueType Technique => TechniqueType.QuiveringPalm;
-    public void ApplyCastAugmentation(NwCreature monk, OnSpellCast castData, BaseTechniqueCallback baseTechnique)
-    {
-        AugmentQuiveringPalm(monk, castData);
-    }
 
     /// <summary>
-    /// Quivering Palm strips the enemy creature of a magical defense according to the breach list, with a 50% chance to
-    /// steal the magical defense. Each Ki Focus adds an additional magical defense.
+    /// 50% chance to strip and steal a magical defense according to the breach list.
+    /// Each Ki Focus allows stealing one additional defense.
     /// </summary>
-    private  void AugmentQuiveringPalm(NwCreature monk, OnSpellCast castData)
+    public void ApplyCastAugmentation(NwCreature monk, OnSpellCast castData, BaseTechniqueCallback baseTechnique)
     {
-        TouchAttackResult touchAttackResult = Techniques.Cast.QuiveringPalm.DoQuiveringPalm(monk, castData);
+        TouchAttackResult touchAttackResult = QuiveringPalm.DoQuiveringPalm(monk, castData);
 
         if (castData.TargetObject is not NwCreature targetCreature || touchAttackResult is TouchAttackResult.Miss)
             return;

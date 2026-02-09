@@ -6,20 +6,16 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations.IroncladBull;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class WholenessOfBody : IAugmentation.ICastAugment
+public class AugmentWholenessOfBody : IAugmentation.ICastAugment
 {
+    private const string OverHealTag = nameof(PathType.IroncladBull) + nameof(TechniqueType.WholenessOfBody);
     public PathType Path => PathType.IroncladBull;
     public TechniqueType Technique => TechniqueType.WholenessOfBody;
-    public void ApplyCastAugmentation(NwCreature monk, OnSpellCast castData, BaseTechniqueCallback baseTechnique)
-    {
-        AugmentWholenessOfBody(monk);
-    }
 
     /// <summary>
-    /// Wholeness of Body heals for 20 extra hit points and grants overheal as temporary hit points.
-    /// Each Ki Focus increases the amount of extra hit points healed by 20, to a maximum of 80 extra hit points.
+    /// Heals an additional 20 HP and converts excess healing into temporary HP. Each Ki Focus adds +20 healing.
     /// </summary>
-    private static void AugmentWholenessOfBody(NwCreature monk)
+    public void ApplyCastAugmentation(NwCreature monk, OnSpellCast castData, BaseTechniqueCallback baseTechnique)
     {
         int healAmount = CalculateHealAmount(monk);
         int overhealAmount = Math.Max(0, healAmount - (monk.MaxHP - monk.HP));
@@ -37,12 +33,16 @@ public class WholenessOfBody : IAugmentation.ICastAugment
     {
         if (overhealAmount <= 0) return;
 
-        Effect overhealEffect = Effect.LinkEffects(
+        Effect? overhealEffect = monk.ActiveEffects.FirstOrDefault(e => e.Tag == OverHealTag);
+        if (overhealEffect != null) monk.RemoveEffect(overhealEffect);
+
+        overhealEffect = Effect.LinkEffects(
             Effect.TemporaryHitpoints(overhealAmount),
             Effect.VisualEffect(VfxType.DurProtGreaterStoneskin)
         );
 
         overhealEffect.SubType = EffectSubType.Extraordinary;
+        overhealEffect.Tag = OverHealTag;
 
         monk.ApplyEffect(EffectDuration.Permanent, overhealEffect);
     }

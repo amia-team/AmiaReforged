@@ -7,37 +7,37 @@ using static AmiaReforged.Classes.Monk.Augmentations.CrashingMeteor.CrashingMete
 namespace AmiaReforged.Classes.Monk.Augmentations.CrashingMeteor;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class BindingStrike : IAugmentation.IDamageAugment
+public class AugmentWholenessOfBody : IAugmentation.ICastAugment
 {
     public PathType Path => PathType.CrashingMeteor;
-    public TechniqueType Technique => TechniqueType.BindingStrike;
-
-    public void ApplyDamageAugmentation(NwCreature monk, OnCreatureDamage damageData,
-        BaseTechniqueCallback baseTechnique)
-    {
-        baseTechnique();
-        AugmentBindingStrike(monk, damageData);
-    }
+    public TechniqueType Technique => TechniqueType.WholenessOfBody;
 
     /// <summary>
-    ///     Binding Strike deals 2d6 elemental damage in a large area around the target. The damage isn’t multiplied by
-    ///     critical hits and a successful reflex save halves the damage. Each Ki Focus adds 2d6 to a maximum of 8d6 elemental
-    ///     damage.
+    ///  Deals 2d6 elemental damage in a large radius (reflex halves). Each Ki Focus adds +2d6 damage.
     /// </summary>
-    private void AugmentBindingStrike(NwCreature monk, OnCreatureDamage damageData)
+    public void ApplyCastAugmentation(NwCreature monk, OnSpellCast castData, BaseTechniqueCallback baseTechnique)
     {
-        if (damageData.Target.Location is not { } location) return;
+        baseTechnique();
+
+        if (monk.Location == null || !monk.IsInCombat) return;
 
         CrashingMeteorData meteor = GetCrashingMeteorData(monk);
 
         Effect reflexVfx = Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse);
 
-        damageData.Target.ApplyEffect(EffectDuration.Instant, meteor.PulseVfx);
-
-        foreach (NwCreature creature in location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Medium, true))
+        monk.ApplyEffect(EffectDuration.Instant, meteor.AoeVfx);
+        foreach (NwGameObject nwObject in monk.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, true,
+                     ObjectTypes.Creature | ObjectTypes.Door | ObjectTypes.Placeable))
         {
-            if (!monk.IsReactionTypeHostile(creature)) continue;
             int damageAmount = Random.Shared.Roll(6, meteor.DiceAmount);
+            if (nwObject is not NwCreature creature)
+            {
+                _ = ApplyAoeDamage(nwObject, monk, damageAmount, meteor.DamageType, meteor.DamageVfx);
+                continue;
+            }
+            if (monk.IsReactionTypeFriendly(creature)) continue;
+
+            CreatureEvents.OnSpellCastAt.Signal(monk, creature, NwSpell.FromSpellType(Spell.Fireball)!);
 
             bool hasEvasion = creature.KnowsFeat(NwFeat.FromFeatType(Feat.Evasion)!);
             bool hasImprovedEvasion = creature.KnowsFeat(NwFeat.FromFeatType(Feat.ImprovedEvasion)!);
@@ -57,8 +57,6 @@ public class BindingStrike : IAugmentation.IDamageAugment
             _ = ApplyAoeDamage(creature, monk, damageAmount, meteor.DamageType, meteor.DamageVfx);
         }
     }
-
-
 
     private static async Task ApplyAoeDamage(NwGameObject targetObject, NwCreature monk, int damageAmount,
         DamageType damageType, VfxType damageVfx)

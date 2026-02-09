@@ -7,23 +7,18 @@ using static AmiaReforged.Classes.Monk.Augmentations.CrashingMeteor.CrashingMete
 namespace AmiaReforged.Classes.Monk.Augmentations.CrashingMeteor;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class AxiomaticStrike : IAugmentation.IAttackAugment
+public class AugmentAxiomaticStrike : IAugmentation.IAttackAugment
 {
     public PathType Path => PathType.CrashingMeteor;
     public TechniqueType Technique => TechniqueType.AxiomaticStrike;
 
+    /// <summary>
+    /// Deals +1 elemental damage. Each Ki Focus adds +1.
+    /// </summary>
     public void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData, BaseTechniqueCallback baseTechnique)
     {
         baseTechnique();
-        AugmentAxiomaticStrike(monk, attackData);
-    }
 
-    /// <summary>
-    ///     Axiomatic Strike deals +1 bonus elemental damage, with an additional +1 for every Ki Focus,
-    ///     to a maximum of +4 elemental damage.
-    /// </summary>
-    private void AugmentAxiomaticStrike(NwCreature monk, OnCreatureAttack attackData)
-    {
         CrashingMeteorData meteor = GetCrashingMeteorData(monk);
 
         DamageData<short> damageData = attackData.DamageData;

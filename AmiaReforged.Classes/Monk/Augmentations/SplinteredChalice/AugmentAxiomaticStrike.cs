@@ -6,22 +6,19 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations.SplinteredChalice;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class AxiomaticStrike : IAugmentation.IAttackAugment
+public class AugmentAxiomaticStrike : IAugmentation.IAttackAugment
 {
     public PathType Path => PathType.SplinteredChalice;
     public TechniqueType Technique => TechniqueType.AxiomaticStrike;
-    public void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData, BaseTechniqueCallback baseTechnique)
-    {
-        baseTechnique();
-        AugmentAxiomaticStrike(monk, attackData);
-    }
 
     /// <summary>
     /// Axiomatic Strike deals +1 negative damage, with extra +1 damage per Ki Focus.
     /// Overflow: Deals +2 divine damage, with extra +2 damage per Ki Focus.
     /// </summary>
-    private static void AugmentAxiomaticStrike(NwCreature monk, OnCreatureAttack attackData)
+    public void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData, BaseTechniqueCallback baseTechnique)
     {
+        baseTechnique();
+
         bool hasOverflow = Overflow.HasOverflow(monk);
         KiFocus? kiFocus = MonkUtils.GetKiFocus(monk);
 

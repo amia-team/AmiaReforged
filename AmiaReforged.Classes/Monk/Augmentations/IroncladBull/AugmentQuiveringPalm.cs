@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.Monk.Techniques.Cast;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
@@ -6,25 +7,19 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations.IroncladBull;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class QuiveringPalm : IAugmentation.ICastAugment
+public class AugmentQuiveringPalm : IAugmentation.ICastAugment
 {
     public PathType Path => PathType.IroncladBull;
     public TechniqueType Technique => TechniqueType.QuiveringPalm;
-    public void ApplyCastAugmentation(NwCreature monk, OnSpellCast castData, BaseTechniqueCallback baseTechnique)
-    {
-        AugmentQuiveringPalm(monk, castData);
-    }
 
     /// <summary>
-    /// Quivering Palm petrifies the target for one round if they fail a reflex saving throw.
-    /// Each Ki Focus increases the duration by one round, to a maximum of four rounds.
+    /// Petrifies the target for 1 round (reflex negates). Each Ki Focus adds +1 round.
     /// </summary>
-    private static void AugmentQuiveringPalm(NwCreature monk, OnSpellCast castData)
+    public void ApplyCastAugmentation(NwCreature monk, OnSpellCast castData, BaseTechniqueCallback baseTechnique)
     {
-        TouchAttackResult touchAttackResult = Techniques.Cast.QuiveringPalm.DoQuiveringPalm(monk, castData);
+        TouchAttackResult touchAttackResult = QuiveringPalm.DoQuiveringPalm(monk, castData);
 
-        if (touchAttackResult is TouchAttackResult.Miss || castData.TargetObject is not NwCreature targetCreature
-                                                        || targetCreature.IsImmuneTo(ImmunityType.Paralysis)) return;
+        if (touchAttackResult is TouchAttackResult.Miss || castData.TargetObject is not NwCreature targetCreature) return;
 
         int dc = MonkUtils.CalculateMonkDc(monk);
 

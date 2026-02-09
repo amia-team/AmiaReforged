@@ -7,21 +7,15 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations.SwingingCenser;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class WholenessOfBody(ScriptHandleFactory scriptHandleFactory) : IAugmentation.ICastAugment
+public class AugmentWholenessOfBody(ScriptHandleFactory scriptHandleFactory) : IAugmentation.ICastAugment
 {
-    private const string WholenessPulseTag = "wholeness_pulse";
     public PathType Path => PathType.SwingingCenser;
     public TechniqueType Technique => TechniqueType.WholenessOfBody;
-    public void ApplyCastAugmentation(NwCreature monk, OnSpellCast castData, BaseTechniqueCallback baseTechnique)
-    {
-        AugmentWholenessOfBody(monk);
-    }
 
     /// <summary>
-    /// Wholeness of Body pulses in a large area around the monk, healing allies.
-    /// Each Ki Focus adds another pulse of healing, to a maximum of four pulses.
+    /// Creates a healing pulse in a large radius. Each Ki Focus adds one additional pulse.
     /// </summary>
-    private void AugmentWholenessOfBody(NwCreature monk)
+    public void ApplyCastAugmentation(NwCreature monk, OnSpellCast castData, BaseTechniqueCallback baseTechnique)
     {
         byte monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
         int healAmount = monkLevel * 2;

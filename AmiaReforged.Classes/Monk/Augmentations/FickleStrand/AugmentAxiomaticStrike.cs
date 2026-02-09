@@ -6,22 +6,18 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations.FickleStrand;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class AxiomaticStrike : IAugmentation.IAttackAugment
+public class AugmentAxiomaticStrike : IAugmentation.IAttackAugment
 {
     public PathType Path => PathType.FickleStrand;
     public TechniqueType Technique => TechniqueType.AxiomaticStrike;
+
+    /// <summary>
+    /// Deals +1 magical damage. Each Ki Focus adds +1.
+    /// </summary>
     public void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData, BaseTechniqueCallback baseTechnique)
     {
         baseTechnique();
-        AugmentAxiomaticStrike(monk, attackData);
-    }
 
-    /// <summary>
-    /// Axiomatic Strike deals +1 bonus magical damage. Each Ki Focus increases the damage by 1,
-    /// to a maximum of +4 bonus magical damage.
-    /// </summary>
-    private void AugmentAxiomaticStrike(NwCreature monk, OnCreatureAttack attackData)
-    {
         int bonusDamage = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,

@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.Monk.Techniques.Attack;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
@@ -6,22 +7,18 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations.FloatingLeaf;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class EagleStrike : IAugmentation.IDamageAugment
+public class AugmentEagleStrike : IAugmentation.IDamageAugment
 {
     private const string FloatingEagleStrikeTag = nameof(PathType.FloatingLeaf) +  nameof(TechniqueType.EagleStrike);
     public PathType Path => PathType.FloatingLeaf;
     public TechniqueType Technique => TechniqueType.EagleStrike;
-    public void ApplyDamageAugmentation(NwCreature monk, OnCreatureDamage damageData, BaseTechniqueCallback baseTechnique)
-    {
-        AugmentEagleStrike(monk, damageData);
-    }
 
     /// <summary>
-    /// Eagle Strike with Ki Focus I incurs a -1 penalty to attack rolls, increased to -2 with Ki Focus II and -3 with Ki Focus III.
+    /// Inflicts -1 attack bonus penalty. Each Ki Focus adds -1.
     /// </summary>
-    private static void AugmentEagleStrike(NwCreature monk, OnCreatureDamage damageData)
+    public void ApplyDamageAugmentation(NwCreature monk, OnCreatureDamage damageData, BaseTechniqueCallback baseTechnique)
     {
-        SavingThrowResult bindingStrikeResult = Techniques.Attack.EagleStrike.DoEagleStrike(monk, damageData);
+        SavingThrowResult bindingStrikeResult = EagleStrike.DoEagleStrike(monk, damageData);
 
         if (damageData.Target is not NwCreature targetCreature || bindingStrikeResult != SavingThrowResult.Failure)
             return;

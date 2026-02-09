@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.Monk.Techniques.Attack;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
@@ -6,22 +7,17 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations.FloatingLeaf;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class BindingStrike : IAugmentation.IDamageAugment
+public class AugmentBindingStrike : IAugmentation.IDamageAugment
 {
     public PathType Path => PathType.FloatingLeaf;
     public TechniqueType Technique => TechniqueType.BindingStrike;
-    public void ApplyDamageAugmentation(NwCreature monk, OnCreatureDamage damageData, BaseTechniqueCallback baseTechnique)
-    {
-        AugmentBindingStrike(monk, damageData);
-    }
 
     /// <summary>
-    /// Binding Strike does weaker effects if the target is immune to stun. Ki Focus I pacifies (making the
-    /// target unable to attack), Ki Focus II dazes, and Ki Focus III paralyzes the target.
+    /// Bypasses mind immunity, causing a weaker effect. Ki Focus I pacifies, II dazes, and III stuns.
     /// </summary>
-    private static void AugmentBindingStrike(NwCreature monk, OnCreatureDamage damageData)
+    public void ApplyDamageAugmentation(NwCreature monk, OnCreatureDamage damageData, BaseTechniqueCallback baseTechnique)
     {
-        SavingThrowResult bindingStrikeResult = Techniques.Attack.BindingStrike.DoBindingStrike(monk, damageData);
+        SavingThrowResult bindingStrikeResult = BindingStrike.DoBindingStrike(monk, damageData);
 
         if (damageData.Target is not NwCreature targetCreature
             || bindingStrikeResult != SavingThrowResult.Immune)

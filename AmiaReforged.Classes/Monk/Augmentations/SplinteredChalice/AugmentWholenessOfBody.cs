@@ -7,22 +7,19 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations.SplinteredChalice;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class WholenessOfBody : IAugmentation.ICastAugment
+public class AugmentWholenessOfBody : IAugmentation.ICastAugment
 {
     public PathType Path => PathType.SplinteredChalice;
     public TechniqueType Technique => TechniqueType.WholenessOfBody;
-    public void ApplyCastAugmentation(NwCreature monk, OnSpellCast castData, BaseTechniqueCallback baseTechnique)
-    {
-        baseTechnique();
-        AugmentWholenessOfBody(monk);
-    }
 
     /// <summary>
     /// Wholeness of Body deals 10 negative damage in a large radius, with extra 10 damage per Ki Focus.
     /// Overflow: 20 divine damage in a large radius, with extra 20 damage per Ki Focus.
     /// </summary>
-    private static void AugmentWholenessOfBody(NwCreature monk)
+    public void ApplyCastAugmentation(NwCreature monk, OnSpellCast castData, BaseTechniqueCallback baseTechnique)
     {
+        baseTechnique();
+
         if (monk.Location == null || !monk.IsInCombat) return;
 
         bool hasOverflow = Overflow.HasOverflow(monk);

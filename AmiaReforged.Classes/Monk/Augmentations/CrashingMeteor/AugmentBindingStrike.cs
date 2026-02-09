@@ -7,42 +7,31 @@ using static AmiaReforged.Classes.Monk.Augmentations.CrashingMeteor.CrashingMete
 namespace AmiaReforged.Classes.Monk.Augmentations.CrashingMeteor;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class WholenessOfBody : IAugmentation.ICastAugment
+public class AugmentBindingStrike : IAugmentation.IDamageAugment
 {
     public PathType Path => PathType.CrashingMeteor;
-    public TechniqueType Technique => TechniqueType.WholenessOfBody;
-
-    public void ApplyCastAugmentation(NwCreature monk, OnSpellCast castData, BaseTechniqueCallback baseTechnique)
-    {
-        baseTechnique();
-        AugmentWholenessOfBody(monk);
-    }
+    public TechniqueType Technique => TechniqueType.BindingStrike;
 
     /// <summary>
-    ///     Wholeness of Body deals 2d6 elemental damage in a large area round the monk, with a successful reflex save
-    ///     halving the damage. Each Ki Focus adds 2d6 damage to a maximum of 8d6 elemental damage.
+    /// Deals 2d6 elemental damage in a large radius (reflex halves). Each Ki Focus adds +2d6 damage.
     /// </summary>
-    private static void AugmentWholenessOfBody(NwCreature monk)
+    public void ApplyDamageAugmentation(NwCreature monk, OnCreatureDamage damageData,
+        BaseTechniqueCallback baseTechnique)
     {
-        if (monk.Location == null || !monk.IsInCombat) return;
+        baseTechnique();
+
+        if (damageData.Target.Location is not { } location) return;
 
         CrashingMeteorData meteor = GetCrashingMeteorData(monk);
 
         Effect reflexVfx = Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse);
 
-        monk.ApplyEffect(EffectDuration.Instant, meteor.AoeVfx);
-        foreach (NwGameObject nwObject in monk.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, true,
-                     ObjectTypes.Creature | ObjectTypes.Door | ObjectTypes.Placeable))
-        {
-            int damageAmount = Random.Shared.Roll(6, meteor.DiceAmount);
-            if (nwObject is not NwCreature creature)
-            {
-                _ = ApplyAoeDamage(nwObject, monk, damageAmount, meteor.DamageType, meteor.DamageVfx);
-                continue;
-            }
-            if (monk.IsReactionTypeFriendly(creature)) continue;
+        damageData.Target.ApplyEffect(EffectDuration.Instant, meteor.PulseVfx);
 
-            CreatureEvents.OnSpellCastAt.Signal(monk, creature, NwSpell.FromSpellType(Spell.Fireball)!);
+        foreach (NwCreature creature in location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Medium, true))
+        {
+            if (!monk.IsReactionTypeHostile(creature)) continue;
+            int damageAmount = Random.Shared.Roll(6, meteor.DiceAmount);
 
             bool hasEvasion = creature.KnowsFeat(NwFeat.FromFeatType(Feat.Evasion)!);
             bool hasImprovedEvasion = creature.KnowsFeat(NwFeat.FromFeatType(Feat.ImprovedEvasion)!);
@@ -62,6 +51,8 @@ public class WholenessOfBody : IAugmentation.ICastAugment
             _ = ApplyAoeDamage(creature, monk, damageAmount, meteor.DamageType, meteor.DamageVfx);
         }
     }
+
+
 
     private static async Task ApplyAoeDamage(NwGameObject targetObject, NwCreature monk, int damageAmount,
         DamageType damageType, VfxType damageVfx)

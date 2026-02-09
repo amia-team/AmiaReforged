@@ -6,22 +6,18 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations.IroncladBull;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class KiBarrier : IAugmentation.ICastAugment
+public class AugmentKiBarrier : IAugmentation.ICastAugment
 {
     public PathType Path => PathType.IroncladBull;
     public TechniqueType Technique => TechniqueType.KiBarrier;
+
+    /// <summary>
+    /// Grants 6/- Physical Damage Resistance. Each Ki Focus adds +3.
+    /// </summary>
     public void ApplyCastAugmentation(NwCreature monk, OnSpellCast castData, BaseTechniqueCallback baseTechnique)
     {
         baseTechnique();
-        AugmentKiBarrier(monk);
-    }
 
-    /// <summary>
-    /// Ki Barrier grants 6/- physical damage resistance, with each Ki Focus increasing it by 3,
-    /// to a maximum of 15/- physical damage resistance.
-    /// </summary>
-    private void AugmentKiBarrier(NwCreature monk)
-    {
         byte monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
 
         byte resistanceAmount = MonkUtils.GetKiFocus(monk) switch

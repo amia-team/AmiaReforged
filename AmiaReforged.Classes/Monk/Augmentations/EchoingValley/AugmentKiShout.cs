@@ -6,22 +6,19 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations.EchoingValley;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class KiShout : IAugmentation.ICastAugment
+public class AugmentKiShout : IAugmentation.ICastAugment
 {
     public PathType Path => PathType.EchoingValley;
     public TechniqueType Technique => TechniqueType.KiShout;
+
+    /// <summary>
+    /// Detonates all Echoes for 10d6 sonic damage each in a large area radius
+    /// (fortitude halves damage and negates stun for 1 round).
+    /// </summary>
     public void ApplyCastAugmentation(NwCreature monk, OnSpellCast castData, BaseTechniqueCallback baseTechnique)
     {
         baseTechnique();
-        AugmentKiShout(monk);
-    }
 
-    /// <summary>
-    /// Ki Shout releases the monk's Echoes, each Echo exploding and dealing 10d6 sonic damage in a large radius.
-    /// If the target succeeds on a fortitude save, they take half damage and avoid being stunned for 1 round.
-    /// </summary>
-    private void AugmentKiShout(NwCreature monk)
-    {
         if (monk.Location == null) return;
 
         foreach (NwCreature echo in monk.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere,

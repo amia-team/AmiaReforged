@@ -6,22 +6,18 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations.EchoingValley;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class AxiomaticStrike : IAugmentation.IAttackAugment
+public class AugmentAxiomaticStrike : IAugmentation.IAttackAugment
 {
     public PathType Path => PathType.EchoingValley;
     public TechniqueType Technique => TechniqueType.AxiomaticStrike;
 
+    /// <summary>
+    /// Deals +1 sonic damage. Each Ki Focus adds +1.
+    /// </summary>
     public void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData, BaseTechniqueCallback baseTechnique)
     {
         baseTechnique();
-        AugmentAxiomaticStrike(monk, attackData);
-    }
 
-    /// <summary>
-    /// Axiomatic Strike deals +1 bonus sonic damage for each Echo the monk has.
-    /// </summary>
-    private void AugmentAxiomaticStrike(NwCreature monk, OnCreatureAttack attackData)
-    {
         DamageData<short> damageData = attackData.DamageData;
         short sonicDamage = damageData.GetDamageByType(DamageType.Sonic);
 
