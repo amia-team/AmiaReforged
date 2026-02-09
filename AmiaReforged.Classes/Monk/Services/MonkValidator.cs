@@ -88,19 +88,19 @@ public class MonkValidator
             CheckImpKnockdownRemoval(levelInfo, monkLevelCounter, eventData.Player, monk);
             CheckCircleKickReplacement(levelInfo, currentCharacterLevel, eventData.Player, monk);
 
-            AuditAndGrantFeat(levelInfo, monkLevelCounter, monk, additionReport);
+            ValidateFeats(levelInfo, monkLevelCounter, monk, additionReport);
         }
 
         if (removalReport.Count > 0)
         {
-            const string messageBase = "[Monk Feat Sorter] The following feats were removed:\n";
+            const string messageBase = "[Monk Validator] The following feats were removed:\n";
             string removedFeatsString = string.Join("\n", removalReport).ColorString(ColorConstants.Red);
             eventData.Player.SendServerMessage($"{messageBase}{removedFeatsString}");
         }
 
         if (additionReport.Count > 0)
         {
-            const string messageBase = "[Monk Feat Sorter] The following feats were updated/added:\n";
+            const string messageBase = "[Monk Validator] The following feats were updated/added:\n";
             string addedFeatsString = string.Join("\n", additionReport).ColorString(ColorConstants.Cyan);
             eventData.Player.SendServerMessage($"{messageBase}{addedFeatsString}");
         }
@@ -152,7 +152,7 @@ public class MonkValidator
         if (!monk.KnowsFeat(newCircleKick))
             monk.AddFeat(newCircleKick, currentCharacterLevel);
 
-        player.SendServerMessage("[Monk Feat Sorter] Replaced old Circle Kick with a toggleable version.");
+        player.SendServerMessage("[Monk Validator] Replaced old Circle Kick with a toggleable version.");
     }
 
     private static void CheckStunningFistRemoval(CreatureLevelInfo levelInfo, int currentMonkLevel, NwPlayer player,
@@ -166,13 +166,14 @@ public class MonkValidator
         monk.RemoveFeat(stunningFist, removeFeatFromLevelList: true);
 
         player.SendServerMessage(
-            $"[Monk Feat Sorter] Stunning Fist removed as a free feat at Monk Level {currentMonkLevel}. " +
+            $"[Monk Validator] Stunning Fist removed as a free feat at Monk Level {currentMonkLevel}. " +
             $"You may reselect this feat as a general feat.");
     }
 
     private void CheckImpKnockdownRemoval(CreatureLevelInfo levelInfo, int currentMonkLevel, NwPlayer player, NwCreature monk)
     {
         if (currentMonkLevel != 6
+            || levelInfo.Feats.Any(f => f.Id == MonkFeat.MonkFightingStyle)
             || NwFeat.FromFeatType(Feat.ImprovedKnockdown) is not { } impKnockdown
             || NwFeat.FromFeatType(Feat.Knockdown) is not { } knockdown
             || !levelInfo.Feats.Contains(knockdown))
@@ -182,12 +183,12 @@ public class MonkValidator
         monk.RemoveFeat(impKnockdown, removeFeatFromLevelList: true);
 
         player.SendServerMessage(
-            $"[Monk Feat Sorter] Knockdown and Improved Knockdown removed as free feats at Monk Level {currentMonkLevel}. " +
-            $"You may reselect these feats through the Monk Fighting Style feat in your class radial.");
+            $"[Monk Validator] Knockdown and Improved Knockdown removed as free feats at Monk Level {currentMonkLevel}. " +
+            $"You may re-select these feats through the Monk Fighting Style feat in your class radial.");
     }
 
 
-    private static void AuditAndGrantFeat(CreatureLevelInfo levelInfo, int currentMonkLevel, NwCreature monk,
+    private static void ValidateFeats(CreatureLevelInfo levelInfo, int currentMonkLevel, NwCreature monk,
         List<string> additionReport)
     {
         if (!MonkFeatsByLevel.TryGetValue(currentMonkLevel, out NwFeat? requiredFeat) || requiredFeat == null) return;

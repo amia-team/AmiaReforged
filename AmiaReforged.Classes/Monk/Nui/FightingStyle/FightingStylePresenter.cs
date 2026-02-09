@@ -102,7 +102,9 @@ public sealed class FightingStylePresenter(FightingStyleView view, NwPlayer play
 
         player.FloatingTextString($"Added feats {featsToAdd[0].Name} and {featsToAdd[1].Name}", false);
 
-        monk.RemoveFeat(fightingStyleFeat, true);
+        // NB! Do not remove this from the feat list on removal. This is crucial so that the MonkValidator doesn't
+        // keep adding this feat over and over again on character login
+        monk.RemoveFeat(fightingStyleFeat);
     }
 
     private bool HasMonkFightingStyle(NwCreature monk)
