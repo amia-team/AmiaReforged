@@ -26,7 +26,7 @@ public class BindingStrike : IAugmentation.IDamageAugment
     private void AugmentBindingStrike(NwCreature monk, OnCreatureDamage damageData)
     {
         if (damageData.Target is not NwCreature targetCreature
-            || !targetCreature.IsReactionTypeHostile(monk)) return;
+            || !monk.IsReactionTypeHostile(targetCreature)) return;
 
         byte echoCap = MonkUtils.GetKiFocus(monk) switch
         {
