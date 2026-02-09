@@ -49,7 +49,10 @@ public class BindingStrike(AugmentationFactory augmentationFactory) : IDamageTec
 
         // since we bypass the mind immunity by ignoring immunity, check again here for paralysis immunity
         if (targetCreature.IsImmuneTo(ImmunityType.Paralysis))
+        {
+            monk.ControllingPlayer?.SendServerMessage($"{targetCreature.Name} : Immune to Paralysis.");
             return SavingThrowResult.Immune;
+        }
 
         SavingThrowResult savingThrowResult =
             targetCreature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.None, monk);
