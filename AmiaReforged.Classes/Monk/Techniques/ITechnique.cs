@@ -14,11 +14,6 @@ public interface ICastTechnique : ITechnique
     void HandleCastTechnique(NwCreature monk, OnSpellCast castData);
 }
 
-public interface IDamageTechnique : ITechnique
-{
-    void HandleDamageTechnique(NwCreature monk, OnCreatureDamage damageData);
-}
-
 public interface IAttackTechnique : ITechnique
 {
     void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData);

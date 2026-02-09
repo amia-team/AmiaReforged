@@ -7,7 +7,7 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations.SwingingCenser;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class AugmentBindingStrike : IAugmentation.IDamageAugment
+public class AugmentBindingStrike : IAugmentation.IAttackAugment
 {
     public PathType Path => PathType.SwingingCenser;
     public TechniqueType Technique => TechniqueType.BindingStrike;
@@ -15,11 +15,11 @@ public class AugmentBindingStrike : IAugmentation.IDamageAugment
     /// <summary>
     /// Heals the monk and nearby allies for 1d6 in a medium radius. Each Ki Focus adds +1d6.
     /// </summary>
-    public void ApplyDamageAugmentation(NwCreature monk, OnCreatureDamage damageData, BaseTechniqueCallback baseTechnique)
+    public void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData, BaseTechniqueCallback baseTechnique)
     {
         baseTechnique();
 
-        if (damageData.Target is not NwCreature targetCreature
+        if (attackData.Target is not NwCreature targetCreature
             || !monk.IsReactionTypeHostile(targetCreature)
             || targetCreature.Location == null) return;
 

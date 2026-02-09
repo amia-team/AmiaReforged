@@ -7,7 +7,7 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations.FloatingLeaf;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class AugmentEagleStrike : IAugmentation.IDamageAugment
+public class AugmentEagleStrike : IAugmentation.IAttackAugment
 {
     private const string FloatingEagleStrikeTag = nameof(PathType.FloatingLeaf) +  nameof(TechniqueType.EagleStrike);
     public PathType Path => PathType.FloatingLeaf;
@@ -16,11 +16,11 @@ public class AugmentEagleStrike : IAugmentation.IDamageAugment
     /// <summary>
     /// Inflicts -1 attack bonus penalty. Each Ki Focus adds -1.
     /// </summary>
-    public void ApplyDamageAugmentation(NwCreature monk, OnCreatureDamage damageData, BaseTechniqueCallback baseTechnique)
+    public void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData, BaseTechniqueCallback baseTechnique)
     {
-        SavingThrowResult bindingStrikeResult = EagleStrike.DoEagleStrike(monk, damageData);
+        SavingThrowResult bindingStrikeResult = EagleStrike.DoEagleStrike(monk, attackData);
 
-        if (damageData.Target is not NwCreature targetCreature || bindingStrikeResult != SavingThrowResult.Failure)
+        if (attackData.Target is not NwCreature targetCreature || bindingStrikeResult != SavingThrowResult.Failure)
             return;
 
         int abDecrease = MonkUtils.GetKiFocus(monk) switch

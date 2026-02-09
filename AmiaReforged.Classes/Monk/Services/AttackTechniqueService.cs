@@ -35,8 +35,7 @@ public class AttackTechniqueService
 
         NwModule.Instance.OnUseFeat += AttackTechniqueUseFeat;
         NwModule.Instance.OnCombatRoundStart += EnterAttackTechnique;
-        NwModule.Instance.OnCreatureAttack += OnHitApplyAxiomatic;
-        NwModule.Instance.OnCreatureDamage += OnDamageApplyTechnique;
+        NwModule.Instance.OnCreatureAttack += OnHitApplyTechnique;
         NwModule.Instance.OnEffectApply += CueAttackTechniqueActivated;
         NwModule.Instance.OnEffectRemove += CueAttackTechniqueDeactivated;
         Log.Info(message: "Monk Attack Technique Service initialized.");
@@ -124,38 +123,16 @@ public class AttackTechniqueService
     }
 
     /// <summary>
-    ///     This is only used for Axiomatic
+    ///     If the target is hit, handle the activated attack technique
     /// </summary>
-    private void OnHitApplyAxiomatic(OnCreatureAttack attackData)
+    private void OnHitApplyTechnique(OnCreatureAttack attackData)
     {
-        if (!attackData.Attacker.KnowsFeat(BindingStrikeFeat!)) return;
-
-        if (attackData.AttackResult is not (AttackResult.Hit or AttackResult.AutomaticHit or AttackResult.CriticalHit
-            or AttackResult.DevastatingCritical)) return;
-
-        NwCreature monk = attackData.Attacker;
-
-        foreach (Effect effect in monk.ActiveEffects)
-        {
-            if (effect.Tag is AttackCooldownTag) return;
-            if (effect.Tag is not AxiomaticTag) continue;
-
-            ITechnique? axiomaticTechniqueHandler = _techniqueFactory.GetTechnique(TechniqueType.AxiomaticStrike);
-
-            if (axiomaticTechniqueHandler is not IAttackTechnique attackTechniqueHandler) continue;
-
-            attackTechniqueHandler.HandleAttackTechnique(monk, attackData);
-            return;
-        }
-    }
-
-    private void OnDamageApplyTechnique(OnCreatureDamage damageData)
-    {
-        if (damageData.DamagedBy is not NwCreature monk
-            || !monk.KnowsFeat(BindingStrikeFeat!)
-            || damageData.Target == monk
-            || !monk.ActiveEffects.Any(effect => effect.Tag is BindingTag or EagleTag)
-            || monk.ActiveEffects.Any(effect => effect.Tag is AttackCooldownTag))
+        if (!attackData.Attacker.KnowsFeat(BindingStrikeFeat!)
+            || attackData.AttackResult is not (AttackResult.Hit or AttackResult.AutomaticHit or AttackResult.CriticalHit
+                or AttackResult.DevastatingCritical)
+            || attackData.Attacker is not { } monk
+            || !monk.ActiveEffects.Any(e => e.Tag is BindingTag or EagleTag or AxiomaticTag)
+            || monk.ActiveEffects.Any(e => e.Tag is AttackCooldownTag))
             return;
 
         string? techniqueTag = GetActiveTechniqueEffect(monk)?.Tag;
@@ -164,9 +141,9 @@ public class AttackTechniqueService
             return;
 
         ITechnique? techniqueHandler = _techniqueFactory.GetTechnique(techniqueType);
-        if (techniqueHandler is IDamageTechnique damageTechniqueHandler)
+        if (techniqueHandler is IAttackTechnique damageTechniqueHandler)
         {
-            damageTechniqueHandler.HandleDamageTechnique(monk, damageData);
+            damageTechniqueHandler.HandleAttackTechnique(monk, attackData);
         }
 
         ApplyTechniqueCooldown(monk, techniqueTag);

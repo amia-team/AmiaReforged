@@ -7,7 +7,7 @@ using static AmiaReforged.Classes.Monk.Augmentations.CrashingMeteor.CrashingMete
 namespace AmiaReforged.Classes.Monk.Augmentations.CrashingMeteor;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class AugmentBindingStrike : IAugmentation.IDamageAugment
+public class AugmentBindingStrike : IAugmentation.IAttackAugment
 {
     public PathType Path => PathType.CrashingMeteor;
     public TechniqueType Technique => TechniqueType.BindingStrike;
@@ -15,18 +15,18 @@ public class AugmentBindingStrike : IAugmentation.IDamageAugment
     /// <summary>
     /// Deals 2d6 elemental damage in a large radius (reflex halves). Each Ki Focus adds +2d6 damage.
     /// </summary>
-    public void ApplyDamageAugmentation(NwCreature monk, OnCreatureDamage damageData,
+    public void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData,
         BaseTechniqueCallback baseTechnique)
     {
         baseTechnique();
 
-        if (damageData.Target.Location is not { } location) return;
+        if (attackData.Target.Location is not { } location) return;
 
         CrashingMeteorData meteor = GetCrashingMeteorData(monk);
 
         Effect reflexVfx = Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse);
 
-        damageData.Target.ApplyEffect(EffectDuration.Instant, meteor.PulseVfx);
+        attackData.Target.ApplyEffect(EffectDuration.Instant, meteor.PulseVfx);
 
         foreach (NwCreature creature in location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Medium, true))
         {
@@ -51,8 +51,6 @@ public class AugmentBindingStrike : IAugmentation.IDamageAugment
             _ = ApplyAoeDamage(creature, monk, damageAmount, meteor.DamageType, meteor.DamageVfx);
         }
     }
-
-
 
     private static async Task ApplyAoeDamage(NwGameObject targetObject, NwCreature monk, int damageAmount,
         DamageType damageType, VfxType damageVfx)

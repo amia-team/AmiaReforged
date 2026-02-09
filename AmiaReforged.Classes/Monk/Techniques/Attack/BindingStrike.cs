@@ -7,19 +7,18 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Techniques.Attack;
 
 [ServiceBinding(typeof(ITechnique))]
-public class BindingStrike(AugmentationFactory augmentationFactory) : IDamageTechnique
+public class BindingStrike(AugmentationFactory augmentationFactory) : IAttackTechnique
 {
     public TechniqueType Technique => TechniqueType.BindingStrike;
-
-    public void HandleDamageTechnique(NwCreature monk, OnCreatureDamage damageData)
+    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData)
     {
         PathType? path = MonkUtils.GetMonkPath(monk);
 
         IAugmentation? augmentation = path.HasValue ? augmentationFactory.GetAugmentation(path.Value, Technique) : null;
 
-        if (augmentation is IAugmentation.IDamageAugment damageAugment)
+        if (augmentation is IAugmentation.IAttackAugment attackAugment)
         {
-            damageAugment.ApplyDamageAugmentation(monk, damageData, BaseTechnique);
+            attackAugment.ApplyAttackAugmentation(monk, attackData, BaseTechnique);
         }
         else
         {
@@ -28,13 +27,12 @@ public class BindingStrike(AugmentationFactory augmentationFactory) : IDamageTec
 
         return;
 
-        void BaseTechnique() => DoBindingStrike(monk, damageData);
-
+        void BaseTechnique() => DoBindingStrike(monk, attackData);
     }
 
-    public static SavingThrowResult DoBindingStrike(NwCreature monk, OnCreatureDamage damageData)
+    public static SavingThrowResult DoBindingStrike(NwCreature monk, OnCreatureAttack attackData)
     {
-        if (damageData.Target is not NwCreature targetCreature)
+        if (attackData.Target is not NwCreature targetCreature)
             return SavingThrowResult.Immune;
 
         Effect bindingStrikeEffect = Effect.LinkEffects(

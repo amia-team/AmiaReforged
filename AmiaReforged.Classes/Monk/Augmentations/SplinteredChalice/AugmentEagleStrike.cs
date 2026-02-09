@@ -7,7 +7,7 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations.SplinteredChalice;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class AugmentEagleStrike : IAugmentation.IDamageAugment
+public class AugmentEagleStrike : IAugmentation.IAttackAugment
 {
     private const string SplinteredEagleTag = nameof(PathType.SplinteredChalice) + nameof(TechniqueType.EagleStrike);
     public PathType Path => PathType.SplinteredChalice;
@@ -17,12 +17,12 @@ public class AugmentEagleStrike : IAugmentation.IDamageAugment
     /// Eagle Strike inflicts 3% physical and negative vulnerability, with extra 3% per Ki Focus.
     /// Overflow: Inflicts 5% physical and divine vulnerability, with extra 5% per Ki Focus.
     /// </summary>
-    public void ApplyDamageAugmentation(NwCreature monk, OnCreatureDamage damageData, BaseTechniqueCallback baseTechnique)
+    public void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData, BaseTechniqueCallback baseTechnique)
     {
-        SavingThrowResult savingThrowResult = EagleStrike.DoEagleStrike(monk, damageData);
+        SavingThrowResult savingThrowResult = EagleStrike.DoEagleStrike(monk, attackData);
 
         if (savingThrowResult != SavingThrowResult.Success
-            || damageData.Target is not NwCreature targetCreature) return;
+            || attackData.Target is not NwCreature targetCreature) return;
 
         KiFocus? kiFocus = MonkUtils.GetKiFocus(monk);
         bool hasOverflow = Overflow.HasOverflow(monk);

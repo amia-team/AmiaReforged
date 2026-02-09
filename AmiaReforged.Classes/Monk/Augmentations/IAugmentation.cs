@@ -18,9 +18,4 @@ public interface IAugmentation
     {
         void ApplyCastAugmentation(NwCreature monk, OnSpellCast castData, BaseTechniqueCallback baseTechnique);
     }
-
-    public interface IDamageAugment : IAugmentation
-    {
-        void ApplyDamageAugmentation(NwCreature monk, OnCreatureDamage damageData, BaseTechniqueCallback baseTechnique);
-    }
 }

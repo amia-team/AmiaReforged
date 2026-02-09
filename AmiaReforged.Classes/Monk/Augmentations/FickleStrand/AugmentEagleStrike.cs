@@ -7,7 +7,7 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations.FickleStrand;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class AugmentEagleStrike(WildMagicService wildMagicService) : IAugmentation.IDamageAugment
+public class AugmentEagleStrike(WildMagicService wildMagicService) : IAugmentation.IAttackAugment
 {
     public PathType Path => PathType.FickleStrand;
     public TechniqueType Technique => TechniqueType.EagleStrike;
@@ -15,11 +15,11 @@ public class AugmentEagleStrike(WildMagicService wildMagicService) : IAugmentati
     /// <summary>
     /// 30% chance to trigger a Wild Magic effect. Ki Focus increases the potency of effects (Weak to Strong).
     /// </summary>
-    public void ApplyDamageAugmentation(NwCreature monk, OnCreatureDamage damageData, BaseTechniqueCallback baseTechnique)
+    public void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData, BaseTechniqueCallback baseTechnique)
     {
         baseTechnique();
 
-        if (damageData.Target is not NwCreature targetCreature || !monk.IsReactionTypeHostile(targetCreature)) return;
+        if (attackData.Target is not NwCreature targetCreature || !monk.IsReactionTypeHostile(targetCreature)) return;
 
         if (Random.Shared.Roll(100) <= 30)
             wildMagicService.DoWildMagic(monk, targetCreature);

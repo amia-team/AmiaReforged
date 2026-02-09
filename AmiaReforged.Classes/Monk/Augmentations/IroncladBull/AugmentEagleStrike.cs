@@ -7,7 +7,7 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations.IroncladBull;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class AugmentEagleStrike : IAugmentation.IDamageAugment
+public class AugmentEagleStrike : IAugmentation.IAttackAugment
 {
     private const string IroncladEagleTag = nameof(PathType.IroncladBull) + nameof(TechniqueType.EagleStrike);
     public PathType Path => PathType.IroncladBull;
@@ -16,15 +16,15 @@ public class AugmentEagleStrike : IAugmentation.IDamageAugment
     /// <summary>
     /// Inflicts -1 physical damage penalty on the enemy. Each Ki Focus adds -1.
     /// </summary>
-    public void ApplyDamageAugmentation(NwCreature monk, OnCreatureDamage damageData, BaseTechniqueCallback baseTechnique)
+    public void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData, BaseTechniqueCallback baseTechnique)
     {
-        SavingThrowResult savingThrowResult = EagleStrike.DoEagleStrike(monk, damageData);
+        SavingThrowResult savingThrowResult = EagleStrike.DoEagleStrike(monk, attackData);
 
         if (savingThrowResult != SavingThrowResult.Failure) return;
 
-        Effect? existingEffect = damageData.Target.ActiveEffects.FirstOrDefault(e => e.Tag == IroncladEagleTag);
+        Effect? existingEffect = attackData.Target.ActiveEffects.FirstOrDefault(e => e.Tag == IroncladEagleTag);
         if (existingEffect != null)
-            damageData.Target.RemoveEffect(existingEffect);
+            attackData.Target.RemoveEffect(existingEffect);
 
         int damageDecrease = MonkUtils.GetKiFocus(monk) switch
         {
@@ -38,6 +38,6 @@ public class AugmentEagleStrike : IAugmentation.IDamageAugment
         eagleDamageDecrease.SubType = EffectSubType.Extraordinary;
         eagleDamageDecrease.Tag = IroncladEagleTag;
 
-        damageData.Target.ApplyEffect(EffectDuration.Temporary, eagleDamageDecrease, NwTimeSpan.FromRounds(2));
+        attackData.Target.ApplyEffect(EffectDuration.Temporary, eagleDamageDecrease, NwTimeSpan.FromRounds(2));
     }
 }

@@ -7,20 +7,20 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Techniques.Attack;
 
 [ServiceBinding(typeof(ITechnique))]
-public class EagleStrike(AugmentationFactory augmentationFactory) : IDamageTechnique
+public class EagleStrike(AugmentationFactory augmentationFactory) : IAttackTechnique
 {
     private const string EagleEffectTag = nameof(TechniqueType.EagleStrike) + "Effect";
     public TechniqueType Technique => TechniqueType.EagleStrike;
 
-    public void HandleDamageTechnique(NwCreature monk, OnCreatureDamage damageData)
+    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData)
     {
         PathType? path = MonkUtils.GetMonkPath(monk);
 
         IAugmentation? augmentation = path.HasValue ? augmentationFactory.GetAugmentation(path.Value, Technique) : null;
 
-        if (augmentation is IAugmentation.IDamageAugment damageAugment)
+        if (augmentation is IAugmentation.IAttackAugment attackAugment)
         {
-            damageAugment.ApplyDamageAugmentation(monk, damageData, BaseTechnique);
+            attackAugment.ApplyAttackAugmentation(monk, attackData, BaseTechnique);
         }
         else
         {
@@ -29,14 +29,14 @@ public class EagleStrike(AugmentationFactory augmentationFactory) : IDamageTechn
 
         return;
 
-        void BaseTechnique() => DoEagleStrike(monk, damageData);
+        void BaseTechnique() => DoEagleStrike(monk, attackData);
     }
 
     /// <summary>
     /// On two successful hits per round against an enemy creature, the target must succeed at a reflex save or suffer
     /// a penalty of -2 to their armor class for two rounds.
     /// </summary>
-    public static SavingThrowResult DoEagleStrike(NwCreature monk, OnCreatureDamage damageData)
+    public static SavingThrowResult DoEagleStrike(NwCreature monk, OnCreatureAttack damageData)
     {
         if (damageData.Target is not NwCreature targetCreature)
             return SavingThrowResult.Immune;

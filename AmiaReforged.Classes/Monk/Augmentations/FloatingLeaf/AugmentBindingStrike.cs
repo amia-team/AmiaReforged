@@ -7,7 +7,7 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations.FloatingLeaf;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class AugmentBindingStrike : IAugmentation.IDamageAugment
+public class AugmentBindingStrike : IAugmentation.IAttackAugment
 {
     public PathType Path => PathType.FloatingLeaf;
     public TechniqueType Technique => TechniqueType.BindingStrike;
@@ -15,11 +15,11 @@ public class AugmentBindingStrike : IAugmentation.IDamageAugment
     /// <summary>
     /// Bypasses mind immunity, causing a weaker effect. Ki Focus I pacifies, II dazes, and III stuns.
     /// </summary>
-    public void ApplyDamageAugmentation(NwCreature monk, OnCreatureDamage damageData, BaseTechniqueCallback baseTechnique)
+    public void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData, BaseTechniqueCallback baseTechnique)
     {
-        SavingThrowResult bindingStrikeResult = BindingStrike.DoBindingStrike(monk, damageData);
+        SavingThrowResult bindingStrikeResult = BindingStrike.DoBindingStrike(monk, attackData);
 
-        if (damageData.Target is not NwCreature targetCreature
+        if (attackData.Target is not NwCreature targetCreature
             || bindingStrikeResult != SavingThrowResult.Immune)
             return;
 

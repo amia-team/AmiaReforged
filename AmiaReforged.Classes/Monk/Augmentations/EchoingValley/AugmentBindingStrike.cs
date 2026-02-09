@@ -8,7 +8,7 @@ using NWN.Core.NWNX;
 namespace AmiaReforged.Classes.Monk.Augmentations.EchoingValley;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class AugmentBindingStrike : IAugmentation.IDamageAugment
+public class AugmentBindingStrike : IAugmentation.IAttackAugment
 {
     public PathType Path => PathType.EchoingValley;
     public TechniqueType Technique => TechniqueType.BindingStrike;
@@ -17,11 +17,11 @@ public class AugmentBindingStrike : IAugmentation.IDamageAugment
     /// Summons an Echo for 2 turns and causes existing Echoes to deal 1d6 sonic damage in a medium radius.
     /// Each Ki Focus allows one additional Echo.
     /// </summary>
-    public void ApplyDamageAugmentation(NwCreature monk, OnCreatureDamage damageData, BaseTechniqueCallback baseTechnique)
+    public void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData, BaseTechniqueCallback baseTechnique)
     {
         baseTechnique();
 
-        if (damageData.Target is not NwCreature targetCreature
+        if (attackData.Target is not NwCreature targetCreature
             || !monk.IsReactionTypeHostile(targetCreature)) return;
 
         byte echoCap = MonkUtils.GetKiFocus(monk) switch
@@ -95,7 +95,7 @@ public class AugmentBindingStrike : IAugmentation.IDamageAugment
         echo.Immortal = true;
     }
 
-    private async Task EchoAoe(NwCreature monk, NwCreature echo)
+    private static async Task EchoAoe(NwCreature monk, NwCreature echo)
     {
         await NwTask.Delay(TimeSpan.FromMilliseconds(1));
 
