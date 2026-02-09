@@ -42,7 +42,9 @@ public class KiShout(AugmentationFactory augmentationFactory) : ICastTechnique
     {
         if (monk.Location == null) return;
         Effect kiShoutVfx = Effect.VisualEffect(VfxType.FnfHowlMind);
+
         monk.ApplyEffect(EffectDuration.Instant, kiShoutVfx);
+        Effect stunEffect = Effect.Stunned();
 
         foreach (NwCreature hostileCreature in monk.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere,
                      RadiusSize.Colossal, false))
@@ -51,11 +53,12 @@ public class KiShout(AugmentationFactory augmentationFactory) : ICastTechnique
 
             CreatureEvents.OnSpellCastAt.Signal(monk, hostileCreature, NwSpell.FromSpellType(Spell.AbilityHowlSonic)!);
 
-            ApplyKiShoutEffects(monk, hostileCreature, damageType, damageVfx);
+            ApplyKiShoutEffects(monk, hostileCreature, damageType, damageVfx, stunEffect);
         }
     }
 
-    private static void ApplyKiShoutEffects(NwCreature monk, NwCreature target, DamageType damageType, VfxType damageVfx)
+    private static void ApplyKiShoutEffects(NwCreature monk, NwCreature target, DamageType damageType,
+        VfxType damageVfx, Effect stunEffect)
     {
         int dc = MonkUtils.CalculateMonkDc(monk);
         byte damageDice = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
@@ -75,7 +78,7 @@ public class KiShout(AugmentationFactory augmentationFactory) : ICastTechnique
                 target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpWillSavingThrowUse));
                 break;
             case SavingThrowResult.Failure:
-                _ = ApplyKiShoutStun(target, delay);
+                _ = ApplyKiShoutStun(stunEffect, target, delay);
                 break;
         }
     }
@@ -92,13 +95,12 @@ public class KiShout(AugmentationFactory augmentationFactory) : ICastTechnique
         target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(damageVfx));
     }
 
-    private static async Task ApplyKiShoutStun(NwCreature target, float delay)
+    private static async Task ApplyKiShoutStun(Effect stunEffect, NwCreature target, float delay)
     {
         await NwTask.Delay(TimeSpan.FromSeconds(delay));
 
-        Effect kiShoutEffect = Effect.Stunned();
-        kiShoutEffect.SubType = EffectSubType.Supernatural;
+        stunEffect.SubType = EffectSubType.Supernatural;
         TimeSpan effectDuration = NwTimeSpan.FromRounds(3);
-        target.ApplyEffect(EffectDuration.Temporary, kiShoutEffect, effectDuration);
+        target.ApplyEffect(EffectDuration.Temporary, stunEffect, effectDuration);
     }
 }
