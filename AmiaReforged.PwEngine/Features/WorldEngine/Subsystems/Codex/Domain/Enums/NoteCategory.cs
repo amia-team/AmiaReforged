@@ -1,4 +1,4 @@
-namespace AmiaReforged.PwEngine.Features.Codex.Domain.Enums;
+namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
 
 /// <summary>
 /// Represents the category/type of a note entry.

@@ -1,6 +1,6 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 
-namespace AmiaReforged.PwEngine.Features.Codex.Domain.Events;
+namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Events;
 
 public sealed record TraitAcquiredEvent(
     CharacterId CharacterId,

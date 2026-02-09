@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Aggregates;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Aggregates;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Repositories;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Infrastructure;
 

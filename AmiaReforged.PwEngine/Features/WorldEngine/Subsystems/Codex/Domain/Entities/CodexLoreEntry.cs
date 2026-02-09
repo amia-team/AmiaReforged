@@ -1,7 +1,7 @@
-using AmiaReforged.PwEngine.Features.Codex.Domain.Enums;
-using AmiaReforged.PwEngine.Features.Codex.Domain.ValueObjects;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
 
-namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Entities;
+namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
 
 /// <summary>
 /// Entity representing a lore entry in a player's codex.

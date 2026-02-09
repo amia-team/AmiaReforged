@@ -1,4 +1,4 @@
-namespace AmiaReforged.PwEngine.Features.Codex.Domain.Enums;
+namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
 
 /// <summary>
 /// Represents the current state of a quest in the player's codex.

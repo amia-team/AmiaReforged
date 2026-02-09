@@ -1,4 +1,4 @@
-namespace AmiaReforged.PwEngine.Features.Codex.Domain.ValueObjects;
+namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
 
 /// <summary>
 /// Value object representing a unique lore entry identifier.

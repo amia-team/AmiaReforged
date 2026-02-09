@@ -91,6 +91,56 @@ A Domain-Driven Design implementation of a persistent character codex system for
 
 ## 🏗️ Architecture
 
+### Folder Structure
+
+```
+Codex/
+├── Domain/                     # Core domain layer (bounded context)
+│   ├── Aggregates/             # Aggregate roots
+│   │   └── PlayerCodex.cs
+│   ├── Entities/               # Domain entities
+│   │   ├── CodexLoreEntry.cs
+│   │   ├── CodexNoteEntry.cs
+│   │   ├── CodexQuestEntry.cs
+│   │   └── FactionReputation.cs
+│   ├── Enums/                  # Domain enums
+│   │   ├── LoreTier.cs
+│   │   ├── NoteCategory.cs
+│   │   └── QuestState.cs
+│   ├── Events/                 # Domain events
+│   │   ├── CodexDomainEvent.cs
+│   │   ├── LoreEvents.cs
+│   │   ├── NoteEvents.cs
+│   │   ├── QuestEvents.cs
+│   │   ├── ReputationEvents.cs
+│   │   └── TraitEvents.cs
+│   ├── Repositories/           # Repository interfaces
+│   │   └── IPlayerCodexRepository.cs
+│   └── ValueObjects/           # Value objects
+│       ├── FactionId.cs
+│       ├── Keyword.cs
+│       ├── LoreId.cs
+│       ├── QuestId.cs
+│       └── ReputationScore.cs
+├── Application/                # Application services
+│   ├── CodexEventProcessor.cs
+│   └── CodexQueryService.cs
+├── Infrastructure/             # Infrastructure implementations
+│   └── InMemoryPlayerCodexRepository.cs
+└── README.md
+```
+
+### Namespace Convention
+
+All Codex types use the consistent namespace:
+`AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.*`
+
+- Domain layer: `...Codex.Domain.{Aggregates|Entities|Enums|Events|Repositories|ValueObjects}`
+- Application layer: `...Codex.Application`
+- Infrastructure layer: `...Codex.Infrastructure`
+
+### System Architecture
+
 ```
 ┌─────────────────────────────────────────┐
 │           NWN Game Engine               │

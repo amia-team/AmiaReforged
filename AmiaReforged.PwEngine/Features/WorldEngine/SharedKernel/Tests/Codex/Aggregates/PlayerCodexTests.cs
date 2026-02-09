@@ -1,7 +1,7 @@
-using AmiaReforged.PwEngine.Features.Codex.Domain.Enums;
-using AmiaReforged.PwEngine.Features.Codex.Domain.ValueObjects;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Aggregates;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Entities;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Aggregates;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Codex.Aggregates;

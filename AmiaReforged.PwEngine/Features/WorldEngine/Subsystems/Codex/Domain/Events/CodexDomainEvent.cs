@@ -1,6 +1,6 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 
-namespace AmiaReforged.PwEngine.Features.Codex.Domain.Events;
+namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Events;
 
 /// <summary>
 /// Base record for all Codex domain events.

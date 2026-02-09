@@ -1,4 +1,4 @@
-using AmiaReforged.PwEngine.Features.Codex.Domain.ValueObjects;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Codex.ValueObjects;

@@ -1,6 +1,6 @@
-using AmiaReforged.PwEngine.Features.Codex.Domain.Enums;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
 
-namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Entities;
+namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
 
 /// <summary>
 /// Entity representing a player or DM note in the codex.
