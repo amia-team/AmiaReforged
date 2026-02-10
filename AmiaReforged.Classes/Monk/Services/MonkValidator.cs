@@ -88,7 +88,7 @@ public class MonkValidator
             CheckImpKnockdownRemoval(levelInfo, monkLevelCounter, eventData.Player, monk);
             CheckCircleKickReplacement(levelInfo, currentCharacterLevel, eventData.Player, monk);
 
-            ValidateFeats(levelInfo, monkLevelCounter, monk, additionReport);
+            ValidateFeats(levelInfo, monkLevelCounter, currentCharacterLevel, monk, additionReport);
         }
 
         if (removalReport.Count > 0)
@@ -188,8 +188,8 @@ public class MonkValidator
     }
 
 
-    private static void ValidateFeats(CreatureLevelInfo levelInfo, int currentMonkLevel, NwCreature monk,
-        List<string> additionReport)
+    private static void ValidateFeats(CreatureLevelInfo levelInfo, int currentMonkLevel, int currentCharacterLevel,
+        NwCreature monk, List<string> additionReport)
     {
         if (!MonkFeatsByLevel.TryGetValue(currentMonkLevel, out NwFeat? requiredFeat) || requiredFeat == null) return;
 
@@ -200,7 +200,7 @@ public class MonkValidator
             monk.RemoveFeat(requiredFeat, true);
         }
 
-        monk.AddFeat(requiredFeat, currentMonkLevel);
+        monk.AddFeat(requiredFeat, currentCharacterLevel);
 
         additionReport.Add($" -{requiredFeat.Name}");
     }
