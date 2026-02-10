@@ -11,7 +11,7 @@ public static class StaticBuff
     private static readonly NwFeat? MonkSpeedFeat = NwFeat.FromFeatId(MonkFeat.MonkSpeedNew);
     private const string StaticBuffTag = "monk_static_buff";
 
-    public static void AdjustBuff(NwCreature monk)
+    public static void RefreshBuff(NwCreature monk)
     {
         FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_EQUIP_SHIELD_AC_NO_STACK, 1, monk);
 
@@ -19,9 +19,17 @@ public static class StaticBuff
 
         Effect? existingMonkBuff = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == StaticBuffTag);
 
-        if (existingMonkBuff != null) monk.RemoveEffect(existingMonkBuff);
+        if (existingMonkBuff != null)
+        {
+            monk.RemoveEffect(existingMonkBuff);
+            SetMovementSpeedCap(monk, 0);
+        }
 
-        if (MonkUtils.AbilityRestricted(monk, "monk abilities")) return;
+        if (MonkUtils.AbilityRestricted(monk, "monk abilities"))
+        {
+            FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_EQUIP_SHIELD_AC_NO_STACK, 0, monk);
+            return;
+        }
 
         List<Effect> effectsToLink = [];
 
@@ -33,11 +41,13 @@ public static class StaticBuff
             effectsToLink.Add(monkDefenseEffect);
         }
 
-        if (MonkSpeedFeat != null && monk.KnowsFeat(MonkSpeedFeat))
+        if (!monk.KnowsFeat(Feat.MonkEndurance!) && MonkSpeedFeat != null && monk.KnowsFeat(MonkSpeedFeat))
         {
             Effect monkSpeedEffect = MonkSpeed(monkLevel);
             monkSpeedEffect.ShowIcon = false;
             effectsToLink.Add(monkSpeedEffect);
+
+            SetMovementSpeedCap(monk, monkLevel);
         }
 
         KiFocus? kiFocusTier = MonkUtils.GetKiFocus(monk);
@@ -66,6 +76,23 @@ public static class StaticBuff
         monk.ApplyEffect(EffectDuration.Permanent, monkBuff);
 
         FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_EQUIP_SHIELD_AC_NO_STACK, 0, monk);
+    }
+
+    /// <summary>
+    /// Raises the monk speed cap according to monk level. If monk level is passed as 0, reverts monk speed cap to default.
+    /// </summary>
+    private static void SetMovementSpeedCap(NwCreature monk, int monkLevel)
+    {
+        float movementSpeedCap = monkLevel switch
+        {
+            >= 4 and <= 9 => 1.6f,
+            >= 10 and <= 15 => 1.7f,
+            >= 16 and <= 21 => 1.8f,
+            >= 22 and <= 27 => 1.9f,
+            >= 28 => 2.0f,
+            _ => 1.5f
+        };
+        CreaturePlugin.SetMovementRateFactorCap(monk, movementSpeedCap);
     }
 
     private static Effect MonkDefense(int monkLevel, int wisMod)

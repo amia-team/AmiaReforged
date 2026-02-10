@@ -31,7 +31,7 @@ public class StaticBuffService
         if (eventData.Player.ControlledCreature is not { } monk
             || !monk.KnowsFeat(MonkDefense!)) return;
 
-        StaticBuff.AdjustBuff(monk);
+        StaticBuff.RefreshBuff(monk);
 
         if (MonkUtils.GetMonkPath(monk) != PathType.FloatingLeaf) return;
 
@@ -42,7 +42,7 @@ public class StaticBuffService
     {
         if (!eventData.EquippedBy.KnowsFeat(MonkDefense!)) return;
 
-        StaticBuff.AdjustBuff(eventData.EquippedBy);
+        StaticBuff.RefreshBuff(eventData.EquippedBy);
 
         if (MonkUtils.GetMonkPath(eventData.EquippedBy) != PathType.FloatingLeaf) return;
 
@@ -53,7 +53,7 @@ public class StaticBuffService
     {
         if (!eventData.Creature.KnowsFeat(MonkDefense!)) return;
 
-        StaticBuff.AdjustBuff(eventData.Creature);
+        StaticBuff.RefreshBuff(eventData.Creature);
 
         if (MonkUtils.GetMonkPath(eventData.Creature) != PathType.FloatingLeaf) return;
 
@@ -64,7 +64,7 @@ public class StaticBuffService
     {
         if (!eventData.Creature.KnowsFeat(MonkDefense!)) return;
 
-        StaticBuff.AdjustBuff(eventData.Creature);
+        StaticBuff.RefreshBuff(eventData.Creature);
 
         if (MonkUtils.GetMonkPath(eventData.Creature) != PathType.FloatingLeaf) return;
 
@@ -75,7 +75,7 @@ public class StaticBuffService
     {
         if (!eventData.Creature.KnowsFeat(MonkDefense!)) return;
 
-        StaticBuff.AdjustBuff(eventData.Creature);
+        StaticBuff.RefreshBuff(eventData.Creature);
 
         if (MonkUtils.GetMonkPath(eventData.Creature) != PathType.FloatingLeaf) return;
 
@@ -92,7 +92,7 @@ public class StaticBuffService
         int ability = eventData.Effect.IntParams[0];
         if (ability is (int)Ability.Wisdom)
         {
-            StaticBuff.AdjustBuff(monk);
+            StaticBuff.RefreshBuff(monk);
         }
         if (MonkUtils.GetMonkPath(monk) == PathType.FloatingLeaf
             && ability is (int)Ability.Wisdom or (int)Ability.Dexterity or (int)Ability.Strength)
@@ -111,7 +111,7 @@ public class StaticBuffService
         int ability = eventData.Effect.IntParams[0];
         if (ability is (int)Ability.Wisdom)
         {
-            StaticBuff.AdjustBuff(monk);
+            StaticBuff.RefreshBuff(monk);
         }
         if (MonkUtils.GetMonkPath(monk) == PathType.FloatingLeaf
             && ability is (int)Ability.Wisdom or (int)Ability.Dexterity or (int)Ability.Strength)
