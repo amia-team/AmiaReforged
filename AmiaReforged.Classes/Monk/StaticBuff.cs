@@ -73,11 +73,11 @@ public static class StaticBuff
     {
         int monkSpeedBonusAmount = monkLevel switch
         {
-            >= 4 and <= 10 => 10,
-            >= 11 and <= 16 => 20,
-            >= 17 and <= 21 => 30,
-            >= 22 and <= 26 => 40,
-            >= 27 => 50,
+            >= 4 and <= 9 => 10,
+            >= 10 and <= 15 => 20,
+            >= 16 and <= 21 => 30,
+            >= 22 and <= 27 => 40,
+            >= 28 => 50,
             _ => 0
         };
 
