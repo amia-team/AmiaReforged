@@ -1,6 +1,7 @@
 using AmiaReforged.Classes.Monk.Constants;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Monk;
 
@@ -12,6 +13,8 @@ public static class StaticBuff
 
     public static void AdjustBuff(NwCreature monk)
     {
+        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_EQUIP_SHIELD_AC_NO_STACK, 1, monk);
+
         int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
 
         Effect? existingMonkBuff = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == StaticBuffTag);
@@ -61,6 +64,8 @@ public static class StaticBuff
         monkBuff.Tag = StaticBuffTag;
 
         monk.ApplyEffect(EffectDuration.Permanent, monkBuff);
+
+        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_EQUIP_SHIELD_AC_NO_STACK, 0, monk);
     }
 
     private static Effect MonkDefense(int monkLevel, int wisMod)
