@@ -30,7 +30,6 @@ public static class StaticBuff
         if (MonkUtils.AbilityRestricted(monk, "monk abilities"))
         {
             FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_EQUIP_SHIELD_AC_NO_STACK, 0, monk);
-            PlayerPlugin.UpdateCharacterSheet(monk);
             return;
         }
 
