@@ -37,6 +37,17 @@ public class SubraceSetupService
         { "half-dragon", new HalfDragonOption() }
     };
 
+    private readonly IReadOnlyList<RacialType> _eligibleRaces = new List<RacialType>
+    {
+        RacialType.Human,
+        RacialType.Elf,
+        RacialType.Dwarf,
+        RacialType.Halfling,
+        RacialType.Gnome,
+        RacialType.HalfElf,
+        RacialType.HalfOrc
+    };
+
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     public SubraceSetupService()
@@ -54,12 +65,17 @@ public class SubraceSetupService
         Log.Info("Subrace setup service initialized.");
     }
 
-    private static void SetupSubrace(PlaceableEvents.OnUsed obj)
+    private void SetupSubrace(PlaceableEvents.OnUsed obj)
     {
         if (!obj.UsedBy.IsPlayerControlled(out NwPlayer player)) return;
         if (player.IsDM || player.IsPlayerDM) return;
+        if (player.LoginCreature is null) return;
+        if (!_eligibleRaces.Contains(player.LoginCreature.Race.RacialType))
+        {
+            player.SendServerMessage("This subrace selection is only available to the base Neverwinter Nights races.", ColorConstants.Red);
+            return;
+        }
         if (TemplateItem.Initialized(player.LoginCreature)) return;
-
         string usedBySubRace = obj.UsedBy.SubRace.ToLower();
         if (!Subraces.ContainsKey(usedBySubRace)) return;
 
