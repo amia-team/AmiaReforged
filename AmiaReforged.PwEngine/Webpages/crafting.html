@@ -1,0 +1,1709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amia Reforged - Crafting System Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #e8e8e8;
+            background: black;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #232323;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #4c4c4c 0%, #232323 100%);
+            color: #d6bc46;
+            padding: 40px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+            color: #e8e8e8;
+        }
+
+        a {
+            color: #d6bc46;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        a:hover {
+            color: #f0d060;
+            text-decoration: underline;
+        }
+
+        a:visited {
+            color: #b89a35;
+        }
+
+        a:visited:hover {
+            color: #d6bc46;
+            text-decoration: underline;
+        }
+
+        h2 {
+            color: #d6bc46;
+            font-size: 2em;
+            margin: 30px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #d6bc46;
+        }
+
+        h3 {
+            color: #d6bc46;
+            font-size: 1.5em;
+            margin: 25px 0 15px 0;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .info-box {
+            background: #4a4a3a;
+            border-left: 4px solid #d6bc46;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            color: #e8e8e8;
+        }
+
+        .item-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            background: #4a4a3a;
+        }
+
+        .item-table thead {
+            background: linear-gradient(135deg, #464735 0%, #373725 100%);
+            color: #d6bc46;
+        }
+
+        .item-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .item-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #555;
+            color: #e8e8e8;
+        }
+
+        .item-table tbody tr:hover {
+            background-color: #5a5a4a;
+        }
+
+        .item-table tbody tr:nth-child(even) {
+            background-color: #505040;
+        }
+
+        .tier-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: #4a4a3a;
+            border-radius: 8px;
+            border: 2px solid #d6bc46;
+        }
+
+        .tier-header {
+            display: inline-block;
+            padding: 10px 20px;
+            margin-bottom: 20px;
+            border-radius: 25px;
+            color: white;
+            font-weight: 600;
+            font-size: 1.3em;
+        }
+
+        .tier-minor { background: linear-gradient(135deg, #8e9eab 0%, #526976 100%); }
+        .tier-lesser { background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%); }
+        .tier-intermediate { background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%); }
+        .tier-greater { background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%); }
+        .tier-flawless { background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%); }
+        .tier-perfect { background: linear-gradient(135deg, #d38312 0%, #a83279 100%); }
+        .tier-divine { background: linear-gradient(135deg, #8e2de2 0%, #4a00e0 100%); }
+
+        .property-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .property-card {
+            background: #232323;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #d6bc46;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .property-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+            background: #454535;
+        }
+
+        .property-name {
+            font-weight: 600;
+            color: #e8e8e8;
+            margin-bottom: 5px;
+        }
+
+        .property-cost {
+            color: #d6bc46;
+            font-weight: 600;
+        }
+
+        .cost-free {
+            color: #90ee90;
+            font-weight: 600;
+        }
+
+        .category-header {
+            background: linear-gradient(135deg, #464735 0%, #373725 100%);
+            color: #d6bc46;
+            padding: 15px 20px;
+            margin: 25px 0 15px 0;
+            border-radius: 5px;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .note {
+            background: #4a4530;
+            border-left: 4px solid #d6bc46;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            color: #e8e8e8;
+        }
+
+        .back-home {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #464735 0%, #373725 100%);
+            color: #d6bc46;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 600;
+            font-size: 1em;
+            margin: 20px 0;
+            border: 2px solid #d6bc46;
+            transition: all 0.3s ease;
+        }
+
+        .back-home:hover {
+            background: linear-gradient(135deg, #545544 0%, #474735 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(214, 188, 70, 0.3);
+        }
+
+        .back-home::before {
+            content: "⬅ ";
+            margin-right: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .property-grid {
+                grid-template-columns: 1fr;
+            }
+
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Amia Crafting System</h1>
+            <p>Master the Art of Mythal Crafting</p>
+        </header>
+
+        <div class="content">
+            <a href="https://www.amiaworld.com/phpbb/index.php" class="back-home">Back to Amia Index Page</a>
+
+            <!-- Overview Section -->
+            <section class="section">
+                <h2>📖 Overview of the Crafting System</h2>
+                <div class="info-box">
+                    <p><strong>Welcome to the Amia Crafting System!</strong></p>
+                    <p>The crafting system allows players to enhance their equipment using magical mythal crystals. Each mythal tier unlocks different properties that can be added to weapons, armor, and accessories. Every item has a maximum point budget, and each property consumes a certain number of points when applied.</p>
+                    <br>
+                    <p><strong>Key Concepts:</strong></p>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li><strong>Power Cost:</strong> The number of points a property consumes from an item's budget</li>
+                        <li><strong>Item Budget:</strong> The maximum number of points an item can have</li>
+                        <li><strong>Mythal Tiers:</strong> Different quality levels of mythals unlock different properties</li>
+                        <li><strong>Free Properties:</strong> Some properties cost 0 points but may still require specific mythal tiers</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Mythals Information Section -->
+            <section class="section">
+                <h2>💎 Information about Mythals</h2>
+                <div class="info-box">
+                    <p>Mythal crystals are splinters of solidified magic, rumored to have broken off from the Weave during a conflict in Amia’s distant past. Intuitive minds soon discovered that these fragments were a valuable energy source and crafting material. Years later, the knowledge mythalcraft has spread throughout the nearby Realms, though mystery still shrouds the origin and ultimate fate of the shards. The Church of Mystra, for its part, seems content in this.</p>
+                    <br>
+                    <p>The size of a mythal directly correlates to its magical potential and rarity. Certain stations throughout the gameworld will allow characters to combine or split crystals apart as desired.</p>
+                    <br>
+                    <p><strong>Mythal Tiers:</strong></p>
+                    <ul style="margin-left: 20px; margin-top: 5px; line-height: 1.6;">
+                        <li style="margin-bottom: 8px;"><span class="tier-header tier-minor" style="display: inline; padding: 5px 10px; font-size: 0.9em;">Minor</span> - Basic enhancements</li>
+                        <li style="margin-bottom: 8px;"><span class="tier-header tier-lesser" style="display: inline; padding: 5px 10px; font-size: 0.9em;">Lesser</span> - Improved properties</li>
+                        <li style="margin-bottom: 8px;"><span class="tier-header tier-intermediate" style="display: inline; padding: 5px 10px; font-size: 0.9em;">Intermediate</span> - Advanced abilities</li>
+                        <li style="margin-bottom: 8px;"><span class="tier-header tier-greater" style="display: inline; padding: 5px 10px; font-size: 0.9em;">Greater</span> - Powerful enhancements</li>
+                        <li style="margin-bottom: 8px;"><span class="tier-header tier-flawless" style="display: inline; padding: 5px 10px; font-size: 0.9em;">Flawless</span> - Superior properties</li>
+                        <li style="margin-bottom: 8px;"><span class="tier-header tier-perfect" style="display: inline; padding: 5px 10px; font-size: 0.9em;">Perfect</span> - Exceptional abilities</li>
+                        <li style="margin-bottom: 8px;"><span class="tier-header tier-divine" style="display: inline; padding: 5px 10px; font-size: 0.9em;">Divine</span> - Divine power</li>
+
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Items and their Powers Section -->
+            <section class="section">
+                <h2>🛡️ Items and their Powers</h2>
+                <p>Each item type in the game has a maximum number of power points that can be allocated to properties. Plan your crafting carefully to maximize your item's potential!</p>
+
+                <div class="note">
+                    <strong>Note:</strong> Caster weapons (weapons imbued with spells) have special power budgets. One-handed caster weapons get 8 points, while two-handed caster weapons get 16 points.
+                </div>
+
+                <table class="item-table">
+                    <thead>
+                        <tr>
+                            <th>Item Category</th>
+                            <th>Item Types</th>
+                            <th>Max Power Points</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Two-Handed Melee Weapons</strong></td>
+                            <td>Greataxe, Greatsword, Halberd, Heavy Flail, Dire Mace, Double Axe, Scythe, Short Spear, Quarterstaff, Two-Bladed Sword</td>
+                            <td><strong>8 points</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>One-Handed Melee Weapons</strong></td>
+                            <td>Bastard Sword, Battle Axe, Club, Dagger, Dwarven Waraxe, Hand Axe, Kama, Katana, Kukri, Light Flail, Light Hammer, Light Mace, Longsword, Morningstar, Rapier, Scimitar, Shortsword, Sickle, Trident, Warhammer, Whip, Magic Staff</td>
+                            <td><strong>6 points</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Ranged Weapons</strong></td>
+                            <td>Longbow, Shortbow, Light Crossbow, Heavy Crossbow, Sling</td>
+                            <td><strong>6 points</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Thrown Weapons</strong></td>
+                            <td>Shuriken, Dart, Throwing Axe</td>
+                            <td><strong>5 points</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Armor</strong></td>
+                            <td>All Armor Types</td>
+                            <td><strong>8 points</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Shields</strong></td>
+                            <td>Tower Shield, Large Shield, Small Shield</td>
+                            <td><strong>8 points</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Accessories (Large)</strong></td>
+                            <td>Gloves, Belt, Bracers, Cloak, Boots</td>
+                            <td><strong>8 points</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Accessories (Medium)</strong></td>
+                            <td>Helmet, Ring, Amulet</td>
+                            <td><strong>6 points</strong></td>
+                        </tr>                       
+                        <tr>
+                            <td><strong>Ammunition</strong></td>
+                            <td>Arrows, Bolts, Bullets</td>
+                            <td><strong>4 points</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Special: Caster Weapons</strong></td>
+                            <td>One-Handed (Staff + Spell)</td>
+                            <td><strong>8 points</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Special: Caster Weapons</strong></td>
+                            <td>Two-Handed (Staff + Spell)</td>
+                            <td><strong>16 points</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Properties and Costs Section -->
+            <section class="section">
+                <h2>✨ Properties and Costs</h2>
+                <p>Below is a comprehensive list of all available properties organized by mythal tier and category. Each property shows its power cost.</p>
+
+                <!-- Minor Mythal -->
+                <div class="tier-section">
+                    <span class="tier-header tier-minor">Minor Mythal</span>
+
+                    <div class="category-header">⚔️ Attack Bonus</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+1 Attack Bonus</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">⚔️ Enhancement Bonus</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+1 Enhancement Bonus</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🛡️ Armor Class</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+1 AC</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🔥 Damage Bonus (Weapons)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+1 Acid Damage</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+1 Cold Damage</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+1 Electrical Damage</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+1 Fire Damage</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+1 Negative Damage</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+1 Sonic Damage</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🛡️ Damage Reduction</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+1 Soak 5 Damage</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">📜 Cast Spell Properties (FREE - 0 Cost!)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">Burning Hands (5) 1/Day</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Charm Person (2) 1/Day</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Grease (2) 1/Day</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Identify (3) 1/Day</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Mage Armor (2) 1/Day</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Magic Missile (3) 1/Day</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                    </div>
+                    <div class="note">
+                        <strong>Minor Mythal Spells:</strong> Many more level 1-2 spell castings available at 0 power cost including Sleep, Shield of Faith, Bless, Aid, Color Spray, and others!
+                    </div>
+                </div>
+
+                <!-- Lesser Mythal -->
+                <div class="tier-section">
+                    <span class="tier-header tier-lesser">Lesser Mythal</span>
+
+                    <div class="category-header">⚔️ Attack Bonus</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+2 Attack Bonus</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">⚔️ Enhancement Bonus</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+2 Enhancement Bonus</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🛡️ Armor Class</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+2 AC</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🔥 Damage Bonus (Weapons)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">1d4 Acid Damage</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">1d4 Cold Damage</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">1d4 Electrical Damage</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">1d4 Fire Damage</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">1d4 Negative Damage</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">1d4 Sonic Damage</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🛡️ Damage Reduction</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+2 Soak 5 Damage</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">⚔️ Massive Criticals (Ranged)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">1d6 Massive Criticals</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">📜 Cast Spell Properties (FREE - 0 Cost!)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">Blindness/Deafness (3) 1/Day</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Ghostly Visage (3) 1/Day</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Invisibility (3) 1/Day</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Knock (3) 1/Day</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">See Invisibility (3) 1/Day</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                    </div>
+                    <div class="note">
+                        <strong>Lesser Mythal Spells:</strong> Many more level 2-3 spell castings available at 0 power cost including Web, Darkness, Melf's Acid Arrow, Cure Moderate Wounds, and others!
+                    </div>
+                </div>
+
+                <!-- Intermediate Mythal -->
+                <div class="tier-section">
+                    <span class="tier-header tier-intermediate">Intermediate Mythal</span>
+
+                    <div class="category-header">⚔️ Attack Bonus</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+3 Attack Bonus</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">⚔️ Enhancement Bonus</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+3 Enhancement Bonus</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🛡️ Armor Class</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+3 AC</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">💪 Ability Bonuses</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+1 Strength</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+1 Dexterity</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+1 Constitution</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+1 Intelligence</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+1 Wisdom</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+1 Charisma</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🔥 Damage Bonus (Weapons)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">1d6 Acid Damage</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">1d6 Cold Damage</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">1d6 Electrical Damage</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">1d6 Fire Damage</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">1d6 Negative Damage</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">1d6 Sonic Damage</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🎯 Skill Bonuses</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+5 Animal Empathy</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Concentration</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Craft Trap</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Disable Trap</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Discipline</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Heal</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Hide</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Listen</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Move Silently</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Open Lock</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Parry</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Perform</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Search</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Set Trap</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Spellcraft</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Spot</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Taunt</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Use Magic Device</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🩸 Vampiric Regeneration</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+1 Vampiric Regeneration</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">💚 Regeneration</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+1 Regeneration</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🛡️ Damage Reduction</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+3 Soak 5 Damage</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🎯 Roleplay/Personal Skills (FREE - 0 Cost!)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+5 Appraise</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Bluff</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Craft Armor</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Craft Weapon</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Intimidate</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Lore</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Persuade</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Pick Pocket</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Ride</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+5 Tumble</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🔰 Saving Throws (General)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+1 Fortitude</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+1 Reflex</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+1 Will</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🔰 Saving Throws vs Specific</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+3 vs Acid</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+3 vs Cold</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+3 vs Electrical</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+3 vs Fire</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+3 vs Sonic</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+3 vs Negative/Poison/Positive</div>
+                            <div class="property-cost">Power Cost: 1 each</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+3 vs Fear/Disease/Divine</div>
+                            <div class="property-cost">Power Cost: 1 each</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+3 vs Mind-Affecting/Death</div>
+                            <div class="property-cost">Power Cost: 1 each</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">⚔️ Massive Criticals (Ranged)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">1d8 Massive Criticals</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">⚔️ Massive Criticals (Melee)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">1d6 Massive Criticals</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🏹 Mighty (Ranged)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">Mighty +3</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🎯 Unlimited Ammo</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">Unlimited Ammo: 1d6 Acid</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Unlimited Ammo: 1d6 Cold</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Unlimited Ammo: 1d6 Fire</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Unlimited Ammo: 1d6 Sonic</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🔰 Universal Saves</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+1 Universal Saves</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🔥 Damage Bonus (Two-Handed)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">1d6 Acid/Cold/Electric/Fire/Negative/Sonic</div>
+                            <div class="property-cost">Power Cost: 1 each</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">👊 Damage Bonus (Gloves)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">1d6 Acid/Cold/Electric/Fire/Negative/Sonic</div>
+                            <div class="property-cost">Power Cost: 1 each</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">📜 Cast Spell Properties (FREE - 0 Cost!)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">Fireball (5) 1/Day</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Haste (5) 1/Day</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Lightning Bolt (5) 1/Day</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Hold Person (3) 1/Day</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Cure Serious Wounds (5) 1/Day</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                    </div>
+                    <div class="note">
+                        <strong>Intermediate Mythal Spells:</strong> Many more level 3-4 spell castings available at 0 power cost including Vampiric Touch, Slow, Clarity, Flame Arrow, Remove Disease, and others!
+                    </div>
+                </div>
+
+                <!-- Greater Mythal -->
+                <div class="tier-section">
+                    <span class="tier-header tier-greater">Greater Mythal</span>
+
+                    <div class="category-header">⚔️ Attack Bonus</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+4 Attack Bonus</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">⚔️ Enhancement Bonus</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+4 Enhancement Bonus</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🛡️ Armor Class</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+4 AC</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">💪 Ability Bonuses</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+2 Strength</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+2 Dexterity</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+2 Constitution</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+2 Intelligence</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+2 Wisdom</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+2 Charisma</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🔥 Damage Bonus (Weapons)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">1d8 Acid Damage</div>
+                            <div class="property-cost">Power Cost: 3</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">1d8 Cold Damage</div>
+                            <div class="property-cost">Power Cost: 3</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">1d8 Electrical Damage</div>
+                            <div class="property-cost">Power Cost: 3</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">1d8 Fire Damage</div>
+                            <div class="property-cost">Power Cost: 3</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">1d8 Negative Damage</div>
+                            <div class="property-cost">Power Cost: 3</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">1d8 Sonic Damage</div>
+                            <div class="property-cost">Power Cost: 3</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🎯 Skill Bonuses</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+10 Animal Empathy</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Concentration</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Craft Trap</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Disable Trap</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Discipline</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Heal</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Hide</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Listen</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Move Silently</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Open Lock</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Parry</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Perform</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Search</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Set Trap</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Spellcraft</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Spot</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Taunt</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Use Magic Device</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🛡️ Elemental Resistances</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">5/- Acid Resistance</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">5/- Cold Resistance</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">5/- Electrical Resistance</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">5/- Fire Resistance</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">5/- Sonic Resistance</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🩸 Vampiric Regeneration</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+2 Vampiric Regeneration</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">💚 Regeneration</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+2 Regeneration</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🛡️ Damage Reduction</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+4 Soak 5 Damage</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🎯 Roleplay/Personal Skills (0 Cost!)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+10 Appraise</div>
+                            <div class="cost-free">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Bluff</div>
+                            <div class="cost-free">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Craft Armor</div>
+                            <div class="cost-free">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Craft Weapon</div>
+                            <div class="cost-free">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Intimidate</div>
+                            <div class="cost-free">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Lore</div>
+                            <div class="cost-free">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Persuade</div>
+                            <div class="cost-free">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Pick Pocket</div>
+                            <div class="cost-free">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Ride</div>
+                            <div class="cost-free">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+10 Tumble</div>
+                            <div class="cost-free">Power Cost: 2</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🔰 Saving Throws</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+3 Fortitude</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+3 Reflex</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+3 Will</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+6 Fortitude</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+6 Reflex</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+6 Will</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🔰 Universal Saves</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+2 Universal Saves</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🔥 Damage Bonus (Two-Handed)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">2d4 Acid/Cold/Electric/Fire/Negative/Sonic</div>
+                            <div class="property-cost">Power Cost: 2 each</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">👊 Damage Bonus (Gloves)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">1d8 Acid/Cold/Electric/Fire/Negative/Sonic</div>
+                            <div class="property-cost">Power Cost: 2 each</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">⚔️ Massive Criticals</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">1d8 Massive Criticals (Melee)</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">1d12 Massive Criticals (Ranged)</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🏹 Mighty</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">Mighty +4</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">✨ Visual Effects (FREE - 0 Cost!)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">Acid Visual Effect</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Cold Visual Effect</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Fire Visual Effect</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Electrical Visual Effect</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Sonic Visual Effect</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Holy Visual Effect</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Evil Visual Effect</div>
+                            <div class="cost-free">Power Cost: 0 (FREE!)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Flawless Mythal -->
+                <div class="tier-section">
+                    <span class="tier-header tier-flawless">Flawless Mythal</span>
+
+                    <div class="category-header">⚔️ Attack Bonus</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+5 Attack Bonus</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">⚔️ Enhancement Bonus</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+5 Enhancement Bonus</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🛡️ Armor Class</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+5 AC</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">💪 Ability Bonuses</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+3 Strength</div>
+                            <div class="property-cost">Power Cost: 6</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+3 Dexterity</div>
+                            <div class="property-cost">Power Cost: 6</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+3 Constitution</div>
+                            <div class="property-cost">Power Cost: 6</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+3 Intelligence</div>
+                            <div class="property-cost">Power Cost: 6</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+3 Wisdom</div>
+                            <div class="property-cost">Power Cost: 6</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+3 Charisma</div>
+                            <div class="property-cost">Power Cost: 6</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🔥 Damage Bonus (One-Handed)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">1d10 Acid Damage</div>
+                            <div class="property-cost">Power Cost: 3</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">1d10 Cold Damage</div>
+                            <div class="property-cost">Power Cost: 3</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">1d10 Electrical Damage</div>
+                            <div class="property-cost">Power Cost: 3</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">1d10 Fire Damage</div>
+                            <div class="property-cost">Power Cost: 3</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">1d10 Negative Damage</div>
+                            <div class="property-cost">Power Cost: 3</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">1d10 Sonic Damage</div>
+                            <div class="property-cost">Power Cost: 3</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🛡️ Elemental Resistances</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">10/- Acid Resistance</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">10/- Cold Resistance</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">10/- Electrical Resistance</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">10/- Fire Resistance</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">10/- Sonic Resistance</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🩸 Vampiric Regeneration</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+3 Vampiric Regeneration</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🛡️ Damage Reduction</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+5 Soak 5 Damage</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🔰 Universal Saves</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+3 Universal Saves</div>
+                            <div class="property-cost">Power Cost: 6</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🔥 Damage Bonus (Two-Handed)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">2d6 Acid/Cold/Electric/Fire/Negative/Sonic</div>
+                            <div class="property-cost">Power Cost: 2 each</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">2d6 Bludgeoning/Piercing/Slashing</div>
+                            <div class="property-cost">Power Cost: 2 each</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">👊 Damage Bonus (Gloves)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">2d6 Acid/Cold/Electric/Fire/Negative/Sonic</div>
+                            <div class="property-cost">Power Cost: 2 each</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">2d6 Bludgeoning/Piercing/Slashing</div>
+                            <div class="property-cost">Power Cost: 2 each</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🏹 Mighty</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">Mighty +5</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">⚔️ Massive Criticals</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">2d12 Massive Criticals (Ranged)</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🎯 Unlimited Ammo</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">Unlimited Ammo: +5 Damage</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Perfect Mythal -->
+                <div class="tier-section">
+                    <span class="tier-header tier-perfect">Perfect Mythal</span>
+
+                    <div class="category-header">⚔️ Keen</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">Keen (Weapons)</div>
+                            <div class="property-cost">Power Cost: 1</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Keen (Thrown Weapons)</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🔮 Spell Resistance</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">Spell Resistance +20</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Spell Resistance +32</div>
+                            <div class="property-cost">Power Cost: 4</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🔰 Universal Saves</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+4 Universal Saves</div>
+                            <div class="property-cost">Power Cost: 8</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🔰 Specific Saving Throws +6</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">+6 vs Acid/Cold/Electric/Fire/Sonic</div>
+                            <div class="property-cost">Power Cost: 2 each</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+6 vs Negative/Positive/Poison</div>
+                            <div class="property-cost">Power Cost: 2 each</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+6 vs Fear/Disease/Divine</div>
+                            <div class="property-cost">Power Cost: 2 each</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">+6 vs Mind-Affecting/Death</div>
+                            <div class="property-cost">Power Cost: 2 each</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">📜 Bonus Spell Slots (Wizard)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">Wizard Slots: Level 0-9</div>
+                            <div class="property-cost">Power Cost: 1 per level</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">📜 Bonus Spell Slots (Sorcerer)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">Sorcerer Slots: Level 0-9</div>
+                            <div class="property-cost">Power Cost: 1 per level</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">📜 Bonus Spell Slots (Cleric)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">Cleric Slots: Level 0-9</div>
+                            <div class="property-cost">Power Cost: 1 per level</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">📜 Bonus Spell Slots (Druid)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">Druid Slots: Level 0-9</div>
+                            <div class="property-cost">Power Cost: 1 per level</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">📜 Bonus Spell Slots (Bard)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">Bard Slots: Level 0-6</div>
+                            <div class="property-cost">Power Cost: 1 per level</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">📜 Bonus Spell Slots (Paladin/Ranger/Blackguard/Assassin)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">Paladin/Ranger: Level 1-4</div>
+                            <div class="property-cost">Power Cost: 1 per level</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Blackguard: Level 1-4</div>
+                            <div class="property-cost">Power Cost: 1 per level</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Assassin: Level 1-4</div>
+                            <div class="property-cost">Power Cost: 1 per level</div>
+                        </div>
+                    </div>
+
+                    <div class="note">
+                        <strong>Bonus Spell Slots:</strong> These are class-exclusive and can only be crafted on items usable by that specific class. All spell slot bonuses cost 1 power point per spell level.
+                    </div>
+                </div>
+
+                <!-- Divine Mythal -->
+                <div class="tier-section">
+                    <span class="tier-header tier-divine">Divine Mythal</span>
+
+                    <div class="category-header">🛡️ Elemental Resistances</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">15/- Acid Resistance</div>
+                            <div class="property-cost">Power Cost: 3</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">15/- Cold Resistance</div>
+                            <div class="property-cost">Power Cost: 3</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">15/- Electrical Resistance</div>
+                            <div class="property-cost">Power Cost: 3</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">15/- Fire Resistance</div>
+                            <div class="property-cost">Power Cost: 3</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">15/- Sonic Resistance</div>
+                            <div class="property-cost">Power Cost: 3</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">🛡️ Physical Damage Resistances</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">5/- Bludgeoning Resistance</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">5/- Piercing Resistance</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">5/- Slashing Resistance</div>
+                            <div class="property-cost">Power Cost: 2</div>
+                        </div>
+                    </div>
+
+                    <div class="category-header">⚔️ On-Hit Effects (DC 20)</div>
+                    <div class="property-grid">
+                        <div class="property-card">
+                            <div class="property-name">Blindness/Confusion/Daze/Deafness</div>
+                            <div class="property-cost">Power Cost: 2 each</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Disease/Doom/Fear/Hold</div>
+                            <div class="property-cost">Power Cost: 2 each</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Knockdown/Level Drain/Poison</div>
+                            <div class="property-cost">Power Cost: 2 each</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Silence/Sleep/Slow/Stun/Wounding</div>
+                            <div class="property-cost">Power Cost: 2 each</div>
+                        </div>
+                        <div class="property-card">
+                            <div class="property-name">Freeze (Slow 3 rounds)</div>
+                            <div class="property-cost">Power Cost: 3</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Note -->
+                <div class="note" style="background: #4a4530; border-left-color: #d6bc46; margin-top: 40px;">
+                    <h3 style="color: #d6bc46; margin-bottom: 10px;">🎯 Quick Reference Summary</h3>
+                    <ul style="margin-left: 20px; line-height: 1.8; color: #e8e8e8;">
+                        <li><strong>FREE Properties (0 cost):</strong> All Visual Effects, Roleplay Skills (Appraise, Bluff, Lore, etc.), Many Cast Spell properties</li>
+                        <li><strong>Best Value:</strong> Attack/Enhancement Bonuses at lower tiers cost only 1 point each</li>
+                        <li><strong>Most Expensive:</strong> Spell Resistance (32 costs 4 points), Universal Saves (+4 costs 8 points)</li>
+                        <li><strong>Weapon Specialists:</strong> Two-handed weapons get 8 points vs 6 for one-handed</li>
+                        <li><strong>Caster Items:</strong> Perfect tier bonus spell slots cost only 1 point per level - excellent for spellcasters!</li>
+                        <li><strong>Defensive Builds:</strong> Mix Elemental Resistances (1-3 points) with AC Bonuses and Saves for balanced protection</li>
+                        <li><strong>On-Hit Builds:</strong> Divine on-hit effects (2-3 points each) can help control combat encounters</li>
+                        <li><strong>Roleplay Items:</strong> Use FREE skills and visual effects to create flavor on items without using power points!</li>
+                    </ul>
+                </div>
+
+            </section>
+
+            <!-- Footer -->
+            <section class="section" style="text-align: center; padding-top: 40px; border-top: 2px solid #d6bc46;">
+                <p style="color: #c0c0c0; font-size: 0.9em;">This guide was generated from the crafting system code. For further help, consult the Mythal Forge interface or ask for community help in Discord.</p>
+                <p style="color: #a0a0a0; font-size: 0.8em; margin-top: 10px;">Last Updated: December 22, 2025</p>
+            </section>
+        </div>
+    </div>
+</body>
+</html>
