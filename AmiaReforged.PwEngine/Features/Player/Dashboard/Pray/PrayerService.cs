@@ -1140,16 +1140,15 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(1, DamageType.Positive), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 10), divineLevel);
                 player?.SendServerMessage(" - +1 Positive Damage", ColorConstants.Cyan);
-                // +1 AB while outdoors
+                // +AB vs Lawful while outdoors (uses consistent scaling)
                 NwArea? fenmarelArea = creature.Area;
                 if (fenmarelArea != null && !fenmarelArea.IsInterior)
                 {
-                    ApplyPrayerEffectsToPCs(creature, Effect.AttackIncrease(1), divineLevel);
-                    player?.SendServerMessage(" - +1 AB (You are outdoors - Bonus Active)", ColorConstants.Cyan);
+                    ApplyAttackBonusVsAlignmentOnWeapon(creature, player, divineLevel, IPAlignmentGroup.Lawful, "Lawful");
                 }
                 else
                 {
-                    player?.SendServerMessage(" - +1 AB (You cannot see the open sky: Bonus Inactive)", ColorConstants.Yellow);
+                    player?.SendServerMessage(" - +AB vs Lawful (You cannot see the open sky: Bonus Inactive)", ColorConstants.Yellow);
                 }
                 player?.SendServerMessage(" - +10 Lore", ColorConstants.Cyan);
                 break;
