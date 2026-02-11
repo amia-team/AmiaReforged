@@ -29,7 +29,7 @@ public class TwoHandedBonusHandler
         // If the item is wieldable, we want to check for two-handed bonus and can return code early
         if (isWieldable)
         {
-            TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.EquippedBy);
+            _ = TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.EquippedBy);
             return;
         }
 
@@ -40,7 +40,7 @@ public class TwoHandedBonusHandler
         // If the ability affected isn't strength, we know to return early; otherwise we check for two-handed bonus
         if (abilityProperty?.IntParams[0] is not (int)Ability.Strength) return;
 
-        TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.EquippedBy);
+        _ = TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.EquippedBy);
     }
 
     private static void OnUnequipApplyTwoHanded(OnItemUnequip eventData)
@@ -50,7 +50,7 @@ public class TwoHandedBonusHandler
         // Check if item still exists (can be null if destroyed during unequip)
         if (!eventData.Item.IsValid)
         {
-            TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
+            _ = TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
             return;
         }
 
@@ -67,7 +67,7 @@ public class TwoHandedBonusHandler
         // If the item is wieldable, we want to check for two-handed bonus and can return code early
         if (isWieldable)
         {
-            TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
+            _ = TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
             return;
         }
 
@@ -78,7 +78,7 @@ public class TwoHandedBonusHandler
         // If the ability affected isn't strength, we know to return early; otherwise we check for two-handed bonus
         if (abilityProperty?.IntParams[0] is not (int)Ability.Strength) return;
 
-        TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
+        _ = TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
     }
 
     private static void OnStrengthApplyApplyTwoHanded(OnEffectApply eventData)
@@ -88,7 +88,7 @@ public class TwoHandedBonusHandler
         if (eventData.Effect.EffectType is not (EffectType.AbilityIncrease or EffectType.AbilityDecrease)) return;
         if (eventData.Effect.IntParams[0] is not (int)Ability.Strength) return;
 
-        TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
+        _ = TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
     }
 
     private static void OnStrengthRemoveApplyTwoHanded(OnEffectRemove eventData)
@@ -98,14 +98,14 @@ public class TwoHandedBonusHandler
         if (eventData.Effect.EffectType is not (EffectType.AbilityIncrease or EffectType.AbilityDecrease)) return;
         if (eventData.Effect.IntParams[0] is not (int)Ability.Strength) return;
 
-        TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
+        _ = TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
     }
 
     private static void OnCharacterLoadApplyTwoHanded(OnLoadCharacterFinish eventData)
     {
         if (eventData.Player.ControlledCreature is not { } creature) return;
 
-        TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
+        _ = TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
     }
 
 }

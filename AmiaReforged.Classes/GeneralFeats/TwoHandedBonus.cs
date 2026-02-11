@@ -30,8 +30,9 @@ public static class TwoHandedBonus
         return twoHandedBonusEffect;
     }
 
-    public static void ApplyTwoHandedBonusEffect(NwCreature creature)
+    public static async Task ApplyTwoHandedBonusEffect(NwCreature creature)
     {
+        await NwTask.Delay(TimeSpan.FromMilliseconds(10));
         if (creature.ControllingPlayer is not { } player) return;
 
         Effect? twoHandedBonus = creature.ActiveEffects.FirstOrDefault(effect => effect.Tag == TwoHandedBonusTag);
