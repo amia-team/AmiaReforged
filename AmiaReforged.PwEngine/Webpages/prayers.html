@@ -1,0 +1,1141 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amia Prayer System Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: #e8e8e8;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #232323;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #4c4c4c 0%, #232323 100%);
+            color: #d6bc46;
+            padding: 30px 40px;
+            text-align: center;
+            border-bottom: 3px solid #d6bc46;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        header p {
+            font-size: 1.1em;
+            color: #c0c0c0;
+        }
+
+        .content {
+            padding: 30px 40px;
+        }
+
+        h2 {
+            color: #d6bc46;
+            font-size: 1.8em;
+            margin: 30px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3a3a3a;
+        }
+
+        h2:first-of-type {
+            margin-top: 0;
+        }
+
+        h3 {
+            color: #d6bc46;
+            font-size: 1.3em;
+            margin: 25px 0 12px 0;
+        }
+
+        h4 {
+            color: #e0c960;
+            font-size: 1.1em;
+            margin: 20px 0 10px 0;
+        }
+
+        p {
+            margin-bottom: 15px;
+            color: #e8e8e8;
+        }
+
+        ul, ol {
+            margin: 15px 0 15px 25px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        a {
+            color: #d6bc46;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        a:hover {
+            color: #f0d060;
+        }
+
+        a:visited {
+            color: #b89a35;
+        }
+
+        .highlight {
+            background-color: #2d2d2d;
+            border-left: 4px solid #d6bc46;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .warning {
+            background-color: #3d2a2a;
+            border-left: 4px solid #c44;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .success {
+            background-color: #2a3d2a;
+            border-left: 4px solid #4a4;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #2a2a2a;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th {
+            background-color: #d6bc46;
+            color: #232323;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #3a3a3a;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background-color: #333333;
+        }
+
+        .class-card {
+            background-color: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            border: 1px solid #3a3a3a;
+        }
+
+        .class-card h4 {
+            color: #d6bc46;
+            margin-top: 0;
+            font-size: 1.2em;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .stat-box {
+            background-color: #2d2d2d;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-box .value {
+            font-size: 1.8em;
+            color: #d6bc46;
+            font-weight: bold;
+        }
+
+        .stat-box .label {
+            font-size: 0.9em;
+            color: #a0a0a0;
+            margin-top: 5px;
+        }
+
+        .deity-table {
+            font-size: 0.95em;
+            min-width: 700px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 20px 0;
+        }
+
+        .deity-table td:first-child {
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .deity-table .good {
+            color: #6c9;
+        }
+
+        .deity-table .evil {
+            color: #c66;
+        }
+
+        .deity-table .neutral {
+            color: #cc9;
+        }
+
+        .deity-table td.align-col,
+        .deity-table td.domains-col {
+            font-size: 0.85em;
+            color: #b0b0b0;
+        }
+
+        .deity-table td.domains-col {
+            max-width: 200px;
+            word-wrap: break-word;
+        }
+
+        .druid-marker {
+            color: #6b9;
+            font-size: 0.85em;
+        }
+
+        .scaling-link {
+            cursor: pointer;
+            color: #d6bc46;
+            text-decoration: none;
+            font-size: 0.9em;
+            margin-left: 4px;
+            transition: transform 0.2s ease, color 0.2s ease;
+        }
+
+        .scaling-link:hover {
+            transform: scale(1.2);
+            color: #f0d060;
+        }
+
+        .toc {
+            background-color: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px 25px;
+            margin-bottom: 30px;
+        }
+
+        .toc h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        .toc ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            column-count: 2;
+            column-gap: 30px;
+        }
+
+        .toc li {
+            margin-bottom: 8px;
+            break-inside: avoid;
+        }
+
+        .toc a {
+            display: block;
+            padding: 5px 0;
+        }
+
+        code {
+            background-color: #2d2d2d;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+            color: #e0c960;
+        }
+
+        .formula {
+            background-color: #2d2d2d;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            margin: 10px 0;
+            display: inline-block;
+        }
+
+        .section-divider {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #d6bc46, transparent);
+            margin: 40px 0;
+        }
+
+        footer {
+            background: linear-gradient(135deg, #4c4c4c 0%, #232323 100%);
+            color: #a0a0a0;
+            padding: 20px 40px;
+            text-align: center;
+            font-size: 0.9em;
+            border-top: 1px solid #3a3a3a;
+        }
+
+        /* Collapsible sections */
+        .collapsible {
+            background-color: #2d2d2d;
+            color: #d6bc46;
+            cursor: pointer;
+            padding: 15px 20px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 1.1em;
+            font-weight: 600;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.2s ease;
+        }
+
+        .collapsible:hover {
+            background-color: #383838;
+        }
+
+        .collapsible:after {
+            content: '▼';
+            font-size: 0.8em;
+            transition: transform 0.2s ease;
+        }
+
+        .collapsible.active:after {
+            transform: rotate(180deg);
+        }
+
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background-color: #2a2a2a;
+            border-radius: 0 0 8px 8px;
+            margin-top: -10px;
+            margin-bottom: 10px;
+        }
+
+        .collapsible-content .inner {
+            padding: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+
+            header {
+                padding: 20px;
+            }
+
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            .toc ul {
+                column-count: 1;
+            }
+
+            table {
+                font-size: 0.85em;
+            }
+
+            th, td {
+                padding: 8px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⛪ Amia Prayer System</h1>
+            <p>A comprehensive guide to praying to your deity and receiving divine blessings</p>
+        </header>
+
+        <div class="content">
+            <!-- Table of Contents -->
+            <nav class="toc">
+                <h3>📜 Table of Contents</h3>
+                <ul>
+                    <li><a href="#overview">Overview</a></li>
+                    <li><a href="#how-to-pray">How to Pray</a></li>
+                    <li><a href="#requirements">Requirements</a></li>
+                    <li><a href="#class-mechanics">Class-Based Mechanics</a></li>
+                    <li><a href="#fallen-state">The Fallen State</a></li>
+                    <li><a href="#effect-duration">Effect Duration</a></li>
+                    <li><a href="#deity-bonuses">Deity-Specific Bonuses</a></li>
+                    <li><a href="#domain-bonuses">Cleric Domain Bonuses</a></li>
+                    <li><a href="#scaling-guide">Scaling Bonuses & Combat Notation</a></li>
+                    <li><a href="#troubleshooting">Troubleshooting</a></li>
+                </ul>
+            </nav>
+
+            <!-- Overview -->
+            <section id="overview">
+                <h2>Overview</h2>
+                <p>The Prayer System allows characters to pray to their chosen deity and receive temporary blessings. The system works differently depending on your character class, alignment, and chosen deity.</p>
+
+                <div class="highlight">
+                    <strong>Key Features:</strong>
+                    <ul>
+                        <li>Deity-specific bonuses unique to each god</li>
+                        <li>Class-based prayer mechanics (Clerics, Druids, Paladins, Rangers, etc.)</li>
+                        <li>Party-wide blessings for devoted followers</li>
+                        <li>Domain bonuses for Clerics</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- How to Pray -->
+            <section id="how-to-pray">
+                <h2>How to Pray</h2>
+                <p><strong>Via Dashboard:</strong> Use the Pray button in the player dashboard (rest menu)</p>
+				<p>You must have a valid, character-appropriate deity set in order to Pray and get bonuses. You can choose a deity by typing the name (as spelled on this page) into the deity field at character creation, or by finding the deity's idol in the game world.</p>
+				<p> You can change your deity at any time unless you are higher than character level 10. Changes after level 10 require a request. If you do not have a deity set, you can choose a deity for the first time whenever you want, regardless of your level.</p>
+                <p>When you pray, your character will perform a meditation animation for approximately 8 seconds while the prayer is processed.</p>
+				<div class="warning">
+                    <strong>⚠️ IMPORTANT: Prayer bonuses do not stack with multiple prayers.</strong> If a cleric prays, their more powerful prayer with domain bonuses will overwrite any other existing prayer effect. You can, however, overwrite your own prayer effect if you would prefer to have the deity bonuses from your own deity. Just do this after any other prayers have been applied. You will not overwrite the prayer on everyone else in your party by doing this.
+                </div>
+
+                <div class="stat-grid">
+                    <div class="stat-box">
+                        <div class="value">60 min</div>
+                        <div class="label">Prayer Cooldown</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="value">5-18 min</div>
+                        <div class="label">Effect Duration</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Requirements -->
+            <section id="requirements">
+                <h2>Requirements to Pray</h2>
+
+                <h3>Basic Requirements</h3>
+                <ol>
+                    <li><strong>Must have a deity</strong> — Characters without a deity receive: <em>"The gods do not care for the Faithless..."</em></li>
+                    <li><strong>Deity must exist in Amia</strong> — If no idol exists for the deity: <em>"[Deity] holds no domain on Amia..."</em></li>
+                    <li><strong>Must not be Fallen</strong> — Characters with the Fallen status cannot receive blessings and will be smited</li>
+                </ol>
+
+                <div class="warning">
+                    <strong>⚠️ Warning:</strong> Divine casters (Clerics, Druids, Paladins, Rangers, Blackguards, Divine Champions) with incorrect alignment will become <strong>Fallen</strong> and lose their divine connection! They will also be smited if they attempt to pray despite being Fallen.
+                </div>
+            </section>
+
+            <!-- Class-Based Mechanics -->
+            <section id="class-mechanics">
+                <h2>Class-Based Prayer Mechanics</h2>
+
+                <!-- Clerics -->
+                <div class="class-card">
+                    <h4>⚔️ Clerics</h4>
+                    <p><strong>Requirements:</strong></p>
+                    <ul>
+                        <li>Must have matching alignment with deity</li>
+                        <li>Must have BOTH domains that match the deity's domains</li>
+                    </ul>
+                    <p><strong>Effects:</strong></p>
+                    <ul>
+                        <li><span style="color: #6b9;">✓</span> 100% Success Rate</li>
+                        <li><span style="color: #6b9;">✓</span> Always Party-Wide (affects all party members in the same area)</li>
+                        <li><span style="color: #6b9;">✓</span> Receives Deity-Specific Bonus</li>
+                        <li><span style="color: #6b9;">✓</span> Receives BOTH Domain Bonuses</li>
+                    </ul>
+                    <div class="warning">
+                        <strong>Failure:</strong> Wrong alignment → Becomes Fallen + Smited<br>
+                        Domains don't both match → Becomes Fallen + Smited
+                    </div>
+                </div>
+
+                <!-- Druids -->
+                <div class="class-card">
+                    <h4>🌿 Druids</h4>
+                    <p><strong>Requirements:</strong></p>
+                    <ul>
+                        <li>Must have matching alignment with deity</li>
+                        <li>Deity must be a valid "druid god" (has the Animal, Plant, Moon, or Sun Domain, or is otherwise indicated through scripting)</li>
+                    </ul>
+                    <p><strong>Effects:</strong></p>
+                    <ul>
+                        <li><span style="color: #6b9;">✓</span> 100% Success Rate</li>
+                        <li><span style="color: #6b9;">✓</span> Always Party-Wide</li>
+                        <li><span style="color: #6b9;">✓</span> Receives Deity-Specific Bonus</li>
+                        <li><span style="color: #c66;">✗</span> Does NOT receive domain bonuses</li>
+                    </ul>
+                </div>
+
+                <!-- Other Divine Casters -->
+                <div class="class-card">
+                    <h4>🛡️ Paladins, Rangers, Blackguards, Divine Champions</h4>
+                    <p><strong>Requirements:</strong></p>
+                    <ul>
+                        <li>Must have matching alignment with deity</li>
+                    </ul>
+                    <p><strong>Effects:</strong></p>
+                    <ul>
+                        <li><span style="color: #6b9;">✓</span> 100% Personal Success Rate</li>
+                        <li>Party-Wide Chance: <span class="formula">40% + 2% per divine level (up to 100%)</span></li>
+                    </ul>
+                    <div class="table-wrapper">
+                    <table>
+                        <tr>
+                            <th>Divine Level</th>
+                            <th>Party-Wide Chance</th>
+                        </tr>
+                        <tr><td>10</td><td>60%</td></tr>
+                        <tr><td>20</td><td>80%</td></tr>
+                        <tr><td>30</td><td>100%</td></tr>
+                    </table>
+                    </div>
+					<p><strong>Note:</strong> All levels you have in divine classes (including Cleric and Druid) count toward your Divine Level. Example: Paladin 10/Divine Champion 20 will have 30 Divine Levels and get a full 100% chance for a party-wide prayer bonus. Cleric 10/Ranger 5/Blackguard 15 will have 30 Divine Levels and get a full 100% chance for a party-wide prayer bonus.</p>
+					<p>Whichever class you have the most levels in (or the last one you took, if they have the same amount) will determine which prayer version you get. In the above examples, the first would be a Divine Champion prayer, while the second one would be a Blackguard prayer.</p>
+                </div>
+
+                <!-- Laypeople -->
+                <div class="class-card">
+                    <h4>👤 Laypeople (Non-Divine Classes)</h4>
+                    <p><strong>Requirements:</strong></p>
+                    <ul>
+                        <li>None. Laypeople can worship any god they want with no restrictions. There just will be consequences for some combinations!</li>
+                    </ul>
+                    <div class="table-wrapper">
+                    <table>
+                        <tr>
+                            <th>Alignment Match</th>
+                            <th>Success Rate</th>
+                            <th>Party-Wide Chance</th>
+                        </tr>
+                        <tr>
+                            <td>Exact Match</td>
+                            <td style="color: #6b9;">60%</td>
+                            <td style="color: #6b9;">40%</td>
+                        </tr>
+                        <tr>
+                            <td>Same Good/Evil Axis</td>
+                            <td style="color: #dd9;">50%</td>
+                            <td style="color: #dd9;">25%</td>
+                        </tr>
+                        <tr>
+                            <td>No Axis Match</td>
+                            <td style="color: #c96;">40%</td>
+                            <td style="color: #c66;">0% (Personal only)</td>
+                        </tr>
+                        <tr>
+                            <td>Opposing Axis (Good vs Evil)</td>
+                            <td colspan="2" style="color: #c66;">SMITED!</td>
+                        </tr>
+                    </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Fallen State -->
+            <section id="fallen-state">
+                <h2>The Fallen State</h2>
+                <p>Divine casters become <strong>Fallen</strong> when:</p>
+                <ol>
+                    <li>Their alignment doesn't match the deity's accepted alignments</li>
+                    <li>(Clerics only) None of their domains match the deity's domains</li>
+                </ol>
+
+                <div class="warning">
+                    <strong>Effects of Being Fallen:</strong>
+                    <ul>
+                        <li>Receives "The Fall" item in their inventory</li>
+                        <li>Gets smited immediately (divine damage = current HP + 3)</li>
+                        <li>Cannot receive any blessings until atonement (Personal quest overseen by a DM)</li>
+                    </ul>
+                </div>
+
+                <h3>Smite Damage</h3>
+                <p>When smited, the character takes <strong>divine damage equal to their current HP + 3</strong>.</p>
+				<p>This means you will have to stabilize to survive being smited by a god. (Regeneration is your friend.)</p>
+            </section>
+
+            <!-- Effect Duration -->
+            <section id="effect-duration">
+                <h2>Effect Duration</h2>
+                <div class="formula">Duration = 300 seconds + (Divine Level × 20 seconds)</div>
+
+                <div class="table-wrapper">
+                <table>
+                    <tr>
+                        <th>Divine Level</th>
+                        <th>Total Duration</th>
+                    </tr>
+                    <tr><td>0 (Layperson)</td><td>5 minutes</td></tr>
+                    <tr><td>10</td><td>8 minutes 20 seconds</td></tr>
+                    <tr><td>20</td><td>11 minutes 40 seconds</td></tr>
+                    <tr><td>30</td><td>15 minutes</td></tr>
+                </table>
+                </div>
+            </section>
+
+            <div class="section-divider"></div>
+
+            <!-- Deity-Specific Bonuses -->
+            <section id="deity-bonuses">
+                <h2>Deity-Specific Prayer Bonuses</h2>
+                <p>Each deity grants unique effects when you pray. Deities marked with <span class="druid-marker">🌿</span> can accept druids.</p>
+
+                <!-- A-B Deities -->
+                <button class="collapsible">A - B Deities</button>
+                <div class="collapsible-content">
+                    <div class="inner">
+                        <div class="table-wrapper">
+                        <table class="deity-table">
+                            <tr><th>Deity</th><th>Align</th><th>Followers</th><th>Domains</th><th>Prayer Bonuses</th></tr>
+                            <tr><td class="neutral">Aasterinian</td><td class="align-col">CN</td><td class="align-col">CG CN CE</td><td class="domains-col">Chaos, Dragon, Illusion, Luck, Travel, Trickery</td><td>+10 Bluff, <a href="#ac-scaling" class="scaling-link">+AC vs Lawful 🔗</a></td></tr>
+                            <tr><td class="evil">Abbathor</td><td class="align-col">NE</td><td class="align-col">CE LE NE NN</td><td class="domains-col">Dwarf, Evil, Hatred, Luck, Trade, Trickery</td><td>+1 Regeneration, +3 Negative Damage, +10 Appraise</td></tr>
+                            <tr><td class="good">Aerdrie Faenya <span class="druid-marker">🌿</span></td><td class="align-col">CG</td><td class="align-col">CG CN NG</td><td class="domains-col">Air, Animal, Chaos, Elf, Good, Renewal</td><td>+3 Electrical Damage, +10 Persuade, Rain (outdoors)</td></tr>
+                            <tr><td class="neutral">Akadi <span class="druid-marker">🌿</span></td><td class="align-col">NN</td><td class="align-col">CN LN NE NG NN</td><td class="domains-col">Air, Animal, Illusion, Portal, Travel, Trickery</td><td>+10% Electrical Immunity, +10 Lore, Temporary Bird Wings</td></tr>
+                            <tr><td class="good">Angharradh <span class="druid-marker">🌿</span></td><td class="align-col">CG</td><td class="align-col">CG CN NG</td><td class="domains-col">Chaos, Elf, Good, Knowledge, Plant, Renewal</td><td>+10 Persuade, <a href="#ab-scaling" class="scaling-link">+AB vs Drow 🔗</a></td></tr>
+                            <tr><td class="good">Anhur</td><td class="align-col">CG</td><td class="align-col">CG CN NG</td><td class="domains-col">Air, Chaos, Courage, Good, Strength, War</td><td>+10 Intimidate, <a href="#ab-scaling" class="scaling-link">+AB vs Reptilian 🔗</a></td></tr>
+                            <tr><td class="neutral">Anubis</td><td class="align-col">LN</td><td class="align-col">LG LN NN LE</td><td class="domains-col">Darkness, Death, Fate, Law, Protection, Repose</td><td>+6 Saves vs. Death, +5 Hide, +5 Lore</td></tr>
+                            <tr><td class="good">Arvoreen</td><td class="align-col">LG</td><td class="align-col">LG LN NG</td><td class="domains-col">Courage, Good, Halfling, Law, Protection, War</td><td>+5 Spell Resistance, +10 Persuade</td></tr>
+                            <tr><td class="evil">Asmodeus</td><td class="align-col">LE</td><td class="align-col">LE LN NE</td><td class="domains-col">Evil, Law, Magic, Nobility, Trickery, Tyranny</td><td>+3 Will Save, +3 Magic Damage, +1 Regeneration, +5 Persuade, Temporary Devil Wings</td></tr>
+                            <tr><td class="neutral">Astilabor</td><td class="align-col">NN</td><td class="align-col">NG LN NN CN NE</td><td class="domains-col">Cavern, Craft, Dragon, Earth, Protection, Trade</td><td>+5 Appraise, +Search (scales with gold carried)</td></tr>
+                            <tr><td class="evil">Auril <span class="druid-marker">🌿</span></td><td class="align-col">NE</td><td class="align-col">CE LE NE</td><td class="domains-col">Air, Cold, Destruction, Evil, Suffering, Water</td><td>+3 Cold Damage, +6 Saves vs. Cold, +10 Intimidate</td></tr>
+                            <tr><td class="neutral">Azuth</td><td class="align-col">LN</td><td class="align-col">LE LG LN NN</td><td class="domains-col">Illusion, Knowledge, Law, Magic, Rune, Spell</td><td>+5 Spellcraft, +5 Lore, Bonus Feat: Combat Casting</td></tr>
+                            <tr><td class="good">Baervan Wildwanderer <span class="druid-marker">🌿</span></td><td class="align-col">NG</td><td class="align-col">CG LG NG NN</td><td class="domains-col">Animal, Good, Gnome, Plant, Travel, Trickery</td><td>+10% Movement Speed, +10 Bluff</td></tr>
+                            <tr><td class="good">Bahamut</td><td class="align-col">LG</td><td class="align-col">LG LN NG</td><td class="domains-col">Air, Cold, Dragon, Good, Law, Protection</td><td>+6 Saves vs. Mind Effects, +5 Persuade, Temporary Silver Dragon Wings</td></tr>
+                            <tr><td class="evil">Bahgtru</td><td class="align-col">CE</td><td class="align-col">CE CN NE</td><td class="domains-col">Chaos, Evil, Hatred, Orc, Strength, War</td><td>+2 Strength, +3 Magical Damage, +5 Intimidate</td></tr>
+                            <tr><td class="evil">Bane</td><td class="align-col">LE</td><td class="align-col">LE LN NE</td><td class="domains-col">Destruction, Evil, Hatred, Law, Strength, Tyranny</td><td>+2 Universal Saves, +3 Divine Damage, +5 Intimidate</td></tr>
+                            <tr><td class="good">Baravar Cloakshadow</td><td class="align-col">NG</td><td class="align-col">CG LG NG NN</td><td class="domains-col">Darkness, Gnome, Good, Illusion, Protection, Trickery</td><td>+3 Saves vs. Mind-Affecting, +3 Divine Damage (night only), +10 Persuade</td></tr>
+                            <tr><td class="good">Berronar Truesilver</td><td class="align-col">LG</td><td class="align-col">LG LN NG</td><td class="domains-col">Community, Dwarf, Good, Healing, Law, Protection</td><td>+6 Saves vs. Fear, +10 Persuade</td></tr>
+                            <tr><td class="evil">Beshaba</td><td class="align-col">CE</td><td class="align-col">CE CN NE</td><td class="domains-col">Charm, Chaos, Evil, Fate, Luck, Trickery</td><td>+6 Saves vs. Traps, +3 Negative Damage, +10 Bluff</td></tr>
+                            <tr><td class="evil">Bhaal</td><td class="align-col">LE</td><td class="align-col">LE NE CE</td><td class="domains-col">Death, Destruction, Evil, Hatred, Retribution, Suffering</td><td>Bonus Feat: Sap, +3 Vampiric Regeneration, +10 Intimidate</td></tr>
+                            <tr><td class="neutral">Brandobaris</td><td class="align-col">NN</td><td class="align-col">CN LN NE NG NN</td><td class="domains-col">Charm, Halfling, Illusion, Luck, Travel, Trickery</td><td>+3 Saves vs. Chaos, +10 Bluff</td></tr>
+                        </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- C-E Deities -->
+                <button class="collapsible">C - E Deities</button>
+                <div class="collapsible-content">
+                    <div class="inner">
+                        <div class="table-wrapper">
+                        <table class="deity-table">
+                            <tr><th>Deity</th><th>Align</th><th>Followers</th><th>Domains</th><th>Prayer Bonuses</th></tr>
+                            <tr><td class="neutral">Callarduran Smoothhands</td><td class="align-col">NN</td><td class="align-col">CN LN NE NG NN</td><td class="domains-col">Cavern, Community, Craft, Earth, Gnome, Illusion</td><td>Ultravision, +10 Spot, +5 Appraise</td></tr>
+                            <tr><td class="good">Chauntea <span class="druid-marker">🌿</span></td><td class="align-col">NG</td><td class="align-col">CG LG NG NN</td><td class="domains-col">Animal, Earth, Good, Plant, Protection, Renewal</td><td>+3 Fortitude Save, +10 Persuade</td></tr>
+                            <tr><td class="good">Clangeddin Silverbeard</td><td class="align-col">LG</td><td class="align-col">LG LN NG</td><td class="domains-col">Courage, Dwarf, Good, Law, Strength, War</td><td>+3 Damage vs Giants, +10 Intimidate</td></tr>
+                            <tr><td class="good">Corellon Larethian</td><td class="align-col">CG</td><td class="align-col">CG CN NG LG</td><td class="domains-col">Chaos, Elf, Good, Magic, Protection, War</td><td>+2 Magic Damage, +3 Damage vs Orcs, +10 Persuade</td></tr>
+                            <tr><td class="evil">Cyric</td><td class="align-col">CE</td><td class="align-col">CE CN NE</td><td class="domains-col">Chaos, Destruction, Evil, Hatred, Illusion, Trickery</td><td>+3 Saves vs. Law, +3 Negative Damage, +10 Bluff</td></tr>
+                            <tr><td class="good">Cyrrollalee</td><td class="align-col">LG</td><td class="align-col">LG LN NG</td><td class="domains-col">Community, Craft, Good, Halfling, Law, Travel</td><td>+3 Saves vs. Chaos, +10 Persuade</td></tr>
+                            <tr><td class="neutral">Dallah Thaun</td><td class="align-col">CN</td><td class="align-col">CE CN CG NN</td><td class="domains-col">Chaos, Charm, Halfling, Knowledge, Luck, Trickery</td><td>+3 Divine Damage vs multiple races, +10 Bluff, Shadow VFX</td></tr>
+                            <tr><td class="evil">Deep Duerra</td><td class="align-col">LE</td><td class="align-col">LE LN NE</td><td class="domains-col">Cavern, Dwarf, Evil, Knowledge, Law, War</td><td>+3 Saves vs. Good, +3 Divine Damage, +10 Lore</td></tr>
+                            <tr><td class="good">Deep Sashelas <span class="druid-marker">🌿</span></td><td class="align-col">CG</td><td class="align-col">CG CN NG</td><td class="domains-col">Chaos, Elf, Good, Knowledge, Travel, Water</td><td>10/- Cold Resist, +10 Lore</td></tr>
+                            <tr><td class="good">Deneir</td><td class="align-col">NG</td><td class="align-col">CG LG NG NN</td><td class="domains-col">Craft, Good, Knowledge, Protection, Rune, Spell</td><td>Bonus Feat: Artist, +10 Lore</td></tr>
+                            <tr><td class="good">Dugmaren Brightmantle</td><td class="align-col">CG</td><td class="align-col">CG CN NG</td><td class="domains-col">Chaos, Craft, Dwarf, Good, Knowledge, Rune</td><td>+3 Divine Damage, +10 Lore</td></tr>
+                            <tr><td class="neutral">Dumathoin</td><td class="align-col">NN</td><td class="align-col">CN LN NE NG NN</td><td class="domains-col">Craft, Dwarf, Earth, Knowledge, Protection, Repose</td><td>+3 Saves vs. Death, Weapon Proficiency Exotic, +10 Lore</td></tr>
+                            <tr><td class="good">Eilistraee <span class="druid-marker">🌿</span></td><td class="align-col">CG</td><td class="align-col">CG CN NG</td><td class="domains-col">Chaos, Charm, Drow, Good, Moon, Portal</td><td>+3 Saves vs. Fear, +5 Perform, +5 Persuade, <a href="#ab-scaling" class="scaling-link">+AB vs Evil 🔗</a> (night only)</td></tr>
+                            <tr><td class="good">Eldath <span class="druid-marker">🌿</span></td><td class="align-col">NG</td><td class="align-col">CG CN NG NN</td><td class="domains-col">Balance, Community, Good, Plant, Protection, Water</td><td><a href="#resist-scaling" class="scaling-link">Bludgeoning & Slashing Resistance 🔗</a>, +5 Persuade</td></tr>
+                            <tr><td class="neutral">Erevan Ilesere</td><td class="align-col">CN</td><td class="align-col">CE CG CN NN</td><td class="domains-col">Charm, Chaos, Elf, Illusion, Luck, Trickery</td><td>Bonus Feat: Evasion, +5 Bluff</td></tr>
+                        </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- F-H Deities -->
+                <button class="collapsible">F - H Deities</button>
+                <div class="collapsible-content">
+                    <div class="inner">
+                        <div class="table-wrapper">
+                        <table class="deity-table">
+                            <tr><th>Deity</th><th>Align</th><th>Followers</th><th>Domains</th><th>Prayer Bonuses</th></tr>
+                            <tr><td class="evil">Faluzure</td><td class="align-col">NE</td><td class="align-col">CE LE NE NN</td><td class="domains-col">Death, Dragon, Evil, Darkness, Magic, Undeath</td><td>+6 Saves vs. Death, +3 Negative Damage, +10 Intimidate, Temporary Dracolich Wings</td></tr>
+                            <tr><td class="neutral">Fenmarel Mestarine <span class="druid-marker">🌿</span></td><td class="align-col">CN</td><td class="align-col">CE CG CN NN</td><td class="domains-col">Animal, Chaos, Darkness, Elf, Plant, Travel</td><td>+1 Positive Damage, +10 Lore, <a href="#ab-scaling" class="scaling-link">+AB vs Lawful 🔗</a> (outdoors only)</td></tr>
+                            <tr><td class="neutral">Finder Wyvernspur</td><td class="align-col">CN</td><td class="align-col">CE CN CG NN</td><td class="domains-col">Chaos, Charm, Craft, Luck, Renewal, Scalykind</td><td>+3 Sonic Damage, +5 Perform, +5 Bluff</td></tr>
+                            <tr><td class="good">Flandal Steelskin</td><td class="align-col">NG</td><td class="align-col">CG LG NG NN</td><td class="domains-col">Craft, Earth, Fire, Gnome, Good, Knowledge</td><td>+3 Electrical Damage, +5 Craft Armor, +5 Craft Weapon</td></tr>
+                            <tr><td class="good">Gaerdal Ironhand</td><td class="align-col">LG</td><td class="align-col">LG LN NG</td><td class="domains-col">Courage, Gnome, Good, Law, Protection, War</td><td>+2 Magical Damage, +3 Damage vs Goblinoids, +10 Persuade</td></tr>
+                            <tr><td class="neutral">Garagos</td><td class="align-col">CN</td><td class="align-col">CE CG CN NN</td><td class="domains-col">Chaos, Destruction, Hatred, Retribution, Strength, War</td><td>+2 Negative Damage, <a href="#ab-scaling" class="scaling-link">+AB vs Good 🔗</a>, +10 Intimidate</td></tr>
+                            <tr><td class="evil">Gargauth</td><td class="align-col">LE</td><td class="align-col">LE LN NE</td><td class="domains-col">Charm, Evil, Knowledge, Law, Trickery, Tyranny</td><td>+2 Divine Damage, +1 Universal Saves, <a href="#ac-scaling" class="scaling-link">+AC vs Good 🔗</a>, +10 Intimidate</td></tr>
+                            <tr><td class="good">Garl Glittergold</td><td class="align-col">LG</td><td class="align-col">LG LN NG</td><td class="domains-col">Craft, Gnome, Good, Law, Protection, Trickery</td><td>+3 Damage vs Chaotic, +5 Set Trap, +5 Bluff</td></tr>
+                            <tr><td class="evil">Garyx <span class="druid-marker">🌿</span></td><td class="align-col">CE</td><td class="align-col">CE CN NE</td><td class="domains-col">Chaos, Destruction, Dragon, Evil, Fire, Renewal</td><td>+3 Fire Damage, 10/- Fire Resist, +3 Saves vs. Good, +5 Intimidate</td></tr>
+                            <tr><td class="neutral">Geb</td><td class="align-col">NN</td><td class="align-col">CN LN NE NG NN</td><td class="domains-col">Cavern, Craft, Earth, Knowledge, Protection, Strength</td><td><a href="#summons-scaling" class="scaling-link">Summons Earth Elemental Divine Servant 🔗</a></td></tr>
+                            <tr><td class="evil">Ghaunadaur</td><td class="align-col">CE</td><td class="align-col">CE CN NE</td><td class="domains-col">Cavern, Chaos, Drow, Evil, Hatred, Slime</td><td>+6 Saves vs. Poison, +3 Negative Damage, +10 Intimidate</td></tr>
+                            <tr><td class="neutral">Gond</td><td class="align-col">NN</td><td class="align-col">CE CG CN LE LG LN NE NG NN</td><td class="domains-col">Craft, Earth, Fire, Knowledge, Trade, Rune</td><td><a href="#summons-scaling" class="scaling-link">Summons Construct Divine Servant Henchman 🔗</a></td></tr>
+                            <tr><td class="good">Gorm Gulthym</td><td class="align-col">LG</td><td class="align-col">LG LN NG</td><td class="domains-col">Dwarf, Good, Law, Protection, Strength, War</td><td>+3 Divine Damage, +5 Set Trap, +5 Persuade</td></tr>
+                            <tr><td class="evil">Grazzt</td><td class="align-col">CE</td><td class="align-col">CE CN NE</td><td class="domains-col">Chaos, Charm, Evil, Knowledge, Trickery, War</td><td>+2 Divine Damage, +3 Vampiric Regen, <a href="#ac-scaling" class="scaling-link">+AC vs Good 🔗</a>, +10 Persuade</td></tr>
+                            <tr><td class="neutral">Grumbar <span class="druid-marker">🌿</span></td><td class="align-col">NN</td><td class="align-col">CN LN NE NG NN</td><td class="domains-col">Cavern, Community, Earth, Rune, Strength, Time</td><td><a href="#summons-scaling" class="scaling-link">Summons Earth Elementals 🔗</a> (multiple summons)</td></tr>
+                            <tr><td class="evil">Gruumsh</td><td class="align-col">CE</td><td class="align-col">CE CN NE</td><td class="domains-col">Cavern, Chaos, Evil, Orc, Strength, War</td><td>+2 Divine Damage, +3 Fortitude, <a href="#ab-scaling" class="scaling-link">+AB vs Elves 🔗</a>, +10 Intimidate</td></tr>
+                            <tr><td class="good">Gwaeron Windstrom <span class="druid-marker">🌿</span></td><td class="align-col">NG</td><td class="align-col">CG LG NG NN</td><td class="domains-col">Animal, Good, Knowledge, Plant, Travel, Retribution</td><td>+2 Magical Damage, +3 Damage vs Giants, +10 Persuade</td></tr>
+                            <tr><td class="good">Haela Brightaxe</td><td class="align-col">CG</td><td class="align-col">CG CN NG</td><td class="domains-col">Chaos, Community, Dwarf, Good, Luck, War</td><td>+3 Saves vs. Evil, +10 Persuade</td></tr>
+                            <tr><td class="good">Hanali Celanil</td><td class="align-col">CG</td><td class="align-col">CG CN NG</td><td class="domains-col">Chaos, Charm, Elf, Good, Magic, Protection</td><td>+3 Fire Damage, +10 Persuade</td></tr>
+                            <tr><td class="good">Hathor <span class="druid-marker">🌿</span></td><td class="align-col">NG</td><td class="align-col">CG LG NG NN</td><td class="domains-col">Animal, Community, Good, Fate, Moon, Protection</td><td>+3 Sonic Damage, +5 Heal, +5 Persuade</td></tr>
+                            <tr><td class="neutral">Helm</td><td class="align-col">LN</td><td class="align-col">LE LG LN NN</td><td class="domains-col">Community, Courage, Law, Protection, Strength, War</td><td>5% Bludgeoning Damage Immunity, +5 Lore</td></tr>
+                            <tr><td class="good">Hlal</td><td class="align-col">CG</td><td class="align-col">CG NG CN</td><td class="domains-col">Chaos, Charm, Dragon, Good, Rune, Trickery</td><td>Bonus Feat: Extra Music, +10 Bluff</td></tr>
+                            <tr><td class="neutral">Hoar</td><td class="align-col">LN</td><td class="align-col">LE LG LN NN</td><td class="domains-col">Evil, Good, Fate, Law, Retribution, Travel</td><td><a href="#shield-scaling" class="scaling-link">Bludgeoning Damage Shield 🔗</a> (Biteback), +5 Intimidate</td></tr>
+                            <tr><td class="good">Horus-Re <span class="druid-marker">🌿</span></td><td class="align-col">LG</td><td class="align-col">LG LN NG</td><td class="domains-col">Courage, Good, Law, Nobility, Retribution, Sun</td><td>+3 Saves vs. Evil, +10 Lore</td></tr>
+                        </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- I-L Deities -->
+                <button class="collapsible">I - L Deities</button>
+                <div class="collapsible-content">
+                    <div class="inner">
+                        <div class="table-wrapper">
+                        <table class="deity-table">
+                            <tr><th>Deity</th><th>Align</th><th>Followers</th><th>Domains</th><th>Prayer Bonuses</th></tr>
+                            <tr><td class="neutral">Ibrandul</td><td class="align-col">CN</td><td class="align-col">CG CN NN CE</td><td class="domains-col">Chaos, Cavern, Darkness, Earth, Scalykind, Travel</td><td>+2 Divine Damage, +10 Bluff, <a href="#ab-scaling" class="scaling-link">+AB vs Lawful 🔗</a> (indoors only), Antilight</td></tr>
+                            <tr><td class="good">Ilmater</td><td class="align-col">LG</td><td class="align-col">LG LN NG</td><td class="domains-col">Good, Healing, Law, Renewal, Strength, Suffering</td><td>Bonus Feat: Perfect Health, +5 Persuade</td></tr>
+                            <tr><td class="evil">Ilneval</td><td class="align-col">NE</td><td class="align-col">CE LE NE NN</td><td class="domains-col">Courage, Destruction, Evil, Hatred, Orc, War</td><td>+3 Divine Damage, +5 Taunt, +5 Intimidate, <a href="#ab-scaling" class="scaling-link">+AB vs Good 🔗</a></td></tr>
+                            <tr><td class="neutral">Io</td><td class="align-col">NN</td><td class="align-col">CE CG CN LE LG LN NE NG NN</td><td class="domains-col">Dragon, Knowledge, Magic, Spell, Strength, Travel</td><td>+2 Universal Saves, +5 Persuade</td></tr>
+                            <tr><td class="good">Isis <span class="druid-marker">🌿</span></td><td class="align-col">NG</td><td class="align-col">CG CN NG NN</td><td class="domains-col">Air, Community, Good, Magic, Plant, Water</td><td>+10 Lore, +3 Damage vs Evil</td></tr>
+                            <tr><td class="neutral">Istishia <span class="druid-marker">🌿</span></td><td class="align-col">NN</td><td class="align-col">CN LN NE NG NN</td><td class="domains-col">Air, Cold, Destruction, Fate, Travel, Water</td><td>Random combat bonus + Random skill bonus (+15)</td></tr>
+                            <tr><td class="neutral">Jergal</td><td class="align-col">LN</td><td class="align-col">LE LG LN NN</td><td class="domains-col">Death, Fate, Law, Repose, Rune, Suffering</td><td>+3 Saves vs. Death, +2 Divine Damage, +10 Lore</td></tr>
+                            <tr><td class="neutral">Kelemvor</td><td class="align-col">LN</td><td class="align-col">LE LG LN NN</td><td class="domains-col">Fate, Law, Nobility, Protection, Repose, Travel</td><td>+6 Saves vs. Death, +2 Positive Damage, +2 Cold Damage, +5 Persuade</td></tr>
+                            <tr><td class="evil">Kiaransalee</td><td class="align-col">CE</td><td class="align-col">CE CN NE</td><td class="domains-col">Chaos, Drow, Evil, Magic, Retribution, Undeath</td><td>+3 Saves vs. Death, +2 Magical Damage, +3 Vampiric Regen, <a href="#ac-scaling" class="scaling-link">+AC vs Good 🔗</a>, +5 Bluff</td></tr>
+                            <tr><td class="neutral">Kossuth <span class="druid-marker">🌿</span></td><td class="align-col">NN</td><td class="align-col">CN LN NE NG NN</td><td class="domains-col">Destruction, Fire, Magic, Portal, Renewal, Suffering</td><td>+6 Saves vs. Fire, +3 Divine Damage, +5 Intimidate</td></tr>
+                            <tr><td class="evil">Kurtulmak</td><td class="align-col">LE</td><td class="align-col">LE LN NE</td><td class="domains-col">Craft, Evil, Law, Scalykind, Trickery, War</td><td>+3 Damage vs Gnomes, +5 Set Trap, +3 Saves vs Traps, +1 Regen, +5 Intimidate</td></tr>
+                            <tr><td class="good">Labelas Enoreth</td><td class="align-col">CG</td><td class="align-col">CG CN NG</td><td class="domains-col">Chaos, Elf, Good, Knowledge, Rune, Time</td><td>+10 Lore, On-Hit: Slow</td></tr>
+                            <tr><td class="evil">Laduguer</td><td class="align-col">LE</td><td class="align-col">LE LN NE</td><td class="domains-col">Craft, Dwarf, Evil, Law, Magic, Protection</td><td>+6 Saves vs. Mind-Affecting, +3 Damage vs Chaotic, +5 Spellcraft, +5 Ride</td></tr>
+                            <tr><td class="good">Lathander <span class="druid-marker">🌿</span></td><td class="align-col">NG</td><td class="align-col">CG LG NG NN</td><td class="domains-col">Good, Nobility, Protection, Renewal, Strength, Sun</td><td><a href="#ab-scaling" class="scaling-link">+AB vs Evil 🔗</a>, +5 Perform, +5 Persuade</td></tr>
+                            <tr><td class="neutral">Leira</td><td class="align-col">CN</td><td class="align-col">CG CN NN CE</td><td class="domains-col">Chaos, Charm, Dream, Illusion, Spell, Trickery</td><td>+10 Bluff, +3 Vampiric Regeneration</td></tr>
+                            <tr><td class="neutral">Lendys</td><td class="align-col">LN</td><td class="align-col">LE LG LN</td><td class="domains-col">Courage, Destruction, Dragon, Law, Protection, Retribution</td><td>Temporary weapon item bonus OnHit Doom DC 22</td></tr>
+                            <tr><td class="good">Lliira</td><td class="align-col">CG</td><td class="align-col">CG CN NG</td><td class="domains-col">Chaos, Charm, Community, Good, Travel</td><td>Bonus Feat: Extra Music, +5 Perform, +5 Persuade</td></tr>
+                            <tr><td class="evil">Lolth</td><td class="align-col">CE</td><td class="align-col">CE CN NE</td><td class="domains-col">Chaos, Drow, Evil, Darkness, Destruction, Trickery</td><td>+1 Regeneration, +2 Magical Damage, <a href="#ab-scaling" class="scaling-link">+AB vs Elves 🔗</a>, +5 Bluff, On-Hit: Doom</td></tr>
+                            <tr><td class="evil">Loviatar</td><td class="align-col">LE</td><td class="align-col">LE LN NE</td><td class="domains-col">Evil, Law, Retribution, Strength, Suffering</td><td><a href="#shield-scaling" class="scaling-link">Slashing Damage Shield 🔗</a>, +3 Divine Damage, +5 Intimidate</td></tr>
+                            <tr><td class="good">Lurue <span class="druid-marker">🌿</span></td><td class="align-col">CG</td><td class="align-col">CG CN NG</td><td class="domains-col">Animal, Chaos, Charm, Dream, Good, Healing</td><td>Arcane Defense: Necromancy, +5 Ride, <a href="#ab-scaling" class="scaling-link">+AB vs Evil 🔗</a></td></tr>
+                            <tr><td class="evil">Luthic</td><td class="align-col">NE</td><td class="align-col">CE LE NE</td><td class="domains-col">Cavern, Earth, Evil, Community, Healing, Orc</td><td>+3 Divine Damage, +3 Saves vs. Good, +10 Intimidate</td></tr>
+                        </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- M-O Deities -->
+                <button class="collapsible">M - O Deities</button>
+                <div class="collapsible-content">
+                    <div class="inner">
+                        <div class="table-wrapper">
+                        <table class="deity-table">
+                            <tr><th>Deity</th><th>Align</th><th>Followers</th><th>Domains</th><th>Prayer Bonuses</th></tr>
+                            <tr><td class="evil">Maglubiyet</td><td class="align-col">NE</td><td class="align-col">CE LE NE NN</td><td class="domains-col">Destruction, Evil, Hatred, Trickery, Tyranny, War</td><td>+3 Divine Damage, +3 Reflex, <a href="#ac-scaling" class="scaling-link">+AC vs Good 🔗</a>, +5 Bluff, Size Increase</td></tr>
+                            <tr><td class="evil">Malar <span class="druid-marker">🌿</span></td><td class="align-col">CE</td><td class="align-col">CE CN NE</td><td class="domains-col">Animal, Chaos, Evil, Moon, Strength, Suffering</td><td>+3 Divine Damage, +6 Saves vs. Law, +5 Intimidate, On-Hit: Fear</td></tr>
+                            <tr><td class="good">Marthammor Duin</td><td class="align-col">NG</td><td class="align-col">CG LG NG NN</td><td class="domains-col">Community, Dwarf, Good, Protection, Strength, Travel</td><td>+6 Saves vs. Traps, +5 Search, +5 Bluff</td></tr>
+                            <tr><td class="evil">Mask</td><td class="align-col">NE</td><td class="align-col">CE LE NE NN</td><td class="domains-col">Charm, Darkness, Evil, Luck, Travel, Trickery</td><td>+5 Hide, +3 Magical Damage, +10 Bluff</td></tr>
+                            <tr><td class="evil">Mephistopheles</td><td class="align-col">LE</td><td class="align-col">LE LN NE</td><td class="domains-col">Evil, Fire, Knowledge, Law, Rune, Spell</td><td>+3 Fire Damage, +10% Fire Immunity, +10 Persuade, Temporary Devil Wings</td></tr>
+                            <tr><td class="good">Mielikki <span class="druid-marker">🌿</span></td><td class="align-col">NG</td><td class="align-col">CG LG NG NN</td><td class="domains-col">Animal, Balance, Good, Plant, Protection, Travel</td><td>+10 Animal Empathy, +5 Persuade</td></tr>
+                            <tr><td class="good">Milil</td><td class="align-col">NG</td><td class="align-col">CG LG NG NN</td><td class="domains-col">Charm, Good, Illusion, Knowledge, Nobility, Trickery</td><td>+5 Perform, <a href="#ac-scaling" class="scaling-link">+AC vs Evil 🔗</a>, +5 Lore</td></tr>
+                            <tr><td class="evil">Moander</td><td class="align-col">CE</td><td class="align-col">LE CE NE</td><td class="domains-col">Chaos, Destruction, Evil, Fire, Plant, Slime</td><td>+3 Negative Damage, +5 Taunt, +5 Intimidate, On-Hit: Level Drain, Fog VFX</td></tr>
+                            <tr><td class="good">Moradin</td><td class="align-col">LG</td><td class="align-col">LG LN NG</td><td class="domains-col">Craft, Dwarf, Earth, Good, Law, Protection</td><td>+2 Divine Damage, <a href="#ac-scaling" class="scaling-link">+AC vs Giants 🔗</a>, +5 Craft Armor, +5 Craft Weapon</td></tr>
+                            <tr><td class="evil">Myrkul</td><td class="align-col">NE</td><td class="align-col">CE LE NE</td><td class="domains-col">Darkness, Death, Evil, Fate, Suffering, Undeath</td><td>+6 Saves vs. Death, +3 Negative Damage, +1 Regeneration, +5 Bluff</td></tr>
+                            <tr><td class="good">Mystra</td><td class="align-col">NG</td><td class="align-col">CG LE LG LN NG NN</td><td class="domains-col">Good, Illusion, Knowledge, Magic, Rune, Spell</td><td>+10 Spellcraft, +5 Lore, Arcane VFX</td></tr>
+                            <tr><td class="good">Nephthys</td><td class="align-col">CG</td><td class="align-col">CG CN NG</td><td class="domains-col">Chaos, Good, Protection, Renewal, Trade, Travel</td><td>+6 Saves vs. Death, +5 Appraise, Gold reward (scales with level)</td></tr>
+                            <tr><td class="good">Nobanion <span class="druid-marker">🌿</span></td><td class="align-col">LG</td><td class="align-col">LG LN NG NN</td><td class="domains-col">Animal, Community, Courage, Good, Law, Nobility</td><td>Temporary weapon item bonus OnHit Blind DC 22</td></tr>
+                            <tr><td class="good">Oberon <span class="druid-marker">🌿</span></td><td class="align-col">CG</td><td class="align-col">CG CN LG LN NG NN</td><td class="domains-col">Animal, Chaos, Good, Nobility, Plant, Strength</td><td>+3 Divine Damage, +10 Lore, Pixie Dust VFX</td></tr>
+                            <tr><td class="neutral">Oghma</td><td class="align-col">NN</td><td class="align-col">CE CG CN LE LG LN NE NG NN</td><td class="domains-col">Balance, Charm, Knowledge, Luck, Travel, Trickery</td><td>+6 Saves vs. Fear, +5 Concentration, +5 Lore</td></tr>
+                            <tr><td class="evil">Orcus</td><td class="align-col">CE</td><td class="align-col">CE CN NE</td><td class="domains-col">Chaos, Darkness, Death, Destruction, Evil, Undeath</td><td>+2 Divine Damage, +6 Saves vs. Mind, +1 Regeneration, <a href="#ac-scaling" class="scaling-link">+AC vs Good 🔗</a>, +5 Intimidate</td></tr>
+                            <tr><td class="good">Osiris <span class="druid-marker">🌿</span></td><td class="align-col">LG</td><td class="align-col">LG LN NG</td><td class="domains-col">Good, Law, Plant, Repose, Renewal, Retribution</td><td>+6 Saves vs. Death, +3 Damage vs Evil, +5 Persuade</td></tr>
+                        </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- P-S Deities -->
+                <button class="collapsible">P - S Deities</button>
+                <div class="collapsible-content">
+                    <div class="inner">
+                        <div class="table-wrapper">
+                        <table class="deity-table">
+                            <tr><th>Deity</th><th>Align</th><th>Followers</th><th>Domains</th><th>Prayer Bonuses</th></tr>
+                            <tr><td class="evil">Pazuzu</td><td class="align-col">CE</td><td class="align-col">CE CN NE</td><td class="domains-col">Air, Chaos, Charm, Evil, Portal, Trickery</td><td>+3 Magical Damage, <a href="#ac-scaling" class="scaling-link">+AC vs Lawful 🔗</a>, +5 Intimidate, +5 Persuade, Temporary Pazuzu Wings</td></tr>
+                            <tr><td class="evil">Queen of Air and Darkness <span class="druid-marker">🌿</span></td><td class="align-col">CE</td><td class="align-col">CE LE NE</td><td class="domains-col">Air, Chaos, Cold, Darkness, Evil, Illusion</td><td>+2 Divine Damage, +3 Damage vs Lawful, <a href="#ac-scaling" class="scaling-link">+Natural AC vs Good 🔗</a>, +5 Bluff, On-Hit: Confusion</td></tr>
+                            <tr><td class="neutral">Red Knight</td><td class="align-col">LN</td><td class="align-col">LE LG LN NN</td><td class="domains-col">Knowledge, Law, Nobility, Protection, Strength, War</td><td>+3 Fortitude Save, +10 Ride</td></tr>
+                            <tr><td class="good">Rillifane Rallathil <span class="druid-marker">🌿</span></td><td class="align-col">CG</td><td class="align-col">CG CN NG</td><td class="domains-col">Chaos, Elf, Good, Plant, Protection, Renewal</td><td>+3 Saves vs. Law, +5 Hide, +5 Lore, Treant Appearance</td></tr>
+                            <tr><td class="good">Salandra</td><td class="align-col">NG</td><td class="align-col">CG CN LG LN NG NN</td><td class="domains-col">Balance, Community, Healing, Good, Protection, Renewal</td><td>+3 Positive Damage, +5 Heal, +5 Persuade</td></tr>
+                            <tr><td class="neutral">Savras</td><td class="align-col">LN</td><td class="align-col">LE LG LN NN</td><td class="domains-col">Dream, Fate, Knowledge, Law, Magic, Spell</td><td><a href="#dr-scaling" class="scaling-link">Damage Reduction 🔗</a>, +3 Saves vs. Spells, +5 Lore</td></tr>
+                            <tr><td class="evil">Sebek <span class="druid-marker">🌿</span></td><td class="align-col">NE</td><td class="align-col">CE LE NE NN</td><td class="domains-col">Animal, Evil, Moon, Scalykind, Trickery, Water</td><td>+1 Strength, +6 Saves vs. Poison, +3 Negative Damage, +5 Bluff</td></tr>
+                            <tr><td class="good">Segojan Earthcaller <span class="druid-marker">🌿</span></td><td class="align-col">NG</td><td class="align-col">CG LG NG NN</td><td class="domains-col">Animal, Cavern, Earth, Gnome, Good, Repose</td><td>+3 Acid Damage, +10 Appraise</td></tr>
+                            <tr><td class="good">Sehanine Moonbow <span class="druid-marker">🌿</span></td><td class="align-col">CG</td><td class="align-col">CG CN NG</td><td class="domains-col">Chaos, Dream, Elf, Good, Moon, Repose</td><td>+3 Fortitude Save, +10 Persuade</td></tr>
+                            <tr><td class="good">Selune <span class="druid-marker">🌿</span></td><td class="align-col">CG</td><td class="align-col">CG CN NG LG</td><td class="domains-col">Chaos, Dream, Good, Moon, Protection, Travel</td><td>+2 Positive Damage, +3 Damage vs Evil (night only), +5 Heal, +5 Persuade</td></tr>
+                            <tr><td class="evil">Selvetarm</td><td class="align-col">CE</td><td class="align-col">CE CN NE</td><td class="domains-col">Chaos, Drow, Evil, Hatred, Strength, War</td><td>+2 Magical Damage, +3 Vampiric Regen, <a href="#ab-scaling" class="scaling-link">+AB vs Good 🔗</a>, +10 Intimidate</td></tr>
+                            <tr><td class="evil">Set <span class="druid-marker">🌿</span></td><td class="align-col">LE</td><td class="align-col">LE LN NE</td><td class="domains-col">Air, Darkness, Evil, Hatred, Law, Scalykind</td><td><a href="#resist-scaling" class="scaling-link">Piercing Resistance 🔗</a>, +3 Acid Damage, +3 Vampiric Regen, +5 Bluff</td></tr>
+                            <tr><td class="evil">Shar</td><td class="align-col">NE</td><td class="align-col">CE LE NE NN</td><td class="domains-col">Cavern, Charm, Darkness, Evil, Knowledge, Trickery</td><td>10% Negative Energy Resistance</td></tr>
+                            <tr><td class="good">Sharess</td><td class="align-col">CG</td><td class="align-col">CG CN NG</td><td class="domains-col">Chaos, Charm, Good, Protection, Travel, Trickery</td><td>+3 Saves vs. Negative, +2 Divine Damage</td></tr>
+                            <tr><td class="evil">Shargaas</td><td class="align-col">CE</td><td class="align-col">CE CN NE</td><td class="domains-col">Cavern, Chaos, Darkness, Evil, Orc, Trickery</td><td>+3 Saves vs. Good, +2 Negative Damage, <a href="#resist-scaling" class="scaling-link">Piercing Resistance 🔗</a>, <a href="#ab-scaling" class="scaling-link">+AB vs Good 🔗</a>, +5 Bluff</td></tr>
+                            <tr><td class="good">Sharindlar <span class="druid-marker">🌿</span></td><td class="align-col">CG</td><td class="align-col">CG CN NG</td><td class="domains-col">Chaos, Charm, Dwarf, Good, Healing, Moon</td><td>+3 Damage vs Evil, +5 Heal, +5 Persuade</td></tr>
+                            <tr><td class="neutral">Shaundakul</td><td class="align-col">CN</td><td class="align-col">CE CG CN NN</td><td class="domains-col">Air, Chaos, Portal, Protection, Trade, Travel</td><td>Immunity to Entangle, +3 Will Save, +2 Divine Damage, +5 Lore</td></tr>
+                            <tr><td class="neutral">Sheela Peryroyl <span class="druid-marker">🌿</span></td><td class="align-col">NN</td><td class="align-col">CN LN NE NG NN</td><td class="domains-col">Air, Balance, Charm, Earth, Halfling, Plant</td><td>+3 Saves vs. Mind Effects, +3 Saves vs. Negative, +1 Regeneration, +5 Persuade</td></tr>
+                            <tr><td class="neutral">Shevarash</td><td class="align-col">CN</td><td class="align-col">CE CG CN NN</td><td class="domains-col">Chaos, Elf, Hatred, Retribution, Strength, War</td><td>+2 Divine Damage, <a href="#ab-scaling" class="scaling-link">+AB vs Drow 🔗</a>, +10 Intimidate</td></tr>
+                            <tr><td class="good">Shiallia <span class="druid-marker">🌿</span></td><td class="align-col">NG</td><td class="align-col">CG LG NG NN</td><td class="domains-col">Animal, Charm, Community, Good, Plant, Renewal</td><td>+3 Divine Damage, +5 Concentration, +5 Lore</td></tr>
+                            <tr><td class="neutral">Siamorphe</td><td class="align-col">LN</td><td class="align-col">LE LG LN NN</td><td class="domains-col">Charm, Community, Knowledge, Law, Nobility, Protection</td><td>+3 Will Save, +10 Persuade</td></tr>
+                            <tr><td class="neutral">Silvanus <span class="druid-marker">🌿</span></td><td class="align-col">NN</td><td class="align-col">CN LN NE NG NN</td><td class="domains-col">Animal, Balance, Plant, Protection, Renewal, Water</td><td>+3 Fortitude Save, +5 Animal Empathy, +5 Persuade</td></tr>
+                            <tr><td class="good">Solonor Thelandira <span class="druid-marker">🌿</span></td><td class="align-col">CG</td><td class="align-col">CG CN NG</td><td class="domains-col">Animal, Chaos, Elf, Good, Plant, War</td><td>Immunity to Blindness, +5 Lore, Green Aura VFX</td></tr>
+                            <tr><td class="good">Sune</td><td class="align-col">CG</td><td class="align-col">CG CN LG NG</td><td class="domains-col">Chaos, Charm, Community, Fire, Good, Protection</td><td>+3 Will Save, +10 Persuade</td></tr>
+                        </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- T-Z Deities -->
+                <button class="collapsible">T - Z Deities</button>
+                <div class="collapsible-content">
+                    <div class="inner">
+                        <div class="table-wrapper">
+                        <table class="deity-table">
+                            <tr><th>Deity</th><th>Align</th><th>Followers</th><th>Domains</th><th>Prayer Bonuses</th></tr>
+                            <tr><td class="evil">Talona <span class="druid-marker">🌿</span></td><td class="align-col">CE</td><td class="align-col">CE CN NE</td><td class="domains-col">Chaos, Destruction, Evil, Hatred, Slime, Suffering</td><td>+6 Saves vs. Poison, +1 Regeneration, +3 Divine Damage, +5 Bluff</td></tr>
+                            <tr><td class="evil">Talos <span class="druid-marker">🌿</span></td><td class="align-col">CE</td><td class="align-col">CE CN NE</td><td class="domains-col">Air, Chaos, Destruction, Evil, Fire, Hatred</td><td>+3 Electrical Damage, +1 Strength, 10% Electrical Immunity, +5 Intimidate</td></tr>
+                            <tr><td class="good">Tamara <span class="druid-marker">🌿</span></td><td class="align-col">NG</td><td class="align-col">CG LG NG NN</td><td class="domains-col">Balance, Community, Dragon, Good, Healing, Sun</td><td>+3 Will Save, +5 Heal, +5 Persuade</td></tr>
+                            <tr><td class="neutral">Tempus</td><td class="align-col">CN</td><td class="align-col">CE CG CN NN</td><td class="domains-col">Chaos, Courage, Protection, Retribution, Strength, War</td><td>+Temporary HP (max 30), <a href="#resist-scaling" class="scaling-link">Slashing Resistance 🔗</a>, +5 Intimidate</td></tr>
+                            <tr><td class="good">Thard Harr <span class="druid-marker">🌿</span></td><td class="align-col">CG</td><td class="align-col">CG NG CN</td><td class="domains-col">Animal, Chaos, Dwarf, Earth, Good, Plant</td><td>+3 Fortitude Save, +5 Animal Empathy, +5 Persuade</td></tr>
+                            <tr><td class="neutral">Thoth</td><td class="align-col">NN</td><td class="align-col">CN LN NE NG NN</td><td class="domains-col">Craft, Knowledge, Luck, Magic, Rune, Spell</td><td>+3 Will Save, +5 Craft Armor, +5 Craft Weapon</td></tr>
+                            <tr><td class="evil">Tiamat</td><td class="align-col">LE</td><td class="align-col">LE LN NE, CE</td><td class="domains-col">Dragon, Evil, Law, Scalykind, Strength, Tyranny</td><td>True Sight</td></tr>
+                            <tr><td class="good">Titania <span class="druid-marker">🌿</span></td><td class="align-col">CG</td><td class="align-col">CG CN LG LN NG NN</td><td class="domains-col">Charm, Chaos, Good, Illusion, Nobility, Plant</td><td>+3 Will Save, +5 Perform, +5 Persuade, Pixie Dust VFX</td></tr>
+                            <tr><td class="good">Torm</td><td class="align-col">LG</td><td class="align-col">LG LN NG</td><td class="domains-col">Courage, Good, Healing, Law, Protection, Strength</td><td>+5 Discipline, +5 Persuade, <a href="#ab-scaling" class="scaling-link">+AB vs Evil 🔗</a></td></tr>
+                            <tr><td class="good">Tymora</td><td class="align-col">CG</td><td class="align-col">CG CN NG</td><td class="domains-col">Chaos, Good, Luck, Protection, Travel, Trickery</td><td>Random blessing (<a href="#ab-scaling" class="scaling-link">AB 🔗</a>/Damage/<a href="#resist-scaling" class="scaling-link">Resistance 🔗</a>), +10 Appraise</td></tr>
+                            <tr><td class="good">Tyr</td><td class="align-col">LG</td><td class="align-col">LG LN NG</td><td class="domains-col">Good, Knowledge, Law, Retribution, Strength, War</td><td><a href="#ab-scaling" class="scaling-link">+AB vs Evil 🔗</a>, <a href="#dr-scaling" class="scaling-link">Damage Reduction 🔗</a>, +5 Intimidate</td></tr>
+                            <tr><td class="neutral">Ubtao <span class="druid-marker">🌿</span></td><td class="align-col">NN</td><td class="align-col">NN LN CN NG NE</td><td class="domains-col">Animal, Balance, Plant, Protection, Repose, Scalykind</td><td>+6 Saves vs. Fear, +2 Divine Damage, +3 Damage vs Monstrous Humanoids, +5 Persuade</td></tr>
+                            <tr><td class="neutral">Ulutiu <span class="druid-marker">🌿</span></td><td class="align-col">LN</td><td class="align-col">LE LG LN NN</td><td class="domains-col">Animal, Law, Cold, Protection, Strength, Water</td><td>10% Cold Immunity, +3 Will Save, +5 Lore</td></tr>
+                            <tr><td class="evil">Umberlee <span class="druid-marker">🌿</span></td><td class="align-col">CE</td><td class="align-col">CE CN NE</td><td class="domains-col">Air, Chaos, Destruction, Evil, Hatred, Water</td><td>+3 Saves vs. Law, +2 Divine Damage, +2 Magical Damage, +1 Regeneration, +5 Bluff</td></tr>
+                            <tr><td class="evil">Urdlen</td><td class="align-col">CE</td><td class="align-col">CE CN NE</td><td class="domains-col">Chaos, Darkness, Earth, Evil, Gnome, Hatred</td><td>+3 Saves vs. Good, +3 Acid Damage, +3 Vampiric Regen, +5 Intimidate</td></tr>
+                            <tr><td class="neutral">Urogalan</td><td class="align-col">LN</td><td class="align-col">LE LG LN NN</td><td class="domains-col">Earth, Halfling, Knowledge, Law, Protection, Repose</td><td>+6 Saves vs. Death, +5 Move Silently, +5 Bluff</td></tr>
+                            <tr><td class="neutral">Uthgar <span class="druid-marker">🌿</span></td><td class="align-col">CN</td><td class="align-col">CE CG CN NN</td><td class="domains-col">Animal, Chaos, Courage, Retribution, Strength, War</td><td><a href="#ab-scaling" class="scaling-link">+AB vs Lawful 🔗</a>, +10 Intimidate</td></tr>
+                            <tr><td class="good">Valkur</td><td class="align-col">CG</td><td class="align-col">CG CN NG</td><td class="domains-col">Air, Chaos, Good, Protection, Water, War</td><td>10% Electric Immunity, +3 Electrical Damage, +5 Intimidate</td></tr>
+                            <tr><td class="neutral">Vandria Gilmadrith</td><td class="align-col">LN</td><td class="align-col">LN LG NG NN</td><td class="domains-col">Community, Courage, Elf, Law, Protection, War</td><td>+3 Saves vs. Evil, +2 Divine Damage, <a href="#ab-scaling" class="scaling-link">+AB vs Drow 🔗</a>, +5 Lore</td></tr>
+                            <tr><td class="evil">Velsharoon</td><td class="align-col">NE</td><td class="align-col">CE CN LE LN NE NN</td><td class="domains-col">Death, Evil, Knowledge, Magic, Spell, Undeath</td><td><a href="#summons-scaling" class="scaling-link">Summons Undead Servants as Henchmen 🔗</a> (multiple henchmen, scales with level)</td></tr>
+                            <tr><td class="neutral">Vergadain</td><td class="align-col">NN</td><td class="align-col">CN LN NE NG NN</td><td class="domains-col">Craft, Dwarf, Luck, Rune, Trade, Trickery</td><td>+1 Regeneration, +10 Appraise</td></tr>
+                            <tr><td class="evil">Vhaeraun</td><td class="align-col">CE</td><td class="align-col">CE CN NE</td><td class="domains-col">Charm, Chaos, Drow, Evil, Travel, Trickery</td><td>Temporary weapon item bonus OnHit Level Drain DC 22, 2 levels</td></tr>
+                            <tr><td class="neutral">Waukeen</td><td class="align-col">NN</td><td class="align-col">CN LN NE NG NN</td><td class="domains-col">Balance, Knowledge, Portal, Protection, Trade, Travel</td><td>+6 Saves vs. Fear, +10 Appraise</td></tr>
+                            <tr><td class="good">Yondalla</td><td class="align-col">LG</td><td class="align-col">LG LN NG</td><td class="domains-col">Community, Good, Halfling, Law, Protection, Renewal</td><td>+6 Saves vs. Fear, +10 Persuade</td></tr>
+                            <tr><td class="evil">Yurtrus</td><td class="align-col">NE</td><td class="align-col">CE LE NE NN</td><td class="domains-col">Death, Destruction, Evil, Orc, Suffering, Slime</td><td>Immunity to Disease, <a href="#ab-scaling" class="scaling-link">+AB vs Good 🔗</a>, +3 Negative Damage, +5 Bluff</td></tr>
+                        </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="section-divider"></div>
+
+            <!-- Domain Bonuses -->
+            <section id="domain-bonuses">
+                <h2>Cleric Domain Bonuses</h2>
+                <p>Clerics receive additional bonuses based on their selected domains. These stack with deity-specific bonuses.</p>
+
+                <button class="collapsible">View All Domain Bonuses</button>
+                <div class="collapsible-content">
+                    <div class="inner">
+                        <div class="table-wrapper">
+                        <table class="deity-table">
+                            <tr><th>Domain</th><th>Bonus</th></tr>
+                            <tr><td>Air</td><td>Electrical Immunity: 20% + divine level</td></tr>
+                            <tr><td>Animal</td><td>Increases damage of Animal summons: +1 per 7 divine levels</td></tr>
+                            <tr><td>Balance</td><td>+Will Save: +1 per 7 divine levels</td></tr>
+                            <tr><td>Cavern</td><td>Ultravision, Immunity to Light Sensitivity</td></tr>
+                            <tr><td>Chaos</td><td>Extra divine damage vs Lawful: +1 per 7 divine levels</td></tr>
+                            <tr><td>Charm</td><td>Immunity to Mind-Affecting Spells</td></tr>
+                            <tr><td>Cold</td><td>+Cold Damage: +1 per 10 divine levels</td></tr>
+                            <tr><td>Community</td><td>+10 Temporary HP per Party Member nearby (Max 100)</td></tr>
+                            <tr><td>Courage</td><td>Fear Immunity</td></tr>
+                            <tr><td>Craft</td><td>+Saves vs Traps: +1 per 5 divine levels</td></tr>
+                            <tr><td>Darkness</td><td>Ultravision, +Spot: +1 per 2 divine levels</td></tr>
+                            <tr><td>Death</td><td>Increases damage of Undead summons: +1 per 7 divine levels</td></tr>
+                            <tr><td>Destruction</td><td>Damaging Fire shield: 1d6 + 1 per 5 divine levels</td></tr>
+                            <tr><td>Dragon</td><td>Alignment-Dependent Elemental Immunity (Good: Cold, Neutral: Electric, Evil: Fire): 20% + 5% per 5 divine levels</td></tr>
+                            <tr><td>Dream</td><td>Immunity to Sleep/Daze/Stun</td></tr>
+                            <tr><td>Drow</td><td>Freedom (Immunity to paralysis/entangle/slow)</td></tr>
+                            <tr><td>Dwarf</td><td>+Constitution: +1 per 7 divine levels</td></tr>
+                            <tr><td>Earth</td><td>Acid Immunity: 20% + divine level</td></tr>
+                            <tr><td>Elf</td><td>+Dexterity: +1 per 7 divine levels</td></tr>
+                            <tr><td>Evil</td><td>Extra divine damage vs Good: +2 per 7 divine levels</td></tr>
+                            <tr><td>Fate</td><td>+Save (random type, 5% chance for all saves): +1 per 7 divine levels</td></tr>
+                            <tr><td>Fire</td><td>Fire Immunity: 20% + divine level</td></tr>
+                            <tr><td>Gnome</td><td>+Charisma: +1 per 7 divine levels</td></tr>
+                            <tr><td>Good</td><td>Extra divine damage vs Evil: +2 per 7 divine levels</td></tr>
+                            <tr><td>Halfling</td><td>+Hide/Move Silently: +1 per 7 divine levels</td></tr>
+                            <tr><td>Hatred</td><td>Damaging Negative Damage Shield: 1d4 + 1 per 5 divine levels</td></tr>
+                            <tr><td>Healing</td><td>Regeneration: +2 per 10 divine levels</td></tr>
+                            <tr><td>Illusion</td><td>Summons an Illusory Duplicate of yourself as a Henchman (Does not apply party-wide)</td></tr>
+                            <tr><td>Knowledge</td><td>All skills boost: +1 per 5 divine levels</td></tr>
+                            <tr><td>Law</td><td>Extra divine damage vs Chaotic: +1 per 7 divine levels</td></tr>
+                            <tr><td>Luck</td><td>+3 to random ability</td></tr>
+                            <tr><td>Magic</td><td>Spell Resistance increase: 11 + 1 per 2 divine levels</td></tr>
+                            <tr><td>Moon</td><td>Divine Damage vs Shapechangers: +1 per 7 divine levels</td></tr>
+                            <tr><td>Nobility</td><td>+Persuade/Bluff/Intimidate: +1 per 5 divine levels</td></tr>
+                            <tr><td>Orc</td><td>+Divine Damage vs Elves: +1 per 7 divine levels</td></tr>
+                            <tr><td>Plant</td><td>Natural AC: +1 per 4 divine levels, capped at 6</td></tr>
+                            <tr><td>Portal</td><td>Summons an Alignment-Based Echo as a Henchman (Does not apply party-wide)</td></tr>
+                            <tr><td>Protection</td><td>Concealment: 20% + divine level</td></tr>
+                            <tr><td>Renewal</td><td>Resist all Elemental Damage: 4 + 1 per 5 divine levels</td></tr>
+                            <tr><td>Repose</td><td>Negative Damage Immunity: +1% per 7 divine levels</td></tr>
+                            <tr><td>Retribution</td><td>Damaging Divine Damage Shield: 1d4 + 1 per 5 divine levels</td></tr>
+                            <tr><td>Rune</td><td>Damage Reduction: 10/+5 + 10 per 3 divine levels</td></tr>
+                            <tr><td>Scalykind</td><td>+Acid damage: +1 per 7 divine levels</td></tr>
+                            <tr><td>Slime</td><td>Acid Immunity: 20% + divine level</td></tr>
+                            <tr><td>Spell</td><td>+Saves vs spells: +1 per 5 divine levels</td></tr>
+                            <tr><td>Strength</td><td>+Strength: +1 per 7 divine levels</td></tr>
+                            <tr><td>Suffering</td><td>+Fortitude/Will: +1 per 5 divine levels</td></tr>
+                            <tr><td>Sun</td><td>Extra divine damage vs Undead: +2 per 7 divine levels</td></tr>
+                            <tr><td>Time</td><td>Movement speed increase: 5% + 1% per 2 divine levels</td></tr>
+                            <tr><td>Trade</td><td>+Appraise: 4 + 2 per 3 divine levels</td></tr>
+                            <tr><td>Travel</td><td>Immunity to Movement Speed Decrease</td></tr>
+                            <tr><td>Trickery</td><td>Invisibility (Reapplied every 30 seconds)</td></tr>
+                            <tr><td>Tyranny</td><td>Bludgeoning Resistance: 1/- + 1 per 5 divine levels</td></tr>
+                            <tr><td>Undeath</td><td>+Negative Damage: +1 per 7 divine levels</td></tr>
+                            <tr><td>War</td><td>+Physical damage: +1 per 10 divine levels</td></tr>
+                            <tr><td>Water</td><td>Cold Immunity: 20% + divine level</td></tr>
+                        </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="section-divider"></div>
+
+            <!-- Deity Bonus Scaling Guide -->
+            <section id="scaling-guide">
+                <h2>⚙️ Deity Bonus Scaling Reference</h2>
+                <p>All deity bonuses marked with a 🔗 symbol follow consistent, predictable scaling based on your Divine Level (sum of all divine class levels: Cleric + Druid + Ranger + Paladin + Blackguard + Divine Champion). Use the sections below to determine exactly what each type of bonus will be at your level.</p>
+
+                <h3 id="ab-scaling">⚔️ Attack Bonus or Attack Bonus vs. Alignment/Race (🔗)</h3>
+                <p><strong>Formula:</strong> 1 + 1 per 4 Divine Levels, capped at +6</p>
+                <ul>
+                    <li>Divine Level 1-3: +1 to hit</li>
+                    <li>Divine Level 4-7: +2 to hit</li>
+                    <li>Divine Level 8-11: +3 to hit</li>
+                    <li>Divine Level 12-15: +4 to hit</li>
+                    <li>Divine Level 16-19: +5 to hit</li>
+                    <li>Divine Level 20+: +6 to hit (capped)</li>
+                </ul>
+                <p><strong>Example:</strong> Angharradh with "+AB vs Drow" at Divine Level 10 = +3 to hit vs Drow enemies</p>
+
+                <h3 id="ac-scaling">🛡️ Armor Class vs. Alignment/Race (🔗)</h3>
+                <p><strong>Formula:</strong> 1 + 1 per 4 Divine Levels, capped at +6</p>
+                <ul>
+                    <li>Divine Level 1-3: +1 AC</li>
+                    <li>Divine Level 4-7: +2 AC</li>
+                    <li>Divine Level 8-11: +3 AC</li>
+                    <li>Divine Level 12-15: +4 AC</li>
+                    <li>Divine Level 16-19: +5 AC</li>
+                    <li>Divine Level 20+: +6 AC (capped)</li>
+                </ul>
+                <p><strong>Example:</strong> "+AC vs Good" at Divine Level 7 = +2 AC against Good enemies</p>
+
+                <h3 id="phys-immunity">💪 Physical/Magic/Divine Damage Immunity % (🔗)</h3>
+                <p><strong>Formula:</strong> 1% + Divine Level / 7</p>
+                <ul>
+                    <li>Divine Level 1: 1%</li>
+                    <li>Divine Level 7: 2%</li>
+                    <li>Divine Level 14: 3%</li>
+                    <li>Divine Level 21: 4%</li>
+                    <li>Divine Level 28: 5%</li>
+                </ul>
+                <p><strong>Note:</strong> These always cap at 5% to keep it in line with our property point values, as they are quite valuable.</p>
+
+                <h3 id="elem-immunity">🔥 Elemental Damage Immunity % (🔗)</h3>
+                <p><strong>Formula:</strong> 3% + Divine Level / 4</p>
+                <ul>
+                    <li>Divine Level 1: 3%</li>
+                    <li>Divine Level 4: 4%</li>
+                    <li>Divine Level 8: 5%</li>
+                    <li>Divine Level 12: 6%</li>
+                    <li>Divine Level 20: 8%</li>
+                    <li>Divine Level 28: 10%</li>
+                </ul>
+                <p><strong>Elements:</strong> Fire, Cold, Electrical, Acid, Sonic</p>
+
+                <h3 id="resist-scaling">🛡️ Damage Resistance (🔗)</h3>
+                <p><strong>Formula:</strong> 1/- + 1 per 5 Levels, capped at 5/-</p>
+                <ul>
+                    <li>Divine Level 1-5: 1/- resistance</li>
+                    <li>Divine Level 6-10: 2/- resistance</li>
+                    <li>Divine Level 11-15: 3/- resistance</li>
+                    <li>Divine Level 16-20: 4/- resistance</li>
+                    <li>Divine Level 21+: 5/- resistance (capped)</li>
+                </ul>
+                <p><strong>Example:</strong> "5/- Bludgeoning Resistance" at level 2 = 1/-, level 26 = 5/-</p>
+
+                <h3 id="shield-scaling">⚡ Damage Shield (🔗)</h3>
+                <p>This is a <strong>Biteback</strong> feature.</p>
+                <p><strong>Damage Formula:</strong> 1 + 1 per 10 Divine Levels (for all damage types)</p>
+                <ul>
+                    <li>Divine Level 1-9: 1 damage to enemies that hit you</li>
+                    <li>Divine Level 10-19: 2 damage to enemies that hit you</li>
+                    <li>Divine Level 20-29: 3 damage to enemies that hit you</li>
+                    <li>Divine Level 30+: 4 damage to enemies that hit you</li>
+                </ul>
+                <p><strong>Example:</strong> "1 Slashing Damage Shield" becomes 2 Slashing Damage at level 10 and 3 Slashing Damage at level 20</p>
+
+                <h3 id="dr-scaling">💎 Damage Reduction (🔗)</h3>
+                <p><strong>Formula:</strong> 1/+1 per 4 Divine Levels, capped at 5/+5</p>
+                <ul>
+                    <li>Divine Level 1-3: 1/+1 DR</li>
+                    <li>Divine Level 4-7: 2/+2 DR</li>
+                    <li>Divine Level 8-11: 3/+3 DR</li>
+                    <li>Divine Level 12-15: 4/+4 DR</li>
+                    <li>Divine Level 16+: 5/+5 DR (capped)</li>
+                </ul>
+
+                <p><strong>Examples:</strong> Damage vs Evil, Damage vs Good, Damage vs Chaotic, Damage vs Lawful</p>
+
+                <h3 id="summons-scaling">🐉 Summons & Servants</h3>
+                <p>Deity summons are attached to the praying character as henchmen. They vary in how they scale:</p>
+                <ul>
+                    <li><strong>Geb and Gond:</strong> Creature Level and power scales with Divine Level (+1 creature level per Divine Level)</li>
+                    <li><strong>Grumbar and Velsharoon:</strong> Number and type of creatures scales with Divine Level.
+                        <ul>
+                            <li>Divine Level 1-9: 2 Small Creatures</li>
+                            <li>Divine Level 10-16: 3 Medium Creatures</li>
+                            <li>Divine Level 17-30: 4 Large Creatures</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <div class="highlight">
+                    <strong>📋 Divine Level Reference:</strong> Divine Level = sum of: Cleric + Druid + Ranger + Paladin + Blackguard + Divine Champion levels
+                </div>
+            </section>
+
+            <div class="section-divider"></div>
+
+            <!-- Troubleshooting -->
+            <section id="troubleshooting">
+                <h2>Troubleshooting</h2>
+                <div class="table-wrapper">
+                <table>
+                    <tr>
+                        <th>Problem</th>
+                        <th>Cause</th>
+                        <th>Solution</th>
+                    </tr>
+                    <tr>
+                        <td><em>"The gods do not care for the Faithless..."</em></td>
+                        <td>No deity set</td>
+                        <td>Set a deity on your character</td>
+                    </tr>
+                    <tr>
+                        <td><em>"[Deity] holds no domain in Amia..."</em></td>
+                        <td>Deity idol doesn't exist</td>
+                        <td>Choose a supported deity</td>
+                    </tr>
+                    <tr>
+                        <td><em>"[Deity] must be too busy right now"</em></td>
+                        <td>Prayer cooldown active</td>
+                        <td>Wait up to 60 minutes</td>
+                    </tr>
+                    <tr>
+                        <td><em>"You are Fallen and must Atone..."</em></td>
+                        <td>Character is Fallen</td>
+                        <td>Complete an atonement quest</td>
+                    </tr>
+                    <tr>
+                        <td><em>"Your alignment displeases [deity]!"</em></td>
+                        <td>Wrong alignment</td>
+                        <td>Change alignment or deity</td>
+                    </tr>
+                    <tr>
+                        <td><em>"Both of your Domains must match [deity]'s Domains!"</em></td>
+                        <td>Cleric domain mismatch</td>
+                        <td>Ensure both domains match the deity</td>
+                    </tr>
+                    <tr>
+                        <td>Prayer succeeded but no visible effect</td>
+                        <td>Effect may be subtle</td>
+                        <td>Check combat log for applied effects</td>
+                    </tr>
+                </table>
+                </div>
+            </section>
+
+            <div class="section-divider"></div>
+
+            <div class="highlight">
+                <h3 style="margin-top: 0;">📝 Notes</h3>
+                <ul>
+                    <li><strong>Conditional Bonuses:</strong> Some deity bonuses are conditional (e.g., night-only bonuses for Baravar Cloakshadow, Eilistraee, and Selûne; indoor bonus for Ibrandul).</li>
+                    <li><strong>Divine Level:</strong> Calculated as the sum of all divine class levels (Cleric + Druid + Ranger + Paladin + Blackguard + Divine Champion).</li>
+                    <li><strong>"Versus" Bonuses:</strong> Effects tagged vs. specific alignments or races may not function against all intended targets due to engine limitations.</li>
+                </ul>
+            </div>
+        </div>
+
+        <footer>
+            <p>Amia Prayer System Guide • Last Updated: February 2026</p>
+        </footer>
+    </div>
+
+    <script>
+        // Collapsible sections
+        document.querySelectorAll('.collapsible').forEach(button => {
+            button.addEventListener('click', function() {
+                this.classList.toggle('active');
+                const content = this.nextElementSibling;
+                if (content.style.maxHeight) {
+                    content.style.maxHeight = null;
+                } else {
+                    content.style.maxHeight = content.scrollHeight + 'px';
+                }
+            });
+        });
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
