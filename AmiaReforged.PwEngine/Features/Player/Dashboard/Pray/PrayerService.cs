@@ -1589,6 +1589,7 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.Fear), divineLevel);
                 ApplyVersusAlignmentWeaponBonus(creature, player!, divineLevel, IPAlignmentGroup.Chaotic, 3, "Chaotic");
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 5), divineLevel);
+                ApplyOnHitDoomWeaponProperty(creature, player, divineLevel);
                 player?.SendServerMessage(" - +6 Saves vs. Fear", ColorConstants.Cyan);
                 player?.SendServerMessage(" - Lore +5", ColorConstants.Cyan);
                 break;
@@ -1783,6 +1784,7 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.Fear), divineLevel);
                 ApplyAttackBonusVsAlignmentOnWeapon(creature, player, divineLevel, IPAlignmentGroup.Evil, "Evil", 1);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
+                ApplyOnHitBlindnessWeaponProperty(creature, player, divineLevel);
                 player?.SendServerMessage(" - +6 Saves vs. Fear", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
@@ -1968,17 +1970,21 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.MindSpells), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 10), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Magical), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Negative, 10), divineLevel);
                 player?.SendServerMessage(" - +6 Saves vs. Mind Effects", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +3 Magical Damage", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +10 Bluff", ColorConstants.Cyan);
+                player?.SendServerMessage(" - 10% Negative Energy Resistance", ColorConstants.Cyan);
                 break;
 
             case "sharess":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpCharm), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.MindSpells), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.Negative), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Divine), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Perform!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
-                player?.SendServerMessage(" - +6 Saves vs. Mind Effects", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Saves vs. Negative", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +2 Divine Damage", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +5 Perform", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
@@ -2351,6 +2357,7 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.BonusFeat(NwFeat.FromFeatId(402)!), divineLevel); // Thug
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.MindSpells), divineLevel);
+                ApplyOnHitLevelDrainWeaponProperty(creature, player, divineLevel);
                 player?.SendServerMessage(" - Bonus Feat: Thug", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +6 Saves vs. Mind-Affecting", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +2 Divine Damage", ColorConstants.Cyan);
@@ -4722,5 +4729,38 @@ public class PrayerService
         }
 
         player?.SendServerMessage($" - OnHit: Confusion (DC 22, 50% / 2 rounds) applied to {string.Join(", ", itemNames)}", ColorConstants.Cyan);
+    }
+
+    /// <summary>
+    /// Applies OnHit: Blindness (DC 22) as a temporary item property on all equipped weapons and gloves.
+    /// </summary>
+    private void ApplyOnHitBlindnessWeaponProperty(NwCreature creature, NwPlayer? player, int divineLevel)
+    {
+        float duration = 300.0f + (divineLevel * 20.0f);
+        List<NwItem> items = GetEquippedWeaponsAndGloves(creature);
+
+        if (items.Count == 0)
+        {
+            player?.SendServerMessage(" - You need a weapon equipped to receive OnHit: Blindness!", ColorConstants.Orange);
+            return;
+        }
+
+        // OnHit: Blindness, DC 22
+        ItemProperty onHitBlindness = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22, HitEffect.Blindness(IPOnHitDuration.Duration50Pct2Rounds));
+
+        List<string> itemNames = new List<string>();
+        foreach (NwItem item in items)
+        {
+            item.AddItemProperty(
+                onHitBlindness,
+                EffectDuration.Temporary,
+                TimeSpan.FromSeconds(duration),
+                AddPropPolicy.ReplaceExisting,
+                ignoreSubType: false
+            );
+            itemNames.Add(item.Name);
+        }
+
+        player?.SendServerMessage($" - OnHit: Blindness (DC 22, 50% / 2 rounds) applied to {string.Join(", ", itemNames)}", ColorConstants.Cyan);
     }
 }
