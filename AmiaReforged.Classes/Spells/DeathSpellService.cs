@@ -22,9 +22,10 @@ public class DeathSpellService
     public const int FingerOfDeathPercentPerFocus = 8;
 
     /// <summary>
-    /// Deathless Master Touch flat percentage of max health dealt as damage (no spell focus scaling).
+    /// Deathless Master Touch percentage of max health dealt as damage per Palemaster level.
+    /// A level 20 Palemaster deals 40% (20 * 2%), while lower levels deal proportionally less.
     /// </summary>
-    public const int DeathlessMasterTouchPercent = 40;
+    public const int DeathlessMasterTouchPercentPerLevel = 2;
 
     /// <summary>
     /// Gets the number of necromancy spell focus tiers the caster has.

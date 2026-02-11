@@ -118,9 +118,9 @@ public class DeathlessMasterTouch(DeathSpellService deathSpellService) : ISpell
         }
         else
         {
-            // Passed save - apply 40% max HP as negative energy damage
-            deathSpellService.ApplyFlatPercentDamage(caster, target,
-                DeathSpellService.DeathlessMasterTouchPercent, applyVfx: true);
+            // Passed save - apply 2% max HP per Palemaster level as negative energy damage
+            int damagePercent = paleMasterLevel * DeathSpellService.DeathlessMasterTouchPercentPerLevel;
+            deathSpellService.ApplyFlatPercentDamage(caster, target, damagePercent, applyVfx: true);
         }
     }
 
