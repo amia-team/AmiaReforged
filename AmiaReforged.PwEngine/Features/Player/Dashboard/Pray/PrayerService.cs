@@ -749,22 +749,25 @@ public class PrayerService
             case "aasterinian":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadMind), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 10), divineLevel);
-                player?.SendServerMessage(" - Bluff +10", ColorConstants.Cyan);
                 // Add AC vs Lawful on boots (scales with level, caps at +6)
                 ApplyACBonusVsAlignmentOnBoots(creature, player, divineLevel, IPAlignmentGroup.Lawful, "Lawful", 1);
+                player?.SendServerMessage(" - Bluff +10", ColorConstants.Cyan);
                 break;
 
             case "abbathor":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpEvilHelp), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.Regenerate(2, TimeSpan.FromSeconds(duration)), divineLevel);
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Appraise!, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.Regenerate(1, TimeSpan.FromSeconds(duration)), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Appraise!, 10), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Negative), divineLevel);
                 player?.SendServerMessage(" - +1 Regeneration", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Appraise +10", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Negative Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Appraise", ColorConstants.Cyan);
                 break;
 
             case "aerdrie faenya":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadElectricity), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Electrical), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 10), divineLevel);
                 player?.SendServerMessage(" - +3 Electrical Damage", ColorConstants.Cyan);
                 // Set weather to rain if outdoors
                 if (creature.Area != null && !creature.Area.IsInterior)
@@ -776,54 +779,65 @@ public class PrayerService
                 {
                     player?.SendServerMessage(" - You must be outdoors to call upon the rain.", ColorConstants.Orange);
                 }
+                player?.SendServerMessage(" - +10 Persuade", ColorConstants.Cyan);
                 break;
 
             case "akadi":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadElectricity), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.DamageImmunityIncrease(DamageType.Electrical, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageImmunityIncrease(DamageType.Electrical, 10), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 10), divineLevel);
                 player?.SendServerMessage(" - +10% Electrical Immunity", ColorConstants.Cyan);
                 // Set wing slot to part 6 for the duration
                 ApplyTemporaryWings(creature, player, duration, 6);
+                player?.SendServerMessage(" - +10 Lore", ColorConstants.Cyan);
                 break;
 
             case "angharradh":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpGoodHelp), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 10), divineLevel);
-                player?.SendServerMessage(" - Persuade +10", ColorConstants.Cyan);
                 // +AB vs Drow (racial type 33), +1 per 4 divine levels, capped at +6
                 int angharradhAbBonus = Math.Min(6, Math.Max(1, divineLevel / 4));
                 ApplyAttackBonusVsRaceOnWeapon(creature, player, duration, 33, angharradhAbBonus, "Drow");
+                player?.SendServerMessage(" - +10 Persuade", ColorConstants.Cyan);
                 break;
 
             case "anhur":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpGoodHelp), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 10), divineLevel);
-                player?.SendServerMessage(" - Intimidate +10", ColorConstants.Cyan);
                 // +AB vs Reptilian, +1 per 4 divine levels, capped at +6
                 int anhurAbBonus = Math.Min(6, Math.Max(1, divineLevel / 4));
                 ApplyAttackBonusVsRaceOnWeapon(creature, player, duration, NWScript.RACIAL_TYPE_HUMANOID_REPTILIAN, anhurAbBonus, "Reptilian");
+                player?.SendServerMessage(" - +10 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "anubis":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadOdd), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Hide!, 5), divineLevel);
-                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 2, SavingThrowType.Death), divineLevel);
-                player?.SendServerMessage(" - Hide +5", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.Death), divineLevel);
                 player?.SendServerMessage(" - +6 Saves vs. Death", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Hide", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Lore", ColorConstants.Cyan);
                 break;
 
             case "arvoreen":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpGoodHelp), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.SpellResistanceIncrease(10), divineLevel);
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Discipline!, 5), divineLevel);
-                player?.SendServerMessage(" - +10 Spell Resistance", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Discipine +5", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.SpellResistanceIncrease(5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 10), divineLevel);
+                player?.SendServerMessage(" - +5 Spell Resistance", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Persuade", ColorConstants.Cyan);
                 break;
 
             case "asmodeus":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpEvilHelp), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.Will, 2), divineLevel);
-                player?.SendServerMessage(" - Will Save +3", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.Will, 3), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Magical), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.Regenerate(1, TimeSpan.FromSeconds(duration)), divineLevel);
+                player?.SendServerMessage(" - +3 Will Save", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Magic Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +1 Regeneration", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 // Set wing slot to part 99 for the duration
                 ApplyTemporaryWings(creature, player, duration, 99);
                 break;
@@ -831,30 +845,31 @@ public class PrayerService
             case "astilabor":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadMind), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Appraise!, 5), divineLevel);
-                player?.SendServerMessage(" - Appraise +5", ColorConstants.Cyan);
-                // Search bonus: +1 per 10 cleric levels + gold-based bonus, +15 max
-                int clericLevels = NWScript.GetLevelByClass(NWScript.CLASS_TYPE_CLERIC, creature);
-                int baseSearchBonus = clericLevels / 10;
+                // Search bonus: 2 + gold-based bonus, +10 max
+                int baseSearchBonus = 2;
                 int astilaborGold = NWScript.GetGold(creature);
                 int goldBonus = astilaborGold switch
                 {
-                    >= 10000000 => 12,
-                    >= 1000000 => 9,
-                    >= 100000 => 5,
-                    >= 10000 => 3,
+                    >= 10000000 => 8,
+                    >= 1000000 => 6,
+                    >= 100000 => 4,
+                    >= 10000 => 2,
                     _ => 1
                 };
                 int totalSearchBonus = Math.Min(15, baseSearchBonus + goldBonus);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Search!, totalSearchBonus), divineLevel);
-                player?.SendServerMessage($" - Search +{totalSearchBonus}", ColorConstants.Cyan);
+                player?.SendServerMessage($" - +{totalSearchBonus} Search ", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Appraise", ColorConstants.Cyan);
                 break;
 
             case "auril":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpFrostS), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 10), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Cold), divineLevel);
-                player?.SendServerMessage(" - Intimidate +10", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.Cold), divineLevel);
                 player?.SendServerMessage(" - +3 Cold Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +6 Saves vs. Cold", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "azuth":
@@ -862,9 +877,9 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Spellcraft!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.BonusFeat(NwFeat.FromFeatId(7)!), divineLevel);
-                player?.SendServerMessage(" - Spellcraft +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Lore +5", ColorConstants.Cyan);
                 player?.SendServerMessage(" - Bonus Feat: Combat Casting", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Spellcraft", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Lore", ColorConstants.Cyan);
                 break;
 
             case "baervan wildwanderer":
@@ -872,22 +887,26 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.MovementSpeedIncrease(10), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 10), divineLevel);
                 player?.SendServerMessage(" - +10% Movement Speed", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Bluff +10", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Bluff", ColorConstants.Cyan);
                 break;
 
             case "bahamut":
                 float bahamutDuration = 300.0f + (divineLevel * 20.0f);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpGoodHelp), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.MindSpells), divineLevel);
-                ApplyTemporaryWings(creature, player, bahamutDuration, 72); // Silver dragon wings
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
                 player?.SendServerMessage(" - +6 Saves vs. Mind Effects", ColorConstants.Cyan);
+                ApplyTemporaryWings(creature, player, bahamutDuration, 72); // Silver dragon wings
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "bahgtru":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpSuperHeroism), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.AbilityIncrease(Ability.Strength, 2), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Magical), divineLevel);
                 player?.SendServerMessage(" - Strength +2", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Magical Damage", ColorConstants.Cyan);
                 player?.SendServerMessage(" - Intimidate +5", ColorConstants.Cyan);
                 break;
 
@@ -895,24 +914,28 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpEvilHelp), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 2), divineLevel);
-                player?.SendServerMessage(" - Intimidate +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Universal Saves +2", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Divine), divineLevel);
+                player?.SendServerMessage(" - +2 Universal Saves", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Divine Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "baravar cloakshadow":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadMind), divineLevel, fullDuration: false);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.MindSpells), divineLevel);
                 // +1 Damage at night - check if it's night
                 if (NWScript.GetIsNight() == 1)
                 {
                     ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Divine), divineLevel);
-                    player?.SendServerMessage(" - +3 Divine Damage (night bonus active)", ColorConstants.Cyan);
+                    player?.SendServerMessage(" - +3 Divine Damage (It is night time - Bonus Active)", ColorConstants.Cyan);
                 }
                 else
                 {
-                    player?.SendServerMessage(" - +3 Divine Damage at night (inactive - daytime)", ColorConstants.Yellow);
+                    player?.SendServerMessage(" - +3 Divine Damage (There is too much daylight - Bonus Inactive)", ColorConstants.Yellow);
                 }
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 10), divineLevel);
-                player?.SendServerMessage(" - Persuade +13", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Saves vs. Mind-Affecting", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Persuade", ColorConstants.Cyan);
                 break;
 
             case "berronar truesilver":
@@ -920,29 +943,32 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.Fear), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 10), divineLevel);
                 player?.SendServerMessage(" - +6 Saves vs. Fear", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +10", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Persuade", ColorConstants.Cyan);
                 break;
 
             case "beshaba":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadOdd), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.Trap), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 10), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Negative), divineLevel);
                 player?.SendServerMessage(" - +6 Saves vs. Traps", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Bluff +10", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Negative Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Bluff", ColorConstants.Cyan);
                 break;
 
             case "bhaal":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpDeath), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.BonusFeat(NwFeat.FromFeatId(31)!), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 10), divineLevel);
+                ApplyVampiricRegenerationWeaponProperty(creature, player, divineLevel, 3);
                 player?.SendServerMessage(" - Bonus Feat: Sap", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Intimidate +10", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "brandobaris":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpGoodHelp), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 2, SavingThrowType.Chaos), divineLevel);
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.Chaos), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 10), divineLevel);
                 player?.SendServerMessage(" - +3 Saves vs. Chaos", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +10 Bluff", ColorConstants.Cyan);
                 break;
@@ -960,7 +986,7 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadNature), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.Fortitude, 3), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 10), divineLevel);
-                player?.SendServerMessage(" - Fortitude Save +3", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Fortitude Save", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +10 Persuade", ColorConstants.Cyan);
                 break;
 
@@ -968,31 +994,35 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadHoly), divineLevel, fullDuration: false);
                 ApplyVersusRacialTypeWeaponBonus(creature, player!, divineLevel, RacialType.Giant, 3, "Giants");
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 10), divineLevel);
-                player?.SendServerMessage(" - Intimidate +10", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "corellon larethian":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpGoodHelp), divineLevel, fullDuration: false);
                 ApplyVersusRacialTypeWeaponBonus(creature, player!, divineLevel, RacialType.HumanoidOrc, 3, "Orcs");
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 10), divineLevel);
-                player?.SendServerMessage(" - Persuade +10", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Magical), divineLevel);
+                player?.SendServerMessage(" - +2 Magic Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Persuade", ColorConstants.Cyan);
                 break;
 
             case "cyric":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpEvilHelp), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 10), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.Law), divineLevel);
-                player?.SendServerMessage(" - Bluff +10", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Negative), divineLevel);
                 player?.SendServerMessage(" - +3 Saves vs. Law", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Negative Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Bluff", ColorConstants.Cyan);
                 break;
 
             case "cyrrollalee":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpGoodHelp), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 10), divineLevel);
-                // +1 Saves vs. Chaos
+                // +3 Saves vs. Chaos
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.Chaos), divineLevel);
-                player?.SendServerMessage(" - Persuade +10", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +3 Saves vs. Chaos", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Persuade", ColorConstants.Cyan);
                 break;
 
             case "dallah thaun":
@@ -1009,39 +1039,41 @@ public class PrayerService
                 ApplyVersusRacialTypeWeaponBonus(creature, player!, divineLevel, RacialType.HumanoidReptilian, 3, "Trolls");
                 ApplyVersusRacialTypeWeaponBonus(creature, player!, divineLevel, RacialType.HumanoidMonstrous, 3, "Monstrous Humanoids");
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 10), divineLevel);
-                player?.SendServerMessage(" - Shadow Shield VFX", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Bluff +10", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Bluff", ColorConstants.Cyan);
                 break;
 
             case "deep duerra":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpEvilHelp), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.Good), divineLevel);
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Discipline!, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 10), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Divine), divineLevel);
                 player?.SendServerMessage(" - +3 Saves vs. Good", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Divine Damage", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +10 Lore", ColorConstants.Cyan);
                 break;
 
             case "deep sashelas":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpFrostS), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Cold, 10), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 10), divineLevel);
                 player?.SendServerMessage(" - 10/- Cold Resist", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +10 Lore", ColorConstants.Cyan);
                 break;
 
             case "deneir":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadMind), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 15), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 10), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.BonusFeat(NwFeat.FromFeatId(378)!), divineLevel); // Artist feat
-                player?.SendServerMessage(" - Lore +10", ColorConstants.Cyan);
                 player?.SendServerMessage(" - Bonus Feat: Artist", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Lore", ColorConstants.Cyan);
                 break;
 
             case "dugmaren brightmantle":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadMind), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 10), divineLevel);
-                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Magical), divineLevel);
-                player?.SendServerMessage(" - Lore +10", ColorConstants.Cyan);
-                player?.SendServerMessage(" - +3 Magic Damage", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Divine), divineLevel);
+                player?.SendServerMessage(" - +3 Divine Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Lore", ColorConstants.Cyan);
                 break;
 
             case "dumathoin":
@@ -1050,14 +1082,16 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 10), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.BonusFeat(NwFeat.FromFeatId(44)!), divineLevel); // Weapon Proficiency Exotic
                 player?.SendServerMessage(" - +3 Saves vs. Death", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Lore +10", ColorConstants.Cyan);
                 player?.SendServerMessage(" - Bonus Feat: Weapon Proficiency Exotic", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Lore", ColorConstants.Cyan);
                 break;
 
             case "eilistraee":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpGoodHelp), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.DurBardSong), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.Fear), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Perform!, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
                 // +AB vs Evil at night (starts at +2, scales with level, caps at +6)
                 if (NWScript.GetIsNight() == 1)
                 {
@@ -1065,10 +1099,11 @@ public class PrayerService
                 }
                 else
                 {
-                    player?.SendServerMessage(" - AB vs Evil at night (inactive - daytime)", ColorConstants.Yellow);
+                    player?.SendServerMessage(" - +AB vs Evil at night (There is too much daylight - Bonus Inactive)", ColorConstants.Yellow);
                 }
-                player?.SendServerMessage(" - Bard Song VFX", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Perform +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Saves vs. Fear", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Perform", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "eldath":
@@ -1078,7 +1113,7 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
                 player?.SendServerMessage(" - 5/- Bludgeoning Resistance", ColorConstants.Cyan);
                 player?.SendServerMessage(" - 5/- Slashing Resistance", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "erevan ilesere":
@@ -1086,73 +1121,88 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.BonusFeat(NwFeat.FromFeatId(9)!), divineLevel); // Evasion feat
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 5), divineLevel);
                 player?.SendServerMessage(" - Bonus Feat: Evasion", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Bluff +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Bluff", ColorConstants.Cyan);
                 break;
 
             case "faluzure":
                 float faluzureDuration = 300.0f + (divineLevel * 20.0f);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpEvilHelp), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.Death), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.Death), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 10), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Negative), divineLevel);
                 ApplyTemporaryWings(creature, player, faluzureDuration, 96);
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
                 player?.SendServerMessage(" - +6 Saves vs. Death", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Intimidate +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Negative Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "fenmarel mestarine":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.DurGhostlyVisageNoSound), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 8), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(1, DamageType.Positive), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 10), divineLevel);
+                player?.SendServerMessage(" - +1 Positive Damage", ColorConstants.Cyan);
                 // +1 AB while outdoors
                 NwArea? fenmarelArea = creature.Area;
                 if (fenmarelArea != null && !fenmarelArea.IsInterior)
                 {
                     ApplyPrayerEffectsToPCs(creature, Effect.AttackIncrease(1), divineLevel);
-                    player?.SendServerMessage(" - +1 AB (outdoors bonus active)", ColorConstants.Cyan);
+                    player?.SendServerMessage(" - +1 AB (You are outdoors - Bonus Active)", ColorConstants.Cyan);
                 }
                 else
                 {
-                    player?.SendServerMessage(" - +1 AB outdoors (inactive - indoors)", ColorConstants.Yellow);
+                    player?.SendServerMessage(" - +1 AB (You cannot see the open sky: Bonus Inactive)", ColorConstants.Yellow);
                 }
-                player?.SendServerMessage(" - Lore +8", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Lore", ColorConstants.Cyan);
                 break;
 
             case "finder wyvernspur":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadMind), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.DurBardSong), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Perform!, 5), divineLevel);
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 10), divineLevel);
-                player?.SendServerMessage(" - Bard Song VFX", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Perform +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Bluff +10", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Sonic), divineLevel);
+                player?.SendServerMessage(" - +3 Sonic Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Perform", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Bluff", ColorConstants.Cyan);
                 break;
 
             case "flandal steelskin":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadFire), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.CraftArmor!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.CraftWeapon!, 5), divineLevel);
-                player?.SendServerMessage(" - Craft Armor +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Craft Weapon +5", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Electrical), divineLevel);
+                player?.SendServerMessage(" - +3 Electrical Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Craft Armor", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Craft Weapon", ColorConstants.Cyan);
                 break;
 
             case "gaerdal ironhand":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpGoodHelp), divineLevel, fullDuration: false);
                 ApplyVersusRacialTypeWeaponBonus(creature, player!, divineLevel, RacialType.HumanoidGoblinoid, 3, "Goblinoids");
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 10), divineLevel);
-                player?.SendServerMessage(" - Persuade +10", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Magical), divineLevel);
+                player?.SendServerMessage(" - +2 Magical Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Persuade", ColorConstants.Cyan);
                 break;
 
             case "garagos":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadEvil), divineLevel, fullDuration: false);
                 ApplyAttackBonusVsAlignmentOnWeapon(creature, player, divineLevel, IPAlignmentGroup.Good, "Good", 1);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Negative), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 10), divineLevel);
-                player?.SendServerMessage(" - Intimidate +10", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +2 Negative Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "gargauth":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpEvilHelp), divineLevel, fullDuration: false);
                 ApplyACBonusVsAlignmentOnBoots(creature, player, divineLevel, IPAlignmentGroup.Good, "Good", 1);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 10), divineLevel);
-                player?.SendServerMessage(" - Intimidate +10", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Divine), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 1), divineLevel);
+                player?.SendServerMessage(" - +2 Divine Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +1 Universal Saves", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "garl glittergold":
@@ -1160,16 +1210,20 @@ public class PrayerService
                 ApplyVersusAlignmentWeaponBonus(creature, player!, divineLevel, IPAlignmentGroup.Chaotic, 3, "Chaotic");
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.SetTrap!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 5), divineLevel);
-                player?.SendServerMessage(" - Set Trap +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Bluff +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Set Trap", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Bluff", ColorConstants.Cyan);
                 break;
 
             case "garyx":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadFire), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(6, DamageType.Fire), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Fire), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
-                player?.SendServerMessage(" - +6 Fire Damage", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Intimidate +5", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Fire, 10), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.Good), divineLevel);
+                player?.SendServerMessage(" - +3 Fire Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - 10/- Fire Damage Resistance", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Saves vs. Good", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "geb":
@@ -1181,9 +1235,10 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpAcidS), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.Poison), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 10), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Negative), divineLevel);
                 player?.SendServerMessage(" - +6 Saves vs. Poison", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Intimidate +10", ColorConstants.Cyan);
-
+                player?.SendServerMessage(" - +3 Negative Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "gond":
@@ -1197,15 +1252,18 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.SetTrap!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
                 player?.SendServerMessage(" - +3 Divine Damage", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Set Trap +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Set Trap", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "grazzt":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpEvilHelp), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 10), divineLevel);
                 ApplyACBonusVsAlignmentOnBoots(creature, player, divineLevel, IPAlignmentGroup.Good, "Good", 1);
-                player?.SendServerMessage(" - Persuade +10", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Divine), divineLevel);
+                ApplyVampiricRegenerationWeaponProperty(creature, player, divineLevel, 3);
+                player?.SendServerMessage(" - +2 Divine Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Persuade", ColorConstants.Cyan);
                 break;
 
             case "grumbar":
@@ -1236,39 +1294,46 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadEvil), divineLevel, fullDuration: false);
                 ApplyAttackBonusVsRaceOnWeapon(creature, player, gruumshDuration, (int)RacialType.Elf, 1, "Elves");
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 10), divineLevel);
-                player?.SendServerMessage(" - Intimidate +10", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Divine), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.Fortitude, 3), divineLevel);
+                player?.SendServerMessage(" - +2 Divine Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Fortitude Save", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "gwaeron windstrom":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadNature), divineLevel, fullDuration: false);
                 ApplyVersusRacialTypeWeaponBonus(creature, player!, divineLevel, RacialType.Giant, 3, "Giants");
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
-                player?.SendServerMessage(" - Persuade +5", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Magical), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 10), divineLevel);
+                player?.SendServerMessage(" - +2 Magical Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Persuade", ColorConstants.Cyan);
                 break;
 
             case "haela brightaxe":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpGoodHelp), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.Evil), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 10), divineLevel);
-                player?.SendServerMessage(" - Persuade +10", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +3 Saves vs. Evil", ColorConstants.Cyan);
-
+                player?.SendServerMessage(" - +10 Persuade", ColorConstants.Cyan);
                 break;
 
             case "hanali celanil":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadFire), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Fire), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Fire), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 10), divineLevel);
-                player?.SendServerMessage(" - Persuade +10", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +3 Fire Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Persuade", ColorConstants.Cyan);
                 break;
 
             case "hathor":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadNature), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Heal!, 10), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Sonic), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Heal!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
-                player?.SendServerMessage(" - Heal +10", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Sonic Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Heal", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "helm":
@@ -1276,24 +1341,24 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageImmunityIncrease(DamageType.Bludgeoning, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 5), divineLevel);
                 player?.SendServerMessage(" - 5% Bludgeoning Damage Immunity", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Lore +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Lore", ColorConstants.Cyan);
                 break;
 
             case "hlal":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadMind), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 10), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.BonusFeat(NwFeat.FromFeatId(423)!), divineLevel);
-                player?.SendServerMessage(" - Bluff +10", ColorConstants.Cyan);
                 player?.SendServerMessage(" - Bonus Feat: Extra Music", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Bluff", ColorConstants.Cyan);
                 break;
 
             case "hoar":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.DurProtectionEvilMinor), divineLevel, fullDuration: false);
                 // +2 Bludgeoning biteback - damage shield
-                ApplyPrayerEffectsToPCs(creature, Effect.DamageShield(2, DamageBonus.Plus1, DamageType.Bludgeoning), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageShield(2, DamageBonus.Plus5, DamageType.Bludgeoning), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
                 player?.SendServerMessage(" - +2 Bludgeoning Damage Shield (biteback)", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Intimidate +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "horus-re":
@@ -1301,7 +1366,7 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.Evil), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 10), divineLevel);
                 player?.SendServerMessage(" - +3 Saves vs. Evil", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Lore +10", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Lore", ColorConstants.Cyan);
                 break;
 
             case "ibrandul":
@@ -1315,11 +1380,12 @@ public class PrayerService
                 }
                 else
                 {
-                    player?.SendServerMessage(" - AB vs Lawful indoors (inactive - outdoors)", ColorConstants.Yellow);
+                    player?.SendServerMessage(" - AB vs Lawful (You are not indoors or underground - Bonus Inactive)", ColorConstants.Yellow);
                 }
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 5), divineLevel);
-                player?.SendServerMessage(" - Anti-Light Aura", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Bluff +5", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Divine), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 10), divineLevel);
+                player?.SendServerMessage(" - +2 Divine Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Bluff", ColorConstants.Cyan);
                 break;
 
             case "ilmater":
@@ -1327,7 +1393,7 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.BonusFeat(NwFeat.FromFeatId(747)!), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
                 player?.SendServerMessage(" - Bonus Feat: Perfect Health", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "ilneval":
@@ -1335,24 +1401,25 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Divine), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Taunt!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
+                ApplyAttackBonusVsAlignmentOnWeapon(creature, player, divineLevel, IPAlignmentGroup.Good, "Good", 1);
                 player?.SendServerMessage(" - +3 Divine Damage", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Taunt +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Intimidate +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Taunt", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "io":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpUnsummon), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 2), divineLevel);
-                player?.SendServerMessage(" - Universal Saves +2", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +2 Universal Saves", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
-                player?.SendServerMessage(" - Persuade +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "isis":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadMind), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 10), divineLevel);
                 ApplyVersusAlignmentWeaponBonus(creature, player!, divineLevel, IPAlignmentGroup.Evil, 3, "Evil");
-                player?.SendServerMessage(" - Lore +10", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Lore", ColorConstants.Cyan);
                 break;
 
             case "istishia":
@@ -1403,19 +1470,19 @@ public class PrayerService
                     {
                         case 1:
                             ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 15), divineLevel);
-                            player?.SendServerMessage(" - Bluff +15", ColorConstants.Cyan);
+                            player?.SendServerMessage(" - +15 Bluff", ColorConstants.Cyan);
                             break;
                         case 2:
                             ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 15), divineLevel);
-                            player?.SendServerMessage(" - Persuade +15", ColorConstants.Cyan);
+                            player?.SendServerMessage(" - +15 Persuade", ColorConstants.Cyan);
                             break;
                         case 3:
                             ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 15), divineLevel);
-                            player?.SendServerMessage(" - Lore +15", ColorConstants.Cyan);
+                            player?.SendServerMessage(" - +15 Lore", ColorConstants.Cyan);
                             break;
                         case 4:
                             ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 15), divineLevel);
-                            player?.SendServerMessage(" - Intimidate +15", ColorConstants.Cyan);
+                            player?.SendServerMessage(" - +15 Intimidate", ColorConstants.Cyan);
                             break;
                     }
                 }
@@ -1426,9 +1493,9 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 10), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.Death), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Divine), divineLevel);
-                player?.SendServerMessage(" - Lore +10", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +3 Saves vs. Death", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +2 Divine Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Lore", ColorConstants.Cyan);
                 break;
 
             case "kelemvor":
@@ -1440,20 +1507,22 @@ public class PrayerService
                 player?.SendServerMessage(" - +6 Saves vs. Death", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +2 Positive Damage", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +2 Cold Damage", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "kiaransalee":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpEvilHelp), divineLevel, fullDuration: false);
                 ApplyACBonusVsAlignmentOnBoots(creature, player, divineLevel, IPAlignmentGroup.Good, "Good");
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.Death), divineLevel);
-
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Magical), divineLevel);
+                ApplyVampiricRegenerationWeaponProperty(creature, player, divineLevel, 3);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 5), divineLevel);
+                player?.SendServerMessage(" - +3 Saves vs. Death", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +2 Magical Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Bluff", ColorConstants.Cyan);
                 // Apply race/gender-based spirit VFX
                 int spiritVfx = GetKiaransaleeSpiritVfx(creature);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect((VfxType)spiritVfx), divineLevel);
-
-                player?.SendServerMessage(" - +3 Saves vs. Death", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Spirit Friend", ColorConstants.Cyan);
                 break;
 
             case "kossuth":
@@ -1463,7 +1532,7 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
                 player?.SendServerMessage(" - +6 Saves vs. Fire", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +3 Divine Damage", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Intimidate +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "kurtulmak":
@@ -1471,16 +1540,20 @@ public class PrayerService
                 ApplyVersusRacialTypeWeaponBonus(creature, player!, divineLevel, RacialType.Gnome, 3, "Gnomes");
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.SetTrap!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
-                player?.SendServerMessage(" - Set Trap +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Intimidate +5", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.Trap), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.Regenerate(1, TimeSpan.FromSeconds(6.0)), divineLevel);
+                player?.SendServerMessage(" - +5 Set Trap", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Saves vs. Traps", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +1 Regeneration", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "labelas enoreth":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadMind), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 10), divineLevel);
                 // Apply OnHit: Slow (50%, 2 rounds) as temporary weapon property
                 ApplyOnHitSlowWeaponProperty(creature, player, divineLevel);
-                player?.SendServerMessage(" - Lore +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Lore", ColorConstants.Cyan);
                 break;
 
             case "laduguer":
@@ -1488,8 +1561,10 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Spellcraft!, 5), divineLevel);
                 ApplyVersusAlignmentWeaponBonus(creature, player!, divineLevel, IPAlignmentGroup.Chaotic, 3, "Chaotic");
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Ride!, 5), divineLevel);
-                player?.SendServerMessage(" - Spellcraft +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Ride +5", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.MindSpells), divineLevel);
+                player?.SendServerMessage(" - +6 Saves vs. Mind-Affecting", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Spellcraft", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Ride", ColorConstants.Cyan);
                 break;
 
             case "lathander":
@@ -1497,8 +1572,8 @@ public class PrayerService
                 ApplyAttackBonusVsAlignmentOnWeapon(creature, player, divineLevel, IPAlignmentGroup.Evil, "Evil");
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Perform!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
-                player?.SendServerMessage(" - Perform +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Perform", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "leira":
@@ -1506,7 +1581,7 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 10), divineLevel);
                 // Apply +3 Vampiric Regeneration as temporary weapon property
                 ApplyVampiricRegenerationWeaponProperty(creature, player, divineLevel, 3);
-                player?.SendServerMessage(" - Bluff +10", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Bluff", ColorConstants.Cyan);
                 break;
 
             case "lendys":
@@ -1524,8 +1599,8 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.BonusFeat(NwFeat.FromFeatId(423)!), divineLevel);
                 player?.SendServerMessage(" - Bonus Feat: Extra Music", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Perform +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade 5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Perform", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "lolth":
@@ -1534,16 +1609,21 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.Regenerate(1, TimeSpan.FromSeconds(6.0)), divineLevel);
                 ApplyAttackBonusVsRaceOnWeapon(creature, player, lolthDuration, (int)RacialType.Elf, 1, "Elves");
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Magical), divineLevel);
+                ApplyOnHitDoomWeaponProperty(creature, player, divineLevel);
                 player?.SendServerMessage(" - +1 Regeneration", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Bluff +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +2 Magical Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Bluff", ColorConstants.Cyan);
                 break;
 
             case "loviatar":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpEvilHelp), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.DamageShield(2, DamageBonus.Plus1, DamageType.Slashing), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageShield(2, DamageBonus.Plus5, DamageType.Slashing), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
-                player?.SendServerMessage(" - +2 Slashing Damage Shield", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Intimidate +5", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Divine), divineLevel);
+                player?.SendServerMessage(" - +2 Slashing Damage Shield (biteback)", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Divine Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "lurue":
@@ -1551,16 +1631,18 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Ride!, 5), divineLevel);
                 ApplyAttackBonusVsAlignmentOnWeapon(creature, player, divineLevel, IPAlignmentGroup.Evil, "Evil");
                 ApplyPrayerEffectsToPCs(creature, Effect.BonusFeat(NwFeat.FromFeatId(421)!), divineLevel); // Arcane Defense: Necromancy
-                player?.SendServerMessage(" - Ride +5", ColorConstants.Cyan);
                 player?.SendServerMessage(" - Bonus Feat: Arcane Defense (Necromancy)", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Ride", ColorConstants.Cyan);
                 break;
 
             case "luthic":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadOdd), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
-                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(1, DamageType.Divine), divineLevel);
-                player?.SendServerMessage(" - Intimidate +5", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 10), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Divine), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.Good), divineLevel);
                 player?.SendServerMessage(" - +3 Divine Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Saves vs. Good", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "maglubiyet":
@@ -1569,9 +1651,11 @@ public class PrayerService
                 ApplyACBonusVsAlignmentOnBoots(creature, player, divineLevel, IPAlignmentGroup.Good, "Good", 1);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Divine), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.Reflex, 3), divineLevel);
                 ApplyTemporaryScale(creature, player, maglubiyetDuration, 2.0f);
                 player?.SendServerMessage(" - +3 Divine Damage", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Bluff +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Reflex Save", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Bluff", ColorConstants.Cyan);
                 break;
 
             case "malar":
@@ -1579,9 +1663,10 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Divine), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.Law), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
+                ApplyOnHitFearWeaponProperty(creature, player, divineLevel);
                 player?.SendServerMessage(" - +3 Divine Damage", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +6 Saves vs. Law", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Intimidate +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "marthammor duin":
@@ -1590,16 +1675,18 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.Trap), divineLevel);
                 player?.SendServerMessage(" - +6 Saves vs. Traps", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Search +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Bluff +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Search", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Bluff", ColorConstants.Cyan);
                 break;
 
             case "mask":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.DurGhostlyVisageNoSound), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Hide!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 10), divineLevel);
-                player?.SendServerMessage(" - Hide +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Bluff +10", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Magical), divineLevel);
+                player?.SendServerMessage(" - +5 Hide", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Magical Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Bluff", ColorConstants.Cyan);
                 break;
 
             case "mephistopheles":
@@ -1611,15 +1698,15 @@ public class PrayerService
                 ApplyTemporaryWings(creature, player, mephistophelesDuration, 93);
                 player?.SendServerMessage(" - +3 Fire Damage", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +10% Fire Immunity", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +10", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Persuade", ColorConstants.Cyan);
                 break;
 
             case "mielikki":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadNature), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.AnimalEmpathy!, 10), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
-                player?.SendServerMessage(" - Animal Empathy +10", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Animal Empathy", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "milil":
@@ -1627,40 +1714,46 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Perform!, 5), divineLevel);
                 ApplyACBonusVsAlignmentOnBoots(creature, player, divineLevel, IPAlignmentGroup.Evil, "Evil", 1);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 5), divineLevel);
-                player?.SendServerMessage(" - Perform +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Lore +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Perform", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Lore", ColorConstants.Cyan);
                 break;
 
             case "moander":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpAcidS), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Acid), divineLevel);
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Taunt!, 3), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Negative), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Taunt!, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
                 // VFX_DUR_TYRANTFOG (2542) for duration
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect((VfxType)2542), divineLevel);
                 // Apply COM_CHUNK_YELLOW_MEDIUM at 30 second intervals
                 ApplyRepeatingChunkVfx(creature, player, divineLevel);
-                player?.SendServerMessage(" - +2 Acid Damage", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Taunt +3", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Tyrant Fog Aura", ColorConstants.Cyan);
+                ApplyOnHitLevelDrainWeaponProperty(creature, player, divineLevel);
+                player?.SendServerMessage(" - +3 Negative Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Taunt", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "moradin":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpGoodHelp), divineLevel, fullDuration: false);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Divine), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.CraftArmor!, 5), divineLevel);
                 ApplyACBonusVsRaceOnBoots(creature, player, divineLevel, RacialType.Giant, "Giants");
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.CraftWeapon!, 5), divineLevel);
-                player?.SendServerMessage(" - Craft Armor +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Craft Weapon +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +2 Divine Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Craft Armor", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Craft Weapon", ColorConstants.Cyan);
                 break;
 
             case "myrkul":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadOdd), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 2, SavingThrowType.Death), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.Death), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Negative), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 5), divineLevel);
-                player?.SendServerMessage(" - +2 Saves vs. Death", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.Regenerate(1, TimeSpan.FromSeconds(6.0)), divineLevel);
+                player?.SendServerMessage(" - +6 Saves vs. Death", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +3 Negative Damage", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Bluff +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +1 Regeneration", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Bluff", ColorConstants.Cyan);
                 break;
 
             case "mystra":
@@ -1669,8 +1762,8 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Spellcraft!, 10), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 5), divineLevel);
                 ApplyTemporaryPhenotype(creature, player, mystraDuration, 19);
-                player?.SendServerMessage(" - Spellcraft +10", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Lore +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Spellcraft", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Lore", ColorConstants.Cyan);
                 break;
 
             case "nephthys":
@@ -1680,9 +1773,9 @@ public class PrayerService
                 // Give 1000 gold per divine level
                 int nephthysGold = divineLevel * 1000;
                 creature.GiveGold(nephthysGold);
-                player?.SendServerMessage(" - Appraise +5", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +6 Saves vs. Death", ColorConstants.Cyan);
-                player?.SendServerMessage($" - You have pleased Nephthys! She showers you in {nephthysGold} gold pieces", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Appraise", ColorConstants.Cyan);
+                player?.SendServerMessage($" - You have pleased Nephthys! She showers you in {nephthysGold} gold pieces!", ColorConstants.Cyan);
                 break;
 
             case "nobanion":
@@ -1691,7 +1784,7 @@ public class PrayerService
                 ApplyAttackBonusVsAlignmentOnWeapon(creature, player, divineLevel, IPAlignmentGroup.Evil, "Evil", 1);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
                 player?.SendServerMessage(" - +6 Saves vs. Fear", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "oberon":
@@ -1699,26 +1792,31 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.DurPixiedust), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 10), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Divine), divineLevel);
-                player?.SendServerMessage(" - Pixie Dust Aura", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Lore +10", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +3 Divine Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Lore", ColorConstants.Cyan);
                 break;
 
             case "oghma":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadMind), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 10), divineLevel);
-                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 10, SavingThrowType.Fear), divineLevel);
-                player?.SendServerMessage(" - Lore +10", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Concentration!, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.Fear), divineLevel);
                 player?.SendServerMessage(" - +6 Saves vs. Fear", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Concentration", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Lore", ColorConstants.Cyan);
                 break;
 
             case "orcus":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpEvilHelp), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Divine), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Divine), divineLevel);
                 ApplyACBonusVsAlignmentOnBoots(creature, player, divineLevel, IPAlignmentGroup.Good, "Good", 1);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
-                player?.SendServerMessage(" - +3 Divine Damage", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Intimidate +5", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.MindSpells), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.Regenerate(1, TimeSpan.FromSeconds(6.0)), divineLevel);
+                player?.SendServerMessage(" - +2 Divine Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +6 Saves vs. Mind-Affecting", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +1 Regeneration", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "osiris":
@@ -1727,7 +1825,7 @@ public class PrayerService
                 ApplyVersusAlignmentWeaponBonus(creature, player!, divineLevel, IPAlignmentGroup.Evil, 3, "Evil");
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
                 player?.SendServerMessage(" - +6 Saves vs. Death", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "pazuzu":
@@ -1736,9 +1834,11 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
                 ApplyACBonusVsAlignmentOnBoots(creature, player, divineLevel, IPAlignmentGroup.Lawful, "Lawful", 1);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Magical), divineLevel);
                 ApplyTemporaryWings(creature, player, pazuzuDuration, 312);
-                player?.SendServerMessage(" - Intimidate +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Magical Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Intimidate", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "queen of air and darkness":
@@ -1747,35 +1847,40 @@ public class PrayerService
                 ApplyVersusAlignmentWeaponBonus(creature, player!, divineLevel, IPAlignmentGroup.Lawful, 3, "Lawful");
                 ApplyNaturalACBonusVsAlignmentOnAmulet(creature, player, divineLevel, IPAlignmentGroup.Good, "Good");
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 5), divineLevel);
-                player?.SendServerMessage(" - Bluff +5", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Divine), divineLevel);
+                ApplyOnHitConfusionWeaponProperty(creature, player, divineLevel);
+                player?.SendServerMessage(" - +2 Divine Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Bluff", ColorConstants.Cyan);
                 break;
 
             case "red knight":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpGoodHelp), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Ride!, 10), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.Fortitude, 3), divineLevel);
-                player?.SendServerMessage(" - Ride +10", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Fortitude Saves +3", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Fortitude Save", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Ride", ColorConstants.Cyan);
                 break;
 
             case "rillifane rallathil":
                 float rillifaneDuration = 300.0f + (divineLevel * 20.0f);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadNature), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Hide!, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.Law), divineLevel);
                 ApplyTemporaryAppearanceAndScale(creature, player, rillifaneDuration, 2000, 0.5f);
-                player?.SendServerMessage(" - Hide +5", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +3 Saves vs. Law", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Hide", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Lore", ColorConstants.Cyan);
                 break;
 
             case "salandra":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHealingS), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Heal!, 5), divineLevel);
-                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Divine), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Positive), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
-                player?.SendServerMessage(" - Heal +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - +3 Divine Damage", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Positive Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Heal", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "savras":
@@ -1787,17 +1892,19 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 5), divineLevel);
                 player?.SendServerMessage($" - Damage Reduction {savrasDRAmount}/+{savrasDRAmount}", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +3 Saves vs. Spells", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Lore +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Lore", ColorConstants.Cyan);
                 break;
 
             case "sebek":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpSuperHeroism), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.AbilityIncrease(Ability.Strength, 1), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.Poison), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Negative), divineLevel);
                 player?.SendServerMessage(" - Strength +1", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +6 Saves vs. Poison", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Negative Damage", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 5), divineLevel);
-                player?.SendServerMessage(" - Bluff +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Bluff", ColorConstants.Cyan);
                 break;
 
             case "segojan earthcaller":
@@ -1805,14 +1912,14 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Acid), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Appraise!, 10), divineLevel);
                 player?.SendServerMessage(" - +3 Acid Damage", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Appraise +10", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Appraise", ColorConstants.Cyan);
                 break;
 
             case "sehanine moonbow":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpFrostS), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.Fortitude, 3), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 10), divineLevel);
-                player?.SendServerMessage(" - Fortitude Save +3", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Fortitude Save", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +10 Persuade", ColorConstants.Cyan);
                 break;
 
@@ -1826,44 +1933,54 @@ public class PrayerService
                 }
                 else
                 {
-                    player?.SendServerMessage(" - +3 Divine Damage vs Evil at night (inactive - daytime)", ColorConstants.Yellow);
+                    player?.SendServerMessage(" - +3 Divine Damage vs Evil (You cannot see the moon - Bonus Inactive)", ColorConstants.Yellow);
                 }
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
-                player?.SendServerMessage(" - Heal +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +5", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Positive), divineLevel);
+                player?.SendServerMessage(" - +2 Positive Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Heal", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "selvetarm":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpEvilHelp), divineLevel, fullDuration: false);
                 ApplyAttackBonusVsAlignmentOnWeapon(creature, player, divineLevel, IPAlignmentGroup.Good, "Good", 1);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 10), divineLevel);
-                player?.SendServerMessage(" - Intimidate +10", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Magical), divineLevel);
+                ApplyVampiricRegenerationWeaponProperty(creature, player, divineLevel, 3);
+                player?.SendServerMessage(" - +2 Magical Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "set":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpEvilHelp), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Piercing, 5), divineLevel);
-                player?.SendServerMessage(" - Bluff +5", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Acid), divineLevel);
+                ApplyVampiricRegenerationWeaponProperty(creature, player, divineLevel, 3);
                 player?.SendServerMessage(" - 5/- Piercing Resistance", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Acid Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Bluff", ColorConstants.Cyan);
                 break;
 
             case "shar":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadOdd), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.MindSpells), divineLevel);
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 10), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Magical), divineLevel);
                 player?.SendServerMessage(" - +6 Saves vs. Mind Effects", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Bluff +10", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Magical Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Bluff", ColorConstants.Cyan);
                 break;
 
             case "sharess":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpCharm), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 2, SavingThrowType.MindSpells), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.MindSpells), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Perform!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
                 player?.SendServerMessage(" - +6 Saves vs. Mind Effects", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Perform +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Perform", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "shargaas":
@@ -1871,7 +1988,11 @@ public class PrayerService
                 ApplyAttackBonusVsAlignmentOnWeapon(creature, player, divineLevel, IPAlignmentGroup.Good, "Good", 1);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.Good), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Negative), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Piercing, 5), divineLevel);
                 player?.SendServerMessage(" - +3 Saves vs. Good", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +2 Negative Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - 5/- Piercing Resistance", ColorConstants.Cyan);
                 player?.SendServerMessage(" - Bluff +5", ColorConstants.Cyan);
                 break;
 
@@ -1880,18 +2001,20 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Heal!, 5), divineLevel);
                 ApplyVersusAlignmentWeaponBonus(creature, player!, divineLevel, IPAlignmentGroup.Evil, 3, "Evil");
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
-                player?.SendServerMessage(" - Heal +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Heal", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "shaundakul":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.DurFreedomOfMovement), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.Immunity(ImmunityType.Entangle), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.Will, 3), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Divine), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 5), divineLevel);
                 player?.SendServerMessage(" - Immunity to Entangle", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Will Save", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +2 Divine Damage", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Lore +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Lore", ColorConstants.Cyan);
                 break;
 
             case "sheela peryroyl":
@@ -1899,9 +2022,11 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.MindSpells), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.Negative), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.Regenerate(1, TimeSpan.FromSeconds(6)), divineLevel);
                 player?.SendServerMessage(" - +3 Saves vs. Mind Effects", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +3 Saves vs. Negative", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +1 Regeneration", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "shevarash":
@@ -1909,10 +2034,10 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpGoodHelp), divineLevel, fullDuration: false);
                 // Drow racial type is 33
                 ApplyAttackBonusVsRaceOnWeapon(creature, player, shevarashDuration, 33, 1, "Drow");
-                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Divine), divineLevel);
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
-                player?.SendServerMessage(" - +3 Divine Damage", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Intimidate +5", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Divine), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 10), divineLevel);
+                player?.SendServerMessage(" - +2 Divine Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - Intimidate +10", ColorConstants.Cyan);
                 break;
 
             case "shiallia":
@@ -1920,17 +2045,17 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Concentration!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Divine), divineLevel);
-                player?.SendServerMessage(" - Concentration +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Lore +5", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +3 Divine Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Concentration", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Lore", ColorConstants.Cyan);
                 break;
 
             case "siamorphe":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpCharm), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
-                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.Will, 1), divineLevel);
-                player?.SendServerMessage(" - Persuade +10", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Will Save +3", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 10), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.Will, 3), divineLevel);
+                player?.SendServerMessage(" - +3 Will Save", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Persuade", ColorConstants.Cyan);
                 break;
 
             case "silvanus":
@@ -1938,9 +2063,9 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.AnimalEmpathy!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.Fortitude, 3), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
-                player?.SendServerMessage(" - Fortitude Save +3", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Animal Empathy +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Fortitude Save", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Animal Empathy", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "solonor thelandira":
@@ -1948,17 +2073,16 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.DurAuraGreenLight), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.Immunity(ImmunityType.Blindness), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 5), divineLevel);
-                player?.SendServerMessage(" - Green Light Aura", ColorConstants.Cyan);
                 player?.SendServerMessage(" - Immunity to Blindness", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Lore +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Lore", ColorConstants.Cyan);
                 break;
 
             case "sune":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpCharm), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 10), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.Will, 3), divineLevel);
-                player?.SendServerMessage(" - Persuade +10", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Will Save +3", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Will Save", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Persuade", ColorConstants.Cyan);
                 break;
 
             case "talona":
@@ -1966,9 +2090,11 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.Poison), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.Regenerate(1, TimeSpan.FromSeconds(6)), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Divine), divineLevel);
                 player?.SendServerMessage(" - +6 Saves vs. Poison", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Regeneration +1", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Bluff +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +1 Regeneration", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Divine Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Bluff", ColorConstants.Cyan);
                 break;
 
             case "talos":
@@ -1976,9 +2102,11 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Electrical), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.AbilityIncrease(Ability.Strength, 1), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageImmunityIncrease(DamageType.Electrical, 10), divineLevel);
                 player?.SendServerMessage(" - +3 Electrical Damage", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Strength +1", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Intimidate +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +1 Strength", ColorConstants.Cyan);
+                player?.SendServerMessage(" - 10% Electrical Immunity", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "tamara":
@@ -1986,9 +2114,9 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Heal!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.Will, 3), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
-                player?.SendServerMessage(" - Will Save +3", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Heal +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Will Save", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Heal", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "tempus":
@@ -1999,7 +2127,7 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
                 player?.SendServerMessage($" - +{tempusTempHP} Temporary HP", ColorConstants.Cyan);
                 player?.SendServerMessage(" - 5/- Slashing Resistance", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Intimidate +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "thard harr":
@@ -2007,9 +2135,9 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.Fortitude, 3), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.AnimalEmpathy!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
-                player?.SendServerMessage(" - Fortitude Save +3", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Animal Empathy +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Fortitude Save", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Animal Empathy", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "thoth":
@@ -2017,15 +2145,15 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.Will, 3), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.CraftArmor!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.CraftWeapon!, 5), divineLevel);
-                player?.SendServerMessage(" - Will Save +3", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Craft Armor +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Craft Weapon +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Will Save", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Craft Armor", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Craft Weapon", ColorConstants.Cyan);
                 break;
 
             case "tiamat":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpStarburstRed), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.TrueSeeing(), divineLevel);
-                player?.SendServerMessage(" - True Seeing", ColorConstants.Cyan);
+                player?.SendServerMessage(" - True Sight", ColorConstants.Cyan);
                 break;
 
             case "titania":
@@ -2034,10 +2162,9 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Perform!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.Will, 3), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
-                player?.SendServerMessage(" - Fairy Dust Aura", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Perform +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Will Save +3", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Will Save", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Perform", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "torm":
@@ -2045,8 +2172,8 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Discipline!, 5), divineLevel);
                 ApplyAttackBonusVsAlignmentOnWeapon(creature, player, divineLevel, IPAlignmentGroup.Evil, "Evil");
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
-                player?.SendServerMessage(" - Discipline +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Discipline", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "tymora":
@@ -2060,7 +2187,7 @@ public class PrayerService
                         ApplyAttackBonusVsAlignmentOnWeapon(creature, player, divineLevel, IPAlignmentGroup.Lawful, "Lawful");
                         break;
                     case 2:
-                        ApplyAttackBonusVsAlignmentOnWeapon(creature, player, divineLevel, IPAlignmentGroup.Chaotic, "Chaotic");
+                        ApplyAttackBonusVsAlignmentOnWeapon(creature, player, divineLevel, IPAlignmentGroup.Neutral, "Neutral");
                         break;
                     case 3:
                         ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Bludgeoning, 5), divineLevel);
@@ -2085,7 +2212,7 @@ public class PrayerService
                 }
 
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Appraise!, 10), divineLevel);
-                player?.SendServerMessage(" - Appraise +10", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Appraise", ColorConstants.Cyan);
                 break;
 
             case "tyr":
@@ -2096,7 +2223,7 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageReduction(tyrDRAmount, DamagePower.Plus1 + (tyrDRAmount - 1)), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
                 player?.SendServerMessage($" - Damage Reduction {tyrDRAmount}/+{tyrDRAmount}", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Intimidate +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "ubtao":
@@ -2104,9 +2231,11 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadNature), divineLevel, fullDuration: false);
                 ApplyVersusRacialTypeWeaponBonus(creature, player!, divineLevel, RacialType.HumanoidMonstrous, 3, "Monstrous Humanoids");
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.Fear), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Divine), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
                 player?.SendServerMessage(" - +6 Saves vs. Fear", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +2 Divine Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
             case "ulutiu":
@@ -2115,8 +2244,8 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.Will, 3), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 5), divineLevel);
                 player?.SendServerMessage(" - 10% Cold Immunity", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Will Save +3", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Lore +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Will Save", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Lore", ColorConstants.Cyan);
                 break;
 
             case "umberlee":
@@ -2125,10 +2254,12 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Divine), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Magical), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.Regenerate(1, TimeSpan.FromSeconds(6.0)), divineLevel);
                 player?.SendServerMessage(" - +3 Saves vs. Law", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +2 Divine Damage", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +2 Magical Damage", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Bluff +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +1 Regeneration", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Bluff", ColorConstants.Cyan);
                 break;
 
             case "urdlen":
@@ -2136,26 +2267,27 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.Good), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Acid), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
+                ApplyVampiricRegenerationWeaponProperty(creature, player, divineLevel, 3);
                 player?.SendServerMessage(" - +3 Saves vs. Good", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +3 Acid Damage", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Intimidate +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "urogalan":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadOdd), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 2, SavingThrowType.Death), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.Death), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.MoveSilently!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 5), divineLevel);
                 player?.SendServerMessage(" - +6 Saves vs. Death", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Move Silently +5", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Bluff +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Move Silently", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Bluff", ColorConstants.Cyan);
                 break;
 
             case "uthgar":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpSuperHeroism), divineLevel, fullDuration: false);
                 ApplyAttackBonusVsAlignmentOnWeapon(creature, player, divineLevel, IPAlignmentGroup.Lawful, "Lawful");
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 10), divineLevel);
-                player?.SendServerMessage(" - Intimidate +10", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "valkur":
@@ -2165,18 +2297,20 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
                 player?.SendServerMessage(" - 10% Electric Immunity", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +3 Electrical Damage", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Intimidate +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "vandria gilmadrith":
                 float vandriaDuration = 300.0f + (divineLevel * 20.0f);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpGoodHelp), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 2, SavingThrowType.Evil), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.Evil), divineLevel);
                 // Drow racial type is 33
                 ApplyAttackBonusVsRaceOnWeapon(creature, player, vandriaDuration, 33, 1, "Drow");
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Divine), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 5), divineLevel);
-                player?.SendServerMessage(" - +2 Saves vs. Evil", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Lore +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +2 Divine Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Saves vs. Evil", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Lore", ColorConstants.Cyan);
                 break;
 
             case "velsharoon":
@@ -2206,8 +2340,8 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadMind), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Appraise!, 10), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.Regenerate(1, TimeSpan.FromSeconds(6.0)), divineLevel);
-                player?.SendServerMessage(" - Appraise +10", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +1 Regeneration", ColorConstants.Cyan);
+                player?.SendServerMessage(" - Appraise +10", ColorConstants.Cyan);
                 break;
 
             case "vhaeraun":
@@ -2216,17 +2350,19 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Divine), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.BonusFeat(NwFeat.FromFeatId(402)!), divineLevel); // Thug
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
-                player?.SendServerMessage(" - +2 Divine Damage", ColorConstants.Cyan);
+                ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.MindSpells), divineLevel);
                 player?.SendServerMessage(" - Bonus Feat: Thug", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Intimidate +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +6 Saves vs. Mind-Affecting", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +2 Divine Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Intimidate", ColorConstants.Cyan);
                 break;
 
             case "waukeen":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadMind), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Appraise!, 10), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.Fear), divineLevel);
-                player?.SendServerMessage(" - Appraise +10", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +6 Saves vs. Fear", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Appraise", ColorConstants.Cyan);
                 break;
 
             case "yondalla":
@@ -2234,7 +2370,7 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 6, SavingThrowType.Fear), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 10), divineLevel);
                 player?.SendServerMessage(" - +6 Saves vs. Fear", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Persuade +10", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +10 Persuade", ColorConstants.Cyan);
                 break;
 
             case "yurtrus":
@@ -2242,8 +2378,10 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.Immunity(ImmunityType.Disease), divineLevel);
                 ApplyAttackBonusVsAlignmentOnWeapon(creature, player, divineLevel, IPAlignmentGroup.Good, "Good");
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Negative), divineLevel);
                 player?.SendServerMessage(" - Immunity to Disease", ColorConstants.Cyan);
-                player?.SendServerMessage(" - Bluff +5", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +3 Negative Damage", ColorConstants.Cyan);
+                player?.SendServerMessage(" - +5 Bluff", ColorConstants.Cyan);
                 break;
 
             default:
@@ -2349,7 +2487,7 @@ public class PrayerService
                 Effect eVsGood = Effect.ACIncrease(vsGood);
                 eVsGood.SubType = EffectSubType.Supernatural;
                 eVsGood.Tag = "PrayerVsGood";
-                player?.SendServerMessage($" - Extra AC vs Good, {vsGood}", ColorConstants.Cyan);
+                player?.SendServerMessage($" - +{vsGood} AC vs. Good", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, eVsGood, divineLevel, fullDuration: true);
             }
 
@@ -2358,7 +2496,7 @@ public class PrayerService
                 Effect eVsEvil = Effect.ACIncrease(vsEvil);
                 eVsEvil.SubType = EffectSubType.Supernatural;
                 eVsEvil.Tag = "PrayerVsEvil";
-                player?.SendServerMessage($" - Extra AC vs Evil, {vsEvil}", ColorConstants.Cyan);
+                player?.SendServerMessage($" - +{vsEvil} AC vs Evil", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, eVsEvil, divineLevel, fullDuration: true);
             }
         }
@@ -2424,7 +2562,7 @@ public class PrayerService
             Effect eVsGood = Effect.ACIncrease(vsGood);
             eVsGood.SubType = EffectSubType.Supernatural;
             eVsGood.Tag = PRAYER_EFFECT_TAG;
-            player?.SendServerMessage($" - Extra AC vs Good, {vsGood}", ColorConstants.Cyan);
+            player?.SendServerMessage($" - +{vsGood} AC vs Good", ColorConstants.Cyan);
             creature.ApplyEffect(EffectDuration.Temporary, eVsGood, TimeSpan.FromSeconds(duration));
         }
 
@@ -2433,7 +2571,7 @@ public class PrayerService
             Effect eVsEvil = Effect.ACIncrease(vsEvil);
             eVsEvil.SubType = EffectSubType.Supernatural;
             eVsEvil.Tag = PRAYER_EFFECT_TAG;
-            player?.SendServerMessage($" - Extra AC vs Evil, {vsEvil}", ColorConstants.Cyan);
+            player?.SendServerMessage($" - +{vsEvil} AC vs Evil", ColorConstants.Cyan);
             creature.ApplyEffect(EffectDuration.Temporary, eVsEvil, TimeSpan.FromSeconds(duration));
         }
     }
@@ -2493,7 +2631,7 @@ public class PrayerService
             Effect eVsGood = Effect.ACIncrease(vsGood);
             eVsGood.SubType = EffectSubType.Supernatural;
             eVsGood.Tag = PRAYER_EFFECT_TAG;
-            player?.SendServerMessage($" - Extra AC vs Good, {vsGood}", ColorConstants.Cyan);
+            player?.SendServerMessage($" - +{vsGood} AC vs Good", ColorConstants.Cyan);
             ApplyLaypersonEffectToParty(creature, eVsGood, duration, fullDuration: true);
         }
 
@@ -2502,7 +2640,7 @@ public class PrayerService
             Effect eVsEvil = Effect.ACIncrease(vsEvil);
             eVsEvil.SubType = EffectSubType.Supernatural;
             eVsEvil.Tag = PRAYER_EFFECT_TAG;
-            player?.SendServerMessage($" - Extra AC vs Evil, {vsEvil}", ColorConstants.Cyan);
+            player?.SendServerMessage($" - +{vsEvil} AC vs Evil", ColorConstants.Cyan);
             ApplyLaypersonEffectToParty(creature, eVsEvil, duration, fullDuration: true);
         }
     }
@@ -2543,7 +2681,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Air domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadElectricity), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageImmunityIncrease(DamageType.Electrical, amount), clericLevel);
-                player.SendServerMessage($" - Immunity vs Electrical damage, {amount}%", ColorConstants.Cyan);
+                player.SendServerMessage($" - {amount}% Electrical Immunity", ColorConstants.Cyan);
                 break;
 
             case 1: // DOMAIN_ANIMAL
@@ -2567,7 +2705,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Destruction domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.DurElementalShield), clericLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageShield(amount, DamageBonus.Plus1d6, DamageType.Fire), clericLevel);
-                player.SendServerMessage($" - Damage shield, 1d6 + {amount} fire damage", ColorConstants.Cyan);
+                player.SendServerMessage($" - 1d6 + {amount} Fire Damage Shield", ColorConstants.Cyan);
                 break;
 
             case 5: // DOMAIN_EARTH
@@ -2575,7 +2713,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Earth domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadAcid), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageImmunityIncrease(DamageType.Acid, amount), clericLevel);
-                player.SendServerMessage($" - Immunity vs Acid damage, {amount}%", ColorConstants.Cyan);
+                player.SendServerMessage($" - {amount}% Acid Immunity", ColorConstants.Cyan);
                 break;
 
             case 6: // DOMAIN_EVIL
@@ -2591,7 +2729,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Fire domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadFire), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageImmunityIncrease(DamageType.Fire, amount), clericLevel);
-                player.SendServerMessage($" - Immunity vs Fire damage, {amount}%", ColorConstants.Cyan);
+                player.SendServerMessage($" - {amount}% Fire Immunity", ColorConstants.Cyan);
                 break;
 
             case 8: // DOMAIN_GOOD
@@ -2600,7 +2738,7 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.DurProtectionGoodMinor), clericLevel, fullDuration: false);
                 // Apply damage vs Evil as temporary item property on equipped weapon
                 ApplyVersusAlignmentWeaponBonus(creature, player, clericLevel, IPAlignmentGroup.Evil, amount, "Evil");
-                player.SendServerMessage($" - Extra damage, {amount} vs. Evil", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Divine Damage vs. Evil", ColorConstants.Cyan);
                 break;
 
             case 9: // DOMAIN_HEALING
@@ -2608,7 +2746,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Healing domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHealingS), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.Regenerate(amount, TimeSpan.FromSeconds(6.0)), clericLevel);
-                player.SendServerMessage($" - Regeneration, +{amount}", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Regeneration", ColorConstants.Cyan);
                 break;
 
             case 10: // DOMAIN_KNOWLEDGE
@@ -2616,7 +2754,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Knowledge domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadMind), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.AllSkills!, amount), clericLevel);
-                player.SendServerMessage($" - Skill boost, +{amount}", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Skills Boost (All), ", ColorConstants.Cyan);
                 break;
 
             case 13: // DOMAIN_MAGIC
@@ -2624,7 +2762,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Magic domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadSonic), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SpellResistanceIncrease(amount), clericLevel);
-                player.SendServerMessage($" - Spell Resistance, +{amount}", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Spell Resistance", ColorConstants.Cyan);
                 break;
 
             case 14: // DOMAIN_PLANT
@@ -2634,7 +2772,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Plant domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.DurProtBarkskin), clericLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.ACIncrease(amount, ACBonus.Natural), clericLevel);
-                player.SendServerMessage($" - AC increase, +{amount} natural", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Natural AC", ColorConstants.Cyan);
                 break;
 
             case 15: // DOMAIN_PROTECTION
@@ -2642,7 +2780,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Protection domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.DurEtherealVisage), clericLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.Concealment(amount), clericLevel);
-                player.SendServerMessage($" - Concealment, {amount}%", ColorConstants.Cyan);
+                player.SendServerMessage($" - {amount}% Concealment", ColorConstants.Cyan);
                 break;
 
             case 16: // DOMAIN_STRENGTH
@@ -2650,7 +2788,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Strength domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadHeal), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.AbilityIncrease(Ability.Strength, amount), clericLevel);
-                player.SendServerMessage($" - Extra Strength, {amount}", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Strength", ColorConstants.Cyan);
                 break;
 
             case 17: // DOMAIN_SUN
@@ -2659,21 +2797,21 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadHoly), clericLevel, fullDuration: false);
                 // Apply damage vs Undead as temporary item property on equipped weapon
                 ApplyVersusRacialTypeWeaponBonus(creature, player, clericLevel, RacialType.Undead, amount, "Undead");
-                player.SendServerMessage($" - Extra damage, {amount} vs. Undead", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Divine Damage vs. Undead", ColorConstants.Cyan);
                 break;
 
             case 18: // DOMAIN_TRAVEL
                 player.SendServerMessage("Adding Travel domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHealingS), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.Immunity(ImmunityType.MovementSpeedDecrease), clericLevel);
-                player.SendServerMessage(" - Immunity from movement decreases", ColorConstants.Cyan);
+                player.SendServerMessage(" - Immunity to Movement Speed Decrease", ColorConstants.Cyan);
                 break;
 
             case 19: // DOMAIN_TRICKERY
                 player.SendServerMessage("Adding Trickery domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHealingS), clericLevel, fullDuration: false);
                 ApplyRepeatingInvisibility(creature, player, clericLevel);
-                player.SendServerMessage(" - Invisibility (reapplied every 30 seconds)", ColorConstants.Cyan);
+                player.SendServerMessage(" - Invisibility (Reapplied every 30 seconds)", ColorConstants.Cyan);
                 break;
 
             case 20: // DOMAIN_WAR
@@ -2681,7 +2819,7 @@ public class PrayerService
                 player.SendServerMessage("Adding War domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadEvil), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(amount, DamageType.BaseWeapon), clericLevel);
-                player.SendServerMessage($" - Extra Damage, {amount}", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Physical Damage", ColorConstants.Cyan);
                 break;
 
             case 21: // DOMAIN_WATER
@@ -2689,7 +2827,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Water domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadCold), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageImmunityIncrease(DamageType.Cold, amount), clericLevel);
-                player.SendServerMessage($" - Immunity vs Cold damage, {amount}%", ColorConstants.Cyan);
+                player.SendServerMessage($" - {amount}% Cold Immunity", ColorConstants.Cyan);
                 break;
 
             case 22: // DOMAIN_BALANCE
@@ -2697,7 +2835,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Balance domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadMind), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.Will, amount), clericLevel);
-                player.SendServerMessage($" - Increased Will Save, {amount}", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Will Save", ColorConstants.Cyan);
                 break;
 
             case 23: // DOMAIN_CAVERN
@@ -2717,7 +2855,7 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadOdd), clericLevel, fullDuration: false);
                 // Apply damage vs Lawful as temporary item property on equipped weapon
                 ApplyVersusAlignmentWeaponBonus(creature, player, clericLevel, IPAlignmentGroup.Lawful, amount, "Lawful");
-                player.SendServerMessage($" - Extra damage, {amount} vs. Lawful", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Divine Damage vs. Lawful", ColorConstants.Cyan);
                 break;
 
             case 25: // DOMAIN_CHARM
@@ -2733,7 +2871,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Cold domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpFrostL), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(amount, DamageType.Cold), clericLevel);
-                player.SendServerMessage($" - Bonus cold damage, {amount}", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Cold Damage", ColorConstants.Cyan);
                 break;
 
             case 27: // DOMAIN_COMMUNITY
@@ -2760,7 +2898,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Community domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHolyAid), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.TemporaryHitpoints(amount), clericLevel);
-                player.SendServerMessage($" - Temporary Hitpoints, {amount}", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Temporary Hit Points", ColorConstants.Cyan);
                 break;
 
             case 28: // DOMAIN_COURAGE
@@ -2775,7 +2913,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Craft domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, amount, SavingThrowType.Trap), clericLevel);
-                player.SendServerMessage($" - Increased saves vs traps, {amount}", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Saves vs Traps", ColorConstants.Cyan);
                 break;
 
             case 30: // DOMAIN_DARKNESS
@@ -2784,7 +2922,8 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.DurMagicalSight), clericLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.Ultravision(), clericLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Spot!, amount), clericLevel);
-                player.SendServerMessage($" - Ultravision, Spot +{amount}", ColorConstants.Cyan);
+                player.SendServerMessage($" - Ultravision", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Spot", ColorConstants.Cyan);
                 break;
 
             case 31: // DOMAIN_DRAGON
@@ -2814,7 +2953,7 @@ public class PrayerService
                 }
 
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageImmunityIncrease(dragonElementType, amount), clericLevel);
-                player.SendServerMessage($" - {dragonElementName} Immunity +{amount}%", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount}% {dragonElementName} Immunity", ColorConstants.Cyan);
                 break;
 
             case 32: // DOMAIN_DREAM
@@ -2841,7 +2980,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Dwarf domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpSuperHeroism), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.AbilityIncrease(Ability.Constitution, amount), clericLevel);
-                player.SendServerMessage($" - Constitution +{amount}", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Constitution", ColorConstants.Cyan);
                 break;
 
             case 35: // DOMAIN_ELF
@@ -2849,7 +2988,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Elf domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpSuperHeroism), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.AbilityIncrease(Ability.Dexterity, amount), clericLevel);
-                player.SendServerMessage($" - Dexterity +{amount}", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Dexterity", ColorConstants.Cyan);
                 break;
 
             case 36: // DOMAIN_FATE
@@ -2862,7 +3001,7 @@ public class PrayerService
                 {
                     // Natural 1 = All saves
                     saveType = SavingThrow.All;
-                    saveTypeName = "Universal Save";
+                    saveTypeName = "Universal Saves";
                 }
                 else
                 {
@@ -2876,7 +3015,7 @@ public class PrayerService
                     };
                     saveTypeName = saveChoice switch
                     {
-                        1 => "Fort Save",
+                        1 => "Fortitude Save",
                         2 => "Reflex Save",
                         _ => "Will Save"
                     };
@@ -2885,7 +3024,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Fate domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpPdkOath), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(saveType, amount), clericLevel);
-                player.SendServerMessage($" - {saveTypeName} +{amount}", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} {saveTypeName}", ColorConstants.Cyan);
                 break;
 
             case 37: // DOMAIN_GNOME
@@ -2893,7 +3032,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Gnome domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpSuperHeroism), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.AbilityIncrease(Ability.Charisma, amount), clericLevel);
-                player.SendServerMessage($" - Charisma +{amount}", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Charisma", ColorConstants.Cyan);
                 break;
 
             case 38: // DOMAIN_HALFLING
@@ -2902,7 +3041,7 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.DurGhostlyVisageNoSound), clericLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Hide!, amount), clericLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.MoveSilently!, amount), clericLevel);
-                player.SendServerMessage($" - Hide/Move Silently +{amount}", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Hide/Move Silently", ColorConstants.Cyan);
                 break;
 
             case 39: // DOMAIN_HATRED
@@ -2910,7 +3049,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Hatred domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.DurProtectionEvilMajor), clericLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageShield(amount, DamageBonus.Plus1d4, DamageType.Negative), clericLevel);
-                player.SendServerMessage($" - Negative Damage Shield, 1d4 + {amount}", ColorConstants.Cyan);
+                player.SendServerMessage($" - 1d4 + {amount} Negative Damage Shield", ColorConstants.Cyan);
                 break;
 
             case 40: // DOMAIN_ILLUSION
@@ -2935,7 +3074,7 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadOdd), clericLevel, fullDuration: false);
                 // Apply damage vs Chaotic as temporary item property on equipped weapon
                 ApplyVersusAlignmentWeaponBonus(creature, player, clericLevel, IPAlignmentGroup.Chaotic, amount, "Chaotic");
-                player.SendServerMessage($" - Extra damage, {amount} vs. Chaotic", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Divine Damage vs. Chaotic", ColorConstants.Cyan);
                 break;
 
             case 42: // DOMAIN_LUCK
@@ -2966,7 +3105,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Luck domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpSuperHeroism), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.AbilityIncrease(luckyAbility, 3), clericLevel);
-                player.SendServerMessage($" - {abilityName} +3", ColorConstants.Cyan);
+                player.SendServerMessage($" - +3 {abilityName}", ColorConstants.Cyan);
                 break;
 
             case 43: // DOMAIN_MOON
@@ -2975,7 +3114,7 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadHoly), clericLevel, fullDuration: false);
                 // Apply damage vs Shapechangers as temporary item property on equipped weapon
                 ApplyVersusRacialTypeWeaponBonus(creature, player, clericLevel, RacialType.ShapeChanger, amount, "Shapechangers");
-                player.SendServerMessage($" - Extra damage, {amount} vs. Shapechangers", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Divine Damage vs. Shapechangers", ColorConstants.Cyan);
                 break;
 
             case 44: // DOMAIN_NOBILITY
@@ -2985,7 +3124,9 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, amount), clericLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, amount), clericLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, amount), clericLevel);
-                player.SendServerMessage($" - Persuade/Intimidate/Bluff +{amount}", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Persuade", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Intimidate", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Bluff", ColorConstants.Cyan);
                 break;
 
             case 45: // DOMAIN_ORC
@@ -2994,7 +3135,7 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadEvil), clericLevel, fullDuration: false);
                 // Apply damage vs Elves as temporary item property on equipped weapon
                 ApplyVersusRacialTypeWeaponBonus(creature, player, clericLevel, RacialType.Elf, amount, "Elves");
-                player.SendServerMessage($" - Extra damage, {amount} vs. Elves", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Divine Damage vs. Elves", ColorConstants.Cyan);
                 break;
 
             case 46: // DOMAIN_PORTAL
@@ -3022,7 +3163,7 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Acid, amount), clericLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Electrical, amount), clericLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Sonic, amount), clericLevel);
-                player.SendServerMessage($" - Elemental Resistance, {amount}/-", ColorConstants.Cyan);
+                player.SendServerMessage($" - {amount}/- Elemental Resistance (All)", ColorConstants.Cyan);
                 break;
 
             case 48: // DOMAIN_REPOSE
@@ -3030,7 +3171,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Repose domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadHoly), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageImmunityIncrease(DamageType.Negative, amount), clericLevel);
-                player.SendServerMessage($" - Immunity vs Negative damage, {amount}%", ColorConstants.Cyan);
+                player.SendServerMessage($" - {amount}% Negative Damage Immunity", ColorConstants.Cyan);
                 break;
 
             case 49: // DOMAIN_RETRIBUTION
@@ -3038,7 +3179,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Retribution domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.DurGlowRed), clericLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageShield(amount, DamageBonus.Plus1d4, DamageType.Divine), clericLevel);
-                player.SendServerMessage($" - Divine Damage Shield, 1d4 + {amount}", ColorConstants.Cyan);
+                player.SendServerMessage($" - 1d4 + {amount} Divine Damage Shield", ColorConstants.Cyan);
                 break;
 
             case 50: // DOMAIN_RUNE
@@ -3046,7 +3187,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Rune domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.DurProtStoneskin), clericLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageReduction(amount, DamagePower.Plus5, amount), clericLevel);
-                player.SendServerMessage($" - Damage Reduction ({amount}/+5)", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount}/+5 Damage Reduction", ColorConstants.Cyan);
                 break;
 
             case 51: // DOMAIN_SCALYKIND
@@ -3054,7 +3195,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Scalykind domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpAcidL), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(amount, DamageType.Acid), clericLevel);
-                player.SendServerMessage($" - Bonus acid damage, {amount}", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Acid Damage", ColorConstants.Cyan);
                 break;
 
             case 52: // DOMAIN_SLIME
@@ -3062,7 +3203,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Slime domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadAcid), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageImmunityIncrease(DamageType.Acid, amount), clericLevel);
-                player.SendServerMessage($" - Immunity vs Acid damage, {amount}%", ColorConstants.Cyan);
+                player.SendServerMessage($" - {amount}% Acid Immunity", ColorConstants.Cyan);
                 break;
 
             case 53: // DOMAIN_SPELL
@@ -3070,7 +3211,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Spell domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.DurMagicResistance), clericLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, amount, SavingThrowType.Spell), clericLevel);
-                player.SendServerMessage($" - Bonus saves vs spells, {amount}", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Saves vs Spells", ColorConstants.Cyan);
                 break;
 
             case 54: // DOMAIN_TIME
@@ -3078,7 +3219,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Time domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHaste), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.MovementSpeedIncrease(amount), clericLevel);
-                player.SendServerMessage($" - Movement speed +{amount}%", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount}% Movement Speed", ColorConstants.Cyan);
                 break;
 
             case 55: // DOMAIN_TRADE
@@ -3086,7 +3227,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Trade domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.DurSanctuary), clericLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Appraise!, amount), clericLevel);
-                player.SendServerMessage($" - Appraise +{amount}", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Appraise", ColorConstants.Cyan);
                 break;
 
             case 56: // DOMAIN_TYRANNY
@@ -3094,7 +3235,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Tyranny domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadEvil), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Bludgeoning, amount), clericLevel);
-                player.SendServerMessage($" - Bludgeoning resistance, {amount}/-", ColorConstants.Cyan);
+                player.SendServerMessage($" - {amount}/- Bludgeoning Damage Resistance", ColorConstants.Cyan);
                 break;
 
             case 57: // DOMAIN_UNDEATH
@@ -3102,7 +3243,7 @@ public class PrayerService
                 player.SendServerMessage("Adding Undeath domain effects:", ColorConstants.Cyan);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHarm), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(amount, DamageType.Negative), clericLevel);
-                player.SendServerMessage($" - Bonus negative damage, {amount}", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Negative Damage", ColorConstants.Cyan);
                 break;
 
             case 58: // DOMAIN_SUFFERING
@@ -3111,7 +3252,8 @@ public class PrayerService
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpDeath), clericLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.Will, amount), clericLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.Fortitude, amount), clericLevel);
-                player.SendServerMessage($" - Bonus to Will and Fort saves, {amount}", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Will Save", ColorConstants.Cyan);
+                player.SendServerMessage($" - +{amount} Fortitude Save", ColorConstants.Cyan);
                 break;
 
             default:
@@ -3588,7 +3730,7 @@ public class PrayerService
 
         if (animalsBuffed > 0)
         {
-            player?.SendServerMessage($" - Boosted {animalsBuffed} Animal associate(s) with +{amount} damage", ColorConstants.Cyan);
+            player?.SendServerMessage($" - Boosted {animalsBuffed} Animal associate(s) with +{amount} Physical Damage", ColorConstants.Cyan);
         }
         else
         {
@@ -3640,7 +3782,7 @@ public class PrayerService
 
         if (undeadBuffed > 0)
         {
-            player?.SendServerMessage($" - Boosted {undeadBuffed} Undead associate(s) with +{amount} damage", ColorConstants.Cyan);
+            player?.SendServerMessage($" - Boosted {undeadBuffed} Undead associate(s) with +{amount} Physical Damage", ColorConstants.Cyan);
         }
         else
         {
@@ -3678,7 +3820,7 @@ public class PrayerService
             itemNames.Add(item.Name);
         }
 
-        player.SendServerMessage($" - {amount} Extra Damage vs {alignmentName} applied to {string.Join(", ", itemNames)}", ColorConstants.Cyan);
+        player.SendServerMessage($" - +{amount} Divine Damage vs {alignmentName} applied to {string.Join(", ", itemNames)}", ColorConstants.Cyan);
     }
 
     /// <summary>
@@ -3711,7 +3853,7 @@ public class PrayerService
             itemNames.Add(item.Name);
         }
 
-        player.SendServerMessage($" - +{amount} Extra Damage vs {raceName} applied to {string.Join(", ", itemNames)}", ColorConstants.Cyan);
+        player.SendServerMessage($" - +{amount} Divine Damage vs {raceName} applied to {string.Join(", ", itemNames)}", ColorConstants.Cyan);
     }
 
     /// <summary>
@@ -3863,7 +4005,7 @@ public class PrayerService
             itemNames.Add(item.Name);
         }
 
-        player?.SendServerMessage($" - OnHit: Slow (50%, 2 rounds) applied to {string.Join(", ", itemNames)}", ColorConstants.Cyan);
+        player?.SendServerMessage($" - OnHit: Slow (DC 22, 50% / 2 rounds) applied to {string.Join(", ", itemNames)}", ColorConstants.Cyan);
     }
 
     /// <summary>
@@ -4049,7 +4191,7 @@ public class PrayerService
         NwItem? pcKey = creature.FindItemWithTag("ds_pckey");
         if (pcKey == null)
         {
-            player?.SendServerMessage(" - Unable to change scale: PC Key not found.", ColorConstants.Orange);
+            player?.SendServerMessage(" - Unable to change Scale: PC Key not found.", ColorConstants.Orange);
             return;
         }
 
@@ -4059,7 +4201,7 @@ public class PrayerService
 
         // Set new scale
         NWScript.SetObjectVisualTransform(creature, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, newScale);
-        player?.SendServerMessage($" - Scale changed to {newScale}", ColorConstants.Cyan);
+        player?.SendServerMessage($" - Your Scaled size has changed to {newScale}", ColorConstants.Cyan);
 
         // Schedule restoration
         _ = NwTask.Run(async () =>
@@ -4137,7 +4279,7 @@ public class PrayerService
         // Set new appearance and scale
         NWScript.SetCreatureAppearanceType(creature, newAppearance);
         NWScript.SetObjectVisualTransform(creature, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, newScale);
-        player?.SendServerMessage(" - Appearance transformed", ColorConstants.Cyan);
+        player?.SendServerMessage(" - Appearance Transformed!", ColorConstants.Cyan);
 
         // Schedule restoration
         _ = NwTask.Run(async () =>
@@ -4448,5 +4590,137 @@ public class PrayerService
                 NWScript.DeleteLocalInt(creature, ILLUSION_PORTAL_SUMMON_VAR);
             }
         });
+    }
+
+    /// <summary>
+    /// Applies OnHit: Doom (DC 22) as a temporary item property on all equipped weapons and gloves.
+    /// </summary>
+    private void ApplyOnHitDoomWeaponProperty(NwCreature creature, NwPlayer? player, int divineLevel)
+    {
+        float duration = 300.0f + (divineLevel * 20.0f);
+        List<NwItem> items = GetEquippedWeaponsAndGloves(creature);
+
+        if (items.Count == 0)
+        {
+            player?.SendServerMessage(" - You need a weapon equipped to receive OnHit: Doom!", ColorConstants.Orange);
+            return;
+        }
+
+        // OnHit: Doom, DC 22
+        ItemProperty onHitDoom = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22, HitEffect.Doom(IPOnHitDuration.Duration50Pct2Rounds));
+
+        List<string> itemNames = new List<string>();
+        foreach (NwItem item in items)
+        {
+            item.AddItemProperty(
+                onHitDoom,
+                EffectDuration.Temporary,
+                TimeSpan.FromSeconds(duration),
+                AddPropPolicy.ReplaceExisting,
+                ignoreSubType: false
+            );
+            itemNames.Add(item.Name);
+        }
+
+        player?.SendServerMessage($" - OnHit: Doom (DC 22, 50% / 2 rounds) applied to {string.Join(", ", itemNames)}", ColorConstants.Cyan);
+    }
+
+    /// <summary>
+    /// Applies OnHit: Fear (DC 22) as a temporary item property on all equipped weapons and gloves.
+    /// </summary>
+    private void ApplyOnHitFearWeaponProperty(NwCreature creature, NwPlayer? player, int divineLevel)
+    {
+        float duration = 300.0f + (divineLevel * 20.0f);
+        List<NwItem> items = GetEquippedWeaponsAndGloves(creature);
+
+        if (items.Count == 0)
+        {
+            player?.SendServerMessage(" - You need a weapon equipped to receive OnHit: Fear!", ColorConstants.Orange);
+            return;
+        }
+
+        // OnHit: Fear, DC 22
+        ItemProperty onHitFear = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22, HitEffect.Fear(IPOnHitDuration.Duration50Pct2Rounds));
+
+        List<string> itemNames = new List<string>();
+        foreach (NwItem item in items)
+        {
+            item.AddItemProperty(
+                onHitFear,
+                EffectDuration.Temporary,
+                TimeSpan.FromSeconds(duration),
+                AddPropPolicy.ReplaceExisting,
+                ignoreSubType: false
+            );
+            itemNames.Add(item.Name);
+        }
+
+        player?.SendServerMessage($" - OnHit: Fear (DC 22, 50% / 2 rounds) applied to {string.Join(", ", itemNames)}", ColorConstants.Cyan);
+    }
+
+    /// <summary>
+    /// Applies OnHit: Level Drain (DC 22) as a temporary item property on all equipped weapons and gloves.
+    /// </summary>
+    private void ApplyOnHitLevelDrainWeaponProperty(NwCreature creature, NwPlayer? player, int divineLevel)
+    {
+        float duration = 300.0f + (divineLevel * 20.0f);
+        List<NwItem> items = GetEquippedWeaponsAndGloves(creature);
+
+        if (items.Count == 0)
+        {
+            player?.SendServerMessage(" - You need a weapon equipped to receive OnHit: Level Drain!", ColorConstants.Orange);
+            return;
+        }
+
+        // OnHit: Level Drain, DC 22
+        ItemProperty onHitLevelDrain = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22, HitEffect.LevelDrain(2));
+
+        List<string> itemNames = new List<string>();
+        foreach (NwItem item in items)
+        {
+            item.AddItemProperty(
+                onHitLevelDrain,
+                EffectDuration.Temporary,
+                TimeSpan.FromSeconds(duration),
+                AddPropPolicy.ReplaceExisting,
+                ignoreSubType: false
+            );
+            itemNames.Add(item.Name);
+        }
+
+        player?.SendServerMessage($" - OnHit: Level Drain (DC 22, 2 Levels) applied to {string.Join(", ", itemNames)}", ColorConstants.Cyan);
+    }
+
+    /// <summary>
+    /// Applies OnHit: Confusion (DC 22) as a temporary item property on all equipped weapons and gloves.
+    /// </summary>
+    private void ApplyOnHitConfusionWeaponProperty(NwCreature creature, NwPlayer? player, int divineLevel)
+    {
+        float duration = 300.0f + (divineLevel * 20.0f);
+        List<NwItem> items = GetEquippedWeaponsAndGloves(creature);
+
+        if (items.Count == 0)
+        {
+            player?.SendServerMessage(" - You need a weapon equipped to receive OnHit: Confusion!", ColorConstants.Orange);
+            return;
+        }
+
+        // OnHit: Confusion, DC 22
+        ItemProperty onHitConfusion = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22, HitEffect.Confusion(IPOnHitDuration.Duration50Pct2Rounds));
+
+        List<string> itemNames = new List<string>();
+        foreach (NwItem item in items)
+        {
+            item.AddItemProperty(
+                onHitConfusion,
+                EffectDuration.Temporary,
+                TimeSpan.FromSeconds(duration),
+                AddPropPolicy.ReplaceExisting,
+                ignoreSubType: false
+            );
+            itemNames.Add(item.Name);
+        }
+
+        player?.SendServerMessage($" - OnHit: Confusion (DC 22, 50% / 2 rounds) applied to {string.Join(", ", itemNames)}", ColorConstants.Cyan);
     }
 }
