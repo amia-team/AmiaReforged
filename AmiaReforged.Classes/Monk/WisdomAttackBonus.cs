@@ -5,8 +5,9 @@ namespace AmiaReforged.Classes.Monk;
 public static class WisdomAttackBonus
 {
     private const string WisdomAbTag = "monk_wis_ab";
-    public static void AdjustWisdomAttackBonus(NwCreature monk)
+    public static async Task AdjustWisdomAttackBonus(NwCreature monk)
     {
+        await NwTask.Delay(TimeSpan.FromMilliseconds(10));
         UnsetWisdomAttackBonus(monk);
 
         if (monk.IsRangedWeaponEquipped || MonkUtils.AbilityRestricted(monk, "Floating Leaf attack bonus"))
@@ -17,27 +18,6 @@ public static class WisdomAttackBonus
         int dexModifier =  monk.GetAbilityModifier(Ability.Dexterity);
 
         if (wisModifier <= strModifier || monk.FinesseApplies(wisModifier, dexModifier)) return;
-
-        // Leaving this commented out for later-day function hooking
-        /*int meleeAttackBonus = monk.GetAttackBonus(isMelee: true);
-
-        if (monk.GetItemInSlot(InventorySlot.RightHand) is null
-            && monk.GetItemInSlot(InventorySlot.Arms) is { } gloves
-            && gloves.ItemProperties.Any(ip => ip.Property.PropertyType == ItemPropertyType.AttackBonus))
-        {
-            int glovesAb = gloves.ItemProperties.
-                First(ip => ip.Property.PropertyType == ItemPropertyType.AttackBonus).
-                IntParams[0];
-
-            meleeAttackBonus += glovesAb;
-        }
-
-        int wisAttackBonus =
-            FinesseApplies(monk, strModifier, dexModifier) ?
-                meleeAttackBonus - dexModifier + wisModifier
-                : meleeAttackBonus - strModifier + wisModifier;
-
-        int newBaseAttackBonus = monk.BaseAttackBonus + wisAttackBonus - meleeAttackBonus;*/
 
         int wisAttackBonus = monk.FinesseApplies(strModifier, dexModifier)
                 ? wisModifier - dexModifier

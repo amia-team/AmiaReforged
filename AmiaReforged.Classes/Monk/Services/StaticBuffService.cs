@@ -31,55 +31,55 @@ public class StaticBuffService
         if (eventData.Player.ControlledCreature is not { } monk
             || !monk.KnowsFeat(MonkDefense!)) return;
 
-        StaticBuff.RefreshBuff(monk);
+        _ = StaticBuff.RefreshBuff(monk);
 
         if (MonkUtils.GetMonkPath(monk) != PathType.FloatingLeaf) return;
 
-        WisdomAttackBonus.AdjustWisdomAttackBonus(monk);
+        _ = WisdomAttackBonus.AdjustWisdomAttackBonus(monk);
     }
 
     private void OnEquipAdjustBuff(OnItemEquip eventData)
     {
         if (!eventData.EquippedBy.KnowsFeat(MonkDefense!)) return;
 
-        StaticBuff.RefreshBuff(eventData.EquippedBy);
+        _ = StaticBuff.RefreshBuff(eventData.EquippedBy);
 
         if (MonkUtils.GetMonkPath(eventData.EquippedBy) != PathType.FloatingLeaf) return;
 
-        WisdomAttackBonus.AdjustWisdomAttackBonus(eventData.EquippedBy);
+        _ = WisdomAttackBonus.AdjustWisdomAttackBonus(eventData.EquippedBy);
     }
 
     private void OnUnequipAdjustBuff(OnItemUnequip eventData)
     {
         if (!eventData.Creature.KnowsFeat(MonkDefense!)) return;
 
-        StaticBuff.RefreshBuff(eventData.Creature);
+        _ = StaticBuff.RefreshBuff(eventData.Creature);
 
         if (MonkUtils.GetMonkPath(eventData.Creature) != PathType.FloatingLeaf) return;
 
-        WisdomAttackBonus.AdjustWisdomAttackBonus(eventData.Creature);
+        _ = WisdomAttackBonus.AdjustWisdomAttackBonus(eventData.Creature);
     }
 
     private void OnLevelUpAdjustBuff(OnLevelUp eventData)
     {
         if (!eventData.Creature.KnowsFeat(MonkDefense!)) return;
 
-        StaticBuff.RefreshBuff(eventData.Creature);
+        _ = StaticBuff.RefreshBuff(eventData.Creature);
 
         if (MonkUtils.GetMonkPath(eventData.Creature) != PathType.FloatingLeaf) return;
 
-        WisdomAttackBonus.AdjustWisdomAttackBonus(eventData.Creature);
+        _ = WisdomAttackBonus.AdjustWisdomAttackBonus(eventData.Creature);
     }
 
     private void OnLevelDownAdjustBuff(OnLevelDown eventData)
     {
         if (!eventData.Creature.KnowsFeat(MonkDefense!)) return;
 
-        StaticBuff.RefreshBuff(eventData.Creature);
+        _ = StaticBuff.RefreshBuff(eventData.Creature);
 
         if (MonkUtils.GetMonkPath(eventData.Creature) != PathType.FloatingLeaf) return;
 
-        WisdomAttackBonus.AdjustWisdomAttackBonus(eventData.Creature);
+        _ = WisdomAttackBonus.AdjustWisdomAttackBonus(eventData.Creature);
     }
 
     private void OnWisdomApplyAdjustBuff(OnEffectApply eventData)
@@ -92,12 +92,12 @@ public class StaticBuffService
         int ability = eventData.Effect.IntParams[0];
         if (ability is (int)Ability.Wisdom)
         {
-            StaticBuff.RefreshBuff(monk);
+            _ = StaticBuff.RefreshBuff(monk);
         }
         if (MonkUtils.GetMonkPath(monk) == PathType.FloatingLeaf
             && ability is (int)Ability.Wisdom or (int)Ability.Dexterity or (int)Ability.Strength)
         {
-            WisdomAttackBonus.AdjustWisdomAttackBonus(monk);
+            _ = WisdomAttackBonus.AdjustWisdomAttackBonus(monk);
         }
     }
 
@@ -111,12 +111,12 @@ public class StaticBuffService
         int ability = eventData.Effect.IntParams[0];
         if (ability is (int)Ability.Wisdom)
         {
-            StaticBuff.RefreshBuff(monk);
+            _ = StaticBuff.RefreshBuff(monk);
         }
         if (MonkUtils.GetMonkPath(monk) == PathType.FloatingLeaf
             && ability is (int)Ability.Wisdom or (int)Ability.Dexterity or (int)Ability.Strength)
         {
-            WisdomAttackBonus.AdjustWisdomAttackBonus(monk);
+            _ = WisdomAttackBonus.AdjustWisdomAttackBonus(monk);
         }
     }
 }

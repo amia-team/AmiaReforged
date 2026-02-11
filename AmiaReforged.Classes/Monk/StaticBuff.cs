@@ -11,8 +11,10 @@ public static class StaticBuff
     private static readonly NwFeat? MonkSpeedFeat = NwFeat.FromFeatId(MonkFeat.MonkSpeedNew);
     private const string StaticBuffTag = "monk_static_buff";
 
-    public static void RefreshBuff(NwCreature monk)
+    public static async Task RefreshBuff(NwCreature monk)
     {
+        await NwTask.Delay(TimeSpan.FromMilliseconds(10));
+
         FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_EQUIP_SHIELD_AC_NO_STACK, 1, monk);
 
         int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
@@ -28,6 +30,7 @@ public static class StaticBuff
         if (MonkUtils.AbilityRestricted(monk, "monk abilities"))
         {
             FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_EQUIP_SHIELD_AC_NO_STACK, 0, monk);
+            PlayerPlugin.UpdateCharacterSheet(monk);
             return;
         }
 
