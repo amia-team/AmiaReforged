@@ -23,6 +23,15 @@ public class CharacterService
         AmiaDbContext amiaDbContext = _ctxFactory.CreateDbContext();
         try
         {
+            // Ensure the player exists before adding the character
+            bool playerExists = await amiaDbContext.Players.AnyAsync(p => p.CdKey == playerCharacter.PlayerId);
+            if (!playerExists)
+            {
+                Log.Error("Cannot save character: Player with ID {PlayerId} does not exist", playerCharacter.PlayerId);
+                await NwTask.SwitchToMainThread();
+                return;
+            }
+
             await amiaDbContext.Characters.AddAsync(playerCharacter);
             await amiaDbContext.SaveChangesAsync();
         }
@@ -121,7 +130,7 @@ public class CharacterService
         }
 
         await NwTask.SwitchToMainThread();
-        
+
         return exists;
     }
 
@@ -151,7 +160,7 @@ public class CharacterService
         {
             return character;
         }
-        
+
         Guid charId = PcKeyToGuid(pcKey);
 
         character = await GetCharacterByGuid(charId);
