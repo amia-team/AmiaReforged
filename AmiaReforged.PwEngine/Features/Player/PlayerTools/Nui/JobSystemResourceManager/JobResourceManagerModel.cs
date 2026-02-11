@@ -287,11 +287,16 @@ internal sealed class JobResourceManagerModel
         if (quantity <= 0 || quantity > resource.Quantity)
             return false;
 
+        // IMPORTANT: Validate destination can accept the items BEFORE removing from source
+        // This prevents item loss if the destination validation fails
+        if (!CanAddToDestination(resource.Resref, destination, targetPlayer, targetMiniatureBox))
+            return false;
+
         // Remove from source
         if (!RemoveFromSource(resource, quantity))
             return false;
 
-        // Add to destination
+        // Add to destination (should succeed since we pre-validated)
         if (!AddToDestination(resource.Resref, resource.Name, quantity, destination, targetPlayer, targetBoxIndex, targetMiniatureBox))
         {
             // Rollback: add back to source
@@ -305,6 +310,142 @@ internal sealed class JobResourceManagerModel
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Pre-validates that a destination can accept the specified resource before any items are removed.
+    /// This prevents item loss when destination validation fails after source removal.
+    /// </summary>
+    private bool CanAddToDestination(string resref, ResourceTransferDestination destination,
+        NwPlayer? targetPlayer, NwItem? targetMiniatureBox)
+    {
+        switch (destination)
+        {
+            case ResourceTransferDestination.SelfMerchantBox:
+                return CanAddToMerchantBox(resref);
+            case ResourceTransferDestination.OtherPlayerMerchantBox:
+                return CanAddToPlayerMerchantBox(targetPlayer, resref);
+            case ResourceTransferDestination.MiniatureBox:
+                return CanAddToMiniatureBoxDirect(targetMiniatureBox, resref);
+            case ResourceTransferDestination.Inventory:
+                return CanAddToInventory(resref);
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>
+    /// Validates that items can be created from the given resref.
+    /// Creates a test item and immediately destroys it to verify the resref is valid.
+    /// </summary>
+    private bool CanAddToInventory(string resref)
+    {
+        if (_player.ControlledCreature?.Location == null) return false;
+
+        // Try to create a test item to verify the resref is valid
+        NwItem? testItem = NwItem.Create(resref, _player.ControlledCreature.Location);
+        if (testItem == null)
+        {
+            NWN.Core.NWScript.WriteTimestampedLogEntry($"[WARNING] Job Resource Manager: Resref '{resref}' cannot be created for player {_player?.PlayerName ?? "Unknown"}. Transfer to inventory blocked.");
+            return false;
+        }
+
+        // Test item created successfully - destroy it and allow the transfer
+        testItem.Destroy();
+        return true;
+    }
+
+    /// <summary>
+    /// Checks if the player's merchant box can accept the specified resource
+    /// </summary>
+    private bool CanAddToMerchantBox(string resref)
+    {
+        if (_jobJournal == null || !IsMerchant()) return false;
+
+        int maxBoxes = GetMaxMerchantBoxes();
+
+        // Check for existing box with this resource
+        for (int i = 1; i <= maxBoxes; i++)
+        {
+            LocalVariableString boxResref = _jobJournal.GetObjectVariable<LocalVariableString>($"storagebox{i}");
+            if (boxResref.HasValue && boxResref.Value == resref)
+                return true; // Can add to existing box
+        }
+
+        // Check for empty slot
+        for (int i = 1; i <= maxBoxes; i++)
+        {
+            LocalVariableString boxResref = _jobJournal.GetObjectVariable<LocalVariableString>($"storagebox{i}");
+            if (!boxResref.HasValue || boxResref.Value == "")
+                return true; // Can use empty slot
+        }
+
+        return false; // No available slots
+    }
+
+    /// <summary>
+    /// Checks if another player's merchant box can accept the specified resource
+    /// </summary>
+    private bool CanAddToPlayerMerchantBox(NwPlayer? targetPlayer, string resref)
+    {
+        if (targetPlayer == null || targetPlayer.ControlledCreature == null) return false;
+
+        // Find target player's job journal
+        NwItem? targetJournal = null;
+        foreach (NwItem item in targetPlayer.ControlledCreature.Inventory.Items)
+        {
+            if (item.Tag == JobJournalTag)
+            {
+                targetJournal = item;
+                break;
+            }
+        }
+
+        if (targetJournal == null) return false;
+
+        // Check if target is a merchant
+        LocalVariableString primary = targetJournal.GetObjectVariable<LocalVariableString>(PrimaryJobVar);
+        LocalVariableString secondary = targetJournal.GetObjectVariable<LocalVariableString>(SecondaryJobVar);
+
+        bool isMerchant = (primary.HasValue && primary.Value == MerchantJobName) ||
+                         (secondary.HasValue && secondary.Value == MerchantJobName);
+
+        if (!isMerchant) return false;
+
+        // Determine max boxes for target player
+        int maxBoxes = (primary.HasValue && primary.Value == MerchantJobName) ? 30 : 10;
+
+        // Check for existing box with this resource
+        for (int i = 1; i <= maxBoxes; i++)
+        {
+            LocalVariableString boxResref = targetJournal.GetObjectVariable<LocalVariableString>($"storagebox{i}");
+            if (boxResref.HasValue && boxResref.Value == resref)
+                return true;
+        }
+
+        // Check for empty slot
+        for (int i = 1; i <= maxBoxes; i++)
+        {
+            LocalVariableString boxResref = targetJournal.GetObjectVariable<LocalVariableString>($"storagebox{i}");
+            if (!boxResref.HasValue || boxResref.Value == "")
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Checks if a miniature box can accept the specified resource
+    /// </summary>
+    private bool CanAddToMiniatureBoxDirect(NwItem? targetBox, string resref)
+    {
+        if (targetBox == null || targetBox.Tag != MiniatureStorageBoxTag)
+            return false;
+
+        LocalVariableString boxResref = targetBox.GetObjectVariable<LocalVariableString>("storagebox");
+
+        // Box can accept if empty or contains the same resource
+        return !boxResref.HasValue || boxResref.Value == "" || boxResref.Value == resref;
     }
 
     private bool RemoveFromSource(ResourceDataRecord resource, int quantity)
@@ -604,15 +745,28 @@ internal sealed class JobResourceManagerModel
     {
         if (_player.ControlledCreature?.Location == null) return false;
 
+        // Track created items so we can clean up if creation fails partway through
+        List<NwItem> createdItems = new();
+
         // Create items one at a time and acquire them
         // This handles both stackable and non-stackable items correctly
         for (int i = 0; i < quantity; i++)
         {
             NwItem? created = NwItem.Create(resref, _player.ControlledCreature.Location);
-            if (created == null) return false;
+            if (created == null)
+            {
+                // Creation failed - clean up any items we already created to maintain atomicity
+                foreach (NwItem itemToDestroy in createdItems)
+                {
+                    itemToDestroy.Destroy();
+                }
+                NWN.Core.NWScript.WriteTimestampedLogEntry($"[ERROR] Job Resource Manager: Failed to create item (resref: {resref}) for player {_player?.PlayerName ?? "Unknown"}. Created {createdItems.Count}/{quantity} before failure - cleaned up created items.");
+                return false;
+            }
 
             // Acquire the item into the player's inventory
             _player.ControlledCreature.AcquireItem(created);
+            createdItems.Add(created);
         }
 
         return true;
