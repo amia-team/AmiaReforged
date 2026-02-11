@@ -38,6 +38,7 @@
         <Folder Include="Resources\WorldEngine\Industries\" />
         <Folder Include="Features\MiniGame\LiarsDice\Nui\" />
         <Folder Include="Features\MiniGame\LiarsDice\Tests\" />
+        <Folder Include="Webpages\" />
     </ItemGroup>
 
     <ItemGroup>

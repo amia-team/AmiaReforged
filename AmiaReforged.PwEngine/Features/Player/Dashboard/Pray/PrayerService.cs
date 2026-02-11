@@ -795,18 +795,16 @@ public class PrayerService
             case "angharradh":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpGoodHelp), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 10), divineLevel);
-                // +AB vs Drow (racial type 33), +1 per 4 divine levels, capped at +6
-                int angharradhAbBonus = Math.Min(6, Math.Max(1, divineLevel / 4));
-                ApplyAttackBonusVsRaceOnWeapon(creature, player, duration, 33, angharradhAbBonus, "Drow");
+                // +AB vs Drow (racial type 33), uses consistent scaling: 1 + divineLevel/4, capped at +6
+                ApplyAttackBonusVsRaceOnWeapon(creature, player, divineLevel, 33, "Drow");
                 player?.SendServerMessage(" - +10 Persuade", ColorConstants.Cyan);
                 break;
 
             case "anhur":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpGoodHelp), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 10), divineLevel);
-                // +AB vs Reptilian, +1 per 4 divine levels, capped at +6
-                int anhurAbBonus = Math.Min(6, Math.Max(1, divineLevel / 4));
-                ApplyAttackBonusVsRaceOnWeapon(creature, player, duration, NWScript.RACIAL_TYPE_HUMANOID_REPTILIAN, anhurAbBonus, "Reptilian");
+                // +AB vs Reptilian, uses consistent scaling: 1 + divineLevel/4, capped at +6
+                ApplyAttackBonusVsRaceOnWeapon(creature, player, divineLevel, NWScript.RACIAL_TYPE_HUMANOID_REPTILIAN, "Reptilian");
                 player?.SendServerMessage(" - +10 Intimidate", ColorConstants.Cyan);
                 break;
 
@@ -1107,12 +1105,13 @@ public class PrayerService
                 break;
 
             case "eldath":
+                int eldathResist = CalculateDamageResistance(divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadNature), divineLevel, fullDuration: false);
-                ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Bludgeoning, 5), divineLevel);
-                ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Slashing, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Bludgeoning, eldathResist), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Slashing, eldathResist), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Persuade!, 5), divineLevel);
-                player?.SendServerMessage(" - 5/- Bludgeoning Resistance", ColorConstants.Cyan);
-                player?.SendServerMessage(" - 5/- Slashing Resistance", ColorConstants.Cyan);
+                player?.SendServerMessage($" - {eldathResist}/- Bludgeoning Resistance", ColorConstants.Cyan);
+                player?.SendServerMessage($" - {eldathResist}/- Slashing Resistance", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +5 Persuade", ColorConstants.Cyan);
                 break;
 
@@ -1290,9 +1289,9 @@ public class PrayerService
                 break;
 
             case "gruumsh":
-                float gruumshDuration = 300.0f + (divineLevel * 20.0f);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadEvil), divineLevel, fullDuration: false);
-                ApplyAttackBonusVsRaceOnWeapon(creature, player, gruumshDuration, (int)RacialType.Elf, 1, "Elves");
+                // +AB vs Elves, uses consistent scaling: 1 + divineLevel/4, capped at +6
+                ApplyAttackBonusVsRaceOnWeapon(creature, player, divineLevel, (int)RacialType.Elf, "Elves");
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 10), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Divine), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.Fortitude, 3), divineLevel);
@@ -1605,10 +1604,10 @@ public class PrayerService
                 break;
 
             case "lolth":
-                float lolthDuration = 300.0f + (divineLevel * 20.0f);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpEvilHelp), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.Regenerate(1, TimeSpan.FromSeconds(6.0)), divineLevel);
-                ApplyAttackBonusVsRaceOnWeapon(creature, player, lolthDuration, (int)RacialType.Elf, 1, "Elves");
+                // +AB vs Elves, uses consistent scaling: 1 + divineLevel/4, capped at +6
+                ApplyAttackBonusVsRaceOnWeapon(creature, player, divineLevel, (int)RacialType.Elf, "Elves");
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Magical), divineLevel);
                 ApplyOnHitDoomWeaponProperty(creature, player, divineLevel);
@@ -1887,12 +1886,12 @@ public class PrayerService
 
             case "savras":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadMind), divineLevel, fullDuration: false);
-                // Damage Reduction with progression: 1/+1 per 4 divine levels, capped at 5/+5
-                int savrasDRAmount = Math.Min(5, 1 + (divineLevel / 4));
-                ApplyPrayerEffectsToPCs(creature, Effect.DamageReduction(savrasDRAmount, DamagePower.Plus1 + (savrasDRAmount - 1)), divineLevel);
+                // Damage Reduction with consistent scaling: 1/+1 per 4 divine levels, capped at 5/+5
+                int savrasDrAmount = CalculateDamageReduction(divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageReduction(savrasDrAmount, DamagePower.Plus1 + (savrasDrAmount - 1)), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.Spell), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 5), divineLevel);
-                player?.SendServerMessage($" - Damage Reduction {savrasDRAmount}/+{savrasDRAmount}", ColorConstants.Cyan);
+                player?.SendServerMessage($" - Damage Reduction {savrasDrAmount}/+{savrasDrAmount}", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +3 Saves vs. Spells", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +5 Lore", ColorConstants.Cyan);
                 break;
@@ -1955,12 +1954,13 @@ public class PrayerService
                 break;
 
             case "set":
+                int setResist = CalculateDamageResistance(divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpEvilHelp), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 5), divineLevel);
-                ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Piercing, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Piercing, setResist), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Acid), divineLevel);
                 ApplyVampiricRegenerationWeaponProperty(creature, player, divineLevel, 3);
-                player?.SendServerMessage(" - 5/- Piercing Resistance", ColorConstants.Cyan);
+                player?.SendServerMessage($" - {setResist}/- Piercing Resistance", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +3 Acid Damage", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +5 Bluff", ColorConstants.Cyan);
                 break;
@@ -1990,15 +1990,16 @@ public class PrayerService
                 break;
 
             case "shargaas":
+                int shargaasResist = CalculateDamageResistance(divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpEvilHelp), divineLevel, fullDuration: false);
                 ApplyAttackBonusVsAlignmentOnWeapon(creature, player, divineLevel, IPAlignmentGroup.Good, "Good", 1);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.Good), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Bluff!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Negative), divineLevel);
-                ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Piercing, 5), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Piercing, shargaasResist), divineLevel);
                 player?.SendServerMessage(" - +3 Saves vs. Good", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +2 Negative Damage", ColorConstants.Cyan);
-                player?.SendServerMessage(" - 5/- Piercing Resistance", ColorConstants.Cyan);
+                player?.SendServerMessage($" - {shargaasResist}/- Piercing Resistance", ColorConstants.Cyan);
                 player?.SendServerMessage(" - Bluff +5", ColorConstants.Cyan);
                 break;
 
@@ -2036,10 +2037,9 @@ public class PrayerService
                 break;
 
             case "shevarash":
-                float shevarashDuration = 300.0f + (divineLevel * 20.0f);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpGoodHelp), divineLevel, fullDuration: false);
-                // Drow racial type is 33
-                ApplyAttackBonusVsRaceOnWeapon(creature, player, shevarashDuration, 33, 1, "Drow");
+                // +AB vs Drow (racial type 33), uses consistent scaling: 1 + divineLevel/4, capped at +6
+                ApplyAttackBonusVsRaceOnWeapon(creature, player, divineLevel, 33, "Drow");
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Divine), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 10), divineLevel);
                 player?.SendServerMessage(" - +2 Divine Damage", ColorConstants.Cyan);
@@ -2126,13 +2126,14 @@ public class PrayerService
                 break;
 
             case "tempus":
+                int tempusResist = CalculateDamageResistance(divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHolyAid), divineLevel, fullDuration: false);
-                int tempusTempHP = Math.Min(30, 5 + divineLevel);
-                ApplyPrayerEffectsToPCs(creature, Effect.TemporaryHitpoints(tempusTempHP), divineLevel);
-                ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Slashing, 5), divineLevel);
+                int tempusTempHp = Math.Min(30, 5 + divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.TemporaryHitpoints(tempusTempHp), divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Slashing, tempusResist), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
-                player?.SendServerMessage($" - +{tempusTempHP} Temporary HP", ColorConstants.Cyan);
-                player?.SendServerMessage(" - 5/- Slashing Resistance", ColorConstants.Cyan);
+                player?.SendServerMessage($" - +{tempusTempHp} Temporary HP", ColorConstants.Cyan);
+                player?.SendServerMessage($" - {tempusResist}/- Slashing Resistance", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +5 Intimidate", ColorConstants.Cyan);
                 break;
 
@@ -2183,6 +2184,7 @@ public class PrayerService
                 break;
 
             case "tymora":
+                int tymoraResist = CalculateDamageResistance(divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpSuperHeroism), divineLevel, fullDuration: false);
 
                 // Random blessing - no chance of nothing
@@ -2196,16 +2198,16 @@ public class PrayerService
                         ApplyAttackBonusVsAlignmentOnWeapon(creature, player, divineLevel, IPAlignmentGroup.Neutral, "Neutral");
                         break;
                     case 3:
-                        ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Bludgeoning, 5), divineLevel);
-                        player?.SendServerMessage(" - 5/- Bludgeoning Resistance", ColorConstants.Cyan);
+                        ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Bludgeoning, tymoraResist), divineLevel);
+                        player?.SendServerMessage($" - {tymoraResist}/- Bludgeoning Resistance", ColorConstants.Cyan);
                         break;
                     case 4:
-                        ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Piercing, 5), divineLevel);
-                        player?.SendServerMessage(" - 5/- Piercing Resistance", ColorConstants.Cyan);
+                        ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Piercing, tymoraResist), divineLevel);
+                        player?.SendServerMessage($" - {tymoraResist}/- Piercing Resistance", ColorConstants.Cyan);
                         break;
                     case 5:
-                        ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Slashing, 5), divineLevel);
-                        player?.SendServerMessage(" - 5/- Slashing Resistance", ColorConstants.Cyan);
+                        ApplyPrayerEffectsToPCs(creature, Effect.DamageResistance(DamageType.Slashing, tymoraResist), divineLevel);
+                        player?.SendServerMessage($" - {tymoraResist}/- Slashing Resistance", ColorConstants.Cyan);
                         break;
                     case 6:
                         ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(3, DamageType.Magical), divineLevel);
@@ -2224,11 +2226,11 @@ public class PrayerService
             case "tyr":
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpGoodHelp), divineLevel, fullDuration: false);
                 ApplyAttackBonusVsAlignmentOnWeapon(creature, player, divineLevel, IPAlignmentGroup.Evil, "Evil", 1);
-                // Damage Reduction with progression: 1/+1 per 4 divine levels, capped at 5/+5
-                int tyrDRAmount = Math.Min(5, 1 + (divineLevel / 4));
-                ApplyPrayerEffectsToPCs(creature, Effect.DamageReduction(tyrDRAmount, DamagePower.Plus1 + (tyrDRAmount - 1)), divineLevel);
+                // Damage Reduction with consistent scaling: 1/+1 per 4 divine levels, capped at 5/+5
+                int tyrDrAmount = CalculateDamageReduction(divineLevel);
+                ApplyPrayerEffectsToPCs(creature, Effect.DamageReduction(tyrDrAmount, DamagePower.Plus1 + (tyrDrAmount - 1)), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Intimidate!, 5), divineLevel);
-                player?.SendServerMessage($" - Damage Reduction {tyrDRAmount}/+{tyrDRAmount}", ColorConstants.Cyan);
+                player?.SendServerMessage($" - Damage Reduction {tyrDrAmount}/+{tyrDrAmount}", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +5 Intimidate", ColorConstants.Cyan);
                 break;
 
@@ -2307,11 +2309,10 @@ public class PrayerService
                 break;
 
             case "vandria gilmadrith":
-                float vandriaDuration = 300.0f + (divineLevel * 20.0f);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpGoodHelp), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.Evil), divineLevel);
-                // Drow racial type is 33
-                ApplyAttackBonusVsRaceOnWeapon(creature, player, vandriaDuration, 33, 1, "Drow");
+                // +AB vs Drow (racial type 33), uses consistent scaling: 1 + divineLevel/4, capped at +6
+                ApplyAttackBonusVsRaceOnWeapon(creature, player, divineLevel, 33, "Drow");
                 ApplyPrayerEffectsToPCs(creature, Effect.DamageIncrease(2, DamageType.Divine), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 5), divineLevel);
                 player?.SendServerMessage(" - +2 Divine Damage", ColorConstants.Cyan);
@@ -3961,6 +3962,7 @@ public class PrayerService
     /// <summary>
     /// Adjusts a summoned creature's effective level to match the caster's divine level.
     /// If the summon's level is higher than the divine level, applies negative levels to reduce it.
+    /// Also manually adjusts AC and attack bonus to prevent overpowered low-level summons.
     /// </summary>
     private void AdjustSummonLevelToDivineLevel(NwCreature summon, int divineLevel)
     {
@@ -3980,6 +3982,51 @@ public class PrayerService
 
         // Also set challenge rating to match divine level
         summon.ChallengeRating = divineLevel;
+
+        // --- Manually adjust AC and Attack Bonus to appropriate levels ---
+        // Calculate target stats based on divine level (reasonable progression)
+        // IMPORTANT: We only LOWER stats if they exceed the target. If the summon's base stats
+        // are already at or below the target, we leave them alone (no buffs applied).
+        // Target AC: 10 + (divineLevel / 2), capped at reasonable values
+        // Target AB: divineLevel (so at level 1, AB = 1; at level 20, AB = 20)
+
+        int targetAc = 10 + (divineLevel / 2); // Level 1 = 10, Level 10 = 15, Level 20 = 20, Level 30 = 25
+        int targetAb = divineLevel; // Level 1 = +1, Level 10 = +10, Level 20 = +20
+
+        // Cap the target values to reasonable maximums
+        targetAc = Math.Min(targetAc, 30); // Max AC of 30
+        targetAb = Math.Min(targetAb, 25); // Max AB of 25
+
+        // Get current AC (this is the total AC from the creature's stats)
+        int currentAc = summon.AC;
+
+        // Only apply AC penalty if current AC is HIGHER than target (never buff)
+        if (currentAc > targetAc)
+        {
+            int acPenalty = currentAc - targetAc;
+            Effect acReduction = Effect.ACDecrease(acPenalty);
+            acReduction.SubType = EffectSubType.Supernatural;
+            acReduction.Tag = "PrayerSummonACReduction";
+            summon.ApplyEffect(EffectDuration.Permanent, acReduction);
+        }
+        // If currentAc <= targetAc, do nothing - don't buff the summon
+
+        // Get current Base Attack Bonus
+        int currentBab = summon.BaseAttackBonus;
+
+        // Only apply AB penalty if current BAB is HIGHER than target (never buff)
+        if (currentBab > targetAb)
+        {
+            int abPenalty = currentBab - targetAb;
+            Effect abReduction = Effect.AttackDecrease(abPenalty);
+            abReduction.SubType = EffectSubType.Supernatural;
+            abReduction.Tag = "PrayerSummonABReduction";
+            summon.ApplyEffect(EffectDuration.Permanent, abReduction);
+        }
+        // If currentBab <= targetAb, do nothing - don't buff the summon
+
+        // Note: NWN doesn't have a direct way to reduce attacks per round via effects,
+        // but the attack penalty and negative levels should help reduce effectiveness.
     }
 
     /// <summary>
@@ -4339,9 +4386,16 @@ public class PrayerService
 
     /// <summary>
     /// Applies attack bonus vs a specific race as a temporary item property on all equipped weapons and gloves.
+    /// Uses level progression: 1 + (divineLevel / 4), capped at 6.
     /// </summary>
-    private void ApplyAttackBonusVsRaceOnWeapon(NwCreature creature, NwPlayer? player, float duration, int racialTypeId, int amount, string raceName)
+    private void ApplyAttackBonusVsRaceOnWeapon(NwCreature creature, NwPlayer? player, int divineLevel, int racialTypeId, string raceName)
     {
+        float duration = 300.0f + (divineLevel * 20.0f);
+
+        // Calculate bonus with level progression, capped at 6
+        int amount = 1 + (divineLevel / 4);
+        if (amount > 6) amount = 6;
+
         List<NwItem> items = GetEquippedWeaponsAndGloves(creature);
 
         if (items.Count == 0)
@@ -4398,6 +4452,53 @@ public class PrayerService
         );
 
         player?.SendServerMessage($" - +{amount} Dodge AC vs {raceName} applied to {boots.Name}", ColorConstants.Cyan);
+    }
+
+    /// <summary>
+    /// Calculates the damage resistance amount using consistent scaling.
+    /// Formula: 1 + 1 per 5 divine levels, capped at 5.
+    /// </summary>
+    private int CalculateDamageResistance(int divineLevel)
+    {
+        int amount = 1 + (divineLevel / 5);
+        return Math.Min(amount, 5);
+    }
+
+    /// <summary>
+    /// Calculates the damage shield amount using consistent scaling.
+    /// Formula: 1 + 1 per 10 divine levels.
+    /// </summary>
+    private int CalculateDamageShield(int divineLevel)
+    {
+        return 1 + (divineLevel / 10);
+    }
+
+    /// <summary>
+    /// Calculates the damage reduction amount using consistent scaling.
+    /// Formula: 1 + 1 per 4 divine levels, capped at 5.
+    /// </summary>
+    private int CalculateDamageReduction(int divineLevel)
+    {
+        int amount = 1 + (divineLevel / 4);
+        return Math.Min(amount, 5);
+    }
+
+    /// <summary>
+    /// Calculates the elemental damage immunity percentage using consistent scaling.
+    /// Formula: 3 + divineLevel / 4.
+    /// </summary>
+    private int CalculateElementalImmunity(int divineLevel)
+    {
+        return 3 + (divineLevel / 4);
+    }
+
+    /// <summary>
+    /// Calculates the damage vs alignment amount using consistent scaling.
+    /// Formula: 1 + 1 per 10 divine levels.
+    /// </summary>
+    private int CalculateDamageVsAlignment(int divineLevel)
+    {
+        return 1 + (divineLevel / 10);
     }
 
     /// <summary>
