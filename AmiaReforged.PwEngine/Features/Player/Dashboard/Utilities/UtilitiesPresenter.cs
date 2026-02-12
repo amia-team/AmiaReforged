@@ -91,23 +91,6 @@ public sealed class UtilitiesPresenter : ScryPresenter<UtilitiesView>
             return;
         }
 
-        // Check if polymorphed by iterating through active effects
-        bool isPolymorphed = false;
-        foreach (Effect effect in creature.ActiveEffects)
-        {
-            if (effect.EffectType == EffectType.Polymorph)
-            {
-                isPolymorphed = true;
-                break;
-            }
-        }
-
-        if (isPolymorphed)
-        {
-            _player.SendServerMessage("- Polymorphed characters cannot be saved. -", ColorConstants.Orange);
-            return;
-        }
-
         if (creature.IsResting)
         {
             _player.SendServerMessage("- Resting characters cannot be saved. -", ColorConstants.Orange);
