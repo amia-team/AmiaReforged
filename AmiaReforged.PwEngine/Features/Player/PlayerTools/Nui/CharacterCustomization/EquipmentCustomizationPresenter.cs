@@ -101,6 +101,13 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
     public override void ProcessEvent(ModuleEvents.OnNuiEvent ev)
     {
         if (_initializing) return;
+        
+        if (ev.EventType is NuiEventType.Click &&
+                player.ControlledCreature is { } creature && creature.ActiveEffects.Any(e => e.EffectType == EffectType.Polymorph))
+        {
+            player.SendServerMessage("Polymorphed characters cannot use Equipment Customization, sorry!", ColorConstants.Cyan);
+            return;
+        }
 
         // Handle window close event (X button)
         if (ev.EventType == NuiEventType.Close)
