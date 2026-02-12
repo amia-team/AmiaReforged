@@ -26,16 +26,29 @@ public class CasterLevelOverrideService
 
     private readonly Dictionary<NwCreature, bool> _casterLevelOverridesApplied = new();
 
-    // Base caster classes that can receive prestige class bonuses
-    private static readonly HashSet<ClassType> BaseCasterClasses = new()
+    // Mapping of prestige classes to their valid base caster classes
+    private static readonly Dictionary<ClassType, HashSet<ClassType>> PrestigeToBaseCasterMap = new()
     {
-        ClassType.Wizard,
-        ClassType.Sorcerer,
-        ClassType.Bard,
-        ClassType.Assassin,
-        ClassType.Druid,
-        ClassType.Cleric,
-        ClassType.Paladin
+        {
+            ClassType.PaleMaster,
+            new HashSet<ClassType> { ClassType.Wizard, ClassType.Sorcerer, ClassType.Bard }
+        },
+        {
+            ClassType.DragonDisciple,
+            new HashSet<ClassType> { ClassType.Sorcerer, ClassType.Bard }
+        },
+        {
+            ClassType.ArcaneArcher,
+            new HashSet<ClassType> { ClassType.Wizard, ClassType.Sorcerer, ClassType.Bard }
+        },
+        {
+            ClassType.Blackguard,
+            new HashSet<ClassType> { ClassType.Cleric, ClassType.Druid, ClassType.Ranger }
+        },
+        {
+            ClassType.DivineChampion,
+            new HashSet<ClassType> { ClassType.Cleric, ClassType.Paladin, ClassType.Druid }
+        }
     };
 
     public CasterLevelOverrideService(ShifterDcService shifterDcService)
@@ -109,43 +122,66 @@ public class CasterLevelOverrideService
         // If no prestige classes with modifiers, no override needed
         if (prestigeClasses.Count == 0) return;
 
-        // Find all base caster classes
-        List<(int level, int classConst)> baseClasses = [];
+        // Build a map of base class levels for quick lookup
+        Dictionary<ClassType, int> baseClassLevels = new();
         foreach (CreatureClassInfo charClass in casterCreature.Classes)
         {
-            if (BaseCasterClasses.Contains(charClass.Class.ClassType))
-            {
-                baseClasses.Add((charClass.Level, (int)charClass.Class.ClassType));
-            }
+            baseClassLevels[charClass.Class.ClassType] = charClass.Level;
         }
 
-        // If no base caster class, can't apply prestige bonuses
-        if (baseClasses.Count == 0)
-        {
-            Log.Warn($"Creature {casterCreature.Name} has prestige caster class but no base caster class");
-            return;
-        }
+        // Track cumulative modifiers per base class
+        Dictionary<ClassType, int> baseClassModifiers = new();
 
-        // Get the highest level base caster class (dominant caster)
-        (int baseLevel, int baseClassConst) baseClassTuple = baseClasses.OrderByDescending(c => c.level).First();
-
-        // Calculate total modifier from all prestige classes
-        int totalModifier = 0;
+        // Process each prestige class and accumulate modifiers for valid base classes
         foreach ((ClassType prcType, int prcLevel) in prestigeClasses)
         {
+            if (!PrestigeToBaseCasterMap.TryGetValue(prcType, out HashSet<ClassType>? validBaseClasses))
+            {
+                Log.Warn($"{casterCreature.Name}: No base class mapping found for prestige class {prcType}");
+                continue;
+            }
+
+            // Find the highest-level valid base class for this prestige class
+            ClassType? bestBaseClass = null;
+            int bestBaseLevel = 0;
+            foreach (ClassType validBase in validBaseClasses)
+            {
+                if (baseClassLevels.TryGetValue(validBase, out int level) && level > bestBaseLevel)
+                {
+                    bestBaseLevel = level;
+                    bestBaseClass = validBase;
+                }
+            }
+
+            if (bestBaseClass == null)
+            {
+                Log.Warn($"{casterCreature.Name}: Prestige class {prcType} has no valid base caster class");
+                continue;
+            }
+
             int modifier = _prestigeClassModifiers[prcType](prcLevel);
-            totalModifier += modifier;
-            Log.Info($"{casterCreature.Name}: Prestige class {prcType} level {prcLevel} adds modifier {modifier}");
+            Log.Info($"{casterCreature.Name}: Prestige class {prcType} level {prcLevel} adds modifier {modifier} to {bestBaseClass.Value}");
+
+            // Accumulate modifier for this base class
+            if (!baseClassModifiers.ContainsKey(bestBaseClass.Value))
+            {
+                baseClassModifiers[bestBaseClass.Value] = 0;
+            }
+            baseClassModifiers[bestBaseClass.Value] += modifier;
         }
 
-        // Calculate final caster level: base plus all prestige modifiers (minimum 1)
-        int finalCasterLevel = Math.Max(1, baseClassTuple.baseLevel + totalModifier);
+        // Apply caster level overrides to each affected base class
+        foreach ((ClassType baseClass, int totalModifier) in baseClassModifiers)
+        {
+            int baseLevel = baseClassLevels[baseClass];
+            int finalCasterLevel = Math.Max(1, baseLevel + totalModifier);
 
-        Log.Info(
-            $"{casterCreature.Name}: Setting caster level override - Base {baseClassTuple.baseLevel} + Modifier {totalModifier} = {finalCasterLevel} for class {baseClassTuple.baseClassConst}");
+            Log.Info(
+                $"{casterCreature.Name}: Setting caster level override - Base {baseLevel} + Modifier {totalModifier} = {finalCasterLevel} for class {baseClass}");
 
-        // Apply the override to the dominant base caster class
-        CreaturePlugin.SetCasterLevelOverride(casterCreature, baseClassTuple.baseClassConst, finalCasterLevel);
+            CreaturePlugin.SetCasterLevelOverride(casterCreature, (int)baseClass, finalCasterLevel);
+        }
+
         _casterLevelOverridesApplied[casterCreature] = true;
     }
 }
