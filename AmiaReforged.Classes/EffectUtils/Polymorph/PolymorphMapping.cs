@@ -257,9 +257,9 @@ public static class PolymorphMapping
     {
         public static readonly Dictionary<SpellId, PolymorphId> Standard = new()
         {
-            { 710, Polymorph.AncientRedDragon },
-            { 711, Polymorph.AncientGreenDragon },
-            { 712, Polymorph.AncientBlueDragon }
+            { 707, Polymorph.AncientRedDragon },
+            { 708, Polymorph.AncientGreenDragon },
+            { 709, Polymorph.AncientBlueDragon }
         };
     }
 
@@ -267,14 +267,14 @@ public static class PolymorphMapping
     {
         public static readonly Dictionary<SpellId, PolymorphId> Standard = new()
         {
-            { 704, Polymorph.RisenLord },
+            { 704, Polymorph.RotHarbinger },
             { 705, Polymorph.VampireMale },
             { 706, Polymorph.Spectre }
         };
 
         public static readonly Dictionary<SpellId, PolymorphId> StandardFemale = new()
         {
-            { 704, Polymorph.RisenLord },
+            { 704, Polymorph.RotHarbinger },
             { 705, Polymorph.VampireFemale },
             { 706, Polymorph.Spectre }
         };
@@ -441,7 +441,7 @@ public static class PolymorphMapping
         };
     }
 
-    public static class Polymorph
+    private static class Polymorph
     {
         public const PolymorphId RedWyrmling = 123;
         public const PolymorphId EpicRedWyrmling = 124;
@@ -544,7 +544,7 @@ public static class PolymorphMapping
         public const PolymorphId AncientRedDragon = 72;
         public const PolymorphId AncientGreenDragon = 73;
 
-        public const PolymorphId RisenLord = 159;
+        public const PolymorphId RotHarbinger = 159;
         public const PolymorphId VampireFemale = 160;
         public const PolymorphId VampireMale = 161;
         public const PolymorphId Spectre = 162;
