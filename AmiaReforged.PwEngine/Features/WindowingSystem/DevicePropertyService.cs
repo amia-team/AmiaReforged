@@ -24,4 +24,6 @@ public class DevicePropertyService
     public int GetGuiWidth(NwPlayer player) => player.GetDeviceProperty(PlayerDeviceProperty.GuiWidth);
 
     public int GetGuiHeight(NwPlayer player) => player.GetDeviceProperty(PlayerDeviceProperty.GuiHeight);
+
+    public int GetGuiScale(NwPlayer player) => player.GetDeviceProperty(PlayerDeviceProperty.GuiScale);
 }
