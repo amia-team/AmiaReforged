@@ -2,6 +2,7 @@ using System.Text;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
 using Anvil.API;
+using Anvil.API.Events;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using NLog;
@@ -19,6 +20,9 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 /// at <see cref="NwModule.Instance.StartingLocation"/> so that <see cref="NwItem.Serialize"/>
 /// can produce the binary GFF payload. The record is then updated in-place and the
 /// temporary item is destroyed.
+///
+/// Runs automatically on module load. Idempotent — re-running is safe because converted
+/// records no longer start with <c>{</c>.
 /// </summary>
 [ServiceBinding(typeof(LegacyStoredItemConversionService))]
 public sealed class LegacyStoredItemConversionService
@@ -34,6 +38,28 @@ public sealed class LegacyStoredItemConversionService
     public LegacyStoredItemConversionService(PwContextFactory contextFactory)
     {
         _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
+        NwModule.Instance.OnModuleLoad += HandleModuleLoad;
+    }
+
+    private async void HandleModuleLoad(ModuleEvents.OnModuleLoad _)
+    {
+        try
+        {
+            ConversionResult result = await RunConversionAsync();
+
+            if (result.Converted > 0 || result.Failed > 0)
+            {
+                Log.Info("Legacy stored-item conversion on module load: {Message}", result.Message);
+            }
+            else
+            {
+                Log.Debug("Legacy stored-item conversion: No legacy JSON records found.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Legacy stored-item conversion failed during module load.");
+        }
     }
 
     /// <summary>Whether a conversion run is currently in progress.</summary>
