@@ -74,7 +74,6 @@ public class DeathlessMasterTouch(DeathSpellService deathSpellService) : ISpell
 
         // Filter: Plot, Creature Size greater than Large, Non-living
         if (target.PlotFlag ||
-            target.Size > CreatureSize.Large ||
             target.Race.RacialType == RacialType.Construct ||
             target.Race.RacialType == RacialType.Ooze ||
             target.Race.RacialType == RacialType.Undead)
