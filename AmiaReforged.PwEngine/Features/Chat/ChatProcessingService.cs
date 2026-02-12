@@ -58,6 +58,7 @@ public sealed class ChatProcessingService
 
             case TalkVolume.Shout:
                 // Block player shout channel (matching original script behavior)
+                if(player.IsDM) return;
                 eventInfo.Volume = TalkVolume.SilentTalk;
                 player.SendServerMessage("Shout channel is disabled.", ColorConstants.Orange);
                 break;
