@@ -4616,7 +4616,7 @@ public class PrayerService
             if (creature.IsValid)
             {
                 // Find the PC key again in case it moved
-                NwItem? pcKeyRestore = creature.FindItemWithTag("ds_pckey");
+                NwItem? pcKeyRestore = creature.Inventory.Items.FirstOrDefault(i => i.ResRef == "ds_pckey");
                 if (pcKeyRestore != null)
                 {
                     int storedOriginal = NWScript.GetLocalInt(pcKeyRestore, "PrayerOriginalWings");

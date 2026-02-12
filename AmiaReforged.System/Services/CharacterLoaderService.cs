@@ -48,7 +48,7 @@ public class CharacterLoaderService
         if (player.IsPlayerDM) return;
 
         Log.Info($"Storing character: {player.LoginCreature?.Name}");
-        NwItem? pcKey = player.LoginCreature?.FindItemWithTag(itemTag: "ds_pckey");
+        NwItem? pcKey = player.LoginCreature?.Inventory.Items.FirstOrDefault(i => i.ResRef == "ds_pckey");
         if (pcKey is null) return;
 
 

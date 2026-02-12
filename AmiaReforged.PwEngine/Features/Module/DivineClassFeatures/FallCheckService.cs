@@ -159,7 +159,7 @@ public class FallCheckService
             return true;
 
         // If the caster has no PCKey (AKA is an NPC), don't block
-        if (caster.FindItemWithTag("ds_pckey") == null)
+        if (caster.Inventory.Items.FirstOrDefault(i => i.ResRef == "ds_pckey") == null)
             return true;
 
         // DMs aren't blocked

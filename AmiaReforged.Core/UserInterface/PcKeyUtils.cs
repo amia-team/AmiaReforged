@@ -10,7 +10,7 @@ public static class PcKeyUtils
     public static Guid GetPcKey(NwPlayer player)
     {
         Log.Info($"{player.PlayerName}");
-        NwItem? pcKey = player.LoginCreature?.FindItemWithTag("ds_pckey");
+        NwItem? pcKey = player.LoginCreature?.Inventory.Items.FirstOrDefault(i => i.ResRef == "ds_pckey");
         if (pcKey == null)
         {
             return Guid.Empty;

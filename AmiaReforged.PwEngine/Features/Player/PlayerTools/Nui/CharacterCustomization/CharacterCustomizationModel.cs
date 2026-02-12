@@ -769,7 +769,7 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
 
     private void ClearBackupFromPcKey()
     {
-        NwItem? pcKey = player.LoginCreature?.FindItemWithTag("ds_pckey");
+        NwItem? pcKey = player.LoginCreature?.Inventory.Items.FirstOrDefault(i => i.ResRef == "ds_pckey");
         if (pcKey != null && pcKey.IsValid)
         {
             NWScript.DeleteLocalString(pcKey, BackupDataKey);
