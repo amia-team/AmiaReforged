@@ -101,6 +101,10 @@ public sealed class AcpPresenter : ScryPresenter<AcpView>
         int sorcLevels = creature.GetClassInfo(ClassType.Sorcerer)?.Level ?? 0;
         if (sorcLevels >= 5) return true;
 
+        // Check Warlock levels (6+)
+        int warlockLevels = creature.GetClassInfo(NwClass.FromClassId(57))?.Level ?? 0;
+        if (warlockLevels >= 6) return true;
+
         // Check Wizard levels (5+)
         int wizLevels = creature.GetClassInfo(ClassType.Wizard)?.Level ?? 0;
         if (wizLevels >= 5) return true;
