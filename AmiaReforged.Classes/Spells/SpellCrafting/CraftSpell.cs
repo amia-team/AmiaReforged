@@ -49,9 +49,6 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         // Validate ClassIndex is within bounds
         if (eventData.ClassIndex < 0 || eventData.ClassIndex >= caster.Classes.Count) return;
 
-        if (targetItem.BaseItem.ItemType is not
-            (BaseItemType.BlankScroll or BaseItemType.BlankWand or BaseItemType.BlankPotion)) return;
-
         if (caster.Inventory.Items.All(item => item != targetItem))
         {
             player.SendServerMessage($"Spell craft failed! {targetItem.Name} must be in your inventory.");

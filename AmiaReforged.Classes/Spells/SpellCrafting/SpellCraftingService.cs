@@ -17,8 +17,10 @@ public class SpellCraftingService
 
     private static void CraftSpell(OnSpellCast eventData)
     {
-        if (eventData.TargetObject is not NwItem targetItem) return;
-        if (eventData.Spell is not { } spell) return;
+        if (eventData.TargetObject is not NwItem targetItem
+            || targetItem.BaseItem.ItemType is not
+                (BaseItemType.BlankScroll or BaseItemType.BlankWand or BaseItemType.BlankPotion)
+            || eventData.Spell is not { } spell) return;
 
         CraftSpell craftSpell = new(eventData, spell, targetItem);
         craftSpell.DoCraftSpell();
