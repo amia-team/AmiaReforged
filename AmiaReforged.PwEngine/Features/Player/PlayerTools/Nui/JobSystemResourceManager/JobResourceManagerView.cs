@@ -7,7 +7,7 @@ namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.JobSystemResourc
 public sealed class JobResourceManagerView : ScryView<JobResourceManagerPresenter>, IToolWindow
 {
     private const float WindowW = 660f;
-    private const float WindowH = 675f;
+    private const float WindowH = 705f;
     private const float HeaderW = 600f;
     private const float HeaderH = 80f;
     private const float HeaderTopPad = 4f;
@@ -25,6 +25,7 @@ public sealed class JobResourceManagerView : ScryView<JobResourceManagerPresente
     // Control buttons
     public NuiButtonImage RefreshButton = null!;
     public NuiButtonImage CloseButton = null!;
+    public NuiButtonImage RetrieveMaterialsButton = null!;
 
     // IToolWindow implementation
     public string Id => "job_resource_manager";
@@ -209,7 +210,16 @@ public sealed class JobResourceManagerView : ScryView<JobResourceManagerPresente
                         }
                     }
                 },
-                new NuiSpacer { Height = 4f },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 280f },
+                        ImageButton("btn_retrieve_materials", "Retrieve job materials from a container", out RetrieveMaterialsButton, 30f, 30f, "nui_pick"),
+
+                    }
+                },
+
                 headerRow,
                 new NuiSpacer { Height = 4f },
                 new NuiRow
@@ -245,8 +255,9 @@ public sealed class JobResourceManagerView : ScryView<JobResourceManagerPresente
         {
             Children =
             {
+                new NuiSpacer { Width = 140f },
                 ImagePlatedLabeledButton("btn_refresh", "", out RefreshButton, "ui_btn_save"),
-                new NuiSpacer { Width = 20f },
+                new NuiSpacer { Width = 10f },
                 ImagePlatedLabeledButton("btn_close", "", out CloseButton, "ui_btn_cancel")
             }
         };

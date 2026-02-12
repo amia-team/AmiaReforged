@@ -19,6 +19,7 @@ internal enum ResourceTransferDestination
     SelfMerchantBox,
     OtherPlayerMerchantBox,
     MiniatureBox,
-    Inventory
+    Inventory,
+    PlcContainer
 }
 

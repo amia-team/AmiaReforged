@@ -73,9 +73,10 @@ internal sealed class JobResourceManagerModel
     }
 
     /// <summary>
-    /// Checks if an inventory item should be blacklisted from the resource list
+    /// Checks if an inventory item should be blacklisted from the resource list.
+    /// Public so it can be reused for PLC retrieval validation.
     /// </summary>
-    private static bool IsInventoryItemBlacklisted(string resref)
+    public static bool IsInventoryItemBlacklisted(string resref)
     {
         // Check specific blacklist
         if (InventoryBlacklist.Contains(resref))
@@ -96,6 +97,45 @@ internal sealed class JobResourceManagerModel
         // Check js_tai_ pattern (exclude all except exceptions)
         if (resref.StartsWith("js_tai_"))
             return !TailoringExceptions.Contains(resref);
+
+        return false;
+    }
+
+    /// <summary>
+    /// Checks if a resref is a valid job resource that can be managed.
+    /// </summary>
+    public static bool IsValidJobResource(string resref)
+    {
+        // Must start with job system prefix
+        if (!resref.StartsWith(JobResourcePrefix))
+            return false;
+
+        // Must not be blacklisted
+        if (IsInventoryItemBlacklisted(resref))
+            return false;
+
+        return true;
+    }
+
+    /// <summary>
+    /// Checks if any other player (besides the current player) is within the specified distance of a placeable.
+    /// </summary>
+    public bool IsOtherPlayerNearby(NwPlaceable plc, float distance)
+    {
+        if (plc.Area == null) return false;
+
+        foreach (NwCreature creature in plc.Area.FindObjectsOfTypeInArea<NwCreature>())
+        {
+            // Skip non-player creatures
+            if (!creature.IsPlayerControlled) continue;
+
+            // Skip the current player
+            if (creature.ControllingPlayer == _player) continue;
+
+            // Check distance
+            if (creature.Distance(plc) <= distance)
+                return true;
+        }
 
         return false;
     }
@@ -282,14 +322,15 @@ internal sealed class JobResourceManagerModel
     /// Transfers a resource from one location to another
     /// </summary>
     public bool TransferResource(ResourceDataRecord resource, int quantity,
-        ResourceTransferDestination destination, NwPlayer? targetPlayer = null, int targetBoxIndex = -1, NwItem? targetMiniatureBox = null)
+        ResourceTransferDestination destination, NwPlayer? targetPlayer = null, int targetBoxIndex = -1,
+        NwItem? targetMiniatureBox = null, NwPlaceable? targetPlc = null)
     {
         if (quantity <= 0 || quantity > resource.Quantity)
             return false;
 
         // IMPORTANT: Validate destination can accept the items BEFORE removing from source
         // This prevents item loss if the destination validation fails
-        if (!CanAddToDestination(resource.Resref, destination, targetPlayer, targetMiniatureBox))
+        if (!CanAddToDestination(resource.Resref, destination, targetPlayer, targetMiniatureBox, targetPlc))
             return false;
 
         // Remove from source
@@ -297,7 +338,7 @@ internal sealed class JobResourceManagerModel
             return false;
 
         // Add to destination (should succeed since we pre-validated)
-        if (!AddToDestination(resource.Resref, resource.Name, quantity, destination, targetPlayer, targetBoxIndex, targetMiniatureBox))
+        if (!AddToDestination(resource.Resref, resource.Name, quantity, destination, targetPlayer, targetBoxIndex, targetMiniatureBox, targetPlc))
         {
             // Rollback: add back to source
             if (!AddBackToSource(resource, quantity))
@@ -317,7 +358,7 @@ internal sealed class JobResourceManagerModel
     /// This prevents item loss when destination validation fails after source removal.
     /// </summary>
     private bool CanAddToDestination(string resref, ResourceTransferDestination destination,
-        NwPlayer? targetPlayer, NwItem? targetMiniatureBox)
+        NwPlayer? targetPlayer, NwItem? targetMiniatureBox, NwPlaceable? targetPlc = null)
     {
         switch (destination)
         {
@@ -329,6 +370,8 @@ internal sealed class JobResourceManagerModel
                 return CanAddToMiniatureBoxDirect(targetMiniatureBox, resref);
             case ResourceTransferDestination.Inventory:
                 return CanAddToInventory(resref);
+            case ResourceTransferDestination.PlcContainer:
+                return CanAddToPlcContainer(targetPlc);
             default:
                 return false;
         }
@@ -448,6 +491,14 @@ internal sealed class JobResourceManagerModel
         return !boxResref.HasValue || boxResref.Value == "" || boxResref.Value == resref;
     }
 
+    /// <summary>
+    /// Validates that items can be added to a PLC container.
+    /// </summary>
+    private bool CanAddToPlcContainer(NwPlaceable? plc)
+    {
+        return plc != null && plc.HasInventory;
+    }
+
     private bool RemoveFromSource(ResourceDataRecord resource, int quantity)
     {
         switch (resource.Source)
@@ -560,7 +611,8 @@ internal sealed class JobResourceManagerModel
     }
 
     private bool AddToDestination(string resref, string name, int quantity,
-        ResourceTransferDestination destination, NwPlayer? targetPlayer, int targetBoxIndex, NwItem? targetMiniatureBox)
+        ResourceTransferDestination destination, NwPlayer? targetPlayer, int targetBoxIndex,
+        NwItem? targetMiniatureBox, NwPlaceable? targetPlc = null)
     {
         switch (destination)
         {
@@ -575,6 +627,8 @@ internal sealed class JobResourceManagerModel
                 return AddToMiniatureBox(targetBoxIndex, resref, name, quantity);
             case ResourceTransferDestination.Inventory:
                 return AddToInventory(resref, name, quantity);
+            case ResourceTransferDestination.PlcContainer:
+                return AddToPlcContainer(targetPlc, resref, name, quantity);
             default:
                 return false;
         }
@@ -772,6 +826,37 @@ internal sealed class JobResourceManagerModel
         return true;
     }
 
+    /// <summary>
+    /// Adds items to a PLC container.
+    /// </summary>
+    private bool AddToPlcContainer(NwPlaceable? plc, string resref, string name, int quantity)
+    {
+        if (plc == null || !plc.HasInventory || plc.Location == null) return false;
+
+        // Track created items so we can clean up if creation fails partway through
+        List<NwItem> createdItems = new();
+
+        for (int i = 0; i < quantity; i++)
+        {
+            NwItem? created = NwItem.Create(resref, plc.Location);
+            if (created == null)
+            {
+                // Creation failed - clean up any items we already created
+                foreach (NwItem itemToDestroy in createdItems)
+                {
+                    itemToDestroy.Destroy();
+                }
+                NWN.Core.NWScript.WriteTimestampedLogEntry($"[ERROR] Job Resource Manager: Failed to create item (resref: {resref}) for PLC transfer. Created {createdItems.Count}/{quantity} before failure.");
+                return false;
+            }
+
+            plc.AcquireItem(created);
+            createdItems.Add(created);
+        }
+
+        return true;
+    }
+
     private bool AddBackToSource(ResourceDataRecord resource, int quantity)
     {
         // Rollback operation - add back to original source
@@ -850,6 +935,201 @@ internal sealed class JobResourceManagerModel
     public int GetLastOtherPlayerBoxIndex()
     {
         return _lastOtherPlayerBoxIndex;
+    }
+
+    /// <summary>
+    /// Result of retrieving resources from a PLC container.
+    /// </summary>
+    public record RetrieveFromPlcResult(
+        int TotalItemsRetrieved,
+        int ItemsToMerchantBox,
+        int ItemsToMiniatureBox,
+        int ItemsToInventory,
+        List<string> Errors);
+
+    /// <summary>
+    /// Retrieves all valid job resources from a PLC container into the player's storage.
+    /// Priority: Merchant Box (if player is merchant) -> Miniature Storage Boxes -> Inventory (capped at 100 total)
+    /// </summary>
+    public RetrieveFromPlcResult RetrieveResourcesFromPlc(NwPlaceable plc)
+    {
+        const int MaxInventoryItems = 100;
+
+        int totalRetrieved = 0;
+        int toMerchantBox = 0;
+        int toMiniatureBox = 0;
+        int toInventory = 0;
+        int inventoryCapRemaining = MaxInventoryItems; // Track remaining capacity for inventory transfers
+        List<string> errors = new();
+
+        if (plc.Inventory == null)
+        {
+            errors.Add("Container has no inventory.");
+            return new RetrieveFromPlcResult(0, 0, 0, 0, errors);
+        }
+
+        // Refresh job journal reference
+        _jobJournal = FindJobJournal();
+        bool isMerchant = IsMerchant();
+
+        // Group items by resref
+        Dictionary<string, List<NwItem>> itemsByResref = new();
+        foreach (NwItem item in plc.Inventory.Items.ToList())
+        {
+            if (!IsValidJobResource(item.ResRef))
+                continue;
+
+            if (!itemsByResref.ContainsKey(item.ResRef))
+                itemsByResref[item.ResRef] = new List<NwItem>();
+
+            itemsByResref[item.ResRef].Add(item);
+        }
+
+        foreach (var kvp in itemsByResref)
+        {
+            string resref = kvp.Key;
+            List<NwItem> items = kvp.Value;
+            string itemName = items.First().Name;
+            int totalQuantity = items.Sum(i => i.StackSize);
+            int remaining = totalQuantity;
+
+            // Priority 1: Merchant Box (if player is merchant and has matching or empty slot)
+            if (isMerchant && remaining > 0)
+            {
+                int? existingBoxIndex = FindMerchantBoxWithResourceIndex(resref);
+                if (existingBoxIndex.HasValue)
+                {
+                    // Add to existing merchant box
+                    AddToMerchantBoxAtIndex(existingBoxIndex.Value, resref, itemName, remaining);
+                    toMerchantBox += remaining;
+                    totalRetrieved += remaining;
+                    remaining = 0;
+                }
+                else
+                {
+                    // Try to find an empty slot
+                    int? emptySlot = FindEmptyMerchantBoxSlot();
+                    if (emptySlot.HasValue)
+                    {
+                        AddToMerchantBoxAtIndex(emptySlot.Value, resref, itemName, remaining);
+                        toMerchantBox += remaining;
+                        totalRetrieved += remaining;
+                        remaining = 0;
+                    }
+                }
+            }
+
+            // Priority 2: Miniature Storage Box with matching resource
+            if (remaining > 0)
+            {
+                NwItem? matchingBox = FindMiniatureBoxWithResource(resref);
+                if (matchingBox != null)
+                {
+                    AddToMiniatureBoxDirect(matchingBox, resref, itemName, remaining);
+                    toMiniatureBox += remaining;
+                    totalRetrieved += remaining;
+                    remaining = 0;
+                }
+            }
+
+            // Priority 3: Inventory (capped at 100 total items across all resource types)
+            if (remaining > 0 && inventoryCapRemaining > 0)
+            {
+                int toTransfer = Math.Min(remaining, inventoryCapRemaining);
+                if (AddToInventory(resref, itemName, toTransfer))
+                {
+                    toInventory += toTransfer;
+                    totalRetrieved += toTransfer;
+                    remaining -= toTransfer;
+                    inventoryCapRemaining -= toTransfer;
+                }
+                else
+                {
+                    errors.Add($"Failed to add {itemName} to inventory.");
+                }
+            }
+
+            // Report items that couldn't be transferred due to inventory cap
+            if (remaining > 0 && inventoryCapRemaining <= 0)
+            {
+                errors.Add($"{remaining} {itemName} left in container (inventory limit reached).");
+            }
+
+            // Destroy the source items from the PLC (only the ones we successfully transferred)
+            int quantityToDestroy = totalQuantity - remaining;
+            int destroyed = 0;
+            foreach (NwItem item in items)
+            {
+                if (destroyed >= quantityToDestroy) break;
+
+                if (item.StackSize <= (quantityToDestroy - destroyed))
+                {
+                    destroyed += item.StackSize;
+                    item.Destroy();
+                }
+                else
+                {
+                    int toRemove = quantityToDestroy - destroyed;
+                    item.StackSize -= toRemove;
+                    destroyed += toRemove;
+                }
+            }
+        }
+
+        return new RetrieveFromPlcResult(totalRetrieved, toMerchantBox, toMiniatureBox, toInventory, errors);
+    }
+
+    /// <summary>
+    /// Finds the index of a merchant box containing the specified resource, or null if not found.
+    /// </summary>
+    private int? FindMerchantBoxWithResourceIndex(string resref)
+    {
+        if (_jobJournal == null) return null;
+
+        int maxBoxes = GetMaxMerchantBoxes();
+        for (int i = 1; i <= maxBoxes; i++)
+        {
+            LocalVariableString boxResref = _jobJournal.GetObjectVariable<LocalVariableString>($"storagebox{i}");
+            if (boxResref.HasValue && boxResref.Value == resref)
+                return i;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Finds the first empty merchant box slot, or null if none available.
+    /// </summary>
+    private int? FindEmptyMerchantBoxSlot()
+    {
+        if (_jobJournal == null) return null;
+
+        int maxBoxes = GetMaxMerchantBoxes();
+        for (int i = 1; i <= maxBoxes; i++)
+        {
+            LocalVariableString boxResref = _jobJournal.GetObjectVariable<LocalVariableString>($"storagebox{i}");
+            if (!boxResref.HasValue || boxResref.Value == "")
+                return i;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Finds a miniature storage box in the player's inventory that contains the specified resource.
+    /// </summary>
+    private NwItem? FindMiniatureBoxWithResource(string resref)
+    {
+        if (_player.ControlledCreature == null) return null;
+
+        foreach (NwItem item in _player.ControlledCreature.Inventory.Items)
+        {
+            if (item.Tag == MiniatureStorageBoxTag)
+            {
+                LocalVariableString boxResref = item.GetObjectVariable<LocalVariableString>("storagebox");
+                if (boxResref.HasValue && boxResref.Value == resref)
+                    return item;
+            }
+        }
+        return null;
     }
 }
 

@@ -8,6 +8,9 @@ namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.JobSystemResourc
 
 public sealed class JobResourceManagerPresenter : ScryPresenter<JobResourceManagerView>
 {
+    private const float NearbyPlayerCheckDistance = 5f;
+    private const int MaxTransferToContainer = 1000;
+
     public override JobResourceManagerView View { get; }
 
     private readonly NwPlayer _player;
@@ -34,7 +37,7 @@ public sealed class JobResourceManagerPresenter : ScryPresenter<JobResourceManag
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(300f, 100f, 660f, 675f),
+            Geometry = new NuiRect(300f, 100f, 660f, 705f),
             Resizable = true,
         };
 
@@ -167,10 +170,10 @@ public sealed class JobResourceManagerPresenter : ScryPresenter<JobResourceManag
                 }
 
                 // Enter targeting mode
-                _player.SendServerMessage("Select transfer destination: yourself for Merchant box, another player, or a miniature storage box item.", new Color(0, 255, 255));
+                _player.SendServerMessage("Select transfer destination: yourself for Merchant box, another player, a miniature storage box, or a container PLC.", new Color(0, 255, 255));
                 _player.EnterTargetMode(OnTransferTargetSelected, new TargetModeSettings
                 {
-                    ValidTargets = ObjectTypes.Creature | ObjectTypes.Item
+                    ValidTargets = ObjectTypes.Creature | ObjectTypes.Item | ObjectTypes.Placeable
                 });
                 return;
             }
@@ -218,6 +221,17 @@ public sealed class JobResourceManagerPresenter : ScryPresenter<JobResourceManag
                 {
                     _player.SendServerMessage("Transfer failed.", new Color(255, 0, 0));
                 }
+                return;
+            }
+
+            // Retrieve Materials button - enter targeting mode for PLC selection
+            if (ev.ElementId == "btn_retrieve_materials")
+            {
+                _player.SendServerMessage("Select a container to retrieve job materials from.", new Color(0, 255, 255));
+                _player.EnterTargetMode(OnRetrieveMaterialsTargetSelected, new TargetModeSettings
+                {
+                    ValidTargets = ObjectTypes.Placeable
+                });
                 return;
             }
 
@@ -279,6 +293,13 @@ public sealed class JobResourceManagerPresenter : ScryPresenter<JobResourceManag
 
             // Case 2b: Other player
             HandleOtherPlayerTransfer(resource, quantity, targetPlayer);
+            return;
+        }
+
+        // Case 3: Targeting a placeable (container)
+        if (targetEvent.TargetObject is NwPlaceable targetPlc)
+        {
+            HandlePlcContainerTransfer(resource, quantity, targetPlc);
             return;
         }
 
@@ -407,6 +428,95 @@ public sealed class JobResourceManagerPresenter : ScryPresenter<JobResourceManag
         else
         {
             _player.SendServerMessage("Transfer failed. The box may already contain a different resource.", new Color(255, 0, 0));
+        }
+    }
+
+    private void OnRetrieveMaterialsTargetSelected(ModuleEvents.OnPlayerTarget targetEvent)
+    {
+        if (targetEvent.TargetObject is not NwPlaceable targetPlc)
+        {
+            _player.SendServerMessage("You must select a placeable container.", new Color(255, 0, 0));
+            return;
+        }
+
+        // Check if the placeable has an inventory
+        if (!targetPlc.HasInventory)
+        {
+            _player.SendServerMessage("This placeable does not have an inventory. Select a container with storage.", new Color(255, 0, 0));
+            return;
+        }
+
+        // Check for other players nearby
+        if (_model.IsOtherPlayerNearby(targetPlc, NearbyPlayerCheckDistance))
+        {
+            _player.SendServerMessage("You cannot retrieve items while other players are within 5 meters of the container.", new Color(255, 0, 0));
+            return;
+        }
+
+        // Retrieve all valid resources
+        var result = _model.RetrieveResourcesFromPlc(targetPlc);
+
+        if (result.TotalItemsRetrieved == 0)
+        {
+            _player.SendServerMessage("No job materials found in this container.", new Color(255, 165, 0));
+            return;
+        }
+
+        // Build result message
+        List<string> destinations = new();
+        if (result.ItemsToMerchantBox > 0)
+            destinations.Add($"{result.ItemsToMerchantBox} to Merchant Box");
+        if (result.ItemsToMiniatureBox > 0)
+            destinations.Add($"{result.ItemsToMiniatureBox} to Miniature Storage");
+        if (result.ItemsToInventory > 0)
+            destinations.Add($"{result.ItemsToInventory} to Inventory");
+
+        string message = $"Retrieved {result.TotalItemsRetrieved} items: {string.Join(", ", destinations)}.";
+        _player.SendServerMessage(message, new Color(0, 255, 0));
+
+        // Report any errors
+        foreach (string error in result.Errors)
+        {
+            _player.SendServerMessage($"Warning: {error}", new Color(255, 165, 0));
+        }
+
+        DelayedRefresh();
+    }
+
+    private void HandlePlcContainerTransfer(ResourceDataRecord resource, int quantity, NwPlaceable targetPlc)
+    {
+        // Check if the placeable has an inventory
+        if (!targetPlc.HasInventory)
+        {
+            _player.SendServerMessage("This placeable does not have an inventory. Select a container with storage.", new Color(255, 0, 0));
+            return;
+        }
+
+        // Check for other players nearby
+        if (_model.IsOtherPlayerNearby(targetPlc, NearbyPlayerCheckDistance))
+        {
+            _player.SendServerMessage("You cannot transfer items while other players are within 5 meters of the container.", new Color(255, 0, 0));
+            return;
+        }
+
+        // Cap quantity at 100
+        int actualQuantity = quantity;
+        if (quantity > MaxTransferToContainer)
+        {
+            _player.SendServerMessage($"You can only transfer {MaxTransferToContainer} items to a container at a time. Transferring {MaxTransferToContainer}.", new Color(255, 165, 0));
+            actualQuantity = MaxTransferToContainer;
+        }
+
+        // Perform the transfer
+        if (_model.TransferResource(resource, actualQuantity, ResourceTransferDestination.PlcContainer, targetPlc: targetPlc))
+        {
+            _player.SendServerMessage($"Transferred {actualQuantity} {resource.Name} to the container.", new Color(0, 255, 0));
+            _selectedResourceIndex = -1;
+            DelayedRefresh();
+        }
+        else
+        {
+            _player.SendServerMessage("Transfer failed.", new Color(255, 0, 0));
         }
     }
 
