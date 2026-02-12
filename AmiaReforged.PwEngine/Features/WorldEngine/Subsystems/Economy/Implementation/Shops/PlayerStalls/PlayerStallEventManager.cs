@@ -1560,7 +1560,12 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         string? originalName = _renameService.GetOriginalName(item);
         string displayName = string.IsNullOrWhiteSpace(originalName) ? item.Name : originalName.Trim();
 
-        byte[] itemData = item.Serialize();
+        // Serialize as JSON (consistent with NPC shop system and legacy records).
+        // Avoids the native GFF binary format which can crash the engine when
+        // legacy JSON records are later fed into NwItem.Deserialize.
+        Json serialized = NWScript.ObjectToJson(item);
+        string payload = serialized.Dump();
+        byte[] itemData = Encoding.UTF8.GetBytes(payload);
 
         List<StallProduct> existingProducts = _shops.ProductsForShop(request.StallId) ?? new List<StallProduct>();
         int sortOrder = existingProducts.Count == 0 ? 0 : existingProducts.Max(p => p.SortOrder) + 1;
@@ -2417,8 +2422,9 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
     }
 
     /// <summary>
-    /// Deserializes an item from byte data. Handles both binary GFF format (preferred)
-    /// and legacy JSON format for backward compatibility with existing database records.
+    /// Deserializes an item from byte data. Tries JSON first (the standard format for
+    /// both new and legacy records), then falls back to binary GFF for any records written
+    /// during the brief transition window when the stall system used <c>item.Serialize()</c>.
     /// </summary>
     /// <param name="itemData">The serialized item data.</param>
     /// <param name="location">The location where the item should be created.</param>
@@ -2430,26 +2436,49 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             return null;
         }
 
-        // Try binary GFF deserialization first (preferred format)
-        NwItem? item = NwItem.Deserialize(itemData);
-        if (item is { IsValid: true })
+        // Sniff the first byte to determine the likely format.
+        // JSON payloads always start with '{' (0x7B).
+        // Binary GFF starts with a 4-char type identifier (e.g. "UTI ").
+        bool looksLikeJson = itemData[0] == 0x7B; // '{'
+
+        if (looksLikeJson)
         {
-            Log.Info("Deserialized item {ItemName} using binary GFF format.", item.Name);
-            item.Location = location;
-            return item;
+            try
+            {
+                string jsonText = Encoding.UTF8.GetString(itemData);
+                Json json = Json.Parse(jsonText);
+                NwItem? item = json.ToNwObject<NwItem>(location);
+                if (item is { IsValid: true })
+                {
+                    return item;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(ex, "JSON deserialization failed for item data that looked like JSON. Trying binary GFF.");
+            }
         }
 
-        // Fall back to legacy JSON deserialization for existing database records
+        // Binary GFF fallback — only attempt if data does NOT look like JSON,
+        // or if JSON parsing unexpectedly failed above.
         try
         {
-            string jsonText = Encoding.UTF8.GetString(itemData);
-            Json json = Json.Parse(jsonText);
-            return json.ToNwObject<NwItem>(location);
+            NwItem? item = NwItem.Deserialize(itemData);
+            if (item is { IsValid: true })
+            {
+                Log.Info("Deserialized item {ItemName} using binary GFF format.", item.Name);
+                item.Location = location;
+                return item;
+            }
         }
-        catch
+        catch (Exception ex)
         {
-            return null;
+            Log.Warn(ex, "Binary GFF deserialization also failed.");
         }
+
+        Log.Error("All deserialization attempts failed for item data ({ByteCount} bytes, first byte 0x{FirstByte:X2}).",
+            itemData.Length, itemData[0]);
+        return null;
     }
 
     private static async Task<string> ResolveBuyerDisplayNameAsync(NwCreature creature, NwPlayer player)
