@@ -31,7 +31,7 @@ public class CasterLevelOverrideService
     {
         {
             ClassType.PaleMaster,
-            new HashSet<ClassType> { ClassType.Wizard, ClassType.Sorcerer, ClassType.Bard }
+            new HashSet<ClassType> { ClassType.Wizard, ClassType.Sorcerer, ClassType.Bard, ClassType.Assassin }
         },
         {
             ClassType.DragonDisciple,
@@ -39,7 +39,7 @@ public class CasterLevelOverrideService
         },
         {
             ClassType.ArcaneArcher,
-            new HashSet<ClassType> { ClassType.Wizard, ClassType.Sorcerer, ClassType.Bard }
+            new HashSet<ClassType> { ClassType.Wizard, ClassType.Sorcerer, ClassType.Bard, ClassType.Assassin }
         },
         {
             ClassType.Blackguard,
@@ -47,7 +47,7 @@ public class CasterLevelOverrideService
         },
         {
             ClassType.DivineChampion,
-            new HashSet<ClassType> { ClassType.Cleric, ClassType.Paladin, ClassType.Druid }
+            new HashSet<ClassType> { ClassType.Cleric, ClassType.Paladin, ClassType.Druid, ClassType.Blackguard }
         }
     };
 
