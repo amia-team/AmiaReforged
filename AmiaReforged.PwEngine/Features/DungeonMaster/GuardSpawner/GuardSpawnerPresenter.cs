@@ -236,8 +236,9 @@ public sealed class GuardSpawnerPresenter : ScryPresenter<GuardSpawnerView>
 
     public override void Close()
     {
+        // Don't call RaiseCloseEvent() here - it causes infinite recursion
+        // The WindowDirector handles cleanup when CloseWindow() is called
         Token().Close();
-        RaiseCloseEvent();
     }
 }
 
