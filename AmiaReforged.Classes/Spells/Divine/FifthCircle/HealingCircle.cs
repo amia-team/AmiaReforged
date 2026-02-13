@@ -29,29 +29,26 @@ public class HealingCircle(ShifterDcService shifterDcService) : ISpell
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
-        if (eventData.Caster == null || eventData.TargetLocation == null) return;
+        if (eventData.Caster is not NwCreature casterCreature || eventData.TargetLocation == null) return;
 
         int casterLevel = eventData.Caster.CasterLevel;
         int dc = eventData.SaveDC;
         int dice = 5;
 
-        if (eventData.Caster is NwCreature casterCreature)
-        {
-            casterLevel = shifterDcService.GetShifterCasterLevel(casterCreature, casterLevel);
-            dc = shifterDcService.GetShifterDc(casterCreature, dc);
+        casterLevel = shifterDcService.GetShifterCasterLevel(casterCreature, casterLevel);
+        dc = shifterDcService.GetShifterDc(casterCreature, dc);
 
-            if (casterCreature.KnowsFeat(Feat.EpicSpellFocusConjuration!))
-            {
-                dice += 3;
-            }
-            else if (casterCreature.KnowsFeat(Feat.GreaterSpellFocusConjuration!))
-            {
-                dice += 2;
-            }
-            else if (casterCreature.KnowsFeat(Feat.SpellFocusConjuration!))
-            {
-                dice += 1;
-            }
+        if (casterCreature.KnowsFeat(Feat.EpicSpellFocusConjuration!))
+        {
+            dice += 3;
+        }
+        else if (casterCreature.KnowsFeat(Feat.GreaterSpellFocusConjuration!))
+        {
+            dice += 2;
+        }
+        else if (casterCreature.KnowsFeat(Feat.SpellFocusConjuration!))
+        {
+            dice += 1;
         }
 
         Effect healVfx = Effect.VisualEffect(VfxType.ImpHealingM);
@@ -65,22 +62,18 @@ public class HealingCircle(ShifterDcService shifterDcService) : ISpell
         {
             if (targetCreature.Race.RacialType == RacialType.Undead)
             {
+                if (casterCreature.IsReactionTypeFriendly(targetCreature)) continue;
+
                 CreatureEvents.OnSpellCastAt.Signal(eventData.Caster, targetCreature, eventData.Spell);
-                
+
                 if (ResistedSpell)
                     continue;
 
                 _ = ApplyDamage(eventData.Caster, targetCreature, damageVfx, dc, casterLevel, dice, eventData.MetaMagicFeat);
                 continue;
             }
-
-            if (eventData.Caster is NwCreature caster)
-            {
-                if (!targetCreature.IsReactionTypeFriendly(caster) || caster != targetCreature)
-                    continue;
-            }
-
-            _ = ApplyHeal(eventData.Caster, targetCreature, healVfx, casterLevel, dice, eventData.MetaMagicFeat);
+            if (!casterCreature.IsReactionTypeHostile(targetCreature))
+                _ = ApplyHeal(eventData.Caster, targetCreature, healVfx, casterLevel, dice, eventData.MetaMagicFeat);
         }
     }
 
