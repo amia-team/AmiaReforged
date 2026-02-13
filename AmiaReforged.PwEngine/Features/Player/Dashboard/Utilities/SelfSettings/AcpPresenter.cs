@@ -150,6 +150,14 @@ public sealed class AcpPresenter : ScryPresenter<AcpView>
         int targetPhenotype = Token().GetBindValue(View.StyleSelected);
         int currentPhenotype = (int)creature.Phenotype;
 
+        // Check if resetting to normal (phenotype 0) - always allow this
+        if (targetPhenotype == 0)
+        {
+            creature.Phenotype = (Phenotype)0;
+            _player.SendServerMessage("Fighting style reset to normal.", ColorConstants.Cyan);
+            return;
+        }
+
         // Check if already using this style
         if (currentPhenotype == targetPhenotype)
         {
@@ -157,42 +165,14 @@ public sealed class AcpPresenter : ScryPresenter<AcpView>
             return;
         }
 
-        // Check if phenotype is 2 (too fat)
+        // If phenotype is 2 (fat), reset to normal first before applying new style
         if (currentPhenotype == 2)
         {
-            _player.SendServerMessage("You're too fat to use a different fighting style!", ColorConstants.Orange);
-            return;
-        }
-
-        // Check if resetting to normal (phenotype 0)
-        if (targetPhenotype == 0)
-        {
-            ResetFightingStyle(creature);
-        }
-        else
-        {
-            SetCustomFightingStyle(creature, targetPhenotype);
-        }
-    }
-
-    private void ResetFightingStyle(NwCreature creature)
-    {
-        int currentPhenotype = (int)creature.Phenotype;
-
-        // Valid phenotypes that can be reset: 15-20, 30-33
-        if (currentPhenotype == 15 || currentPhenotype == 16 || currentPhenotype == 17 ||
-            currentPhenotype == 18 || currentPhenotype == 19 || currentPhenotype == 20 ||
-            currentPhenotype == 30 || currentPhenotype == 31 || currentPhenotype == 32 ||
-            currentPhenotype == 33)
-        {
             creature.Phenotype = (Phenotype)0;
-            _player.SendServerMessage("Fighting style reset to normal.", ColorConstants.Cyan);
+            _player.SendServerMessage("Resetting from large phenotype before applying new style...", ColorConstants.Cyan);
         }
-        else
-        {
-            _player.SendServerMessage("This may not work for you...", ColorConstants.Orange);
-            creature.Phenotype = (Phenotype)0;
-        }
+
+        SetCustomFightingStyle(creature, targetPhenotype);
     }
 
     private void SetCustomFightingStyle(NwCreature creature, int style)
