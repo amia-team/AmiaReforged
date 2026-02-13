@@ -37,6 +37,14 @@ public sealed class ChatProcessingService
 
     private void OnPlayerChat(ModuleEvents.OnPlayerChat eventInfo)
     {
+        // Rewrite legacy f_ commands to ./ prefix so ChatCommandService handles them
+        if (eventInfo.Message.StartsWith("f_"))
+        {
+            string rewritten = RewriteLegacyCommand(eventInfo);
+            eventInfo.Message = rewritten;
+            return; // Let ChatCommandService pick it up
+        }
+
         // Skip our custom chat commands
         if (eventInfo.Message.StartsWith("./")) return;
 
@@ -69,6 +77,32 @@ public sealed class ChatProcessingService
                 eventInfo.Message = ProcessEmotes(message, GetEmoteSymbol(creature));
                 break;
         }
+    }
+
+    /// <summary>
+    /// Rewrites a legacy f_ command to ./ prefix and handles special cases like f_bio
+    /// which routes differently for DMs vs players.
+    /// </summary>
+    private static string RewriteLegacyCommand(ModuleEvents.OnPlayerChat eventInfo)
+    {
+        string message = eventInfo.Message;
+        // Strip "f_" prefix
+        string stripped = message[2..];
+        
+        // Parse command and args
+        int spaceIndex = stripped.IndexOf(' ');
+        string command = spaceIndex == -1 ? stripped : stripped[..spaceIndex];
+        string args = spaceIndex == -1 ? "" : stripped[(spaceIndex + 1)..];
+        command = command.ToLowerInvariant();
+
+        // Special case: f_bio routes to ./bio for players, ./setbio for DMs
+        if (command == "bio")
+        {
+            bool isDm = eventInfo.Sender.IsDM || eventInfo.Sender.IsPlayerDM;
+            command = isDm ? "setbio" : "bio";
+        }
+
+        return string.IsNullOrEmpty(args) ? $"./{command}" : $"./{command} {args}";
     }
 
     /// <summary>
