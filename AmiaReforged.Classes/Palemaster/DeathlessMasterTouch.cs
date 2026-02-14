@@ -14,7 +14,6 @@ namespace AmiaReforged.Classes.Palemaster;
  *
  * Restrictions:
  * - Cannot be used on plot creatures
- * - Cannot be used on creatures larger than Large
  * - Cannot be used on constructs, oozes, or undead
  * - Cannot be used in areas with NoSpecialAbilities flag
  * - Requires successful melee touch attack
@@ -31,7 +30,7 @@ public class DeathlessMasterTouch(DeathSpellService deathSpellService) : ISpell
 
     public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
-    public string ImpactScript => "x2_s2_dthmsttch";
+    public string ImpactScript => "X2_S2_DthMstTch";
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
@@ -71,13 +70,13 @@ public class DeathlessMasterTouch(DeathSpellService deathSpellService) : ISpell
         // Signal the spell event
         SpellUtils.SignalSpell(caster, target, eventData.Spell);
 
-        // Filter: Plot, Creature Size greater than Large, Non-living
+        // Filter: Plot creatures, Non-living (constructs, oozes, undead)
         if (target.PlotFlag ||
             target.Race.RacialType == RacialType.Construct ||
             target.Race.RacialType == RacialType.Ooze ||
             target.Race.RacialType == RacialType.Undead)
         {
-            player?.SendServerMessage("<c€þ>- Undead Graft: Deathless Mastery Touch won't affect this creature. -");
+            player?.SendServerMessage("<c€þ>- Undead Graft: Deathless Mastery Touch only effects living and non-plot creatures. -");
             return;
         }
 
