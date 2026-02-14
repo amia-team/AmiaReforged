@@ -1,4 +1,4 @@
-﻿using Anvil.API;
+﻿﻿using Anvil.API;
 using Anvil.API.Events;
 using NWN.Core;
 
@@ -199,7 +199,10 @@ public class SpellUtils
     public static bool IsValidHostileTarget(NwCreature target, NwCreature caster)
     {
         if (target.IsDMAvatar) return false;
-        if (target.Master == caster || target == caster) return true;
+        if (target == caster) return false;
+        if (target.Master == caster) return false;
+        // Check if target is an associate of a friendly creature (e.g., party member's summon)
+        if (target.Master != null && target.Master.IsReactionTypeFriendly(caster)) return false;
         if (target.IsReactionTypeFriendly(caster)) return false;
         return true;
     }

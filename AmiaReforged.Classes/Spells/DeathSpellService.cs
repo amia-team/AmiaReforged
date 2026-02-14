@@ -1,5 +1,6 @@
 using Anvil.API;
 using Anvil.Services;
+using NWN.Core;
 
 namespace AmiaReforged.Classes.Spells;
 
@@ -153,9 +154,8 @@ public class DeathSpellService
     /// <returns>True if immune to death magic</returns>
     public bool IsDeathImmune(NwCreature creature)
     {
-        // Check for death immunity effect
-        return creature.ActiveEffects.Any(e => e.EffectType == EffectType.Immunity
-            && e.IntParams.Contains((int)ImmunityType.Death));
+        // Use NWScript.GetIsImmune which checks all immunity sources (racial, effects, items, etc.)
+        return NWScript.GetIsImmune(creature, NWScript.IMMUNITY_TYPE_DEATH) == NWScript.TRUE;
     }
 
     /// <summary>

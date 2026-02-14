@@ -28,7 +28,6 @@ public class DeathlessMasterTouch(DeathSpellService deathSpellService) : ISpell
 {
     private const string NoSpecialAbilitiesVar = "NoSpecialAbilities";
     private const string DeathtouchImmuneVar = "Deathtouch_Immune";
-    private const int PaleMasterClassId = 24;
 
     public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
@@ -127,7 +126,7 @@ public class DeathlessMasterTouch(DeathSpellService deathSpellService) : ISpell
     {
         foreach (CreatureClassInfo classInfo in creature.Classes)
         {
-            if (classInfo.Class.Id == PaleMasterClassId)
+            if (classInfo.Class.ClassType == ClassType.PaleMaster)
                 return classInfo.Level;
         }
         return 0;
