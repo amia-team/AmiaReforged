@@ -110,8 +110,15 @@ public class PlatRaceCommand : IChatCommand
         // Boot the player after a delay so they can read the message
         async void BootAfterDelay()
         {
+            try
+            {
             await NwTask.Delay(TimeSpan.FromSeconds(6));
             target.ControllingPlayer?.BootPlayer("Your platinum race has been authorised. Please reconnect.");
+            }
+            catch (Exception)
+            {
+                // Player may have disconnected during delay — safe to ignore
+            }
         }
         BootAfterDelay();
     }
