@@ -1,11 +1,13 @@
 ﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
+using NLog;
 
 namespace AmiaReforged.PwEngine.Features.DungeonMaster.ItemEditor;
 
 public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     public override ItemEditorView View { get; }
 
     private readonly NwPlayer _player;
@@ -893,6 +895,8 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
 
     private async void ConfirmItemTypeChange()
     {
+        try
+        {
         if (_model.SelectedItem == null || !_model.SelectedItem.IsValid)
         {
             _player.SendServerMessage("Item is no longer valid.", ColorConstants.Orange);
@@ -937,6 +941,11 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
 
         // No issues, proceed with the item type change
         await PerformItemTypeChange(newType, newResRef, currentName, currentDesc, currentTag, currentLocation);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in ConfirmItemTypeChange");
+        }
     }
 
     private void ShowConfirmNoDamageModal(int selectedIndex)
@@ -974,6 +983,8 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
 
     private async void ProceedWithNoDamageChange()
     {
+        try
+        {
         if (_model.SelectedItem == null || !_model.SelectedItem.IsValid)
         {
             _player.SendServerMessage("Item is no longer valid.", ColorConstants.Orange);
@@ -996,6 +1007,11 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
 
         CloseConfirmNoDamageModal();
         await PerformItemTypeChange(newType, newResRef, currentName, currentDesc, currentTag, currentLocation);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in ProceedWithNoDamageChange");
+        }
     }
 
     private void CloseConfirmNoDamageModal()
