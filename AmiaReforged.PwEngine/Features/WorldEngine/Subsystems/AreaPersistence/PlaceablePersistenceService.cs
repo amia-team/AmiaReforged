@@ -120,16 +120,23 @@ public class PlaceablePersistenceService
 
     private async void HandlePlaceableDeath(PlaceableEvents.OnDeath obj)
     {
-        NwPlaceable placeable = obj.KilledObject;
-        LocalVariableInt dbVar = placeable.GetObjectVariable<LocalVariableInt>(DatabaseIdLocalInt);
-        long id = dbVar.Value;
-
-        if (id <= 0)
+        try
         {
-            return;
-        }
+            NwPlaceable placeable = obj.KilledObject;
+            LocalVariableInt dbVar = placeable.GetObjectVariable<LocalVariableInt>(DatabaseIdLocalInt);
+            long id = dbVar.Value;
 
-        await _objectRepository.DeleteObject(id);
+            if (id <= 0)
+            {
+                return;
+            }
+
+            await _objectRepository.DeleteObject(id);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in HandlePlaceableDeath");
+        }
     }
 
     public async Task SaveAreaPlaceables(NwArea area)
