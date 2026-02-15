@@ -4,11 +4,13 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NLog;
 
 namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui;
 
 public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindowView>
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly NwPlayer _player;
     private NuiWindowToken _token;
     private NuiWindow? _window;
@@ -41,6 +43,8 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
 
     public override async void Create()
     {
+        try
+        {
         // Create the window if it's null.
         if (_window == null)
             // Try to create the window if it doesn't exist.
@@ -69,6 +73,11 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
                     false);
 
         RefreshWindowList();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in PlayerToolsWindowPresenter.Create");
+        }
     }
 
     private void RefreshWindowList()
