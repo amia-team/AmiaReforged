@@ -24,16 +24,23 @@ public class BanEnforcementService
 
     private async void HandleClientEnter(ModuleEvents.OnClientEnter eventData)
     {
-        NwPlayer player = eventData.Player;
-        string cdKey = player.CDKey;
-
-        bool isBanned = await _banService.IsBannedAsync(cdKey);
-        await NwTask.SwitchToMainThread();
-
-        if (isBanned)
+        try
         {
-            Log.Warn($"Banned player attempted to connect: {player.PlayerName} (CD Key: {cdKey})");
-            player.BootPlayer("You have been banned from this server.");
+            NwPlayer player = eventData.Player;
+            string cdKey = player.CDKey;
+
+            bool isBanned = await _banService.IsBannedAsync(cdKey);
+            await NwTask.SwitchToMainThread();
+
+            if (isBanned)
+            {
+                Log.Warn($"Banned player attempted to connect: {player.PlayerName} (CD Key: {cdKey})");
+                player.BootPlayer("You have been banned from this server.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in BanEnforcementService.HandleClientEnter");
         }
     }
 }
