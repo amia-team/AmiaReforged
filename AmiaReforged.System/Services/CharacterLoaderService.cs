@@ -43,6 +43,8 @@ public class CharacterLoaderService
 
     private async void StoreCharacter(AreaEvents.OnEnter obj)
     {
+        try
+        {
         if (!obj.EnteringObject.IsPlayerControlled(out NwPlayer? player)) return;
         if (player.IsDM) return;
         if (player.IsPlayerDM) return;
@@ -60,7 +62,7 @@ public class CharacterLoaderService
 
         bool characterExists = await _characterService.CharacterExists(pcKeyGuid);
 
-        NwTask.SwitchToMainThread();
+        await NwTask.SwitchToMainThread();
 
         if (characterExists) return;
 
@@ -82,5 +84,10 @@ public class CharacterLoaderService
         await _characterService.AddCharacter(playerCharacter);
 
         await NwTask.SwitchToMainThread();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in StoreCharacter");
+        }
     }
 }
