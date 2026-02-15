@@ -5,7 +5,11 @@ using NLog;
 
 namespace AmiaReforged.PwEngine.Features.CharacterTools.CustomSummon;
 
-public sealed class WeaponChangePresenter(WeaponChangeView view, NwPlayer player, NwCreature targetCreature, NwItem widget)
+public sealed class WeaponChangePresenter(
+    WeaponChangeView view,
+    NwPlayer player,
+    NwCreature targetCreature,
+    NwItem widget)
     : ScryPresenter<WeaponChangeView>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
@@ -72,7 +76,8 @@ public sealed class WeaponChangePresenter(WeaponChangeView view, NwPlayer player
         Token().SetBindValues(View.WeaponTypeNames, weaponNames);
         Token().SetBindValue(View.SelectedWeaponIndex, -1);
 
-        Log.Info($"Weapon change modal opened. Current weapon: {_currentWeapon.BaseItem.ItemType}, Wield type: {wieldType}, Compatible types: {_compatibleWeaponTypes.Count}");
+        Log.Info(
+            $"Weapon change modal opened. Current weapon: {_currentWeapon.BaseItem.ItemType}, Wield type: {wieldType}, Compatible types: {_compatibleWeaponTypes.Count}");
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
@@ -107,72 +112,81 @@ public sealed class WeaponChangePresenter(WeaponChangeView view, NwPlayer player
 
     private async void ConfirmWeaponChange()
     {
-        int selection = Token().GetBindValue(View.SelectedWeaponIndex);
-
-        if (selection < 0 || selection >= _compatibleWeaponTypes.Count)
+        try
         {
-            player.SendServerMessage("No weapon type selected.", ColorConstants.Orange);
-            return;
-        }
+            int selection = Token().GetBindValue(View.SelectedWeaponIndex);
 
-        if (_currentWeapon == null || !_currentWeapon.IsValid)
-        {
-            player.SendServerMessage("Current weapon is invalid.", ColorConstants.Orange);
+            if (selection < 0 || selection >= _compatibleWeaponTypes.Count)
+            {
+                player.SendServerMessage("No weapon type selected.", ColorConstants.Orange);
+                return;
+            }
+
+            if (_currentWeapon == null || !_currentWeapon.IsValid)
+            {
+                player.SendServerMessage("Current weapon is invalid.", ColorConstants.Orange);
+                Close();
+                return;
+            }
+
+            BaseItemType newWeaponType = _compatibleWeaponTypes[selection];
+            string weaponName = GetWeaponTypeName(newWeaponType);
+
+            Log.Info($"Changing weapon from {_currentWeapon.BaseItem.ItemType} to {newWeaponType}");
+
+            // Get the proper blueprint resref for this weapon type
+            string weaponResref = GetWeaponResref(newWeaponType);
+            if (string.IsNullOrEmpty(weaponResref))
+            {
+                player.SendServerMessage($"No blueprint found for weapon type: {weaponName}", ColorConstants.Red);
+                Log.Error($"No resref mapping for weapon type {newWeaponType}");
+                Close();
+                return;
+            }
+
+            Log.Info($"Creating weapon with resref: {weaponResref}");
+
+            // Create new weapon using the proper blueprint
+            NwItem? newWeapon = await NwItem.Create(weaponResref, targetCreature);
+
+            if (newWeapon == null)
+            {
+                player.SendServerMessage($"Failed to create weapon of type: {weaponName}", ColorConstants.Red);
+                Log.Error($"Failed to create weapon of type {newWeaponType} with resref {weaponResref}");
+                Close();
+                return;
+            }
+
+            // Copy properties from old weapon to new weapon
+            int propertiesCopied = 0;
+            foreach (var prop in _currentWeapon.ItemProperties)
+            {
+                // Clone the item property by recreating it
+                newWeapon.AddItemProperty(prop, EffectDuration.Permanent);
+                propertiesCopied++;
+            }
+
+            Log.Info($"Copied {propertiesCopied} properties to new weapon");
+
+            // Unequip and destroy old weapon
+            targetCreature.RunUnequip(_currentWeapon);
+            _currentWeapon.Destroy();
+
+            // Give new weapon to creature and equip it
+            targetCreature.AcquireItem(newWeapon);
+            targetCreature.RunEquip(newWeapon, InventorySlot.RightHand);
+
+            player.SendServerMessage(
+                $"Changed weapon to {weaponName.ColorString(ColorConstants.Cyan)}. Copied {propertiesCopied} properties.",
+                ColorConstants.Green);
+            Log.Info($"Weapon change completed successfully for {targetCreature.Name}");
+
             Close();
-            return;
         }
-
-        BaseItemType newWeaponType = _compatibleWeaponTypes[selection];
-        string weaponName = GetWeaponTypeName(newWeaponType);
-
-        Log.Info($"Changing weapon from {_currentWeapon.BaseItem.ItemType} to {newWeaponType}");
-
-        // Get the proper blueprint resref for this weapon type
-        string weaponResref = GetWeaponResref(newWeaponType);
-        if (string.IsNullOrEmpty(weaponResref))
+        catch (Exception ex)
         {
-            player.SendServerMessage($"No blueprint found for weapon type: {weaponName}", ColorConstants.Red);
-            Log.Error($"No resref mapping for weapon type {newWeaponType}");
-            Close();
-            return;
+            Log.Error(ex, "Error in ConfirmWeaponChange");
         }
-
-        Log.Info($"Creating weapon with resref: {weaponResref}");
-
-        // Create new weapon using the proper blueprint
-        NwItem? newWeapon = await NwItem.Create(weaponResref, targetCreature);
-
-        if (newWeapon == null)
-        {
-            player.SendServerMessage($"Failed to create weapon of type: {weaponName}", ColorConstants.Red);
-            Log.Error($"Failed to create weapon of type {newWeaponType} with resref {weaponResref}");
-            Close();
-            return;
-        }
-
-        // Copy properties from old weapon to new weapon
-        int propertiesCopied = 0;
-        foreach (var prop in _currentWeapon.ItemProperties)
-        {
-            // Clone the item property by recreating it
-            newWeapon.AddItemProperty(prop, EffectDuration.Permanent);
-            propertiesCopied++;
-        }
-
-        Log.Info($"Copied {propertiesCopied} properties to new weapon");
-
-        // Unequip and destroy old weapon
-        targetCreature.RunUnequip(_currentWeapon);
-        _currentWeapon.Destroy();
-
-        // Give new weapon to creature and equip it
-        targetCreature.AcquireItem(newWeapon);
-        targetCreature.RunEquip(newWeapon, InventorySlot.RightHand);
-
-        player.SendServerMessage($"Changed weapon to {weaponName.ColorString(ColorConstants.Cyan)}. Copied {propertiesCopied} properties.", ColorConstants.Green);
-        Log.Info($"Weapon change completed successfully for {targetCreature.Name}");
-
-        Close();
     }
 
     private int GetWeaponWieldType(BaseItemType baseItemType)
@@ -183,17 +197,17 @@ public sealed class WeaponChangePresenter(WeaponChangeView view, NwPlayer player
         {
             // One-handed weapons (0)
             BaseItemType.Longsword or BaseItemType.Shortsword or BaseItemType.Rapier or
-            BaseItemType.Scimitar or BaseItemType.Handaxe or BaseItemType.Battleaxe or
-            BaseItemType.LightHammer or BaseItemType.LightMace or BaseItemType.Morningstar or
-            BaseItemType.Club or BaseItemType.Dagger or BaseItemType.Kama or
-            BaseItemType.Kukri or BaseItemType.Sickle or BaseItemType.Warhammer or
-            BaseItemType.LightFlail or BaseItemType.Whip or BaseItemType.Trident or
-            BaseItemType.DwarvenWaraxe or BaseItemType.Bastardsword or BaseItemType.Katana or
-            BaseItemType.MagicStaff => 0,
+                BaseItemType.Scimitar or BaseItemType.Handaxe or BaseItemType.Battleaxe or
+                BaseItemType.LightHammer or BaseItemType.LightMace or BaseItemType.Morningstar or
+                BaseItemType.Club or BaseItemType.Dagger or BaseItemType.Kama or
+                BaseItemType.Kukri or BaseItemType.Sickle or BaseItemType.Warhammer or
+                BaseItemType.LightFlail or BaseItemType.Whip or BaseItemType.Trident or
+                BaseItemType.DwarvenWaraxe or BaseItemType.Bastardsword or BaseItemType.Katana or
+                BaseItemType.MagicStaff => 0,
 
             // Two-handed weapons (4)
             BaseItemType.Greatsword or BaseItemType.Greataxe or BaseItemType.Halberd or
-            BaseItemType.HeavyFlail or BaseItemType.Scythe or BaseItemType.ShortSpear => 4,
+                BaseItemType.HeavyFlail or BaseItemType.Scythe or BaseItemType.ShortSpear => 4,
             BaseItemType.Quarterstaff => 4,
 
             // Bows (5)
@@ -328,4 +342,3 @@ public sealed class WeaponChangePresenter(WeaponChangeView view, NwPlayer player
         };
     }
 }
-
