@@ -28,11 +28,18 @@ public class DcAccountRegistrationService
 
     private async void HandleClientEnter(ModuleEvents.OnClientEnter eventData)
     {
-        if (eventData.Player.IsDM) return;
+        try
+        {
+            if (eventData.Player.IsDM) return;
 
-        string cdKey = eventData.Player.CDKey;
+            string cdKey = eventData.Player.CDKey;
 
-        await EnsureDreamcoinAccountExists(cdKey);
+            await EnsureDreamcoinAccountExists(cdKey);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in DcAccountRegistrationService.HandleClientEnter");
+        }
     }
 
     /// <summary>
