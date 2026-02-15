@@ -27,11 +27,18 @@ public class PlayerAccountRegistrationService
 
     private async void HandleClientEnter(ModuleEvents.OnClientEnter eventData)
     {
-        if (eventData.Player.IsDM) return;
+        try
+        {
+            if (eventData.Player.IsDM) return;
 
-        string cdKey = eventData.Player.CDKey;
+            string cdKey = eventData.Player.CDKey;
 
-        await EnsurePlayerExists(cdKey);
+            await EnsurePlayerExists(cdKey);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in PlayerAccountRegistrationService.HandleClientEnter");
+        }
     }
 
     /// <summary>
