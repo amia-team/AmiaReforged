@@ -110,7 +110,9 @@ public sealed class WindowDirector : IDisposable
     /// <param name="obj">The event object containing details about the client leave event.</param>
     private void PurgeWindows(ModuleEvents.OnClientLeave obj)
     {
-        _activeWindows[obj.Player].ForEach(w =>
+        if (!_activeWindows.TryGetValue(obj.Player, out List<IScryPresenter>? playerWindows)) return;
+
+        playerWindows.ForEach(w =>
         {
             CleanupAutoClose(w);
             w.Close();
