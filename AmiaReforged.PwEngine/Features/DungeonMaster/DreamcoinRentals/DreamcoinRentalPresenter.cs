@@ -78,6 +78,8 @@ public sealed class DreamcoinRentalPresenter : ScryPresenter<DreamcoinRentalView
 
     private async void LoadRentalsAsync()
     {
+        try
+        {
         bool showInactive = Token().GetBindValue(View.ShowInactive);
         _model.SetShowInactive(showInactive);
 
@@ -85,6 +87,11 @@ public sealed class DreamcoinRentalPresenter : ScryPresenter<DreamcoinRentalView
         await NwTask.SwitchToMainThread();
 
         RefreshRentalList();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in LoadRentalsAsync");
+        }
     }
 
     private void OnRentalsUpdated(DreamcoinRentalModel sender, EventArgs e)
@@ -191,6 +198,8 @@ public sealed class DreamcoinRentalPresenter : ScryPresenter<DreamcoinRentalView
 
     private async void HandleAddRental()
     {
+        try
+        {
         string cdKey = Token().GetBindValue(View.NewCdKey) ?? "";
         string costStr = Token().GetBindValue(View.NewMonthlyCost) ?? "0";
         string description = Token().GetBindValue(View.NewDescription) ?? "";
@@ -210,6 +219,11 @@ public sealed class DreamcoinRentalPresenter : ScryPresenter<DreamcoinRentalView
             Token().SetBindValue(View.NewCdKey, "");
             Token().SetBindValue(View.NewMonthlyCost, "");
             Token().SetBindValue(View.NewDescription, "");
+        }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in HandleAddRental");
         }
     }
 
@@ -297,6 +311,8 @@ public sealed class DreamcoinRentalPresenter : ScryPresenter<DreamcoinRentalView
 
     private async void HandleConfirmEdit()
     {
+        try
+        {
         if (_editModalToken is null || _editingRentalId is null)
             return;
 
@@ -318,28 +334,49 @@ public sealed class DreamcoinRentalPresenter : ScryPresenter<DreamcoinRentalView
         _editModalToken?.Close();
         _editModalToken = null;
         _editingRentalId = null;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in HandleConfirmEdit");
+        }
     }
 
     private async void HandleDeactivateRental(int arrayIndex)
     {
+        try
+        {
         if (arrayIndex < 0 || arrayIndex >= _model.VisibleRentals.Count)
             return;
 
         DreamcoinRental rental = _model.VisibleRentals[arrayIndex];
         await _model.DeactivateRentalAsync(rental.Id);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in HandleDeactivateRental");
+        }
     }
 
     private async void HandleReactivateRental(int arrayIndex)
     {
+        try
+        {
         if (arrayIndex < 0 || arrayIndex >= _model.VisibleRentals.Count)
             return;
 
         DreamcoinRental rental = _model.VisibleRentals[arrayIndex];
         await _model.ReactivateRentalAsync(rental.Id);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in HandleReactivateRental");
+        }
     }
 
     private async void HandleDeleteRental(int arrayIndex)
     {
+        try
+        {
         if (arrayIndex < 0 || arrayIndex >= _model.VisibleRentals.Count)
             return;
 
@@ -349,15 +386,27 @@ public sealed class DreamcoinRentalPresenter : ScryPresenter<DreamcoinRentalView
         _dmPlayer.SendServerMessage($"Deleting rental for {rental.PlayerCdKey}...", ColorConstants.Orange);
 
         await _model.DeleteRentalAsync(rental.Id);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in HandleDeleteRental");
+        }
     }
 
     private async void HandleClearDelinquent(int arrayIndex)
     {
+        try
+        {
         if (arrayIndex < 0 || arrayIndex >= _model.VisibleRentals.Count)
             return;
 
         DreamcoinRental rental = _model.VisibleRentals[arrayIndex];
         await _model.ClearDelinquencyAsync(rental.Id);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in HandleClearDelinquent");
+        }
     }
 
     public override void Close()
