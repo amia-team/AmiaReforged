@@ -260,7 +260,7 @@ public class WarlockUtilityHandler
         }
 
         obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockUtils.String(pactFeatName +
-                                                                               " Pact feat added. Relog to see if you qualify for other utility tokens."));
+                                                                           " Pact feat added. Relog to see if you qualify for other utility tokens."));
         obj.UsedBy.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpElementalProtection));
         NWScript.DeleteLocalInt(obj.UsedBy, sVarName: "pactfeat_int");
     }
@@ -336,8 +336,8 @@ public class WarlockUtilityHandler
         }
 
         obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockUtils.String(energyFeat1Name + " and " +
-                                                                               energyFeat2Name +
-                                                                               " Energy feats added. Relog to see if you qualify for other utility tokens."));
+                                                                           energyFeat2Name +
+                                                                           " Energy feats added. Relog to see if you qualify for other utility tokens."));
         obj.UsedBy.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpElementalProtection));
         NWScript.DeleteLocalInt(obj.UsedBy, sVarName: "energyfeat_int1");
         NWScript.DeleteLocalInt(obj.UsedBy, sVarName: "energyfeat_int2");
@@ -345,27 +345,34 @@ public class WarlockUtilityHandler
 
     private async void TokenRelevel(OnItemUse obj)
     {
-        if (!obj.UsedBy.IsPlayerControlled) return;
-        if (obj.Item.Tag != "utility_token_warlockrelevel") return;
-
-        int level = obj.UsedBy.Level;
-
-        for (int i = level; i > 1; i--)
+        try
         {
-            CreatureLevelInfo levelInfo = obj.UsedBy.GetLevelStats(level);
-            if (levelInfo.ClassInfo.Class.Id == 57)
+            if (!obj.UsedBy.IsPlayerControlled) return;
+            if (obj.Item.Tag != "utility_token_warlockrelevel") return;
+
+            int level = obj.UsedBy.Level;
+
+            for (int i = level; i > 1; i--)
             {
-                int xpDelevel = NwEffects.GetXpForLevel(level) - 1;
-                int xpRelevel = NWScript.GetLocalInt(obj.Item, sVarName: "warlockxp_releveltoken");
-                obj.Item.Destroy();
-                obj.UsedBy.Xp = xpDelevel;
-                await NwTask.Delay(TimeSpan.FromSeconds(1));
-                obj.UsedBy.Xp = xpRelevel;
-                obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockUtils.String(
-                    message:
-                    "Releveled to the last warlock level. Relog to see if you qualify for other utility tokens."));
-                return;
+                CreatureLevelInfo levelInfo = obj.UsedBy.GetLevelStats(level);
+                if (levelInfo.ClassInfo.Class.Id == 57)
+                {
+                    int xpDelevel = NwEffects.GetXpForLevel(level) - 1;
+                    int xpRelevel = NWScript.GetLocalInt(obj.Item, sVarName: "warlockxp_releveltoken");
+                    obj.Item.Destroy();
+                    obj.UsedBy.Xp = xpDelevel;
+                    await NwTask.Delay(TimeSpan.FromSeconds(1));
+                    obj.UsedBy.Xp = xpRelevel;
+                    obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockUtils.String(
+                        message:
+                        "Releveled to the last warlock level. Relog to see if you qualify for other utility tokens."));
+                    return;
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in TokenRelevel");
         }
     }
 
