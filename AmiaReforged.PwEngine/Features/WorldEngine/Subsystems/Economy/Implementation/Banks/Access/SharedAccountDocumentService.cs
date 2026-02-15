@@ -8,12 +8,14 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementati
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NLog;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Banks.Access;
 
 [ServiceBinding(typeof(SharedAccountDocumentService))]
 public class SharedAccountDocumentService
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly ICommandHandler<JoinCoinhouseAccountCommand> _joinAccountHandler;
     private readonly IPersonaDescriptorService _personaDescriptors;
     private readonly RuntimeCharacterService _runtimeCharacterService;
@@ -32,6 +34,8 @@ public class SharedAccountDocumentService
 
     private async void HandleDocumentActivation(ModuleEvents.OnActivateItem obj)
     {
+        try
+        {
         if (obj.ActivatedItem.ResRef != ShareDocumentResRef)
             return;
 
@@ -108,6 +112,11 @@ public class SharedAccountDocumentService
 
         obj.ActivatedItem.Destroy();
         player.SendServerMessage("You have been added to the shared account.", ColorConstants.Green);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in HandleDocumentActivation");
+        }
     }
 
     private JoinCoinhouseAccountCommand? ExtractCommandFromDocument(NwItem item, NwPlayer player,
