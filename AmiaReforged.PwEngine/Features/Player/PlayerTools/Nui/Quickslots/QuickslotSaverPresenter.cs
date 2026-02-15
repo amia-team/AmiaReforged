@@ -146,6 +146,8 @@ public class QuickslotSaverPresenter : ScryPresenter<QuickslotSaverView>
 
     private async void DeleteConfiguration(ModuleEvents.OnNuiEvent eventData)
     {
+        try
+        {
         SavedQuickslots? selectedQuickslot = _visibleQuickslots?[eventData.ArrayIndex];
         if (selectedQuickslot == null) return;
 
@@ -157,6 +159,11 @@ public class QuickslotSaverPresenter : ScryPresenter<QuickslotSaverView>
         _quickslots.Remove(selectedQuickslot);
 
         RefreshQuickslotList();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in DeleteConfiguration");
+        }
     }
 
     public override void Close()
