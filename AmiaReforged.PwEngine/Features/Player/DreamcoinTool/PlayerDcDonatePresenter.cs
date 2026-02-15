@@ -115,6 +115,8 @@ public sealed class PlayerDcDonatePresenter : ScryPresenter<PlayerDcDonateView>
 
     private async void HandleDonate()
     {
+        try
+        {
         // Check cooldown
         TimeSpan? remaining = GetDonateCooldownRemaining();
         if (remaining.HasValue && remaining.Value.TotalSeconds > 0)
@@ -167,6 +169,11 @@ public sealed class PlayerDcDonatePresenter : ScryPresenter<PlayerDcDonateView>
         Log.Info($"Player {_player.PlayerName} donated 1 DC to {_targetPlayer.PlayerName}");
 
         RefreshDisplay();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in HandleDonate");
+        }
     }
 
     private void HandleRecommend()

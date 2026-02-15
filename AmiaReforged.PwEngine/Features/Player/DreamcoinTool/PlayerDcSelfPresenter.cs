@@ -50,6 +50,8 @@ public sealed class PlayerDcSelfPresenter : ScryPresenter<PlayerDcSelfView>
 
     private async void RefreshDisplay()
     {
+        try
+        {
         int balance = await _dreamcoinService.GetDreamcoins(_player.CDKey);
         await NwTask.SwitchToMainThread();
 
@@ -76,6 +78,11 @@ public sealed class PlayerDcSelfPresenter : ScryPresenter<PlayerDcSelfView>
         Token().SetBindValue(View.BurnRewardInfo, burnRewardText);
         Token().SetBindValue(View.BurnGoldOnlyInfo, $"Gold only reward: {goldOnly} gold");
         Token().SetBindValue(View.CanBurnForXp, canBurnForXp);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in RefreshDisplay");
+        }
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent ev)
@@ -94,8 +101,8 @@ public sealed class PlayerDcSelfPresenter : ScryPresenter<PlayerDcSelfView>
     }
 
     private async void HandleBurnDc()
-    {
-        NwCreature? creature = _player.LoginCreature;
+    {        try
+        {        NwCreature? creature = _player.LoginCreature;
         if (creature == null)
         {
             _player.SendServerMessage("Error: Could not find your character.");
@@ -149,10 +156,17 @@ public sealed class PlayerDcSelfPresenter : ScryPresenter<PlayerDcSelfView>
         {
             _player.SendServerMessage("Failed to burn DC. Please try again.");
         }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in HandleBurnDc");
+        }
     }
 
     private async void HandleBurnDcGoldOnly()
     {
+        try
+        {
         NwCreature? creature = _player.LoginCreature;
         if (creature == null)
         {
@@ -186,6 +200,11 @@ public sealed class PlayerDcSelfPresenter : ScryPresenter<PlayerDcSelfView>
         else
         {
             _player.SendServerMessage("Failed to burn DC. Please try again.");
+        }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in HandleBurnDcGoldOnly");
         }
     }
 

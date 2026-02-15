@@ -86,6 +86,8 @@ public sealed class DcPlaytimeService
 
     private async void OnPlaytimeTick()
     {
+        try
+        {
         // Capture all player data while on main thread
         List<(NwPlayer player, string cdKey, string playerName)> playerData = NwModule.Instance.Players
             .Where(p => p.IsValid && !p.IsDM)
@@ -142,6 +144,11 @@ public sealed class DcPlaytimeService
         foreach (string key in disconnectedKeys)
         {
             _cachedMinutes.Remove(key);
+        }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in DcPlaytimeService.OnPlaytimeTick");
         }
     }
 }
