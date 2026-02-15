@@ -19,6 +19,8 @@ public class FrogDeathHandler
     [ScriptHandler(scriptName: "wlk_frog_ondeath")]
     public async void OnFrogDeathRussianDoll(CallInfo callInfo)
     {
+        try
+        {
         if (callInfo.TryGetEvent(out CreatureEvents.OnDeath obj))
         {
             if (obj.KilledCreature.AssociateType != AssociateType.Summoned) return;
@@ -55,6 +57,11 @@ public class FrogDeathHandler
                     return;
                 }
             }
+        }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in OnFrogDeathRussianDoll");
         }
     }
     
