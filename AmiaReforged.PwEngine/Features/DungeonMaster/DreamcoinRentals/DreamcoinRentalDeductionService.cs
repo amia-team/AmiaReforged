@@ -59,7 +59,14 @@ public sealed class DreamcoinRentalDeductionService
 
     private async void OnDeductionCheck()
     {
-        await ProcessDueRentalsAsync();
+        try
+        {
+            await ProcessDueRentalsAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in OnDeductionCheck");
+        }
     }
 
     /// <summary>
