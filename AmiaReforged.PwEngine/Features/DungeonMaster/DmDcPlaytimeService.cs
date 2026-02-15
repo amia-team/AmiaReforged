@@ -100,6 +100,8 @@ public sealed class DmDcPlaytimeService
 
     private async void OnPlaytimeTick()
     {
+        try
+        {
         // Capture all DM data while on main thread
         List<(NwPlayer dm, string cdKey, string playerName)> dmData = NwModule.Instance.Players
             .Where(p => p.IsValid && p.IsDM)
@@ -156,6 +158,11 @@ public sealed class DmDcPlaytimeService
         foreach (string key in disconnectedKeys)
         {
             _cachedMinutes.Remove(key);
+        }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in DmDcPlaytimeService.OnPlaytimeTick");
         }
     }
 }
