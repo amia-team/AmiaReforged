@@ -89,74 +89,80 @@ public class PersonalStorageService
 
     private async void AddStoredItem(OnInventoryItemAdd obj)
     {
-        if (NWScript.GetLocalInt(obj.AcquiredBy, "populatingChest") == 1) return;
-        uint chestOwner = NWScript.GetLastUsedBy();
-
-        NwCreature? chestOwnerCreature = chestOwner.ToNwObject<NwCreature>();
-        NwPlaceable chest = (NwPlaceable)obj.AcquiredBy;
-        NwItem? pcKey = chestOwnerCreature?.FindItemWithTag(DsPckey);
-
-        int storageCap = NWScript.GetLocalInt(pcKey, StorageCap);
-
-        bool wasGold = ReturnGoldToUser(obj, chestOwner);
-        if (wasGold) return;
-
-
-        Json backup = obj.Item.SerializeToJson(true);
-        if (chest.Inventory.Items.Count() + 1 > storageCap)
-        {
-            backup.ToNwObject<NwItem>(chestOwnerCreature.Location, chestOwnerCreature);
-            obj.Item.Destroy();
-
-            chestOwnerCreature?.ControllingPlayer?.SendServerMessage(
-                $"You have have reached the maximum amount of items you can store. ({storageCap})");
-
-
-            return;
-        }
-
-        Guid characterId = Guid.Parse(pcKey!.Name.Split("_")[1]);
-
-
-        Json itemJson = NWScript.ObjectToJson(obj.Item);
-        StoredItem newItem = new()
-        {
-            ItemJson = itemJson.Dump(),
-            PlayerCharacterId = characterId
-        };
-
-
-        bool success = true;
-
-        AmiaDbContext amiaDbContext = _factory.CreateDbContext();
         try
         {
-            await amiaDbContext.AddAsync(newItem);
-            await amiaDbContext.SaveChangesAsync();
-            
-        }
-        catch (Exception e)
-        {
-            success = false;
-            Log.Error(
-                $"Storage chest error: Could not add item. Exception: {e.Message} \n \n{e.InnerException}\n\n{e.StackTrace}");
-        }
+            if (NWScript.GetLocalInt(obj.AcquiredBy, "populatingChest") == 1) return;
+            uint chestOwner = NWScript.GetLastUsedBy();
 
-        await NwTask.SwitchToMainThread();
+            NwCreature? chestOwnerCreature = chestOwner.ToNwObject<NwCreature>();
+            NwPlaceable chest = (NwPlaceable)obj.AcquiredBy;
+            NwItem? pcKey = chestOwnerCreature?.FindItemWithTag(DsPckey);
 
-        if (!success)
-        {
-            NWScript.SendMessageToPC(chestOwner, "There was an error storing your item.");
-            NWScript.CopyItem(obj.Item, chestOwner, NWScript.TRUE);
-            obj.Item.Destroy();
-        }
-        else
-        {
-            NWScript.SetLocalString(obj.Item, "db_guid", newItem.ItemId.ToString());
-        }
+            int storageCap = NWScript.GetLocalInt(pcKey, StorageCap);
 
-        NWScript.ExportSingleCharacter(chestOwner);
-        NWScript.SendMessageToPC(chestOwner, "Your character has been saved.");
+            bool wasGold = ReturnGoldToUser(obj, chestOwner);
+            if (wasGold) return;
+
+
+            Json backup = obj.Item.SerializeToJson(true);
+            if (chest.Inventory.Items.Count() + 1 > storageCap)
+            {
+                backup.ToNwObject<NwItem>(chestOwnerCreature.Location, chestOwnerCreature);
+                obj.Item.Destroy();
+
+                chestOwnerCreature?.ControllingPlayer?.SendServerMessage(
+                    $"You have have reached the maximum amount of items you can store. ({storageCap})");
+
+
+                return;
+            }
+
+            Guid characterId = Guid.Parse(pcKey!.Name.Split("_")[1]);
+
+
+            Json itemJson = NWScript.ObjectToJson(obj.Item);
+            StoredItem newItem = new()
+            {
+                ItemJson = itemJson.Dump(),
+                PlayerCharacterId = characterId
+            };
+
+
+            bool success = true;
+
+            AmiaDbContext amiaDbContext = _factory.CreateDbContext();
+            try
+            {
+                await amiaDbContext.AddAsync(newItem);
+                await amiaDbContext.SaveChangesAsync();
+            }
+            catch (Exception e)
+            {
+                success = false;
+                Log.Error(
+                    $"Storage chest error: Could not add item. Exception: {e.Message} \n \n{e.InnerException}\n\n{e.StackTrace}");
+            }
+
+            await NwTask.SwitchToMainThread();
+
+            if (!success)
+            {
+                NWScript.SendMessageToPC(chestOwner, "There was an error storing your item.");
+                NWScript.CopyItem(obj.Item, chestOwner, NWScript.TRUE);
+                obj.Item.Destroy();
+            }
+            else
+            {
+                NWScript.SetLocalString(obj.Item, "db_guid", newItem.ItemId.ToString());
+            }
+
+            NWScript.ExportSingleCharacter(chestOwner);
+            NWScript.SendMessageToPC(chestOwner, "Your character has been saved.");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in AddStoredItem");
+        }
     }
 
     private static bool ReturnGoldToUser(OnInventoryItemAdd obj, uint chestOwner)
@@ -173,34 +179,41 @@ public class PersonalStorageService
 
     private async void RemoveStoredItem(OnInventoryItemRemove obj)
     {
-        if (NWScript.GetLocalInt(obj.RemovedFrom, "clearingChest") == 1) return;
-
-        string storedId = NWScript.GetLocalString(obj.Item, "db_guid");
-        if (storedId is "") return;
-        long itemId;
-
         try
         {
-            itemId = long.Parse(storedId);
-        }
-        catch
-        {
-            Log.Error("Storage chest error: Could not parse item ID.");
-            return;
-        }
+            if (NWScript.GetLocalInt(obj.RemovedFrom, "clearingChest") == 1) return;
 
-        AmiaDbContext amiaDbContext = _factory.CreateDbContext();
-        StoredItem? s = await amiaDbContext.PlayerItems.FindAsync(itemId);
-        if (s != null)
-        {
-            amiaDbContext.PlayerItems.Remove(s);
-            await amiaDbContext.SaveChangesAsync();
-        }
+            string storedId = NWScript.GetLocalString(obj.Item, "db_guid");
+            if (storedId is "") return;
+            long itemId;
 
-        await NwTask.SwitchToMainThread();
-        uint chestOwner = NWScript.GetLastUsedBy();
-        NWScript.ExportSingleCharacter(chestOwner);
-        NWScript.SendMessageToPC(chestOwner, "Your character has been saved.");
+            try
+            {
+                itemId = long.Parse(storedId);
+            }
+            catch
+            {
+                Log.Error("Storage chest error: Could not parse item ID.");
+                return;
+            }
+
+            AmiaDbContext amiaDbContext = _factory.CreateDbContext();
+            StoredItem? s = await amiaDbContext.PlayerItems.FindAsync(itemId);
+            if (s != null)
+            {
+                amiaDbContext.PlayerItems.Remove(s);
+                await amiaDbContext.SaveChangesAsync();
+            }
+
+            await NwTask.SwitchToMainThread();
+            uint chestOwner = NWScript.GetLastUsedBy();
+            NWScript.ExportSingleCharacter(chestOwner);
+            NWScript.SendMessageToPC(chestOwner, "Your character has been saved.");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in RemoveStoredItem");
+        }
     }
 
     private async Task<IEnumerable<StoredItem>> GetStoredItems(NwPlayer player)
@@ -259,7 +272,7 @@ public class PersonalStorageService
                     break;
                 }
             }
-        
+
             NWScript.SetLocalInt(chest, "populatingChest", 0);
         }
         catch (Exception e)
