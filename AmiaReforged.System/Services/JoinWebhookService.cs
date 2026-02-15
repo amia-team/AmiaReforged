@@ -39,6 +39,8 @@ public class JoinWebhookService
 
     private async void ListPlayers()
     {
+        try
+        {
         bool noPlayers = !NwModule.Instance.Players.Any();
 
         if (noPlayers)
@@ -47,12 +49,15 @@ public class JoinWebhookService
             return;
         }
 
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
         string players = NwModule.Instance.Players.Where(player => player.LoginCreature != null).Aggregate(
             seed: "Players online: \n",
-            (current, player) => current + $"\t\t{player.PlayerName} - {player.LoginCreature.Name}\n");
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
+            (current, player) => current + $"\t\t{player.PlayerName} - {player.LoginCreature?.Name}\n");
         await _webhookSender.SendMessage(Username, players, Avatar);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in ListPlayers");
+        }
     }
 
     public async Task LaunchDiscordMessage(string messageSent)
