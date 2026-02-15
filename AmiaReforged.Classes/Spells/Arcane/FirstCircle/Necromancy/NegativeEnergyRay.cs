@@ -29,11 +29,20 @@ public class NegativeEnergyRay : ISpell
         if (ResistedSpell) return;
 
         int numberOfDie = caster.CasterLevel / 2;
-        int damage = NWScript.d4(numberOfDie);
+        int amount = NWScript.d4(numberOfDie);
 
-        Effect damageEffect = Effect.Damage(damage, DamageType.Negative);
+        bool isUndead = NWScript.GetRacialType(target) == NWScript.RACIAL_TYPE_UNDEAD;
 
-        target.ApplyEffect(EffectDuration.Instant, damageEffect);
+        Effect effect = isUndead
+            ? Effect.Heal(amount)
+            : Effect.Damage(amount, DamageType.Negative);
+
+        Effect vfx = isUndead
+            ? Effect.VisualEffect(VfxType.ImpHealingS)
+            : Effect.VisualEffect(VfxType.ImpNegativeEnergy);
+
+        target.ApplyEffect(EffectDuration.Instant, effect);
+        target.ApplyEffect(EffectDuration.Instant, vfx);
     }
 
     public void SetSpellResisted(bool result)
