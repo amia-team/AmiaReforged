@@ -1,6 +1,7 @@
 ﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
+using NLog;
 
 namespace AmiaReforged.PwEngine.Features.DungeonMaster.GuardSpawner;
 
@@ -9,6 +10,7 @@ namespace AmiaReforged.PwEngine.Features.DungeonMaster.GuardSpawner;
 /// </summary>
 public sealed class GuardSpawnerPresenter : ScryPresenter<GuardSpawnerView>
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly GuardSpawnerView _view;
     private readonly NwPlayer _player;
     private readonly GuardSpawnerModel _model;
@@ -161,6 +163,8 @@ public sealed class GuardSpawnerPresenter : ScryPresenter<GuardSpawnerView>
 
     private async void HandleSave()
     {
+        try
+        {
         // Read current values from UI
         string qtyText = Token().GetBindValue(View.QuantityText) ?? "1";
         if (!int.TryParse(qtyText, out int qty) || qty < 1 || qty > 8)
@@ -181,6 +185,11 @@ public sealed class GuardSpawnerPresenter : ScryPresenter<GuardSpawnerView>
             // Reset after successful creation
             _model.Reset();
             InitializeBindings();
+        }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in HandleSave");
         }
     }
 
