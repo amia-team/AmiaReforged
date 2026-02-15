@@ -21,7 +21,8 @@ public class DreamcoinToolService
     private readonly PlayerDataService _playerDataService;
     private readonly WindowDirector _director;
 
-    public DreamcoinToolService(DreamcoinService dreamcoinService, PlayerDataService playerDataService, WindowDirector director)
+    public DreamcoinToolService(DreamcoinService dreamcoinService, PlayerDataService playerDataService,
+        WindowDirector director)
     {
         _dreamcoinService = dreamcoinService;
         _playerDataService = playerDataService;
@@ -33,32 +34,39 @@ public class DreamcoinToolService
 
     private async void HandleDcRodActivation(ModuleEvents.OnActivateItem obj)
     {
-        if (obj.ActivatedItem.Tag != DcRodTag)
-            return;
-
-        if (!obj.ItemActivator.IsLoginPlayerCharacter(out NwPlayer? player))
-            return;
-
-        // Verify the user is a DM
-        bool isDm = await _playerDataService.IsDm(player.CDKey);
-        await NwTask.SwitchToMainThread();
-
-        if (!isDm && !player.IsDM)
+        try
         {
-            player.SendServerMessage("You must be a DM to use the DC rod.");
-            return;
-        }
+            if (obj.ActivatedItem.Tag != DcRodTag)
+                return;
 
-        // Get the target player
-        NwCreature? targetCreature = obj.TargetObject as NwCreature;
-        if (targetCreature == null || !targetCreature.IsPlayerControlled(out NwPlayer? targetPlayer))
+            if (!obj.ItemActivator.IsLoginPlayerCharacter(out NwPlayer? player))
+                return;
+
+            // Verify the user is a DM
+            bool isDm = await _playerDataService.IsDm(player.CDKey);
+            await NwTask.SwitchToMainThread();
+
+            if (!isDm && !player.IsDM)
+            {
+                player.SendServerMessage("You must be a DM to use the DC rod.");
+                return;
+            }
+
+            // Get the target player
+            NwCreature? targetCreature = obj.TargetObject as NwCreature;
+            if (targetCreature == null || !targetCreature.IsPlayerControlled(out NwPlayer? targetPlayer))
+            {
+                player.SendServerMessage("You must target a player character.");
+                return;
+            }
+
+            // Open the Dreamcoin tool window
+            OpenDreamcoinTool(player, targetPlayer);
+        }
+        catch (Exception ex)
         {
-            player.SendServerMessage("You must target a player character.");
-            return;
+            Log.Error(ex, "Error in HandleDcRodActivation");
         }
-
-        // Open the Dreamcoin tool window
-        OpenDreamcoinTool(player, targetPlayer);
     }
 
     private void OpenDreamcoinTool(NwPlayer dmPlayer, NwPlayer targetPlayer)

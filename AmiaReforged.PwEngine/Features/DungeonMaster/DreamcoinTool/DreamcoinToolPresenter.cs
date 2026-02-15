@@ -53,6 +53,8 @@ public sealed class DreamcoinToolPresenter : ScryPresenter<DreamcoinToolView>
 
     private async void RefreshBalanceDisplay()
     {
+        try
+        {
         string targetName = _targetPlayer.LoginCreature?.Name ?? "Unknown";
         int balance = await _dreamcoinService.GetDreamcoins(_targetPlayer.CDKey);
 
@@ -60,6 +62,11 @@ public sealed class DreamcoinToolPresenter : ScryPresenter<DreamcoinToolView>
 
         Token().SetBindValue(View.TargetName, $"Target: {targetName}");
         Token().SetBindValue(View.CurrentBalance, $"Balance: {balance} DCs");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in RefreshBalanceDisplay");
+        }
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent ev)
@@ -87,6 +94,8 @@ public sealed class DreamcoinToolPresenter : ScryPresenter<DreamcoinToolView>
 
     private async void HandleAddDc()
     {
+        try
+        {
         string amountStr = Token().GetBindValue(View.AddAmount) ?? "0";
         if (!int.TryParse(amountStr, out int amount) || amount <= 0)
         {
@@ -110,10 +119,17 @@ public sealed class DreamcoinToolPresenter : ScryPresenter<DreamcoinToolView>
         {
             _dmPlayer.SendServerMessage("Failed to add DCs. Check logs for details.");
         }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in HandleAddDc");
+        }
     }
 
     private async void HandleAddDcParty()
     {
+        try
+        {
         string amountStr = Token().GetBindValue(View.AddAmount) ?? "0";
         if (!int.TryParse(amountStr, out int amount) || amount <= 0)
         {
@@ -168,10 +184,17 @@ public sealed class DreamcoinToolPresenter : ScryPresenter<DreamcoinToolView>
         Log.Info($"DM {_dmPlayer.PlayerName} added {amount} DCs to {successCount} party members");
         RefreshBalanceDisplay();
         Token().SetBindValue(View.AddAmount, "0");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in HandleAddDcParty");
+        }
     }
 
     private async void HandleAddDcNearby()
     {
+        try
+        {
         string amountStr = Token().GetBindValue(View.AddAmount) ?? "0";
         if (!int.TryParse(amountStr, out int amount) || amount <= 0)
         {
@@ -220,10 +243,17 @@ public sealed class DreamcoinToolPresenter : ScryPresenter<DreamcoinToolView>
         Log.Info($"DM {_dmPlayer.PlayerName} added {amount} DCs to {successCount} nearby players");
         RefreshBalanceDisplay();
         Token().SetBindValue(View.AddAmount, "0");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in HandleAddDcNearby");
+        }
     }
 
     private async void HandleTakeDc()
     {
+        try
+        {
         string amountStr = Token().GetBindValue(View.TakeAmount) ?? "0";
         if (!int.TryParse(amountStr, out int amount) || amount <= 0)
         {
@@ -245,6 +275,11 @@ public sealed class DreamcoinToolPresenter : ScryPresenter<DreamcoinToolView>
         else
         {
             _dmPlayer.SendServerMessage("Failed to remove DCs. Player may not have enough.");
+        }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in HandleTakeDc");
         }
     }
 
