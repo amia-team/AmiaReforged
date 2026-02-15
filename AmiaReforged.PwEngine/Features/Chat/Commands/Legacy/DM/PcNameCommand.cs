@@ -1,6 +1,7 @@
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NLog;
 using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Features.Chat.Commands.Legacy.DM;
@@ -13,6 +14,7 @@ namespace AmiaReforged.PwEngine.Features.Chat.Commands.Legacy.DM;
 [ServiceBinding(typeof(IChatCommand))]
 public class PcNameCommand : IChatCommand
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     public string Command => "./pcname";
     public string Description => "Set PC first/last name: first/last <name> (click to target)";
     public string AllowedRoles => "DM";
@@ -52,6 +54,8 @@ public class PcNameCommand : IChatCommand
 
     private static async void OnTargetSelected(ModuleEvents.OnPlayerTarget obj)
     {
+        try
+        {
         NwCreature? dm = obj.Player.ControlledCreature;
         if (dm == null) return;
 
@@ -86,5 +90,10 @@ public class PcNameCommand : IChatCommand
         await NwTask.SwitchToMainThread();
 
         targetPlayer.BootPlayer("Name change applied. Please reconnect.");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in PcNameCommand.OnTargetSelected");
+        }
     }
 }
