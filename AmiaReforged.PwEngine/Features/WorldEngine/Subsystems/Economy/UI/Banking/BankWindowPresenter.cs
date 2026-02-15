@@ -102,6 +102,8 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
 
     public override async void Create()
     {
+        try
+        {
         if (_window == null)
         {
             InitBefore();
@@ -170,6 +172,11 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
             Token().Player.SendServerMessage(
                 message: "You do not yet have an account at this coinhouse. Use the controls above to open one.",
                 ColorConstants.Orange);
+        }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in BankWindowPresenter.Create");
         }
     }
 
