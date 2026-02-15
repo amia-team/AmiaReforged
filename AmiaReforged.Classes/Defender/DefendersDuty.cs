@@ -32,6 +32,10 @@ public class DefendersDuty
     // Track if we're subscribed to the module client leave event (for protected creatures disconnecting)
     private bool _subscribedToModuleClientLeave;
 
+    // Cached creature reference for cleanup — Defender.LoginCreature can become null on disconnect,
+    // but we still need the reference to clean up factory dictionaries.
+    private NwCreature? _cachedDefenderCreature;
+
 
     /// <summary>
     ///     Do not construct directly. Use <see cref="DefendersDutyFactory" /> to create this object.
@@ -81,8 +85,11 @@ public class DefendersDuty
         Effect? threatAura = CreateThreatAuraEffect();
         if (threatAura == null) return;
 
+        // Cache the creature reference so cleanup can always reach the factory
+        _cachedDefenderCreature = Defender.LoginCreature;
+
         // Register with factory so script handlers can find us
-        DefendersDutyFactory.Register(Defender.LoginCreature, this);
+        DefendersDutyFactory.Register(_cachedDefenderCreature, this);
 
         // Subscribe to disconnect to clean up
         Defender.OnClientLeave += OnDefenderLeave;
@@ -121,10 +128,13 @@ public class DefendersDuty
 
         _protectedCreatures.Clear();
 
+        // Use cached creature reference — Defender.LoginCreature may already be null on disconnect
+        NwCreature? defenderCreature = _cachedDefenderCreature ?? Defender.LoginCreature;
+
         // Release all protected targets from global registry
-        if (Defender.LoginCreature != null)
+        if (defenderCreature != null)
         {
-            DefendersDutyFactory.ReleaseAllProtectedBy(Defender.LoginCreature);
+            DefendersDutyFactory.ReleaseAllProtectedBy(defenderCreature);
         }
 
         // Unsubscribe from module damage event
@@ -142,12 +152,14 @@ public class DefendersDuty
         }
 
         // Remove immunity from defender as well
-        if (Defender.LoginCreature != null)
+        if (defenderCreature != null)
         {
-            RemovePhysicalImmunity(Defender.LoginCreature);
+            RemovePhysicalImmunity(defenderCreature);
             // Unregister from factory
-            DefendersDutyFactory.Unregister(Defender.LoginCreature);
+            DefendersDutyFactory.Unregister(defenderCreature);
         }
+
+        _cachedDefenderCreature = null;
     }
 
     /// <summary>
@@ -182,10 +194,11 @@ public class DefendersDuty
         {
             _protectedCreatures.Remove(invalid);
 
-            // Release from global registry
-            if (Defender.LoginCreature != null)
+            // Release from global registry — use cached ref in case LoginCreature is null
+            NwCreature? defenderCreature = _cachedDefenderCreature ?? Defender.LoginCreature;
+            if (defenderCreature != null)
             {
-                DefendersDutyFactory.ReleaseProtection(invalid, Defender.LoginCreature);
+                DefendersDutyFactory.ReleaseProtection(invalid, defenderCreature);
             }
         }
 
@@ -382,10 +395,11 @@ public class DefendersDuty
         _protectedCreatures.Remove(creature);
         creature.OnDeath -= OnProtectedCreatureDeath;
 
-        // Release from global registry
-        if (Defender.LoginCreature != null)
+        // Release from global registry — use cached ref in case LoginCreature is null
+        NwCreature? defenderCreature = _cachedDefenderCreature ?? Defender.LoginCreature;
+        if (defenderCreature != null)
         {
-            DefendersDutyFactory.ReleaseProtection(creature, Defender.LoginCreature);
+            DefendersDutyFactory.ReleaseProtection(creature, defenderCreature);
         }
 
         RemoveProtectedVisual(creature);
