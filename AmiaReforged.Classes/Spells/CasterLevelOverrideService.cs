@@ -79,8 +79,6 @@ public class CasterLevelOverrideService
         NwCreature? playerLoginCreature = obj.Player.LoginCreature;
         if (playerLoginCreature is null) return;
 
-        _casterLevelOverridesApplied[playerLoginCreature] = false;
-
         _casterLevelOverridesApplied.Remove(playerLoginCreature);
     }
 
