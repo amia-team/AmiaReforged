@@ -2101,6 +2101,8 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
     private async void HandleLoadLayoutClick()
     {
+        try
+        {
         if (_currentPropertyId is null)
         {
             Token().SetBindValue(View.StatusMessage, "Layout management is only available in housing areas.");
@@ -2127,6 +2129,11 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         _player.SendServerMessage($"Loading layout: {selectedLayout.Name} ({selectedLayout.Items.Count} items)", ColorConstants.Cyan);
 
         await LoadLayoutAsync(selectedLayout.Id);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in HandleLoadLayoutClick");
+        }
     }
 
     private async Task LoadLayoutAsync(long layoutId)
