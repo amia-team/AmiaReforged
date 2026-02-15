@@ -4,11 +4,13 @@ using Anvil.API;
 using Anvil.API.Events;
 using System.Text;
 using Anvil.Services;
+using NLog;
 
 namespace AmiaReforged.PwEngine.Features.DungeonMaster.RebuildTool;
 
 public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     public override RebuildToolView View { get; }
 
     private readonly NwPlayer _player;
@@ -311,6 +313,8 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
 
     private async void HandleRemoveFeat()
     {
+        try
+        {
         string featIdStr = Token().GetBindValue(View.FeatId);
 
         if (!int.TryParse(featIdStr, out int featId))
@@ -332,6 +336,11 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         else
         {
             UpdateLevelupInfo();
+        }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in HandleRemoveFeat");
         }
     }
 
@@ -647,6 +656,8 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
 
     private async void HandleStartFullRebuild()
     {
+        try
+        {
         if (_model.SelectedCharacter == null)
         {
             _player.SendServerMessage("No character selected.");
@@ -666,10 +677,17 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         {
             _player.SendServerMessage($"Full rebuild started. Rebuild ID: {_currentRebuildId.Value}", ColorConstants.Green);
         }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in HandleStartFullRebuild");
+        }
     }
 
     private async void HandleReturnInventory()
     {
+        try
+        {
         if (!_currentRebuildId.HasValue)
         {
             _player.SendServerMessage("No active rebuild. Use Find Rebuild to load a pending rebuild.");
@@ -690,6 +708,11 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         }
 
         await _model.ReturnInventory(_currentRebuildId.Value, targetPlayer);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in HandleReturnInventory");
+        }
     }
 
     private void EnterReturnInventoryTargetMode()
@@ -711,6 +734,8 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
 
     private async void OnReturnInventoryTargetSelected(ModuleEvents.OnPlayerTarget obj)
     {
+        try
+        {
         if (!_currentRebuildId.HasValue)
         {
             _player.SendServerMessage("No active rebuild.");
@@ -744,6 +769,11 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
 
         // Now proceed with returning inventory
         await _model.ReturnInventory(_currentRebuildId.Value, targetPlayer);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in OnReturnInventoryTargetSelected");
+        }
     }
 
     private void HandleFullRebuildReturnXP()
