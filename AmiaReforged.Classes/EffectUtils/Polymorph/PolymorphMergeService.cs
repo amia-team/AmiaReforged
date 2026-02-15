@@ -34,8 +34,24 @@ public class PolymorphMergeService
     {
         NwModule.Instance.OnPolymorphApply += OnApplyPolymorphBefore;
         eventService.SubscribeAll<OnPolymorphApply, OnPolymorphApply.Factory>(OnApplyPolymorphAfter, EventCallbackType.After);
+        NwModule.Instance.OnClientLeave += CleanupOnClientLeave;
 
         Log.Info("Polymorph Merge Service initialized.");
+    }
+
+    /// <summary>
+    /// Defensive cleanup: remove any pending merge data for a creature whose player is leaving.
+    /// Normally the Before/After pair runs synchronously, but this guards against edge cases.
+    /// </summary>
+    private void CleanupOnClientLeave(ModuleEvents.OnClientLeave obj)
+    {
+        NwCreature? creature = obj.Player.LoginCreature;
+        if (creature == null) return;
+
+        _pendingWeaponMerges.Remove(creature);
+        _pendingArmorMerges.Remove(creature);
+        _pendingItemMerges.Remove(creature);
+        _pendingWaterBreathing.Remove(creature);
     }
 
     private void OnApplyPolymorphBefore(OnPolymorphApply eventData)
