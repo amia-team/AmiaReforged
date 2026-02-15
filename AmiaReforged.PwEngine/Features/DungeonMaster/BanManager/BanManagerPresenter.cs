@@ -4,6 +4,7 @@ using Anvil;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NLog;
 
 namespace AmiaReforged.PwEngine.Features.DungeonMaster.BanManager;
 
@@ -12,6 +13,7 @@ namespace AmiaReforged.PwEngine.Features.DungeonMaster.BanManager;
 /// </summary>
 public sealed class BanManagerPresenter : ScryPresenter<BanManagerView>
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     public override BanManagerView View { get; }
 
     private readonly NwPlayer _dmPlayer;
@@ -65,9 +67,16 @@ public sealed class BanManagerPresenter : ScryPresenter<BanManagerView>
 
     private async void LoadBansAsync()
     {
+        try
+        {
         await _model.LoadBansAsync();
         await NwTask.SwitchToMainThread();
         RefreshBanList();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in LoadBansAsync");
+        }
     }
 
     private void OnBansUpdated(BanManagerModel sender, EventArgs e)
@@ -114,6 +123,8 @@ public sealed class BanManagerPresenter : ScryPresenter<BanManagerView>
 
     private async void HandleBan()
     {
+        try
+        {
         string cdKey = Token().GetBindValue(View.NewCdKey) ?? "";
 
         if (string.IsNullOrWhiteSpace(cdKey))
@@ -128,6 +139,11 @@ public sealed class BanManagerPresenter : ScryPresenter<BanManagerView>
         if (success)
         {
             Token().SetBindValue(View.NewCdKey, "");
+        }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in HandleBan");
         }
     }
 
@@ -147,11 +163,18 @@ public sealed class BanManagerPresenter : ScryPresenter<BanManagerView>
 
     private async void HandleUnban(int arrayIndex)
     {
+        try
+        {
         if (arrayIndex < 0 || arrayIndex >= _model.VisibleBans.Count)
             return;
 
         Ban ban = _model.VisibleBans[arrayIndex];
         await _model.UnbanCdKeyAsync(ban.CdKey);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in HandleUnban");
+        }
     }
 
     public override void Close()
