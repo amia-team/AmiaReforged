@@ -11,13 +11,14 @@ public class InfiniteCantripService
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     // Dictionary mapping prestige classes to their caster level modifier formulas
+    // Formula takes prestige class level and returns the modifier (minimum 0, prevents negative)
     private readonly Dictionary<ClassType, Func<int, int>> _prestigeClassModifiers = new()
     {
-        { ClassType.PaleMaster, prcLevel => Math.Max(0, prcLevel) },
-        { ClassType.DragonDisciple, prcLevel => Math.Max(0, prcLevel) },
-        { ClassType.Blackguard, prcLevel => Math.Max(0, prcLevel) },
-        { ClassType.DivineChampion, prcLevel => Math.Max(0, prcLevel) },
-        { ClassType.ArcaneArcher, prcLevel => Math.Max(0, prcLevel) }
+        { ClassType.PaleMaster, prcLevel => Math.Max(0, prcLevel - 5) },
+        { ClassType.DragonDisciple, prcLevel => Math.Max(0, prcLevel - 5) },
+        { ClassType.Blackguard, prcLevel => Math.Max(0, prcLevel - 5) },
+        { ClassType.DivineChampion, prcLevel => Math.Max(0, prcLevel - 5) },
+        { ClassType.ArcaneArcher, prcLevel => Math.Max(0, prcLevel - 5) }
     };
 
     // Mapping of prestige classes to their valid base caster classes
@@ -25,11 +26,15 @@ public class InfiniteCantripService
     {
         {
             ClassType.PaleMaster,
-            new HashSet<ClassType> { ClassType.Wizard, ClassType.Sorcerer }
+            new HashSet<ClassType> { ClassType.Wizard, ClassType.Sorcerer, ClassType.Bard, ClassType.Assassin }
         },
         {
             ClassType.DragonDisciple,
             new HashSet<ClassType> { ClassType.Sorcerer, ClassType.Bard }
+        },
+        {
+            ClassType.ArcaneArcher,
+            new HashSet<ClassType> { ClassType.Wizard, ClassType.Sorcerer, ClassType.Bard, ClassType.Assassin }
         },
         {
             ClassType.Blackguard,
@@ -37,15 +42,7 @@ public class InfiniteCantripService
         },
         {
             ClassType.DivineChampion,
-            new HashSet<ClassType> { ClassType.Cleric, ClassType.Paladin }
-        },
-        {
-            ClassType.ArcaneArcher,
-            new HashSet<ClassType> { ClassType.Wizard, ClassType.Sorcerer, ClassType.Bard }
-        },
-        {
-            ClassType.Assassin,
-            new HashSet<ClassType> { ClassType.Wizard, ClassType.Sorcerer, ClassType.Bard }
+            new HashSet<ClassType> { ClassType.Cleric, ClassType.Paladin, ClassType.Druid, ClassType.Blackguard }
         }
     };
 
