@@ -41,7 +41,7 @@ public class DivineWrath : ISpell
         Effect divineWrath = DivineWrathEffect(divineChampionLevel);
 
         int chaMod = creature.GetAbilityModifier(Ability.Charisma);
-        int durationBonus = chaMod < 2 ? 0 : chaMod / 2;
+        int durationBonus = chaMod < 0 ? 0 : chaMod;
 
         int divineWrathRounds = divineChampionLevel >= 18 ? 10 + durationBonus + 5 : 10 + durationBonus;
 
