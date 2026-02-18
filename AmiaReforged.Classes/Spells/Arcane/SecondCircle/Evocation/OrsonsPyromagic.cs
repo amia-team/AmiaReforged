@@ -12,8 +12,8 @@ namespace AmiaReforged.Classes.Spells.Arcane.SecondCircle.Evocation;
 [ServiceBinding(typeof(ISpell))]
 public class OrsonsPyromagic(ScriptHandleFactory scriptHandleFactory) : ISpell
 {
-    private static readonly VfxType DurFireWhirl = (VfxType)2545;
-    private static readonly VfxType ImpMirvFire = (VfxType)2544;
+    private const VfxType DurFireWhirl = (VfxType)2545;
+    private const VfxType ImpMirvFire = (VfxType)2544;
 
     public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
@@ -30,7 +30,11 @@ public class OrsonsPyromagic(ScriptHandleFactory scriptHandleFactory) : ISpell
 
         int dc = eventData.SaveDC;
 
-        Effect pyromagicEffect = CreatePyromagicEffect(caster, dc, metaMagic, eventData.Spell);
+        Effect? pyromagicEffect = caster.ActiveEffects.FirstOrDefault(e => e.Spell == eventData.Spell);
+        if (pyromagicEffect != null)
+            caster.RemoveEffect(pyromagicEffect);
+
+        pyromagicEffect = CreatePyromagicEffect(caster, dc, metaMagic, eventData.Spell);
 
         caster.ApplyEffect(EffectDuration.Temporary, pyromagicEffect, duration);
     }
