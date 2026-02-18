@@ -15,8 +15,6 @@ public class OrsonsPyromagic(ScriptHandleFactory scriptHandleFactory) : ISpell
     private const VfxType DurFireWhirl = (VfxType)2545;
     private const VfxType ImpMirvFire = (VfxType)2544;
 
-    public bool CheckedSpellResistance { get; set; }
-    public bool ResistedSpell { get; set; }
     public string ImpactScript => "orsons_pyro";
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
@@ -106,4 +104,6 @@ public class OrsonsPyromagic(ScriptHandleFactory scriptHandleFactory) : ISpell
     {
         // This spell checks for each spell resist individually
     }
+    public bool CheckedSpellResistance { get; set; }
+    public bool ResistedSpell { get; set; }
 }
