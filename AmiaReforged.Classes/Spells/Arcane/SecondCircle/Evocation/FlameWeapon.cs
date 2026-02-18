@@ -1,4 +1,5 @@
-﻿using Anvil.API;
+﻿using AmiaReforged.Classes.EffectUtils.WeaponBuff;
+using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 
@@ -6,32 +7,9 @@ namespace AmiaReforged.Classes.Spells.Arcane.SecondCircle.Evocation;
 
 [ServiceBinding(typeof(ISpell))]
 
-public class FlameWeapon : ISpell
+public class FlameWeapon(WeaponBuffService weaponBuffService) : ISpell
 {
-    public bool CheckedSpellResistance { get; set; }
-    public bool ResistedSpell { get; set; }
     public string ImpactScript => "X2_S0_FlmeWeap";
-
-    private enum FlameWeaponType
-    {
-        Fire = 1,
-        Cold = 2,
-        Electrical = 3,
-        Acid = 4,
-        Sonic = 5,
-        Negative = 6
-    }
-
-    private static readonly Dictionary<FlameWeaponType, (IPDamageType ipDamageType, VfxType vfxType, ItemVisual itemVisual)>
-        FlameWeaponMap = new()
-    {
-        { FlameWeaponType.Fire, (IPDamageType.Fire, VfxType.ImpPulseFire, ItemVisual.Fire) },
-        { FlameWeaponType.Cold, (IPDamageType.Cold, VfxType.ImpPulseCold, ItemVisual.Cold) },
-        { FlameWeaponType.Electrical, (IPDamageType.Electrical, VfxType.ImpPulseWind, ItemVisual.Electrical) },
-        { FlameWeaponType.Acid, (IPDamageType.Acid, VfxType.ImpPulseNature, ItemVisual.Acid) },
-        { FlameWeaponType.Sonic, (IPDamageType.Sonic, VfxType.ImpSuperHeroism, ItemVisual.Sonic) },
-        { FlameWeaponType.Negative, (IPDamageType.Negative, VfxType.ImpPulseNegative, ItemVisual.Evil) }
-    };
 
     private const string UnknownItemResRef = "itm_coldweapon_dmg";
     private const string WyvernBileResRef = "itm_sc_wyvernbil";
@@ -43,38 +21,39 @@ public class FlameWeapon : ISpell
     private const string WyvernVenomGlandResRef = "js_wyverngland";
     private const string FrostspearsTreasureResRef = "wdragonbossrewar";
 
-    private static readonly Dictionary<string, (FlameWeaponType, int CasterLevel)> ItemResRefMap = new()
+    private static readonly Dictionary<string, (IPDamageType DamageType, int CasterLevel)> ItemResRefMap = new()
     {
-        { UnknownItemResRef, (FlameWeaponType.Cold, 15) },
-        { WyvernBileResRef, (FlameWeaponType.Acid, 15) },
-        { AuricularEssenceResRef, (FlameWeaponType.Sonic, 15)},
-        { SourtoothVenomResRef, (FlameWeaponType.Negative, 15) },
-        { VenomGlandResRef, (FlameWeaponType.Acid, 9) },
-        { HighQualityVenomGlandResRef, (FlameWeaponType.Acid, 10) },
-        { LegendaryVenomGlandResRef, (FlameWeaponType.Acid, 15) },
-        { WyvernVenomGlandResRef, (FlameWeaponType.Acid, 20) },
-        { FrostspearsTreasureResRef, (FlameWeaponType.Sonic, 17) }
+        { UnknownItemResRef, (IPDamageType.Cold, 15) },
+        { WyvernBileResRef, (IPDamageType.Acid, 15) },
+        { AuricularEssenceResRef, (IPDamageType.Sonic, 15) },
+        { SourtoothVenomResRef, (IPDamageType.Negative, 15) },
+        { VenomGlandResRef, (IPDamageType.Acid, 9) },
+        { HighQualityVenomGlandResRef, (IPDamageType.Acid, 10) },
+        { LegendaryVenomGlandResRef, (IPDamageType.Acid, 15) },
+        { WyvernVenomGlandResRef, (IPDamageType.Acid, 20) },
+        { FrostspearsTreasureResRef, (IPDamageType.Sonic, 17) }
     };
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
         if (eventData.Caster == null) return;
 
-        (FlameWeaponType flameWeaponType, int casterLevel) = GetFlameWeaponData(eventData, eventData.Caster);
+        (IPDamageType damageType, int casterLevel) = GetFlameWeaponData(eventData, eventData.Caster);
+
+        IPDamageBonus damageBonus = GetDamageBonus(casterLevel);
+
+        NwItem? weapon = weaponBuffService.SelectWeaponToBuff(eventData, damageType, damageBonus);
+
+        if (weapon == null) return;
+
+        ItemProperty damageProperty = ItemProperty.DamageBonus(damageType, damageBonus);
+        ItemProperty weaponVisual = ItemProperty.VisualEffect(weaponBuffService.ElementalDamageMap[damageType].itemVisual);
 
         TimeSpan duration = NwTimeSpan.FromHours(casterLevel);
         if (eventData.MetaMagicFeat == MetaMagic.Extend)
             duration *= 2;
 
-        IPDamageBonus damageBonus = GetDamageBonus(casterLevel);
-        IPDamageType damageType = FlameWeaponMap[flameWeaponType].ipDamageType;
-
-        NwItem? weapon = FindTargetWeapon(eventData.TargetObject, eventData.Caster, damageBonus, damageType);
-
-        if (weapon == null) return;
-
-        ItemProperty damageProperty = ItemProperty.DamageBonus(damageType, damageBonus);
-        ItemProperty weaponVisual = ItemProperty.VisualEffect(FlameWeaponMap[flameWeaponType].itemVisual);
+        weaponBuffService.RemoveConflictingWeaponBuffs(eventData.Spell, weapon);
 
         weapon.AddItemProperty
         (
@@ -94,87 +73,11 @@ public class FlameWeapon : ISpell
             ignoreSubType: true
         );
 
-        VfxType pulseVfx = FlameWeaponMap[flameWeaponType].vfxType;
+        VfxType pulseVfx = weaponBuffService.ElementalDamageMap[damageType].vfxType;
         eventData.TargetObject?.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(pulseVfx));
     }
 
-    private NwItem? FindTargetWeapon(NwGameObject? targetObject, NwGameObject caster, IPDamageBonus damageBonus, IPDamageType damageType)
-    {
-        if (targetObject is NwItem targetItem)
-            return targetItem;
-
-        if (targetObject is not NwCreature targetCreature)
-            return null;
-
-        caster.IsPlayerControlled(out NwPlayer? player);
-
-        NwItem?[] itemsToEnhance = GetItemsToEnhance(targetCreature);
-
-        if (itemsToEnhance.Length == 0)
-        {
-            player?.FloatingTextString
-                ($"No weapon or gloves found on {targetCreature.Name} to cast Flame Weapon.", false);
-
-            return null;
-        }
-
-        NwItem? weapon = itemsToEnhance
-            // Filter out items that have a more powerful effect
-            .Where(item => item != null && !item.ItemProperties.Any(ip =>
-                ip is { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus }
-                && ip.IntParams[1] == (int)damageType
-                && ip.IntParams[3] > (int)damageBonus))
-            // First check for items with no damage bonus
-            .OrderBy(item => item!.ItemProperties.Any(ip =>
-                ip is { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus }))
-            // then by items without matching damage type
-            .ThenBy(item => item!.ItemProperties.Any(ip =>
-                ip is { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus }
-                && ip.IntParams[1] == (int)damageType))
-            // lastly by items with less damage bonus
-            .ThenByDescending(item => item!.ItemProperties.Any(ip =>
-                ip is { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus }
-                && ip.IntParams[3] < (int)damageBonus))
-            // Pick the first item in the sorted list.
-            .FirstOrDefault();
-
-        if (weapon != null) return weapon;
-
-        player?.FloatingTextString
-            ($"{targetCreature.Name} already has a more powerful weapon effect.", false);
-
-        return null;
-    }
-
-    private static NwItem?[] GetItemsToEnhance(NwCreature targetCreature)
-    {
-        // Prio 1: weapons
-        NwItem?[] weapons = new[]
-        {
-            targetCreature.GetItemInSlot(InventorySlot.RightHand),
-            targetCreature.GetItemInSlot(InventorySlot.LeftHand)
-        }
-        .Where(item => item is { BaseItem.Category: BaseItemCategory.Melee }).ToArray();
-
-        if (weapons.Length > 0)
-            return weapons;
-
-        // Prio 2: gloves
-        NwItem? armItem = targetCreature.GetItemInSlot(InventorySlot.Arms);
-        if (armItem is { BaseItem.ItemType: BaseItemType.Gloves })
-            return [armItem];
-
-        // Prio 3: creature weapons
-        return new[]
-        {
-            targetCreature.GetItemInSlot(InventorySlot.CreatureRightWeapon),
-            targetCreature.GetItemInSlot(InventorySlot.CreatureLeftWeapon),
-            targetCreature.GetItemInSlot(InventorySlot.CreatureBiteWeapon)
-        }
-        .Where(item => item != null).ToArray();
-    }
-
-    private IPDamageBonus GetDamageBonus(int casterLevel)
+    private static IPDamageBonus GetDamageBonus(int casterLevel)
         => casterLevel switch
         {
             >= 25 => IPDamageBonus.Plus1d12,
@@ -184,7 +87,7 @@ public class FlameWeapon : ISpell
             _ => IPDamageBonus.Plus1d4,
         };
 
-    private (FlameWeaponType, int) GetFlameWeaponData(SpellEvents.OnSpellCast eventData, NwGameObject caster)
+    private (IPDamageType, int) GetFlameWeaponData(SpellEvents.OnSpellCast eventData, NwGameObject caster)
     {
         int casterLevel = eventData.Caster?.CasterLevel ?? 0;
 
@@ -194,21 +97,22 @@ public class FlameWeapon : ISpell
                 BaseItemType.Scroll or BaseItemType.EnchantedScroll or BaseItemType.SpellScroll
                 or BaseItemType.Potions or BaseItemType.EnchantedPotion
                 or BaseItemType.EnchantedWand or BaseItemType.MagicWand)
-                return (FlameWeaponType.Fire, casterLevel);
+                return (IPDamageType.Fire, casterLevel);
 
-            if (ItemResRefMap.TryGetValue(item.ResRef, out (FlameWeaponType FlameWeaponType, int CasterLevel) itemData))
-                return (itemData.FlameWeaponType, itemData.CasterLevel);
+            if (ItemResRefMap.TryGetValue(item.ResRef, out (IPDamageType DamageType, int CasterLevel) itemData))
+                return (itemData.DamageType, itemData.CasterLevel);
         }
 
-        LocalVariableInt flameWeaponTypeKey =
+        LocalVariableInt damageTypeKey =
             caster.GetObjectVariable<LocalVariableInt>("ds_spell_" + eventData.Spell.Id);
 
         // default value fire for unexpected values
-        if (flameWeaponTypeKey.Value is < 1 or > 6)
-            flameWeaponTypeKey.Value = (int)FlameWeaponType.Fire;
+        IPDamageType damageType = weaponBuffService.BookOfTransmutationMap.GetValueOrDefault(damageTypeKey.Value, IPDamageType.Fire);
 
-        return ((FlameWeaponType)flameWeaponTypeKey.Value, casterLevel);
+        return (damageType, casterLevel);
     }
 
     public void SetSpellResisted(bool result) { }
+    public bool CheckedSpellResistance { get; set; }
+    public bool ResistedSpell { get; set; }
 }
