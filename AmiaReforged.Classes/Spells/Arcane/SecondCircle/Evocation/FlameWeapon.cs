@@ -60,8 +60,7 @@ public class FlameWeapon(WeaponBuffService weaponBuffService) : ISpell
             damageProperty,
             EffectDuration.Temporary,
             duration,
-            AddPropPolicy.ReplaceExisting,
-            ignoreSubType: true
+            AddPropPolicy.ReplaceExisting
         );
 
         weapon.AddItemProperty
@@ -69,8 +68,7 @@ public class FlameWeapon(WeaponBuffService weaponBuffService) : ISpell
             weaponVisual,
             EffectDuration.Temporary,
             duration,
-            AddPropPolicy.ReplaceExisting,
-            ignoreSubType: true
+            AddPropPolicy.ReplaceExisting
         );
 
         VfxType pulseVfx = weaponBuffService.ElementalDamageMap[damageType].vfxType;
