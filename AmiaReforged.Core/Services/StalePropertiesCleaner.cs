@@ -98,11 +98,17 @@ public class StalePropertiesCleaner
     {
         StringBuilder cleanupMessage = new("Stale properties cleaned:");
 
-        foreach ((NwItem? item, ItemProperty[]? propertiesToRemove) in removedPropertiesByItem)
+        foreach ((NwItem? item, ItemProperty[] propertiesToRemove) in removedPropertiesByItem)
         {
             cleanupMessage.Append($"\n{item.Name}: ");
-            string propertyNames = string.Join(", ", propertiesToRemove
-                .Select(p => p.Spell?.Name ?? p.Property.Name));
+
+            string propertyNames = string.Join(", ",
+                propertiesToRemove
+                    .Select(p => p.Spell?.Name.ToString() ?? p.Property.Name.ToString())
+                    .Where(n => !string.IsNullOrWhiteSpace(n))
+                    .Distinct()
+                    .OrderBy(n => n));
+
             cleanupMessage.Append(propertyNames);
 
             foreach (ItemProperty itemProperty in propertiesToRemove)
