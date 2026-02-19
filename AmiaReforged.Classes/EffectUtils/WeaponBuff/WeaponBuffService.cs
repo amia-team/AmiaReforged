@@ -71,14 +71,14 @@ public class WeaponBuffService
                 && ip.IntParams[1] == (int)damageType
                 && ip.IntParams[3] > (int)damageBonus))
             // First check for items with no damage bonus
-            .OrderBy(item => item!.ItemProperties.Any(ip =>
+            .OrderBy(item => item.ItemProperties.Any(ip =>
                 ip is { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus }))
             // then by items without matching damage type
-            .ThenBy(item => item!.ItemProperties.Any(ip =>
+            .ThenBy(item => item.ItemProperties.Any(ip =>
                 ip is { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus }
                 && ip.IntParams[1] == (int)damageType))
             // lastly by items with less damage bonus
-            .ThenByDescending(item => item!.ItemProperties.Any(ip =>
+            .ThenByDescending(item => item.ItemProperties.Any(ip =>
                 ip is { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus }
                 && ip.IntParams[3] < (int)damageBonus))
             // Pick the first item in the sorted list.
