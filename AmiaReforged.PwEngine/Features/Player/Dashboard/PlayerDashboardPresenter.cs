@@ -8,6 +8,7 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Features.Player.Dashboard;
 
@@ -110,6 +111,14 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
 
         if (creature == null)
         {
+            return;
+        }
+
+        // Insta rest on test and dev servers
+        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
+        if (environment != "live")
+        {
+            creature.ForceRest();
             return;
         }
 
