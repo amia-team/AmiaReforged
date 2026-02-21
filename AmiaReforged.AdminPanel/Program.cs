@@ -1,8 +1,10 @@
+using System.Security.Claims;
 using AmiaReforged.AdminPanel.Components;
 using AmiaReforged.AdminPanel.Configuration;
 using AmiaReforged.AdminPanel.Hubs;
 using AmiaReforged.AdminPanel.Services;
 using DotNetEnv;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Serilog;
 
@@ -92,6 +94,39 @@ public class Program
 
             app.MapRazorComponents<App>()
                 .AddInteractiveServerRenderMode();
+
+            // Login endpoint - handles form POST for cookie authentication
+            app.MapPost("/api/auth/login", async (HttpContext context, AdminPanelConfig config) =>
+            {
+                var form = await context.Request.ReadFormAsync();
+                var username = form["username"].ToString();
+                var password = form["password"].ToString();
+                var rememberMe = form["rememberMe"] == "true";
+                var returnUrl = form["returnUrl"].ToString();
+
+                if (username == config.DefaultAdminUsername && password == config.DefaultAdminPassword)
+                {
+                    var claims = new List<Claim>
+                    {
+                        new(ClaimTypes.Name, username),
+                        new(ClaimTypes.Role, "Admin")
+                    };
+
+                    var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                    var principal = new ClaimsPrincipal(identity);
+
+                    var authProperties = new AuthenticationProperties
+                    {
+                        IsPersistent = rememberMe,
+                        ExpiresUtc = DateTimeOffset.UtcNow.AddHours(24)
+                    };
+
+                    await context.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
+                    return Results.Redirect(string.IsNullOrEmpty(returnUrl) ? "/" : returnUrl);
+                }
+
+                return Results.Redirect($"/Account/Login?error=invalid&returnUrl={Uri.EscapeDataString(returnUrl ?? "/")}");
+            }).AllowAnonymous();
 
             await app.RunAsync();
         }
