@@ -94,6 +94,7 @@ body {
 .table {
     width: 100%;
     border-collapse: collapse;
+    color: var(--text-primary);
 }
 
 .table th,
@@ -101,6 +102,11 @@ body {
     padding: 12px;
     text-align: left;
     border-bottom: 1px solid var(--bg-input);
+    color: var(--text-primary);
+}
+
+.table td {
+    color: #ffffff;
 }
 
 .table th {
