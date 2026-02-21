@@ -102,14 +102,51 @@ public class DockerMonitorService : IDockerMonitorService, IDisposable
             Timestamps = true
         };
 
-        using var stream = await _docker.Containers.GetContainerLogsAsync(containerId, false, parameters, ct);
+        // Check if container uses TTY mode
+        bool useTty = false;
+        try
+        {
+            var inspect = await _docker.Containers.InspectContainerAsync(containerId, ct);
+            useTty = inspect.Config.Tty;
+        }
+        catch
+        {
+            // Ignore, default to multiplexed stream
+        }
+
+        // Use the tty parameter to tell Docker API how to handle the stream
+        using var stream = await _docker.Containers.GetContainerLogsAsync(containerId, useTty, parameters, ct);
 
         var buffer = new byte[81920];
-        while (!ct.IsCancellationRequested)
+        var errorOccurred = false;
+        string? errorMessage = null;
+
+        while (!ct.IsCancellationRequested && !errorOccurred)
         {
-            var result = await stream.ReadOutputAsync(buffer, 0, buffer.Length, ct);
+            MultiplexedStream.ReadResult result = default;
+
+            try
+            {
+                result = await stream.ReadOutputAsync(buffer, 0, buffer.Length, ct);
+            }
+            catch (OperationCanceledException)
+            {
+                yield break;
+            }
+            catch (Exception ex)
+            {
+                errorOccurred = true;
+                errorMessage = ex.Message;
+            }
+
+            if (errorOccurred)
+            {
+                _logger.LogWarning("Stream error for container {ContainerId}: {Error}", containerId, errorMessage);
+                yield break;
+            }
+
             if (result.EOF)
-                break;
+                yield break;
 
             var text = Encoding.UTF8.GetString(buffer, 0, result.Count);
             var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries);
