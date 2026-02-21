@@ -5,8 +5,6 @@ namespace AmiaReforged.Classes.Spells;
 
 public interface ISpell
 {
-    bool CheckedSpellResistance { get; set; }
-    bool ResistedSpell { get; set; }
     string ImpactScript { get; }
 
     void DoSpellResist(NwCreature creature, NwCreature caster)
@@ -16,10 +14,12 @@ public interface ISpell
                         || caster.SpellAbsorptionUnlimitedCheck(creature)
                         || caster.SpellImmunityCheck(creature)
                         || caster.SpellResistanceCheck(creature);
-        
+
         CheckedSpellResistance = true;
     }
 
     void OnSpellImpact(SpellEvents.OnSpellCast eventData);
     void SetSpellResisted(bool result);
+    bool CheckedSpellResistance { get; set; }
+    bool ResistedSpell { get; set; }
 }
