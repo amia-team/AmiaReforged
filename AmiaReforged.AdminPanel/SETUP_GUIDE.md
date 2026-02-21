@@ -166,7 +166,7 @@ For container management features, ensure your user has Docker socket access:
 
 ```bash
 # Add your user to the docker group
-sudo usermod -aG docker $USER
+usermod -aG docker $USER
 
 # Log out and back in, or run:
 newgrp docker

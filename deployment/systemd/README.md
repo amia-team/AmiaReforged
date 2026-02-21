@@ -50,33 +50,33 @@ GIT_TOKEN=your_git_personal_access_token
 
 ```bash
 # Create and initialize the backup repository
-sudo mkdir -p /var/backups/amia/sql
+mkdir -p /var/backups/amia/sql
 cd /var/backups/amia
-sudo git init
-sudo git remote add origin https://github.com/your-org/amia-db-backups.git
+git init
+git remote add origin https://github.com/your-org/amia-db-backups.git
 
 # Set ownership
-sudo chown -R amia:amia /var/backups/amia
+chown -R amia:amia /var/backups/amia
 ```
 
 ### 4. Install the systemd Service
 
 ```bash
 # Copy service file
-sudo cp deployment/systemd/amia-backup.service /etc/systemd/system/
+cp deployment/systemd/amia-backup.service /etc/systemd/system/
 
 # Reload systemd
-sudo systemctl daemon-reload
+systemctl daemon-reload
 
 # Enable and start the service
-sudo systemctl enable amia-backup.service
-sudo systemctl start amia-backup.service
+systemctl enable amia-backup.service
+systemctl start amia-backup.service
 
 # Check status
-sudo systemctl status amia-backup.service
+systemctl status amia-backup.service
 
 # View logs
-sudo journalctl -u amia-backup.service -f
+journalctl -u amia-backup.service -f
 ```
 
 ## Docker Alternative
