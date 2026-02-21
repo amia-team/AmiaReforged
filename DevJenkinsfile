@@ -1,14 +1,44 @@
 pipeline{
     agent any
 
+    parameters {
+        string(name: 'DEV_SERVER_BASE', description: 'Base path for dev server (e.g. /home/amia/dev_server/server)')
+        string(name: 'STOP_SCRIPT', description: 'Stop script name (e.g. stop-dev.sh)')
+        string(name: 'START_SCRIPT', description: 'Start script name (e.g. start-dev.sh)')
+        string(name: 'SERVER_LABEL', description: 'Label for discord notifications (e.g. Dev Server 1)')
+        string(name: 'webhookURL', description: 'Discord webhook URL for build notifications')
+        booleanParam(name: 'DeployAll', defaultValue: false, description: 'Deploy all plugins')
+        booleanParam(name: 'DeployCore', defaultValue: false, description: 'Deploy Core plugin only')
+        booleanParam(name: 'DeploySystem', defaultValue: false, description: 'Deploy System plugin only')
+        booleanParam(name: 'DeployClasses', defaultValue: false, description: 'Deploy Classes plugin only')
+        booleanParam(name: 'DeployRaces', defaultValue: false, description: 'Deploy Races plugin only')
+        booleanParam(name: 'DeployDms', defaultValue: false, description: 'Deploy DMS plugin only')
+        booleanParam(name: 'DeployPwEngine', defaultValue: false, description: 'Deploy PwEngine plugin only')
+    }
+
     stages {
+        stage('Validate') {
+            steps {
+                script {
+                    if (!params.DEV_SERVER_BASE?.trim()) {
+                        error "DEV_SERVER_BASE parameter is required but was not set."
+                    }
+                    if (!params.STOP_SCRIPT?.trim()) {
+                        error "STOP_SCRIPT parameter is required but was not set."
+                    }
+                    if (!params.START_SCRIPT?.trim()) {
+                        error "START_SCRIPT parameter is required but was not set."
+                    }
+                }
+            }
+        }
         stage('Build') {
             steps {
                 echo 'Building..'
                  script {
-                    sh "chown -R jenkins.jenkins /var/lib/jenkins/workspace/"
-                    sh 'chmod +x stop-dev.sh'
-                    sh 'bash stop-dev.sh'
+                    sh "chown -R jenkins.jenkins ${WORKSPACE}"
+                    sh "chmod +x ${params.STOP_SCRIPT}"
+                    sh "bash ${params.STOP_SCRIPT}"
                 }
             }
         }
@@ -21,12 +51,12 @@ pipeline{
             steps {
                 echo 'Deploying....'
 
-                sh 'dotnet publish AmiaReforged.Core --output /home/amia/dev_server/server/anvil/Plugins/AmiaReforged.Core/'
-                sh 'dotnet publish AmiaReforged.System --output /home/amia/dev_server/server/anvil/Plugins/AmiaReforged.System/'
-                sh 'dotnet publish AmiaReforged.Classes --output /home/amia/dev_server/server/anvil/Plugins/AmiaReforged.Classes/'
-                sh 'dotnet publish AmiaReforged.Races --output /home/amia/dev_server/server/anvil/Plugins/AmiaReforged.Races/'
-                sh 'dotnet publish AmiaReforged.DMS --output /home/amia/dev_server/server/anvil/Plugins/AmiaReforged.DMS/'
-                sh 'dotnet publish AmiaReforged.PwEngine --output /home/amia/dev_server/server/anvil/Plugins/AmiaReforged.PwEngine/'
+                sh "dotnet publish AmiaReforged.Core --output ${params.DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.Core/"
+                sh "dotnet publish AmiaReforged.System --output ${params.DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.System/"
+                sh "dotnet publish AmiaReforged.Classes --output ${params.DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.Classes/"
+                sh "dotnet publish AmiaReforged.Races --output ${params.DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.Races/"
+                sh "dotnet publish AmiaReforged.DMS --output ${params.DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.DMS/"
+                sh "dotnet publish AmiaReforged.PwEngine --output ${params.DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.PwEngine/"
             }
         }
         stage('Deploy Core') {
@@ -38,7 +68,7 @@ pipeline{
             steps {
                 echo 'Deploying....'
 
-                sh 'dotnet publish AmiaReforged.Core --output /home/amia/dev_server/server/anvil/Plugins/AmiaReforged.Core/'
+                sh "dotnet publish AmiaReforged.Core --output ${params.DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.Core/"
             }
         }
         stage('Deploy System') {
@@ -50,7 +80,7 @@ pipeline{
 			steps {
 				echo 'Deploying....'
 
-				sh 'dotnet publish AmiaReforged.System --output /home/amia/dev_server/server/anvil/Plugins/AmiaReforged.System/'
+				sh "dotnet publish AmiaReforged.System --output ${params.DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.System/"
 			}
 		}
         stage('Deploy Classes') {
@@ -62,7 +92,7 @@ pipeline{
             steps {
                 echo 'Deploying....'
 
-                sh 'dotnet publish AmiaReforged.Classes --output /home/amia/dev_server/server/anvil/Plugins/AmiaReforged.Classes/'
+                sh "dotnet publish AmiaReforged.Classes --output ${params.DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.Classes/"
             }
         }
         stage('Deploy Races') {
@@ -74,7 +104,7 @@ pipeline{
             steps {
                 echo 'Deploying....'
 
-                sh 'dotnet publish AmiaReforged.Races --output /home/amia/dev_server/server/anvil/Plugins/AmiaReforged.Races/'
+                sh "dotnet publish AmiaReforged.Races --output ${params.DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.Races/"
             }
         }
         stage('Deploy DMS') {
@@ -86,7 +116,7 @@ pipeline{
             steps {
                 echo 'Deploying....'
 
-                sh 'dotnet publish AmiaReforged.DMS --output /home/amia/dev_server/server/anvil/Plugins/AmiaReforged.DMS/'
+                sh "dotnet publish AmiaReforged.DMS --output ${params.DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.DMS/"
             }
         }
         stage('Deploy PwEngine') {
@@ -98,16 +128,16 @@ pipeline{
             steps {
                 echo 'Deploying....'
 
-                sh 'dotnet publish AmiaReforged.PwEngine --output /home/amia/dev_server/server/anvil/Plugins/AmiaReforged.PwEngine/'
+                sh "dotnet publish AmiaReforged.PwEngine --output ${params.DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.PwEngine/"
             }
         }
     }
     post {
         always {
-            discordSend description: "Builder for plugin AmiaReforged Dev Server 1 finished.", footer: "Build results for AmiaReforged (DEV)", link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: params.webhookURL
-            sh "chown -R jenkins.jenkins /var/lib/jenkins/workspace/"
-            sh 'chmod +x start-dev.sh'
-            sh 'bash start-dev.sh'
+            discordSend description: "Builder for plugin AmiaReforged ${params.SERVER_LABEL} finished.", footer: "Build results for AmiaReforged (DEV)", link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: params.webhookURL
+            sh "chown -R jenkins.jenkins ${WORKSPACE}"
+            sh "chmod +x ${params.START_SCRIPT}"
+            sh "bash ${params.START_SCRIPT}"
         }
         success {
             echo 'Build success'

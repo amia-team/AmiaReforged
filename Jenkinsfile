@@ -1,6 +1,16 @@
 pipeline{
     agent any
 
+    parameters {
+        string(name: 'TEST_SERVER_BASE', description: 'Base path for test server (e.g. /home/amia/amia_server/test_server)')
+        string(name: 'LIVE_SERVER_BASE', description: 'Base path for live server (e.g. /home/amia/amia_server/server)')
+        string(name: 'webhookURL', description: 'Discord webhook URL for build notifications')
+        string(name: 'resources_dest_test', description: 'Destination for WorldEngine resources (test)')
+        string(name: 'resources_dest_prod', description: 'Destination for WorldEngine resources (prod)')
+        booleanParam(name: 'DeployTest', defaultValue: false, description: 'Deploy to test server')
+        booleanParam(name: 'DeployLive', defaultValue: false, description: 'Deploy to live server')
+    }
+
     stages {
         stage('Build BackupService Docker Image') {
             when {
@@ -51,17 +61,22 @@ pipeline{
                     }
             }
             steps {
+                script {
+                    if (!params.TEST_SERVER_BASE?.trim()) {
+                        error "TEST_SERVER_BASE parameter is required but was not set."
+                    }
+                }
                 echo 'Deploying....'
-				sh "chown -R jenkins.jenkins /var/lib/jenkins/workspace/"
+				sh "chown -R jenkins.jenkins ${WORKSPACE}"
 				sh 'chmod +x stop-test.sh'
 				sh 'bash stop-test.sh'
 
-                sh 'dotnet publish AmiaReforged.Core --output /home/amia/amia_server/test_server/anvil/Plugins/AmiaReforged.Core/'
-                sh 'dotnet publish AmiaReforged.System --output /home/amia/amia_server/test_server/anvil/Plugins/AmiaReforged.System/'
-                sh 'dotnet publish AmiaReforged.Classes --output /home/amia/amia_server/test_server/anvil/Plugins/AmiaReforged.Classes/'
-                sh 'dotnet publish AmiaReforged.Races --output /home/amia/amia_server/test_server/anvil/Plugins/AmiaReforged.Races/'
-                sh 'dotnet publish AmiaReforged.DMS --output /home/amia/amia_server/test_server/anvil/Plugins/AmiaReforged.DMS/'
-                sh 'dotnet publish AmiaReforged.PwEngine --output /home/amia/amia_server/test_server/anvil/Plugins/AmiaReforged.PwEngine/'
+                sh "dotnet publish AmiaReforged.Core --output ${params.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.Core/"
+                sh "dotnet publish AmiaReforged.System --output ${params.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.System/"
+                sh "dotnet publish AmiaReforged.Classes --output ${params.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.Classes/"
+                sh "dotnet publish AmiaReforged.Races --output ${params.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.Races/"
+                sh "dotnet publish AmiaReforged.DMS --output ${params.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.DMS/"
+                sh "dotnet publish AmiaReforged.PwEngine --output ${params.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.PwEngine/"
 
                 script {
                     if (params.resources_dest_test?.trim()) {
@@ -71,7 +86,7 @@ pipeline{
                     }
                 }
 
-				sh "chown -R jenkins.jenkins /var/lib/jenkins/workspace/"
+				sh "chown -R jenkins.jenkins ${WORKSPACE}"
 				sh 'chmod +x start-test.sh'
 				sh 'bash start-test.sh'
             }
@@ -83,17 +98,22 @@ pipeline{
                     }
             }
             steps {
+                script {
+                    if (!params.LIVE_SERVER_BASE?.trim()) {
+                        error "LIVE_SERVER_BASE parameter is required but was not set."
+                    }
+                }
                 echo 'Deploying....'
-				sh "chown -R jenkins.jenkins /var/lib/jenkins/workspace/"
+				sh "chown -R jenkins.jenkins ${WORKSPACE}"
 				sh 'chmod +x stop-live.sh'
 				sh 'bash stop-live.sh'
 
-                sh 'dotnet publish AmiaReforged.Core --output /home/amia/amia_server/server/anvil/Plugins/AmiaReforged.Core/'
-                sh 'dotnet publish AmiaReforged.System --output /home/amia/amia_server/server/anvil/Plugins/AmiaReforged.System/'
-                sh 'dotnet publish AmiaReforged.Classes --output /home/amia/amia_server/server/anvil/Plugins/AmiaReforged.Classes/'
-                sh 'dotnet publish AmiaReforged.Races --output /home/amia/amia_server/server/anvil/Plugins/AmiaReforged.Races/'
-                sh 'dotnet publish AmiaReforged.DMS --output /home/amia/amia_server/server/anvil/Plugins/AmiaReforged.DMS/'
-                sh 'dotnet publish AmiaReforged.PwEngine --output /home/amia/amia_server/server/anvil/Plugins/AmiaReforged.PwEngine/'
+                sh "dotnet publish AmiaReforged.Core --output ${params.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.Core/"
+                sh "dotnet publish AmiaReforged.System --output ${params.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.System/"
+                sh "dotnet publish AmiaReforged.Classes --output ${params.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.Classes/"
+                sh "dotnet publish AmiaReforged.Races --output ${params.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.Races/"
+                sh "dotnet publish AmiaReforged.DMS --output ${params.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.DMS/"
+                sh "dotnet publish AmiaReforged.PwEngine --output ${params.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.PwEngine/"
 
                 script {
                     if (params.resources_dest_prod?.trim()) {
@@ -103,7 +123,7 @@ pipeline{
                     }
                 }
 
-				sh "chown -R jenkins.jenkins /var/lib/jenkins/workspace/"
+				sh "chown -R jenkins.jenkins ${WORKSPACE}"
 				sh 'chmod +x start-live.sh'
 				sh 'bash start-live.sh'
             }
