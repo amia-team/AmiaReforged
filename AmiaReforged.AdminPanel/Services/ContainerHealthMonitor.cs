@@ -1,8 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 using AmiaReforged.AdminPanel.Configuration;
-using AmiaReforged.AdminPanel.Data;
-using Microsoft.EntityFrameworkCore;
+using AmiaReforged.AdminPanel.Models;
 
 namespace AmiaReforged.AdminPanel.Services;
 
@@ -13,10 +12,8 @@ public class ContainerHealthMonitor : BackgroundService
 {
     private readonly IDockerMonitorService _docker;
     private readonly IMonitoringConfigService _monitoringConfig;
-    private readonly IDbContextFactory<AdminPanelDbContext> _contextFactory;
     private readonly AdminPanelConfig _config;
     private readonly ILogger<ContainerHealthMonitor> _logger;
-    private readonly IServiceScopeFactory _scopeFactory;
 
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _activeMonitors = new();
     private readonly ConcurrentDictionary<string, DateTime> _lastRestartTimes = new();
@@ -24,17 +21,13 @@ public class ContainerHealthMonitor : BackgroundService
     public ContainerHealthMonitor(
         IDockerMonitorService docker,
         IMonitoringConfigService monitoringConfig,
-        IDbContextFactory<AdminPanelDbContext> contextFactory,
         AdminPanelConfig config,
-        ILogger<ContainerHealthMonitor> logger,
-        IServiceScopeFactory scopeFactory)
+        ILogger<ContainerHealthMonitor> logger)
     {
         _docker = docker;
         _monitoringConfig = monitoringConfig;
-        _contextFactory = contextFactory;
         _config = config;
         _logger = logger;
-        _scopeFactory = scopeFactory;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -96,7 +89,7 @@ public class ContainerHealthMonitor : BackgroundService
         }
     }
 
-    private async Task MonitorContainerLogsAsync(MonitoredContainer container, CancellationToken ct)
+    private async Task MonitorContainerLogsAsync(MonitoredContainerConfig container, CancellationToken ct)
     {
         try
         {
@@ -114,8 +107,8 @@ public class ContainerHealthMonitor : BackgroundService
                         _logger.LogWarning("Pattern '{Pattern}' matched in container {ContainerId}: {Line}",
                             pattern.ToString(), container.ContainerId, line);
 
-                        await RecordEventAsync(container.ContainerId, "PatternMatch",
-                            $"Pattern: {pattern}, Line: {line[..Math.Min(line.Length, 500)]}", ct);
+                        LogEvent(container.ContainerId, "PatternMatch",
+                            $"Pattern: {pattern}, Line: {line[..Math.Min(line.Length, 500)]}");
 
                         if (container.AutoRestartEnabled && ShouldAutoRestart(container.ContainerId))
                         {
@@ -156,7 +149,7 @@ public class ContainerHealthMonitor : BackgroundService
         return true;
     }
 
-    private async Task HandleAutoRestartAsync(MonitoredContainer container, string triggerLine, CancellationToken ct)
+    private async Task HandleAutoRestartAsync(MonitoredContainerConfig container, string triggerLine, CancellationToken ct)
     {
         try
         {
@@ -166,35 +159,21 @@ public class ContainerHealthMonitor : BackgroundService
 
             await _docker.RestartContainerAsync(container.ContainerId, ct);
 
-            await RecordEventAsync(container.ContainerId, "AutoRestart",
-                $"Triggered by pattern match: {triggerLine[..Math.Min(triggerLine.Length, 500)]}", ct);
+            LogEvent(container.ContainerId, "AutoRestart",
+                $"Triggered by pattern match: {triggerLine[..Math.Min(triggerLine.Length, 500)]}");
 
             // TODO: Send Discord notification if configured
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to auto-restart container {ContainerId}", container.ContainerId);
-            await RecordEventAsync(container.ContainerId, "AutoRestartFailed", ex.Message, ct);
+            LogEvent(container.ContainerId, "AutoRestartFailed", ex.Message);
         }
     }
 
-    private async Task RecordEventAsync(string containerId, string eventType, string? details, CancellationToken ct)
+    private void LogEvent(string containerId, string eventType, string? details)
     {
-        try
-        {
-            await using var context = await _contextFactory.CreateDbContextAsync(ct);
-            context.ContainerEvents.Add(new ContainerEvent
-            {
-                ContainerId = containerId,
-                EventType = eventType,
-                Details = details,
-                Timestamp = DateTime.UtcNow
-            });
-            await context.SaveChangesAsync(ct);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to record container event");
-        }
+        _logger.LogInformation("Container event: {ContainerId} | {EventType} | {Details}",
+            containerId, eventType, details);
     }
 }

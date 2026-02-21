@@ -1,7 +1,5 @@
 @page "/configure/{ContainerId}"
 @using Microsoft.AspNetCore.Authorization
-@using AmiaReforged.AdminPanel.Services
-@using AmiaReforged.AdminPanel.Data
 @attribute [Authorize]
 @inject IMonitoringConfigService MonitoringService
 @inject NavigationManager Navigation
@@ -84,7 +82,7 @@
     [Parameter]
     public string ContainerId { get; set; } = string.Empty;
 
-    private MonitoredContainer? _container;
+    private MonitoredContainerConfig? _container;
     private string _watchPatterns = string.Empty;
     private bool _autoRestartEnabled;
     private bool _isMonitoringEnabled;

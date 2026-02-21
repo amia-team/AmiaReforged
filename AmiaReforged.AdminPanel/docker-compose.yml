@@ -5,14 +5,13 @@ services:
     image: amia-admin-panel:latest
     container_name: admin-panel
     restart: unless-stopped
-    depends_on:
-      - postgres
     environment:
-      - ConnectionStrings__DefaultConnection=Host=postgres;Database=admin_panel;Username=amia;Password=${DB_PASSWORD:-amia}
-      - AdminPanel__DefaultAdminPassword=${ADMIN_PASSWORD:-ChangeMe123!}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-ChangeMe123!}
       - DOTNET_ENVIRONMENT=Production
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - admin_data:/data
     networks:
       - admin-network
     expose:
@@ -37,29 +36,11 @@ services:
     depends_on:
       - admin-panel
 
-  postgres:
-    image: postgres:16-alpine
-    container_name: admin-panel-db
-    restart: unless-stopped
-    environment:
-      - POSTGRES_USER=amia
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-amia}
-      - POSTGRES_DB=admin_panel
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - admin-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U amia -d admin_panel"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
 networks:
   admin-network:
     driver: bridge
 
 volumes:
-  postgres_data:
+  admin_data:
   caddy_data:
   caddy_config:

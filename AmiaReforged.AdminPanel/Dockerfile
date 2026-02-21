@@ -41,12 +41,18 @@ LABEL org.opencontainers.image.title="Amia Admin Panel" \
 # Copy published output from build stage
 COPY --from=build /app/publish .
 
+# Create data directory for config persistence
+RUN mkdir -p /data
+
 # Set environment variables
 ENV ASPNETCORE_URLS=http://+:8080 \
     DOTNET_ENVIRONMENT=Production
 
 # Expose port
 EXPOSE 8080
+
+# Volume for persistent config
+VOLUME ["/data"]
 
 # Run the application
 ENTRYPOINT ["dotnet", "AmiaReforged.AdminPanel.dll"]

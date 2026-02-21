@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using Microsoft.AspNetCore.Authorization
 @using AmiaReforged.AdminPanel.Services
+@using AmiaReforged.AdminPanel.Models
 @attribute [Authorize]
 @inject IDockerMonitorService DockerService
 @inject IMonitoringConfigService MonitoringService
@@ -125,7 +126,7 @@
 
 @code {
     private List<ContainerInfo> _containers = new();
-    private List<Data.MonitoredContainer> _monitoredContainers = new();
+    private List<MonitoredContainerConfig> _monitoredContainers = new();
     private HashSet<string> _monitoredIds = new();
     private bool _isLoading = true;
     private string? _error;
@@ -183,7 +184,7 @@
         }
     }
 
-    private async Task ToggleAutoRestart(Data.MonitoredContainer mc)
+    private async Task ToggleAutoRestart(MonitoredContainerConfig mc)
     {
         try
         {
@@ -202,7 +203,7 @@
         Navigation.NavigateTo($"/logs/{container.Id}");
     }
 
-    private void ConfigureMonitoring(Data.MonitoredContainer mc)
+    private void ConfigureMonitoring(MonitoredContainerConfig mc)
     {
         Navigation.NavigateTo($"/configure/{mc.ContainerId}");
     }

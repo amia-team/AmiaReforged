@@ -23,7 +23,6 @@ This guide walks you through setting up the Amia Admin Panel for Docker containe
 
 ### For Local Development
 - .NET 8.0 SDK
-- PostgreSQL 14+ (or Docker for containerized DB)
 - Docker socket access (for container management features)
 
 ---
@@ -52,10 +51,8 @@ ADMIN_DOMAIN=admin.yourdomain.com
 ADMIN_EMAIL=admin@yourdomain.com
 
 # Admin Credentials
+ADMIN_USERNAME=admin
 ADMIN_PASSWORD=YourSecurePassword123!
-
-# Database
-DB_PASSWORD=your_secure_db_password
 
 # Optional: Discord Notifications
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
@@ -70,14 +67,13 @@ docker-compose up -d
 This starts:
 - **admin-panel**: The Blazor Server application on port 8080
 - **caddy**: Reverse proxy with automatic HTTPS on ports 80/443
-- **postgres**: PostgreSQL database for identity/settings
 
 ### Step 3: Access the Panel
 
 Open `https://admin.yourdomain.com` in your browser.
 
 Login with:
-- **Username**: `admin`
+- **Username**: (the `ADMIN_USERNAME` you set in `.env`, default: `admin`)
 - **Password**: (the `ADMIN_PASSWORD` you set in `.env`)
 
 ---
@@ -98,22 +94,21 @@ docker build \
   -t amia-admin-panel:${VERSION} \
   -t amia-admin-panel:latest \
   --build-arg BUILD_VERSION=${VERSION} \
-  --build-arg GIT_SHA=$(git rev-parse --short HEAD) \
-  --build-arg BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --build-arg GIT_SHA=$(git rev-parse HEAD) \
+  --build-arg BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
   .
-
-echo "Built amia-admin-panel:${VERSION}"
 ```
 
-### Run the Container
+### Run Standalone (without Caddy)
 
 ```bash
 docker run -d \
   --name admin-panel \
   -p 8080:8080 \
-  -v /var/run/docker.sock:/var/run/docker.sock:ro \
-  -e ConnectionStrings__DefaultConnection="Host=your-db-host;Database=admin_panel;Username=amia;Password=your_password" \
-  -e AdminPanel__DefaultAdminPassword="YourSecurePassword123!" \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v admin_data:/data \
+  -e ADMIN_USERNAME=admin \
+  -e ADMIN_PASSWORD=YourSecurePassword123! \
   amia-admin-panel:latest
 ```
 
@@ -121,33 +116,15 @@ docker run -d \
 
 ## Local Development Setup
 
-### Step 1: Install Dependencies
+### Step 1: Clone and Build
 
 ```bash
 cd AmiaReforged.AdminPanel
 dotnet restore
+dotnet build
 ```
 
-### Step 2: Start PostgreSQL
-
-Using Docker:
-```bash
-docker run -d \
-  --name admin-panel-db \
-  -p 5432:5432 \
-  -e POSTGRES_USER=amia \
-  -e POSTGRES_PASSWORD=amia \
-  -e POSTGRES_DB=admin_panel \
-  postgres:16
-```
-
-### Step 3: Apply Database Migrations
-
-```bash
-dotnet ef database update
-```
-
-### Step 4: Run the Application
+### Step 2: Run the Application
 
 ```bash
 dotnet run
@@ -160,13 +137,13 @@ dotnet watch run
 
 The application will be available at `http://localhost:5000` (or the port specified in `Properties/launchSettings.json`).
 
-### Step 5: Access Docker Socket
+### Step 3: Access Docker Socket
 
 For container management features, ensure your user has Docker socket access:
 
 ```bash
 # Add your user to the docker group
-usermod -aG docker $USER
+sudo usermod -aG docker $USER
 
 # Log out and back in, or run:
 newgrp docker
@@ -182,8 +159,8 @@ newgrp docker
 |----------|-------------|---------|
 | `ADMIN_DOMAIN` | Domain for Caddy TLS certificate | `admin.example.com` |
 | `ADMIN_EMAIL` | Email for Let's Encrypt notifications | `admin@example.com` |
-| `ADMIN_PASSWORD` | Initial admin account password | `ChangeMe123!` |
-| `DB_PASSWORD` | PostgreSQL password | `amia` |
+| `ADMIN_USERNAME` | Admin login username | `admin` |
+| `ADMIN_PASSWORD` | Admin login password | `ChangeMe123!` |
 | `DISCORD_WEBHOOK_URL` | Discord webhook for notifications | _(none)_ |
 
 ### Application Settings (appsettings.json)
@@ -191,126 +168,64 @@ newgrp docker
 | Setting | Description | Default |
 |---------|-------------|---------|
 | `AdminPanel:DefaultAdminUsername` | Admin username | `admin` |
-| `AdminPanel:DefaultAdminEmail` | Admin email | `admin@amia.local` |
 | `AdminPanel:DefaultAdminPassword` | Admin password | `ChangeMe123!` |
 | `AdminPanel:DockerSocketPath` | Docker socket path | `unix:///var/run/docker.sock` |
+| `AdminPanel:ConfigPath` | Path to monitoring config JSON | `/data/monitoring-config.json` |
 | `AdminPanel:ContainerPollIntervalSeconds` | Status refresh interval | `5` |
 | `AdminPanel:MaxLogLinesPerContainer` | Log buffer size | `1000` |
 | `AdminPanel:AutoRestartCooldownSeconds` | Cooldown between auto-restarts | `60` |
-
-### Caddy Configuration
-
-The `Caddyfile` configures the reverse proxy:
-
-```caddyfile
-{$ADMIN_DOMAIN} {
-    reverse_proxy admin-panel:8080
-
-    # Security headers included:
-    # - X-Content-Type-Options: nosniff
-    # - X-Frame-Options: DENY
-    # - X-XSS-Protection: 1; mode=block
-    # - Referrer-Policy: strict-origin-when-cross-origin
-}
-```
 
 ---
 
 ## Troubleshooting
 
-### Cannot Connect to Docker Socket
+### Cannot connect to Docker
 
-**Symptom**: "Cannot connect to Docker daemon" errors
+**Symptom**: Error about Docker socket connection
 
-**Solution**:
-```bash
-# Check socket permissions
-ls -la /var/run/docker.sock
-
-# Ensure container has socket mounted
-docker inspect admin-panel | grep -A5 "Mounts"
-```
-
-For write access (restart/stop/start), mount without `:ro`:
+**Solution**: Ensure the Docker socket is mounted correctly:
 ```yaml
 volumes:
   - /var/run/docker.sock:/var/run/docker.sock
 ```
 
-### Database Connection Failed
+### Login not working
 
-**Symptom**: "Connection refused" or timeout errors
+**Symptom**: Invalid credentials error
 
-**Solution**:
-1. Verify PostgreSQL is running:
-   ```bash
-   docker ps | grep postgres
-   ```
+**Solution**: Check that `ADMIN_USERNAME` and `ADMIN_PASSWORD` environment variables are set correctly. Default username is `admin`.
 
-2. Check connection string in environment:
-   ```bash
-   docker exec admin-panel printenv | grep Connection
-   ```
+### Configuration not persisting
 
-3. Ensure database exists:
-   ```bash
-   docker exec -it admin-panel-db psql -U amia -c "\l"
-   ```
+**Symptom**: Monitored containers reset after restart
 
-### Let's Encrypt Certificate Issues
+**Solution**: Ensure the `/data` volume is mounted:
+```yaml
+volumes:
+  - admin_data:/data
+```
 
-**Symptom**: HTTPS not working or certificate errors
+### Caddy not getting certificates
+
+**Symptom**: HTTPS not working, certificate errors
 
 **Solution**:
-1. Ensure ports 80 and 443 are open on your firewall
-2. Verify DNS is pointing to your server:
-   ```bash
-   dig +short admin.yourdomain.com
-   ```
-3. Check Caddy logs:
-   ```bash
-   docker logs caddy
-   ```
-
-### Admin Login Not Working
-
-**Symptom**: Cannot login with default credentials
-
-**Solution**:
-1. Verify the password was set correctly:
-   ```bash
-   docker exec admin-panel printenv | grep ADMIN_PASSWORD
-   ```
-
-2. The admin account is created on first startup. If you need to reset:
-   ```bash
-   # Stop the container
-   docker-compose down
-
-   # Remove the database volume
-   docker volume rm adminpanel_postgres_data
-
-   # Restart with correct password
-   docker-compose up -d
-   ```
+1. Ensure `ADMIN_DOMAIN` points to your server's IP
+2. Ensure ports 80 and 443 are open
+3. Check Caddy logs: `docker-compose logs caddy`
 
 ---
 
-## Next Steps
+## Data Persistence
 
-- Review the [VERSION_GUIDE.md](VERSION_GUIDE.md) for release procedures
-- Configure crash detection patterns for your containers
-- Set up Discord webhook for notifications
-- Add additional containers to monitor via the UI
+The Admin Panel stores monitoring configuration in `/data/monitoring-config.json`. This is mounted as a Docker volume (`admin_data`) to persist across container restarts.
 
-## Support
-
-For issues, check the repository's issue tracker or review logs:
-
+To backup:
 ```bash
-# Admin Panel logs
-docker logs -f admin-panel
+docker cp admin-panel:/data/monitoring-config.json ./backup-config.json
+```
 
-# All services
-docker-compose logs -f
+To restore:
+```bash
+docker cp ./backup-config.json admin-panel:/data/monitoring-config.json
 ```

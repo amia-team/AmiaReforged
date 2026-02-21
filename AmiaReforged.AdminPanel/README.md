@@ -8,8 +8,9 @@ A Blazor Server admin panel for monitoring and managing Docker containers with r
 - **Selective Container Monitoring**: Choose which containers to monitor from the UI
 - **Crash Detection**: Configurable regex patterns to detect segfaults, SIGSEGV, and other crash indicators
 - **Auto-Restart**: Automatically restart containers when crash patterns are detected
-- **Secure Authentication**: ASP.NET Identity with single admin account
+- **Simple Authentication**: Single admin account configured via environment variables
 - **Let's Encrypt TLS**: Automatic HTTPS via Caddy reverse proxy
+- **No Database Required**: Configuration persisted to JSON file
 
 ## Quick Start
 
@@ -32,8 +33,8 @@ nano .env
 ```env
 ADMIN_DOMAIN=admin.yourdomain.com
 ADMIN_EMAIL=admin@yourdomain.com
+ADMIN_USERNAME=admin
 ADMIN_PASSWORD=YourSecurePassword123!
-DB_PASSWORD=your_secure_db_password
 ```
 
 3. Deploy with Docker Compose:
@@ -46,7 +47,7 @@ docker-compose up -d
 4. Access the panel at `https://admin.yourdomain.com`
 
 Default credentials:
-- Username: `admin`
+- Username: (from `ADMIN_USERNAME` env variable, default: `admin`)
 - Password: (from `ADMIN_PASSWORD` env variable)
 
 ## Configuration
@@ -57,8 +58,8 @@ Default credentials:
 |----------|-------------|---------|
 | `ADMIN_DOMAIN` | Domain for TLS certificate | `admin.example.com` |
 | `ADMIN_EMAIL` | Email for Let's Encrypt | `admin@example.com` |
+| `ADMIN_USERNAME` | Admin login username | `admin` |
 | `ADMIN_PASSWORD` | Admin login password | `ChangeMe123!` |
-| `DB_PASSWORD` | PostgreSQL password | `amia` |
 | `DISCORD_WEBHOOK_URL` | Discord notifications (optional) | - |
 
 ### Watch Patterns
@@ -81,8 +82,8 @@ Custom patterns can be added via the Configure page for each monitored container
                     ┌─────────────────┼─────────────────┐
                     ▼                 ▼                 ▼
             ┌─────────────┐   ┌─────────────┐   ┌─────────────┐
-            │ PostgreSQL  │   │ Docker API  │   │  SignalR    │
-            │ (Identity)  │   │ (socket)    │   │  (logs)     │
+            │ JSON Config │   │ Docker API  │   │  SignalR    │
+            │ (/data)     │   │ (socket)    │   │  (logs)     │
             └─────────────┘   └─────────────┘   └─────────────┘
 ```
 
@@ -123,22 +124,16 @@ This configuration:
 - Uses development-friendly default credentials
 - Sets `DOTNET_ENVIRONMENT=Development` for detailed error pages
 
-### Database Migrations
+## Data Persistence
 
-```bash
-# Add migration
-dotnet ef migrations add MigrationName
-
-# Apply migrations
-dotnet ef database update
-```
+Monitoring configuration is stored in `/data/monitoring-config.json` inside the container. The `admin_data` Docker volume ensures this persists across container restarts.
 
 ## Security Notes
 
-- The Docker socket is mounted read-only for container inspection
+- The Docker socket is mounted for container management
 - Restart/stop/start operations require the socket to be mounted with write access
 - All routes require authentication
-- Passwords are hashed with ASP.NET Identity's PBKDF2
+- Simple cookie-based authentication
 
 ## License
 

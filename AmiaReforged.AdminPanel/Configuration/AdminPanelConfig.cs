@@ -6,14 +6,9 @@ namespace AmiaReforged.AdminPanel.Configuration;
 public class AdminPanelConfig
 {
     /// <summary>
-    /// Default admin username seeded on first run.
+    /// Default admin username for login.
     /// </summary>
     public string DefaultAdminUsername { get; set; } = "admin";
-
-    /// <summary>
-    /// Default admin email seeded on first run.
-    /// </summary>
-    public string DefaultAdminEmail { get; set; } = "admin@amia.local";
 
     /// <summary>
     /// Default admin password (should be overridden via environment variable).
@@ -24,6 +19,11 @@ public class AdminPanelConfig
     /// Path to the Docker socket.
     /// </summary>
     public string DockerSocketPath { get; set; } = "unix:///var/run/docker.sock";
+
+    /// <summary>
+    /// Path to the JSON config file for monitoring state persistence.
+    /// </summary>
+    public string ConfigPath { get; set; } = "/data/monitoring-config.json";
 
     /// <summary>
     /// How often to poll container status (in seconds).

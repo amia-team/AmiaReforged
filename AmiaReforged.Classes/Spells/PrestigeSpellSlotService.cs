@@ -95,7 +95,6 @@ public class PrestigeSpellSlotService
         Log.Info($"=== STEP 0: Starting ApplyPrestigeSpellSlotSkin for {creature.Name} ===");
 
         // STEP 1: Look for equipped creature hide
-        Log.Info($"STEP 1: Checking for equipped creature hide in skin slot...");
         NwItem? existingHide = creature.GetItemInSlot(InventorySlot.CreatureSkin);
 
         if (existingHide != null && existingHide.ResRef == "ds_pchide")
@@ -119,7 +118,6 @@ public class PrestigeSpellSlotService
 
         if (hideInInventory.Count > 0)
         {
-            Log.Info($"STEP 2: Found {hideInInventory.Count} duplicate hide(s) in inventory - removing them");
             foreach (NwItem hide in hideInInventory)
             {
                 hide.Destroy();
@@ -132,7 +130,6 @@ public class PrestigeSpellSlotService
         }
 
         // STEP 3: Analyze character classes BEFORE creating hide
-        Log.Info($"STEP 3: Analyzing character classes...");
         List<(ClassType classType, int level)> prestigeClasses = [];
         Dictionary<ClassType, int> allBaseClasses = new();
 
@@ -161,7 +158,6 @@ public class PrestigeSpellSlotService
         // Check if we need to add spell slots - ONLY if they have Blackguard
         if (prestigeClasses.Count == 0)
         {
-            Log.Info($"STEP 3: No prestige caster classes (Blackguard) found");
 
             // If they have a hide but no longer need it, remove it
             if (existingHide != null)
