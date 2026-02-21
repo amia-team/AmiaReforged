@@ -4,35 +4,8 @@ using NWN.Core;
 
 namespace AmiaReforged.Classes.Spells;
 
-public class SpellUtils
+public static class SpellUtils
 {
-    /// <summary>
-    /// If spell targets neutrals (like fireball, grease, etc., most AOE spells),
-    /// it also damages yourself and associates , but not your party members or their associates.
-    /// If ObjectTypes in GetObjectsInShape allows placeables or doors, they're always hit
-    /// </summary>
-    /// <returns>True for valid targets to apply effects to hit</returns>
-    static bool IsValidAoeTarget(NwGameObject caster, NwObject target)
-    {
-        if (target is NwDoor or NwPlaceable) return true;
-
-        // Hurts yourself
-        if (caster == target) return true;
-
-        if (target is NwCreature targetCreature)
-        {
-            // Hurt your own associates
-            if (targetCreature.Master == caster) return true;
-
-            // Hurt neutrals and hostiles
-            if (!targetCreature.IsReactionTypeFriendly((NwCreature)caster)) return true;
-        }
-
-        // Doesn't hurt other targets than the checked for above
-        return false;
-    }
-
-
     /// <summary>
     /// Sends a server message as feedback to the player about the remaining ability cool down
     /// </summary>
@@ -135,39 +108,6 @@ public class SpellUtils
         };
     }
 
-    public static int GetAoeSpellDc(AreaOfEffectEvents.OnEnter eventData)
-    {
-        if (eventData.Effect.Creator is not NwCreature casterCreature) return eventData.SpellSaveDC;
-        NwSpell? spell = eventData.Effect.Spell;
-        if (spell is null) return eventData.SpellSaveDC;
-
-        // If the caster knows the spell, default to normal DC
-        if (casterCreature.Classes.Any(c => c.KnownSpells.Any(spells => spells.Contains(spell))))
-            return eventData.SpellSaveDC;
-
-        // Check for both monk and shifter as classes, if caster has both, then use the highest level class
-        // or default to shifter if monk and shifter are equal
-        if (casterCreature.Classes.All(c => c.Class.ClassType is ClassType.Monk or ClassType.Shifter))
-        {
-            int monkLevel = casterCreature.GetClassInfo(ClassType.Monk)?.Level ?? 0;
-            int shifterLevel = casterCreature.GetClassInfo(ClassType.Shifter)?.Level ?? 0;
-
-
-            return monkLevel > shifterLevel ? CalculateMonkWildMagicDc(casterCreature, spell.InnateSpellLevel)
-                : CalculateShifterDc(casterCreature);
-        }
-
-        CreatureClassInfo? spellClass = casterCreature.Classes.FirstOrDefault(c => c.Class.ClassType is ClassType.Monk or ClassType.Shifter);
-        if (spellClass is null) return eventData.SpellSaveDC;
-
-        return spellClass.Class.ClassType switch
-        {
-            ClassType.Monk => CalculateMonkWildMagicDc(casterCreature, spell.InnateSpellLevel),
-            ClassType.Shifter => CalculateShifterDc(casterCreature),
-            _ => eventData.SpellSaveDC
-        };
-    }
-
     private static int CalculateMonkWildMagicDc(NwCreature creature, int spellLevel) =>
         0;
 
@@ -194,15 +134,16 @@ public class SpellUtils
 
     /// <summary>
     /// Checks if a target is valid for a hostile spell.
-    /// Returns true if the target is a valid hostile target.
+    /// As per base game rules and Amia's difficulty setting, spells hurt the caster and the caster's own associates.
+    /// C# version of spellsIsTarget with target type SPELL_TARGET_STANDARDHOSTILE
+    /// in x0_i0_spells that is used for most hostile AoE spells in the game
     /// </summary>
+    /// <returns>Returns true if the target is a valid target for a hostile spell.</returns>
     public static bool IsValidHostileTarget(NwCreature target, NwCreature caster)
     {
         if (target.IsDMAvatar) return false;
-        if (target == caster) return false;
-        if (target.Master == caster) return false;
-        // Check if target is an associate of a friendly creature (e.g., party member's summon)
-        if (target.Master != null && target.Master.IsReactionTypeFriendly(caster)) return false;
+        if (target == caster) return true;
+        if (target.Master == caster) return true;
         if (target.IsReactionTypeFriendly(caster)) return false;
         return true;
     }
