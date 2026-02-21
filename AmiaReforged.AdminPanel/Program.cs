@@ -58,6 +58,7 @@ public class Program
                 });
 
             builder.Services.AddAuthorization();
+            builder.Services.AddHttpContextAccessor();
             builder.Services.AddCascadingAuthenticationState();
 
             // Services
