@@ -65,6 +65,7 @@ public class OrsonsPyromagic(ScriptHandleFactory scriptHandleFactory) : ISpell
         {
             if (!caster.IsReactionTypeHostile(creature) || !creature.IsValid || creature.IsDead) continue;
 
+            CreatureEvents.OnSpellCastAt.Signal(caster, creature, spell);
             creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(ImpMirvFire));
             _ = ApplyFireMissile(caster, creature, dc, metaMagic, spell, reflexVfx, damageVfx);
         }
