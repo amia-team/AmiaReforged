@@ -1,11 +1,13 @@
 ﻿@page "/"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 @using AmiaReforged.AdminPanel.Services
 @using AmiaReforged.AdminPanel.Models
 @attribute [Authorize]
 @inject IDockerMonitorService DockerService
 @inject IMonitoringConfigService MonitoringService
 @inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
 @rendermode InteractiveServer
 
 <PageTitle>Dashboard - Amia Admin Panel</PageTitle>
@@ -41,7 +43,10 @@
                             <th>Image</th>
                             <th>State</th>
                             <th>Status</th>
-                            <th>Monitored</th>
+                            @if (_isAdmin)
+                            {
+                                <th>Monitored</th>
+                            }
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -56,28 +61,34 @@
                                     <span class="state-badge @container.State">@container.State</span>
                                 </td>
                                 <td>@container.Status</td>
-                                <td>
-                                    <input type="checkbox" checked="@isMonitored"
-                                           @onchange="() => ToggleMonitoring(container)" />
-                                </td>
+                                @if (_isAdmin)
+                                {
+                                    <td>
+                                        <input type="checkbox" checked="@isMonitored"
+                                               @onchange="() => ToggleMonitoring(container)" />
+                                    </td>
+                                }
                                 <td class="actions">
                                     <button class="btn btn-sm btn-info" @onclick="() => ViewLogs(container)">
                                         Logs
                                     </button>
-                                    @if (container.State == "running")
+                                    @if (_isAdmin)
                                     {
-                                        <button class="btn btn-sm btn-warning" @onclick="() => RestartContainer(container)">
-                                            Restart
-                                        </button>
-                                        <button class="btn btn-sm btn-danger" @onclick="() => StopContainer(container)">
-                                            Stop
-                                        </button>
-                                    }
-                                    else
-                                    {
-                                        <button class="btn btn-sm btn-success" @onclick="() => StartContainer(container)">
-                                            Start
-                                        </button>
+                                        @if (container.State == "running")
+                                        {
+                                            <button class="btn btn-sm btn-warning" @onclick="() => RestartContainer(container)">
+                                                Restart
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" @onclick="() => StopContainer(container)">
+                                                Stop
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-sm btn-success" @onclick="() => StartContainer(container)">
+                                                Start
+                                            </button>
+                                        }
                                     }
                                 </td>
                             </tr>
@@ -86,7 +97,7 @@
                 </table>
             </div>
 
-            @if (_monitoredContainers.Any())
+            @if (_isAdmin && _monitoredContainers.Any())
             {
                 <div class="section monitored-section">
                     <h2>Monitored Containers (@_monitoredContainers.Count)</h2>
@@ -130,9 +141,12 @@
     private HashSet<string> _monitoredIds = new();
     private bool _isLoading = true;
     private string? _error;
+    private bool _isAdmin;
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _isAdmin = authState.User.IsInRole("Admin");
         await RefreshContainers();
     }
 

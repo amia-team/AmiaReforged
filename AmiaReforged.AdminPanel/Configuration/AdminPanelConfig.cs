@@ -16,6 +16,16 @@ public class AdminPanelConfig
     public string DefaultAdminPassword { get; set; } = "ChangeMe123!";
 
     /// <summary>
+    /// Dev account username (read-only access, log streaming only).
+    /// </summary>
+    public string DevUsername { get; set; } = "dev";
+
+    /// <summary>
+    /// Dev account password (should be overridden via environment variable).
+    /// </summary>
+    public string DevPassword { get; set; } = "DevPass123!";
+
+    /// <summary>
     /// Path to the Docker socket.
     /// </summary>
     public string DockerSocketPath { get; set; } = "unix:///var/run/docker.sock";

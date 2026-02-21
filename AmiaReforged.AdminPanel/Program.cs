@@ -43,6 +43,8 @@ public class Program
             // Override from environment variables
             adminConfig.DefaultAdminUsername = Environment.GetEnvironmentVariable("ADMIN_USERNAME") ?? adminConfig.DefaultAdminUsername;
             adminConfig.DefaultAdminPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD") ?? adminConfig.DefaultAdminPassword;
+            adminConfig.DevUsername = Environment.GetEnvironmentVariable("DEV_USERNAME") ?? adminConfig.DevUsername;
+            adminConfig.DevPassword = Environment.GetEnvironmentVariable("DEV_PASSWORD") ?? adminConfig.DevPassword;
             adminConfig.DiscordWebhookUrl = Environment.GetEnvironmentVariable("DISCORD_WEBHOOK_URL") ?? adminConfig.DiscordWebhookUrl;
             adminConfig.DockerSocketPath = Environment.GetEnvironmentVariable("DOCKER_SOCKET") ?? adminConfig.DockerSocketPath;
 
@@ -104,12 +106,25 @@ public class Program
                 var rememberMe = form["rememberMe"] == "true";
                 var returnUrl = form["returnUrl"].ToString();
 
+                string? role = null;
+
+                // Check Admin credentials
                 if (username == config.DefaultAdminUsername && password == config.DefaultAdminPassword)
+                {
+                    role = "Admin";
+                }
+                // Check Dev credentials
+                else if (username == config.DevUsername && password == config.DevPassword)
+                {
+                    role = "Dev";
+                }
+
+                if (role != null)
                 {
                     var claims = new List<Claim>
                     {
                         new(ClaimTypes.Name, username),
-                        new(ClaimTypes.Role, "Admin")
+                        new(ClaimTypes.Role, role)
                     };
 
                     var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
