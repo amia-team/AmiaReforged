@@ -64,7 +64,6 @@ pipeline{
                     }
                 }
                 echo 'Deploying....'
-				sh "chown -R jenkins.jenkins ${WORKSPACE}"
 				sh 'chmod +x stop-test.sh'
 				sh 'bash stop-test.sh'
 
@@ -83,7 +82,6 @@ pipeline{
                     }
                 }
 
-				sh "chown -R jenkins.jenkins ${WORKSPACE}"
 				sh 'chmod +x start-test.sh'
 				sh 'bash start-test.sh'
             }
@@ -101,7 +99,6 @@ pipeline{
                     }
                 }
                 echo 'Deploying....'
-				sh "chown -R jenkins.jenkins ${WORKSPACE}"
 				sh 'chmod +x stop-live.sh'
 				sh 'bash stop-live.sh'
 
@@ -120,7 +117,6 @@ pipeline{
                     }
                 }
 
-				sh "chown -R jenkins.jenkins ${WORKSPACE}"
 				sh 'chmod +x start-live.sh'
 				sh 'bash start-live.sh'
             }
