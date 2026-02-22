@@ -2,10 +2,6 @@ pipeline{
     agent any
 
     parameters {
-        string(name: 'TEST_SERVER_BASE', description: 'Base path for test server (e.g. /home/amia/amia_server/test_server)')
-        string(name: 'LIVE_SERVER_BASE', description: 'Base path for live server (e.g. /home/amia/amia_server/server)')
-        string(name: 'resources_dest_test', description: 'Destination for WorldEngine resources (test)')
-        string(name: 'resources_dest_prod', description: 'Destination for WorldEngine resources (prod)')
         booleanParam(name: 'DeployTest', defaultValue: true, description: 'Deploy to test server')
         booleanParam(name: 'DeployLive', defaultValue: false, description: 'Deploy to live server')
     }
