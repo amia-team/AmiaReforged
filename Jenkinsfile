@@ -55,33 +55,33 @@ pipeline{
             }
             steps {
                 script {
-                    if (!params.TEST_SERVER_BASE?.trim()) {
-                        error "TEST_SERVER_BASE parameter is required but was not set."
+                    if (!env.TEST_SERVER_BASE?.trim()) {
+                        error "TEST_SERVER_BASE environment variable is required but was not set."
                     }
                 }
                 echo 'Deploying....'
 				sh 'chmod +x stop-test.sh'
-				withEnv(["AMIA_SERVER_DIR=${params.TEST_SERVER_BASE}/..".toString()]) {
+				withEnv(["AMIA_SERVER_DIR=${env.TEST_SERVER_BASE}/..".toString()]) {
 				    sh 'bash stop-test.sh'
 				}
 
-                sh "dotnet publish AmiaReforged.Core --output ${params.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.Core/"
-                sh "dotnet publish AmiaReforged.System --output ${params.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.System/"
-                sh "dotnet publish AmiaReforged.Classes --output ${params.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.Classes/"
-                sh "dotnet publish AmiaReforged.Races --output ${params.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.Races/"
-                sh "dotnet publish AmiaReforged.DMS --output ${params.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.DMS/"
-                sh "dotnet publish AmiaReforged.PwEngine --output ${params.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.PwEngine/"
+                sh "dotnet publish AmiaReforged.Core --output ${env.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.Core/"
+                sh "dotnet publish AmiaReforged.System --output ${env.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.System/"
+                sh "dotnet publish AmiaReforged.Classes --output ${env.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.Classes/"
+                sh "dotnet publish AmiaReforged.Races --output ${env.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.Races/"
+                sh "dotnet publish AmiaReforged.DMS --output ${env.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.DMS/"
+                sh "dotnet publish AmiaReforged.PwEngine --output ${env.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.PwEngine/"
 
                 script {
-                    if (params.resources_dest_test?.trim()) {
-                        sh "rsync -av --delete AmiaReforged.PwEngine/Resources/WorldEngine ${params.resources_dest_test}/"
+                    if (env.resources_dest_test?.trim()) {
+                        sh "rsync -av --delete AmiaReforged.PwEngine/Resources/WorldEngine ${env.resources_dest_test}/"
                     } else {
-                        echo 'WARNING: resources_dest_test parameter is empty. Skipping WorldEngine resource deployment.'
+                        echo 'WARNING: resources_dest_test environment variable is empty. Skipping WorldEngine resource deployment.'
                     }
                 }
 
 				sh 'chmod +x start-test.sh'
-				withEnv(["AMIA_SERVER_DIR=${params.TEST_SERVER_BASE}/..".toString()]) {
+				withEnv(["AMIA_SERVER_DIR=${env.TEST_SERVER_BASE}/..".toString()]) {
 				    sh 'bash start-test.sh'
 				}
             }
@@ -94,33 +94,33 @@ pipeline{
             }
             steps {
                 script {
-                    if (!params.LIVE_SERVER_BASE?.trim()) {
-                        error "LIVE_SERVER_BASE parameter is required but was not set."
+                    if (!env.LIVE_SERVER_BASE?.trim()) {
+                        error "LIVE_SERVER_BASE environment variable is required but was not set."
                     }
                 }
                 echo 'Deploying....'
 				sh 'chmod +x stop-live.sh'
-				withEnv(["AMIA_SERVER_DIR=${params.LIVE_SERVER_BASE}/..".toString()]) {
+				withEnv(["AMIA_SERVER_DIR=${env.LIVE_SERVER_BASE}/..".toString()]) {
 				    sh 'bash stop-live.sh'
 				}
 
-                sh "dotnet publish AmiaReforged.Core --output ${params.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.Core/"
-                sh "dotnet publish AmiaReforged.System --output ${params.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.System/"
-                sh "dotnet publish AmiaReforged.Classes --output ${params.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.Classes/"
-                sh "dotnet publish AmiaReforged.Races --output ${params.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.Races/"
-                sh "dotnet publish AmiaReforged.DMS --output ${params.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.DMS/"
-                sh "dotnet publish AmiaReforged.PwEngine --output ${params.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.PwEngine/"
+                sh "dotnet publish AmiaReforged.Core --output ${env.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.Core/"
+                sh "dotnet publish AmiaReforged.System --output ${env.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.System/"
+                sh "dotnet publish AmiaReforged.Classes --output ${env.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.Classes/"
+                sh "dotnet publish AmiaReforged.Races --output ${env.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.Races/"
+                sh "dotnet publish AmiaReforged.DMS --output ${env.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.DMS/"
+                sh "dotnet publish AmiaReforged.PwEngine --output ${env.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.PwEngine/"
 
                 script {
-                    if (params.resources_dest_prod?.trim()) {
-                        sh "rsync -av --delete AmiaReforged.PwEngine/Resources/WorldEngine ${params.resources_dest_prod}/"
+                    if (env.resources_dest_prod?.trim()) {
+                        sh "rsync -av --delete AmiaReforged.PwEngine/Resources/WorldEngine ${env.resources_dest_prod}/"
                     } else {
-                        echo 'WARNING: resources_dest_prod parameter is empty. Skipping WorldEngine resource deployment.'
+                        echo 'WARNING: resources_dest_prod environment variable is empty. Skipping WorldEngine resource deployment.'
                     }
                 }
 
 				sh 'chmod +x start-live.sh'
-				withEnv(["AMIA_SERVER_DIR=${params.LIVE_SERVER_BASE}/..".toString()]) {
+				withEnv(["AMIA_SERVER_DIR=${env.LIVE_SERVER_BASE}/..".toString()]) {
 				    sh 'bash start-live.sh'
 				}
             }
