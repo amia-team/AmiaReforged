@@ -65,7 +65,9 @@ pipeline{
                 }
                 echo 'Deploying....'
 				sh 'chmod +x stop-test.sh'
-				sh 'bash stop-test.sh'
+				withEnv(["AMIA_SERVER_DIR=${params.TEST_SERVER_BASE}/..".toString()]) {
+				    sh 'bash stop-test.sh'
+				}
 
                 sh "dotnet publish AmiaReforged.Core --output ${params.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.Core/"
                 sh "dotnet publish AmiaReforged.System --output ${params.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.System/"
@@ -83,7 +85,9 @@ pipeline{
                 }
 
 				sh 'chmod +x start-test.sh'
-				sh 'bash start-test.sh'
+				withEnv(["AMIA_SERVER_DIR=${params.TEST_SERVER_BASE}/..".toString()]) {
+				    sh 'bash start-test.sh'
+				}
             }
         }
 		stage('Deploy Live') {
@@ -100,7 +104,9 @@ pipeline{
                 }
                 echo 'Deploying....'
 				sh 'chmod +x stop-live.sh'
-				sh 'bash stop-live.sh'
+				withEnv(["AMIA_SERVER_DIR=${params.LIVE_SERVER_BASE}/..".toString()]) {
+				    sh 'bash stop-live.sh'
+				}
 
                 sh "dotnet publish AmiaReforged.Core --output ${params.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.Core/"
                 sh "dotnet publish AmiaReforged.System --output ${params.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.System/"
@@ -118,7 +124,9 @@ pipeline{
                 }
 
 				sh 'chmod +x start-live.sh'
-				sh 'bash start-live.sh'
+				withEnv(["AMIA_SERVER_DIR=${params.LIVE_SERVER_BASE}/..".toString()]) {
+				    sh 'bash start-live.sh'
+				}
             }
         }
     }
