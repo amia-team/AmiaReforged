@@ -4,7 +4,6 @@ pipeline{
     parameters {
         string(name: 'TEST_SERVER_BASE', description: 'Base path for test server (e.g. /home/amia/amia_server/test_server)')
         string(name: 'LIVE_SERVER_BASE', description: 'Base path for live server (e.g. /home/amia/amia_server/server)')
-        string(name: 'webhookURL', description: 'Discord webhook URL for build notifications')
         string(name: 'resources_dest_test', description: 'Destination for WorldEngine resources (test)')
         string(name: 'resources_dest_prod', description: 'Destination for WorldEngine resources (prod)')
         booleanParam(name: 'DeployTest', defaultValue: false, description: 'Deploy to test server')
@@ -19,7 +18,6 @@ pipeline{
             steps {
                 script {
                     echo 'Changes detected in BackupService, building Docker image...'
-                    discordSend description: "Changes detected in BackupService, building Docker image...", footer: "New version detected", link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: params.webhookURL
 
                     dir('AmiaReforged.BackupService') {
                         // Read version from version.txt
@@ -41,7 +39,6 @@ pipeline{
             steps {
                 script {
                     echo 'Changes detected in AdminPanel, building Docker image...'
-                    discordSend description: "Changes detected in AdminPanel, building Docker image...", footer: "New version detected", link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: params.webhookURL
 
                     // Read version from version.txt
                     def version = readFile('AmiaReforged.AdminPanel/version.txt').trim()
@@ -130,9 +127,6 @@ pipeline{
         }
     }
     post {
-        always {
-            discordSend description: "Builder for plugin AmiaReforged finished.", footer: "Build results for AmiaReforged", link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: params.webhookURL
-        }
         success {
             echo 'Build success'
         }
