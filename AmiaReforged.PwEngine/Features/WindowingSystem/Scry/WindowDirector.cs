@@ -183,6 +183,17 @@ public sealed class WindowDirector : IDisposable
 
 
     /// <summary>
+    ///     Checks if a NuiWindowToken is valid (not default or Invalid).
+    ///     This avoids NullReferenceException when comparing struct defaults.
+    /// </summary>
+    /// <param name="token">The token to check.</param>
+    /// <returns>True if the token is valid, otherwise false.</returns>
+    private static bool IsValidToken(NuiWindowToken token)
+    {
+        return token.Player != null && token.Token >= 0;
+    }
+
+    /// <summary>
     ///     Use <see cref="GenericWindow" /> to build a new window in a more fluent manner.
     /// </summary>
     /// <param name="nwPlayer"></param>
@@ -193,7 +204,7 @@ public sealed class WindowDirector : IDisposable
     public void OpenPopup(NwPlayer nwPlayer, string title, string message, NuiWindowToken linkedToken = default,
         bool ignoreButton = false)
     {
-        if (linkedToken != default)
+        if (IsValidToken(linkedToken))
         {
             _linkedTokens.TryGetValue(linkedToken, out List<NuiWindowToken>? linkedTokens);
             linkedTokens?.Add(linkedToken);
@@ -215,7 +226,7 @@ public sealed class WindowDirector : IDisposable
 
     public void OpenPopupWithReaction(NwPlayer nwPlayer, string title, string message, Action outcome, bool ignoreButton = false,  NuiWindowToken linkedToken = default)
     {
-        if (linkedToken != default)
+        if (IsValidToken(linkedToken))
         {
             _linkedTokens.TryGetValue(linkedToken, out List<NuiWindowToken>? linkedTokens);
             linkedTokens?.Add(linkedToken);
