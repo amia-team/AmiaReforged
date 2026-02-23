@@ -71,6 +71,10 @@
                         <label>Base URL</label>
                         <input class="form-control" @bind="_epUrl" placeholder="http://nwserver:8080" />
                     </div>
+                    <div class="form-group">
+                        <label>API Key <span style="color:var(--text-secondary);font-weight:normal">(optional)</span></label>
+                        <input class="form-control" type="password" @bind="_epApiKey" placeholder="Bearer token" />
+                    </div>
                 </div>
                 <div class="form-actions">
                     @if (_editingEndpointId == null)
@@ -93,6 +97,7 @@
                         <tr>
                             <th>Name</th>
                             <th>URL</th>
+                            <th>API Key</th>
                             <th>Enabled</th>
                             <th>Actions</th>
                         </tr>
@@ -103,6 +108,7 @@
                             <tr>
                                 <td>@ep.Name</td>
                                 <td style="font-family:monospace;font-size:0.9rem">@ep.BaseUrl</td>
+                                <td style="color:var(--text-secondary)">@(string.IsNullOrEmpty(ep.ApiKey) ? "—" : "••••••••")</td>
                                 <td>
                                     <span class="state-badge @(ep.IsEnabled ? "running" : "stopped")">
                                         @(ep.IsEnabled ? "Yes" : "No")
@@ -509,6 +515,7 @@
     private bool _isSavingEndpoint;
     private string _epName = "";
     private string _epUrl = "";
+    private string _epApiKey = "";
     private Guid? _editingEndpointId;
 
     // ===== Encounter State =====
@@ -620,10 +627,11 @@
         _isSavingEndpoint = true;
         try
         {
-            await EndpointService.AddEndpointAsync(_epName, _epUrl);
+            await EndpointService.AddEndpointAsync(_epName, _epUrl, string.IsNullOrWhiteSpace(_epApiKey) ? null : _epApiKey);
             _success = $"Server '{_epName}' added.";
             _epName = "";
             _epUrl = "";
+            _epApiKey = "";
             await RefreshEndpoints();
         }
         catch (Exception ex) { _error = ex.Message; }
@@ -635,6 +643,7 @@
         _editingEndpointId = ep.Id;
         _epName = ep.Name;
         _epUrl = ep.BaseUrl;
+        _epApiKey = ep.ApiKey ?? "";
     }
 
     private void CancelEditEndpoint()
@@ -642,6 +651,7 @@
         _editingEndpointId = null;
         _epName = "";
         _epUrl = "";
+        _epApiKey = "";
     }
 
     private async Task SaveEditEndpoint()
@@ -650,7 +660,9 @@
         _isSavingEndpoint = true;
         try
         {
-            await EndpointService.UpdateEndpointAsync(_editingEndpointId.Value, _epName, _epUrl, null);
+            bool clearKey = string.IsNullOrWhiteSpace(_epApiKey);
+            await EndpointService.UpdateEndpointAsync(_editingEndpointId.Value, _epName, _epUrl, null,
+                clearKey ? null : _epApiKey, clearApiKey: clearKey);
             _success = $"Server '{_epName}' updated.";
             CancelEditEndpoint();
             await RefreshEndpoints();

@@ -15,6 +15,9 @@ public class WorldEngineEndpoint
     /// <summary>Base URL for the WorldEngine HTTP API (e.g. "http://nwserver:8080").</summary>
     public string BaseUrl { get; set; } = string.Empty;
 
+    /// <summary>Optional API key sent as an Authorization header with every request.</summary>
+    public string? ApiKey { get; set; }
+
     /// <summary>Whether this endpoint is currently enabled for use.</summary>
     public bool IsEnabled { get; set; } = true;
 }

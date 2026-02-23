@@ -17,10 +17,10 @@ public interface IWorldEngineEndpointService
     Task<WorldEngineEndpoint?> GetEndpointAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>Add a new endpoint. Returns the created endpoint.</summary>
-    Task<WorldEngineEndpoint> AddEndpointAsync(string name, string baseUrl, CancellationToken ct = default);
+    Task<WorldEngineEndpoint> AddEndpointAsync(string name, string baseUrl, string? apiKey = null, CancellationToken ct = default);
 
-    /// <summary>Update an existing endpoint's name, URL, or enabled state.</summary>
-    Task<WorldEngineEndpoint?> UpdateEndpointAsync(Guid id, string? name, string? baseUrl, bool? isEnabled, CancellationToken ct = default);
+    /// <summary>Update an existing endpoint's name, URL, API key, or enabled state.</summary>
+    Task<WorldEngineEndpoint?> UpdateEndpointAsync(Guid id, string? name, string? baseUrl, bool? isEnabled, string? apiKey = null, bool clearApiKey = false, CancellationToken ct = default);
 
     /// <summary>Remove an endpoint entirely.</summary>
     Task<bool> RemoveEndpointAsync(Guid id, CancellationToken ct = default);
@@ -74,7 +74,7 @@ public class WorldEngineEndpointService : IWorldEngineEndpointService
         return _endpoints.TryGetValue(id, out var ep) ? ep : null;
     }
 
-    public async Task<WorldEngineEndpoint> AddEndpointAsync(string name, string baseUrl, CancellationToken ct = default)
+    public async Task<WorldEngineEndpoint> AddEndpointAsync(string name, string baseUrl, string? apiKey = null, CancellationToken ct = default)
     {
         await EnsureLoadedAsync(ct);
 
@@ -83,6 +83,7 @@ public class WorldEngineEndpointService : IWorldEngineEndpointService
             Id = Guid.NewGuid(),
             Name = name.Trim(),
             BaseUrl = baseUrl.TrimEnd('/'),
+            ApiKey = string.IsNullOrWhiteSpace(apiKey) ? null : apiKey.Trim(),
             IsEnabled = true
         };
 
@@ -93,7 +94,7 @@ public class WorldEngineEndpointService : IWorldEngineEndpointService
         return endpoint;
     }
 
-    public async Task<WorldEngineEndpoint?> UpdateEndpointAsync(Guid id, string? name, string? baseUrl, bool? isEnabled, CancellationToken ct = default)
+    public async Task<WorldEngineEndpoint?> UpdateEndpointAsync(Guid id, string? name, string? baseUrl, bool? isEnabled, string? apiKey = null, bool clearApiKey = false, CancellationToken ct = default)
     {
         await EnsureLoadedAsync(ct);
 
@@ -102,6 +103,8 @@ public class WorldEngineEndpointService : IWorldEngineEndpointService
         if (name != null) ep.Name = name.Trim();
         if (baseUrl != null) ep.BaseUrl = baseUrl.TrimEnd('/');
         if (isEnabled.HasValue) ep.IsEnabled = isEnabled.Value;
+        if (clearApiKey) ep.ApiKey = null;
+        else if (apiKey != null) ep.ApiKey = apiKey.Trim();
 
         await SaveAsync(ct);
         _logger.LogInformation("Updated WorldEngine endpoint '{Name}' ({Id})", ep.Name, ep.Id);

@@ -52,6 +52,13 @@ public class EncounterApiService
 
         var client = _httpClientFactory.CreateClient("WorldEngine");
         client.BaseAddress = new Uri(ep.BaseUrl.TrimEnd('/') + "/");
+
+        if (!string.IsNullOrWhiteSpace(ep.ApiKey))
+        {
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", ep.ApiKey);
+        }
+
         return client;
     }
 

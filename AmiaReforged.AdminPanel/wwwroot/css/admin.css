@@ -14,12 +14,102 @@
     --info: #5ba4b5;
     --bg-header: #3a3520;
     --border-subtle: #3e3a30;
+
+    /* Bootstrap 5 overrides */
+    --bs-body-bg: #1c1b19;
+    --bs-body-color: #d0ccc2;
+    --bs-primary: #c9a84c;
+    --bs-primary-rgb: 201, 168, 76;
+    --bs-secondary: #33302a;
+    --bs-secondary-rgb: 51, 48, 42;
+    --bs-success: #4ecca3;
+    --bs-success-rgb: 78, 204, 163;
+    --bs-danger: #dc3545;
+    --bs-danger-rgb: 220, 53, 69;
+    --bs-warning: #ffc107;
+    --bs-warning-rgb: 255, 193, 7;
+    --bs-info: #5ba4b5;
+    --bs-info-rgb: 91, 164, 181;
+    --bs-link-color: #c9a84c;
+    --bs-link-hover-color: #ddc06a;
+    --bs-border-color: #3e3a30;
 }
 
 body {
     background-color: var(--bg-dark);
     color: var(--text-primary);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* ========== Bootstrap component overrides ========== */
+
+a {
+    color: var(--accent);
+}
+
+a:hover {
+    color: var(--accent-hover);
+}
+
+.btn-primary {
+    --bs-btn-bg: #c9a84c;
+    --bs-btn-border-color: #b8963e;
+    --bs-btn-hover-bg: #ddc06a;
+    --bs-btn-hover-border-color: #c9a84c;
+    --bs-btn-active-bg: #b8963e;
+    --bs-btn-active-border-color: #a88834;
+    --bs-btn-disabled-bg: #7a6a3a;
+    --bs-btn-disabled-border-color: #7a6a3a;
+    color: #1c1b19;
+}
+
+.btn-outline-primary {
+    --bs-btn-color: #c9a84c;
+    --bs-btn-border-color: #c9a84c;
+    --bs-btn-hover-bg: #c9a84c;
+    --bs-btn-hover-border-color: #c9a84c;
+    --bs-btn-hover-color: #1c1b19;
+    --bs-btn-active-bg: #c9a84c;
+    --bs-btn-active-color: #1c1b19;
+}
+
+.btn-outline-info {
+    --bs-btn-color: #5ba4b5;
+    --bs-btn-border-color: #5ba4b5;
+    --bs-btn-hover-bg: #5ba4b5;
+    --bs-btn-hover-border-color: #5ba4b5;
+    --bs-btn-hover-color: #1c1b19;
+}
+
+.form-control, .form-select {
+    background-color: var(--bg-input);
+    border-color: var(--border-subtle);
+    color: var(--text-primary);
+}
+
+.form-control:focus, .form-select:focus {
+    background-color: var(--bg-input);
+    border-color: var(--accent);
+    color: var(--text-primary);
+    box-shadow: 0 0 0 0.2rem rgba(201, 168, 76, 0.25);
+}
+
+.form-control::placeholder {
+    color: var(--text-secondary);
+}
+
+.dropdown-menu {
+    background-color: var(--bg-card);
+    border-color: var(--border-subtle);
+}
+
+.dropdown-item {
+    color: var(--text-primary);
+}
+
+.dropdown-item:hover, .dropdown-item:focus {
+    background-color: var(--bg-input);
+    color: var(--accent);
 }
 
 /* Login Page */
