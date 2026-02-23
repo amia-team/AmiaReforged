@@ -67,7 +67,7 @@ public class EncounterApiService
     private static HttpRequestMessage CreateRequest(HttpMethod method, Uri baseUri, string relativeUrl, string apiKey)
     {
         var request = new HttpRequestMessage(method, new Uri(baseUri, relativeUrl));
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+        request.Headers.Add("X-API-Key", apiKey);
         return request;
     }
 
