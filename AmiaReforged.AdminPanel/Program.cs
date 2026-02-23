@@ -47,16 +47,15 @@ public class Program
             adminConfig.DevPassword = Environment.GetEnvironmentVariable("DEV_PASSWORD") ?? adminConfig.DevPassword;
             adminConfig.DiscordWebhookUrl = Environment.GetEnvironmentVariable("DISCORD_WEBHOOK_URL") ?? adminConfig.DiscordWebhookUrl;
             adminConfig.DockerSocketPath = Environment.GetEnvironmentVariable("DOCKER_SOCKET") ?? adminConfig.DockerSocketPath;
-            adminConfig.WorldEngineBaseUrl = Environment.GetEnvironmentVariable("WORLDENGINE_URL") ?? adminConfig.WorldEngineBaseUrl;
 
             builder.Services.AddSingleton(adminConfig);
 
-            // WorldEngine API HttpClient
+            // WorldEngine API — a bare named HttpClient (base address set per-request from the endpoint service)
             builder.Services.AddHttpClient("WorldEngine", client =>
             {
-                client.BaseAddress = new Uri(adminConfig.WorldEngineBaseUrl);
                 client.Timeout = TimeSpan.FromSeconds(15);
             });
+            builder.Services.AddSingleton<IWorldEngineEndpointService, WorldEngineEndpointService>();
             builder.Services.AddScoped<EncounterApiService>();
 
             // Cookie Authentication

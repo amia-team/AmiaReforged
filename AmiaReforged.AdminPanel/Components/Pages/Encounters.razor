@@ -4,6 +4,7 @@
 @using AmiaReforged.AdminPanel.Services
 @attribute [Authorize]
 @inject EncounterApiService Api
+@inject IWorldEngineEndpointService EndpointService
 @inject ILogger<Encounters> Logger
 @rendermode InteractiveServer
 
@@ -13,11 +14,30 @@
     <div class="dashboard-header">
         <h1>Encounter Profiles</h1>
         <div class="header-actions">
-            <button class="btn btn-secondary" @onclick="RefreshProfiles">Refresh</button>
-            <button class="btn btn-primary" @onclick="() => _showCreateForm = !_showCreateForm">+ New Profile</button>
-            <button class="btn btn-warning btn-sm" @onclick="RefreshCache" disabled="@_isRefreshingCache">
-                @(_isRefreshingCache ? "Refreshing..." : "Refresh Cache")
+            @if (_endpoints.Count > 0)
+            {
+                <div class="instance-selector">
+                    <label class="instance-label">Server:</label>
+                    <select class="form-control form-control-sm" value="@(_selectedEndpoint?.Id.ToString() ?? "")" @onchange="OnEndpointChanged">
+                        <option value="">— Select —</option>
+                        @foreach (var ep in _endpoints)
+                        {
+                            <option value="@ep.Id">@ep.Name</option>
+                        }
+                    </select>
+                </div>
+            }
+            <button class="btn btn-sm btn-outline-info" @onclick="() => _showEndpointManager = !_showEndpointManager">
+                @(_showEndpointManager ? "Hide Servers" : "Manage Servers")
             </button>
+            @if (_selectedEndpoint != null)
+            {
+                <button class="btn btn-secondary" @onclick="RefreshProfiles">Refresh</button>
+                <button class="btn btn-primary" @onclick="() => _showCreateForm = !_showCreateForm">+ New Profile</button>
+                <button class="btn btn-warning btn-sm" @onclick="RefreshCache" disabled="@_isRefreshingCache">
+                    @(_isRefreshingCache ? "Refreshing..." : "Refresh Cache")
+                </button>
+            }
             <a href="/" class="btn btn-secondary">← Dashboard</a>
         </div>
     </div>
@@ -31,7 +51,101 @@
         <div class="alert alert-success">@_success <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _success = null">Dismiss</button></div>
     }
 
-    @if (_showCreateForm)
+    @* ===== Endpoint Manager ===== *@
+    @if (_showEndpointManager)
+    {
+        <div class="section" style="margin-bottom:20px">
+            <h2>WorldEngine Server Endpoints</h2>
+            <p style="color:var(--text-secondary);font-size:0.9rem">
+                Add the base URL of each WorldEngine server you want to manage. Endpoints are saved to disk.
+            </p>
+
+            @* Add form *@
+            <div class="inline-form" style="margin-bottom:15px;padding:15px;background:var(--bg-input);border-radius:8px">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input class="form-control" @bind="_epName" placeholder="e.g. Production" maxlength="64" />
+                    </div>
+                    <div class="form-group" style="flex:2">
+                        <label>Base URL</label>
+                        <input class="form-control" @bind="_epUrl" placeholder="http://nwserver:8080" />
+                    </div>
+                </div>
+                <div class="form-actions">
+                    @if (_editingEndpointId == null)
+                    {
+                        <button class="btn btn-success btn-sm" @onclick="AddEndpoint" disabled="@_isSavingEndpoint">Add Server</button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-primary btn-sm" @onclick="SaveEditEndpoint" disabled="@_isSavingEndpoint">Save</button>
+                        <button class="btn btn-secondary btn-sm" @onclick="CancelEditEndpoint">Cancel</button>
+                    }
+                </div>
+            </div>
+
+            @* List *@
+            @if (_allEndpoints.Count > 0)
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>URL</th>
+                            <th>Enabled</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var ep in _allEndpoints)
+                        {
+                            <tr>
+                                <td>@ep.Name</td>
+                                <td style="font-family:monospace;font-size:0.9rem">@ep.BaseUrl</td>
+                                <td>
+                                    <span class="state-badge @(ep.IsEnabled ? "running" : "stopped")">
+                                        @(ep.IsEnabled ? "Yes" : "No")
+                                    </span>
+                                </td>
+                                <td class="actions">
+                                    <button class="btn btn-sm btn-secondary" @onclick="() => StartEditEndpoint(ep)">Edit</button>
+                                    <button class="btn btn-sm @(ep.IsEnabled ? "btn-warning" : "btn-success")"
+                                            @onclick="() => ToggleEndpointEnabled(ep)">
+                                        @(ep.IsEnabled ? "Disable" : "Enable")
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveEndpoint(ep)">Remove</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p style="color:var(--text-secondary)">No endpoints configured. Add one above to get started.</p>
+            }
+        </div>
+    }
+
+    @if (_selectedEndpoint == null && !_showEndpointManager)
+    {
+        <div class="section" style="text-align:center;padding:60px 20px">
+            @if (_endpoints.Count == 0)
+            {
+                <p style="color:var(--text-secondary);font-size:1.1rem">
+                    No WorldEngine servers configured.
+                    <button class="btn btn-primary btn-sm" style="margin-left:8px" @onclick="() => _showEndpointManager = true">Add a Server</button>
+                </p>
+            }
+            else
+            {
+                <p style="color:var(--text-secondary);font-size:1.1rem">Select a server from the dropdown above to manage encounters.</p>
+            }
+        </div>
+    }
+
+    @if (_selectedEndpoint != null && _showCreateForm)
     {
         <div class="section" style="margin-bottom:20px">
             <h2>Create Profile</h2>
@@ -62,11 +176,11 @@
         </div>
     }
 
-    @if (_isLoading)
+    @if (_selectedEndpoint != null && _isLoading)
     {
         <div class="loading">Loading profiles...</div>
     }
-    else
+    else if (_selectedEndpoint != null)
     {
         <div class="encounters-layout">
             @* ===== Left Panel: Profile List ===== *@
@@ -387,12 +501,22 @@
 </div>
 
 @code {
-    // ===== State =====
+    // ===== Endpoint Management =====
+    private List<WorldEngineEndpoint> _allEndpoints = [];
+    private List<WorldEngineEndpoint> _endpoints = []; // enabled only
+    private WorldEngineEndpoint? _selectedEndpoint;
+    private bool _showEndpointManager;
+    private bool _isSavingEndpoint;
+    private string _epName = "";
+    private string _epUrl = "";
+    private Guid? _editingEndpointId;
+
+    // ===== Encounter State =====
     private List<SpawnProfileDto> _profiles = [];
     private SpawnProfileDto? _selectedProfile;
     private HashSet<Guid> _expandedGroups = [];
 
-    private bool _isLoading = true;
+    private bool _isLoading;
     private bool _isSaving;
     private bool _isRefreshingCache;
     private string? _error;
@@ -426,7 +550,140 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await RefreshEndpoints();
+    }
+
+    // ===== Endpoint CRUD =====
+
+    private async Task RefreshEndpoints()
+    {
+        try
+        {
+            _allEndpoints = (await EndpointService.GetAllEndpointsAsync()).ToList();
+            _endpoints = _allEndpoints.Where(e => e.IsEnabled).ToList();
+
+            // Re-validate current selection
+            if (_selectedEndpoint != null && _endpoints.All(e => e.Id != _selectedEndpoint.Id))
+            {
+                _selectedEndpoint = null;
+                Api.SelectEndpoint(null);
+                _profiles = [];
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load endpoints: {ex.Message}";
+            Logger.LogError(ex, "Failed to load WorldEngine endpoints");
+        }
+    }
+
+    private async Task OnEndpointChanged(ChangeEventArgs e)
+    {
+        var idStr = e.Value?.ToString();
+        if (string.IsNullOrEmpty(idStr))
+        {
+            _selectedEndpoint = null;
+            Api.SelectEndpoint(null);
+            _profiles = [];
+            return;
+        }
+
+        if (!Guid.TryParse(idStr, out var id)) return;
+
+        _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
+        if (_selectedEndpoint == null) return;
+
+        Api.SelectEndpoint(_selectedEndpoint.Id);
+        ResetEncounterState();
         await RefreshProfiles();
+    }
+
+    private void ResetEncounterState()
+    {
+        _selectedProfile = null;
+        _expandedGroups.Clear();
+        _showCreateForm = false;
+        _showAddGroup = false;
+        _showAddBonus = false;
+        _error = null;
+        _success = null;
+    }
+
+    private async Task AddEndpoint()
+    {
+        if (string.IsNullOrWhiteSpace(_epName) || string.IsNullOrWhiteSpace(_epUrl))
+        {
+            _error = "Name and URL are required.";
+            return;
+        }
+
+        _isSavingEndpoint = true;
+        try
+        {
+            await EndpointService.AddEndpointAsync(_epName, _epUrl);
+            _success = $"Server '{_epName}' added.";
+            _epName = "";
+            _epUrl = "";
+            await RefreshEndpoints();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSavingEndpoint = false; }
+    }
+
+    private void StartEditEndpoint(WorldEngineEndpoint ep)
+    {
+        _editingEndpointId = ep.Id;
+        _epName = ep.Name;
+        _epUrl = ep.BaseUrl;
+    }
+
+    private void CancelEditEndpoint()
+    {
+        _editingEndpointId = null;
+        _epName = "";
+        _epUrl = "";
+    }
+
+    private async Task SaveEditEndpoint()
+    {
+        if (_editingEndpointId == null) return;
+        _isSavingEndpoint = true;
+        try
+        {
+            await EndpointService.UpdateEndpointAsync(_editingEndpointId.Value, _epName, _epUrl, null);
+            _success = $"Server '{_epName}' updated.";
+            CancelEditEndpoint();
+            await RefreshEndpoints();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSavingEndpoint = false; }
+    }
+
+    private async Task ToggleEndpointEnabled(WorldEngineEndpoint ep)
+    {
+        try
+        {
+            await EndpointService.UpdateEndpointAsync(ep.Id, null, null, !ep.IsEnabled);
+            await RefreshEndpoints();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private async Task RemoveEndpoint(WorldEngineEndpoint ep)
+    {
+        try
+        {
+            await EndpointService.RemoveEndpointAsync(ep.Id);
+            _success = $"Server '{ep.Name}' removed.";
+            if (_selectedEndpoint?.Id == ep.Id)
+            {
+                _selectedEndpoint = null;
+                Api.SelectEndpoint(null);
+                _profiles = [];
+            }
+            await RefreshEndpoints();
+        }
+        catch (Exception ex) { _error = ex.Message; }
     }
 
     // ===== Profile List =====

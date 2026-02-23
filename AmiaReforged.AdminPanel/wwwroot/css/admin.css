@@ -452,6 +452,24 @@ body {
     margin: 0 auto;
 }
 
+/* Instance (server) selector */
+.instance-selector {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.instance-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    margin: 0;
+}
+
+.instance-selector select {
+    min-width: 140px;
+}
+
 .encounters-layout {
     display: grid;
     grid-template-columns: 420px 1fr;

@@ -7,11 +7,17 @@ namespace AmiaReforged.AdminPanel.Services;
 
 /// <summary>
 /// HTTP client wrapper for the WorldEngine encounter API.
-/// Communicates with the NWN server's built-in HTTP API on port 8080.
+/// Endpoints are managed at runtime via <see cref="IWorldEngineEndpointService"/>
+/// and persisted to JSON on disk.
 /// </summary>
 public class EncounterApiService
 {
-    private readonly HttpClient _http;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IWorldEngineEndpointService _endpointService;
+
+    /// <summary>Currently selected endpoint id (null = none selected).</summary>
+    private Guid? _selectedEndpointId;
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -23,9 +29,30 @@ public class EncounterApiService
     private const string BonusesBase = "/api/worldengine/encounters/bonuses";
     private const string CacheBase = "/api/worldengine/encounters/cache";
 
-    public EncounterApiService(IHttpClientFactory httpClientFactory)
+    public EncounterApiService(IHttpClientFactory httpClientFactory, IWorldEngineEndpointService endpointService)
     {
-        _http = httpClientFactory.CreateClient("WorldEngine");
+        _httpClientFactory = httpClientFactory;
+        _endpointService = endpointService;
+    }
+
+    /// <summary>The id of the currently selected endpoint, or null.</summary>
+    public Guid? SelectedEndpointId => _selectedEndpointId;
+
+    /// <summary>Select a WorldEngine endpoint by id. Pass null to deselect.</summary>
+    public void SelectEndpoint(Guid? endpointId) => _selectedEndpointId = endpointId;
+
+    private async Task<HttpClient> CreateClientAsync()
+    {
+        if (_selectedEndpointId == null)
+            throw new InvalidOperationException("No WorldEngine endpoint selected. Add one in the Encounters page.");
+
+        var ep = await _endpointService.GetEndpointAsync(_selectedEndpointId.Value);
+        if (ep == null)
+            throw new InvalidOperationException("The selected WorldEngine endpoint no longer exists.");
+
+        var client = _httpClientFactory.CreateClient("WorldEngine");
+        client.BaseAddress = new Uri(ep.BaseUrl.TrimEnd('/') + "/");
+        return client;
     }
 
     // ==================== Profiles ====================
@@ -115,16 +142,18 @@ public class EncounterApiService
 
     private async Task<T?> GetAsync<T>(string url) where T : class
     {
-        HttpResponseMessage response = await _http.GetAsync(url);
+        var http = await CreateClientAsync();
+        HttpResponseMessage response = await http.GetAsync(url);
         await EnsureSuccessOrThrow(response);
         return await response.Content.ReadFromJsonAsync<T>(JsonOptions);
     }
 
     private async Task<T?> PostAsync<T>(string url, object? body) where T : class
     {
+        var http = await CreateClientAsync();
         HttpResponseMessage response = body != null
-            ? await _http.PostAsJsonAsync(url, body, JsonOptions)
-            : await _http.PostAsync(url, null);
+            ? await http.PostAsJsonAsync(url, body, JsonOptions)
+            : await http.PostAsync(url, null);
         await EnsureSuccessOrThrow(response);
 
         string content = await response.Content.ReadAsStringAsync();
@@ -134,14 +163,16 @@ public class EncounterApiService
 
     private async Task<T?> PutAsync<T>(string url, object body) where T : class
     {
-        HttpResponseMessage response = await _http.PutAsJsonAsync(url, body, JsonOptions);
+        var http = await CreateClientAsync();
+        HttpResponseMessage response = await http.PutAsJsonAsync(url, body, JsonOptions);
         await EnsureSuccessOrThrow(response);
         return await response.Content.ReadFromJsonAsync<T>(JsonOptions);
     }
 
     private async Task DeleteAsync(string url)
     {
-        HttpResponseMessage response = await _http.DeleteAsync(url);
+        var http = await CreateClientAsync();
+        HttpResponseMessage response = await http.DeleteAsync(url);
         await EnsureSuccessOrThrow(response);
     }
 
