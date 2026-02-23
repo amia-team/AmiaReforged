@@ -6,6 +6,7 @@ using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Database.Entities.PlayerHousing;
 using AmiaReforged.PwEngine.Database.EntityConfig;
+using AmiaReforged.PwEngine.Features.Encounters.Models;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
@@ -95,6 +96,15 @@ public class PwEngineContext : DbContext
     /// </summary>
     public DbSet<PlcLayoutItem> PlcLayoutItems { get; set; } = null!;
 
+    // === Dynamic Encounter System ===
+
+    public DbSet<SpawnProfile> SpawnProfiles { get; set; } = null!;
+    public DbSet<SpawnGroup> SpawnGroups { get; set; } = null!;
+    public DbSet<SpawnCondition> SpawnConditions { get; set; } = null!;
+    public DbSet<SpawnEntry> SpawnEntries { get; set; } = null!;
+    public DbSet<SpawnBonus> SpawnBonuses { get; set; } = null!;
+    public DbSet<MiniBossConfig> MiniBossConfigs { get; set; } = null!;
+
 
     public PwEngineContext()
     {
@@ -165,5 +175,13 @@ public class PwEngineContext : DbContext
         modelBuilder.ApplyConfiguration(new DreamcoinRentalConfiguration());
         modelBuilder.ApplyConfiguration(new PlcLayoutConfigurationConfiguration());
         modelBuilder.ApplyConfiguration(new PlcLayoutItemConfiguration());
+
+        // Dynamic Encounter System
+        modelBuilder.ApplyConfiguration(new SpawnProfileConfiguration());
+        modelBuilder.ApplyConfiguration(new SpawnGroupConfiguration());
+        modelBuilder.ApplyConfiguration(new SpawnConditionConfiguration());
+        modelBuilder.ApplyConfiguration(new SpawnEntryConfiguration());
+        modelBuilder.ApplyConfiguration(new SpawnBonusConfiguration());
+        modelBuilder.ApplyConfiguration(new MiniBossConfigConfiguration());
     }
 }

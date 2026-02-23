@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.Encounters.Models;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
@@ -48,6 +49,14 @@ public interface IRegionSubsystem
     Task<List<RegionalEffect>> GetRegionalEffectsAsync(
         string regionTag,
         CancellationToken ct = default);
+
+    // === Chaos System ===
+
+    /// <summary>
+    /// Gets the chaos state for a specific area. Returns area-level override if present,
+    /// region default if available, or <see cref="ChaosState.Default"/> as final fallback.
+    /// </summary>
+    Task<ChaosState> GetChaosForAreaAsync(string areaResRef, CancellationToken ct = default);
 }
 
 /// <summary>

@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.Encounters.Models;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using Anvil.Services;
 
@@ -38,6 +39,15 @@ public sealed class RegionSubsystem : IRegionSubsystem
     public Task<List<RegionalEffect>> GetRegionalEffectsAsync(string regionTag, CancellationToken ct = default)
     {
         return Task.FromResult(new List<RegionalEffect>());
+    }
+
+    /// <summary>
+    /// Stub: returns default chaos state. TODO: Wire to InMemoryRegionRepository to resolve
+    /// area-level overrides and region defaults.
+    /// </summary>
+    public Task<ChaosState> GetChaosForAreaAsync(string areaResRef, CancellationToken ct = default)
+    {
+        return Task.FromResult(ChaosState.Default);
     }
 }
 

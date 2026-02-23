@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using AmiaReforged.PwEngine.Features.Encounters.Models;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.ResourceNodeData;
 
@@ -12,7 +13,11 @@ public record AreaDefinition(
     SettlementId? LinkedSettlement = null);
 
 
-public record EnvironmentData(Climate Climate, EconomyQuality SoilQuality, QualityRange MineralQualityRange);
+public record EnvironmentData(
+    Climate Climate,
+    EconomyQuality SoilQuality,
+    QualityRange MineralQualityRange,
+    ChaosState? Chaos = null);
 
 public record QualityRange(EconomyQuality Min = EconomyQuality.Average, EconomyQuality Max = EconomyQuality.Average);
 
