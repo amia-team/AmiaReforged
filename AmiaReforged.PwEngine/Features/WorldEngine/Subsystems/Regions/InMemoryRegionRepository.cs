@@ -15,6 +15,9 @@ public class InMemoryRegionRepository : IRegionRepository
     private readonly Dictionary<string, int> _poiToSettlement = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, HashSet<int>> _regionToSettlements = new(StringComparer.OrdinalIgnoreCase);
 
+    // Area-to-region index for O(1) area registration lookups
+    private readonly Dictionary<string, string> _areaToRegionTag = new(StringComparer.OrdinalIgnoreCase);
+
     // Optimized POI indexes for O(1) direct lookups
     private readonly Dictionary<string, PlaceOfInterest> _poiByResRef = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, List<string>> _poiByTag = new(StringComparer.OrdinalIgnoreCase);
@@ -186,11 +189,30 @@ public class InMemoryRegionRepository : IRegionRepository
         return _poiLocationCache.TryGetValue(poiResRef, out PoiLocationInfo? info) ? info : null;
     }
 
+    public bool IsAreaRegistered(string areaResRef)
+    {
+        return _areaToRegionTag.ContainsKey(areaResRef);
+    }
+
+    public bool TryGetRegionForArea(string areaResRef, out RegionDefinition? region)
+    {
+        region = null;
+        if (_areaToRegionTag.TryGetValue(areaResRef, out string? regionTag)
+            && _regions.TryGetValue(regionTag, out RegionDefinition? def))
+        {
+            region = def;
+            return true;
+        }
+
+        return false;
+    }
+
     public void Clear()
     {
         _regions.Clear();
         _settlementToRegionTag.Clear();
         _areaToSettlement.Clear();
+        _areaToRegionTag.Clear();
         _settlementToAreas.Clear();
         _settlementToPois.Clear();
         _poiToSettlement.Clear();
@@ -208,6 +230,7 @@ public class InMemoryRegionRepository : IRegionRepository
     {
         _settlementToRegionTag.Clear();
         _areaToSettlement.Clear();
+        _areaToRegionTag.Clear();
         _settlementToAreas.Clear();
         _settlementToPois.Clear();
         _poiToSettlement.Clear();
@@ -228,6 +251,9 @@ public class InMemoryRegionRepository : IRegionRepository
             {
                 if (!string.IsNullOrWhiteSpace(area.ResRef.Value))
                 {
+                    // Index every area to its parent region for O(1) registration checks
+                    _areaToRegionTag[area.ResRef.Value] = regionKey;
+
                     if (area.LinkedSettlement is { } settlement)
                     {
                         regionSettlements.Add(settlement.Value);

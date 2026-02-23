@@ -57,6 +57,19 @@ public interface IRegionSubsystem
     /// region default if available, or <see cref="ChaosState.Default"/> as final fallback.
     /// </summary>
     Task<ChaosState> GetChaosForAreaAsync(string areaResRef, CancellationToken ct = default);
+
+    // === Area Registration ===
+
+    /// <summary>
+    /// Returns true if the area (by resref) is defined in any region.
+    /// Unregistered areas should not receive chaos state — only mutations (profile bonuses).
+    /// </summary>
+    bool IsAreaInRegion(string areaResRef);
+
+    /// <summary>
+    /// Returns the region tag for the area, or null if the area is not defined in any region.
+    /// </summary>
+    string? GetRegionTagForArea(string areaResRef);
 }
 
 /// <summary>

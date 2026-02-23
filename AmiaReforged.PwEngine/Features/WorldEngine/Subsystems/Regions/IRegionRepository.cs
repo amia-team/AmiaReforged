@@ -28,6 +28,17 @@ public interface IRegionRepository
     // Composite query - returns POI with full location context in single O(1) operation
     PoiLocationInfo? GetPoiLocationInfo(string poiResRef);
 
+    // Area-to-region lookup
+    /// <summary>
+    /// Checks whether an area (by resref) is defined in any region.
+    /// </summary>
+    bool IsAreaRegistered(string areaResRef);
+
+    /// <summary>
+    /// Retrieves the <see cref="RegionDefinition"/> that contains the given area, if any.
+    /// </summary>
+    bool TryGetRegionForArea(string areaResRef, out RegionDefinition? region);
+
     // Clear all regions and indexes (used on reload)
     void Clear();
 }
