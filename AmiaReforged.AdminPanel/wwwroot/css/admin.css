@@ -441,3 +441,138 @@ body {
         text-overflow: ellipsis;
     }
 }
+
+/* =============================================
+   Encounters Page — Master-Detail Layout
+   ============================================= */
+
+.encounters-page {
+    padding: 20px;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.encounters-layout {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: 20px;
+    align-items: start;
+}
+
+.profile-list {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+}
+
+.profile-list .table tr {
+    cursor: pointer;
+}
+
+.profile-list .table tr.selected-row {
+    background: rgba(233, 69, 96, 0.15);
+    border-left: 3px solid var(--accent);
+}
+
+.profile-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Section header with title + action button */
+.section-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.section-header-row h2 {
+    margin: 0;
+}
+
+/* Inline form rows */
+.inline-form .form-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.inline-form .form-row .form-group {
+    flex: 1;
+    min-width: 140px;
+}
+
+/* Group cards */
+.group-card {
+    background: var(--bg-input);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+.group-card-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    cursor: pointer;
+    gap: 8px;
+    transition: background 0.15s;
+}
+
+.group-card-header:hover {
+    background: rgba(233, 69, 96, 0.1);
+}
+
+.group-card-actions {
+    margin-left: auto;
+}
+
+.expand-icon {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    width: 16px;
+    text-align: center;
+}
+
+.group-card-body {
+    padding: 15px;
+    border-top: 1px solid var(--bg-dark);
+}
+
+.group-card-body h3 {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin: 15px 0 8px 0;
+}
+
+.group-card-body h3:first-child {
+    margin-top: 0;
+}
+
+/* Compact tables inside group cards */
+.table-compact th,
+.table-compact td {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+}
+
+/* Code styling inside tables */
+.table code {
+    background: var(--bg-dark);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.85rem;
+    color: var(--accent);
+}
+
+/* Responsive: stack panels vertically on smaller screens */
+@media (max-width: 992px) {
+    .encounters-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-list {
+        max-height: none;
+    }
+}

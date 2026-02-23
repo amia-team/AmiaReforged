@@ -1,0 +1,663 @@
+@page "/encounters"
+@using Microsoft.AspNetCore.Authorization
+@using AmiaReforged.AdminPanel.Models
+@using AmiaReforged.AdminPanel.Services
+@attribute [Authorize]
+@inject EncounterApiService Api
+@inject ILogger<Encounters> Logger
+@rendermode InteractiveServer
+
+<PageTitle>Encounters - Amia Admin Panel</PageTitle>
+
+<div class="encounters-page">
+    <div class="dashboard-header">
+        <h1>Encounter Profiles</h1>
+        <div class="header-actions">
+            <button class="btn btn-secondary" @onclick="RefreshProfiles">Refresh</button>
+            <button class="btn btn-primary" @onclick="() => _showCreateForm = !_showCreateForm">+ New Profile</button>
+            <button class="btn btn-warning btn-sm" @onclick="RefreshCache" disabled="@_isRefreshingCache">
+                @(_isRefreshingCache ? "Refreshing..." : "Refresh Cache")
+            </button>
+            <a href="/" class="btn btn-secondary">← Dashboard</a>
+        </div>
+    </div>
+
+    @if (_error != null)
+    {
+        <div class="alert alert-danger">@_error <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _error = null">Dismiss</button></div>
+    }
+    @if (_success != null)
+    {
+        <div class="alert alert-success">@_success <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _success = null">Dismiss</button></div>
+    }
+
+    @if (_showCreateForm)
+    {
+        <div class="section" style="margin-bottom:20px">
+            <h2>Create Profile</h2>
+            <div class="inline-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Area ResRef</label>
+                        <input class="form-control" @bind="_newAreaResRef" placeholder="e.g. howling_woods" maxlength="32" />
+                    </div>
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input class="form-control" @bind="_newProfileName" placeholder="e.g. Howling Woods Encounters" maxlength="128" />
+                    </div>
+                    <div class="form-group">
+                        <label>Cooldown (s)</label>
+                        <input class="form-control" type="number" @bind="_newCooldown" />
+                    </div>
+                    <div class="form-group">
+                        <label>Despawn (s)</label>
+                        <input class="form-control" type="number" @bind="_newDespawn" />
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-success" @onclick="CreateProfile" disabled="@_isSaving">Create</button>
+                    <button class="btn btn-secondary" @onclick="() => _showCreateForm = false">Cancel</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (_isLoading)
+    {
+        <div class="loading">Loading profiles...</div>
+    }
+    else
+    {
+        <div class="encounters-layout">
+            @* ===== Left Panel: Profile List ===== *@
+            <div class="profile-list section">
+                <h2>Profiles (@_profiles.Count)</h2>
+                @if (_profiles.Count == 0)
+                {
+                    <p style="color: var(--text-secondary)">No profiles configured yet.</p>
+                }
+                else
+                {
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Area</th>
+                                <th>Active</th>
+                                <th>Groups</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in _profiles)
+                            {
+                                bool isSelected = _selectedProfile?.Id == p.Id;
+                                <tr class="@(isSelected ? "selected-row" : "")" @onclick="() => SelectProfile(p)">
+                                    <td>@p.Name</td>
+                                    <td><code>@p.AreaResRef</code></td>
+                                    <td>
+                                        <span class="state-badge @(p.IsActive ? "running" : "stopped")">
+                                            @(p.IsActive ? "Active" : "Inactive")
+                                        </span>
+                                    </td>
+                                    <td>@p.SpawnGroups.Count</td>
+                                    <td class="actions" @onclick:stopPropagation="true">
+                                        @if (p.IsActive)
+                                        {
+                                            <button class="btn btn-sm btn-warning" @onclick="() => ToggleActive(p)">Deactivate</button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-sm btn-success" @onclick="() => ToggleActive(p)">Activate</button>
+                                        }
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteProfile(p)">Delete</button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+
+            @* ===== Right Panel: Profile Detail ===== *@
+            <div class="profile-detail">
+                @if (_selectedProfile == null)
+                {
+                    <div class="section" style="text-align:center;padding:60px 20px">
+                        <p style="color:var(--text-secondary);font-size:1.1rem">Select a profile to view details</p>
+                    </div>
+                }
+                else
+                {
+                    @* --- Profile Settings --- *@
+                    <div class="section">
+                        <h2>Profile Settings — @_selectedProfile.Name</h2>
+                        <div class="inline-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Name</label>
+                                    <input class="form-control" @bind="_editName" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Cooldown (s)</label>
+                                    <input class="form-control" type="number" @bind="_editCooldown" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Despawn (s)</label>
+                                    <input class="form-control" type="number" @bind="_editDespawn" />
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn-primary" @onclick="SaveProfileSettings" disabled="@_isSaving">Save</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* --- Spawn Groups --- *@
+                    <div class="section">
+                        <div class="section-header-row">
+                            <h2>Spawn Groups (@_selectedProfile.SpawnGroups.Count)</h2>
+                            <button class="btn btn-sm btn-primary" @onclick="() => _showAddGroup = !_showAddGroup">+ Add Group</button>
+                        </div>
+
+                        @if (_showAddGroup)
+                        {
+                            <div class="inline-form" style="margin-bottom:15px;padding:15px;background:var(--bg-input);border-radius:8px">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Group Name</label>
+                                        <input class="form-control" @bind="_newGroupName" placeholder="e.g. Wolves - Day" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Weight</label>
+                                        <input class="form-control" type="number" @bind="_newGroupWeight" />
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <button class="btn btn-success btn-sm" @onclick="AddGroup" disabled="@_isSaving">Add</button>
+                                    <button class="btn btn-secondary btn-sm" @onclick="() => _showAddGroup = false">Cancel</button>
+                                </div>
+                            </div>
+                        }
+
+                        @foreach (var group in _selectedProfile.SpawnGroups)
+                        {
+                            bool expanded = _expandedGroups.Contains(group.Id);
+                            <div class="group-card @(expanded ? "expanded" : "")">
+                                <div class="group-card-header" @onclick="() => ToggleGroupExpanded(group.Id)">
+                                    <span class="expand-icon">@(expanded ? "▼" : "▶")</span>
+                                    <strong>@group.Name</strong>
+                                    <span style="color:var(--text-secondary);margin-left:10px">Weight: @group.Weight · @group.Entries.Count entries · @group.Conditions.Count conditions</span>
+                                    <div class="group-card-actions" @onclick:stopPropagation="true">
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteGroup(group)">Delete</button>
+                                    </div>
+                                </div>
+                                @if (expanded)
+                                {
+                                    <div class="group-card-body">
+                                        @* -- Group Name/Weight Edit -- *@
+                                        <div class="inline-form" style="margin-bottom:15px">
+                                            <div class="form-row">
+                                                <div class="form-group">
+                                                    <label>Name</label>
+                                                    <input class="form-control" value="@group.Name" @onchange="e => UpdateGroupName(group, e)" />
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Weight</label>
+                                                    <input class="form-control" type="number" value="@group.Weight" @onchange="e => UpdateGroupWeight(group, e)" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        @* -- Entries -- *@
+                                        <h3>Entries</h3>
+                                        <table class="table table-compact">
+                                            <thead>
+                                                <tr>
+                                                    <th>Creature ResRef</th>
+                                                    <th>Weight</th>
+                                                    <th>Min</th>
+                                                    <th>Max</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var entry in group.Entries)
+                                                {
+                                                    <tr>
+                                                        <td><code>@entry.CreatureResRef</code></td>
+                                                        <td>@entry.RelativeWeight</td>
+                                                        <td>@entry.MinCount</td>
+                                                        <td>@entry.MaxCount</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+
+                                        @* -- Conditions -- *@
+                                        <h3>Conditions</h3>
+                                        @if (group.Conditions.Count == 0)
+                                        {
+                                            <p style="color:var(--text-secondary);font-size:0.9rem">No conditions — group is always eligible.</p>
+                                        }
+                                        else
+                                        {
+                                            <table class="table table-compact">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Type</th>
+                                                        <th>Operator</th>
+                                                        <th>Value</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var cond in group.Conditions)
+                                                    {
+                                                        <tr>
+                                                            <td>@cond.Type</td>
+                                                            <td>@cond.Operator</td>
+                                                            <td>@cond.Value</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        }
+
+                                        <p style="color:var(--text-secondary);font-size:0.85rem;margin-top:10px">
+                                            To add entries or conditions, use the API to create a new group with entries/conditions,
+                                            or delete this group and recreate it.
+                                        </p>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    @* --- Bonuses --- *@
+                    <div class="section">
+                        <div class="section-header-row">
+                            <h2>Profile Bonuses (@_selectedProfile.Bonuses.Count)</h2>
+                            <button class="btn btn-sm btn-primary" @onclick="() => _showAddBonus = !_showAddBonus">+ Add Bonus</button>
+                        </div>
+
+                        @if (_showAddBonus)
+                        {
+                            <div class="inline-form" style="margin-bottom:15px;padding:15px;background:var(--bg-input);border-radius:8px">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Name</label>
+                                        <input class="form-control" @bind="_newBonusName" placeholder="e.g. Extra HP" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Type</label>
+                                        <select class="form-control" @bind="_newBonusType">
+                                            @foreach (SpawnBonusType t in Enum.GetValues<SpawnBonusType>())
+                                            {
+                                                <option value="@t">@t</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Value</label>
+                                        <input class="form-control" type="number" @bind="_newBonusValue" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Duration (s)</label>
+                                        <input class="form-control" type="number" @bind="_newBonusDuration" />
+                                        <small class="form-text">0 = permanent</small>
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <button class="btn btn-success btn-sm" @onclick="AddBonus" disabled="@_isSaving">Add</button>
+                                    <button class="btn btn-secondary btn-sm" @onclick="() => _showAddBonus = false">Cancel</button>
+                                </div>
+                            </div>
+                        }
+
+                        @if (_selectedProfile.Bonuses.Count > 0)
+                        {
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Value</th>
+                                        <th>Duration</th>
+                                        <th>Active</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var bonus in _selectedProfile.Bonuses)
+                                    {
+                                        <tr>
+                                            <td>@bonus.Name</td>
+                                            <td>@bonus.Type</td>
+                                            <td>@bonus.Value</td>
+                                            <td>@(bonus.DurationSeconds == 0 ? "Permanent" : $"{bonus.DurationSeconds}s")</td>
+                                            <td>
+                                                <span class="state-badge @(bonus.IsActive ? "running" : "stopped")">
+                                                    @(bonus.IsActive ? "Active" : "Off")
+                                                </span>
+                                            </td>
+                                            <td class="actions">
+                                                <button class="btn btn-sm @(bonus.IsActive ? "btn-warning" : "btn-success")"
+                                                        @onclick="() => ToggleBonusActive(bonus)">
+                                                    @(bonus.IsActive ? "Disable" : "Enable")
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteBonus(bonus)">Delete</button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                        else
+                        {
+                            <p style="color:var(--text-secondary)">No bonuses configured.</p>
+                        }
+                    </div>
+
+                    @* --- Mini-Boss --- *@
+                    @if (_selectedProfile.MiniBoss != null)
+                    {
+                        <div class="section">
+                            <h2>Mini-Boss</h2>
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Creature ResRef</th>
+                                        <th>Spawn Chance</th>
+                                        <th>Bonuses</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>@_selectedProfile.MiniBoss.CreatureResRef</code></td>
+                                        <td>@_selectedProfile.MiniBoss.SpawnChancePercent%</td>
+                                        <td>@_selectedProfile.MiniBoss.Bonuses.Count</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    // ===== State =====
+    private List<SpawnProfileDto> _profiles = [];
+    private SpawnProfileDto? _selectedProfile;
+    private HashSet<Guid> _expandedGroups = [];
+
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private bool _isRefreshingCache;
+    private string? _error;
+    private string? _success;
+
+    // ===== Create Profile Form =====
+    private bool _showCreateForm;
+    private string _newAreaResRef = "";
+    private string _newProfileName = "";
+    private int _newCooldown = 900;
+    private int _newDespawn = 600;
+
+    // ===== Edit Profile =====
+    private string _editName = "";
+    private int _editCooldown;
+    private int _editDespawn;
+
+    // ===== Add Group Form =====
+    private bool _showAddGroup;
+    private string _newGroupName = "";
+    private int _newGroupWeight = 1;
+
+    // ===== Add Bonus Form =====
+    private bool _showAddBonus;
+    private string _newBonusName = "";
+    private SpawnBonusType _newBonusType = SpawnBonusType.TempHP;
+    private int _newBonusValue = 10;
+    private int _newBonusDuration;
+
+    // ===== Lifecycle =====
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshProfiles();
+    }
+
+    // ===== Profile List =====
+
+    private async Task RefreshProfiles()
+    {
+        _isLoading = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            _profiles = await Api.GetAllProfilesAsync();
+
+            // Re-select current profile if it still exists
+            if (_selectedProfile != null)
+            {
+                SpawnProfileDto? refreshed = _profiles.FirstOrDefault(p => p.Id == _selectedProfile.Id);
+                if (refreshed != null)
+                {
+                    SelectProfile(refreshed);
+                }
+                else
+                {
+                    _selectedProfile = null;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load profiles: {ex.Message}";
+            Logger.LogError(ex, "Failed to load encounter profiles");
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void SelectProfile(SpawnProfileDto profile)
+    {
+        _selectedProfile = profile;
+        _editName = profile.Name;
+        _editCooldown = profile.CooldownSeconds;
+        _editDespawn = profile.DespawnSeconds;
+        _showAddGroup = false;
+        _showAddBonus = false;
+    }
+
+    // ===== Profile CRUD =====
+
+    private async Task CreateProfile()
+    {
+        if (string.IsNullOrWhiteSpace(_newAreaResRef) || string.IsNullOrWhiteSpace(_newProfileName))
+        {
+            _error = "Area ResRef and Name are required.";
+            return;
+        }
+
+        _isSaving = true;
+        try
+        {
+            await Api.CreateProfileAsync(new CreateProfileRequest(
+                _newAreaResRef.Trim(), _newProfileName.Trim(), false, _newCooldown, _newDespawn));
+            _success = $"Profile '{_newProfileName}' created.";
+            _newAreaResRef = "";
+            _newProfileName = "";
+            _newCooldown = 900;
+            _newDespawn = 600;
+            _showCreateForm = false;
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task SaveProfileSettings()
+    {
+        if (_selectedProfile == null) return;
+        _isSaving = true;
+        try
+        {
+            await Api.UpdateProfileAsync(_selectedProfile.Id, new UpdateProfileRequest(
+                _editName, null, _editCooldown, _editDespawn));
+            _success = "Profile settings saved.";
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task ToggleActive(SpawnProfileDto profile)
+    {
+        try
+        {
+            if (profile.IsActive)
+                await Api.DeactivateProfileAsync(profile.Id);
+            else
+                await Api.ActivateProfileAsync(profile.Id);
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private async Task DeleteProfile(SpawnProfileDto profile)
+    {
+        try
+        {
+            await Api.DeleteProfileAsync(profile.Id);
+            if (_selectedProfile?.Id == profile.Id) _selectedProfile = null;
+            _success = $"Profile '{profile.Name}' deleted.";
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    // ===== Group CRUD =====
+
+    private void ToggleGroupExpanded(Guid groupId)
+    {
+        if (!_expandedGroups.Remove(groupId))
+            _expandedGroups.Add(groupId);
+    }
+
+    private async Task AddGroup()
+    {
+        if (_selectedProfile == null || string.IsNullOrWhiteSpace(_newGroupName)) return;
+        _isSaving = true;
+        try
+        {
+            await Api.AddGroupAsync(_selectedProfile.Id,
+                new CreateGroupRequest(_newGroupName.Trim(), _newGroupWeight));
+            _success = $"Group '{_newGroupName}' added.";
+            _newGroupName = "";
+            _newGroupWeight = 1;
+            _showAddGroup = false;
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task UpdateGroupName(SpawnGroupDto group, ChangeEventArgs e)
+    {
+        string? newName = e.Value?.ToString();
+        if (string.IsNullOrWhiteSpace(newName) || newName == group.Name) return;
+        try
+        {
+            await Api.UpdateGroupAsync(group.Id, new UpdateGroupRequest(Name: newName));
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private async Task UpdateGroupWeight(SpawnGroupDto group, ChangeEventArgs e)
+    {
+        if (!int.TryParse(e.Value?.ToString(), out int weight) || weight == group.Weight) return;
+        try
+        {
+            await Api.UpdateGroupAsync(group.Id, new UpdateGroupRequest(Weight: weight));
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private async Task DeleteGroup(SpawnGroupDto group)
+    {
+        try
+        {
+            await Api.DeleteGroupAsync(group.Id);
+            _expandedGroups.Remove(group.Id);
+            _success = $"Group '{group.Name}' deleted.";
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    // ===== Bonus CRUD =====
+
+    private async Task AddBonus()
+    {
+        if (_selectedProfile == null || string.IsNullOrWhiteSpace(_newBonusName)) return;
+        _isSaving = true;
+        try
+        {
+            await Api.AddBonusAsync(_selectedProfile.Id,
+                new CreateBonusRequest(_newBonusName.Trim(), _newBonusType, _newBonusValue, _newBonusDuration));
+            _success = $"Bonus '{_newBonusName}' added.";
+            _newBonusName = "";
+            _newBonusValue = 10;
+            _newBonusDuration = 0;
+            _showAddBonus = false;
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task ToggleBonusActive(SpawnBonusDto bonus)
+    {
+        try
+        {
+            await Api.UpdateBonusAsync(bonus.Id, new UpdateBonusRequest(IsActive: !bonus.IsActive));
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private async Task DeleteBonus(SpawnBonusDto bonus)
+    {
+        try
+        {
+            await Api.DeleteBonusAsync(bonus.Id);
+            _success = $"Bonus '{bonus.Name}' deleted.";
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    // ===== Cache =====
+
+    private async Task RefreshCache()
+    {
+        _isRefreshingCache = true;
+        try
+        {
+            await Api.RefreshCacheAsync();
+            _success = "Encounter cache refreshed successfully.";
+        }
+        catch (Exception ex) { _error = $"Cache refresh failed: {ex.Message}"; }
+        finally { _isRefreshingCache = false; }
+    }
+}

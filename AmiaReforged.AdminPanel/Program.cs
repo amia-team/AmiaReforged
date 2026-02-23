@@ -47,8 +47,17 @@ public class Program
             adminConfig.DevPassword = Environment.GetEnvironmentVariable("DEV_PASSWORD") ?? adminConfig.DevPassword;
             adminConfig.DiscordWebhookUrl = Environment.GetEnvironmentVariable("DISCORD_WEBHOOK_URL") ?? adminConfig.DiscordWebhookUrl;
             adminConfig.DockerSocketPath = Environment.GetEnvironmentVariable("DOCKER_SOCKET") ?? adminConfig.DockerSocketPath;
+            adminConfig.WorldEngineBaseUrl = Environment.GetEnvironmentVariable("WORLDENGINE_URL") ?? adminConfig.WorldEngineBaseUrl;
 
             builder.Services.AddSingleton(adminConfig);
+
+            // WorldEngine API HttpClient
+            builder.Services.AddHttpClient("WorldEngine", client =>
+            {
+                client.BaseAddress = new Uri(adminConfig.WorldEngineBaseUrl);
+                client.Timeout = TimeSpan.FromSeconds(15);
+            });
+            builder.Services.AddScoped<EncounterApiService>();
 
             // Cookie Authentication
             builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

@@ -54,4 +54,10 @@ public class AdminPanelConfig
     /// Cooldown period (in seconds) before allowing another auto-restart of the same container.
     /// </summary>
     public int AutoRestartCooldownSeconds { get; set; } = 60;
+
+    /// <summary>
+    /// Base URL for the WorldEngine HTTP API (encounter management, etc.).
+    /// Override via WORLDENGINE_URL environment variable.
+    /// </summary>
+    public string WorldEngineBaseUrl { get; set; } = "http://nwserver:8080";
 }
