@@ -565,10 +565,9 @@ a:hover {
 }
 
 .encounters-layout {
-    display: grid;
-    grid-template-columns: 420px 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 20px;
-    align-items: start;
 }
 
 .profile-list {
@@ -576,13 +575,65 @@ a:hover {
     overflow-y: auto;
 }
 
-.profile-list .table tr {
+.profile-list .table tr.clickable-row {
     cursor: pointer;
+    transition: background 0.15s;
 }
 
-.profile-list .table tr.selected-row {
-    background: rgba(201, 168, 76, 0.12);
-    border-left: 3px solid var(--accent);
+.profile-list .table tr.clickable-row:hover {
+    background: rgba(201, 168, 76, 0.08);
+}
+
+/* ===== Profile Detail Modal ===== */
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1040;
+    backdrop-filter: blur(2px);
+}
+
+.profile-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(90vw, 960px);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    z-index: 1050;
+    overflow: hidden;
+}
+
+.profile-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--bg-dark);
+    flex-shrink: 0;
+}
+
+.profile-modal-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--accent);
+}
+
+.profile-modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
 .profile-detail {
@@ -678,10 +729,11 @@ a:hover {
     color: var(--accent);
 }
 
-/* Responsive: stack panels vertically on smaller screens */
+/* Responsive: modal goes full-width on small screens */
 @media (max-width: 992px) {
-    .encounters-layout {
-        grid-template-columns: 1fr;
+    .profile-modal {
+        width: 96vw;
+        max-height: 95vh;
     }
 
     .profile-list {

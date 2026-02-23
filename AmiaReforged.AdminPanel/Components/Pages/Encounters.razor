@@ -188,70 +188,67 @@
     }
     else if (_selectedEndpoint != null)
     {
-        <div class="encounters-layout">
-            @* ===== Left Panel: Profile List ===== *@
-            <div class="profile-list section">
-                <h2>Profiles (@_profiles.Count)</h2>
-                @if (_profiles.Count == 0)
-                {
-                    <p style="color: var(--text-secondary)">No profiles configured yet.</p>
-                }
-                else
-                {
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Area</th>
-                                <th>Active</th>
-                                <th>Groups</th>
-                                <th>Actions</th>
+        @* ===== Profile List (full width) ===== *@
+        <div class="profile-list section">
+            <h2>Profiles (@_profiles.Count)</h2>
+            @if (_profiles.Count == 0)
+            {
+                <p style="color: var(--text-secondary)">No profiles configured yet.</p>
+            }
+            else
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Area</th>
+                            <th>Active</th>
+                            <th>Groups</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in _profiles)
+                        {
+                            <tr class="clickable-row" @onclick="() => SelectProfile(p)">
+                                <td>@p.Name</td>
+                                <td><code>@p.AreaResRef</code></td>
+                                <td>
+                                    <span class="state-badge @(p.IsActive ? "running" : "stopped")">
+                                        @(p.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+                                <td>@p.SpawnGroups.Count</td>
+                                <td class="actions" @onclick:stopPropagation="true">
+                                    @if (p.IsActive)
+                                    {
+                                        <button class="btn btn-sm btn-warning" @onclick="() => ToggleActive(p)">Deactivate</button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-sm btn-success" @onclick="() => ToggleActive(p)">Activate</button>
+                                    }
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteProfile(p)">Delete</button>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var p in _profiles)
-                            {
-                                bool isSelected = _selectedProfile?.Id == p.Id;
-                                <tr class="@(isSelected ? "selected-row" : "")" @onclick="() => SelectProfile(p)">
-                                    <td>@p.Name</td>
-                                    <td><code>@p.AreaResRef</code></td>
-                                    <td>
-                                        <span class="state-badge @(p.IsActive ? "running" : "stopped")">
-                                            @(p.IsActive ? "Active" : "Inactive")
-                                        </span>
-                                    </td>
-                                    <td>@p.SpawnGroups.Count</td>
-                                    <td class="actions" @onclick:stopPropagation="true">
-                                        @if (p.IsActive)
-                                        {
-                                            <button class="btn btn-sm btn-warning" @onclick="() => ToggleActive(p)">Deactivate</button>
-                                        }
-                                        else
-                                        {
-                                            <button class="btn btn-sm btn-success" @onclick="() => ToggleActive(p)">Activate</button>
-                                        }
-                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteProfile(p)">Delete</button>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                }
-            </div>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
 
-            @* ===== Right Panel: Profile Detail ===== *@
-            <div class="profile-detail">
-                @if (_selectedProfile == null)
-                {
-                    <div class="section" style="text-align:center;padding:60px 20px">
-                        <p style="color:var(--text-secondary);font-size:1.1rem">Select a profile to view details</p>
-                    </div>
-                }
-                else
-                {
+        @* ===== Profile Detail Modal ===== *@
+        @if (_selectedProfile != null)
+        {
+            <div class="modal-backdrop" @onclick="CloseProfileModal"></div>
+            <div class="profile-modal">
+                <div class="profile-modal-header">
+                    <h2>@_selectedProfile.Name</h2>
+                    <button class="btn btn-sm btn-secondary" @onclick="CloseProfileModal">✕ Close</button>
+                </div>
+                <div class="profile-modal-body">
                     @* --- Profile Settings --- *@
                     <div class="section">
-                        <h2>Profile Settings — @_selectedProfile.Name</h2>
                         <div class="inline-form">
                             <div class="form-row">
                                 <div class="form-group">
@@ -500,9 +497,9 @@
                             </table>
                         </div>
                     }
-                }
+                </div>
             </div>
-        </div>
+        }
     }
 </div>
 
@@ -742,6 +739,14 @@
         _editName = profile.Name;
         _editCooldown = profile.CooldownSeconds;
         _editDespawn = profile.DespawnSeconds;
+        _showAddGroup = false;
+        _showAddBonus = false;
+    }
+
+    private void CloseProfileModal()
+    {
+        _selectedProfile = null;
+        _expandedGroups.Clear();
         _showAddGroup = false;
         _showAddBonus = false;
     }
