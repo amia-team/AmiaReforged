@@ -31,4 +31,11 @@ public class EncounterContext
     /// The region tag for the area, if known.
     /// </summary>
     public string? RegionTag { get; init; }
+
+    /// <summary>
+    /// True when the area is defined in a region. Unregistered areas only receive
+    /// mutations (profile bonuses at base scaling) and ignore all region workflows
+    /// (chaos scaling, region-gated spawn groups, etc.).
+    /// </summary>
+    public bool IsInRegion { get; init; }
 }

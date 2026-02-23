@@ -162,9 +162,20 @@ public class DynamicEncounterService
         int minute = NWScript.GetTimeMinute();
         TimeSpan gameTime = new(hour, minute, 0);
 
-        // Get chaos state (async → blocking is acceptable in NWN script context)
-        ChaosState chaos = _regionSubsystem.GetChaosForAreaAsync(area.ResRef)
-            .GetAwaiter().GetResult();
+        // Check if this area belongs to a region
+        bool isInRegion = _regionSubsystem.IsAreaInRegion(area.ResRef);
+
+        // Only pull chaos state from the region subsystem if the area is registered in a region.
+        // Unregistered areas get ChaosState.Default (all zeros) — no chaos influence, just base
+        // mutations (profile bonuses applied at 1.0× scaling).
+        ChaosState chaos = isInRegion
+            ? _regionSubsystem.GetChaosForAreaAsync(area.ResRef).GetAwaiter().GetResult()
+            : ChaosState.Default;
+
+        // Resolve region tag only for registered areas
+        string? regionTag = isInRegion
+            ? _regionSubsystem.GetRegionTagForArea(area.ResRef)
+            : null;
 
         return new EncounterContext
         {
@@ -172,7 +183,8 @@ public class DynamicEncounterService
             PartySize = partySize,
             GameTime = gameTime,
             Chaos = chaos,
-            RegionTag = null // TODO: resolve from InMemoryRegionRepository when wired
+            RegionTag = regionTag,
+            IsInRegion = isInRegion
         };
     }
 
