@@ -6,6 +6,9 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits;
 /// </summary>
 public class TraitBudget
 {
+    /// <summary>
+    /// Baseline amount of traits any character starts with (can be modified by DM events or special unlocks, but always starts at 2)
+    /// </summary>
     private const int BaseTraitPoints = 2;
 
     /// <summary>
