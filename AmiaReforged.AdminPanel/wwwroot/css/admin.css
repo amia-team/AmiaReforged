@@ -601,6 +601,18 @@ a:hover {
 
 /* ===== Profile Detail Modal ===== */
 
+/* Hide number input spinners inside the modal */
+.profile-modal input[type="number"]::-webkit-inner-spin-button,
+.profile-modal input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.profile-modal input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
 .modal-backdrop {
     position: fixed;
     inset: 0;
