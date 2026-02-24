@@ -584,6 +584,21 @@ a:hover {
     background: rgba(201, 168, 76, 0.08);
 }
 
+/* Search bar inside section header */
+.search-bar {
+    flex: 0 1 300px;
+}
+
+.search-bar input {
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+}
+
+.search-bar input::placeholder {
+    color: var(--text-secondary);
+}
+
 /* ===== Profile Detail Modal ===== */
 
 .modal-backdrop {

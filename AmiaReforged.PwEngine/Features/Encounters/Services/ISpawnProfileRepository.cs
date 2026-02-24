@@ -59,6 +59,18 @@ public interface ISpawnProfileRepository
     Task<SpawnGroup> UpdateGroupAsync(SpawnGroup group);
     Task DeleteGroupAsync(Guid groupId);
 
+    // === Spawn Entry Operations ===
+
+    Task<SpawnEntry?> GetEntryByIdAsync(Guid entryId);
+    Task<SpawnEntry> AddEntryAsync(Guid groupId, SpawnEntry entry);
+    Task DeleteEntryAsync(Guid entryId);
+
+    // === Spawn Condition Operations ===
+
+    Task<SpawnCondition?> GetConditionByIdAsync(Guid conditionId);
+    Task<SpawnCondition> AddConditionAsync(Guid groupId, SpawnCondition condition);
+    Task DeleteConditionAsync(Guid conditionId);
+
     // === Spawn Bonus Operations ===
 
     Task<SpawnBonus?> GetBonusByIdAsync(Guid bonusId);

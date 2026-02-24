@@ -190,8 +190,19 @@
     {
         @* ===== Profile List (full width) ===== *@
         <div class="profile-list section">
-            <h2>Profiles (@_profiles.Count)</h2>
-            @if (_profiles.Count == 0)
+            <div class="section-header-row">
+                <h2>Profiles (@FilteredProfiles.Count of @_profiles.Count)</h2>
+                <div class="search-bar">
+                    <input class="form-control form-control-sm" type="search"
+                           placeholder="Filter by area or name..."
+                           @bind="_searchFilter" @bind:event="oninput" />
+                </div>
+            </div>
+            @if (FilteredProfiles.Count == 0 && _profiles.Count > 0)
+            {
+                <p style="color: var(--text-secondary)">No profiles matching "<strong>@_searchFilter</strong>".</p>
+            }
+            else if (_profiles.Count == 0)
             {
                 <p style="color: var(--text-secondary)">No profiles configured yet.</p>
             }
@@ -208,7 +219,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var p in _profiles)
+                        @foreach (var p in FilteredProfiles)
                         {
                             <tr class="clickable-row" @onclick="() => SelectProfile(p)">
                                 <td>@p.Name</td>
@@ -327,31 +338,107 @@
                                         </div>
 
                                         @* -- Entries -- *@
-                                        <h3>Entries</h3>
-                                        <table class="table table-compact">
-                                            <thead>
-                                                <tr>
-                                                    <th>Creature ResRef</th>
-                                                    <th>Weight</th>
-                                                    <th>Min</th>
-                                                    <th>Max</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach (var entry in group.Entries)
-                                                {
+                                        <div class="section-header-row" style="margin-top:10px">
+                                            <h3>Entries (@group.Entries.Count)</h3>
+                                            <button class="btn btn-sm btn-primary" @onclick="() => ToggleAddEntry(group.Id)">+ Add Entry</button>
+                                        </div>
+
+                                        @if (_addEntryGroupId == group.Id)
+                                        {
+                                            <div class="inline-form" style="margin-bottom:10px;padding:10px;background:var(--bg-dark);border-radius:6px">
+                                                <div class="form-row">
+                                                    <div class="form-group" style="flex:2">
+                                                        <label>Creature ResRef</label>
+                                                        <input class="form-control form-control-sm" @bind="_newEntryResRef" placeholder="e.g. wolf_01" maxlength="32" />
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label>Weight</label>
+                                                        <input class="form-control form-control-sm" type="number" @bind="_newEntryWeight" />
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label>Min</label>
+                                                        <input class="form-control form-control-sm" type="number" @bind="_newEntryMin" />
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label>Max</label>
+                                                        <input class="form-control form-control-sm" type="number" @bind="_newEntryMax" />
+                                                    </div>
+                                                </div>
+                                                <div class="form-actions">
+                                                    <button class="btn btn-success btn-sm" @onclick="() => AddEntry(group.Id)" disabled="@_isSaving">Add</button>
+                                                    <button class="btn btn-secondary btn-sm" @onclick="() => _addEntryGroupId = null">Cancel</button>
+                                                </div>
+                                            </div>
+                                        }
+
+                                        @if (group.Entries.Count > 0)
+                                        {
+                                            <table class="table table-compact">
+                                                <thead>
                                                     <tr>
-                                                        <td><code>@entry.CreatureResRef</code></td>
-                                                        <td>@entry.RelativeWeight</td>
-                                                        <td>@entry.MinCount</td>
-                                                        <td>@entry.MaxCount</td>
+                                                        <th>Creature ResRef</th>
+                                                        <th>Weight</th>
+                                                        <th>Min</th>
+                                                        <th>Max</th>
+                                                        <th style="width:60px"></th>
                                                     </tr>
-                                                }
-                                            </tbody>
-                                        </table>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var entry in group.Entries)
+                                                    {
+                                                        <tr>
+                                                            <td><code>@entry.CreatureResRef</code></td>
+                                                            <td>@entry.RelativeWeight</td>
+                                                            <td>@entry.MinCount</td>
+                                                            <td>@entry.MaxCount</td>
+                                                            <td>
+                                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteEntry(entry)">✕</button>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        }
+                                        else
+                                        {
+                                            <p style="color:var(--text-secondary);font-size:0.9rem">No entries — add creature resrefs above.</p>
+                                        }
 
                                         @* -- Conditions -- *@
-                                        <h3>Conditions</h3>
+                                        <div class="section-header-row" style="margin-top:15px">
+                                            <h3>Conditions (@group.Conditions.Count)</h3>
+                                            <button class="btn btn-sm btn-primary" @onclick="() => ToggleAddCondition(group.Id)">+ Add Condition</button>
+                                        </div>
+
+                                        @if (_addConditionGroupId == group.Id)
+                                        {
+                                            <div class="inline-form" style="margin-bottom:10px;padding:10px;background:var(--bg-dark);border-radius:6px">
+                                                <div class="form-row">
+                                                    <div class="form-group">
+                                                        <label>Type</label>
+                                                        <select class="form-control form-control-sm" @bind="_newConditionType">
+                                                            @foreach (SpawnConditionType t in Enum.GetValues<SpawnConditionType>())
+                                                            {
+                                                                <option value="@t">@t</option>
+                                                            }
+                                                        </select>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label>Operator</label>
+                                                        <input class="form-control form-control-sm" @bind="_newConditionOp" placeholder="e.g. >=" />
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label>Value</label>
+                                                        <input class="form-control form-control-sm" @bind="_newConditionValue" placeholder="e.g. 06:00-18:00" />
+                                                    </div>
+                                                </div>
+                                                <div class="form-actions">
+                                                    <button class="btn btn-success btn-sm" @onclick="() => AddCondition(group.Id)" disabled="@_isSaving">Add</button>
+                                                    <button class="btn btn-secondary btn-sm" @onclick="() => _addConditionGroupId = null">Cancel</button>
+                                                </div>
+                                            </div>
+                                        }
+
                                         @if (group.Conditions.Count == 0)
                                         {
                                             <p style="color:var(--text-secondary);font-size:0.9rem">No conditions — group is always eligible.</p>
@@ -364,6 +451,7 @@
                                                         <th>Type</th>
                                                         <th>Operator</th>
                                                         <th>Value</th>
+                                                        <th style="width:60px"></th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -373,16 +461,14 @@
                                                             <td>@cond.Type</td>
                                                             <td>@cond.Operator</td>
                                                             <td>@cond.Value</td>
+                                                            <td>
+                                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteCondition(cond)">✕</button>
+                                                            </td>
                                                         </tr>
                                                     }
                                                 </tbody>
                                             </table>
                                         }
-
-                                        <p style="color:var(--text-secondary);font-size:0.85rem;margin-top:10px">
-                                            To add entries or conditions, use the API to create a new group with entries/conditions,
-                                            or delete this group and recreate it.
-                                        </p>
                                     </div>
                                 }
                             </div>
@@ -519,12 +605,21 @@
     private List<SpawnProfileDto> _profiles = [];
     private SpawnProfileDto? _selectedProfile;
     private HashSet<Guid> _expandedGroups = [];
+    private string _searchFilter = "";
 
     private bool _isLoading;
     private bool _isSaving;
     private bool _isRefreshingCache;
     private string? _error;
     private string? _success;
+
+    // ===== Filtered Profile List =====
+    private List<SpawnProfileDto> FilteredProfiles => string.IsNullOrWhiteSpace(_searchFilter)
+        ? _profiles
+        : _profiles.Where(p =>
+            p.Name.Contains(_searchFilter, StringComparison.OrdinalIgnoreCase) ||
+            p.AreaResRef.Contains(_searchFilter, StringComparison.OrdinalIgnoreCase))
+        .ToList();
 
     // ===== Create Profile Form =====
     private bool _showCreateForm;
@@ -549,6 +644,19 @@
     private SpawnBonusType _newBonusType = SpawnBonusType.TempHP;
     private int _newBonusValue = 10;
     private int _newBonusDuration;
+
+    // ===== Add Entry Form =====
+    private Guid? _addEntryGroupId;
+    private string _newEntryResRef = "";
+    private int _newEntryWeight = 1;
+    private int _newEntryMin = 1;
+    private int _newEntryMax = 4;
+
+    // ===== Add Condition Form =====
+    private Guid? _addConditionGroupId;
+    private SpawnConditionType _newConditionType = SpawnConditionType.TimeOfDay;
+    private string _newConditionOp = "";
+    private string _newConditionValue = "";
 
     // ===== Lifecycle =====
 
@@ -874,6 +982,96 @@
             await Api.DeleteGroupAsync(group.Id);
             _expandedGroups.Remove(group.Id);
             _success = $"Group '{group.Name}' deleted.";
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    // ===== Entry CRUD =====
+
+    private void ToggleAddEntry(Guid groupId)
+    {
+        if (_addEntryGroupId == groupId)
+        {
+            _addEntryGroupId = null;
+        }
+        else
+        {
+            _addEntryGroupId = groupId;
+            _newEntryResRef = "";
+            _newEntryWeight = 1;
+            _newEntryMin = 1;
+            _newEntryMax = 4;
+        }
+    }
+
+    private async Task AddEntry(Guid groupId)
+    {
+        if (string.IsNullOrWhiteSpace(_newEntryResRef)) return;
+        _isSaving = true;
+        try
+        {
+            await Api.AddEntryAsync(groupId,
+                new CreateEntryRequest(_newEntryResRef.Trim(), _newEntryWeight, _newEntryMin, _newEntryMax));
+            _success = $"Entry '{_newEntryResRef}' added.";
+            _addEntryGroupId = null;
+            _newEntryResRef = "";
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task DeleteEntry(SpawnEntryDto entry)
+    {
+        try
+        {
+            await Api.DeleteEntryAsync(entry.Id);
+            _success = $"Entry '{entry.CreatureResRef}' deleted.";
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    // ===== Condition CRUD =====
+
+    private void ToggleAddCondition(Guid groupId)
+    {
+        if (_addConditionGroupId == groupId)
+        {
+            _addConditionGroupId = null;
+        }
+        else
+        {
+            _addConditionGroupId = groupId;
+            _newConditionType = SpawnConditionType.TimeOfDay;
+            _newConditionOp = "";
+            _newConditionValue = "";
+        }
+    }
+
+    private async Task AddCondition(Guid groupId)
+    {
+        if (string.IsNullOrWhiteSpace(_newConditionOp)) return;
+        _isSaving = true;
+        try
+        {
+            await Api.AddConditionAsync(groupId,
+                new CreateConditionRequest(_newConditionType, _newConditionOp.Trim(), _newConditionValue.Trim()));
+            _success = "Condition added.";
+            _addConditionGroupId = null;
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task DeleteCondition(SpawnConditionDto condition)
+    {
+        try
+        {
+            await Api.DeleteConditionAsync(condition.Id);
+            _success = "Condition deleted.";
             await RefreshProfiles();
         }
         catch (Exception ex) { _error = ex.Message; }

@@ -126,6 +126,62 @@ public class SpawnProfileRepository : ISpawnProfileRepository
         }
     }
 
+    // === Spawn Entry Operations ===
+
+    public async Task<SpawnEntry?> GetEntryByIdAsync(Guid entryId)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        return await ctx.SpawnEntries.FindAsync(entryId);
+    }
+
+    public async Task<SpawnEntry> AddEntryAsync(Guid groupId, SpawnEntry entry)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        entry.SpawnGroupId = groupId;
+        ctx.SpawnEntries.Add(entry);
+        await ctx.SaveChangesAsync();
+        return entry;
+    }
+
+    public async Task DeleteEntryAsync(Guid entryId)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        SpawnEntry? entry = await ctx.SpawnEntries.FindAsync(entryId);
+        if (entry != null)
+        {
+            ctx.SpawnEntries.Remove(entry);
+            await ctx.SaveChangesAsync();
+        }
+    }
+
+    // === Spawn Condition Operations ===
+
+    public async Task<SpawnCondition?> GetConditionByIdAsync(Guid conditionId)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        return await ctx.SpawnConditions.FindAsync(conditionId);
+    }
+
+    public async Task<SpawnCondition> AddConditionAsync(Guid groupId, SpawnCondition condition)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        condition.SpawnGroupId = groupId;
+        ctx.SpawnConditions.Add(condition);
+        await ctx.SaveChangesAsync();
+        return condition;
+    }
+
+    public async Task DeleteConditionAsync(Guid conditionId)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        SpawnCondition? condition = await ctx.SpawnConditions.FindAsync(conditionId);
+        if (condition != null)
+        {
+            ctx.SpawnConditions.Remove(condition);
+            await ctx.SaveChangesAsync();
+        }
+    }
+
     // === Spawn Bonus Operations ===
 
     public async Task<SpawnBonus?> GetBonusByIdAsync(Guid bonusId)

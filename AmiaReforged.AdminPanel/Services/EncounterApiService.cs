@@ -28,6 +28,8 @@ public class EncounterApiService
 
     private const string ProfilesBase = "/api/worldengine/encounters/profiles";
     private const string GroupsBase = "/api/worldengine/encounters/groups";
+    private const string EntriesBase = "/api/worldengine/encounters/entries";
+    private const string ConditionsBase = "/api/worldengine/encounters/conditions";
     private const string BonusesBase = "/api/worldengine/encounters/bonuses";
     private const string CacheBase = "/api/worldengine/encounters/cache";
 
@@ -128,6 +130,30 @@ public class EncounterApiService
     public async Task DeleteGroupAsync(Guid groupId)
     {
         await DeleteAsync($"{GroupsBase}/{groupId}");
+    }
+
+    // ==================== Entries ====================
+
+    public async Task<SpawnEntryDto?> AddEntryAsync(Guid groupId, CreateEntryRequest request)
+    {
+        return await PostAsync<SpawnEntryDto>($"{GroupsBase}/{groupId}/entries", request);
+    }
+
+    public async Task DeleteEntryAsync(Guid entryId)
+    {
+        await DeleteAsync($"{EntriesBase}/{entryId}");
+    }
+
+    // ==================== Conditions ====================
+
+    public async Task<SpawnConditionDto?> AddConditionAsync(Guid groupId, CreateConditionRequest request)
+    {
+        return await PostAsync<SpawnConditionDto>($"{GroupsBase}/{groupId}/conditions", request);
+    }
+
+    public async Task DeleteConditionAsync(Guid conditionId)
+    {
+        await DeleteAsync($"{ConditionsBase}/{conditionId}");
     }
 
     // ==================== Bonuses ====================

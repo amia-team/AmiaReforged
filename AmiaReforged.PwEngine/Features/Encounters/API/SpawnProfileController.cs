@@ -307,6 +307,105 @@ public class SpawnProfileController
         return new ApiResult(200, new { message = "Group deleted.", groupId });
     }
 
+    // ==================== Entry CRUD ====================
+
+    /// <summary>
+    /// POST /api/worldengine/encounters/groups/{groupId}/entries — Add an entry to a group
+    /// </summary>
+    [HttpPost("/api/worldengine/encounters/groups/{groupId}/entries")]
+    public static async Task<ApiResult> AddEntry(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("groupId"), out Guid groupId))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid group ID."));
+
+        SpawnGroup? group = await Repository.GetGroupByIdAsync(groupId);
+        if (group == null)
+            return new ApiResult(404, new ErrorResponse("Not found", $"Group {groupId} not found."));
+
+        CreateEntryRequest? req = await ctx.ReadJsonBodyAsync<CreateEntryRequest>();
+        if (req == null || string.IsNullOrWhiteSpace(req.CreatureResRef))
+            return new ApiResult(400, new ErrorResponse("Bad request", "CreatureResRef is required."));
+
+        SpawnEntry entry = new()
+        {
+            Id = Guid.NewGuid(),
+            SpawnGroupId = groupId,
+            CreatureResRef = req.CreatureResRef,
+            RelativeWeight = req.RelativeWeight,
+            MinCount = req.MinCount,
+            MaxCount = req.MaxCount
+        };
+
+        await Repository.AddEntryAsync(groupId, entry);
+        return new ApiResult(201, ToDto(entry));
+    }
+
+    /// <summary>
+    /// DELETE /api/worldengine/encounters/entries/{entryId} — Delete an entry
+    /// </summary>
+    [HttpDelete("/api/worldengine/encounters/entries/{entryId}")]
+    public static async Task<ApiResult> DeleteEntry(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("entryId"), out Guid entryId))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid entry ID."));
+
+        await Repository.DeleteEntryAsync(entryId);
+        return new ApiResult(200, new { message = "Entry deleted.", entryId });
+    }
+
+    // ==================== Condition CRUD ====================
+
+    /// <summary>
+    /// POST /api/worldengine/encounters/groups/{groupId}/conditions — Add a condition to a group
+    /// </summary>
+    [HttpPost("/api/worldengine/encounters/groups/{groupId}/conditions")]
+    public static async Task<ApiResult> AddCondition(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("groupId"), out Guid groupId))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid group ID."));
+
+        SpawnGroup? group = await Repository.GetGroupByIdAsync(groupId);
+        if (group == null)
+            return new ApiResult(404, new ErrorResponse("Not found", $"Group {groupId} not found."));
+
+        CreateConditionRequest? req = await ctx.ReadJsonBodyAsync<CreateConditionRequest>();
+        if (req == null || string.IsNullOrWhiteSpace(req.Operator))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Operator is required."));
+
+        SpawnCondition condition = new()
+        {
+            Id = Guid.NewGuid(),
+            SpawnGroupId = groupId,
+            Type = req.Type,
+            Operator = req.Operator,
+            Value = req.Value
+        };
+
+        await Repository.AddConditionAsync(groupId, condition);
+        return new ApiResult(201, ToDto(condition));
+    }
+
+    /// <summary>
+    /// DELETE /api/worldengine/encounters/conditions/{conditionId} — Delete a condition
+    /// </summary>
+    [HttpDelete("/api/worldengine/encounters/conditions/{conditionId}")]
+    public static async Task<ApiResult> DeleteCondition(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("conditionId"), out Guid conditionId))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid condition ID."));
+
+        await Repository.DeleteConditionAsync(conditionId);
+        return new ApiResult(200, new { message = "Condition deleted.", conditionId });
+    }
+
     // ==================== Bonus CRUD ====================
 
     /// <summary>
