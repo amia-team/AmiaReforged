@@ -118,6 +118,14 @@ public static class EncounterApiDtos
         int? DurationSeconds = null,
         bool? IsActive = null);
 
+    public record CreateMiniBossRequest(
+        string CreatureResRef,
+        int SpawnChancePercent = 5);
+
+    public record UpdateMiniBossRequest(
+        string? CreatureResRef = null,
+        int? SpawnChancePercent = null);
+
     // --- Mapping ---
 
     public static SpawnProfileDto ToDto(SpawnProfile p) => new(

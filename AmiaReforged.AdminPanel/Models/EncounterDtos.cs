@@ -138,6 +138,14 @@ public record UpdateBonusRequest(
     int? DurationSeconds = null,
     bool? IsActive = null);
 
+public record CreateMiniBossRequest(
+    string CreatureResRef,
+    int SpawnChancePercent = 5);
+
+public record UpdateMiniBossRequest(
+    string? CreatureResRef = null,
+    int? SpawnChancePercent = null);
+
 // ===================== Error DTO =====================
 
 public record ApiErrorResponse(string Error, string Detail);

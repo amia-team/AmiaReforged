@@ -234,6 +234,55 @@ public class SpawnProfileRepository : ISpawnProfileRepository
         }
     }
 
+    // === Mini-Boss Operations ===
+
+    public async Task<MiniBossConfig?> GetMiniBossAsync(Guid profileId)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        return await ctx.MiniBossConfigs
+            .Include(m => m.Bonuses)
+            .FirstOrDefaultAsync(m => m.SpawnProfileId == profileId);
+    }
+
+    public async Task<MiniBossConfig> CreateMiniBossAsync(Guid profileId, MiniBossConfig config)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        config.SpawnProfileId = profileId;
+        ctx.MiniBossConfigs.Add(config);
+        await ctx.SaveChangesAsync();
+        return config;
+    }
+
+    public async Task<MiniBossConfig> UpdateMiniBossAsync(MiniBossConfig config)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        ctx.MiniBossConfigs.Update(config);
+        await ctx.SaveChangesAsync();
+        return config;
+    }
+
+    public async Task DeleteMiniBossAsync(Guid profileId)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        MiniBossConfig? config = await ctx.MiniBossConfigs
+            .FirstOrDefaultAsync(m => m.SpawnProfileId == profileId);
+        if (config != null)
+        {
+            ctx.MiniBossConfigs.Remove(config);
+            await ctx.SaveChangesAsync();
+        }
+    }
+
+    public async Task<SpawnBonus> AddMiniBossBonusAsync(Guid miniBossId, SpawnBonus bonus)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        bonus.MiniBossConfigId = miniBossId;
+        bonus.SpawnProfileId = null;
+        ctx.SpawnBonuses.Add(bonus);
+        await ctx.SaveChangesAsync();
+        return bonus;
+    }
+
     /// <summary>
     /// Builds a query that eagerly loads the full profile graph.
     /// </summary>

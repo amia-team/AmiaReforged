@@ -587,28 +587,142 @@
                     </div>
 
                     @* --- Mini-Boss --- *@
-                    @if (_selectedProfile.MiniBoss != null)
-                    {
-                        <div class="section">
-                            <h2>Mini-Boss</h2>
+                    <div class="section">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h2 class="mb-0">Mini-Boss</h2>
+                            @if (_selectedProfile.MiniBoss == null)
+                            {
+                                <button class="btn btn-sm btn-outline-warning" @onclick="() => _showAddMiniBoss = !_showAddMiniBoss">
+                                    @(_showAddMiniBoss ? "Cancel" : "+ Add Mini-Boss")
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-outline-danger" @onclick="DeleteMiniBoss" disabled="@_isSaving">Delete Mini-Boss</button>
+                            }
+                        </div>
+
+                        @if (_selectedProfile.MiniBoss == null)
+                        {
+                            @if (_showAddMiniBoss)
+                            {
+                                <div class="row g-2 align-items-end mb-3">
+                                    <div class="col-5">
+                                        <label class="form-label">Creature ResRef</label>
+                                        <input class="form-control form-control-sm" @bind="_newMiniBossResRef" placeholder="e.g. nw_werewolf" />
+                                    </div>
+                                    <div class="col-3">
+                                        <label class="form-label">Spawn Chance %</label>
+                                        <input type="number" class="form-control form-control-sm" @bind="_newMiniBossChance" min="0" max="100" />
+                                    </div>
+                                    <div class="col-auto">
+                                        <button class="btn btn-sm btn-warning" @onclick="CreateMiniBoss" disabled="@_isSaving">Save</button>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <p style="color:var(--text-secondary)">No mini-boss configured.</p>
+                            }
+                        }
+                        else
+                        {
                             <table class="table">
                                 <thead>
                                     <tr>
                                         <th>Creature ResRef</th>
-                                        <th>Spawn Chance</th>
-                                        <th>Bonuses</th>
+                                        <th style="width:140px">Spawn Chance %</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td><code>@_selectedProfile.MiniBoss.CreatureResRef</code></td>
-                                        <td>@_selectedProfile.MiniBoss.SpawnChancePercent%</td>
-                                        <td>@_selectedProfile.MiniBoss.Bonuses.Count</td>
+                                        <td>
+                                            <input class="form-control form-control-sm"
+                                                   value="@_selectedProfile.MiniBoss.CreatureResRef"
+                                                   @onchange="e => UpdateMiniBossField(e.Value?.ToString(), null)" />
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control form-control-sm" min="0" max="100"
+                                                   value="@_selectedProfile.MiniBoss.SpawnChancePercent"
+                                                   @onchange="e => UpdateMiniBossField(null, int.TryParse(e.Value?.ToString(), out var v) ? v : null)" />
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
-                        </div>
-                    }
+
+                            @* Mini-Boss Bonuses *@
+                            <h3 class="mt-3">Mini-Boss Bonuses</h3>
+                            @if (_selectedProfile.MiniBoss.Bonuses.Any())
+                            {
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Type</th>
+                                            <th>Value</th>
+                                            <th>Duration (s)</th>
+                                            <th>Active</th>
+                                            <th style="width:50px"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var b in _selectedProfile.MiniBoss.Bonuses)
+                                        {
+                                            <tr>
+                                                <td><input class="form-control form-control-sm" value="@b.Name"
+                                                           @onchange="e => UpdateMiniBossBonusField(b, nameof(SpawnBonusDto.Name), e)" /></td>
+                                                <td>
+                                                    <select class="form-select form-select-sm" value="@b.Type"
+                                                            @onchange="e => UpdateMiniBossBonusField(b, nameof(SpawnBonusDto.Type), e)">
+                                                        @foreach (var t in Enum.GetValues<SpawnBonusType>())
+                                                        {
+                                                            <option value="@t" selected="@(t == b.Type)">@t</option>
+                                                        }
+                                                    </select>
+                                                </td>
+                                                <td><input type="number" class="form-control form-control-sm" value="@b.Value"
+                                                           @onchange="e => UpdateMiniBossBonusField(b, nameof(SpawnBonusDto.Value), e)" /></td>
+                                                <td><input type="number" class="form-control form-control-sm" value="@b.DurationSeconds"
+                                                           @onchange="e => UpdateMiniBossBonusField(b, nameof(SpawnBonusDto.DurationSeconds), e)" /></td>
+                                                <td>
+                                                    <input type="checkbox" checked="@b.IsActive"
+                                                           @onchange="() => ToggleMiniBossBonusActive(b)" />
+                                                </td>
+                                                <td><button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteMiniBossBonus(b)">✕</button></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                            else
+                            {
+                                <p style="color:var(--text-secondary)">No bonuses on mini-boss.</p>
+                            }
+
+                            <div class="row g-2 align-items-end mt-1">
+                                <div class="col-3">
+                                    <input class="form-control form-control-sm" @bind="_newMbBonusName" placeholder="Name" />
+                                </div>
+                                <div class="col-2">
+                                    <select class="form-select form-select-sm" @bind="_newMbBonusType">
+                                        @foreach (var t in Enum.GetValues<SpawnBonusType>())
+                                        {
+                                            <option value="@t">@t</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-2">
+                                    <input type="number" class="form-control form-control-sm" @bind="_newMbBonusValue" placeholder="Value" />
+                                </div>
+                                <div class="col-2">
+                                    <input type="number" class="form-control form-control-sm" @bind="_newMbBonusDuration" placeholder="Duration" />
+                                </div>
+                                <div class="col-auto">
+                                    <button class="btn btn-sm btn-outline-warning" @onclick="AddMiniBossBonus" disabled="@_isSaving">+ Bonus</button>
+                                </div>
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
         }
@@ -683,6 +797,15 @@
     private SpawnConditionType _newConditionType = SpawnConditionType.TimeOfDay;
     private string _newConditionOp = "";
     private string _newConditionValue = "";
+
+    // ===== Mini-Boss Form =====
+    private bool _showAddMiniBoss;
+    private string _newMiniBossResRef = "";
+    private int _newMiniBossChance = 5;
+    private string _newMbBonusName = "";
+    private SpawnBonusType _newMbBonusType = SpawnBonusType.TempHP;
+    private int _newMbBonusValue = 10;
+    private int _newMbBonusDuration;
 
     // ===== Lifecycle =====
 
@@ -1183,6 +1306,113 @@
         {
             await Api.DeleteBonusAsync(bonus.Id);
             _success = $"Bonus '{bonus.Name}' deleted.";
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    // ===== Mini-Boss CRUD =====
+
+    private async Task CreateMiniBoss()
+    {
+        if (_selectedProfile == null || string.IsNullOrWhiteSpace(_newMiniBossResRef)) return;
+        _isSaving = true;
+        try
+        {
+            await Api.CreateMiniBossAsync(_selectedProfile.Id,
+                new CreateMiniBossRequest(_newMiniBossResRef.Trim(), _newMiniBossChance));
+            _success = "Mini-boss created.";
+            _newMiniBossResRef = "";
+            _newMiniBossChance = 5;
+            _showAddMiniBoss = false;
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task UpdateMiniBossField(string? resref, int? chance)
+    {
+        if (_selectedProfile == null) return;
+        try
+        {
+            await Api.UpdateMiniBossAsync(_selectedProfile.Id,
+                new UpdateMiniBossRequest(resref, chance));
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private async Task DeleteMiniBoss()
+    {
+        if (_selectedProfile == null) return;
+        _isSaving = true;
+        try
+        {
+            await Api.DeleteMiniBossAsync(_selectedProfile.Id);
+            _success = "Mini-boss removed.";
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task AddMiniBossBonus()
+    {
+        if (_selectedProfile?.MiniBoss == null || string.IsNullOrWhiteSpace(_newMbBonusName)) return;
+        _isSaving = true;
+        try
+        {
+            await Api.AddMiniBossBonusAsync(_selectedProfile.MiniBoss.Id,
+                new CreateBonusRequest(_newMbBonusName.Trim(), _newMbBonusType, _newMbBonusValue, _newMbBonusDuration));
+            _success = $"Mini-boss bonus '{_newMbBonusName}' added.";
+            _newMbBonusName = "";
+            _newMbBonusValue = 10;
+            _newMbBonusDuration = 0;
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task UpdateMiniBossBonusField(SpawnBonusDto bonus, string field, ChangeEventArgs e)
+    {
+        string? val = e.Value?.ToString();
+        if (string.IsNullOrEmpty(val)) return;
+
+        try
+        {
+            UpdateBonusRequest req = field switch
+            {
+                nameof(SpawnBonusDto.Name) => new UpdateBonusRequest(Name: val),
+                nameof(SpawnBonusDto.Type) when Enum.TryParse<SpawnBonusType>(val, out var t) => new UpdateBonusRequest(Type: t),
+                nameof(SpawnBonusDto.Value) when int.TryParse(val, out int v) => new UpdateBonusRequest(Value: v),
+                nameof(SpawnBonusDto.DurationSeconds) when int.TryParse(val, out int d) => new UpdateBonusRequest(DurationSeconds: d),
+                _ => throw new ArgumentException($"Unknown field: {field}")
+            };
+
+            await Api.UpdateBonusAsync(bonus.Id, req);
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private async Task ToggleMiniBossBonusActive(SpawnBonusDto bonus)
+    {
+        try
+        {
+            await Api.UpdateBonusAsync(bonus.Id, new UpdateBonusRequest(IsActive: !bonus.IsActive));
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private async Task DeleteMiniBossBonus(SpawnBonusDto bonus)
+    {
+        try
+        {
+            await Api.DeleteBonusAsync(bonus.Id);
+            _success = $"Mini-boss bonus '{bonus.Name}' deleted.";
             await RefreshProfiles();
         }
         catch (Exception ex) { _error = ex.Message; }

@@ -31,6 +31,7 @@ public class EncounterApiService
     private const string EntriesBase = "/api/worldengine/encounters/entries";
     private const string ConditionsBase = "/api/worldengine/encounters/conditions";
     private const string BonusesBase = "/api/worldengine/encounters/bonuses";
+    private const string MiniBossBase = "/api/worldengine/encounters/miniboss";
     private const string CacheBase = "/api/worldengine/encounters/cache";
 
     public EncounterApiService(IHttpClientFactory httpClientFactory, IWorldEngineEndpointService endpointService)
@@ -181,6 +182,28 @@ public class EncounterApiService
     public async Task DeleteBonusAsync(Guid bonusId)
     {
         await DeleteAsync($"{BonusesBase}/{bonusId}");
+    }
+
+    // ==================== Mini-Boss ====================
+
+    public async Task<MiniBossConfigDto?> CreateMiniBossAsync(Guid profileId, CreateMiniBossRequest request)
+    {
+        return await PostAsync<MiniBossConfigDto>($"{ProfilesBase}/{profileId}/miniboss", request);
+    }
+
+    public async Task<MiniBossConfigDto?> UpdateMiniBossAsync(Guid profileId, UpdateMiniBossRequest request)
+    {
+        return await PutAsync<MiniBossConfigDto>($"{ProfilesBase}/{profileId}/miniboss", request);
+    }
+
+    public async Task DeleteMiniBossAsync(Guid profileId)
+    {
+        await DeleteAsync($"{ProfilesBase}/{profileId}/miniboss");
+    }
+
+    public async Task<SpawnBonusDto?> AddMiniBossBonusAsync(Guid miniBossId, CreateBonusRequest request)
+    {
+        return await PostAsync<SpawnBonusDto>($"{MiniBossBase}/{miniBossId}/bonuses", request);
     }
 
     // ==================== Cache ====================

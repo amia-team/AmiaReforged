@@ -557,6 +557,143 @@ public class SpawnProfileController
         return new ApiResult(200, new { message = "Bonus deleted.", bonusId });
     }
 
+    // ==================== Mini-Boss Management ====================
+
+    /// <summary>
+    /// GET /api/worldengine/encounters/profiles/{id}/miniboss — Get mini-boss config for a profile
+    /// </summary>
+    [HttpGet("/api/worldengine/encounters/profiles/{id}/miniboss")]
+    public static async Task<ApiResult> GetMiniBoss(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("id"), out Guid id))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid profile ID."));
+
+        MiniBossConfig? config = await Repository.GetMiniBossAsync(id);
+        return config != null
+            ? new ApiResult(200, ToDto(config))
+            : new ApiResult(404, new ErrorResponse("Not found", $"No mini-boss configured for profile {id}."));
+    }
+
+    /// <summary>
+    /// POST /api/worldengine/encounters/profiles/{id}/miniboss — Create mini-boss for a profile
+    /// </summary>
+    [HttpPost("/api/worldengine/encounters/profiles/{id}/miniboss")]
+    public static async Task<ApiResult> CreateMiniBoss(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("id"), out Guid id))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid profile ID."));
+
+        SpawnProfile? profile = await Repository.GetByIdAsync(id);
+        if (profile == null)
+            return new ApiResult(404, new ErrorResponse("Not found", $"Profile {id} not found."));
+
+        if (profile.MiniBoss != null)
+            return new ApiResult(409, new ErrorResponse("Conflict", "Profile already has a mini-boss. Delete it first or update it."));
+
+        CreateMiniBossRequest? req = await ctx.ReadJsonBodyAsync<CreateMiniBossRequest>();
+        if (req == null || string.IsNullOrWhiteSpace(req.CreatureResRef))
+            return new ApiResult(400, new ErrorResponse("Bad request", "CreatureResRef is required."));
+
+        MiniBossConfig config = new()
+        {
+            Id = Guid.NewGuid(),
+            SpawnProfileId = id,
+            CreatureResRef = req.CreatureResRef,
+            SpawnChancePercent = Math.Clamp(req.SpawnChancePercent, 0, 100)
+        };
+
+        await Repository.CreateMiniBossAsync(id, config);
+
+        if (EncounterService != null)
+            await EncounterService.RefreshProfileCacheAsync(profile.AreaResRef);
+
+        return new ApiResult(201, ToDto(config));
+    }
+
+    /// <summary>
+    /// PUT /api/worldengine/encounters/profiles/{id}/miniboss — Update mini-boss config
+    /// </summary>
+    [HttpPut("/api/worldengine/encounters/profiles/{id}/miniboss")]
+    public static async Task<ApiResult> UpdateMiniBoss(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("id"), out Guid id))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid profile ID."));
+
+        MiniBossConfig? config = await Repository.GetMiniBossAsync(id);
+        if (config == null)
+            return new ApiResult(404, new ErrorResponse("Not found", $"No mini-boss for profile {id}."));
+
+        UpdateMiniBossRequest? req = await ctx.ReadJsonBodyAsync<UpdateMiniBossRequest>();
+        if (req == null) return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required."));
+
+        if (req.CreatureResRef != null) config.CreatureResRef = req.CreatureResRef;
+        if (req.SpawnChancePercent.HasValue) config.SpawnChancePercent = Math.Clamp(req.SpawnChancePercent.Value, 0, 100);
+
+        await Repository.UpdateMiniBossAsync(config);
+
+        SpawnProfile? profile = await Repository.GetByIdAsync(id);
+        if (profile != null && EncounterService != null)
+            await EncounterService.RefreshProfileCacheAsync(profile.AreaResRef);
+
+        return new ApiResult(200, ToDto(config));
+    }
+
+    /// <summary>
+    /// DELETE /api/worldengine/encounters/profiles/{id}/miniboss — Remove mini-boss from a profile
+    /// </summary>
+    [HttpDelete("/api/worldengine/encounters/profiles/{id}/miniboss")]
+    public static async Task<ApiResult> DeleteMiniBoss(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("id"), out Guid id))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid profile ID."));
+
+        await Repository.DeleteMiniBossAsync(id);
+
+        SpawnProfile? profile = await Repository.GetByIdAsync(id);
+        if (profile != null && EncounterService != null)
+            await EncounterService.RefreshProfileCacheAsync(profile.AreaResRef);
+
+        return new ApiResult(200, new { message = "Mini-boss removed.", profileId = id });
+    }
+
+    /// <summary>
+    /// POST /api/worldengine/encounters/miniboss/{miniBossId}/bonuses — Add a bonus to a mini-boss
+    /// </summary>
+    [HttpPost("/api/worldengine/encounters/miniboss/{miniBossId}/bonuses")]
+    public static async Task<ApiResult> AddMiniBossBonus(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("miniBossId"), out Guid miniBossId))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid mini-boss ID."));
+
+        CreateBonusRequest? req = await ctx.ReadJsonBodyAsync<CreateBonusRequest>();
+        if (req == null || string.IsNullOrWhiteSpace(req.Name))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Bonus name is required."));
+
+        SpawnBonus bonus = new()
+        {
+            Id = Guid.NewGuid(),
+            MiniBossConfigId = miniBossId,
+            Name = req.Name,
+            Type = req.Type,
+            Value = req.Value,
+            DurationSeconds = req.DurationSeconds,
+            IsActive = req.IsActive
+        };
+
+        await Repository.AddMiniBossBonusAsync(miniBossId, bonus);
+        return new ApiResult(201, ToDto(bonus));
+    }
+
     // ==================== Cache Management ====================
 
     /// <summary>

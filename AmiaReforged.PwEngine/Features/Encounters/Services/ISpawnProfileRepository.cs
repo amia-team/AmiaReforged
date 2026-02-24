@@ -79,4 +79,12 @@ public interface ISpawnProfileRepository
     Task<SpawnBonus> AddBonusAsync(Guid profileId, SpawnBonus bonus);
     Task<SpawnBonus> UpdateBonusAsync(SpawnBonus bonus);
     Task DeleteBonusAsync(Guid bonusId);
+
+    // === Mini-Boss Operations ===
+
+    Task<MiniBossConfig?> GetMiniBossAsync(Guid profileId);
+    Task<MiniBossConfig> CreateMiniBossAsync(Guid profileId, MiniBossConfig config);
+    Task<MiniBossConfig> UpdateMiniBossAsync(MiniBossConfig config);
+    Task DeleteMiniBossAsync(Guid profileId);
+    Task<SpawnBonus> AddMiniBossBonusAsync(Guid miniBossId, SpawnBonus bonus);
 }
