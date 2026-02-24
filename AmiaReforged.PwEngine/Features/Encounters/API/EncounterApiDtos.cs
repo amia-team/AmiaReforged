@@ -126,6 +126,53 @@ public static class EncounterApiDtos
         string? CreatureResRef = null,
         int? SpawnChancePercent = null);
 
+    // --- Mutation DTOs ---
+
+    public record MutationTemplateDto(
+        Guid Id,
+        string Prefix,
+        string? Description,
+        int SpawnChancePercent,
+        bool IsActive,
+        List<MutationEffectDto> Effects);
+
+    public record MutationEffectDto(
+        Guid Id,
+        MutationEffectType Type,
+        int Value,
+        NwnAbilityType? AbilityType,
+        NwnDamageType? DamageType,
+        int DurationSeconds,
+        bool IsActive);
+
+    public record CreateMutationRequest(
+        string Prefix,
+        string? Description = null,
+        int SpawnChancePercent = 10,
+        bool IsActive = true);
+
+    public record UpdateMutationRequest(
+        string? Prefix = null,
+        string? Description = null,
+        int? SpawnChancePercent = null,
+        bool? IsActive = null);
+
+    public record CreateMutationEffectRequest(
+        MutationEffectType Type,
+        int Value,
+        NwnAbilityType? AbilityType = null,
+        NwnDamageType? DamageType = null,
+        int DurationSeconds = 0,
+        bool IsActive = true);
+
+    public record UpdateMutationEffectRequest(
+        MutationEffectType? Type = null,
+        int? Value = null,
+        NwnAbilityType? AbilityType = null,
+        NwnDamageType? DamageType = null,
+        int? DurationSeconds = null,
+        bool? IsActive = null);
+
     // --- Mapping ---
 
     public static SpawnProfileDto ToDto(SpawnProfile p) => new(
@@ -153,4 +200,11 @@ public static class EncounterApiDtos
     public static MiniBossConfigDto ToDto(MiniBossConfig m) => new(
         m.Id, m.CreatureResRef, m.SpawnChancePercent,
         m.Bonuses.Select(ToDto).ToList());
+
+    public static MutationTemplateDto ToMutationDto(MutationTemplate t) => new(
+        t.Id, t.Prefix, t.Description, t.SpawnChancePercent, t.IsActive,
+        t.Effects.Select(ToMutationEffectDto).ToList());
+
+    public static MutationEffectDto ToMutationEffectDto(MutationEffect e) => new(
+        e.Id, e.Type, e.Value, e.AbilityType, e.DamageType, e.DurationSeconds, e.IsActive);
 }

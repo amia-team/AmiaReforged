@@ -28,6 +28,49 @@ public enum SpawnBonusType
     Custom = 99
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum MutationEffectType
+{
+    AbilityBonus = 0,
+    ExtraAttack = 1,
+    DamageBonus = 2,
+    TempHP = 3,
+    AC = 4,
+    AttackBonus = 5,
+    SpellResistance = 6,
+    Concealment = 7,
+    DamageShield = 8,
+    Custom = 99
+}
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum NwnAbilityType
+{
+    Strength = 0,
+    Dexterity = 1,
+    Constitution = 2,
+    Intelligence = 3,
+    Wisdom = 4,
+    Charisma = 5
+}
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum NwnDamageType
+{
+    Bludgeoning = 1,
+    Piercing = 2,
+    Slashing = 4,
+    Magical = 8,
+    Acid = 16,
+    Cold = 32,
+    Divine = 64,
+    Electrical = 128,
+    Fire = 256,
+    Negative = 512,
+    Positive = 1024,
+    Sonic = 2048
+}
+
 // ===================== Response DTOs =====================
 
 public record SpawnProfileDto(
@@ -76,6 +119,23 @@ public record MiniBossConfigDto(
     string CreatureResRef,
     int SpawnChancePercent,
     List<SpawnBonusDto> Bonuses);
+
+public record MutationTemplateDto(
+    Guid Id,
+    string Prefix,
+    string? Description,
+    int SpawnChancePercent,
+    bool IsActive,
+    List<MutationEffectDto> Effects);
+
+public record MutationEffectDto(
+    Guid Id,
+    MutationEffectType Type,
+    int Value,
+    NwnAbilityType? AbilityType,
+    NwnDamageType? DamageType,
+    int DurationSeconds,
+    bool IsActive);
 
 // ===================== Request DTOs =====================
 
@@ -145,6 +205,34 @@ public record CreateMiniBossRequest(
 public record UpdateMiniBossRequest(
     string? CreatureResRef = null,
     int? SpawnChancePercent = null);
+
+public record CreateMutationRequest(
+    string Prefix,
+    string? Description = null,
+    int SpawnChancePercent = 10,
+    bool IsActive = true);
+
+public record UpdateMutationRequest(
+    string? Prefix = null,
+    string? Description = null,
+    int? SpawnChancePercent = null,
+    bool? IsActive = null);
+
+public record CreateMutationEffectRequest(
+    MutationEffectType Type,
+    int Value,
+    NwnAbilityType? AbilityType = null,
+    NwnDamageType? DamageType = null,
+    int DurationSeconds = 0,
+    bool IsActive = true);
+
+public record UpdateMutationEffectRequest(
+    MutationEffectType? Type = null,
+    int? Value = null,
+    NwnAbilityType? AbilityType = null,
+    NwnDamageType? DamageType = null,
+    int? DurationSeconds = null,
+    bool? IsActive = null);
 
 // ===================== Error DTO =====================
 

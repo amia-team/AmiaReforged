@@ -24,13 +24,16 @@ public class DynamicCreatureSpawner
 
     private readonly SpawnGroupSelector _groupSelector;
     private readonly SpawnBonusApplicator _bonusApplicator;
+    private readonly MutationApplicator _mutationApplicator;
 
     public DynamicCreatureSpawner(
         SpawnGroupSelector groupSelector,
-        SpawnBonusApplicator bonusApplicator)
+        SpawnBonusApplicator bonusApplicator,
+        MutationApplicator mutationApplicator)
     {
         _groupSelector = groupSelector;
         _bonusApplicator = bonusApplicator;
+        _mutationApplicator = mutationApplicator;
     }
 
     /// <summary>
@@ -69,11 +72,12 @@ public class DynamicCreatureSpawner
         // Spawn creatures
         List<uint> spawned = SpawnCreaturesFromGroup(group, scaledCount, spawnLocation, profile.DespawnSeconds);
 
-        // Apply profile bonuses
+        // Apply profile bonuses and attempt mutation
         IReadOnlyList<SpawnBonus> activeBonuses = profile.Bonuses.Where(b => b.IsActive).ToList();
         foreach (uint creature in spawned)
         {
             _bonusApplicator.ApplyBonuses(creature, activeBonuses, context.Chaos);
+            _mutationApplicator.TryApplyMutation(creature, context.Chaos);
         }
 
         // Mini-boss

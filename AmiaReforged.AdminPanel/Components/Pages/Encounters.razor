@@ -727,6 +727,215 @@
             </div>
         }
     }
+
+    @* ==================== Mutations Management ==================== *@
+    @if (_selectedEndpoint != null)
+    {
+        <div class="section mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="mb-0">Mutation Templates</h2>
+                <div>
+                    <button class="btn btn-sm btn-outline-warning" @onclick="() => _showAddMutation = !_showAddMutation">
+                        @(_showAddMutation ? "Cancel" : "+ New Mutation")
+                    </button>
+                    <button class="btn btn-sm btn-secondary ms-1" @onclick="LoadMutations" disabled="@_isLoadingMutations">Refresh</button>
+                </div>
+            </div>
+
+            @if (_showAddMutation)
+            {
+                <div class="row g-2 align-items-end mb-3">
+                    <div class="col-3">
+                        <label class="form-label">Prefix</label>
+                        <input class="form-control form-control-sm" @bind="_newMutPrefix" placeholder="e.g. Frenzied" />
+                    </div>
+                    <div class="col-3">
+                        <label class="form-label">Description</label>
+                        <input class="form-control form-control-sm" @bind="_newMutDescription" placeholder="Optional description" />
+                    </div>
+                    <div class="col-2">
+                        <label class="form-label">Chance %</label>
+                        <input type="number" class="form-control form-control-sm" @bind="_newMutChance" min="0" max="100" />
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-sm btn-warning" @onclick="CreateMutation" disabled="@_isSaving">Save</button>
+                    </div>
+                </div>
+            }
+
+            @if (_isLoadingMutations)
+            {
+                <p>Loading mutations...</p>
+            }
+            else if (_mutations.Count == 0)
+            {
+                <p style="color:var(--text-secondary)">No mutation templates defined.</p>
+            }
+            else
+            {
+                @foreach (var mut in _mutations)
+                {
+                    <div class="card mb-3" style="background:var(--bg-surface); border-color:var(--border-color);">
+                        <div class="card-header d-flex justify-content-between align-items-center"
+                             style="cursor:pointer; background:var(--bg-card); border-color:var(--border-color);"
+                             @onclick="() => ToggleMutationExpand(mut.Id)">
+                            <div>
+                                <strong style="color:var(--accent-amber);">@mut.Prefix</strong>
+                                <span class="ms-2" style="color:var(--text-secondary)">@(mut.Description ?? "")</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge" style="background:var(--accent-amber); color:var(--bg-primary)">@mut.SpawnChancePercent%</span>
+                                <input type="checkbox" checked="@mut.IsActive"
+                                       @onchange="() => ToggleMutationActive(mut)" />
+                                <button class="btn btn-sm btn-outline-danger" @onclick:stopPropagation="true"
+                                        @onclick="() => DeleteMutation(mut)">✕</button>
+                            </div>
+                        </div>
+
+                        @if (_expandedMutations.Contains(mut.Id))
+                        {
+                            <div class="card-body" style="border-top:1px solid var(--border-color);">
+                                @* Editable mutation fields *@
+                                <div class="row g-2 align-items-end mb-3">
+                                    <div class="col-3">
+                                        <label class="form-label">Prefix</label>
+                                        <input class="form-control form-control-sm" value="@mut.Prefix"
+                                               @onchange='e => UpdateMutationField(mut, "Prefix", e)' />
+                                    </div>
+                                    <div class="col-3">
+                                        <label class="form-label">Description</label>
+                                        <input class="form-control form-control-sm" value="@(mut.Description ?? "")"
+                                               @onchange='e => UpdateMutationField(mut, "Description", e)' />
+                                    </div>
+                                    <div class="col-2">
+                                        <label class="form-label">Chance %</label>
+                                        <input type="number" class="form-control form-control-sm" min="0" max="100"
+                                               value="@mut.SpawnChancePercent"
+                                               @onchange='e => UpdateMutationField(mut, "SpawnChancePercent", e)' />
+                                    </div>
+                                </div>
+
+                                @* Effects table *@
+                                <h3 class="mt-2">Effects</h3>
+                                @if (mut.Effects.Any())
+                                {
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Type</th>
+                                                <th>Value</th>
+                                                <th>Ability</th>
+                                                <th>Damage Type</th>
+                                                <th>Duration (s)</th>
+                                                <th>Active</th>
+                                                <th style="width:50px"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var fx in mut.Effects)
+                                            {
+                                                <tr>
+                                                    <td>
+                                                        <select class="form-select form-select-sm" value="@fx.Type"
+                                                                @onchange='e => UpdateEffectField(fx, "Type", e)'>
+                                                            @foreach (var t in Enum.GetValues<MutationEffectType>())
+                                                            {
+                                                                <option value="@t" selected="@(t == fx.Type)">@t</option>
+                                                            }
+                                                        </select>
+                                                    </td>
+                                                    <td>
+                                                        <input type="number" class="form-control form-control-sm" value="@fx.Value"
+                                                               @onchange='e => UpdateEffectField(fx, "Value", e)' />
+                                                    </td>
+                                                    <td>
+                                                        <select class="form-select form-select-sm"
+                                                                value="@(fx.AbilityType?.ToString() ?? "")"
+                                                                @onchange='e => UpdateEffectField(fx, "AbilityType", e)'>
+                                                            <option value="">—</option>
+                                                            @foreach (var a in Enum.GetValues<NwnAbilityType>())
+                                                            {
+                                                                <option value="@a" selected="@(a == fx.AbilityType)">@a</option>
+                                                            }
+                                                        </select>
+                                                    </td>
+                                                    <td>
+                                                        <select class="form-select form-select-sm"
+                                                                value="@(fx.DamageType?.ToString() ?? "")"
+                                                                @onchange='e => UpdateEffectField(fx, "DamageType", e)'>
+                                                            <option value="">—</option>
+                                                            @foreach (var d in Enum.GetValues<NwnDamageType>())
+                                                            {
+                                                                <option value="@d" selected="@(d == fx.DamageType)">@d</option>
+                                                            }
+                                                        </select>
+                                                    </td>
+                                                    <td>
+                                                        <input type="number" class="form-control form-control-sm" value="@fx.DurationSeconds"
+                                                               @onchange='e => UpdateEffectField(fx, "DurationSeconds", e)' />
+                                                    </td>
+                                                    <td>
+                                                        <input type="checkbox" checked="@fx.IsActive"
+                                                               @onchange="() => ToggleEffectActive(fx)" />
+                                                    </td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteEffect(fx)">✕</button>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                }
+                                else
+                                {
+                                    <p style="color:var(--text-secondary)">No effects. Add one below.</p>
+                                }
+
+                                @* Add effect row *@
+                                <div class="row g-2 align-items-end mt-1">
+                                    <div class="col-2">
+                                        <select class="form-select form-select-sm" @bind="_newFxType">
+                                            @foreach (var t in Enum.GetValues<MutationEffectType>())
+                                            {
+                                                <option value="@t">@t</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-1">
+                                        <input type="number" class="form-control form-control-sm" @bind="_newFxValue" placeholder="Val" />
+                                    </div>
+                                    <div class="col-2">
+                                        <select class="form-select form-select-sm" @bind="_newFxAbility">
+                                            <option value="">— Ability —</option>
+                                            @foreach (var a in Enum.GetValues<NwnAbilityType>())
+                                            {
+                                                <option value="@a">@a</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-2">
+                                        <select class="form-select form-select-sm" @bind="_newFxDamageType">
+                                            <option value="">— Dmg Type —</option>
+                                            @foreach (var d in Enum.GetValues<NwnDamageType>())
+                                            {
+                                                <option value="@d">@d</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-1">
+                                        <input type="number" class="form-control form-control-sm" @bind="_newFxDuration" placeholder="Dur" />
+                                    </div>
+                                    <div class="col-auto">
+                                        <button class="btn btn-sm btn-outline-warning" @onclick="() => AddEffect(mut.Id)" disabled="@_isSaving">+ Effect</button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            }
+        </div>
+    }
 </div>
 
 @code {
@@ -807,6 +1016,22 @@
     private int _newMbBonusValue = 10;
     private int _newMbBonusDuration;
 
+    // ===== Mutations =====
+    private List<MutationTemplateDto> _mutations = [];
+    private HashSet<Guid> _expandedMutations = [];
+    private bool _isLoadingMutations;
+    private bool _showAddMutation;
+    private string _newMutPrefix = "";
+    private string? _newMutDescription;
+    private int _newMutChance = 10;
+
+    // ===== Add Effect Form =====
+    private MutationEffectType _newFxType = MutationEffectType.AbilityBonus;
+    private int _newFxValue = 2;
+    private string? _newFxAbility;
+    private string? _newFxDamageType;
+    private int _newFxDuration;
+
     // ===== Lifecycle =====
 
     protected override async Task OnInitializedAsync()
@@ -857,6 +1082,7 @@
         Api.SelectEndpoint(_selectedEndpoint.Id);
         ResetEncounterState();
         await RefreshProfiles();
+        await LoadMutations();
     }
 
     private void ResetEncounterState()
@@ -1416,6 +1642,208 @@
             await RefreshProfiles();
         }
         catch (Exception ex) { _error = ex.Message; }
+    }
+
+    // ===== Mutations =====
+
+    private async Task LoadMutations()
+    {
+        _isLoadingMutations = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            _mutations = await Api.GetAllMutationsAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load mutations: {ex.Message}";
+            Logger.LogError(ex, "Failed to load mutation templates");
+        }
+        finally
+        {
+            _isLoadingMutations = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CreateMutation()
+    {
+        if (string.IsNullOrWhiteSpace(_newMutPrefix))
+        {
+            _error = "Prefix is required.";
+            return;
+        }
+
+        _isSaving = true;
+        try
+        {
+            await Api.CreateMutationAsync(new CreateMutationRequest(
+                _newMutPrefix.Trim(),
+                _newMutDescription?.Trim(),
+                _newMutChance
+            ));
+            _success = $"Mutation '{_newMutPrefix}' created.";
+            _newMutPrefix = "";
+            _newMutDescription = null;
+            _newMutChance = 10;
+            _showAddMutation = false;
+            await LoadMutations();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task UpdateMutationField(MutationTemplateDto mut, string field, ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString() ?? "";
+        string prefix = mut.Prefix;
+        string? description = mut.Description;
+        int chance = mut.SpawnChancePercent;
+        bool active = mut.IsActive;
+
+        switch (field)
+        {
+            case "Prefix": prefix = val; break;
+            case "Description": description = string.IsNullOrWhiteSpace(val) ? null : val; break;
+            case "SpawnChancePercent": chance = int.TryParse(val, out var c) ? c : chance; break;
+        }
+
+        _isSaving = true;
+        try
+        {
+            await Api.UpdateMutationAsync(mut.Id, new UpdateMutationRequest(prefix, description, chance, active));
+            _success = $"Mutation '{prefix}' updated.";
+            await LoadMutations();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task ToggleMutationActive(MutationTemplateDto mut)
+    {
+        _isSaving = true;
+        try
+        {
+            await Api.UpdateMutationAsync(mut.Id, new UpdateMutationRequest(
+                mut.Prefix, mut.Description, mut.SpawnChancePercent, !mut.IsActive));
+            _success = $"Mutation '{mut.Prefix}' {(mut.IsActive ? "deactivated" : "activated")}.";
+            await LoadMutations();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task DeleteMutation(MutationTemplateDto mut)
+    {
+        _isSaving = true;
+        try
+        {
+            await Api.DeleteMutationAsync(mut.Id);
+            _success = $"Mutation '{mut.Prefix}' deleted.";
+            _expandedMutations.Remove(mut.Id);
+            await LoadMutations();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private void ToggleMutationExpand(Guid id)
+    {
+        if (!_expandedMutations.Remove(id))
+            _expandedMutations.Add(id);
+    }
+
+    private async Task AddEffect(Guid templateId)
+    {
+        _isSaving = true;
+        try
+        {
+            NwnAbilityType? abilityType = !string.IsNullOrEmpty(_newFxAbility) && Enum.TryParse<NwnAbilityType>(_newFxAbility, out var a) ? a : null;
+            NwnDamageType? damageType = !string.IsNullOrEmpty(_newFxDamageType) && Enum.TryParse<NwnDamageType>(_newFxDamageType, out var d) ? d : null;
+
+            await Api.AddMutationEffectAsync(templateId, new CreateMutationEffectRequest(
+                _newFxType, _newFxValue, abilityType, damageType, _newFxDuration
+            ));
+            _success = "Effect added.";
+            _newFxType = MutationEffectType.AbilityBonus;
+            _newFxValue = 2;
+            _newFxAbility = null;
+            _newFxDamageType = null;
+            _newFxDuration = 0;
+            await LoadMutations();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task UpdateEffectField(MutationEffectDto fx, string field, ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString() ?? "";
+        var type = fx.Type;
+        int value = fx.Value;
+        NwnAbilityType? abilityType = fx.AbilityType;
+        NwnDamageType? damageType = fx.DamageType;
+        int duration = fx.DurationSeconds;
+        bool active = fx.IsActive;
+
+        switch (field)
+        {
+            case "Type":
+                type = Enum.TryParse<MutationEffectType>(val, out var t) ? t : type;
+                break;
+            case "Value":
+                value = int.TryParse(val, out var v) ? v : value;
+                break;
+            case "AbilityType":
+                abilityType = !string.IsNullOrEmpty(val) && Enum.TryParse<NwnAbilityType>(val, out var ab) ? ab : null;
+                break;
+            case "DamageType":
+                damageType = !string.IsNullOrEmpty(val) && Enum.TryParse<NwnDamageType>(val, out var dt) ? dt : null;
+                break;
+            case "DurationSeconds":
+                duration = int.TryParse(val, out var dur) ? dur : duration;
+                break;
+        }
+
+        _isSaving = true;
+        try
+        {
+            await Api.UpdateMutationEffectAsync(fx.Id, new UpdateMutationEffectRequest(
+                type, value, abilityType, damageType, duration, active));
+            _success = "Effect updated.";
+            await LoadMutations();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task ToggleEffectActive(MutationEffectDto fx)
+    {
+        _isSaving = true;
+        try
+        {
+            await Api.UpdateMutationEffectAsync(fx.Id, new UpdateMutationEffectRequest(
+                fx.Type, fx.Value, fx.AbilityType, fx.DamageType, fx.DurationSeconds, !fx.IsActive));
+            _success = $"Effect {(fx.IsActive ? "deactivated" : "activated")}.";
+            await LoadMutations();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task DeleteEffect(MutationEffectDto fx)
+    {
+        _isSaving = true;
+        try
+        {
+            await Api.DeleteMutationEffectAsync(fx.Id);
+            _success = "Effect deleted.";
+            await LoadMutations();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
     }
 
     // ===== Cache =====

@@ -32,6 +32,8 @@ public class EncounterApiService
     private const string ConditionsBase = "/api/worldengine/encounters/conditions";
     private const string BonusesBase = "/api/worldengine/encounters/bonuses";
     private const string MiniBossBase = "/api/worldengine/encounters/miniboss";
+    private const string MutationsBase = "/api/worldengine/encounters/mutations";
+    private const string MutationEffectsBase = "/api/worldengine/encounters/effects";
     private const string CacheBase = "/api/worldengine/encounters/cache";
 
     public EncounterApiService(IHttpClientFactory httpClientFactory, IWorldEngineEndpointService endpointService)
@@ -204,6 +206,48 @@ public class EncounterApiService
     public async Task<SpawnBonusDto?> AddMiniBossBonusAsync(Guid miniBossId, CreateBonusRequest request)
     {
         return await PostAsync<SpawnBonusDto>($"{MiniBossBase}/{miniBossId}/bonuses", request);
+    }
+
+    // ==================== Mutations ====================
+
+    public async Task<List<MutationTemplateDto>> GetAllMutationsAsync()
+    {
+        return await GetAsync<List<MutationTemplateDto>>(MutationsBase) ?? [];
+    }
+
+    public async Task<MutationTemplateDto?> CreateMutationAsync(CreateMutationRequest request)
+    {
+        return await PostAsync<MutationTemplateDto>(MutationsBase, request);
+    }
+
+    public async Task<MutationTemplateDto?> UpdateMutationAsync(Guid id, UpdateMutationRequest request)
+    {
+        return await PutAsync<MutationTemplateDto>($"{MutationsBase}/{id}", request);
+    }
+
+    public async Task DeleteMutationAsync(Guid id)
+    {
+        await DeleteAsync($"{MutationsBase}/{id}");
+    }
+
+    public async Task<MutationEffectDto?> AddMutationEffectAsync(Guid templateId, CreateMutationEffectRequest request)
+    {
+        return await PostAsync<MutationEffectDto>($"{MutationsBase}/{templateId}/effects", request);
+    }
+
+    public async Task<MutationEffectDto?> UpdateMutationEffectAsync(Guid effectId, UpdateMutationEffectRequest request)
+    {
+        return await PutAsync<MutationEffectDto>($"{MutationEffectsBase}/{effectId}", request);
+    }
+
+    public async Task DeleteMutationEffectAsync(Guid effectId)
+    {
+        await DeleteAsync($"{MutationEffectsBase}/{effectId}");
+    }
+
+    public async Task RefreshMutationCacheAsync()
+    {
+        await PostAsync<object>($"{MutationsBase}/cache/refresh", null);
     }
 
     // ==================== Cache ====================
