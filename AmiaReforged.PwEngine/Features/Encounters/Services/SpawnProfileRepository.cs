@@ -143,6 +143,14 @@ public class SpawnProfileRepository : ISpawnProfileRepository
         return entry;
     }
 
+    public async Task<SpawnEntry> UpdateEntryAsync(SpawnEntry entry)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        ctx.SpawnEntries.Update(entry);
+        await ctx.SaveChangesAsync();
+        return entry;
+    }
+
     public async Task DeleteEntryAsync(Guid entryId)
     {
         await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
@@ -167,6 +175,14 @@ public class SpawnProfileRepository : ISpawnProfileRepository
         await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
         condition.SpawnGroupId = groupId;
         ctx.SpawnConditions.Add(condition);
+        await ctx.SaveChangesAsync();
+        return condition;
+    }
+
+    public async Task<SpawnCondition> UpdateConditionAsync(SpawnCondition condition)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        ctx.SpawnConditions.Update(condition);
         await ctx.SaveChangesAsync();
         return condition;
     }

@@ -139,6 +139,11 @@ public class EncounterApiService
         return await PostAsync<SpawnEntryDto>($"{GroupsBase}/{groupId}/entries", request);
     }
 
+    public async Task<SpawnEntryDto?> UpdateEntryAsync(Guid entryId, UpdateEntryRequest request)
+    {
+        return await PutAsync<SpawnEntryDto>($"{EntriesBase}/{entryId}", request);
+    }
+
     public async Task DeleteEntryAsync(Guid entryId)
     {
         await DeleteAsync($"{EntriesBase}/{entryId}");
@@ -149,6 +154,11 @@ public class EncounterApiService
     public async Task<SpawnConditionDto?> AddConditionAsync(Guid groupId, CreateConditionRequest request)
     {
         return await PostAsync<SpawnConditionDto>($"{GroupsBase}/{groupId}/conditions", request);
+    }
+
+    public async Task<SpawnConditionDto?> UpdateConditionAsync(Guid conditionId, UpdateConditionRequest request)
+    {
+        return await PutAsync<SpawnConditionDto>($"{ConditionsBase}/{conditionId}", request);
     }
 
     public async Task DeleteConditionAsync(Guid conditionId)

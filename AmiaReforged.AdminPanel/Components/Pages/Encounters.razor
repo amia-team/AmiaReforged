@@ -377,9 +377,9 @@
                                                 <thead>
                                                     <tr>
                                                         <th>Creature ResRef</th>
-                                                        <th>Weight</th>
-                                                        <th>Min</th>
-                                                        <th>Max</th>
+                                                        <th style="width:80px">Weight</th>
+                                                        <th style="width:70px">Min</th>
+                                                        <th style="width:70px">Max</th>
                                                         <th style="width:60px"></th>
                                                     </tr>
                                                 </thead>
@@ -387,10 +387,22 @@
                                                     @foreach (var entry in group.Entries)
                                                     {
                                                         <tr>
-                                                            <td><code>@entry.CreatureResRef</code></td>
-                                                            <td>@entry.RelativeWeight</td>
-                                                            <td>@entry.MinCount</td>
-                                                            <td>@entry.MaxCount</td>
+                                                            <td>
+                                                                <input class="form-control form-control-sm" value="@entry.CreatureResRef"
+                                                                       @onchange="e => UpdateEntryField(entry, nameof(entry.CreatureResRef), e)" />
+                                                            </td>
+                                                            <td>
+                                                                <input class="form-control form-control-sm" type="number" value="@entry.RelativeWeight"
+                                                                       @onchange="e => UpdateEntryField(entry, nameof(entry.RelativeWeight), e)" />
+                                                            </td>
+                                                            <td>
+                                                                <input class="form-control form-control-sm" type="number" value="@entry.MinCount"
+                                                                       @onchange="e => UpdateEntryField(entry, nameof(entry.MinCount), e)" />
+                                                            </td>
+                                                            <td>
+                                                                <input class="form-control form-control-sm" type="number" value="@entry.MaxCount"
+                                                                       @onchange="e => UpdateEntryField(entry, nameof(entry.MaxCount), e)" />
+                                                            </td>
                                                             <td>
                                                                 <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteEntry(entry)">✕</button>
                                                             </td>
@@ -458,9 +470,23 @@
                                                     @foreach (var cond in group.Conditions)
                                                     {
                                                         <tr>
-                                                            <td>@cond.Type</td>
-                                                            <td>@cond.Operator</td>
-                                                            <td>@cond.Value</td>
+                                                            <td>
+                                                                <select class="form-control form-control-sm" value="@cond.Type"
+                                                                        @onchange="e => UpdateConditionField(cond, nameof(cond.Type), e)">
+                                                                    @foreach (SpawnConditionType t in Enum.GetValues<SpawnConditionType>())
+                                                                    {
+                                                                        <option value="@t" selected="@(t == cond.Type)">@t</option>
+                                                                    }
+                                                                </select>
+                                                            </td>
+                                                            <td>
+                                                                <input class="form-control form-control-sm" value="@cond.Operator"
+                                                                       @onchange="e => UpdateConditionField(cond, nameof(cond.Operator), e)" />
+                                                            </td>
+                                                            <td>
+                                                                <input class="form-control form-control-sm" value="@cond.Value"
+                                                                       @onchange="e => UpdateConditionField(cond, nameof(cond.Value), e)" />
+                                                            </td>
                                                             <td>
                                                                 <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteCondition(cond)">✕</button>
                                                             </td>
@@ -1033,6 +1059,28 @@
         catch (Exception ex) { _error = ex.Message; }
     }
 
+    private async Task UpdateEntryField(SpawnEntryDto entry, string field, ChangeEventArgs e)
+    {
+        string? val = e.Value?.ToString();
+        if (string.IsNullOrEmpty(val)) return;
+
+        try
+        {
+            UpdateEntryRequest req = field switch
+            {
+                nameof(SpawnEntryDto.CreatureResRef) => new UpdateEntryRequest(CreatureResRef: val),
+                nameof(SpawnEntryDto.RelativeWeight) when int.TryParse(val, out int w) => new UpdateEntryRequest(RelativeWeight: w),
+                nameof(SpawnEntryDto.MinCount) when int.TryParse(val, out int min) => new UpdateEntryRequest(MinCount: min),
+                nameof(SpawnEntryDto.MaxCount) when int.TryParse(val, out int max) => new UpdateEntryRequest(MaxCount: max),
+                _ => throw new ArgumentException($"Unknown field: {field}")
+            };
+
+            await Api.UpdateEntryAsync(entry.Id, req);
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
     // ===== Condition CRUD =====
 
     private void ToggleAddCondition(Guid groupId)
@@ -1072,6 +1120,27 @@
         {
             await Api.DeleteConditionAsync(condition.Id);
             _success = "Condition deleted.";
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private async Task UpdateConditionField(SpawnConditionDto condition, string field, ChangeEventArgs e)
+    {
+        string? val = e.Value?.ToString();
+        if (string.IsNullOrEmpty(val)) return;
+
+        try
+        {
+            UpdateConditionRequest req = field switch
+            {
+                nameof(SpawnConditionDto.Type) when Enum.TryParse<SpawnConditionType>(val, out var t) => new UpdateConditionRequest(Type: t),
+                nameof(SpawnConditionDto.Operator) => new UpdateConditionRequest(Operator: val),
+                nameof(SpawnConditionDto.Value) => new UpdateConditionRequest(Value: val),
+                _ => throw new ArgumentException($"Unknown field: {field}")
+            };
+
+            await Api.UpdateConditionAsync(condition.Id, req);
             await RefreshProfiles();
         }
         catch (Exception ex) { _error = ex.Message; }

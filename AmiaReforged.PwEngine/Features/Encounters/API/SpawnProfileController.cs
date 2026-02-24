@@ -343,6 +343,33 @@ public class SpawnProfileController
     }
 
     /// <summary>
+    /// PUT /api/worldengine/encounters/entries/{entryId} — Update an entry
+    /// </summary>
+    [HttpPut("/api/worldengine/encounters/entries/{entryId}")]
+    public static async Task<ApiResult> UpdateEntry(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("entryId"), out Guid entryId))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid entry ID."));
+
+        SpawnEntry? entry = await Repository.GetEntryByIdAsync(entryId);
+        if (entry == null)
+            return new ApiResult(404, new ErrorResponse("Not found", $"Entry {entryId} not found."));
+
+        UpdateEntryRequest? req = await ctx.ReadJsonBodyAsync<UpdateEntryRequest>();
+        if (req == null) return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required."));
+
+        if (req.CreatureResRef != null) entry.CreatureResRef = req.CreatureResRef;
+        if (req.RelativeWeight.HasValue) entry.RelativeWeight = req.RelativeWeight.Value;
+        if (req.MinCount.HasValue) entry.MinCount = req.MinCount.Value;
+        if (req.MaxCount.HasValue) entry.MaxCount = req.MaxCount.Value;
+
+        await Repository.UpdateEntryAsync(entry);
+        return new ApiResult(200, ToDto(entry));
+    }
+
+    /// <summary>
     /// DELETE /api/worldengine/encounters/entries/{entryId} — Delete an entry
     /// </summary>
     [HttpDelete("/api/worldengine/encounters/entries/{entryId}")]
@@ -389,6 +416,32 @@ public class SpawnProfileController
 
         await Repository.AddConditionAsync(groupId, condition);
         return new ApiResult(201, ToDto(condition));
+    }
+
+    /// <summary>
+    /// PUT /api/worldengine/encounters/conditions/{conditionId} — Update a condition
+    /// </summary>
+    [HttpPut("/api/worldengine/encounters/conditions/{conditionId}")]
+    public static async Task<ApiResult> UpdateCondition(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("conditionId"), out Guid conditionId))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid condition ID."));
+
+        SpawnCondition? condition = await Repository.GetConditionByIdAsync(conditionId);
+        if (condition == null)
+            return new ApiResult(404, new ErrorResponse("Not found", $"Condition {conditionId} not found."));
+
+        UpdateConditionRequest? req = await ctx.ReadJsonBodyAsync<UpdateConditionRequest>();
+        if (req == null) return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required."));
+
+        if (req.Type.HasValue) condition.Type = req.Type.Value;
+        if (req.Operator != null) condition.Operator = req.Operator;
+        if (req.Value != null) condition.Value = req.Value;
+
+        await Repository.UpdateConditionAsync(condition);
+        return new ApiResult(200, ToDto(condition));
     }
 
     /// <summary>

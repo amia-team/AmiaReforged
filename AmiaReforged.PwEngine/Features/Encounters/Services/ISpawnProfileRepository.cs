@@ -63,12 +63,14 @@ public interface ISpawnProfileRepository
 
     Task<SpawnEntry?> GetEntryByIdAsync(Guid entryId);
     Task<SpawnEntry> AddEntryAsync(Guid groupId, SpawnEntry entry);
+    Task<SpawnEntry> UpdateEntryAsync(SpawnEntry entry);
     Task DeleteEntryAsync(Guid entryId);
 
     // === Spawn Condition Operations ===
 
     Task<SpawnCondition?> GetConditionByIdAsync(Guid conditionId);
     Task<SpawnCondition> AddConditionAsync(Guid groupId, SpawnCondition condition);
+    Task<SpawnCondition> UpdateConditionAsync(SpawnCondition condition);
     Task DeleteConditionAsync(Guid conditionId);
 
     // === Spawn Bonus Operations ===

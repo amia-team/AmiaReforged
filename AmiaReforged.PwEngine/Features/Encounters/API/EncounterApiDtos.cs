@@ -93,6 +93,17 @@ public static class EncounterApiDtos
         string? Name = null,
         int? Weight = null);
 
+    public record UpdateEntryRequest(
+        string? CreatureResRef = null,
+        int? RelativeWeight = null,
+        int? MinCount = null,
+        int? MaxCount = null);
+
+    public record UpdateConditionRequest(
+        SpawnConditionType? Type = null,
+        string? Operator = null,
+        string? Value = null);
+
     public record CreateBonusRequest(
         string Name,
         SpawnBonusType Type,
