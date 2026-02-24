@@ -1,9 +1,11 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Features.Encounters.Models;
+using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace AmiaReforged.PwEngine.Features.Encounters.Services;
 
+[ServiceBinding(typeof(IMutationRepository))]
 public class MutationRepository : IMutationRepository
 {
     private readonly IDbContextFactory<PwEngineContext> _factory;
