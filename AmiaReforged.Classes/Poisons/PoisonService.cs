@@ -7,7 +7,7 @@ namespace AmiaReforged.Classes.Poisons;
 [ServiceBinding(typeof(PoisonService))]
 public class PoisonService(ScriptHandleFactory scriptHandleFactory)
 {
-    public void ApplyPoisonEffect(PoisonType poisonType, NwCreature targetCreature, NwCreature poisoner, int dc)
+    public void ApplyPoisonEffect(PoisonType poisonType, NwCreature targetCreature, NwGameObject poisoner, int dc)
     {
         PoisonData.PoisonValues? poisonValues = PoisonData.GetPoisonValues(poisonType);
 
@@ -35,7 +35,7 @@ public class PoisonService(ScriptHandleFactory scriptHandleFactory)
                 ApplyPrimaryPoisonEffect(targetCreature, poisonValues);
 
                 if (targetCreature.ActiveEffects.Any(e => e.Tag == poisonValues.Name)) return;
-                
+
                 Effect secondaryPoisonEffect = CreateSecondaryPoisonEffect(poisonValues, dc, poisoner);
                 targetCreature.ApplyEffect(EffectDuration.Temporary, secondaryPoisonEffect, NwTimeSpan.FromTurns(1));
 
@@ -43,7 +43,7 @@ public class PoisonService(ScriptHandleFactory scriptHandleFactory)
         }
     }
 
-    private void ApplyPrimaryPoisonEffect(NwCreature targetCreature, PoisonData.PoisonValues poisonValues)
+    private static void ApplyPrimaryPoisonEffect(NwCreature targetCreature, PoisonData.PoisonValues poisonValues)
     {
         switch (poisonValues)
         {
@@ -66,7 +66,7 @@ public class PoisonService(ScriptHandleFactory scriptHandleFactory)
         }
     }
 
-    private Effect CreateSecondaryPoisonEffect(PoisonData.PoisonValues poisonValues, int dc, NwCreature poisoner)
+    private Effect CreateSecondaryPoisonEffect(PoisonData.PoisonValues poisonValues, int dc, NwGameObject poisoner)
     {
         ScriptCallbackHandle removeHandle
             = scriptHandleFactory.CreateUniqueHandler(info => OnSecondaryPoisonTrigger(info, poisonValues, dc, poisoner));
@@ -80,8 +80,8 @@ public class PoisonService(ScriptHandleFactory scriptHandleFactory)
         return secondaryPoisonEffect;
     }
 
-    private ScriptHandleResult OnSecondaryPoisonTrigger(CallInfo info, PoisonData.PoisonValues poisonValues, int dc,
-        NwCreature poisoner)
+    private static ScriptHandleResult OnSecondaryPoisonTrigger(CallInfo info, PoisonData.PoisonValues poisonValues, int dc,
+        NwGameObject poisoner)
     {
         if (info.ObjectSelf is not NwCreature targetCreature)
         {
@@ -97,11 +97,11 @@ public class PoisonService(ScriptHandleFactory scriptHandleFactory)
         switch (savingThrowResult)
         {
             case SavingThrowResult.Immune:
-                return ScriptHandleResult.Handled;
+                break;
 
             case SavingThrowResult.Success:
                 targetCreature.ApplyEffect(EffectDuration.Instant, fortSaveVfx);
-                return ScriptHandleResult.Handled;
+                break;
 
             case SavingThrowResult.Failure:
                 targetCreature.ApplyEffect(EffectDuration.Instant, poisonVfx);
@@ -125,7 +125,6 @@ public class PoisonService(ScriptHandleFactory scriptHandleFactory)
 
                         break;
                 }
-
                 break;
         }
 
