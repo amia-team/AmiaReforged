@@ -61,7 +61,7 @@ public class OrsonsPyromagic(ScriptHandleFactory scriptHandleFactory) : ISpell
         Effect damageVfx = Effect.VisualEffect(VfxType.ImpFlameS);
 
         foreach (NwCreature creature in caster.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere,
-                     RadiusSize.Large, true))
+                     RadiusSize.Medium, true))
         {
             if (!caster.IsReactionTypeHostile(creature) || !creature.IsValid || creature.IsDead) continue;
 

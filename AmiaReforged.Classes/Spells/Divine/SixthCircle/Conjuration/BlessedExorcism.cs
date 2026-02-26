@@ -32,10 +32,12 @@ public class BlessedExorcism : ISpell
         Effect turnEffect =
             Effect.LinkEffects(Effect.VisualEffect(VfxType.DurMindAffectingFear), Effect.Turned());
 
-        caster.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfWord, fScale: 0.5f));
+
+        const float vfxScale = RadiusSize.Huge / RadiusSize.Colossal;
+        caster.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfWord, fScale: vfxScale));
 
         foreach (NwCreature creature in caster.Location.GetObjectsInShapeByType<NwCreature>
-                     (Shape.Sphere, RadiusSize.Large, false))
+                     (Shape.Sphere, RadiusSize.Huge, false))
         {
             if (caster.IsReactionTypeFriendly(creature))
             {
