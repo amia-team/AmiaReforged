@@ -25,6 +25,7 @@ public class AugmentBindingStrike : IAugmentation.IAttackAugment
         CrashingMeteorData meteor = GetCrashingMeteorData(monk);
 
         Effect reflexVfx = Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse);
+        Effect damageVfx = Effect.VisualEffect(meteor.DamageVfx);
 
         attackData.Target.ApplyEffect(EffectDuration.Instant, meteor.PulseVfx);
 
@@ -48,18 +49,8 @@ public class AugmentBindingStrike : IAugmentation.IAttackAugment
             if (hasImprovedEvasion || savingThrowResult == SavingThrowResult.Success)
                 damageAmount /= 2;
 
-            _ = ApplyAoeDamage(creature, monk, damageAmount, meteor.DamageType, meteor.DamageVfx);
+            creature.ApplyEffect(EffectDuration.Instant, Effect.Damage(damageAmount, meteor.DamageType));
+            creature.ApplyEffect(EffectDuration.Instant, damageVfx);
         }
-    }
-
-    private static async Task ApplyAoeDamage(NwGameObject targetObject, NwCreature monk, int damageAmount,
-        DamageType damageType, VfxType damageVfx)
-    {
-        await monk.WaitForObjectContext();
-        Effect damageEffect = Effect.LinkEffects(
-            Effect.Damage(damageAmount, damageType),
-            Effect.VisualEffect(damageVfx));
-
-        targetObject.ApplyEffect(EffectDuration.Instant, damageEffect);
     }
 }
