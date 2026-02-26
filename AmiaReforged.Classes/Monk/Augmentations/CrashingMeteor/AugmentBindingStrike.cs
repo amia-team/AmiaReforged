@@ -31,7 +31,7 @@ public class AugmentBindingStrike : IAugmentation.IAttackAugment
 
         foreach (NwCreature creature in location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Medium, true))
         {
-            if (!monk.IsReactionTypeHostile(creature)) continue;
+            if (!monk.IsReactionTypeHostile(creature) || creature.IsDead) continue;
             int damageAmount = Random.Shared.Roll(6, meteor.DiceAmount);
 
             bool hasEvasion = creature.KnowsFeat(NwFeat.FromFeatType(Feat.Evasion)!);
