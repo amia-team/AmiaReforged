@@ -44,7 +44,8 @@ public class BrambleHex : ISpell
             curseDuration *= 2;
         }
 
-        Effect knockdownEffect = Effect.LinkEffects(Effect.Knockdown(), Effect.VisualEffect(VfxType.DurEntangle));
+        Effect knockdownEffect = Effect.LinkEffects(Effect.Knockdown(), Effect.CutsceneImmobilize(),
+            Effect.VisualEffect(VfxType.DurEntangle));
         knockdownEffect.SubType = EffectSubType.Supernatural;
 
         int dexDamage = Random.Shared.Roll(6) + 1;
