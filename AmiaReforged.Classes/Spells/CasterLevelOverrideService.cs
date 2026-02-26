@@ -1,7 +1,6 @@
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using NWN.Core;
 using NWN.Core.NWNX;
 using NLog;
 
@@ -13,49 +12,25 @@ public class CasterLevelOverrideService
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly ShifterDcService _shifterDcService;
 
-    // Dictionary mapping prestige classes to their caster level modifier formulas
-    // Formula takes prestige class level and returns the modifier (minimum 0, prevents negative)
-    private readonly Dictionary<ClassType, Func<int, int>> _prestigeClassModifiers = new()
+    // Epic Caster feat ID - granted when caster level override reaches 20+
+    private const ushort EpicCasterFeatId = 1370;
+
+    // Classes eligible to receive the Epic Caster feat when their CL reaches 20+
+    private static readonly HashSet<ClassType> EpicCasterEligibleClasses = new()
     {
-        { ClassType.PaleMaster, prcLevel => Math.Max(0, prcLevel - 5) },
-        { ClassType.DragonDisciple, prcLevel => Math.Max(0, prcLevel - 5) },
-        { ClassType.Blackguard, prcLevel => Math.Max(0, prcLevel - 5) },
-        { ClassType.DivineChampion, prcLevel => Math.Max(0, prcLevel - 5) },
-        { ClassType.ArcaneArcher, prcLevel => Math.Max(0, prcLevel - 5) }
+        ClassType.Bard, ClassType.Cleric, ClassType.Druid,
+        ClassType.Paladin, ClassType.Ranger, ClassType.Sorcerer, ClassType.Wizard
     };
 
     private readonly Dictionary<NwCreature, bool> _casterLevelOverridesApplied = new();
 
-    // Mapping of prestige classes to their valid base caster classes
-    private static readonly Dictionary<ClassType, HashSet<ClassType>> PrestigeToBaseCasterMap = new()
-    {
-        {
-            ClassType.PaleMaster,
-            new HashSet<ClassType> { ClassType.Wizard, ClassType.Sorcerer, ClassType.Bard, ClassType.Assassin }
-        },
-        {
-            ClassType.DragonDisciple,
-            new HashSet<ClassType> { ClassType.Sorcerer, ClassType.Bard }
-        },
-        {
-            ClassType.ArcaneArcher,
-            new HashSet<ClassType> { ClassType.Wizard, ClassType.Sorcerer, ClassType.Bard, ClassType.Assassin }
-        },
-        {
-            ClassType.Blackguard,
-            new HashSet<ClassType> { ClassType.Cleric, ClassType.Druid, ClassType.Ranger }
-        },
-        {
-            ClassType.DivineChampion,
-            new HashSet<ClassType> { ClassType.Cleric, ClassType.Paladin, ClassType.Druid, ClassType.Blackguard }
-        }
-    };
 
     public CasterLevelOverrideService(ShifterDcService shifterDcService)
     {
         _shifterDcService = shifterDcService;
 
         NwModule.Instance.OnClientLeave += RemoveSetup;
+        NwModule.Instance.OnClientEnter += FixCasterLevelOnClientEnter;
 
         NwModule.Instance.OnLevelUp += FixCasterLevelOnLevelUp;
         NwModule.Instance.OnLevelDown += FixCasterLevelOnLevelDown;
@@ -99,7 +74,7 @@ public class CasterLevelOverrideService
         DoCasterLevelOverride(obj.Creature);
     }
 
-    private void FixCasterLevel(ModuleEvents.OnClientEnter obj)
+    private void FixCasterLevelOnClientEnter(ModuleEvents.OnClientEnter obj)
     {
         if (obj.Player.LoginCreature is null) return;
         DoCasterLevelOverride(obj.Player.LoginCreature);
@@ -107,77 +82,52 @@ public class CasterLevelOverrideService
 
     private void DoCasterLevelOverride(NwCreature casterCreature)
     {
-        // Find all prestige classes that have caster level modifiers
-        List<(ClassType classType, int level)> prestigeClasses = [];
+        // Use the shared calculator to get all effective caster levels
+        var effectiveLevels = EffectiveCasterLevelCalculator.CalculateAllEffectiveCasterLevels(casterCreature);
+
+        // Build a map of actual class levels for comparison
+        Dictionary<ClassType, int> actualLevels = new();
         foreach (CreatureClassInfo charClass in casterCreature.Classes)
         {
-            if (_prestigeClassModifiers.ContainsKey(charClass.Class.ClassType))
+            actualLevels[charClass.Class.ClassType] = charClass.Level;
+        }
+
+        // Check if any eligible base caster class has 20+ levels (qualifies for Epic Caster without PRC stacking)
+        bool qualifiesForEpicCaster = actualLevels
+            .Any(kvp => EpicCasterEligibleClasses.Contains(kvp.Key) && kvp.Value >= 20);
+
+        // Apply caster level overrides and check for Epic Caster qualification
+        foreach ((ClassType targetClass, int effectiveLevel) in effectiveLevels)
+        {
+            int actualLevel = actualLevels.TryGetValue(targetClass, out int al) ? al : 0;
+
+            // Only set override if effective level is different from actual
+            if (effectiveLevel != actualLevel)
             {
-                prestigeClasses.Add((charClass.Class.ClassType, charClass.Level));
+                int finalCasterLevel = Math.Max(1, effectiveLevel);
+
+                Log.Info($"{casterCreature.Name}: Setting caster level override for {targetClass} = {finalCasterLevel} (actual {actualLevel})");
+
+                CreaturePlugin.SetCasterLevelOverride(casterCreature, (int)targetClass, finalCasterLevel);
+            }
+
+            // Check if this class qualifies for Epic Caster feat
+            if (effectiveLevel >= 20 && EpicCasterEligibleClasses.Contains(targetClass))
+            {
+                qualifiesForEpicCaster = true;
             }
         }
 
-        // If no prestige classes with modifiers, no override needed
-        if (prestigeClasses.Count == 0) return;
+        // Handle Epic Caster feat (granted for 20+ base class levels OR 20+ CL via PRC stacking)
+        bool hasEpicCasterFeat = CreaturePlugin.GetKnowsFeat(casterCreature, EpicCasterFeatId) == 1;
 
-        // Build a map of base class levels for quick lookup
-        Dictionary<ClassType, int> baseClassLevels = new();
-        foreach (CreatureClassInfo charClass in casterCreature.Classes)
+        if (qualifiesForEpicCaster && !hasEpicCasterFeat)
         {
-            baseClassLevels[charClass.Class.ClassType] = charClass.Level;
-        }
-
-        // Track cumulative modifiers per base class
-        Dictionary<ClassType, int> baseClassModifiers = new();
-
-        // Process each prestige class and accumulate modifiers for valid base classes
-        foreach ((ClassType prcType, int prcLevel) in prestigeClasses)
-        {
-            if (!PrestigeToBaseCasterMap.TryGetValue(prcType, out HashSet<ClassType>? validBaseClasses))
-            {
-                Log.Warn($"{casterCreature.Name}: No base class mapping found for prestige class {prcType}");
-                continue;
-            }
-
-            // Find the highest-level valid base class for this prestige class
-            ClassType? bestBaseClass = null;
-            int bestBaseLevel = 0;
-            foreach (ClassType validBase in validBaseClasses)
-            {
-                if (baseClassLevels.TryGetValue(validBase, out int level) && level > bestBaseLevel)
-                {
-                    bestBaseLevel = level;
-                    bestBaseClass = validBase;
-                }
-            }
-
-            if (bestBaseClass == null)
-            {
-                Log.Warn($"{casterCreature.Name}: Prestige class {prcType} has no valid base caster class");
-                continue;
-            }
-
-            int modifier = _prestigeClassModifiers[prcType](prcLevel);
-            Log.Info($"{casterCreature.Name}: Prestige class {prcType} level {prcLevel} adds modifier {modifier} to {bestBaseClass.Value}");
-
-            // Accumulate modifier for this base class
-            if (!baseClassModifiers.ContainsKey(bestBaseClass.Value))
-            {
-                baseClassModifiers[bestBaseClass.Value] = 0;
-            }
-            baseClassModifiers[bestBaseClass.Value] += modifier;
-        }
-
-        // Apply caster level overrides to each affected base class
-        foreach ((ClassType baseClass, int totalModifier) in baseClassModifiers)
-        {
-            int baseLevel = baseClassLevels[baseClass];
-            int finalCasterLevel = Math.Max(1, baseLevel + totalModifier);
-
-            Log.Info(
-                $"{casterCreature.Name}: Setting caster level override - Base {baseLevel} + Modifier {totalModifier} = {finalCasterLevel} for class {baseClass}");
-
-            CreaturePlugin.SetCasterLevelOverride(casterCreature, (int)baseClass, finalCasterLevel);
+            // Add the feat at the current level
+            // NWN will automatically remove it if they delevel below this level
+            int currentLevel = casterCreature.Level;
+            CreaturePlugin.AddFeatByLevel(casterCreature, EpicCasterFeatId, currentLevel);
+            Log.Info($"{casterCreature.Name}: Added Epic Caster feat (ID {EpicCasterFeatId}) at level {currentLevel} (CL >= 20)");
         }
 
         _casterLevelOverridesApplied[casterCreature] = true;

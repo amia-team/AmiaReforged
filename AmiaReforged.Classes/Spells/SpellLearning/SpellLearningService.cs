@@ -1,4 +1,4 @@
-﻿using Anvil.API;
+﻿﻿using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
@@ -33,30 +33,6 @@ public class SpellLearningService
         ClassType.Bard
     };
 
-    // Mapping of prestige classes to their caster level progression
-    private static readonly Dictionary<ClassType, Func<int, int>> PrestigeCasterLevelModifiers = new()
-    {
-        { ClassType.DragonDisciple, prcLevel => Math.Max(0, prcLevel) },
-        { ClassType.PaleMaster, prcLevel => Math.Max(0, prcLevel) },
-        { ClassType.ArcaneArcher, prcLevel => Math.Max(0, prcLevel / 2) }
-    };
-
-    // Valid base classes for each prestige class
-    private static readonly Dictionary<ClassType, HashSet<ClassType>> PrestigeToBaseClassMap = new()
-    {
-        {
-            ClassType.DragonDisciple,
-            new HashSet<ClassType> { ClassType.Sorcerer, ClassType.Bard }
-        },
-        {
-            ClassType.PaleMaster,
-            new HashSet<ClassType> { ClassType.Sorcerer, ClassType.Bard } // Wizard is memorization, Assassin needs special handling
-        },
-        {
-            ClassType.ArcaneArcher,
-            new HashSet<ClassType> { ClassType.Sorcerer, ClassType.Bard }
-        }
-    };
 
     public SpellLearningService(EventService eventService)
     {
@@ -111,7 +87,9 @@ public class SpellLearningService
 
         ClassType baseClass = eligibleBaseClass.Value;
         int baseLevel = creature.GetClassInfo(baseClass)?.Level ?? 0;
-        int effectiveCasterLevel = CalculateEffectiveCasterLevel(baseClass, baseLevel, creature);
+
+        // Use the shared calculator for correct effective caster level (with -5 penalty applied once)
+        int effectiveCasterLevel = EffectiveCasterLevelCalculator.GetEffectiveCasterLevelForClass(creature, baseClass);
 
         Log.Info($"{creature.Name} is eligible for spell learning: Base={baseClass} L{baseLevel}, Effective L{effectiveCasterLevel}");
 
@@ -248,7 +226,10 @@ public class SpellLearningService
 
     private ClassType? GetEligibleBaseClass(NwCreature creature, ClassType prestigeClass)
     {
-        if (!PrestigeToBaseClassMap.TryGetValue(prestigeClass, out HashSet<ClassType>? validBaseClasses))
+        // Use the shared calculator's base class mappings
+        HashSet<ClassType>? validBaseClasses = EffectiveCasterLevelCalculator.GetValidBaseClassesForPrestige(prestigeClass);
+
+        if (validBaseClasses == null)
         {
             Log.Warn($"No base class mapping found for prestige class {prestigeClass}");
             return null;
@@ -289,25 +270,6 @@ public class SpellLearningService
         return selectedBase;
     }
 
-    private int CalculateEffectiveCasterLevel(ClassType baseClass, int baseLevel, NwCreature creature)
-    {
-        int totalModifier = 0;
-
-        foreach (CreatureClassInfo classInfo in creature.Classes)
-        {
-            if (PrestigeCasterLevelModifiers.TryGetValue(classInfo.Class.ClassType, out Func<int, int>? modifierFunc))
-            {
-                // Check if this prestige class can boost the base class
-                if (PrestigeToBaseClassMap.TryGetValue(classInfo.Class.ClassType, out HashSet<ClassType>? validBases) &&
-                    validBases.Contains(baseClass))
-                {
-                    totalModifier += modifierFunc(classInfo.Level);
-                }
-            }
-        }
-
-        return baseLevel + totalModifier;
-    }
 
     private void ShowSpellLearningNui(NwPlayer player, ClassType baseClass, int effectiveCasterLevel, Dictionary<int, int> spellsNeeded)
     {
