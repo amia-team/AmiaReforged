@@ -29,6 +29,7 @@ public static class SpellProgressionData
             (1, >= 1) => 2,
 
             // Level 2 - 0 at L1-3, 1 at L4, 2 at L5-6, 3 at L7-8, 4 at L9+
+            (2, >= 11) => 5,
             (2, >= 9) => 4,
             (2, >= 7) => 3,
             (2, >= 5) => 2,
@@ -53,7 +54,6 @@ public static class SpellProgressionData
             (5, >= 10) => 1,
 
             // Level 6 - 0 at L1-11, 1 at L12, 2 at L13-14, 3 at L15-16, 4 at L17+
-            (6, >= 17) => 4,
             (6, >= 15) => 3,
             (6, >= 13) => 2,
             (6, >= 12) => 1,
