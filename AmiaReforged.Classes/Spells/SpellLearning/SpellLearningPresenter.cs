@@ -132,6 +132,22 @@ public sealed class SpellLearningPresenter : ScryPresenter<SpellLearningView>
             return;
 
         NwCreature creature = _player.ControlledCreature;
+
+        // VALIDATION: Check if the player still qualifies for these spells
+        // This handles the case where a prestige class level was removed (e.g., Dragon Disciple
+        // removed due to invalid racial template like Aasimar)
+        int currentEffectiveCL = EffectiveCasterLevelCalculator.GetEffectiveCasterLevelForClass(creature, _baseClass);
+
+        if (currentEffectiveCL < _effectiveCasterLevel)
+        {
+            Log.Warn($"{creature.Name}: Effective CL dropped from {_effectiveCasterLevel} to {currentEffectiveCL} - prestige class level was likely removed. Denying spell selection.");
+            _player.SendServerMessage(
+                "Your prestige class level was removed before you finished selection. You are no longer eligible for these spells.",
+                ColorConstants.Red);
+            Close();
+            return;
+        }
+
         CreatureClassInfo? classInfo = creature.GetClassInfo(_baseClass);
         if (classInfo == null)
         {
