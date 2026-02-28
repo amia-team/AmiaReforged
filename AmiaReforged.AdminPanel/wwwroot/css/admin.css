@@ -767,3 +767,82 @@ a:hover {
         max-height: none;
     }
 }
+
+/* ==================== Area Graph ==================== */
+
+.area-graph-stats {
+    margin-bottom: 12px;
+}
+
+.area-graph-stats .stat-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    align-items: center;
+}
+
+.area-graph-stats .stat-item {
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.area-graph-stats .stat-item strong {
+    color: var(--accent);
+}
+
+.area-graph-stats .stat-detail {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin-left: 4px;
+}
+
+.area-graph-legend {
+    display: flex;
+    gap: 20px;
+    padding: 8px 16px;
+    margin-bottom: 8px;
+    background: var(--bg-card);
+    border-radius: 6px;
+    border: 1px solid var(--border-subtle);
+}
+
+.area-graph-legend .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.area-graph-legend .legend-swatch {
+    display: inline-block;
+    width: 24px;
+    height: 4px;
+    border-radius: 2px;
+}
+
+.area-graph-legend .legend-door {
+    background-color: #5ba4b5;
+}
+
+.area-graph-legend .legend-trigger {
+    background-color: #4ecca3;
+    background-image: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 4px,
+        var(--bg-card) 4px,
+        var(--bg-card) 8px
+    );
+}
+
+.area-graph-container {
+    background: var(--bg-dark);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.area-graph-container #cy {
+    background: var(--bg-dark);
+}

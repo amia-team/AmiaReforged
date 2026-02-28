@@ -1,0 +1,350 @@
+@page "/worldengine/area-graph"
+@using Microsoft.AspNetCore.Authorization
+@using AmiaReforged.AdminPanel.Models
+@using AmiaReforged.AdminPanel.Services
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@attribute [Authorize]
+@inject AreaGraphApiService Api
+@inject IWorldEngineEndpointService EndpointService
+@inject ILogger<AreaGraph> Logger
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+
+<PageTitle>Area Graph - World Engine</PageTitle>
+
+<div class="encounters-page">
+    <div class="dashboard-header">
+        <h1>Area Graph</h1>
+        <div class="header-actions">
+            @if (_endpoints.Count > 0)
+            {
+                <div class="instance-selector">
+                    <label class="instance-label">Server:</label>
+                    <select class="form-control form-control-sm" value="@(_selectedEndpoint?.Id.ToString() ?? "")" @onchange="OnEndpointChanged">
+                        <option value="">— Select —</option>
+                        @foreach (var ep in _endpoints)
+                        {
+                            <option value="@ep.Id">@ep.Name</option>
+                        }
+                    </select>
+                </div>
+            }
+            @if (_selectedEndpoint != null)
+            {
+                <button class="btn btn-primary btn-sm" @onclick="LoadGraph" disabled="@_isLoading">
+                    @(_isLoading ? "Loading..." : "Load Graph")
+                </button>
+                <button class="btn btn-warning btn-sm" @onclick="RefreshGraph" disabled="@_isLoading">
+                    @(_isLoading ? "Refreshing..." : "Refresh (Rescan)")
+                </button>
+                @if (_graph != null)
+                {
+                    <button class="btn btn-secondary btn-sm" @onclick="FitView">Fit View</button>
+                }
+            }
+            <a href="/" class="btn btn-secondary btn-sm">← Dashboard</a>
+        </div>
+    </div>
+
+    @if (_error != null)
+    {
+        <div class="alert alert-danger">@_error <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _error = null">Dismiss</button></div>
+    }
+    @if (_success != null)
+    {
+        <div class="alert alert-success">@_success <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _success = null">Dismiss</button></div>
+    }
+
+    @if (_selectedEndpoint == null)
+    {
+        <div class="section" style="text-align:center;padding:60px 20px">
+            @if (_endpoints.Count == 0)
+            {
+                <p style="color:var(--text-secondary);font-size:1.1rem">
+                    No WorldEngine servers configured. Go to
+                    <a href="/encounters">Encounters</a> to add one.
+                </p>
+            }
+            else
+            {
+                <p style="color:var(--text-secondary);font-size:1.1rem">Select a server from the dropdown above to view the area graph.</p>
+            }
+        </div>
+    }
+
+    @if (_selectedEndpoint != null && _graph != null)
+    {
+        @* ===== Stats Bar ===== *@
+        <div class="section area-graph-stats">
+            <div class="stat-row">
+                <span class="stat-item">
+                    <strong>Connected Areas:</strong> @_graph.Nodes.Count
+                </span>
+                <span class="stat-item">
+                    <strong>Transitions:</strong> @_graph.Edges.Count
+                    <span class="stat-detail">
+                        (@_graph.Edges.Count(e => e.TransitionType == "Door") doors,
+                         @_graph.Edges.Count(e => e.TransitionType == "Trigger") triggers)
+                    </span>
+                </span>
+                <span class="stat-item">
+                    <strong>Disconnected:</strong> @_graph.DisconnectedAreas.Count
+                </span>
+                <span class="stat-item">
+                    <strong>Generated:</strong> @_graph.GeneratedAtUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC
+                </span>
+            </div>
+        </div>
+
+        @* ===== Search ===== *@
+        <div class="section" style="margin-bottom:12px">
+            <div class="form-row" style="display:flex;gap:10px;align-items:end">
+                <div class="form-group" style="flex:1">
+                    <label>Search Areas</label>
+                    <input class="form-control" @bind="_searchQuery" @bind:event="oninput"
+                           placeholder="Search by name or ResRef..."
+                           @onkeydown="OnSearchKeyDown" />
+                </div>
+                <button class="btn btn-primary btn-sm" @onclick="SearchGraph">Search</button>
+                <button class="btn btn-secondary btn-sm" @onclick="ClearSearch">Clear</button>
+            </div>
+        </div>
+
+        @* ===== Edge Legend ===== *@
+        <div class="area-graph-legend">
+            <span class="legend-item">
+                <span class="legend-swatch legend-door"></span> Door Transition
+            </span>
+            <span class="legend-item">
+                <span class="legend-swatch legend-trigger"></span> Trigger Transition
+            </span>
+        </div>
+
+        @* ===== Graph Container ===== *@
+        <div class="section area-graph-container">
+            <div id="cy" style="width:100%;height:650px;"></div>
+        </div>
+
+        @* ===== Disconnected Areas ===== *@
+        @if (_graph.DisconnectedAreas.Count > 0)
+        {
+            <div class="section" style="margin-top:20px">
+                <h3 style="margin-bottom:12px;color:var(--text-secondary)">
+                    Disconnected Areas (@_graph.DisconnectedAreas.Count)
+                </h3>
+                <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:12px">
+                    These areas have no door or trigger transitions to other areas.
+                </p>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ResRef</th>
+                            <th>Name</th>
+                            <th>Region</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var area in _graph.DisconnectedAreas)
+                        {
+                            <tr>
+                                <td><code>@area.ResRef</code></td>
+                                <td>@area.Name</td>
+                                <td>@(area.Region ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+    else if (_selectedEndpoint != null && !_isLoading && _graph == null)
+    {
+        <div class="section" style="text-align:center;padding:60px 20px">
+            <p style="color:var(--text-secondary);font-size:1.1rem">
+                Click <strong>Load Graph</strong> to fetch the area connectivity graph from the server.
+            </p>
+            <p style="color:var(--text-secondary);font-size:0.9rem">
+                Use <strong>Refresh (Rescan)</strong> to force the server to re-scan all areas and rebuild the graph.
+            </p>
+        </div>
+    }
+</div>
+
+@code {
+    private List<WorldEngineEndpoint> _endpoints = new();
+    private WorldEngineEndpoint? _selectedEndpoint;
+    private AreaGraphDto? _graph;
+    private bool _isLoading;
+    private string? _error;
+    private string? _success;
+    private string _searchQuery = "";
+
+    private static readonly JsonSerializerOptions CamelCase = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Converters = { new JsonStringEnumConverter() }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var all = await EndpointService.GetAllEndpointsAsync();
+            _endpoints = all.ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load endpoints");
+            _error = "Failed to load server endpoints.";
+        }
+    }
+
+    private async Task OnEndpointChanged(ChangeEventArgs e)
+    {
+        _graph = null;
+        _error = null;
+        _success = null;
+
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
+            Api.SelectEndpoint(id);
+        }
+        else
+        {
+            _selectedEndpoint = null;
+            Api.SelectEndpoint(null);
+        }
+
+        await Task.CompletedTask;
+    }
+
+    private async Task LoadGraph()
+    {
+        await FetchGraph(refresh: false);
+    }
+
+    private async Task RefreshGraph()
+    {
+        await FetchGraph(refresh: true);
+    }
+
+    private async Task FetchGraph(bool refresh)
+    {
+        _isLoading = true;
+        _error = null;
+        _success = null;
+
+        try
+        {
+            _graph = refresh
+                ? await Api.RefreshGraphAsync()
+                : await Api.GetGraphAsync();
+
+            if (_graph != null)
+            {
+                _success = refresh
+                    ? $"Graph refreshed — {_graph.Nodes.Count} connected areas, {_graph.DisconnectedAreas.Count} disconnected."
+                    : $"Graph loaded — {_graph.Nodes.Count} connected areas, {_graph.DisconnectedAreas.Count} disconnected.";
+
+                // Allow Blazor to render the container div first
+                StateHasChanged();
+                await Task.Delay(50);
+
+                await RenderGraph();
+            }
+        }
+        catch (WorldEngineApiException ex)
+        {
+            Logger.LogError(ex, "API error loading area graph");
+            _error = $"API error [{ex.StatusCode}]: {ex.ErrorTitle} — {ex.Detail}";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load area graph");
+            _error = $"Failed to load area graph: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task RenderGraph()
+    {
+        if (_graph == null) return;
+
+        try
+        {
+            string nodesJson = JsonSerializer.Serialize(_graph.Nodes, CamelCase);
+            string edgesJson = JsonSerializer.Serialize(_graph.Edges, CamelCase);
+            await JS.InvokeVoidAsync("areaGraph.init", "cy", nodesJson, edgesJson);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to render graph via Cytoscape");
+            _error = "Failed to render graph visualization.";
+        }
+    }
+
+    private async Task SearchGraph()
+    {
+        if (string.IsNullOrWhiteSpace(_searchQuery))
+        {
+            await ClearSearch();
+            return;
+        }
+
+        try
+        {
+            bool found = await JS.InvokeAsync<bool>("areaGraph.highlightNode", _searchQuery);
+            if (!found)
+            {
+                _error = $"No area found matching '{_searchQuery}'.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Search error");
+        }
+    }
+
+    private async Task ClearSearch()
+    {
+        _searchQuery = "";
+        _error = null;
+        try
+        {
+            await JS.InvokeVoidAsync("areaGraph.clearHighlight");
+        }
+        catch { /* ignore if cy not initialized */ }
+    }
+
+    private async Task FitView()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("areaGraph.fitView");
+        }
+        catch { /* ignore */ }
+    }
+
+    private async Task OnSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchGraph();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("areaGraph.destroy");
+        }
+        catch { /* component may already be disposed */ }
+    }
+}

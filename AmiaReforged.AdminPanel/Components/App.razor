@@ -15,6 +15,10 @@
 
 <body>
     <Routes @rendermode="InteractiveServer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"
+            integrity="sha512-PfFSgA1yFaFLFsIdfHxEzOqMiFg/stIEVMJSP7MbKfO+oXdjlcFsD8HhBfPNqPz3GKSNGo/6sJRcpkPGLI5+Og=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="js/areagraph.js"></script>
     <script src="_framework/blazor.web.js"></script>
     <script>
         window.adminPanelDownloadFile = function (fileName, base64Content) {

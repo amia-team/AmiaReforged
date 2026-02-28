@@ -86,3 +86,28 @@ public class ImportResult
     public int Total { get; set; }
     public List<string> Errors { get; set; } = new();
 }
+
+// ==================== Area Graph DTOs ====================
+
+public class AreaNodeDto
+{
+    public string ResRef { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? Region { get; set; }
+}
+
+public class AreaEdgeDto
+{
+    public string SourceResRef { get; set; } = string.Empty;
+    public string TargetResRef { get; set; } = string.Empty;
+    public string TransitionType { get; set; } = string.Empty;
+    public string TransitionTag { get; set; } = string.Empty;
+}
+
+public class AreaGraphDto
+{
+    public List<AreaNodeDto> Nodes { get; set; } = new();
+    public List<AreaEdgeDto> Edges { get; set; } = new();
+    public List<AreaNodeDto> DisconnectedAreas { get; set; } = new();
+    public DateTime GeneratedAtUtc { get; set; }
+}
