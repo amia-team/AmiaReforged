@@ -1,6 +1,7 @@
 ﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
+using NWN.Core;
 using NWN.Core.NWNX;
 using NLog;
 
@@ -10,9 +11,15 @@ public sealed class SpellLearningPresenter : ScryPresenter<SpellLearningView>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
+    // Cache the spells.2da table for spell descriptions
+    private static TwoDimArray? _spellsTable;
+    private static TwoDimArray SpellsTable => _spellsTable ??= NwGameTables.GetTable("spells")!;
+
     public override SpellLearningView View { get; }
     private NuiWindowToken _token;
+    private NuiWindowToken? _descriptionToken;
     private NuiWindow? _window;
+    private Action<ModuleEvents.OnNuiEvent>? _descriptionEventHandler;
 
     private readonly NwPlayer _player;
     private readonly ClassType _baseClass;
@@ -27,6 +34,10 @@ public sealed class SpellLearningPresenter : ScryPresenter<SpellLearningView>
     private readonly Dictionary<int, int> _selectedCountPerLevel = new();
     private readonly HashSet<int> _selectedSpellIds = new();
     private readonly HashSet<int> _knownSpellIds = new();
+
+    // Spell swap tracking
+    private readonly HashSet<int> _spellsMarkedForRemoval = new(); // Known spells player wants to swap out
+    private readonly Dictionary<int, int> _totalSpellsAllowedPerLevel = new(); // Total spells allowed at each level
 
     public SpellLearningPresenter(SpellLearningView view, NwPlayer player, ClassType baseClass, int effectiveCasterLevel, Dictionary<int, int> spellsNeeded)
     {
@@ -88,38 +99,79 @@ public sealed class SpellLearningPresenter : ScryPresenter<SpellLearningView>
                 HandleSpellToggle(row);
             }
         }
+        else if (eventData.ElementId == "spell_desc_button")
+        {
+            // Show spell description popup
+            int rowIndex = eventData.ArrayIndex;
+            if (rowIndex >= 0 && rowIndex < _visibleSpellListRows.Count)
+            {
+                SpellListRow row = _visibleSpellListRows[rowIndex];
+                ShowSpellDescription(row);
+            }
+        }
     }
 
     private void HandleSpellToggle(SpellListRow row)
     {
-        if (row.AlreadyKnown)
-            return;
-
         int spellId = row.SpellId;
         int spellLevel = row.SpellLevel;
-        int maxSelections = _spellsToLearnPerLevel.GetValueOrDefault(spellLevel, 0);
-        int currentSelections = _selectedCountPerLevel.GetValueOrDefault(spellLevel, 0);
+        int totalAllowed = _totalSpellsAllowedPerLevel.GetValueOrDefault(spellLevel, 0);
 
-        // Toggle selection
-        if (_selectedSpellIds.Contains(spellId))
+        // Calculate current count: known spells (minus those marked for removal) + selected new spells
+        int knownCount = _allSpells.TryGetValue(spellLevel, out var spellsAtLevel)
+            ? spellsAtLevel.Count(s => s.AlreadyKnown && !_spellsMarkedForRemoval.Contains(s.SpellId))
+            : 0;
+        int selectedCount = _selectedCountPerLevel.GetValueOrDefault(spellLevel, 0);
+        int currentTotal = knownCount + selectedCount;
+
+        if (row.AlreadyKnown)
         {
-            _selectedSpellIds.Remove(spellId);
-            _selectedCountPerLevel[spellLevel] = currentSelections - 1;
-            row.IsSelected = false;
-            Log.Info($"Deselected spell {spellId} (Level {spellLevel})");
+            // Toggle removal of known spell (for swapping)
+            if (_spellsMarkedForRemoval.Contains(spellId))
+            {
+                // Unmark for removal - but check if we have room
+                if (currentTotal >= totalAllowed)
+                {
+                    _player.SendServerMessage($"You already have the maximum {totalAllowed} spell(s) at level {spellLevel}. Remove a selected spell first.", ColorConstants.Orange);
+                    return;
+                }
+
+                _spellsMarkedForRemoval.Remove(spellId);
+                row.MarkedForRemoval = false;
+                Log.Info($"Unmarked known spell {spellId} (Level {spellLevel}) for removal");
+            }
+            else
+            {
+                // Mark for removal
+                _spellsMarkedForRemoval.Add(spellId);
+                row.MarkedForRemoval = true;
+                Log.Info($"Marked known spell {spellId} (Level {spellLevel}) for removal (swap)");
+            }
         }
         else
         {
-            if (currentSelections >= maxSelections)
+            // Toggle selection of new spell
+            if (_selectedSpellIds.Contains(spellId))
             {
-                _player.SendServerMessage($"You can only select {maxSelections} spell(s) of level {spellLevel}.", ColorConstants.Orange);
-                return;
+                _selectedSpellIds.Remove(spellId);
+                _selectedCountPerLevel[spellLevel] = selectedCount - 1;
+                row.IsSelected = false;
+                Log.Info($"Deselected spell {spellId} (Level {spellLevel})");
             }
+            else
+            {
+                // Check if we can add more
+                if (currentTotal >= totalAllowed)
+                {
+                    _player.SendServerMessage($"You can only have {totalAllowed} spell(s) at level {spellLevel}. Remove a known spell or deselect one first.", ColorConstants.Orange);
+                    return;
+                }
 
-            _selectedSpellIds.Add(spellId);
-            _selectedCountPerLevel[spellLevel] = currentSelections + 1;
-            row.IsSelected = true;
-            Log.Info($"Selected spell {spellId} (Level {spellLevel})");
+                _selectedSpellIds.Add(spellId);
+                _selectedCountPerLevel[spellLevel] = selectedCount + 1;
+                row.IsSelected = true;
+                Log.Info($"Selected spell {spellId} (Level {spellLevel})");
+            }
         }
 
         // Update UI
@@ -167,6 +219,27 @@ public sealed class SpellLearningPresenter : ScryPresenter<SpellLearningView>
             return;
         }
 
+        // First, remove any spells marked for removal (swap out)
+        int spellsRemoved = 0;
+        foreach (int spellId in _spellsMarkedForRemoval)
+        {
+            SpellListRow? row = _allSpells.Values
+                .SelectMany(list => list)
+                .FirstOrDefault(r => r.SpellId == spellId);
+
+            if (row == null)
+                continue;
+
+            Log.Info($"Removing spell {spellId} (Level {row.SpellLevel}) from {creature.Name}'s {_baseClass} spellbook (swap)");
+            CreaturePlugin.RemoveKnownSpell(creature, classId, row.SpellLevel, spellId);
+
+            // Also remove any persistent tracking if it was a prestige spell
+            string persistentKey = $"PRESTIGE_SPELL_{_baseClass}_{row.SpellLevel}_{spellId}";
+            pcKey.GetObjectVariable<LocalVariableInt>(persistentKey).Delete();
+
+            spellsRemoved++;
+        }
+
         // Add all selected spells using NWNX (search across all spell levels)
         foreach (int spellId in _selectedSpellIds)
         {
@@ -185,10 +258,153 @@ public sealed class SpellLearningPresenter : ScryPresenter<SpellLearningView>
             pcKey.GetObjectVariable<LocalVariableInt>(persistentKey).Value = currentLevel;
         }
 
-        _player.SendServerMessage($"Successfully learned {_selectedSpellIds.Count} new spell(s)!", ColorConstants.Green);
-        Log.Info($"{creature.Name} learned {_selectedSpellIds.Count} spells for {_baseClass} at character level {currentLevel}");
+        string successMsg = _selectedSpellIds.Count > 0
+            ? $"Successfully learned {_selectedSpellIds.Count} new spell(s)!"
+            : "";
+
+        if (spellsRemoved > 0)
+        {
+            successMsg = string.IsNullOrEmpty(successMsg)
+                ? $"Successfully removed {spellsRemoved} spell(s)."
+                : $"{successMsg} Removed {spellsRemoved} spell(s).";
+        }
+
+        if (!string.IsNullOrEmpty(successMsg))
+        {
+            _player.SendServerMessage(successMsg, ColorConstants.Green);
+        }
+
+        Log.Info($"{creature.Name} learned {_selectedSpellIds.Count} spells, removed {spellsRemoved} spells for {_baseClass} at character level {currentLevel}");
 
         Close();
+    }
+
+    private void ShowSpellDescription(SpellListRow row)
+    {
+        // Get spell description from the SpellDesc column in spells.2da
+        string? spellDescStrRefStr = SpellsTable.GetString(row.SpellId, "SpellDesc");
+
+        if (string.IsNullOrEmpty(spellDescStrRefStr) || spellDescStrRefStr == "****")
+        {
+            _player.SendServerMessage("No description available for this spell.", ColorConstants.Orange);
+            return;
+        }
+
+        if (!int.TryParse(spellDescStrRefStr, out int spellDescStrRef))
+        {
+            _player.SendServerMessage("Could not load spell description.", ColorConstants.Orange);
+            return;
+        }
+
+        // Get the actual description text from the TLK file
+        string description = NWScript.GetStringByStrRef(spellDescStrRef);
+
+        if (string.IsNullOrEmpty(description))
+        {
+            _player.SendServerMessage("No description available for this spell.", ColorConstants.Orange);
+            return;
+        }
+
+        // Create a simple popup window with the spell description
+        NuiColumn layout = new()
+        {
+            Children =
+            {
+                new NuiSpacer { Height = 10f },
+                new NuiRow
+                {
+                    Height = 44f,
+                    Children =
+                    {
+                        new NuiSpacer(),
+                        new NuiImage(row.SpellIconResRef)
+                        {
+                            Height = 40f,
+                            Width = 40f,
+                            ImageAspect = NuiAspect.Exact
+                        },
+                        new NuiSpacer()
+                    }
+                },
+                new NuiSpacer { Height = 10f },
+                new NuiRow
+                {
+                    Height = 280f,
+                    Children =
+                    {
+                        new NuiText(description)
+                        {
+                            Border = false
+                        }
+                    }
+                },
+                new NuiRow
+                {
+                    Height = 40f,
+                    Children =
+                    {
+                        new NuiSpacer(),
+                        new NuiButton("Close")
+                        {
+                            Id = "close_desc",
+                            Width = 80f
+                        },
+                        new NuiSpacer()
+                    }
+                }
+            }
+        };
+
+        NuiWindow descWindow = new(layout, row.SpellName)
+        {
+            Geometry = new NuiRect(300f, 150f, 400f, 460f),
+            Closable = true,
+            Resizable = false
+        };
+
+        // Close any existing description window and unsubscribe its event handler
+        CloseDescriptionWindow();
+
+        if (_player.TryCreateNuiWindow(descWindow, out NuiWindowToken newToken))
+        {
+            _descriptionToken = newToken;
+
+            // Subscribe to module-level NUI events for this window
+            _descriptionEventHandler = (eventData) =>
+            {
+                if (_descriptionToken != null && eventData.Token == _descriptionToken)
+                {
+                    if (eventData.EventType == NuiEventType.Click && eventData.ElementId == "close_desc")
+                    {
+                        CloseDescriptionWindow();
+                    }
+                    else if (eventData.EventType == NuiEventType.Close)
+                    {
+                        // Clean up when window is closed via X button
+                        CleanupDescriptionEventHandler();
+                        _descriptionToken = null;
+                    }
+                }
+            };
+
+            NwModule.Instance.OnNuiEvent += _descriptionEventHandler;
+        }
+    }
+
+    private void CloseDescriptionWindow()
+    {
+        _descriptionToken?.Close();
+        CleanupDescriptionEventHandler();
+        _descriptionToken = null;
+    }
+
+    private void CleanupDescriptionEventHandler()
+    {
+        if (_descriptionEventHandler != null)
+        {
+            NwModule.Instance.OnNuiEvent -= _descriptionEventHandler;
+            _descriptionEventHandler = null;
+        }
     }
 
     private void Cancel()
@@ -233,6 +449,8 @@ public sealed class SpellLearningPresenter : ScryPresenter<SpellLearningView>
 
     public override void Close()
     {
+        // Close description window if open
+        CloseDescriptionWindow();
         _token.Close();
     }
 
@@ -264,13 +482,51 @@ public sealed class SpellLearningPresenter : ScryPresenter<SpellLearningView>
     private void CalculateSpellsToLearn()
     {
         _spellsToLearnPerLevel.Clear();
+        _totalSpellsAllowedPerLevel.Clear();
 
-        // Use the spells needed that were calculated by the service
+        // First, add levels where the player gains new spells
         foreach (var kvp in _spellsNeeded)
         {
             _spellsToLearnPerLevel[kvp.Key] = kvp.Value;
             _selectedCountPerLevel[kvp.Key] = 0;
-            Log.Info($"Player can learn {kvp.Value} spell(s) of level {kvp.Key}");
+        }
+
+        // Now calculate total allowed for ALL levels where the player has known spells
+        // This allows swapping at any level, not just levels where they gain new spells
+        NwClass? nwClass = NwClass.FromClassType(_baseClass);
+        if (nwClass == null) return;
+
+        for (int spellLevel = 0; spellLevel <= 9; spellLevel++)
+        {
+            // Count how many spells they already know at this level
+            int knownAtLevel = _knownSpellIds.Count(spellId =>
+            {
+                NwSpell? spell = NwSpell.FromSpellId(spellId);
+                if (spell == null) return false;
+#pragma warning disable CS0618
+                byte level = spell.GetSpellLevelForClass(nwClass);
+#pragma warning restore CS0618
+                return level == spellLevel;
+            });
+
+            // Skip levels where they have no known spells and no new spells to learn
+            if (knownAtLevel == 0 && !_spellsToLearnPerLevel.ContainsKey(spellLevel))
+                continue;
+
+            // Get new spells to learn at this level (0 if not in _spellsNeeded)
+            int newSpellsToLearn = _spellsToLearnPerLevel.GetValueOrDefault(spellLevel, 0);
+
+            // Ensure this level is in our tracking dictionaries
+            if (!_spellsToLearnPerLevel.ContainsKey(spellLevel))
+            {
+                _spellsToLearnPerLevel[spellLevel] = 0;
+                _selectedCountPerLevel[spellLevel] = 0;
+            }
+
+            // Total allowed = already known + new they can learn
+            _totalSpellsAllowedPerLevel[spellLevel] = knownAtLevel + newSpellsToLearn;
+
+            Log.Info($"Spell level {spellLevel}: can learn {newSpellsToLearn} new spell(s) (total allowed: {_totalSpellsAllowedPerLevel[spellLevel]}, currently known: {knownAtLevel})");
         }
     }
 
@@ -388,7 +644,7 @@ public sealed class SpellLearningPresenter : ScryPresenter<SpellLearningView>
         string className = _baseClass == ClassType.Sorcerer ? "Sorcerer" : "Bard";
 
         _token.SetBindValue(View.HeaderText, $"Learn {className} Spells (Effective Caster Level {_effectiveCasterLevel})");
-        _token.SetBindValue(View.InstructionText, "Select the spells you want to learn.");
+        _token.SetBindValue(View.InstructionText, "Select spells to learn. Click known spells to swap them out.");
 
         // Set up individual spell level buttons (0-9)
         SetupSpellLevelButton(0, View.SpellLevelButtonText0, View.SpellLevelButtonEnabled0);
@@ -410,9 +666,19 @@ public sealed class SpellLearningPresenter : ScryPresenter<SpellLearningView>
     {
         if (_spellsToLearnPerLevel.ContainsKey(level))
         {
-            int max = _spellsToLearnPerLevel[level];
+            int newSpells = _spellsNeeded.GetValueOrDefault(level, 0);
             int current = _selectedCountPerLevel.GetValueOrDefault(level, 0);
-            _token.SetBindValue(textBind, $"{level} ({current}/{max})");
+
+            // Show new spells to learn if any, otherwise just the level number for swap-only levels
+            if (newSpells > 0)
+            {
+                _token.SetBindValue(textBind, $"{level} ({current}/{newSpells})");
+            }
+            else
+            {
+                // Swap-only level - just show the level number
+                _token.SetBindValue(textBind, $"{level} (--)");
+            }
             _token.SetBindValue(enabledBind, true);
         }
         else
@@ -437,9 +703,25 @@ public sealed class SpellLearningPresenter : ScryPresenter<SpellLearningView>
         UpdateSpellLevelButton(9, View.SpellLevelButtonText9);
 
         // Build header text for current spell level
-        int maxSpells = _spellsToLearnPerLevel.GetValueOrDefault(_currentSpellLevel, 0);
+        int newSpellSlots = _spellsNeeded.GetValueOrDefault(_currentSpellLevel, 0);
         int selectedSpells = _selectedCountPerLevel.GetValueOrDefault(_currentSpellLevel, 0);
-        string headerText = $"Spell Level {_currentSpellLevel}: Select {maxSpells - selectedSpells} more spell(s).";
+
+        // Count how many known spells at this level are marked for removal (opens up additional slots)
+        int removedAtLevel = _visibleSpellListRows.Count(r => r.AlreadyKnown && r.MarkedForRemoval);
+
+        // Available slots = new spell slots + removed spells - already selected
+        int availableSlots = newSpellSlots + removedAtLevel - selectedSpells;
+
+        string headerText;
+        if (newSpellSlots > 0)
+        {
+            headerText = $"Spell Level {_currentSpellLevel}: Select {availableSlots} more spell(s).";
+        }
+        else
+        {
+            // Swap-only level
+            headerText = $"Spell Level {_currentSpellLevel}: Swap spells. ({removedAtLevel} removed, {selectedSpells} selected)";
+        }
         _token.SetBindValue(View.SpellLevelHeaderText, headerText);
 
         // Update the visible spell list count
@@ -450,44 +732,125 @@ public sealed class SpellLearningPresenter : ScryPresenter<SpellLearningView>
         List<string> tooltips = new();
         List<bool> enabledStates = new();
         List<string> statusTexts = new();
-        // List<string> iconResRefs = new(); // Temporarily disabled while fixing layout
+        List<bool> descButtonEnabled = new();
+        List<Color> buttonColors = new();
+        List<string> iconResRefs = new();
+
+        // Color definitions
+        Color greenColor = new Color(32, 200, 32);      // Green for adding
+        Color orangeColor = new Color(240, 160, 32);    // Orange for removing
+        Color lightBlueColor = new Color(128, 192, 255); // Light blue for known
+        Color defaultColor = new Color(255, 255, 255);  // White/default
 
         foreach (SpellListRow row in _visibleSpellListRows)
         {
-            string buttonText = row.SpellName;
-            if (row.IsSelected)
-                buttonText = "+ " + buttonText;
+            string buttonText;
+            Color buttonColor;
+
+            if (row.AlreadyKnown)
+            {
+                if (row.MarkedForRemoval)
+                {
+                    // Orange for spells being removed
+                    buttonText = $"  - {row.SpellName}";
+                    buttonColor = orangeColor;
+                }
+                else
+                {
+                    // Light blue for known spells
+                    buttonText = $"    {row.SpellName}";
+                    buttonColor = lightBlueColor;
+                }
+            }
+            else if (row.IsSelected)
+            {
+                // Green for spells being added
+                buttonText = $"  + {row.SpellName}";
+                buttonColor = greenColor;
+            }
+            else
+            {
+                // Default - no prefix, white color
+                buttonText = $"    {row.SpellName}";
+                buttonColor = defaultColor;
+            }
 
             buttonTexts.Add(buttonText);
-            tooltips.Add(row.AlreadyKnown ? "Already Known" : $"Learn {row.SpellName}");
-            enabledStates.Add(!row.AlreadyKnown);
+            buttonColors.Add(buttonColor);
 
-            string statusText = row.AlreadyKnown ? "(Known)" : row.IsSelected ? "(Selected)" : "";
+            // Update tooltips based on state
+            string tooltip;
+            if (row.AlreadyKnown)
+            {
+                tooltip = row.MarkedForRemoval
+                    ? $"Click to keep {row.SpellName}"
+                    : $"Click to remove {row.SpellName} (--)";
+            }
+            else
+            {
+                tooltip = row.IsSelected
+                    ? $"Click to deselect {row.SpellName}"
+                    : $"Learn {row.SpellName}";
+            }
+            tooltips.Add(tooltip);
+
+            // All spells are now enabled (known spells can be toggled for swap)
+            enabledStates.Add(true);
+
+            // Status text shows the state
+            string statusText;
+            if (row.AlreadyKnown)
+            {
+                statusText = row.MarkedForRemoval ? "(Remove)" : "(Known)";
+            }
+            else
+            {
+                statusText = row.IsSelected ? "(Selected)" : "";
+            }
             statusTexts.Add(statusText);
 
-            // iconResRefs.Add(row.SpellIconResRef); // Temporarily disabled
+            // Description button is always enabled
+            descButtonEnabled.Add(true);
+
+            // Add spell icon resref for DrawList overlay
+            iconResRefs.Add(row.SpellIconResRef);
         }
 
         _token.SetBindValues(View.SpellButtonText, buttonTexts);
         _token.SetBindValues(View.SpellTooltip, tooltips);
         _token.SetBindValues(View.SpellEnabled, enabledStates);
         _token.SetBindValues(View.SpellStatusText, statusTexts);
-        // _token.SetBindValues(View.SpellIconResRef, iconResRefs); // Temporarily disabled
+        _token.SetBindValues(View.SpellDescButtonEnabled, descButtonEnabled);
+        _token.SetBindValues(View.SpellButtonColor, buttonColors);
+        _token.SetBindValues(View.SpellIconResRef, iconResRefs);
 
-        // Check if all required spells are selected
-        bool allSelected = _spellsToLearnPerLevel.All(kvp =>
-            _selectedCountPerLevel.GetValueOrDefault(kvp.Key, 0) == kvp.Value);
+        // Check if all required NEW spells are selected (only levels from _spellsNeeded, not swap-only levels)
+        bool allSelected = _spellsNeeded.All(kvp =>
+            _selectedCountPerLevel.GetValueOrDefault(kvp.Key, 0) >= kvp.Value);
 
-        _token.SetBindValue(View.CanConfirm, allSelected);
+        bool hasChanges = _selectedSpellIds.Count > 0 || _spellsMarkedForRemoval.Count > 0;
+
+        // Can confirm if all new slots are filled, OR if they've made any changes (swaps count)
+        _token.SetBindValue(View.CanConfirm, allSelected || hasChanges);
     }
 
     private void UpdateSpellLevelButton(int level, NuiBind<string> textBind)
     {
         if (_spellsToLearnPerLevel.ContainsKey(level))
         {
-            int max = _spellsToLearnPerLevel[level];
+            int newSpells = _spellsNeeded.GetValueOrDefault(level, 0);
             int current = _selectedCountPerLevel.GetValueOrDefault(level, 0);
-            _token.SetBindValue(textBind, $"{level} ({current}/{max})");
+
+            // Show new spells to learn if any, otherwise just the level number for swap-only levels
+            if (newSpells > 0)
+            {
+                _token.SetBindValue(textBind, $"{level} ({current}/{newSpells})");
+            }
+            else
+            {
+                // Swap-only level - just show the level number
+                _token.SetBindValue(textBind, $"{level} (--)");
+            }
         }
     }
 
@@ -502,8 +865,10 @@ public sealed class SpellLearningPresenter : ScryPresenter<SpellLearningView>
         public int SpellLevel { get; set; }
         public string SpellName { get; set; } = string.Empty;
         public string SpellIconResRef { get; set; } = string.Empty;
+        public int SpellDescStrRef { get; set; }
         public bool AlreadyKnown { get; set; }
         public bool IsSelected { get; set; }
+        public bool MarkedForRemoval { get; set; } // For spell swap feature
     }
 }
 

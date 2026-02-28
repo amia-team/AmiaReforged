@@ -1,4 +1,4 @@
-﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 
 namespace AmiaReforged.Classes.Spells.SpellLearning;
@@ -40,6 +40,10 @@ public sealed class SpellLearningView : ScryView<SpellLearningPresenter>
     public readonly NuiBind<bool> SpellEnabled = new("spell_enabled");
     public readonly NuiBind<string> SpellStatusText = new("spell_status_text");
     public readonly NuiBind<string> SpellIconResRef = new("spell_icon_resref");
+    public readonly NuiBind<Color> SpellButtonColor = new("spell_button_color");
+
+    // Spell description popup
+    public readonly NuiBind<bool> SpellDescButtonEnabled = new("spell_desc_button_enabled");
 
     public SpellLearningView(NwPlayer player, ClassType baseClass, int effectiveCasterLevel, Dictionary<int, int> spellsNeeded)
     {
@@ -50,27 +54,47 @@ public sealed class SpellLearningView : ScryView<SpellLearningPresenter>
 
     public override NuiLayout RootLayout()
     {
-        // Spell list template
+        // Spell list template: [Name Button with Icon] [Desc Button] [Feedback]
         List<NuiListTemplateCell> spellTemplate =
         [
+            // Cell 1: Spell name button with color-coded text and icon overlay
             new(new NuiButton(SpellButtonText)
             {
+                DrawList = new List<NuiDrawListItem>
+                {
+                    new NuiDrawListImage(SpellIconResRef, new NuiRect(5f, 5f, 32f, 32f))
+                },
                 Id = "spell_button",
                 Tooltip = SpellTooltip,
                 Enabled = SpellEnabled,
-                Height = 30f
+                Height = 40f,
+                ForegroundColor = SpellButtonColor
             })
             {
-                Width = 200f,
+                Width = 275f,
                 VariableSize = false
             },
+            // Cell 2: Description button with cc_scale icon
+            new(new NuiButtonImage("cc_scale")
+            {
+                Id = "spell_desc_button",
+                Tooltip = "View spell description",
+                Enabled = SpellDescButtonEnabled,
+                Height = 40f,
+                Width = 40f
+            })
+            {
+                Width = 40f,
+                VariableSize = false
+            },
+            // Cell 3: Feedback (Selected, Known, Remove)
             new(new NuiLabel(SpellStatusText)
             {
                 HorizontalAlign = NuiHAlign.Center,
                 VerticalAlign = NuiVAlign.Middle
             })
             {
-                Width = 120f,
+                Width = 110f,
                 VariableSize = false
             }
         ];
@@ -96,7 +120,7 @@ public sealed class SpellLearningView : ScryView<SpellLearningPresenter>
                     {
                         new NuiLabel(HeaderText)
                         {
-                            Width = 650f,
+                            Width = 680f,
                             HorizontalAlign = NuiHAlign.Center,
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(50, 40, 30)
@@ -252,14 +276,15 @@ public sealed class SpellLearningView : ScryView<SpellLearningPresenter>
                 new NuiRow
                 {
                     Height = 350f,
-                    Width = 520f,
                     Children =
                     {
-                        new NuiSpacer { Width = 145f },
+                        new NuiSpacer { Width = 95f },
                         new NuiList(spellTemplate, SpellListCount)
                         {
+                            Width = 460f,
+                            Height = 340f,
                             Scrollbars = NuiScrollbars.Y,
-                            RowHeight = 35f
+                            RowHeight = 40f
                         }
                     }
                 },
