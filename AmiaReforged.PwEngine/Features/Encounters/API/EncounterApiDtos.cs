@@ -17,6 +17,7 @@ public static class EncounterApiDtos
         bool IsActive,
         int CooldownSeconds,
         int DespawnSeconds,
+        int? MaxTotalSpawns,
         DateTime CreatedAt,
         DateTime UpdatedAt,
         List<SpawnGroupDto> SpawnGroups,
@@ -64,13 +65,15 @@ public static class EncounterApiDtos
         string Name,
         bool IsActive = false,
         int CooldownSeconds = 900,
-        int DespawnSeconds = 600);
+        int DespawnSeconds = 600,
+        int? MaxTotalSpawns = null);
 
     public record UpdateProfileRequest(
         string? Name = null,
         bool? IsActive = null,
         int? CooldownSeconds = null,
-        int? DespawnSeconds = null);
+        int? DespawnSeconds = null,
+        int? MaxTotalSpawns = null);
 
     public record CreateGroupRequest(
         string Name,
@@ -173,11 +176,17 @@ public static class EncounterApiDtos
         int? DurationSeconds = null,
         bool? IsActive = null);
 
+    // --- Bulk Operations ---
+
+    public record BulkSetActiveRequest(
+        List<Guid> Ids,
+        bool IsActive);
+
     // --- Mapping ---
 
     public static SpawnProfileDto ToDto(SpawnProfile p) => new(
         p.Id, p.AreaResRef, p.Name, p.IsActive,
-        p.CooldownSeconds, p.DespawnSeconds,
+        p.CooldownSeconds, p.DespawnSeconds, p.MaxTotalSpawns,
         p.CreatedAt, p.UpdatedAt,
         p.SpawnGroups.Select(ToDto).ToList(),
         p.Bonuses.Select(ToDto).ToList(),

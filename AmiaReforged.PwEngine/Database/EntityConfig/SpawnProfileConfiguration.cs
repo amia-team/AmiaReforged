@@ -34,6 +34,10 @@ public class SpawnProfileConfiguration : IEntityTypeConfiguration<SpawnProfile>
             .HasColumnName("despawn_seconds")
             .HasDefaultValue(600);
 
+        builder.Property(p => p.MaxTotalSpawns)
+            .HasColumnName("max_total_spawns")
+            .HasDefaultValue(null);
+
         builder.Property(p => p.CreatedAt)
             .HasColumnName("created_at");
 

@@ -88,7 +88,8 @@ public class SpawnProfileController
             Name = req.Name,
             IsActive = req.IsActive,
             CooldownSeconds = req.CooldownSeconds,
-            DespawnSeconds = req.DespawnSeconds
+            DespawnSeconds = req.DespawnSeconds,
+            MaxTotalSpawns = req.MaxTotalSpawns
         };
 
         await Repository.CreateAsync(profile);
@@ -121,6 +122,9 @@ public class SpawnProfileController
         if (req.IsActive.HasValue) profile.IsActive = req.IsActive.Value;
         if (req.CooldownSeconds.HasValue) profile.CooldownSeconds = req.CooldownSeconds.Value;
         if (req.DespawnSeconds.HasValue) profile.DespawnSeconds = req.DespawnSeconds.Value;
+        // MaxTotalSpawns: 0 = clear the cap (set to null), >0 = set cap, null = don't change
+        if (req.MaxTotalSpawns.HasValue)
+            profile.MaxTotalSpawns = req.MaxTotalSpawns.Value > 0 ? req.MaxTotalSpawns.Value : null;
 
         await Repository.UpdateAsync(profile);
 
@@ -692,6 +696,65 @@ public class SpawnProfileController
 
         await Repository.AddMiniBossBonusAsync(miniBossId, bonus);
         return new ApiResult(201, ToDto(bonus));
+    }
+
+    // ==================== Bulk Operations ====================
+
+    /// <summary>
+    /// POST /api/worldengine/encounters/profiles/bulk-set-active — Bulk activate/deactivate profiles
+    /// </summary>
+    [HttpPost("/api/worldengine/encounters/profiles/bulk-set-active")]
+    public static async Task<ApiResult> BulkSetProfilesActive(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        BulkSetActiveRequest? req = await ctx.ReadJsonBodyAsync<BulkSetActiveRequest>();
+        if (req == null || req.Ids.Count == 0)
+            return new ApiResult(400, new ErrorResponse("Bad request", "Ids list is required and must not be empty."));
+
+        await Repository.BulkSetProfilesActiveAsync(req.Ids, req.IsActive);
+
+        if (EncounterService != null)
+            await EncounterService.RefreshAllProfileCacheAsync();
+
+        return new ApiResult(200, new { message = $"{req.Ids.Count} profiles {(req.IsActive ? "activated" : "deactivated")}.", count = req.Ids.Count });
+    }
+
+    /// <summary>
+    /// POST /api/worldengine/encounters/bonuses/bulk-set-active — Bulk activate/deactivate bonuses
+    /// </summary>
+    [HttpPost("/api/worldengine/encounters/bonuses/bulk-set-active")]
+    public static async Task<ApiResult> BulkSetBonusesActive(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        BulkSetActiveRequest? req = await ctx.ReadJsonBodyAsync<BulkSetActiveRequest>();
+        if (req == null || req.Ids.Count == 0)
+            return new ApiResult(400, new ErrorResponse("Bad request", "Ids list is required and must not be empty."));
+
+        await Repository.BulkSetBonusesActiveAsync(req.Ids, req.IsActive);
+
+        if (EncounterService != null)
+            await EncounterService.RefreshAllProfileCacheAsync();
+
+        return new ApiResult(200, new { message = $"{req.Ids.Count} bonuses {(req.IsActive ? "activated" : "deactivated")}.", count = req.Ids.Count });
+    }
+
+    /// <summary>
+    /// POST /api/worldengine/encounters/mutations/bulk-set-active — Bulk activate/deactivate mutations
+    /// </summary>
+    [HttpPost("/api/worldengine/encounters/mutations/bulk-set-active")]
+    public static async Task<ApiResult> BulkSetMutationsActive(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        BulkSetActiveRequest? req = await ctx.ReadJsonBodyAsync<BulkSetActiveRequest>();
+        if (req == null || req.Ids.Count == 0)
+            return new ApiResult(400, new ErrorResponse("Bad request", "Ids list is required and must not be empty."));
+
+        await Repository.BulkSetMutationsActiveAsync(req.Ids, req.IsActive);
+
+        return new ApiResult(200, new { message = $"{req.Ids.Count} mutations {(req.IsActive ? "activated" : "deactivated")}.", count = req.Ids.Count });
     }
 
     // ==================== Cache Management ====================

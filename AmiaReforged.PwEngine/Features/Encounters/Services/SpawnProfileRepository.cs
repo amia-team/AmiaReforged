@@ -298,4 +298,37 @@ public class SpawnProfileRepository : ISpawnProfileRepository
                 .ThenInclude(m => m!.Bonuses)
             .AsSplitQuery();
     }
+
+    // === Bulk Operations ===
+
+    public async Task BulkSetProfilesActiveAsync(IEnumerable<Guid> ids, bool isActive)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        List<Guid> idList = ids.ToList();
+        await ctx.SpawnProfiles
+            .Where(p => idList.Contains(p.Id))
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(p => p.IsActive, isActive)
+                .SetProperty(p => p.UpdatedAt, DateTime.UtcNow));
+    }
+
+    public async Task BulkSetBonusesActiveAsync(IEnumerable<Guid> ids, bool isActive)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        List<Guid> idList = ids.ToList();
+        await ctx.SpawnBonuses
+            .Where(b => idList.Contains(b.Id))
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(b => b.IsActive, isActive));
+    }
+
+    public async Task BulkSetMutationsActiveAsync(IEnumerable<Guid> ids, bool isActive)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        List<Guid> idList = ids.ToList();
+        await ctx.MutationTemplates
+            .Where(m => idList.Contains(m.Id))
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(m => m.IsActive, isActive));
+    }
 }

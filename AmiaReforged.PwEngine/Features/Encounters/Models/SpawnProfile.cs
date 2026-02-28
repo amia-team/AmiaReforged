@@ -41,6 +41,12 @@ public class SpawnProfile
     /// </summary>
     public int DespawnSeconds { get; set; } = 600;
 
+    /// <summary>
+    /// Maximum total number of creatures that can be spawned per encounter trigger.
+    /// Null means no cap. Mini-boss spawns are exempt from this limit.
+    /// </summary>
+    public int? MaxTotalSpawns { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

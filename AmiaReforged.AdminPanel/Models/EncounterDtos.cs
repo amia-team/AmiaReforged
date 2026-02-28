@@ -80,6 +80,7 @@ public record SpawnProfileDto(
     bool IsActive,
     int CooldownSeconds,
     int DespawnSeconds,
+    int? MaxTotalSpawns,
     DateTime CreatedAt,
     DateTime UpdatedAt,
     List<SpawnGroupDto> SpawnGroups,
@@ -144,13 +145,15 @@ public record CreateProfileRequest(
     string Name,
     bool IsActive = false,
     int CooldownSeconds = 900,
-    int DespawnSeconds = 600);
+    int DespawnSeconds = 600,
+    int? MaxTotalSpawns = null);
 
 public record UpdateProfileRequest(
     string? Name = null,
     bool? IsActive = null,
     int? CooldownSeconds = null,
-    int? DespawnSeconds = null);
+    int? DespawnSeconds = null,
+    int? MaxTotalSpawns = null);
 
 public record CreateGroupRequest(
     string Name,
@@ -237,3 +240,9 @@ public record UpdateMutationEffectRequest(
 // ===================== Error DTO =====================
 
 public record ApiErrorResponse(string Error, string Detail);
+
+// ===================== Bulk Operations =====================
+
+public record BulkSetActiveRequest(
+    List<Guid> Ids,
+    bool IsActive);

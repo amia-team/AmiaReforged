@@ -173,6 +173,11 @@
                         <label>Despawn (s)</label>
                         <input class="form-control" type="number" @bind="_newDespawn" />
                     </div>
+                    <div class="form-group">
+                        <label>Max Spawns</label>
+                        <input class="form-control" type="number" @bind="_newMaxTotalSpawns" placeholder="No cap" />
+                        <small class="form-text">Leave 0 or blank for no cap</small>
+                    </div>
                 </div>
                 <div class="form-actions">
                     <button class="btn btn-success" @onclick="CreateProfile" disabled="@_isSaving">Create</button>
@@ -208,12 +213,26 @@
             }
             else
             {
+                @if (_selectedProfileIds.Count > 0)
+                {
+                    <div class="bulk-toolbar" style="margin-bottom:10px;padding:10px;background:var(--bg-input);border-radius:8px;display:flex;align-items:center;gap:10px">
+                        <span style="color:var(--text-secondary)"><strong>@_selectedProfileIds.Count</strong> selected</span>
+                        <button class="btn btn-sm btn-success" @onclick="BulkActivateProfiles" disabled="@_isSaving">Activate Selected</button>
+                        <button class="btn btn-sm btn-warning" @onclick="BulkDeactivateProfiles" disabled="@_isSaving">Deactivate Selected</button>
+                        <button class="btn btn-sm btn-secondary" @onclick="() => _selectedProfileIds.Clear()">Clear Selection</button>
+                    </div>
+                }
                 <table class="table">
                     <thead>
                         <tr>
+                            <th style="width:40px">
+                                <input type="checkbox" checked="@(_selectedProfileIds.Count > 0 && _selectedProfileIds.Count == FilteredProfiles.Count)"
+                                       @onchange="ToggleSelectAllProfiles" />
+                            </th>
                             <th>Name</th>
                             <th>Area</th>
                             <th>Active</th>
+                            <th>Max Spawns</th>
                             <th>Groups</th>
                             <th>Actions</th>
                         </tr>
@@ -222,6 +241,10 @@
                         @foreach (var p in FilteredProfiles)
                         {
                             <tr class="clickable-row" @onclick="() => SelectProfile(p)">
+                                <td @onclick:stopPropagation="true">
+                                    <input type="checkbox" checked="@_selectedProfileIds.Contains(p.Id)"
+                                           @onchange="() => ToggleProfileSelection(p.Id)" />
+                                </td>
                                 <td>@p.Name</td>
                                 <td><code>@p.AreaResRef</code></td>
                                 <td>
@@ -229,6 +252,7 @@
                                         @(p.IsActive ? "Active" : "Inactive")
                                     </span>
                                 </td>
+                                <td>@(p.MaxTotalSpawns?.ToString() ?? "—")</td>
                                 <td>@p.SpawnGroups.Count</td>
                                 <td class="actions" @onclick:stopPropagation="true">
                                     @if (p.IsActive)
@@ -273,6 +297,11 @@
                                 <div class="form-group">
                                     <label>Despawn (s)</label>
                                     <input class="form-control" type="number" @bind="_editDespawn" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Max Spawns</label>
+                                    <input class="form-control" type="number" @bind="_editMaxTotalSpawns" placeholder="No cap" />
+                                    <small class="form-text">0 = no cap</small>
                                 </div>
                             </div>
                             <div class="form-actions">
@@ -544,9 +573,22 @@
 
                         @if (_selectedProfile.Bonuses.Count > 0)
                         {
+                            @if (_selectedBonusIds.Count > 0)
+                            {
+                                <div class="bulk-toolbar" style="margin-bottom:10px;padding:8px;background:var(--bg-input);border-radius:6px;display:flex;align-items:center;gap:10px">
+                                    <span style="color:var(--text-secondary)"><strong>@_selectedBonusIds.Count</strong> selected</span>
+                                    <button class="btn btn-sm btn-success" @onclick="BulkActivateBonuses" disabled="@_isSaving">Enable Selected</button>
+                                    <button class="btn btn-sm btn-warning" @onclick="BulkDeactivateBonuses" disabled="@_isSaving">Disable Selected</button>
+                                    <button class="btn btn-sm btn-secondary" @onclick="() => _selectedBonusIds.Clear()">Clear</button>
+                                </div>
+                            }
                             <table class="table">
                                 <thead>
                                     <tr>
+                                        <th style="width:40px">
+                                            <input type="checkbox" checked="@(_selectedBonusIds.Count > 0 && _selectedBonusIds.Count == _selectedProfile.Bonuses.Count)"
+                                                   @onchange="ToggleSelectAllBonuses" />
+                                        </th>
                                         <th>Name</th>
                                         <th>Type</th>
                                         <th>Value</th>
@@ -559,6 +601,10 @@
                                     @foreach (var bonus in _selectedProfile.Bonuses)
                                     {
                                         <tr>
+                                            <td>
+                                                <input type="checkbox" checked="@_selectedBonusIds.Contains(bonus.Id)"
+                                                       @onchange="() => ToggleBonusSelection(bonus.Id)" />
+                                            </td>
                                             <td>@bonus.Name</td>
                                             <td>@bonus.Type</td>
                                             <td>@bonus.Value</td>
@@ -773,13 +819,25 @@
             }
             else
             {
+                @if (_selectedMutationIds.Count > 0)
+                {
+                    <div class="bulk-toolbar" style="margin-bottom:10px;padding:10px;background:var(--bg-input);border-radius:8px;display:flex;align-items:center;gap:10px">
+                        <span style="color:var(--text-secondary)"><strong>@_selectedMutationIds.Count</strong> selected</span>
+                        <button class="btn btn-sm btn-success" @onclick="BulkActivateMutations" disabled="@_isSaving">Activate Selected</button>
+                        <button class="btn btn-sm btn-warning" @onclick="BulkDeactivateMutations" disabled="@_isSaving">Deactivate Selected</button>
+                        <button class="btn btn-sm btn-secondary" @onclick="() => _selectedMutationIds.Clear()">Clear Selection</button>
+                    </div>
+                }
                 @foreach (var mut in _mutations)
                 {
                     <div class="card mb-3" style="background:var(--bg-surface); border-color:var(--border-color);">
                         <div class="card-header d-flex justify-content-between align-items-center"
                              style="cursor:pointer; background:var(--bg-card); border-color:var(--border-color);"
                              @onclick="() => ToggleMutationExpand(mut.Id)">
-                            <div>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="checkbox" checked="@_selectedMutationIds.Contains(mut.Id)"
+                                       @onclick:stopPropagation="true"
+                                       @onchange="() => ToggleMutationSelection(mut.Id)" />
                                 <strong style="color:var(--accent-amber);">@mut.Prefix</strong>
                                 <span class="ms-2" style="color:var(--text-secondary)">@(mut.Description ?? "")</span>
                             </div>
@@ -976,11 +1034,18 @@
     private string _newProfileName = "";
     private int _newCooldown = 900;
     private int _newDespawn = 600;
+    private int _newMaxTotalSpawns;
 
     // ===== Edit Profile =====
     private string _editName = "";
     private int _editCooldown;
     private int _editDespawn;
+    private int _editMaxTotalSpawns;
+
+    // ===== Bulk Selection =====
+    private HashSet<Guid> _selectedProfileIds = [];
+    private HashSet<Guid> _selectedBonusIds = [];
+    private HashSet<Guid> _selectedMutationIds = [];
 
     // ===== Add Group Form =====
     private bool _showAddGroup;
@@ -1089,6 +1154,9 @@
     {
         _selectedProfile = null;
         _expandedGroups.Clear();
+        _selectedProfileIds.Clear();
+        _selectedBonusIds.Clear();
+        _selectedMutationIds.Clear();
         _showCreateForm = false;
         _showAddGroup = false;
         _showAddBonus = false;
@@ -1222,6 +1290,8 @@
         _editName = profile.Name;
         _editCooldown = profile.CooldownSeconds;
         _editDespawn = profile.DespawnSeconds;
+        _editMaxTotalSpawns = profile.MaxTotalSpawns ?? 0;
+        _selectedBonusIds.Clear();
         _showAddGroup = false;
         _showAddBonus = false;
     }
@@ -1230,6 +1300,7 @@
     {
         _selectedProfile = null;
         _expandedGroups.Clear();
+        _selectedBonusIds.Clear();
         _showAddGroup = false;
         _showAddBonus = false;
     }
@@ -1248,12 +1319,14 @@
         try
         {
             await Api.CreateProfileAsync(new CreateProfileRequest(
-                _newAreaResRef.Trim(), _newProfileName.Trim(), false, _newCooldown, _newDespawn));
+                _newAreaResRef.Trim(), _newProfileName.Trim(), false, _newCooldown, _newDespawn,
+                _newMaxTotalSpawns > 0 ? _newMaxTotalSpawns : null));
             _success = $"Profile '{_newProfileName}' created.";
             _newAreaResRef = "";
             _newProfileName = "";
             _newCooldown = 900;
             _newDespawn = 600;
+            _newMaxTotalSpawns = 0;
             _showCreateForm = false;
             await RefreshProfiles();
         }
@@ -1268,7 +1341,8 @@
         try
         {
             await Api.UpdateProfileAsync(_selectedProfile.Id, new UpdateProfileRequest(
-                _editName, null, _editCooldown, _editDespawn));
+                _editName, null, _editCooldown, _editDespawn,
+                _editMaxTotalSpawns > 0 ? _editMaxTotalSpawns : null));
             _success = "Profile settings saved.";
             await RefreshProfiles();
         }
@@ -1858,5 +1932,134 @@
         }
         catch (Exception ex) { _error = $"Cache refresh failed: {ex.Message}"; }
         finally { _isRefreshingCache = false; }
+    }
+
+    // ===== Bulk Selection Helpers =====
+
+    private void ToggleProfileSelection(Guid id)
+    {
+        if (!_selectedProfileIds.Remove(id))
+            _selectedProfileIds.Add(id);
+    }
+
+    private void ToggleSelectAllProfiles(ChangeEventArgs e)
+    {
+        if ((bool)(e.Value ?? false))
+            _selectedProfileIds = FilteredProfiles.Select(p => p.Id).ToHashSet();
+        else
+            _selectedProfileIds.Clear();
+    }
+
+    private void ToggleBonusSelection(Guid id)
+    {
+        if (!_selectedBonusIds.Remove(id))
+            _selectedBonusIds.Add(id);
+    }
+
+    private void ToggleSelectAllBonuses(ChangeEventArgs e)
+    {
+        if (_selectedProfile == null) return;
+        if ((bool)(e.Value ?? false))
+            _selectedBonusIds = _selectedProfile.Bonuses.Select(b => b.Id).ToHashSet();
+        else
+            _selectedBonusIds.Clear();
+    }
+
+    private void ToggleMutationSelection(Guid id)
+    {
+        if (!_selectedMutationIds.Remove(id))
+            _selectedMutationIds.Add(id);
+    }
+
+    // ===== Bulk Actions =====
+
+    private async Task BulkActivateProfiles()
+    {
+        if (_selectedProfileIds.Count == 0) return;
+        _isSaving = true;
+        try
+        {
+            await Api.BulkSetProfilesActiveAsync(_selectedProfileIds.ToList(), true);
+            _success = $"{_selectedProfileIds.Count} profiles activated.";
+            _selectedProfileIds.Clear();
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task BulkDeactivateProfiles()
+    {
+        if (_selectedProfileIds.Count == 0) return;
+        _isSaving = true;
+        try
+        {
+            await Api.BulkSetProfilesActiveAsync(_selectedProfileIds.ToList(), false);
+            _success = $"{_selectedProfileIds.Count} profiles deactivated.";
+            _selectedProfileIds.Clear();
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task BulkActivateBonuses()
+    {
+        if (_selectedBonusIds.Count == 0) return;
+        _isSaving = true;
+        try
+        {
+            await Api.BulkSetBonusesActiveAsync(_selectedBonusIds.ToList(), true);
+            _success = $"{_selectedBonusIds.Count} bonuses enabled.";
+            _selectedBonusIds.Clear();
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task BulkDeactivateBonuses()
+    {
+        if (_selectedBonusIds.Count == 0) return;
+        _isSaving = true;
+        try
+        {
+            await Api.BulkSetBonusesActiveAsync(_selectedBonusIds.ToList(), false);
+            _success = $"{_selectedBonusIds.Count} bonuses disabled.";
+            _selectedBonusIds.Clear();
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task BulkActivateMutations()
+    {
+        if (_selectedMutationIds.Count == 0) return;
+        _isSaving = true;
+        try
+        {
+            await Api.BulkSetMutationsActiveAsync(_selectedMutationIds.ToList(), true);
+            _success = $"{_selectedMutationIds.Count} mutations activated.";
+            _selectedMutationIds.Clear();
+            await LoadMutations();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task BulkDeactivateMutations()
+    {
+        if (_selectedMutationIds.Count == 0) return;
+        _isSaving = true;
+        try
+        {
+            await Api.BulkSetMutationsActiveAsync(_selectedMutationIds.ToList(), false);
+            _success = $"{_selectedMutationIds.Count} mutations deactivated.";
+            _selectedMutationIds.Clear();
+            await LoadMutations();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
     }
 }

@@ -87,4 +87,21 @@ public interface ISpawnProfileRepository
     Task<MiniBossConfig> UpdateMiniBossAsync(MiniBossConfig config);
     Task DeleteMiniBossAsync(Guid profileId);
     Task<SpawnBonus> AddMiniBossBonusAsync(Guid miniBossId, SpawnBonus bonus);
+
+    // === Bulk Operations ===
+
+    /// <summary>
+    /// Sets the active state of multiple profiles at once.
+    /// </summary>
+    Task BulkSetProfilesActiveAsync(IEnumerable<Guid> ids, bool isActive);
+
+    /// <summary>
+    /// Sets the active state of multiple bonuses at once.
+    /// </summary>
+    Task BulkSetBonusesActiveAsync(IEnumerable<Guid> ids, bool isActive);
+
+    /// <summary>
+    /// Sets the active state of multiple mutation templates at once.
+    /// </summary>
+    Task BulkSetMutationsActiveAsync(IEnumerable<Guid> ids, bool isActive);
 }

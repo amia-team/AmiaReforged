@@ -66,8 +66,13 @@ public class DynamicCreatureSpawner
         int scaledCount = ScaleByDensity(baseCount, context.Chaos.Density);
         if (context.PartySize > 6) scaledCount *= 2; // Double spawns for large parties
 
-        Log.Info("Dynamic spawn: profile='{Name}', group='{GroupName}', count={Count} (base={Base}), area={Area}",
-            profile.Name, group.Name, scaledCount, baseCount, profile.AreaResRef);
+        // Enforce profile-level spawn cap (mini-boss is exempt)
+        if (profile.MaxTotalSpawns.HasValue)
+            scaledCount = Math.Min(scaledCount, profile.MaxTotalSpawns.Value);
+
+        Log.Info("Dynamic spawn: profile='{Name}', group='{GroupName}', count={Count} (base={Base}, cap={Cap}), area={Area}",
+            profile.Name, group.Name, scaledCount, baseCount,
+            profile.MaxTotalSpawns?.ToString() ?? "none", profile.AreaResRef);
 
         // Spawn creatures
         List<uint> spawned = SpawnCreaturesFromGroup(group, scaledCount, spawnLocation, profile.DespawnSeconds);

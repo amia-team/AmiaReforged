@@ -257,6 +257,23 @@ public class EncounterApiService
         await PostAsync<object>($"{CacheBase}/refresh", null);
     }
 
+    // ==================== Bulk Operations ====================
+
+    public async Task BulkSetProfilesActiveAsync(List<Guid> ids, bool isActive)
+    {
+        await PostAsync<object>($"{ProfilesBase}/bulk-set-active", new BulkSetActiveRequest(ids, isActive));
+    }
+
+    public async Task BulkSetBonusesActiveAsync(List<Guid> ids, bool isActive)
+    {
+        await PostAsync<object>($"{BonusesBase}/bulk-set-active", new BulkSetActiveRequest(ids, isActive));
+    }
+
+    public async Task BulkSetMutationsActiveAsync(List<Guid> ids, bool isActive)
+    {
+        await PostAsync<object>($"{MutationsBase}/bulk-set-active", new BulkSetActiveRequest(ids, isActive));
+    }
+
     // ==================== HTTP Helpers ====================
 
     private async Task<T?> GetAsync<T>(string url) where T : class
