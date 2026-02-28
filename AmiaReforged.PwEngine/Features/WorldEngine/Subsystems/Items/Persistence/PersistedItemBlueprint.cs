@@ -9,12 +9,13 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.Persistenc
 public class PersistedItemBlueprint
 {
     /// <summary>
-    /// ResRef — NWN resource reference, max 16 characters. Primary key.
+    /// ResRef — NWN resource reference (in-game template name), max 16 characters.
+    /// Not unique — multiple items can share the same ResRef.
     /// </summary>
     public string ResRef { get; set; } = string.Empty;
 
     /// <summary>
-    /// Unique item tag identifier.
+    /// Unique item tag identifier. Primary key.
     /// </summary>
     public string ItemTag { get; set; } = string.Empty;
 

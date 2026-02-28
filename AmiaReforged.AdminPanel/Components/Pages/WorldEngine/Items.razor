@@ -151,12 +151,12 @@
             <div style="display:flex;flex-direction:column;gap:12px;margin-top:15px">
                 <div class="form-row" style="display:flex;gap:10px">
                     <div class="form-group" style="flex:1">
-                        <label>ResRef <small style="color:var(--text-secondary)">(max 16 chars)</small></label>
-                        <input class="form-control" @bind="_editItem.ResRef" maxlength="16" disabled="@(!_isCreating)" />
+                        <label>ResRef <small style="color:var(--text-secondary)">(in-game template, max 16 chars)</small></label>
+                        <input class="form-control" @bind="_editItem.ResRef" maxlength="16" />
                     </div>
                     <div class="form-group" style="flex:1">
-                        <label>Item Tag</label>
-                        <input class="form-control" @bind="_editItem.ItemTag" />
+                        <label>Item Tag <small style="color:var(--text-secondary)">(unique identifier)</small></label>
+                        <input class="form-control" @bind="_editItem.ItemTag" disabled="@(!_isCreating)" />
                     </div>
                 </div>
 

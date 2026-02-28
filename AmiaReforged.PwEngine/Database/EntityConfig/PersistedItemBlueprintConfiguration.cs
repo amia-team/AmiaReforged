@@ -10,7 +10,7 @@ public class PersistedItemBlueprintConfiguration : IEntityTypeConfiguration<Pers
     {
         builder.ToTable("ItemBlueprints");
 
-        builder.HasKey(e => e.ResRef);
+        builder.HasKey(e => e.ItemTag);
 
         builder.Property(e => e.ResRef)
             .HasColumnName("res_ref")
@@ -71,9 +71,8 @@ public class PersistedItemBlueprintConfiguration : IEntityTypeConfiguration<Pers
         builder.Property(e => e.UpdatedAt)
             .HasColumnName("updated_at");
 
-        builder.HasIndex(e => e.ItemTag)
-            .IsUnique()
-            .HasDatabaseName("IX_ItemBlueprints_ItemTag");
+        builder.HasIndex(e => e.ResRef)
+            .HasDatabaseName("IX_ItemBlueprints_ResRef");
 
         builder.HasIndex(e => e.Name)
             .HasDatabaseName("IX_ItemBlueprints_Name");

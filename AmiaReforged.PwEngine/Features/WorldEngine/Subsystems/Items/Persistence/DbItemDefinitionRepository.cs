@@ -24,7 +24,7 @@ public class DbItemDefinitionRepository : IItemDefinitionRepository
         using var ctx = _contextFactory.CreateDbContext();
 
         var existing = ctx.ItemBlueprints
-            .FirstOrDefault(e => e.ResRef == definition.ResRef || e.ItemTag == definition.ItemTag);
+            .FirstOrDefault(e => e.ItemTag == definition.ItemTag);
 
         if (existing != null)
         {

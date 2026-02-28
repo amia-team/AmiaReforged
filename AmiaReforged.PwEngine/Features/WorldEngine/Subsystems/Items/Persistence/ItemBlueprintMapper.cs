@@ -88,7 +88,7 @@ public static class ItemBlueprintMapper
     /// </summary>
     public static void UpdateEntity(PersistedItemBlueprint entity, ItemBlueprint blueprint)
     {
-        entity.ItemTag = blueprint.ItemTag;
+        entity.ResRef = blueprint.ResRef;
         entity.Name = blueprint.Name;
         entity.Description = blueprint.Description;
         entity.BaseItemType = blueprint.BaseItemType;
