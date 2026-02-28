@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using AmiaReforged.AdminPanel.Models
 @using AmiaReforged.AdminPanel.Services
+@using System.IO.Compression
 @attribute [Authorize]
 @inject ItemApiService Api
 @inject IWorldEngineEndpointService EndpointService
@@ -172,8 +173,27 @@
 
                 <div class="form-row" style="display:flex;gap:10px">
                     <div class="form-group" style="flex:1">
-                        <label>Job System Type</label>
-                        <input class="form-control" @bind="_editItem.JobSystemType" placeholder="e.g. Woodworking" />
+                        <label>Item Category</label>
+                        <select class="form-control" @bind="_editItem.JobSystemType">
+                            <option value="">— Select —</option>
+                            <option value="None">None</option>
+                            <option value="ToolPick">Tool: Pick</option>
+                            <option value="ToolHammer">Tool: Hammer</option>
+                            <option value="ToolAxe">Tool: Axe</option>
+                            <option value="ToolFroe">Tool: Froe</option>
+                            <option value="ToolAdze">Tool: Adze</option>
+                            <option value="ToolWoodChisel">Tool: Wood Chisel</option>
+                            <option value="ToolMasonChisle">Tool: Mason Chisel</option>
+                            <option value="ResourceOre">Resource: Ore</option>
+                            <option value="ResourceStone">Resource: Stone</option>
+                            <option value="ResourceLog">Resource: Log</option>
+                            <option value="ResourcePlank">Resource: Plank</option>
+                            <option value="ResourceBrick">Resource: Brick</option>
+                            <option value="ResourceIngot">Resource: Ingot</option>
+                            <option value="ResourceGem">Resource: Gem</option>
+                            <option value="ResourcePlant">Resource: Plant</option>
+                            <option value="Furniture">Furniture</option>
+                        </select>
                     </div>
                     <div class="form-group" style="flex:1">
                         <label>Base Item Type (int)</label>
@@ -303,7 +323,8 @@
 
             <div class="form-group" style="margin-top:15px">
                 <label>Upload JSON File</label>
-                <InputFile OnChange="OnImportFileSelected" accept=".json" multiple class="form-control" />
+                <InputFile OnChange="OnImportFileSelected" accept=".json,.zip" multiple class="form-control" />
+                <small style="color:var(--text-secondary);margin-top:4px;display:block">Select .json files or a .zip containing .json files. You can add more files by clicking again — they will be appended.</small>
             </div>
 
             <div class="form-group" style="margin-top:10px">
@@ -585,39 +606,71 @@
 
     // ===== Import =====
 
+    private List<System.Text.Json.JsonElement> _importedItems = new();
+
     private async Task OnImportFileSelected(InputFileChangeEventArgs e)
     {
         try
         {
-            var allItems = new List<System.Text.Json.JsonElement>();
             foreach (var file in e.GetMultipleFiles(100))
             {
-                using var reader = new StreamReader(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
-                string content = await reader.ReadToEndAsync();
-
-                // Try to parse as array or single object and collect all items
-                using var doc = System.Text.Json.JsonDocument.Parse(content);
-                if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+                if (file.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
                 {
-                    foreach (var item in doc.RootElement.EnumerateArray())
-                    {
-                        allItems.Add(item.Clone());
-                    }
+                    await ProcessZipItems(file);
                 }
-                else if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object)
+                else
                 {
-                    allItems.Add(doc.RootElement.Clone());
+                    await ProcessJsonFileItems(file);
                 }
             }
 
-            _importJson = System.Text.Json.JsonSerializer.Serialize(allItems);
+            _importJson = System.Text.Json.JsonSerializer.Serialize(_importedItems);
             _importResult = null;
-            _success = $"Loaded {allItems.Count} item(s) from {e.GetMultipleFiles(100).Count} file(s).";
+            _success = $"Loaded {_importedItems.Count} item(s) total. Pick more files to add more, or click Import.";
             StateHasChanged();
         }
         catch (Exception ex)
         {
             _error = $"Failed to read file(s): {ex.Message}";
+        }
+    }
+
+    private async Task ProcessJsonFileItems(IBrowserFile file)
+    {
+        using var reader = new StreamReader(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
+        string content = await reader.ReadToEndAsync();
+        ParseJsonItems(content);
+    }
+
+    private async Task ProcessZipItems(IBrowserFile file)
+    {
+        using var ms = new MemoryStream();
+        await file.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024).CopyToAsync(ms);
+        ms.Position = 0;
+        using var archive = new ZipArchive(ms, ZipArchiveMode.Read);
+        foreach (var entry in archive.Entries)
+        {
+            if (!entry.FullName.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) continue;
+            using var entryStream = entry.Open();
+            using var reader = new StreamReader(entryStream);
+            string content = await reader.ReadToEndAsync();
+            ParseJsonItems(content);
+        }
+    }
+
+    private void ParseJsonItems(string content)
+    {
+        using var doc = System.Text.Json.JsonDocument.Parse(content);
+        if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+            foreach (var item in doc.RootElement.EnumerateArray())
+            {
+                _importedItems.Add(item.Clone());
+            }
+        }
+        else if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object)
+        {
+            _importedItems.Add(doc.RootElement.Clone());
         }
     }
 
@@ -650,6 +703,7 @@
         _showImportModal = false;
         _importJson = "";
         _importResult = null;
+        _importedItems.Clear();
     }
 
     // ===== Export =====

@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using AmiaReforged.AdminPanel.Models
 @using AmiaReforged.AdminPanel.Services
+@using System.IO.Compression
 @attribute [Authorize]
 @inject ResourceNodeApiService Api
 @inject IWorldEngineEndpointService EndpointService
@@ -77,10 +78,12 @@
                     <label>Type Filter</label>
                     <select class="form-control" @bind="_typeFilter">
                         <option value="">All Types</option>
+                        <option value="Undefined">Undefined</option>
+                        <option value="Ore">Ore</option>
+                        <option value="Geode">Geode</option>
+                        <option value="Boulder">Boulder</option>
+                        <option value="Tree">Tree</option>
                         <option value="Flora">Flora</option>
-                        <option value="Mineral">Mineral</option>
-                        <option value="Animal">Animal</option>
-                        <option value="Salvage">Salvage</option>
                     </select>
                 </div>
                 <button class="btn btn-primary btn-sm" @onclick="SearchNodes" disabled="@_isLoading">Search</button>
@@ -180,10 +183,12 @@
                         <label>Type</label>
                         <select class="form-control" @bind="_editNode.Type">
                             <option value="">— Select —</option>
+                            <option value="Undefined">Undefined</option>
+                            <option value="Ore">Ore</option>
+                            <option value="Geode">Geode</option>
+                            <option value="Boulder">Boulder</option>
+                            <option value="Tree">Tree</option>
                             <option value="Flora">Flora</option>
-                            <option value="Mineral">Mineral</option>
-                            <option value="Animal">Animal</option>
-                            <option value="Salvage">Salvage</option>
                         </select>
                     </div>
                     <div class="form-group" style="flex:1">
@@ -323,7 +328,8 @@
 
             <div class="form-group" style="margin-top:15px">
                 <label>Upload JSON File</label>
-                <InputFile OnChange="OnImportFileSelected" accept=".json" class="form-control" />
+                <InputFile OnChange="OnImportFileSelected" accept=".json,.zip" multiple class="form-control" />
+                <small style="color:var(--text-secondary);margin-top:4px;display:block">Select .json files or a .zip containing .json files. You can add more files by clicking again — they will be appended.</small>
             </div>
 
             <div class="form-group" style="margin-top:10px">
@@ -611,19 +617,71 @@
 
     // ===== Import =====
 
+    private List<System.Text.Json.JsonElement> _importedNodes = new();
+
     private async Task OnImportFileSelected(InputFileChangeEventArgs e)
     {
         try
         {
-            var file = e.File;
-            using var reader = new StreamReader(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
-            _importJson = await reader.ReadToEndAsync();
+            foreach (var file in e.GetMultipleFiles(100))
+            {
+                if (file.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                {
+                    await ProcessZipNodes(file);
+                }
+                else
+                {
+                    await ProcessJsonFileNodes(file);
+                }
+            }
+
+            _importJson = System.Text.Json.JsonSerializer.Serialize(_importedNodes);
             _importResult = null;
+            _success = $"Loaded {_importedNodes.Count} node(s) total. Pick more files to add more, or click Import.";
             StateHasChanged();
         }
         catch (Exception ex)
         {
-            _error = $"Failed to read file: {ex.Message}";
+            _error = $"Failed to read file(s): {ex.Message}";
+        }
+    }
+
+    private async Task ProcessJsonFileNodes(IBrowserFile file)
+    {
+        using var reader = new StreamReader(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
+        string content = await reader.ReadToEndAsync();
+        ParseJsonNodes(content);
+    }
+
+    private async Task ProcessZipNodes(IBrowserFile file)
+    {
+        using var ms = new MemoryStream();
+        await file.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024).CopyToAsync(ms);
+        ms.Position = 0;
+        using var archive = new ZipArchive(ms, ZipArchiveMode.Read);
+        foreach (var entry in archive.Entries)
+        {
+            if (!entry.FullName.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) continue;
+            using var entryStream = entry.Open();
+            using var reader = new StreamReader(entryStream);
+            string content = await reader.ReadToEndAsync();
+            ParseJsonNodes(content);
+        }
+    }
+
+    private void ParseJsonNodes(string content)
+    {
+        using var doc = System.Text.Json.JsonDocument.Parse(content);
+        if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+            foreach (var node in doc.RootElement.EnumerateArray())
+            {
+                _importedNodes.Add(node.Clone());
+            }
+        }
+        else if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object)
+        {
+            _importedNodes.Add(doc.RootElement.Clone());
         }
     }
 
@@ -656,6 +714,7 @@
         _showImportModal = false;
         _importJson = "";
         _importResult = null;
+        _importedNodes.Clear();
     }
 
     // ===== Delete =====
