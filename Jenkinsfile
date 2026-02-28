@@ -72,14 +72,6 @@ pipeline{
                 sh "dotnet publish AmiaReforged.DMS --output ${env.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.DMS/"
                 sh "dotnet publish AmiaReforged.PwEngine --output ${env.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.PwEngine/"
 
-                script {
-                    if (env.resources_dest_test?.trim()) {
-                        sh "rsync -av --delete AmiaReforged.PwEngine/Resources/WorldEngine ${env.resources_dest_test}/"
-                    } else {
-                        echo 'WARNING: resources_dest_test environment variable is empty. Skipping WorldEngine resource deployment.'
-                    }
-                }
-
 				sh 'chmod +x start-test.sh'
 				withEnv(["AMIA_SERVER_DIR=${env.TEST_SERVER_BASE}/..".toString()]) {
 				    sh 'bash start-test.sh'
@@ -110,14 +102,6 @@ pipeline{
                 sh "dotnet publish AmiaReforged.Races --output ${env.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.Races/"
                 sh "dotnet publish AmiaReforged.DMS --output ${env.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.DMS/"
                 sh "dotnet publish AmiaReforged.PwEngine --output ${env.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.PwEngine/"
-
-                script {
-                    if (env.resources_dest_prod?.trim()) {
-                        sh "rsync -av --delete AmiaReforged.PwEngine/Resources/WorldEngine ${env.resources_dest_prod}/"
-                    } else {
-                        echo 'WARNING: resources_dest_prod environment variable is empty. Skipping WorldEngine resource deployment.'
-                    }
-                }
 
 				sh 'chmod +x start-live.sh'
 				withEnv(["AMIA_SERVER_DIR=${env.LIVE_SERVER_BASE}/..".toString()]) {
