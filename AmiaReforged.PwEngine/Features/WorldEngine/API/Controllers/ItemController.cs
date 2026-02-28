@@ -167,6 +167,29 @@ public class ItemController
     }
 
     /// <summary>
+    /// Export all item blueprints (optionally filtered) as a JSON array.
+    /// GET /api/worldengine/items/export?search=
+    /// </summary>
+    [HttpGet("/api/worldengine/items/export")]
+    public static async Task<ApiResult> Export(RouteContext ctx)
+    {
+        var repo = ResolveRepository();
+        string? search = ctx.GetQueryParam("search");
+
+        List<ItemBlueprint> items;
+        if (!string.IsNullOrWhiteSpace(search) && repo is DbItemDefinitionRepository dbRepo)
+        {
+            items = dbRepo.Search(search, 1, int.MaxValue, out _);
+        }
+        else
+        {
+            items = repo.AllItems();
+        }
+
+        return await Task.FromResult(new ApiResult(200, items.Select(ToDto).ToArray()));
+    }
+
+    /// <summary>
     /// Bulk import item blueprints from JSON.
     /// POST /api/worldengine/items/import
     /// Body: JSON array of item blueprints (same format as existing JSON files).

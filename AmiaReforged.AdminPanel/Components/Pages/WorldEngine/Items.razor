@@ -6,6 +6,7 @@
 @inject ItemApiService Api
 @inject IWorldEngineEndpointService EndpointService
 @inject ILogger<Items> Logger
+@inject IJSRuntime JS
 @rendermode InteractiveServer
 
 <PageTitle>Items - World Engine</PageTitle>
@@ -32,6 +33,7 @@
                 <button class="btn btn-secondary btn-sm" @onclick="RefreshItems">Refresh</button>
                 <button class="btn btn-primary btn-sm" @onclick="ShowCreateModal">+ New Item</button>
                 <button class="btn btn-info btn-sm" @onclick="() => _showImportModal = true">Import JSON</button>
+                <button class="btn btn-success btn-sm" @onclick="ExportItems" disabled="@_isExporting">@(_isExporting ? "Exporting..." : "Export JSON")</button>
             }
             <a href="/" class="btn btn-secondary btn-sm">← Dashboard</a>
         </div>
@@ -398,6 +400,9 @@
     private bool _showDeleteConfirm;
     private ItemBlueprintDto? _deleteTarget;
 
+    // ===== Export =====
+    private bool _isExporting;
+
     // ===== Lifecycle =====
 
     protected override async Task OnInitializedAsync()
@@ -536,7 +541,7 @@
             if (_isCreating)
                 await Api.CreateAsync(_editItem);
             else
-                await Api.UpdateAsync(_editItem.ResRef, _editItem);
+                await Api.UpdateAsync(_editItem.ItemTag, _editItem);
 
             _success = _isCreating ? $"Item '{_editItem.Name}' created." : $"Item '{_editItem.Name}' updated.";
             _showEditModal = false;
@@ -622,6 +627,40 @@
         _showImportModal = false;
         _importJson = "";
         _importResult = null;
+    }
+
+    // ===== Export =====
+
+    private async Task ExportItems()
+    {
+        _isExporting = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            string json = await Api.ExportJsonAsync(_searchTerm);
+            string fileName = $"items-export-{DateTime.UtcNow:yyyyMMdd-HHmmss}.json";
+            await DownloadFileAsync(fileName, json);
+            _success = "Export downloaded successfully.";
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to export items");
+        }
+        finally
+        {
+            _isExporting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DownloadFileAsync(string fileName, string content)
+    {
+        var bytes = System.Text.Encoding.UTF8.GetBytes(content);
+        var base64 = Convert.ToBase64String(bytes);
+        await JS.InvokeVoidAsync("adminPanelDownloadFile", fileName, base64);
     }
 
     // ===== Delete =====

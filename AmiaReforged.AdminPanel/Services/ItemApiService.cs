@@ -71,6 +71,32 @@ public class ItemApiService
         return await PostAsync<ImportResult>($"{ItemsBase}/import", jsonContent, raw: true);
     }
 
+    public async Task<string> ExportJsonAsync(string? search = null)
+    {
+        string url = $"{ItemsBase}/export";
+        if (!string.IsNullOrWhiteSpace(search))
+            url += $"?search={Uri.EscapeDataString(search)}";
+
+        var (baseUri, apiKey) = await ResolveEndpointAsync();
+        var http = _httpClientFactory.CreateClient("WorldEngine");
+        using var request = CreateRequest(HttpMethod.Get, baseUri, url, apiKey);
+        var response = await http.SendAsync(request);
+        await EnsureSuccessOrThrow(response);
+
+        // Get the raw JSON for download (pretty-printed)
+        string raw = await response.Content.ReadAsStringAsync();
+        // Re-serialize for pretty printing
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<JsonElement>(raw);
+            return JsonSerializer.Serialize(parsed, new JsonSerializerOptions { WriteIndented = true });
+        }
+        catch
+        {
+            return raw;
+        }
+    }
+
     // ==================== HTTP Helpers ====================
 
     private async Task<(Uri BaseUri, string ApiKey)> ResolveEndpointAsync()
