@@ -145,7 +145,7 @@
     @if (_showEditModal)
     {
         <div class="modal-backdrop" @onclick="CloseEditModal">
-        <div class="modal-dialog" @onclick:stopPropagation="true" style="max-width:700px;max-height:85vh;overflow-y:auto;margin:5vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+        <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:700px;max-height:85vh;overflow-y:auto;margin:5vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
             <h2>@(_isCreating ? "Create Item Blueprint" : $"Edit: {_editItem.Name}")</h2>
 
             <div style="display:flex;flex-direction:column;gap:12px;margin-top:15px">
@@ -294,7 +294,7 @@
     @if (_showImportModal)
     {
         <div class="modal-backdrop" @onclick="() => _showImportModal = false">
-        <div class="modal-dialog" @onclick:stopPropagation="true" style="max-width:600px;max-height:80vh;overflow-y:auto;margin:10vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+        <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:600px;max-height:80vh;overflow-y:auto;margin:10vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
             <h2>Import Item Blueprints</h2>
             <p style="color:var(--text-secondary);font-size:0.9rem">
                 Paste or upload a JSON file containing item blueprint definitions. The JSON should be an array of item objects
@@ -347,7 +347,7 @@
     @if (_showDeleteConfirm)
     {
         <div class="modal-backdrop" @onclick="() => _showDeleteConfirm = false">
-        <div class="modal-dialog" @onclick:stopPropagation="true" style="max-width:450px;margin:15vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+        <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:450px;margin:15vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
             <h3>Confirm Delete</h3>
             <p>Are you sure you want to delete item <strong>@_deleteTarget?.Name</strong> (<code>@_deleteTarget?.ItemTag</code>)?</p>
             <p style="color:var(--text-secondary);font-size:0.9rem">This action cannot be undone.</p>
