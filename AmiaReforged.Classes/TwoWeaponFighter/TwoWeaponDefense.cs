@@ -17,8 +17,8 @@ public static class TwoWeaponDefense
 
         int defenseAc = twfLevel switch
         {
-            > 1 and < 3 => 1,
-            > 3 and < 5 => 2,
+            >= 1 and < 3 => 1,
+            >= 3 and < 5 => 2,
             >= 5 => 4,
             _ => 1
         };
