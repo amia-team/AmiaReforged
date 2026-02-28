@@ -123,8 +123,12 @@ public class DynamicEncounterService
         if (!_profileCache.TryGetValue(areaResRef, out SpawnProfile? profile))
         {
             // No active profile — let legacy system handle it
+            Log.Info("Area '{AreaResRef}': no active dynamic profile found — using legacy spawn system.", areaResRef);
             return;
         }
+
+        Log.Info("Area '{AreaResRef}': active dynamic profile '{ProfileName}' found — using new spawn system.",
+            areaResRef, profile.Name);
 
         // Check no_spawn
         if (NWScript.GetLocalInt(area, "no_spawn") == NWScript.TRUE) return;
