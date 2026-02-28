@@ -43,7 +43,7 @@ public class CustomSummonListener
         }
 
         uint targetObject = NWScript.GetItemActivatedTarget();
-        NwCreature? targetCreature = targetObject.ToNwObject<NwCreature>();
+        NwObject? targetNwObject = targetObject.ToNwObject<NwObject>();
         uint widgetObject = NWScript.GetItemActivated();
         NwItem? widget = widgetObject.ToNwObject<NwItem>();
 
@@ -56,19 +56,20 @@ public class CustomSummonListener
         // DM Mode - Adding summons to the widget
         if (player.IsDM)
         {
+            NwCreature? targetCreature = targetNwObject as NwCreature;
             HandleDmMode(player, widget, targetCreature);
             return;
         }
 
-        // Player used item on themselves - open selection window
-        if (targetObject == pcObject)
+        // Player targeted the ground - summon the creature
+        if (targetObject == NWScript.OBJECT_INVALID)
         {
-            OpenSummonSelectionWindow(player, widget);
+            HandlePlayerSummon(player, widget);
             return;
         }
 
-        // Player is summoning
-        HandlePlayerSummon(player, widget, targetObject);
+        // Any other target (self, widget, another creature, etc.) - open selection window
+        OpenSummonSelectionWindow(player, widget);
     }
 
     private void HandleDmMode(NwPlayer player, NwItem widget, NwCreature? targetCreature)
@@ -196,7 +197,7 @@ public class CustomSummonListener
         player.SendServerMessage("Opening Summon Selection...", ColorConstants.Cyan);
     }
 
-    private void HandlePlayerSummon(NwPlayer player, NwItem widget, uint targetLocation)
+    private void HandlePlayerSummon(NwPlayer player, NwItem widget)
     {
         // Check if player already has a summon
         if (player.ControlledCreature?.Associates.Any(a => a.Tag == "cust_summon") == true)
