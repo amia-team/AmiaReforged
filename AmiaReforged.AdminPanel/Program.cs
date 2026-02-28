@@ -57,6 +57,8 @@ public class Program
             });
             builder.Services.AddSingleton<IWorldEngineEndpointService, WorldEngineEndpointService>();
             builder.Services.AddScoped<EncounterApiService>();
+            builder.Services.AddScoped<ItemApiService>();
+            builder.Services.AddScoped<ResourceNodeApiService>();
 
             // Cookie Authentication
             builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

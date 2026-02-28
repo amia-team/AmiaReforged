@@ -12,6 +12,12 @@ public class RouteContext
     public Dictionary<string, string> RouteValues { get; }
     public CancellationToken CancellationToken { get; }
 
+    /// <summary>
+    /// Service provider for resolving dependencies in controllers.
+    /// Set by the HTTP server when dispatching requests.
+    /// </summary>
+    public IServiceProvider? Services { get; set; }
+
     public RouteContext(
         HttpListenerRequest? request,
         Dictionary<string, string> routeValues,

@@ -4,7 +4,6 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementati
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.Services;
 using Anvil.Services;
 using NLog;
 using NWN.Core.NWNX;
@@ -16,16 +15,13 @@ public class EconomyLoaderService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    private readonly ResourceDefinitionLoadingService _resourceLoader;
-    private readonly ItemDefinitionLoadingService _itemLoader;
     private readonly ItemBlueprintLoadingService _blueprintLoader;
     private readonly IndustryDefinitionLoadingService _industryLoader;
     private readonly RegionDefinitionLoadingService _regionLoader;
     private readonly NpcShopLoader _shopLoader;
     private readonly CoinhouseLoader _coinhouseLoader;
 
-    public EconomyLoaderService(ResourceDefinitionLoadingService resourceLoader,
-        ItemDefinitionLoadingService itemLoader,
+    public EconomyLoaderService(
         ItemBlueprintLoadingService blueprintLoader,
         IndustryDefinitionLoadingService industryLoader,
         RegionDefinitionLoadingService regionLoader,
@@ -37,8 +33,6 @@ public class EconomyLoaderService
 
         Environment.SetEnvironmentVariable("RESOURCE_PATH", resourcePath);
 
-        _resourceLoader = resourceLoader;
-        _itemLoader = itemLoader;
         _blueprintLoader = blueprintLoader;
         _industryLoader = industryLoader;
         _regionLoader = regionLoader;
@@ -71,17 +65,13 @@ public class EconomyLoaderService
         _industryLoader.Load();
         LogLoadResults("Industries", _industryLoader.Failures());
 
-        Log.Info("Loading Item Definitions...");
-        _itemLoader.Load();
-        LogLoadResults("Item Definitions", _itemLoader.Failures());
+        // Item definitions and resource node definitions are now loaded from the database.
+        // They are managed via the WorldEngine admin panel and persisted in PostgreSQL.
+        Log.Info("Item definitions and resource nodes are now database-backed (skipping JSON loading)");
 
         Log.Info("Loading Item Blueprints...");
         _blueprintLoader.Load();
         LogLoadResults("Item Blueprints", _blueprintLoader.Failures());
-
-        Log.Info("Loading Resources...");
-        _resourceLoader.Load();
-        LogLoadResults("Resources", _resourceLoader.Failures());
 
         Log.Info("Loading Regions...");
         _regionLoader.Load();

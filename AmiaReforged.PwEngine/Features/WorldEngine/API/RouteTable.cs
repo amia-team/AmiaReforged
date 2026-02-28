@@ -192,7 +192,8 @@ public class RouteTable
         string method,
         string path,
         HttpListenerRequest request,
-        CancellationToken ct)
+        CancellationToken ct,
+        IServiceProvider? serviceProvider = null)
     {
         // Find matching route
         CompiledRoute? route = _routes.FirstOrDefault(r => r.Matches(method, path));
@@ -210,7 +211,10 @@ public class RouteTable
         Dictionary<string, string> routeValues = route.ExtractRouteValues(path);
 
         // Create context
-        RouteContext context = new RouteContext(request, routeValues, ct);
+        RouteContext context = new RouteContext(request, routeValues, ct)
+        {
+            Services = serviceProvider
+        };
 
         // Execute handler
         try

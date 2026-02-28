@@ -3,7 +3,10 @@ using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes;
 
-[ServiceBinding(typeof(IResourceNodeDefinitionRepository))]
+/// <summary>
+/// In-memory implementation retained for unit testing and caching scenarios.
+/// The DB-backed DbResourceNodeDefinitionRepository is now the active service binding.
+/// </summary>
 public class InMemoryResourceNodeDefinitionRepository : IResourceNodeDefinitionRepository
 {
     private readonly Dictionary<string, ResourceNodeDefinition> _definitions = new();

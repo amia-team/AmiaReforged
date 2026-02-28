@@ -17,17 +17,20 @@ public class WorldEngineHttpServer : IDisposable
     private readonly Logger _logger;
     private readonly CancellationTokenSource _cts;
     private readonly string _apiKey;
+    private readonly IServiceProvider? _serviceProvider;
     private bool _isRunning;
 
     public WorldEngineHttpServer(
         IApiRouter router,
         Logger logger,
         string apiKey,
-        int port = 8080)
+        int port = 8080,
+        IServiceProvider? serviceProvider = null)
     {
         _router = router ?? throw new ArgumentNullException(nameof(router));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _apiKey = apiKey ?? throw new ArgumentNullException(nameof(apiKey));
+        _serviceProvider = serviceProvider;
         _cts = new CancellationTokenSource();
 
         _listener = new HttpListener();
@@ -113,7 +116,7 @@ public class WorldEngineHttpServer : IDisposable
             }
 
             // Route to handler
-            ApiResult result = await _router.RouteAsync(method, path, request, _cts.Token);
+            ApiResult result = await _router.RouteAsync(method, path, request, _cts.Token, _serviceProvider);
 
             // Write response
             await WriteResponseAsync(response, result.StatusCode, result.Data);

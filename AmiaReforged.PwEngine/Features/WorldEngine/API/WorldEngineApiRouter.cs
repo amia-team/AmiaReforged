@@ -41,12 +41,13 @@ public class WorldEngineApiRouter : IApiRouter
         string method,
         string path,
         HttpListenerRequest request,
-        CancellationToken ct)
+        CancellationToken ct,
+        IServiceProvider? serviceProvider = null)
     {
         _logger.Debug("Routing {Method} {Path}", method, path);
 
         // Try to dispatch using route table
-        ApiResult? result = await _routeTable.DispatchAsync(method, path, request, ct);
+        ApiResult? result = await _routeTable.DispatchAsync(method, path, request, ct, serviceProvider);
 
         if (result != null)
         {

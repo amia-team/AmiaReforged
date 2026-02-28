@@ -1,0 +1,659 @@
+@page "/worldengine/items"
+@using Microsoft.AspNetCore.Authorization
+@using AmiaReforged.AdminPanel.Models
+@using AmiaReforged.AdminPanel.Services
+@attribute [Authorize]
+@inject ItemApiService Api
+@inject IWorldEngineEndpointService EndpointService
+@inject ILogger<Items> Logger
+@rendermode InteractiveServer
+
+<PageTitle>Items - World Engine</PageTitle>
+
+<div class="encounters-page">
+    <div class="dashboard-header">
+        <h1>Item Blueprints</h1>
+        <div class="header-actions">
+            @if (_endpoints.Count > 0)
+            {
+                <div class="instance-selector">
+                    <label class="instance-label">Server:</label>
+                    <select class="form-control form-control-sm" value="@(_selectedEndpoint?.Id.ToString() ?? "")" @onchange="OnEndpointChanged">
+                        <option value="">— Select —</option>
+                        @foreach (var ep in _endpoints)
+                        {
+                            <option value="@ep.Id">@ep.Name</option>
+                        }
+                    </select>
+                </div>
+            }
+            @if (_selectedEndpoint != null)
+            {
+                <button class="btn btn-secondary btn-sm" @onclick="RefreshItems">Refresh</button>
+                <button class="btn btn-primary btn-sm" @onclick="ShowCreateModal">+ New Item</button>
+                <button class="btn btn-info btn-sm" @onclick="() => _showImportModal = true">Import JSON</button>
+            }
+            <a href="/" class="btn btn-secondary btn-sm">← Dashboard</a>
+        </div>
+    </div>
+
+    @if (_error != null)
+    {
+        <div class="alert alert-danger">@_error <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _error = null">Dismiss</button></div>
+    }
+    @if (_success != null)
+    {
+        <div class="alert alert-success">@_success <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _success = null">Dismiss</button></div>
+    }
+
+    @if (_selectedEndpoint == null)
+    {
+        <div class="section" style="text-align:center;padding:60px 20px">
+            @if (_endpoints.Count == 0)
+            {
+                <p style="color:var(--text-secondary);font-size:1.1rem">
+                    No WorldEngine servers configured. Go to
+                    <a href="/encounters">Encounters</a> to add one.
+                </p>
+            }
+            else
+            {
+                <p style="color:var(--text-secondary);font-size:1.1rem">Select a server from the dropdown above to manage item blueprints.</p>
+            }
+        </div>
+    }
+
+    @* ===== Search & Filter ===== *@
+    @if (_selectedEndpoint != null)
+    {
+        <div class="section" style="margin-bottom:20px">
+            <div class="form-row" style="display:flex;gap:10px;align-items:end">
+                <div class="form-group" style="flex:1">
+                    <label>Search</label>
+                    <input class="form-control" @bind="_searchTerm" @bind:event="oninput"
+                           placeholder="Search by name, tag, or ResRef..." />
+                </div>
+                <button class="btn btn-primary btn-sm" @onclick="SearchItems" disabled="@_isLoading">Search</button>
+            </div>
+        </div>
+
+        @* ===== Items Table ===== *@
+        @if (_isLoading)
+        {
+            <div class="section" style="text-align:center;padding:40px"><em>Loading...</em></div>
+        }
+        else if (_items.Count == 0)
+        {
+            <div class="section" style="text-align:center;padding:40px">
+                <p style="color:var(--text-secondary)">No item blueprints found.</p>
+            </div>
+        }
+        else
+        {
+            <div class="section">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ResRef</th>
+                            <th>Tag</th>
+                            <th>Name</th>
+                            <th>Job Type</th>
+                            <th>Base Value</th>
+                            <th>Source</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in _items)
+                        {
+                            <tr>
+                                <td style="font-family:monospace;font-size:0.9rem">@item.ResRef</td>
+                                <td style="font-family:monospace;font-size:0.9rem">@item.ItemTag</td>
+                                <td>@item.Name</td>
+                                <td>@(item.JobSystemType ?? "—")</td>
+                                <td>@item.BaseValue</td>
+                                <td style="color:var(--text-secondary);font-size:0.85rem">@(item.SourceFile ?? "—")</td>
+                                <td class="actions">
+                                    <button class="btn btn-sm btn-secondary" @onclick="() => ShowEditModal(item)">Edit</button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(item)">Delete</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                @* Pagination *@
+                @if (_totalCount > _pageSize)
+                {
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+                        <span style="color:var(--text-secondary);font-size:0.9rem">
+                            Showing @((_page - 1) * _pageSize + 1)–@(Math.Min(_page * _pageSize, _totalCount)) of @_totalCount
+                        </span>
+                        <div style="display:flex;gap:5px">
+                            <button class="btn btn-sm btn-secondary" disabled="@(_page <= 1)" @onclick="PrevPage">← Prev</button>
+                            <button class="btn btn-sm btn-secondary" disabled="@(_page * _pageSize >= _totalCount)" @onclick="NextPage">Next →</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+
+    @* ===== Create / Edit Modal ===== *@
+    @if (_showEditModal)
+    {
+        <div class="modal-backdrop" @onclick="CloseEditModal"></div>
+        <div class="modal-dialog" @onclick:stopPropagation="true" style="max-width:700px;max-height:85vh;overflow-y:auto;margin:5vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+            <h2>@(_isCreating ? "Create Item Blueprint" : $"Edit: {_editItem.Name}")</h2>
+
+            <div style="display:flex;flex-direction:column;gap:12px;margin-top:15px">
+                <div class="form-row" style="display:flex;gap:10px">
+                    <div class="form-group" style="flex:1">
+                        <label>ResRef <small style="color:var(--text-secondary)">(max 16 chars)</small></label>
+                        <input class="form-control" @bind="_editItem.ResRef" maxlength="16" disabled="@(!_isCreating)" />
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Item Tag</label>
+                        <input class="form-control" @bind="_editItem.ItemTag" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Name</label>
+                    <input class="form-control" @bind="_editItem.Name" />
+                </div>
+
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea class="form-control" rows="3" @bind="_editItem.Description"></textarea>
+                </div>
+
+                <div class="form-row" style="display:flex;gap:10px">
+                    <div class="form-group" style="flex:1">
+                        <label>Job System Type</label>
+                        <input class="form-control" @bind="_editItem.JobSystemType" placeholder="e.g. Woodworking" />
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Base Item Type (int)</label>
+                        <input class="form-control" type="number" @bind="_editItem.BaseItemType" />
+                    </div>
+                </div>
+
+                <div class="form-row" style="display:flex;gap:10px">
+                    <div class="form-group" style="flex:1">
+                        <label>Base Value</label>
+                        <input class="form-control" type="number" @bind="_editItem.BaseValue" />
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Weight Increase Constant</label>
+                        <input class="form-control" type="number" @bind="_editItem.WeightIncreaseConstant" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Materials <small style="color:var(--text-secondary)">(comma-separated)</small></label>
+                    <input class="form-control" value="@(string.Join(", ", _editItem.Materials ?? []))"
+                           @onchange="OnMaterialsChanged" placeholder="e.g. Iron, Wood, Leather" />
+                </div>
+
+                <div class="form-group">
+                    <label>Source File</label>
+                    <input class="form-control" @bind="_editItem.SourceFile" placeholder="e.g. items/weapons.json" />
+                </div>
+
+                @* ===== Appearance Section ===== *@
+                <div style="border:1px solid var(--border-color);border-radius:8px;padding:15px;margin-top:5px">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <h4 style="margin:0">Appearance</h4>
+                        @if (_editItem.Appearance == null)
+                        {
+                            <button class="btn btn-sm btn-outline-info" @onclick="AddAppearance">Add Appearance</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-outline-danger" @onclick="RemoveAppearance">Remove</button>
+                        }
+                    </div>
+
+                    @if (_editItem.Appearance != null)
+                    {
+                        <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+                            <div class="form-row" style="display:flex;gap:10px">
+                                <div class="form-group" style="flex:1">
+                                    <label>Model Type</label>
+                                    <input class="form-control" type="number" @bind="_editItem.Appearance.ModelType" />
+                                </div>
+                                <div class="form-group" style="flex:1">
+                                    <label>Simple Model Number</label>
+                                    <input class="form-control" type="number" value="@(_editItem.Appearance.SimpleModelNumber)"
+                                           @onchange="OnSimpleModelChanged" />
+                                </div>
+                            </div>
+
+                            @* Weapon Part Data *@
+                            <div style="border:1px solid var(--border-color);border-radius:6px;padding:10px;margin-top:5px">
+                                <div style="display:flex;justify-content:space-between;align-items:center">
+                                    <strong>Weapon Parts</strong>
+                                    @if (_editItem.Appearance.Data == null)
+                                    {
+                                        <button class="btn btn-sm btn-outline-info" @onclick="AddWeaponParts">Add</button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="RemoveWeaponParts">Remove</button>
+                                    }
+                                </div>
+                                @if (_editItem.Appearance.Data != null)
+                                {
+                                    <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+                                        <div class="form-group">
+                                            <label>Top Model</label>
+                                            <input class="form-control" type="number" @bind="_editItem.Appearance.Data.TopPartModel" />
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Middle Model</label>
+                                            <input class="form-control" type="number" @bind="_editItem.Appearance.Data.MiddlePartModel" />
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Bottom Model</label>
+                                            <input class="form-control" type="number" @bind="_editItem.Appearance.Data.BottomPartModel" />
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Top Color</label>
+                                            <input class="form-control" type="number" @bind="_editItem.Appearance.Data.TopPartColor" />
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Middle Color</label>
+                                            <input class="form-control" type="number" @bind="_editItem.Appearance.Data.MiddlePartColor" />
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Bottom Color</label>
+                                            <input class="form-control" type="number" @bind="_editItem.Appearance.Data.BottomPartColor" />
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="form-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+                <button class="btn btn-secondary" @onclick="CloseEditModal">Cancel</button>
+                <button class="btn btn-primary" @onclick="SaveItem" disabled="@_isSaving">
+                    @(_isSaving ? "Saving..." : (_isCreating ? "Create" : "Save Changes"))
+                </button>
+            </div>
+        </div>
+    }
+
+    @* ===== Import Modal ===== *@
+    @if (_showImportModal)
+    {
+        <div class="modal-backdrop" @onclick="() => _showImportModal = false"></div>
+        <div class="modal-dialog" @onclick:stopPropagation="true" style="max-width:600px;max-height:80vh;overflow-y:auto;margin:10vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+            <h2>Import Item Blueprints</h2>
+            <p style="color:var(--text-secondary);font-size:0.9rem">
+                Paste or upload a JSON file containing item blueprint definitions. The JSON should be an array of item objects
+                matching the existing item definition format.
+            </p>
+
+            <div class="form-group" style="margin-top:15px">
+                <label>Upload JSON File</label>
+                <InputFile OnChange="OnImportFileSelected" accept=".json" class="form-control" />
+            </div>
+
+            <div class="form-group" style="margin-top:10px">
+                <label>Or paste JSON directly</label>
+                <textarea class="form-control" rows="10" @bind="_importJson"
+                          placeholder='[{"ResRef":"my_item","ItemTag":"my_tag","Name":"My Item",...}]'
+                          style="font-family:monospace;font-size:0.85rem"></textarea>
+            </div>
+
+            @if (_importResult != null)
+            {
+                <div class="alert @(_importResult.Failed > 0 ? "alert-warning" : "alert-success")" style="margin-top:15px">
+                    <strong>Import complete:</strong> @_importResult.Succeeded succeeded, @_importResult.Failed failed out of @_importResult.Total total.
+                    @if (_importResult.Errors.Count > 0)
+                    {
+                        <ul style="margin-top:8px;margin-bottom:0">
+                            @foreach (var err in _importResult.Errors.Take(10))
+                            {
+                                <li style="font-size:0.85rem">@err</li>
+                            }
+                            @if (_importResult.Errors.Count > 10)
+                            {
+                                <li style="font-size:0.85rem;color:var(--text-secondary)">...and @(_importResult.Errors.Count - 10) more</li>
+                            }
+                        </ul>
+                    }
+                </div>
+            }
+
+            <div class="form-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+                <button class="btn btn-secondary" @onclick="CloseImportModal">Close</button>
+                <button class="btn btn-primary" @onclick="RunImport" disabled="@(_isSaving || string.IsNullOrWhiteSpace(_importJson))">
+                    @(_isSaving ? "Importing..." : "Import")
+                </button>
+            </div>
+        </div>
+    }
+
+    @* ===== Delete Confirmation Modal ===== *@
+    @if (_showDeleteConfirm)
+    {
+        <div class="modal-backdrop" @onclick="() => _showDeleteConfirm = false"></div>
+        <div class="modal-dialog" @onclick:stopPropagation="true" style="max-width:450px;margin:15vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+            <h3>Confirm Delete</h3>
+            <p>Are you sure you want to delete item <strong>@_deleteTarget?.Name</strong> (<code>@_deleteTarget?.ItemTag</code>)?</p>
+            <p style="color:var(--text-secondary);font-size:0.9rem">This action cannot be undone.</p>
+            <div class="form-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+                <button class="btn btn-secondary" @onclick="() => _showDeleteConfirm = false">Cancel</button>
+                <button class="btn btn-danger" @onclick="DeleteItem" disabled="@_isSaving">
+                    @(_isSaving ? "Deleting..." : "Delete")
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .modal-backdrop {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 1040;
+    }
+</style>
+
+@code {
+    // ===== Endpoint State =====
+    private List<WorldEngineEndpoint> _endpoints = [];
+    private WorldEngineEndpoint? _selectedEndpoint;
+
+    // ===== Data =====
+    private List<ItemBlueprintDto> _items = [];
+    private int _totalCount;
+    private int _page = 1;
+    private int _pageSize = 50;
+    private string _searchTerm = "";
+
+    // ===== UI State =====
+    private bool _isLoading;
+    private bool _isSaving;
+    private string? _error;
+    private string? _success;
+
+    // ===== Edit Modal =====
+    private bool _showEditModal;
+    private bool _isCreating;
+    private ItemBlueprintDto _editItem = new();
+
+    // ===== Import Modal =====
+    private bool _showImportModal;
+    private string _importJson = "";
+    private ImportResult? _importResult;
+
+    // ===== Delete Confirmation =====
+    private bool _showDeleteConfirm;
+    private ItemBlueprintDto? _deleteTarget;
+
+    // ===== Lifecycle =====
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshEndpoints();
+    }
+
+    // ===== Endpoint Handling =====
+
+    private async Task RefreshEndpoints()
+    {
+        var all = await EndpointService.GetAllEndpointsAsync();
+        _endpoints = all.Where(e => e.IsEnabled).ToList();
+
+        if (_selectedEndpoint != null && !_endpoints.Any(e => e.Id == _selectedEndpoint.Id))
+            _selectedEndpoint = null;
+
+        StateHasChanged();
+    }
+
+    private async Task OnEndpointChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
+            Api.SelectEndpoint(id);
+            _page = 1;
+            await RefreshItems();
+        }
+        else
+        {
+            _selectedEndpoint = null;
+            Api.SelectEndpoint(null);
+            _items.Clear();
+        }
+    }
+
+    // ===== Data Loading =====
+
+    private async Task RefreshItems()
+    {
+        if (_selectedEndpoint == null) return;
+        _isLoading = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            var result = await Api.GetAllAsync(_searchTerm, _page, _pageSize);
+            _items = result.Items;
+            _totalCount = result.TotalCount;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to load items");
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SearchItems()
+    {
+        _page = 1;
+        await RefreshItems();
+    }
+
+    private async Task PrevPage()
+    {
+        if (_page > 1) { _page--; await RefreshItems(); }
+    }
+
+    private async Task NextPage()
+    {
+        if (_page * _pageSize < _totalCount) { _page++; await RefreshItems(); }
+    }
+
+    // ===== Create / Edit Modal =====
+
+    private void ShowCreateModal()
+    {
+        _isCreating = true;
+        _editItem = new ItemBlueprintDto { BaseValue = 1, WeightIncreaseConstant = -1 };
+        _showEditModal = true;
+    }
+
+    private void ShowEditModal(ItemBlueprintDto item)
+    {
+        _isCreating = false;
+        // Deep-ish clone to avoid modifying list data directly
+        _editItem = new ItemBlueprintDto
+        {
+            ResRef = item.ResRef,
+            ItemTag = item.ItemTag,
+            Name = item.Name,
+            Description = item.Description,
+            Materials = item.Materials?.ToArray(),
+            JobSystemType = item.JobSystemType,
+            BaseItemType = item.BaseItemType,
+            BaseValue = item.BaseValue,
+            WeightIncreaseConstant = item.WeightIncreaseConstant,
+            SourceFile = item.SourceFile,
+            Appearance = item.Appearance != null ? new AppearanceDataDto
+            {
+                ModelType = item.Appearance.ModelType,
+                SimpleModelNumber = item.Appearance.SimpleModelNumber,
+                Data = item.Appearance.Data != null ? new WeaponPartDataDto
+                {
+                    TopPartModel = item.Appearance.Data.TopPartModel,
+                    MiddlePartModel = item.Appearance.Data.MiddlePartModel,
+                    BottomPartModel = item.Appearance.Data.BottomPartModel,
+                    TopPartColor = item.Appearance.Data.TopPartColor,
+                    MiddlePartColor = item.Appearance.Data.MiddlePartColor,
+                    BottomPartColor = item.Appearance.Data.BottomPartColor,
+                } : null,
+            } : null,
+        };
+        _showEditModal = true;
+    }
+
+    private void CloseEditModal()
+    {
+        _showEditModal = false;
+        _editItem = new();
+    }
+
+    private async Task SaveItem()
+    {
+        _isSaving = true;
+        _error = null;
+        try
+        {
+            if (_isCreating)
+                await Api.CreateAsync(_editItem);
+            else
+                await Api.UpdateAsync(_editItem.ResRef, _editItem);
+
+            _success = _isCreating ? $"Item '{_editItem.Name}' created." : $"Item '{_editItem.Name}' updated.";
+            _showEditModal = false;
+            await RefreshItems();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to save item");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    // ===== Appearance Helpers =====
+
+    private void AddAppearance() => _editItem.Appearance = new AppearanceDataDto();
+    private void RemoveAppearance() => _editItem.Appearance = null;
+    private void AddWeaponParts() { if (_editItem.Appearance != null) _editItem.Appearance.Data = new WeaponPartDataDto(); }
+    private void RemoveWeaponParts() { if (_editItem.Appearance != null) _editItem.Appearance.Data = null; }
+
+    private void OnSimpleModelChanged(ChangeEventArgs e)
+    {
+        if (_editItem.Appearance == null) return;
+        _editItem.Appearance.SimpleModelNumber = int.TryParse(e.Value?.ToString(), out var v) ? v : null;
+    }
+
+    private void OnMaterialsChanged(ChangeEventArgs e)
+    {
+        var raw = e.Value?.ToString() ?? "";
+        _editItem.Materials = string.IsNullOrWhiteSpace(raw)
+            ? null
+            : raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    }
+
+    // ===== Import =====
+
+    private async Task OnImportFileSelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            var file = e.File;
+            using var reader = new StreamReader(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
+            _importJson = await reader.ReadToEndAsync();
+            _importResult = null;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to read file: {ex.Message}";
+        }
+    }
+
+    private async Task RunImport()
+    {
+        if (string.IsNullOrWhiteSpace(_importJson)) return;
+        _isSaving = true;
+        _error = null;
+        try
+        {
+            _importResult = await Api.ImportJsonAsync(_importJson);
+            if (_importResult is { Failed: 0 })
+                _success = $"Successfully imported {_importResult.Succeeded} items.";
+            await RefreshItems();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to import items");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseImportModal()
+    {
+        _showImportModal = false;
+        _importJson = "";
+        _importResult = null;
+    }
+
+    // ===== Delete =====
+
+    private void ConfirmDelete(ItemBlueprintDto item)
+    {
+        _deleteTarget = item;
+        _showDeleteConfirm = true;
+    }
+
+    private async Task DeleteItem()
+    {
+        if (_deleteTarget == null) return;
+        _isSaving = true;
+        _error = null;
+        try
+        {
+            await Api.DeleteAsync(_deleteTarget.ItemTag);
+            _success = $"Deleted item '{_deleteTarget.Name}'.";
+            _showDeleteConfirm = false;
+            _deleteTarget = null;
+            await RefreshItems();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to delete item");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+}

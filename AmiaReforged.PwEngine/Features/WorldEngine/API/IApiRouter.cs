@@ -11,6 +11,7 @@ public interface IApiRouter
         string method,
         string path,
         HttpListenerRequest request,
-        CancellationToken ct);
+        CancellationToken ct,
+        IServiceProvider? serviceProvider = null);
 }
 

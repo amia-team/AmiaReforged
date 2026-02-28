@@ -2,7 +2,10 @@ using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items;
 
-[ServiceBinding(typeof(IItemDefinitionRepository))]
+/// <summary>
+/// In-memory implementation retained for unit testing and caching scenarios.
+/// The DB-backed DbItemDefinitionRepository is now the active service binding.
+/// </summary>
 public class InMemoryItemDefinitionRepository : IItemDefinitionRepository
 {
     private readonly Dictionary<string, ItemData.ItemBlueprint> _itemDefinitions = new(StringComparer.OrdinalIgnoreCase);

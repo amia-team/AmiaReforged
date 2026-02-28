@@ -1,0 +1,701 @@
+@page "/worldengine/resource-nodes"
+@using Microsoft.AspNetCore.Authorization
+@using AmiaReforged.AdminPanel.Models
+@using AmiaReforged.AdminPanel.Services
+@attribute [Authorize]
+@inject ResourceNodeApiService Api
+@inject IWorldEngineEndpointService EndpointService
+@inject ILogger<ResourceNodes> Logger
+@rendermode InteractiveServer
+
+<PageTitle>Resource Nodes - World Engine</PageTitle>
+
+<div class="encounters-page">
+    <div class="dashboard-header">
+        <h1>Resource Node Definitions</h1>
+        <div class="header-actions">
+            @if (_endpoints.Count > 0)
+            {
+                <div class="instance-selector">
+                    <label class="instance-label">Server:</label>
+                    <select class="form-control form-control-sm" value="@(_selectedEndpoint?.Id.ToString() ?? "")" @onchange="OnEndpointChanged">
+                        <option value="">— Select —</option>
+                        @foreach (var ep in _endpoints)
+                        {
+                            <option value="@ep.Id">@ep.Name</option>
+                        }
+                    </select>
+                </div>
+            }
+            @if (_selectedEndpoint != null)
+            {
+                <button class="btn btn-secondary btn-sm" @onclick="RefreshNodes">Refresh</button>
+                <button class="btn btn-primary btn-sm" @onclick="ShowCreateModal">+ New Node</button>
+                <button class="btn btn-info btn-sm" @onclick="() => _showImportModal = true">Import JSON</button>
+            }
+            <a href="/" class="btn btn-secondary btn-sm">← Dashboard</a>
+        </div>
+    </div>
+
+    @if (_error != null)
+    {
+        <div class="alert alert-danger">@_error <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _error = null">Dismiss</button></div>
+    }
+    @if (_success != null)
+    {
+        <div class="alert alert-success">@_success <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _success = null">Dismiss</button></div>
+    }
+
+    @if (_selectedEndpoint == null)
+    {
+        <div class="section" style="text-align:center;padding:60px 20px">
+            @if (_endpoints.Count == 0)
+            {
+                <p style="color:var(--text-secondary);font-size:1.1rem">
+                    No WorldEngine servers configured. Go to
+                    <a href="/encounters">Encounters</a> to add one.
+                </p>
+            }
+            else
+            {
+                <p style="color:var(--text-secondary);font-size:1.1rem">Select a server from the dropdown above to manage resource nodes.</p>
+            }
+        </div>
+    }
+
+    @* ===== Search & Filter ===== *@
+    @if (_selectedEndpoint != null)
+    {
+        <div class="section" style="margin-bottom:20px">
+            <div class="form-row" style="display:flex;gap:10px;align-items:end">
+                <div class="form-group" style="flex:1">
+                    <label>Search</label>
+                    <input class="form-control" @bind="_searchTerm" @bind:event="oninput"
+                           placeholder="Search by name or tag..." />
+                </div>
+                <div class="form-group" style="width:200px">
+                    <label>Type Filter</label>
+                    <select class="form-control" @bind="_typeFilter">
+                        <option value="">All Types</option>
+                        <option value="Flora">Flora</option>
+                        <option value="Mineral">Mineral</option>
+                        <option value="Animal">Animal</option>
+                        <option value="Salvage">Salvage</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary btn-sm" @onclick="SearchNodes" disabled="@_isLoading">Search</button>
+            </div>
+        </div>
+
+        @* ===== Nodes Table ===== *@
+        @if (_isLoading)
+        {
+            <div class="section" style="text-align:center;padding:40px"><em>Loading...</em></div>
+        }
+        else if (_nodes.Count == 0)
+        {
+            <div class="section" style="text-align:center;padding:40px">
+                <p style="color:var(--text-secondary)">No resource node definitions found.</p>
+            </div>
+        }
+        else
+        {
+            <div class="section">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Tag</th>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Uses</th>
+                            <th>Harvest Rounds</th>
+                            <th>Outputs</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var node in _nodes)
+                        {
+                            <tr>
+                                <td style="font-family:monospace;font-size:0.9rem">@node.Tag</td>
+                                <td>@(node.Name ?? "—")</td>
+                                <td>
+                                    <span class="state-badge @GetTypeBadgeClass(node.Type)">@(node.Type ?? "—")</span>
+                                </td>
+                                <td>@node.Uses</td>
+                                <td>@node.BaseHarvestRounds</td>
+                                <td style="color:var(--text-secondary);font-size:0.85rem">@(node.Outputs?.Length ?? 0) output(s)</td>
+                                <td class="actions">
+                                    <button class="btn btn-sm btn-secondary" @onclick="() => ShowEditModal(node)">Edit</button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(node)">Delete</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                @* Pagination *@
+                @if (_totalCount > _pageSize)
+                {
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+                        <span style="color:var(--text-secondary);font-size:0.9rem">
+                            Showing @((_page - 1) * _pageSize + 1)–@(Math.Min(_page * _pageSize, _totalCount)) of @_totalCount
+                        </span>
+                        <div style="display:flex;gap:5px">
+                            <button class="btn btn-sm btn-secondary" disabled="@(_page <= 1)" @onclick="PrevPage">← Prev</button>
+                            <button class="btn btn-sm btn-secondary" disabled="@(_page * _pageSize >= _totalCount)" @onclick="NextPage">Next →</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+
+    @* ===== Create / Edit Modal ===== *@
+    @if (_showEditModal)
+    {
+        <div class="modal-backdrop" @onclick="CloseEditModal"></div>
+        <div class="modal-dialog" @onclick:stopPropagation="true" style="max-width:700px;max-height:85vh;overflow-y:auto;margin:5vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+            <h2>@(_isCreating ? "Create Resource Node" : $"Edit: {_editNode.Name ?? _editNode.Tag}")</h2>
+
+            <div style="display:flex;flex-direction:column;gap:12px;margin-top:15px">
+                <div class="form-row" style="display:flex;gap:10px">
+                    <div class="form-group" style="flex:1">
+                        <label>Tag</label>
+                        <input class="form-control" @bind="_editNode.Tag" disabled="@(!_isCreating)" />
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Name</label>
+                        <input class="form-control" @bind="_editNode.Name" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea class="form-control" rows="3" @bind="_editNode.Description"></textarea>
+                </div>
+
+                <div class="form-row" style="display:flex;gap:10px">
+                    <div class="form-group" style="flex:1">
+                        <label>Type</label>
+                        <select class="form-control" @bind="_editNode.Type">
+                            <option value="">— Select —</option>
+                            <option value="Flora">Flora</option>
+                            <option value="Mineral">Mineral</option>
+                            <option value="Animal">Animal</option>
+                            <option value="Salvage">Salvage</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>PLC Appearance (int)</label>
+                        <input class="form-control" type="number" @bind="_editNode.PlcAppearance" />
+                    </div>
+                </div>
+
+                <div class="form-row" style="display:flex;gap:10px">
+                    <div class="form-group" style="flex:1">
+                        <label>Uses</label>
+                        <input class="form-control" type="number" @bind="_editNode.Uses" />
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Base Harvest Rounds</label>
+                        <input class="form-control" type="number" @bind="_editNode.BaseHarvestRounds" />
+                    </div>
+                </div>
+
+                @* ===== Harvest Requirement ===== *@
+                <div style="border:1px solid var(--border-color);border-radius:8px;padding:15px;margin-top:5px">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <h4 style="margin:0">Harvest Requirement</h4>
+                        @if (_editNode.Requirement == null)
+                        {
+                            <button class="btn btn-sm btn-outline-info" @onclick="AddRequirement">Add Requirement</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-outline-danger" @onclick="RemoveRequirement">Remove</button>
+                        }
+                    </div>
+                    @if (_editNode.Requirement != null)
+                    {
+                        <div style="margin-top:10px;display:flex;gap:10px">
+                            <div class="form-group" style="flex:1">
+                                <label>Required Item Type</label>
+                                <input class="form-control" @bind="_editNode.Requirement.RequiredItemType" placeholder="e.g. Axe" />
+                            </div>
+                            <div class="form-group" style="flex:1">
+                                <label>Required Item Material</label>
+                                <input class="form-control" @bind="_editNode.Requirement.RequiredItemMaterial" placeholder="e.g. Iron" />
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @* ===== Harvest Outputs ===== *@
+                <div style="border:1px solid var(--border-color);border-radius:8px;padding:15px;margin-top:5px">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <h4 style="margin:0">Harvest Outputs</h4>
+                        <button class="btn btn-sm btn-outline-info" @onclick="AddOutput">+ Add Output</button>
+                    </div>
+                    @if (_editOutputs.Count > 0)
+                    {
+                        <table class="table" style="margin-top:10px">
+                            <thead>
+                                <tr>
+                                    <th>Item Tag</th>
+                                    <th>Quantity</th>
+                                    <th>Chance (%)</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < _editOutputs.Count; i++)
+                                {
+                                    var idx = i;
+                                    <tr>
+                                        <td><input class="form-control form-control-sm" @bind="_editOutputs[idx].ItemDefinitionTag" /></td>
+                                        <td><input class="form-control form-control-sm" type="number" @bind="_editOutputs[idx].Quantity" /></td>
+                                        <td><input class="form-control form-control-sm" type="number" @bind="_editOutputs[idx].Chance" min="0" max="100" /></td>
+                                        <td><button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveOutput(idx)">✕</button></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <p style="color:var(--text-secondary);font-size:0.85rem;margin-top:8px">No outputs defined.</p>
+                    }
+                </div>
+
+                @* ===== Flora Properties (conditional) ===== *@
+                @if (string.Equals(_editNode.Type, "Flora", StringComparison.OrdinalIgnoreCase))
+                {
+                    <div style="border:1px solid var(--border-color);border-radius:8px;padding:15px;margin-top:5px">
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <h4 style="margin:0">Flora Properties</h4>
+                            @if (_editNode.FloraProperties == null)
+                            {
+                                <button class="btn btn-sm btn-outline-info" @onclick="AddFloraProperties">Add</button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-outline-danger" @onclick="RemoveFloraProperties">Remove</button>
+                            }
+                        </div>
+                        @if (_editNode.FloraProperties != null)
+                        {
+                            <div style="margin-top:10px;display:flex;gap:10px">
+                                <div class="form-group" style="flex:1">
+                                    <label>Preferred Climate</label>
+                                    <input class="form-control" @bind="_editNode.FloraProperties.PreferredClimate" placeholder="e.g. Temperate" />
+                                </div>
+                                <div class="form-group" style="flex:1">
+                                    <label>Required Soil Quality</label>
+                                    <input class="form-control" @bind="_editNode.FloraProperties.RequiredSoilQuality" placeholder="e.g. Fertile" />
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="form-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+                <button class="btn btn-secondary" @onclick="CloseEditModal">Cancel</button>
+                <button class="btn btn-primary" @onclick="SaveNode" disabled="@_isSaving">
+                    @(_isSaving ? "Saving..." : (_isCreating ? "Create" : "Save Changes"))
+                </button>
+            </div>
+        </div>
+    }
+
+    @* ===== Import Modal ===== *@
+    @if (_showImportModal)
+    {
+        <div class="modal-backdrop" @onclick="() => _showImportModal = false"></div>
+        <div class="modal-dialog" @onclick:stopPropagation="true" style="max-width:600px;max-height:80vh;overflow-y:auto;margin:10vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+            <h2>Import Resource Nodes</h2>
+            <p style="color:var(--text-secondary);font-size:0.9rem">
+                Paste or upload a JSON file containing resource node definitions. The JSON should be an array of node objects
+                matching the existing resource node definition format.
+            </p>
+
+            <div class="form-group" style="margin-top:15px">
+                <label>Upload JSON File</label>
+                <InputFile OnChange="OnImportFileSelected" accept=".json" class="form-control" />
+            </div>
+
+            <div class="form-group" style="margin-top:10px">
+                <label>Or paste JSON directly</label>
+                <textarea class="form-control" rows="10" @bind="_importJson"
+                          placeholder='[{"Tag":"oak_tree","Name":"Oak Tree","Type":"Flora",...}]'
+                          style="font-family:monospace;font-size:0.85rem"></textarea>
+            </div>
+
+            @if (_importResult != null)
+            {
+                <div class="alert @(_importResult.Failed > 0 ? "alert-warning" : "alert-success")" style="margin-top:15px">
+                    <strong>Import complete:</strong> @_importResult.Succeeded succeeded, @_importResult.Failed failed out of @_importResult.Total total.
+                    @if (_importResult.Errors.Count > 0)
+                    {
+                        <ul style="margin-top:8px;margin-bottom:0">
+                            @foreach (var err in _importResult.Errors.Take(10))
+                            {
+                                <li style="font-size:0.85rem">@err</li>
+                            }
+                            @if (_importResult.Errors.Count > 10)
+                            {
+                                <li style="font-size:0.85rem;color:var(--text-secondary)">...and @(_importResult.Errors.Count - 10) more</li>
+                            }
+                        </ul>
+                    }
+                </div>
+            }
+
+            <div class="form-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+                <button class="btn btn-secondary" @onclick="CloseImportModal">Close</button>
+                <button class="btn btn-primary" @onclick="RunImport" disabled="@(_isSaving || string.IsNullOrWhiteSpace(_importJson))">
+                    @(_isSaving ? "Importing..." : "Import")
+                </button>
+            </div>
+        </div>
+    }
+
+    @* ===== Delete Confirmation Modal ===== *@
+    @if (_showDeleteConfirm)
+    {
+        <div class="modal-backdrop" @onclick="() => _showDeleteConfirm = false"></div>
+        <div class="modal-dialog" @onclick:stopPropagation="true" style="max-width:450px;margin:15vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+            <h3>Confirm Delete</h3>
+            <p>Are you sure you want to delete resource node <strong>@(_deleteTarget?.Name ?? _deleteTarget?.Tag)</strong> (<code>@_deleteTarget?.Tag</code>)?</p>
+            <p style="color:var(--text-secondary);font-size:0.9rem">This action cannot be undone.</p>
+            <div class="form-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+                <button class="btn btn-secondary" @onclick="() => _showDeleteConfirm = false">Cancel</button>
+                <button class="btn btn-danger" @onclick="DeleteNode" disabled="@_isSaving">
+                    @(_isSaving ? "Deleting..." : "Delete")
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .modal-backdrop {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 1040;
+    }
+</style>
+
+@code {
+    // ===== Endpoint State =====
+    private List<WorldEngineEndpoint> _endpoints = [];
+    private WorldEngineEndpoint? _selectedEndpoint;
+
+    // ===== Data =====
+    private List<ResourceNodeDefinitionDto> _nodes = [];
+    private int _totalCount;
+    private int _page = 1;
+    private int _pageSize = 50;
+    private string _searchTerm = "";
+    private string _typeFilter = "";
+
+    // ===== UI State =====
+    private bool _isLoading;
+    private bool _isSaving;
+    private string? _error;
+    private string? _success;
+
+    // ===== Edit Modal =====
+    private bool _showEditModal;
+    private bool _isCreating;
+    private ResourceNodeDefinitionDto _editNode = new();
+    private List<HarvestOutputDto> _editOutputs = [];
+
+    // ===== Import Modal =====
+    private bool _showImportModal;
+    private string _importJson = "";
+    private ImportResult? _importResult;
+
+    // ===== Delete Confirmation =====
+    private bool _showDeleteConfirm;
+    private ResourceNodeDefinitionDto? _deleteTarget;
+
+    // ===== Lifecycle =====
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshEndpoints();
+    }
+
+    // ===== Endpoint Handling =====
+
+    private async Task RefreshEndpoints()
+    {
+        var all = await EndpointService.GetAllEndpointsAsync();
+        _endpoints = all.Where(e => e.IsEnabled).ToList();
+
+        if (_selectedEndpoint != null && !_endpoints.Any(e => e.Id == _selectedEndpoint.Id))
+            _selectedEndpoint = null;
+
+        StateHasChanged();
+    }
+
+    private async Task OnEndpointChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
+            Api.SelectEndpoint(id);
+            _page = 1;
+            await RefreshNodes();
+        }
+        else
+        {
+            _selectedEndpoint = null;
+            Api.SelectEndpoint(null);
+            _nodes.Clear();
+        }
+    }
+
+    // ===== Data Loading =====
+
+    private async Task RefreshNodes()
+    {
+        if (_selectedEndpoint == null) return;
+        _isLoading = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            var result = await Api.GetAllAsync(
+                _searchTerm,
+                string.IsNullOrEmpty(_typeFilter) ? null : _typeFilter,
+                _page,
+                _pageSize);
+            _nodes = result.Items;
+            _totalCount = result.TotalCount;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to load resource nodes");
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SearchNodes()
+    {
+        _page = 1;
+        await RefreshNodes();
+    }
+
+    private async Task PrevPage()
+    {
+        if (_page > 1) { _page--; await RefreshNodes(); }
+    }
+
+    private async Task NextPage()
+    {
+        if (_page * _pageSize < _totalCount) { _page++; await RefreshNodes(); }
+    }
+
+    // ===== Create / Edit Modal =====
+
+    private void ShowCreateModal()
+    {
+        _isCreating = true;
+        _editNode = new ResourceNodeDefinitionDto { Uses = 50 };
+        _editOutputs = [];
+        _showEditModal = true;
+    }
+
+    private void ShowEditModal(ResourceNodeDefinitionDto node)
+    {
+        _isCreating = false;
+        _editNode = new ResourceNodeDefinitionDto
+        {
+            Tag = node.Tag,
+            Name = node.Name,
+            Description = node.Description,
+            PlcAppearance = node.PlcAppearance,
+            Type = node.Type,
+            Uses = node.Uses,
+            BaseHarvestRounds = node.BaseHarvestRounds,
+            Requirement = node.Requirement != null ? new HarvestContextDto
+            {
+                RequiredItemType = node.Requirement.RequiredItemType,
+                RequiredItemMaterial = node.Requirement.RequiredItemMaterial,
+            } : null,
+            FloraProperties = node.FloraProperties != null ? new FloraPropertiesDto
+            {
+                PreferredClimate = node.FloraProperties.PreferredClimate,
+                RequiredSoilQuality = node.FloraProperties.RequiredSoilQuality,
+            } : null,
+        };
+        _editOutputs = node.Outputs?.Select(o => new HarvestOutputDto
+        {
+            ItemDefinitionTag = o.ItemDefinitionTag,
+            Quantity = o.Quantity,
+            Chance = o.Chance,
+        }).ToList() ?? [];
+        _showEditModal = true;
+    }
+
+    private void CloseEditModal()
+    {
+        _showEditModal = false;
+        _editNode = new();
+        _editOutputs = [];
+    }
+
+    private async Task SaveNode()
+    {
+        _isSaving = true;
+        _error = null;
+        try
+        {
+            _editNode.Outputs = _editOutputs.ToArray();
+
+            if (_isCreating)
+                await Api.CreateAsync(_editNode);
+            else
+                await Api.UpdateAsync(_editNode.Tag, _editNode);
+
+            _success = _isCreating
+                ? $"Resource node '{_editNode.Name ?? _editNode.Tag}' created."
+                : $"Resource node '{_editNode.Name ?? _editNode.Tag}' updated.";
+            _showEditModal = false;
+            await RefreshNodes();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to save resource node");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    // ===== Output Management =====
+
+    private void AddOutput()
+    {
+        _editOutputs.Add(new HarvestOutputDto { Chance = 100 });
+    }
+
+    private void RemoveOutput(int index)
+    {
+        if (index >= 0 && index < _editOutputs.Count)
+            _editOutputs.RemoveAt(index);
+    }
+
+    // ===== Requirement / Flora Helpers =====
+
+    private void AddRequirement() => _editNode.Requirement = new HarvestContextDto();
+    private void RemoveRequirement() => _editNode.Requirement = null;
+    private void AddFloraProperties() => _editNode.FloraProperties = new FloraPropertiesDto();
+    private void RemoveFloraProperties() => _editNode.FloraProperties = null;
+
+    // ===== Import =====
+
+    private async Task OnImportFileSelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            var file = e.File;
+            using var reader = new StreamReader(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
+            _importJson = await reader.ReadToEndAsync();
+            _importResult = null;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to read file: {ex.Message}";
+        }
+    }
+
+    private async Task RunImport()
+    {
+        if (string.IsNullOrWhiteSpace(_importJson)) return;
+        _isSaving = true;
+        _error = null;
+        try
+        {
+            _importResult = await Api.ImportJsonAsync(_importJson);
+            if (_importResult is { Failed: 0 })
+                _success = $"Successfully imported {_importResult.Succeeded} resource nodes.";
+            await RefreshNodes();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to import resource nodes");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseImportModal()
+    {
+        _showImportModal = false;
+        _importJson = "";
+        _importResult = null;
+    }
+
+    // ===== Delete =====
+
+    private void ConfirmDelete(ResourceNodeDefinitionDto node)
+    {
+        _deleteTarget = node;
+        _showDeleteConfirm = true;
+    }
+
+    private async Task DeleteNode()
+    {
+        if (_deleteTarget == null) return;
+        _isSaving = true;
+        _error = null;
+        try
+        {
+            await Api.DeleteAsync(_deleteTarget.Tag);
+            _success = $"Deleted resource node '{_deleteTarget.Name ?? _deleteTarget.Tag}'.";
+            _showDeleteConfirm = false;
+            _deleteTarget = null;
+            await RefreshNodes();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to delete resource node");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    // ===== Helpers =====
+
+    private static string GetTypeBadgeClass(string? type) => type?.ToLowerInvariant() switch
+    {
+        "flora" => "running",
+        "mineral" => "stopped",
+        "animal" => "warning",
+        "salvage" => "",
+        _ => ""
+    };
+}
