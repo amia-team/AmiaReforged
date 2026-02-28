@@ -322,6 +322,15 @@ public sealed class CharacterCustomizationPresenter(CharacterCustomizationView v
             return;
         }
 
+        if (ev.ElementId == View.SetPartToZeroButton?.Id)
+        {
+            _model.SetArmorPartModelToZero();
+            int modelNum = _model.GetCurrentArmorPartModel();
+            Token().SetBindValue(View.CurrentPartModel, modelNum);
+            Token().SetBindValue(View.CurrentPartModelText, modelNum.ToString());
+            return;
+        }
+
         if (ev.ElementId == View.CopyAppearanceButton?.Id)
         {
             player.SendServerMessage("Select an armor in your inventory to copy the appearance to.", ColorConstants.Cyan);

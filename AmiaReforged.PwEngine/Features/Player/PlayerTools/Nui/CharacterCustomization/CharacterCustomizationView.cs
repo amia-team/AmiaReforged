@@ -56,6 +56,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
 
     public NuiButtonImage CopyToOtherSideButton = null!;
     public NuiButtonImage CopyAppearanceButton = null!;
+    public NuiButtonImage SetPartToZeroButton = null!;
 
     public string Title => "Player Crafting and Customization";
     public string Id => "char_customization";
@@ -249,7 +250,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 145f },
+                        new NuiSpacer { Width = 120f },
                         new NuiLabel("Model:")
                         {
                             Width = 80f,
@@ -296,7 +297,9 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                             Height = 35f,
                             Tooltip = "+10",
                             Enabled = ModelButtonsEnabled
-                        }.Assign(out ModelRight10Button)
+                        }.Assign(out ModelRight10Button),
+                        new NuiSpacer { Width = 9f },
+                        ImageButton("btn_set_part_zero", "Set part to zero.", out SetPartToZeroButton, 35f, 35f, "cc_turn_right")
                     }
                 }
             }
@@ -314,7 +317,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 280f },
+                        new NuiSpacer { Width = 255f },
                         ImageButton("btn_copy_to_other_side", "Copy current part to other side", out CopyToOtherSideButton, 50f, 50f, "app_copy_side"),
                         new NuiSpacer { Width = 10f },
                         ImageButton("btn_copy_appearance", "Copy appearance to other armor (Save first)", out CopyAppearanceButton, 50f, 50f, "app_copy")

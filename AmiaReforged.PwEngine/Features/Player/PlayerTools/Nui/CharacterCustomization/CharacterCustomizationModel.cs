@@ -18,7 +18,7 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
     {
         [0] =
         [
-            1, 3, 5, 6, 7, 8, 9, 12, 19, 39, 50, 66, 67, 73, 74, 150, 158, 199, 200, 210, 228, 239, 240, 251
+            0, 1, 3, 5, 6, 7, 8, 9, 12, 19, 39, 50, 66, 67, 73, 74, 150, 158, 199, 200, 210, 228, 239, 240, 251
         ], // Cloth
         [1] = [20, 28, 40], // Padded
         [2] = [10, 13, 16, 27, 41, 42, 49, 58, 75, 76, 77, 86, 91, 92], // Hide
@@ -34,7 +34,7 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
         [8] =
         [
             14, 21, 23, 37, 53, 57, 60, 61, 62, 65, 70, 71, 72, 90, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
-            116, 117, 186, 190, 209, 220, 221, 222, 223, 252
+            116, 117, 186, 190, 209, 220, 221, 222, 223, 252, 253
         ] // Full plate
     };
 
@@ -136,6 +136,91 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
         _currentArmor = newArmor;
         oldArmor.Destroy();
         player.SendServerMessage($"Part model updated to {newModel}.", ColorConstants.Green);
+    }
+
+    public void SetArmorPartModelToZero()
+    {
+        if (CurrentMode != CustomizationMode.Armor) return;
+
+        if (_currentArmor == null || !_currentArmor.IsValid)
+        {
+            player.SendServerMessage("No armor equipped to modify.", ColorConstants.Orange);
+            return;
+        }
+
+        NwCreature? creature = player.ControlledCreature;
+        if (creature == null) return;
+
+        NwItem oldArmor = _currentArmor;
+
+        if (CurrentArmorPart == 19)
+        {
+            // All Parts mode - set all parts to zero except torso (unless 0 AC)
+            int? currentAc = GetArmorAcFromModel(oldArmor.Appearance.GetArmorModel(CreaturePart.Torso));
+            bool canZeroTorso = currentAc.HasValue && currentAc.Value == 0;
+
+            CreaturePart[] allParts =
+            [
+                CreaturePart.RightFoot, CreaturePart.LeftFoot, CreaturePart.RightShin, CreaturePart.LeftShin,
+                CreaturePart.RightThigh, CreaturePart.LeftThigh, CreaturePart.Pelvis, CreaturePart.Torso,
+                CreaturePart.Belt, CreaturePart.Neck, CreaturePart.RightForearm, CreaturePart.LeftForearm,
+                CreaturePart.RightBicep, CreaturePart.LeftBicep, CreaturePart.RightShoulder, CreaturePart.LeftShoulder,
+                CreaturePart.RightHand, CreaturePart.LeftHand, CreaturePart.Robe
+            ];
+
+            foreach (CreaturePart part in allParts)
+            {
+                if (part == CreaturePart.Torso && !canZeroTorso)
+                    continue;
+
+                oldArmor.Appearance.SetArmorModel(part, 0);
+            }
+
+            player.SendServerMessage(canZeroTorso
+                ? "Setting all parts to 0 (null model)..."
+                : "Setting all parts to 0 (null model), excluding torso (non-cloth armor)...",
+                ColorConstants.Cyan);
+        }
+        else
+        {
+            CreaturePart creaturePart = GetCreaturePart(CurrentArmorPart);
+
+            // Check if trying to zero the torso on non-cloth armor
+            if (creaturePart == CreaturePart.Torso)
+            {
+                int? currentAc = GetArmorAcFromModel(oldArmor.Appearance.GetArmorModel(CreaturePart.Torso));
+                if (!currentAc.HasValue || currentAc.Value != 0)
+                {
+                    player.SendServerMessage("Cannot set torso to zero on non-cloth armor.", ColorConstants.Orange);
+                    return;
+                }
+            }
+
+            oldArmor.Appearance.SetArmorModel(creaturePart, 0);
+        }
+
+        creature.RunUnequip(oldArmor);
+        NwItem newArmor = oldArmor.Clone(creature);
+
+        if (!newArmor.IsValid)
+        {
+            player.SendServerMessage("Failed to refresh armor.", ColorConstants.Red);
+            creature.RunEquip(oldArmor, InventorySlot.Chest);
+            return;
+        }
+
+        creature.RunEquip(newArmor, InventorySlot.Chest);
+        _currentArmor = newArmor;
+        oldArmor.Destroy();
+
+        if (CurrentArmorPart == 19)
+        {
+            player.SendServerMessage("All parts set to 0 (null model).", ColorConstants.Green);
+        }
+        else
+        {
+            player.SendServerMessage("Part model set to 0 (null model).", ColorConstants.Green);
+        }
     }
 
     private int GetNextValidArmorModel(CreaturePart creaturePart, int currentModel, int delta)
