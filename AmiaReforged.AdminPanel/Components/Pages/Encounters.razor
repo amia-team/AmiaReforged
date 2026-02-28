@@ -275,8 +275,8 @@
         @* ===== Profile Detail Modal ===== *@
         @if (_selectedProfile != null)
         {
-            <div class="modal-backdrop" @onclick="CloseProfileModal"></div>
-            <div class="profile-modal">
+            <div class="modal-backdrop" @onclick="CloseProfileModal">
+            <div class="profile-modal" @onclick:stopPropagation="true">
                 <div class="profile-modal-header">
                     <h2>@_selectedProfile.Name</h2>
                     <button class="btn btn-sm btn-secondary" @onclick="CloseProfileModal">✕ Close</button>
@@ -858,6 +858,7 @@
                         }
                     </div>
                 </div>
+            </div>
             </div>
         }
     }
