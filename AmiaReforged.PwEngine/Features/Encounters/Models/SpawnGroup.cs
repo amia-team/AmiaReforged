@@ -40,6 +40,20 @@ public class SpawnGroup
     public virtual List<SpawnEntry> Entries { get; set; } = [];
 
     /// <summary>
+    /// When true, only the mutations listed in <see cref="MutationOverrides"/> are
+    /// considered for this group's creatures (using each override's custom chance).
+    /// If true but no overrides are defined, no mutations are ever applied.
+    /// When false, the global mutation pool is used as normal.
+    /// </summary>
+    public bool OverrideMutations { get; set; }
+
+    /// <summary>
+    /// Per-group mutation overrides with custom appearance chances.
+    /// Only used when <see cref="OverrideMutations"/> is true.
+    /// </summary>
+    public virtual List<GroupMutationOverride> MutationOverrides { get; set; } = [];
+
+    /// <summary>
     /// Navigation property back to the owning profile.
     /// </summary>
     public virtual SpawnProfile SpawnProfile { get; set; } = null!;

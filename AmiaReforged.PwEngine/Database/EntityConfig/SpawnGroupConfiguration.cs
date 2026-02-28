@@ -25,6 +25,10 @@ public class SpawnGroupConfiguration : IEntityTypeConfiguration<SpawnGroup>
             .HasColumnName("weight")
             .HasDefaultValue(1);
 
+        builder.Property(g => g.OverrideMutations)
+            .HasColumnName("override_mutations")
+            .HasDefaultValue(false);
+
         builder.HasIndex(g => g.SpawnProfileId)
             .HasDatabaseName("IX_SpawnGroups_SpawnProfileId");
 
@@ -36,6 +40,11 @@ public class SpawnGroupConfiguration : IEntityTypeConfiguration<SpawnGroup>
         builder.HasMany(g => g.Entries)
             .WithOne(e => e.SpawnGroup)
             .HasForeignKey(e => e.SpawnGroupId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(g => g.MutationOverrides)
+            .WithOne(o => o.SpawnGroup)
+            .HasForeignKey(o => o.SpawnGroupId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

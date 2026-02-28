@@ -291,6 +291,7 @@ public class SpawnProfileController
 
         if (req.Name != null) group.Name = req.Name;
         if (req.Weight.HasValue) group.Weight = req.Weight.Value;
+        if (req.OverrideMutations.HasValue) group.OverrideMutations = req.OverrideMutations.Value;
 
         await Repository.UpdateGroupAsync(group);
         return new ApiResult(200, ToDto(group));
@@ -773,4 +774,116 @@ public class SpawnProfileController
 
     private static ApiResult ServiceUnavailable() =>
         new(503, new ErrorResponse("Service unavailable", "Encounter system is not initialized."));
+
+    // ==================== Group Mutation Overrides ====================
+
+    /// <summary>
+    /// POST /api/worldengine/encounters/groups/{groupId}/mutation-overrides — Add a mutation override to a group
+    /// </summary>
+    [HttpPost("/api/worldengine/encounters/groups/{groupId}/mutation-overrides")]
+    public static async Task<ApiResult> AddMutationOverride(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("groupId"), out Guid groupId))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid group ID."));
+
+        SpawnGroup? group = await Repository.GetGroupByIdAsync(groupId);
+        if (group == null)
+            return new ApiResult(404, new ErrorResponse("Not found", $"Group {groupId} not found."));
+
+        SetGroupMutationOverrideRequest? req = await ctx.ReadJsonBodyAsync<SetGroupMutationOverrideRequest>();
+        if (req == null)
+            return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required."));
+
+        // Check for duplicate
+        if (group.MutationOverrides.Any(o => o.MutationTemplateId == req.MutationTemplateId))
+            return new ApiResult(409, new ErrorResponse("Conflict", "This mutation is already overridden for this group."));
+
+        GroupMutationOverride ovr = new()
+        {
+            Id = Guid.NewGuid(),
+            SpawnGroupId = groupId,
+            MutationTemplateId = req.MutationTemplateId,
+            ChancePercent = Math.Clamp(req.ChancePercent, 0, 100)
+        };
+
+        await Repository.AddMutationOverrideAsync(groupId, ovr);
+
+        // Re-fetch to get the nav property populated
+        ovr = (await Repository.GetMutationOverrideByIdAsync(ovr.Id))!;
+
+        // Refresh profile cache
+        SpawnProfile? profile = await Repository.GetByIdAsync(group.SpawnProfileId);
+        if (profile != null && EncounterService != null)
+            await EncounterService.RefreshProfileCacheAsync(profile.AreaResRef);
+
+        return new ApiResult(201, ToOverrideDto(ovr));
+    }
+
+    /// <summary>
+    /// PUT /api/worldengine/encounters/groups/{groupId}/mutation-overrides/{overrideId} — Update a mutation override's chance
+    /// </summary>
+    [HttpPut("/api/worldengine/encounters/groups/{groupId}/mutation-overrides/{overrideId}")]
+    public static async Task<ApiResult> UpdateMutationOverride(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("overrideId"), out Guid overrideId))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid override ID."));
+
+        GroupMutationOverride? ovr = await Repository.GetMutationOverrideByIdAsync(overrideId);
+        if (ovr == null)
+            return new ApiResult(404, new ErrorResponse("Not found", $"Override {overrideId} not found."));
+
+        UpdateGroupMutationOverrideRequest? req = await ctx.ReadJsonBodyAsync<UpdateGroupMutationOverrideRequest>();
+        if (req == null)
+            return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required."));
+
+        if (req.ChancePercent.HasValue)
+            ovr.ChancePercent = Math.Clamp(req.ChancePercent.Value, 0, 100);
+
+        await Repository.UpdateMutationOverrideAsync(ovr);
+
+        // Refresh profile cache
+        SpawnGroup? group = await Repository.GetGroupByIdAsync(ovr.SpawnGroupId);
+        if (group != null)
+        {
+            SpawnProfile? profile = await Repository.GetByIdAsync(group.SpawnProfileId);
+            if (profile != null && EncounterService != null)
+                await EncounterService.RefreshProfileCacheAsync(profile.AreaResRef);
+        }
+
+        return new ApiResult(200, ToOverrideDto(ovr));
+    }
+
+    /// <summary>
+    /// DELETE /api/worldengine/encounters/groups/{groupId}/mutation-overrides/{overrideId} — Remove a mutation override
+    /// </summary>
+    [HttpDelete("/api/worldengine/encounters/groups/{groupId}/mutation-overrides/{overrideId}")]
+    public static async Task<ApiResult> DeleteMutationOverride(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("overrideId"), out Guid overrideId))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid override ID."));
+
+        GroupMutationOverride? ovr = await Repository.GetMutationOverrideByIdAsync(overrideId);
+        if (ovr == null)
+            return new ApiResult(404, new ErrorResponse("Not found", $"Override {overrideId} not found."));
+
+        Guid groupId = ovr.SpawnGroupId;
+        await Repository.DeleteMutationOverrideAsync(overrideId);
+
+        // Refresh profile cache
+        SpawnGroup? group = await Repository.GetGroupByIdAsync(groupId);
+        if (group != null)
+        {
+            SpawnProfile? profile = await Repository.GetByIdAsync(group.SpawnProfileId);
+            if (profile != null && EncounterService != null)
+                await EncounterService.RefreshProfileCacheAsync(profile.AreaResRef);
+        }
+
+        return new ApiResult(200, new { message = "Mutation override deleted.", overrideId });
+    }
 }

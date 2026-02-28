@@ -135,6 +135,23 @@ public class EncounterApiService
         await DeleteAsync($"{GroupsBase}/{groupId}");
     }
 
+    // ==================== Group Mutation Overrides ====================
+
+    public async Task<GroupMutationOverrideDto?> AddMutationOverrideAsync(Guid groupId, SetGroupMutationOverrideRequest request)
+    {
+        return await PostAsync<GroupMutationOverrideDto>($"{GroupsBase}/{groupId}/mutation-overrides", request);
+    }
+
+    public async Task<GroupMutationOverrideDto?> UpdateMutationOverrideAsync(Guid groupId, Guid overrideId, UpdateGroupMutationOverrideRequest request)
+    {
+        return await PutAsync<GroupMutationOverrideDto>($"{GroupsBase}/{groupId}/mutation-overrides/{overrideId}", request);
+    }
+
+    public async Task DeleteMutationOverrideAsync(Guid groupId, Guid overrideId)
+    {
+        await DeleteAsync($"{GroupsBase}/{groupId}/mutation-overrides/{overrideId}");
+    }
+
     // ==================== Entries ====================
 
     public async Task<SpawnEntryDto?> AddEntryAsync(Guid groupId, CreateEntryRequest request)

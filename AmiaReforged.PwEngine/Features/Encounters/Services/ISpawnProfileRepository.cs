@@ -88,6 +88,13 @@ public interface ISpawnProfileRepository
     Task DeleteMiniBossAsync(Guid profileId);
     Task<SpawnBonus> AddMiniBossBonusAsync(Guid miniBossId, SpawnBonus bonus);
 
+    // === Group Mutation Override Operations ===
+
+    Task<GroupMutationOverride?> GetMutationOverrideByIdAsync(Guid overrideId);
+    Task<GroupMutationOverride> AddMutationOverrideAsync(Guid groupId, GroupMutationOverride ovr);
+    Task<GroupMutationOverride> UpdateMutationOverrideAsync(GroupMutationOverride ovr);
+    Task DeleteMutationOverrideAsync(Guid overrideId);
+
     // === Bulk Operations ===
 
     /// <summary>

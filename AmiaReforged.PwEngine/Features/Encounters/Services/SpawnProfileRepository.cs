@@ -95,6 +95,9 @@ public class SpawnProfileRepository : ISpawnProfileRepository
         return await ctx.SpawnGroups
             .Include(g => g.Conditions)
             .Include(g => g.Entries)
+            .Include(g => g.MutationOverrides)
+                .ThenInclude(o => o.MutationTemplate)
+                    .ThenInclude(t => t.Effects)
             .FirstOrDefaultAsync(g => g.Id == groupId);
     }
 
@@ -293,6 +296,10 @@ public class SpawnProfileRepository : ISpawnProfileRepository
                 .ThenInclude(g => g.Conditions)
             .Include(p => p.SpawnGroups)
                 .ThenInclude(g => g.Entries)
+            .Include(p => p.SpawnGroups)
+                .ThenInclude(g => g.MutationOverrides)
+                    .ThenInclude(o => o.MutationTemplate)
+                        .ThenInclude(t => t.Effects)
             .Include(p => p.Bonuses)
             .Include(p => p.MiniBoss)
                 .ThenInclude(m => m!.Bonuses)
@@ -330,5 +337,44 @@ public class SpawnProfileRepository : ISpawnProfileRepository
             .Where(m => idList.Contains(m.Id))
             .ExecuteUpdateAsync(s => s
                 .SetProperty(m => m.IsActive, isActive));
+    }
+
+    // === Group Mutation Override Operations ===
+
+    public async Task<GroupMutationOverride?> GetMutationOverrideByIdAsync(Guid overrideId)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        return await ctx.GroupMutationOverrides
+            .Include(o => o.MutationTemplate)
+                .ThenInclude(t => t.Effects)
+            .FirstOrDefaultAsync(o => o.Id == overrideId);
+    }
+
+    public async Task<GroupMutationOverride> AddMutationOverrideAsync(Guid groupId, GroupMutationOverride ovr)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        ovr.SpawnGroupId = groupId;
+        ctx.GroupMutationOverrides.Add(ovr);
+        await ctx.SaveChangesAsync();
+        return ovr;
+    }
+
+    public async Task<GroupMutationOverride> UpdateMutationOverrideAsync(GroupMutationOverride ovr)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        ctx.GroupMutationOverrides.Update(ovr);
+        await ctx.SaveChangesAsync();
+        return ovr;
+    }
+
+    public async Task DeleteMutationOverrideAsync(Guid overrideId)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        GroupMutationOverride? ovr = await ctx.GroupMutationOverrides.FindAsync(overrideId);
+        if (ovr != null)
+        {
+            ctx.GroupMutationOverrides.Remove(ovr);
+            await ctx.SaveChangesAsync();
+        }
     }
 }

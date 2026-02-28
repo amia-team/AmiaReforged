@@ -28,8 +28,16 @@ public static class EncounterApiDtos
         Guid Id,
         string Name,
         int Weight,
+        bool OverrideMutations,
         List<SpawnConditionDto> Conditions,
-        List<SpawnEntryDto> Entries);
+        List<SpawnEntryDto> Entries,
+        List<GroupMutationOverrideDto> MutationOverrides);
+
+    public record GroupMutationOverrideDto(
+        Guid Id,
+        Guid MutationTemplateId,
+        string MutationPrefix,
+        int ChancePercent);
 
     public record SpawnConditionDto(
         Guid Id,
@@ -94,7 +102,8 @@ public static class EncounterApiDtos
 
     public record UpdateGroupRequest(
         string? Name = null,
-        int? Weight = null);
+        int? Weight = null,
+        bool? OverrideMutations = null);
 
     public record UpdateEntryRequest(
         string? CreatureResRef = null,
@@ -182,6 +191,13 @@ public static class EncounterApiDtos
         List<Guid> Ids,
         bool IsActive);
 
+    public record SetGroupMutationOverrideRequest(
+        Guid MutationTemplateId,
+        int ChancePercent = 10);
+
+    public record UpdateGroupMutationOverrideRequest(
+        int? ChancePercent = null);
+
     // --- Mapping ---
 
     public static SpawnProfileDto ToDto(SpawnProfile p) => new(
@@ -193,9 +209,15 @@ public static class EncounterApiDtos
         p.MiniBoss != null ? ToDto(p.MiniBoss) : null);
 
     public static SpawnGroupDto ToDto(SpawnGroup g) => new(
-        g.Id, g.Name, g.Weight,
+        g.Id, g.Name, g.Weight, g.OverrideMutations,
         g.Conditions.Select(ToDto).ToList(),
-        g.Entries.Select(ToDto).ToList());
+        g.Entries.Select(ToDto).ToList(),
+        g.MutationOverrides.Select(ToOverrideDto).ToList());
+
+    public static GroupMutationOverrideDto ToOverrideDto(GroupMutationOverride o) => new(
+        o.Id, o.MutationTemplateId,
+        o.MutationTemplate?.Prefix ?? "(unknown)",
+        o.ChancePercent);
 
     public static SpawnConditionDto ToDto(SpawnCondition c) => new(
         c.Id, c.Type, c.Operator, c.Value);

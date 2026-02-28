@@ -82,7 +82,7 @@ public class DynamicCreatureSpawner
         foreach (uint creature in spawned)
         {
             _bonusApplicator.ApplyBonuses(creature, activeBonuses, context.Chaos);
-            _mutationApplicator.TryApplyMutation(creature, context.Chaos);
+            _mutationApplicator.TryApplyMutation(creature, context.Chaos, group);
         }
 
         // Mini-boss

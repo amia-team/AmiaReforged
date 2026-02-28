@@ -524,13 +524,101 @@
                                                 </tbody>
                                             </table>
                                         }
+
+                                        @* -- Mutation Overrides -- *@
+                                        <div class="section-header-row" style="margin-top:15px">
+                                            <h3>
+                                                Mutation Overrides
+                                                @if (group.OverrideMutations)
+                                                {
+                                                    <span class="badge" style="background:var(--accent);color:#fff;margin-left:6px;font-size:0.7rem">ACTIVE</span>
+                                                }
+                                            </h3>
+                                            <div style="display:flex;gap:6px;align-items:center">
+                                                <button class="btn btn-sm @(group.OverrideMutations ? "btn-warning" : "btn-outline-secondary")"
+                                                        @onclick="() => ToggleOverrideMutations(group)">
+                                                    @(group.OverrideMutations ? "Disable Override" : "Override Mutations")
+                                                </button>
+                                                @if (group.OverrideMutations)
+                                                {
+                                                    <button class="btn btn-sm btn-primary" @onclick="() => ToggleAddMutationOverride(group.Id)">+ Add</button>
+                                                }
+                                            </div>
+                                        </div>
+
+                                        @if (group.OverrideMutations)
+                                        {
+                                            @if (_addMutationOverrideGroupId == group.Id)
+                                            {
+                                                <div class="inline-form" style="margin-bottom:10px;padding:10px;background:var(--bg-dark);border-radius:6px">
+                                                    <div class="form-row">
+                                                        <div class="form-group" style="flex:2">
+                                                            <label>Mutation</label>
+                                                            <select class="form-control form-control-sm" @bind="_newOverrideMutationId">
+                                                                <option value="">— Select mutation —</option>
+                                                                @foreach (var mut in GetAvailableMutationsForGroup(group))
+                                                                {
+                                                                    <option value="@mut.Id">@mut.Prefix @(mut.IsActive ? "" : "(inactive)")</option>
+                                                                }
+                                                            </select>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label>Chance %</label>
+                                                            <input class="form-control form-control-sm" type="number" @bind="_newOverrideChance" min="0" max="100" />
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-actions">
+                                                        <button class="btn btn-success btn-sm" @onclick="() => AddMutationOverride(group)" disabled="@_isSaving">Add</button>
+                                                        <button class="btn btn-secondary btn-sm" @onclick="() => _addMutationOverrideGroupId = null">Cancel</button>
+                                                    </div>
+                                                </div>
+                                            }
+
+                                            @if (group.MutationOverrides.Count > 0)
+                                            {
+                                                <table class="table table-compact">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Mutation</th>
+                                                            <th style="width:100px">Chance %</th>
+                                                            <th style="width:60px"></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var ovr in group.MutationOverrides)
+                                                        {
+                                                            <tr>
+                                                                <td><strong>@ovr.MutationPrefix</strong></td>
+                                                                <td>
+                                                                    <input class="form-control form-control-sm" type="number"
+                                                                           value="@ovr.ChancePercent" min="0" max="100"
+                                                                           @onchange="e => UpdateMutationOverrideChance(group, ovr, e)" />
+                                                                </td>
+                                                                <td>
+                                                                    <button class="btn btn-sm btn-outline-danger"
+                                                                            @onclick="() => DeleteMutationOverride(group, ovr)">✕</button>
+                                                                </td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            }
+                                            else
+                                            {
+                                                <p style="color:var(--text-secondary);font-size:0.9rem;font-style:italic">
+                                                    ⚠ Mutations are overridden but none are defined — <strong>no mutations will be applied</strong> to this group's creatures.
+                                                </p>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <p style="color:var(--text-secondary);font-size:0.85rem">Global mutation pool applies. Click "Override Mutations" to select specific mutations for this group.</p>
+                                        }
                                     </div>
                                 }
                             </div>
                         }
                     </div>
-
-                    @* --- Bonuses --- *@
                     <div class="section">
                         <div class="section-header-row">
                             <h2>Profile Bonuses (@_selectedProfile.Bonuses.Count)</h2>
@@ -1072,6 +1160,11 @@
     private string _newConditionOp = "";
     private string _newConditionValue = "";
 
+    // ===== Mutation Override Form =====
+    private Guid? _addMutationOverrideGroupId;
+    private string _newOverrideMutationId = "";
+    private int _newOverrideChance = 10;
+
     // ===== Mini-Boss Form =====
     private bool _showAddMiniBoss;
     private string _newMiniBossResRef = "";
@@ -1431,6 +1524,77 @@
             await Api.DeleteGroupAsync(group.Id);
             _expandedGroups.Remove(group.Id);
             _success = $"Group '{group.Name}' deleted.";
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    // ===== Mutation Override CRUD =====
+
+    private async Task ToggleOverrideMutations(SpawnGroupDto group)
+    {
+        try
+        {
+            await Api.UpdateGroupAsync(group.Id, new UpdateGroupRequest(OverrideMutations: !group.OverrideMutations));
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private void ToggleAddMutationOverride(Guid groupId)
+    {
+        if (_addMutationOverrideGroupId == groupId)
+        {
+            _addMutationOverrideGroupId = null;
+        }
+        else
+        {
+            _addMutationOverrideGroupId = groupId;
+            _newOverrideMutationId = "";
+            _newOverrideChance = 10;
+        }
+    }
+
+    private IEnumerable<MutationTemplateDto> GetAvailableMutationsForGroup(SpawnGroupDto group)
+    {
+        var alreadyOverridden = group.MutationOverrides.Select(o => o.MutationTemplateId).ToHashSet();
+        return _mutations.Where(m => !alreadyOverridden.Contains(m.Id));
+    }
+
+    private async Task AddMutationOverride(SpawnGroupDto group)
+    {
+        if (!Guid.TryParse(_newOverrideMutationId, out Guid mutId) || mutId == Guid.Empty) return;
+        _isSaving = true;
+        try
+        {
+            await Api.AddMutationOverrideAsync(group.Id,
+                new SetGroupMutationOverrideRequest(mutId, Math.Clamp(_newOverrideChance, 0, 100)));
+            _addMutationOverrideGroupId = null;
+            _success = "Mutation override added.";
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task UpdateMutationOverrideChance(SpawnGroupDto group, GroupMutationOverrideDto ovr, ChangeEventArgs e)
+    {
+        if (!int.TryParse(e.Value?.ToString(), out int chance) || chance == ovr.ChancePercent) return;
+        try
+        {
+            await Api.UpdateMutationOverrideAsync(group.Id, ovr.Id,
+                new UpdateGroupMutationOverrideRequest(ChancePercent: Math.Clamp(chance, 0, 100)));
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private async Task DeleteMutationOverride(SpawnGroupDto group, GroupMutationOverrideDto ovr)
+    {
+        try
+        {
+            await Api.DeleteMutationOverrideAsync(group.Id, ovr.Id);
+            _success = $"Override for '{ovr.MutationPrefix}' removed.";
             await RefreshProfiles();
         }
         catch (Exception ex) { _error = ex.Message; }

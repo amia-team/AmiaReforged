@@ -91,8 +91,16 @@ public record SpawnGroupDto(
     Guid Id,
     string Name,
     int Weight,
+    bool OverrideMutations,
     List<SpawnConditionDto> Conditions,
-    List<SpawnEntryDto> Entries);
+    List<SpawnEntryDto> Entries,
+    List<GroupMutationOverrideDto> MutationOverrides);
+
+public record GroupMutationOverrideDto(
+    Guid Id,
+    Guid MutationTemplateId,
+    string MutationPrefix,
+    int ChancePercent);
 
 public record SpawnConditionDto(
     Guid Id,
@@ -174,7 +182,8 @@ public record CreateEntryRequest(
 
 public record UpdateGroupRequest(
     string? Name = null,
-    int? Weight = null);
+    int? Weight = null,
+    bool? OverrideMutations = null);
 
 public record UpdateEntryRequest(
     string? CreatureResRef = null,
@@ -246,3 +255,10 @@ public record ApiErrorResponse(string Error, string Detail);
 public record BulkSetActiveRequest(
     List<Guid> Ids,
     bool IsActive);
+
+public record SetGroupMutationOverrideRequest(
+    Guid MutationTemplateId,
+    int ChancePercent = 10);
+
+public record UpdateGroupMutationOverrideRequest(
+    int? ChancePercent = null);

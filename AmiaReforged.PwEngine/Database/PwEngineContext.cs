@@ -106,6 +106,7 @@ public class PwEngineContext : DbContext
     public DbSet<MiniBossConfig> MiniBossConfigs { get; set; } = null!;
     public DbSet<MutationTemplate> MutationTemplates { get; set; } = null!;
     public DbSet<MutationEffect> MutationEffects { get; set; } = null!;
+    public DbSet<GroupMutationOverride> GroupMutationOverrides { get; set; } = null!;
 
 
     public PwEngineContext()
@@ -189,5 +190,6 @@ public class PwEngineContext : DbContext
         // Mutation System
         modelBuilder.ApplyConfiguration(new MutationTemplateConfiguration());
         modelBuilder.ApplyConfiguration(new MutationEffectConfiguration());
+        modelBuilder.ApplyConfiguration(new GroupMutationOverrideConfiguration());
     }
 }
