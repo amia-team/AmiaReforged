@@ -303,7 +303,7 @@
 
             <div class="form-group" style="margin-top:15px">
                 <label>Upload JSON File</label>
-                <InputFile OnChange="OnImportFileSelected" accept=".json" class="form-control" />
+                <InputFile OnChange="OnImportFileSelected" accept=".json" multiple class="form-control" />
             </div>
 
             <div class="form-group" style="margin-top:10px">
@@ -589,15 +589,35 @@
     {
         try
         {
-            var file = e.File;
-            using var reader = new StreamReader(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
-            _importJson = await reader.ReadToEndAsync();
+            var allItems = new List<System.Text.Json.JsonElement>();
+            foreach (var file in e.GetMultipleFiles(100))
+            {
+                using var reader = new StreamReader(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
+                string content = await reader.ReadToEndAsync();
+
+                // Try to parse as array or single object and collect all items
+                using var doc = System.Text.Json.JsonDocument.Parse(content);
+                if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+                {
+                    foreach (var item in doc.RootElement.EnumerateArray())
+                    {
+                        allItems.Add(item.Clone());
+                    }
+                }
+                else if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object)
+                {
+                    allItems.Add(doc.RootElement.Clone());
+                }
+            }
+
+            _importJson = System.Text.Json.JsonSerializer.Serialize(allItems);
             _importResult = null;
+            _success = $"Loaded {allItems.Count} item(s) from {e.GetMultipleFiles(100).Count} file(s).";
             StateHasChanged();
         }
         catch (Exception ex)
         {
-            _error = $"Failed to read file: {ex.Message}";
+            _error = $"Failed to read file(s): {ex.Message}";
         }
     }
 
