@@ -10,7 +10,7 @@ window.areaGraph = (function () {
     const COLORS = {
         nodeBg: '#c9a84c',
         nodeBorder: '#8a6d1b',
-        nodeText: '#1c1b19',
+        nodeText: '#d0ccc2',
         edgeDoor: '#5ba4b5',
         edgeTrigger: '#4ecca3',
         highlightNode: '#ffc107',
