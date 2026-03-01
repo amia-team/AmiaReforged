@@ -43,9 +43,9 @@ window.areaGraph = (function () {
         const nodes = JSON.parse(nodesJson);
         const edges = JSON.parse(edgesJson);
 
-        const elements = [];
+        var elements = [];
 
-        // Add nodes
+        // Build element array
         nodes.forEach(function (n) {
             elements.push({
                 group: 'nodes',
@@ -60,7 +60,6 @@ window.areaGraph = (function () {
             });
         });
 
-        // Add edges
         edges.forEach(function (e, idx) {
             elements.push({
                 group: 'edges',
@@ -76,10 +75,12 @@ window.areaGraph = (function () {
 
         cy = cytoscape({
             container: container,
-            elements: elements,
+            elements: [],          // add elements in batch below
             minZoom: 0.1,
             maxZoom: 3,
             wheelSensitivity: 0.2,
+            textureOnViewport: true,   // render to texture while panning/zooming
+            hideEdgesOnViewport: true, // hide edges during pan/zoom for perf
             style: [
                 {
                     selector: 'node',
@@ -171,19 +172,27 @@ window.areaGraph = (function () {
                     }
                 }
             ],
-            layout: {
-                name: 'cose',
-                animate: true,
-                animationDuration: 800,
-                nodeRepulsion: function () { return 8000; },
-                idealEdgeLength: function () { return 120; },
-                edgeElasticity: function () { return 100; },
-                gravity: 0.25,
-                numIter: 1000,
-                padding: 40,
-                randomize: true
-            }
+            layout: { name: 'preset' } // no layout yet — we batch-add then run layout
         });
+
+        // Batch-add all elements to avoid per-element redraws
+        cy.startBatch();
+        cy.add(elements);
+        cy.endBatch();
+
+        // Run layout: animate only the final result, not every iteration
+        cy.layout({
+            name: 'cose',
+            animate: 'end',          // compute off-screen, animate to final positions
+            animationDuration: 600,
+            nodeRepulsion: function () { return 8000; },
+            idealEdgeLength: function () { return 120; },
+            edgeElasticity: function () { return 100; },
+            gravity: 0.25,
+            numIter: 500,            // 500 iterations is sufficient for convergence
+            padding: 40,
+            randomize: true
+        }).run();
 
         // Node click — send data back to Blazor
         cy.on('tap', 'node', function (evt) {
