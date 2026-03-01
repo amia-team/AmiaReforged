@@ -113,3 +113,53 @@ public class AreaGraphDto
     public List<AreaNodeDto> DisconnectedAreas { get; set; } = new();
     public DateTime GeneratedAtUtc { get; set; }
 }
+
+// ==================== Region DTOs ====================
+
+public class RegionDefinitionDto
+{
+    public string Tag { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public List<AreaDefinitionDto> Areas { get; set; } = new();
+    public ChaosStateDto? DefaultChaos { get; set; }
+}
+
+public class AreaDefinitionDto
+{
+    public string ResRef { get; set; } = string.Empty;
+    public List<string> DefinitionTags { get; set; } = new();
+    public EnvironmentDataDto Environment { get; set; } = new();
+    public List<PlaceOfInterestDto>? PlacesOfInterest { get; set; }
+    public int? LinkedSettlement { get; set; }
+}
+
+public class EnvironmentDataDto
+{
+    public string? Climate { get; set; }
+    public string? SoilQuality { get; set; }
+    public QualityRangeDto MineralQualityRange { get; set; } = new();
+    public ChaosStateDto? Chaos { get; set; }
+}
+
+public class QualityRangeDto
+{
+    public string? Min { get; set; }
+    public string? Max { get; set; }
+}
+
+public class PlaceOfInterestDto
+{
+    public string ResRef { get; set; } = string.Empty;
+    public string Tag { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? Type { get; set; }
+    public string? Description { get; set; }
+}
+
+public class ChaosStateDto
+{
+    public int Danger { get; set; }
+    public int Corruption { get; set; }
+    public int Density { get; set; }
+    public int Mutation { get; set; }
+}

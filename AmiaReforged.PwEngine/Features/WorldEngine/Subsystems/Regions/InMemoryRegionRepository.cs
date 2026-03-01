@@ -1,9 +1,11 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
-using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions;
 
-[ServiceBinding(typeof(IRegionRepository))]
+/// <summary>
+/// In-memory implementation retained for unit testing and caching scenarios.
+/// The DB-backed DbRegionRepository is now the active service binding.
+/// </summary>
 public class InMemoryRegionRepository : IRegionRepository
 {
     // Region aggregates and core indexes
@@ -205,6 +207,13 @@ public class InMemoryRegionRepository : IRegionRepository
         }
 
         return false;
+    }
+
+    public bool Delete(RegionTag tag)
+    {
+        bool existed = _regions.Remove(tag);
+        if (existed) RebuildIndexes();
+        return existed;
     }
 
     public void Clear()

@@ -9,6 +9,7 @@ using AmiaReforged.PwEngine.Database.EntityConfig;
 using AmiaReforged.PwEngine.Features.Encounters.Models;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.Persistence;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions.Persistence;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.Persistence;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
@@ -114,6 +115,7 @@ public class PwEngineContext : DbContext
 
     public DbSet<PersistedItemBlueprint> ItemBlueprints { get; set; } = null!;
     public DbSet<PersistedResourceNodeDefinition> ResourceNodeDefinitions { get; set; } = null!;
+    public DbSet<PersistedRegionDefinition> RegionDefinitions { get; set; } = null!;
 
 
     public PwEngineContext()
@@ -202,5 +204,6 @@ public class PwEngineContext : DbContext
         // World Engine Definition Management
         modelBuilder.ApplyConfiguration(new PersistedItemBlueprintConfiguration());
         modelBuilder.ApplyConfiguration(new PersistedResourceNodeDefinitionConfiguration());
+        modelBuilder.ApplyConfiguration(new PersistedRegionDefinitionConfiguration());
     }
 }

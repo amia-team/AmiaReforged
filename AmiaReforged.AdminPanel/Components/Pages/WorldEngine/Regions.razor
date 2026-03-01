@@ -1,0 +1,965 @@
+@page "/worldengine/regions"
+@using Microsoft.AspNetCore.Authorization
+@using AmiaReforged.AdminPanel.Models
+@using AmiaReforged.AdminPanel.Services
+@using System.IO.Compression
+@attribute [Authorize]
+@inject RegionApiService Api
+@inject IWorldEngineEndpointService EndpointService
+@inject ILogger<Regions> Logger
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<PageTitle>Regions - World Engine</PageTitle>
+
+<div class="encounters-page">
+    <div class="dashboard-header">
+        <h1>Region Definitions</h1>
+        <div class="header-actions">
+            @if (_endpoints.Count > 0)
+            {
+                <div class="instance-selector">
+                    <label class="instance-label">Server:</label>
+                    <select class="form-control form-control-sm" value="@(_selectedEndpoint?.Id.ToString() ?? "")" @onchange="OnEndpointChanged">
+                        <option value="">— Select —</option>
+                        @foreach (var ep in _endpoints)
+                        {
+                            <option value="@ep.Id">@ep.Name</option>
+                        }
+                    </select>
+                </div>
+            }
+            @if (_selectedEndpoint != null)
+            {
+                <button class="btn btn-secondary btn-sm" @onclick="RefreshRegions">Refresh</button>
+                <button class="btn btn-primary btn-sm" @onclick="ShowCreateModal">+ New Region</button>
+                <button class="btn btn-info btn-sm" @onclick="() => _showImportModal = true">Import JSON</button>
+                <button class="btn btn-success btn-sm" @onclick="ExportRegions" disabled="@_isExporting">@(_isExporting ? "Exporting..." : "Export JSON")</button>
+            }
+            <a href="/" class="btn btn-secondary btn-sm">← Dashboard</a>
+        </div>
+    </div>
+
+    @if (_error != null)
+    {
+        <div class="alert alert-danger">@_error <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _error = null">Dismiss</button></div>
+    }
+    @if (_success != null)
+    {
+        <div class="alert alert-success">@_success <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _success = null">Dismiss</button></div>
+    }
+
+    @if (_selectedEndpoint == null)
+    {
+        <div class="section" style="text-align:center;padding:60px 20px">
+            @if (_endpoints.Count == 0)
+            {
+                <p style="color:var(--text-secondary);font-size:1.1rem">
+                    No WorldEngine servers configured. Go to
+                    <a href="/encounters">Encounters</a> to add one.
+                </p>
+            }
+            else
+            {
+                <p style="color:var(--text-secondary);font-size:1.1rem">Select a server from the dropdown above to manage region definitions.</p>
+            }
+        </div>
+    }
+
+    @* ===== Search ===== *@
+    @if (_selectedEndpoint != null)
+    {
+        <div class="section" style="margin-bottom:20px">
+            <div class="form-row" style="display:flex;gap:10px;align-items:end">
+                <div class="form-group" style="flex:1">
+                    <label>Search</label>
+                    <input class="form-control" @bind="_searchTerm" @bind:event="oninput"
+                           placeholder="Search by tag or name..." />
+                </div>
+                <button class="btn btn-primary btn-sm" @onclick="SearchRegions" disabled="@_isLoading">Search</button>
+            </div>
+        </div>
+
+        @* ===== Regions Table ===== *@
+        @if (_isLoading)
+        {
+            <div class="section" style="text-align:center;padding:40px"><em>Loading...</em></div>
+        }
+        else if (_regions.Count == 0)
+        {
+            <div class="section" style="text-align:center;padding:40px">
+                <p style="color:var(--text-secondary)">No region definitions found.</p>
+            </div>
+        }
+        else
+        {
+            <div class="section">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Tag</th>
+                            <th>Name</th>
+                            <th>Areas</th>
+                            <th>Default Chaos</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var region in _regions)
+                        {
+                            <tr>
+                                <td style="font-family:monospace;font-size:0.9rem">@region.Tag</td>
+                                <td>@region.Name</td>
+                                <td>@region.Areas.Count area(s)</td>
+                                <td style="font-size:0.85rem;color:var(--text-secondary)">
+                                    @if (region.DefaultChaos != null)
+                                    {
+                                        <span>D:@region.DefaultChaos.Danger C:@region.DefaultChaos.Corruption N:@region.DefaultChaos.Density M:@region.DefaultChaos.Mutation</span>
+                                    }
+                                    else
+                                    {
+                                        <span>—</span>
+                                    }
+                                </td>
+                                <td class="actions">
+                                    <button class="btn btn-sm btn-secondary" @onclick="() => ShowEditModal(region)">Edit</button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(region)">Delete</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                @* Pagination *@
+                @if (_totalCount > _pageSize)
+                {
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+                        <span style="color:var(--text-secondary);font-size:0.9rem">
+                            Showing @((_page - 1) * _pageSize + 1)–@(Math.Min(_page * _pageSize, _totalCount)) of @_totalCount
+                        </span>
+                        <div style="display:flex;gap:5px">
+                            <button class="btn btn-sm btn-secondary" disabled="@(_page <= 1)" @onclick="PrevPage">← Prev</button>
+                            <button class="btn btn-sm btn-secondary" disabled="@(_page * _pageSize >= _totalCount)" @onclick="NextPage">Next →</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+
+    @* ===== Create / Edit Modal ===== *@
+    @if (_showEditModal)
+    {
+        <div class="modal-backdrop" @onclick="CloseEditModal">
+        <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:850px;max-height:90vh;overflow-y:auto;margin:3vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+            <h2>@(_isCreating ? "Create Region" : $"Edit: {_editRegion.Name}")</h2>
+
+            <div style="display:flex;flex-direction:column;gap:12px;margin-top:15px">
+                @* ===== Basic Fields ===== *@
+                <div class="form-row" style="display:flex;gap:10px">
+                    <div class="form-group" style="flex:1">
+                        <label>Tag <small style="color:var(--text-secondary)">(unique identifier)</small></label>
+                        <input class="form-control" @bind="_editRegion.Tag" disabled="@(!_isCreating)" />
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Name</label>
+                        <input class="form-control" @bind="_editRegion.Name" />
+                    </div>
+                </div>
+
+                @* ===== Default Chaos ===== *@
+                <div style="border:1px solid var(--border-color);border-radius:8px;padding:12px;margin-top:4px">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <strong>Default Chaos State</strong>
+                        @if (_editRegion.DefaultChaos == null)
+                        {
+                            <button class="btn btn-sm btn-secondary" @onclick="AddDefaultChaos">+ Add</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-outline-danger" @onclick="RemoveDefaultChaos">Remove</button>
+                        }
+                    </div>
+                    @if (_editRegion.DefaultChaos != null)
+                    {
+                        <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+                            <div class="form-group" style="flex:1;min-width:100px">
+                                <label>Danger <small>(@_editRegion.DefaultChaos.Danger)</small></label>
+                                <input type="range" class="form-range" min="0" max="100" @bind="_editRegion.DefaultChaos.Danger" />
+                            </div>
+                            <div class="form-group" style="flex:1;min-width:100px">
+                                <label>Corruption <small>(@_editRegion.DefaultChaos.Corruption)</small></label>
+                                <input type="range" class="form-range" min="0" max="100" @bind="_editRegion.DefaultChaos.Corruption" />
+                            </div>
+                            <div class="form-group" style="flex:1;min-width:100px">
+                                <label>Density <small>(@_editRegion.DefaultChaos.Density)</small></label>
+                                <input type="range" class="form-range" min="0" max="100" @bind="_editRegion.DefaultChaos.Density" />
+                            </div>
+                            <div class="form-group" style="flex:1;min-width:100px">
+                                <label>Mutation <small>(@_editRegion.DefaultChaos.Mutation)</small></label>
+                                <input type="range" class="form-range" min="0" max="100" @bind="_editRegion.DefaultChaos.Mutation" />
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @* ===== Areas ===== *@
+                <div style="border:1px solid var(--border-color);border-radius:8px;padding:12px;margin-top:4px">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <strong>Areas (@_editRegion.Areas.Count)</strong>
+                        <button class="btn btn-sm btn-primary" @onclick="AddArea">+ Add Area</button>
+                    </div>
+
+                    @for (int idx = 0; idx < _editRegion.Areas.Count; idx++)
+                    {
+                        var i = idx;
+                        var area = _editRegion.Areas[i];
+                        <div style="border:1px solid var(--border-color);border-radius:6px;padding:10px;margin-top:10px;background:rgba(255,255,255,0.02)">
+                            <div style="display:flex;justify-content:space-between;align-items:center">
+                                <strong style="font-size:0.95rem">
+                                    <a href="javascript:void(0)" @onclick="() => ToggleAreaExpanded(i)" style="text-decoration:none;color:inherit">
+                                        @(IsAreaExpanded(i) ? "▾" : "▸") Area @(i + 1): @(string.IsNullOrWhiteSpace(area.ResRef) ? "(new)" : area.ResRef)
+                                    </a>
+                                </strong>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveArea(i)">Remove</button>
+                            </div>
+
+                            @if (IsAreaExpanded(i))
+                            {
+                                <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+                                    <div class="form-row" style="display:flex;gap:10px">
+                                        <div class="form-group" style="flex:1">
+                                            <label>ResRef <small style="color:var(--text-secondary)">(max 16 chars)</small></label>
+                                            <input class="form-control" @bind="area.ResRef" maxlength="16" />
+                                        </div>
+                                        <div class="form-group" style="flex:1">
+                                            <label>Linked Settlement ID <small style="color:var(--text-secondary)">(optional)</small></label>
+                                            <input type="number" class="form-control" value="@(area.LinkedSettlement?.ToString() ?? "")"
+                                                   @onchange="(e) => OnLinkedSettlementChanged(e, i)" min="1" />
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Definition Tags <small style="color:var(--text-secondary)">(comma-separated)</small></label>
+                                        <input class="form-control" value="@string.Join(", ", area.DefinitionTags)"
+                                               @onchange="(e) => OnDefinitionTagsChanged(e, i)" />
+                                    </div>
+
+                                    @* ===== Environment ===== *@
+                                    <div style="border:1px solid var(--border-color);border-radius:6px;padding:10px;background:rgba(255,255,255,0.02)">
+                                        <strong style="font-size:0.9rem">Environment</strong>
+                                        <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
+                                            <div class="form-group" style="flex:1;min-width:150px">
+                                                <label>Climate</label>
+                                                <select class="form-control" @bind="area.Environment.Climate">
+                                                    <option value="">— Select —</option>
+                                                    <option value="Undefined">Undefined</option>
+                                                    <option value="Temperate">Temperate</option>
+                                                    <option value="Tropical">Tropical</option>
+                                                    <option value="Arid">Arid</option>
+                                                    <option value="Arctic">Arctic</option>
+                                                    <option value="Mediterranean">Mediterranean</option>
+                                                    <option value="Continental">Continental</option>
+                                                    <option value="Oceanic">Oceanic</option>
+                                                    <option value="Subarctic">Subarctic</option>
+                                                    <option value="Alpine">Alpine</option>
+                                                    <option value="Tundra">Tundra</option>
+                                                    <option value="Desert">Desert</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-group" style="flex:1;min-width:150px">
+                                                <label>Soil Quality</label>
+                                                <select class="form-control" @bind="area.Environment.SoilQuality">
+                                                    <option value="">— Select —</option>
+                                                    <option value="None">None</option>
+                                                    <option value="VeryPoor">Very Poor</option>
+                                                    <option value="Poor">Poor</option>
+                                                    <option value="BelowAverage">Below Average</option>
+                                                    <option value="Average">Average</option>
+                                                    <option value="AboveAverage">Above Average</option>
+                                                    <option value="Good">Good</option>
+                                                    <option value="VeryGood">Very Good</option>
+                                                    <option value="Excellent">Excellent</option>
+                                                    <option value="Masterwork">Masterwork</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
+                                            <div class="form-group" style="flex:1;min-width:150px">
+                                                <label>Mineral Quality Min</label>
+                                                <select class="form-control" @bind="area.Environment.MineralQualityRange.Min">
+                                                    <option value="">— Select —</option>
+                                                    <option value="None">None</option>
+                                                    <option value="VeryPoor">Very Poor</option>
+                                                    <option value="Poor">Poor</option>
+                                                    <option value="BelowAverage">Below Average</option>
+                                                    <option value="Average">Average</option>
+                                                    <option value="AboveAverage">Above Average</option>
+                                                    <option value="Good">Good</option>
+                                                    <option value="VeryGood">Very Good</option>
+                                                    <option value="Excellent">Excellent</option>
+                                                    <option value="Masterwork">Masterwork</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-group" style="flex:1;min-width:150px">
+                                                <label>Mineral Quality Max</label>
+                                                <select class="form-control" @bind="area.Environment.MineralQualityRange.Max">
+                                                    <option value="">— Select —</option>
+                                                    <option value="None">None</option>
+                                                    <option value="VeryPoor">Very Poor</option>
+                                                    <option value="Poor">Poor</option>
+                                                    <option value="BelowAverage">Below Average</option>
+                                                    <option value="Average">Average</option>
+                                                    <option value="AboveAverage">Above Average</option>
+                                                    <option value="Good">Good</option>
+                                                    <option value="VeryGood">Very Good</option>
+                                                    <option value="Excellent">Excellent</option>
+                                                    <option value="Masterwork">Masterwork</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        @* ===== Area Chaos Override ===== *@
+                                        <div style="margin-top:8px">
+                                            <div style="display:flex;justify-content:space-between;align-items:center">
+                                                <small><strong>Chaos Override</strong></small>
+                                                @if (area.Environment.Chaos == null)
+                                                {
+                                                    <button class="btn btn-sm btn-secondary" style="font-size:0.75rem" @onclick="() => AddAreaChaos(i)">+ Add</button>
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn btn-sm btn-outline-danger" style="font-size:0.75rem" @onclick="() => RemoveAreaChaos(i)">Remove</button>
+                                                }
+                                            </div>
+                                            @if (area.Environment.Chaos != null)
+                                            {
+                                                <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap">
+                                                    <div class="form-group" style="flex:1;min-width:80px">
+                                                        <label style="font-size:0.8rem">Danger <small>(@area.Environment.Chaos.Danger)</small></label>
+                                                        <input type="range" class="form-range" min="0" max="100" @bind="area.Environment.Chaos.Danger" />
+                                                    </div>
+                                                    <div class="form-group" style="flex:1;min-width:80px">
+                                                        <label style="font-size:0.8rem">Corruption <small>(@area.Environment.Chaos.Corruption)</small></label>
+                                                        <input type="range" class="form-range" min="0" max="100" @bind="area.Environment.Chaos.Corruption" />
+                                                    </div>
+                                                    <div class="form-group" style="flex:1;min-width:80px">
+                                                        <label style="font-size:0.8rem">Density <small>(@area.Environment.Chaos.Density)</small></label>
+                                                        <input type="range" class="form-range" min="0" max="100" @bind="area.Environment.Chaos.Density" />
+                                                    </div>
+                                                    <div class="form-group" style="flex:1;min-width:80px">
+                                                        <label style="font-size:0.8rem">Mutation <small>(@area.Environment.Chaos.Mutation)</small></label>
+                                                        <input type="range" class="form-range" min="0" max="100" @bind="area.Environment.Chaos.Mutation" />
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    @* ===== Places of Interest ===== *@
+                                    <div style="border:1px solid var(--border-color);border-radius:6px;padding:10px;background:rgba(255,255,255,0.02)">
+                                        <div style="display:flex;justify-content:space-between;align-items:center">
+                                            <strong style="font-size:0.9rem">Places of Interest (@(area.PlacesOfInterest?.Count ?? 0))</strong>
+                                            <button class="btn btn-sm btn-secondary" @onclick="() => AddPoi(i)">+ Add POI</button>
+                                        </div>
+
+                                        @if (area.PlacesOfInterest != null)
+                                        {
+                                            @for (int pidx = 0; pidx < area.PlacesOfInterest.Count; pidx++)
+                                            {
+                                                var pi = pidx;
+                                                var poi = area.PlacesOfInterest[pi];
+                                                <div style="border:1px dashed var(--border-color);border-radius:4px;padding:8px;margin-top:8px">
+                                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                                                        <small><strong>POI @(pi + 1): @(string.IsNullOrWhiteSpace(poi.Name) ? "(new)" : poi.Name)</strong></small>
+                                                        <button class="btn btn-sm btn-outline-danger" style="font-size:0.7rem;padding:1px 6px" @onclick="() => RemovePoi(i, pi)">✕</button>
+                                                    </div>
+                                                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                                                        <div class="form-group" style="flex:1;min-width:120px">
+                                                            <label style="font-size:0.8rem">ResRef</label>
+                                                            <input class="form-control form-control-sm" @bind="poi.ResRef" maxlength="16" />
+                                                        </div>
+                                                        <div class="form-group" style="flex:1;min-width:120px">
+                                                            <label style="font-size:0.8rem">Tag</label>
+                                                            <input class="form-control form-control-sm" @bind="poi.Tag" />
+                                                        </div>
+                                                        <div class="form-group" style="flex:1;min-width:120px">
+                                                            <label style="font-size:0.8rem">Name</label>
+                                                            <input class="form-control form-control-sm" @bind="poi.Name" />
+                                                        </div>
+                                                        <div class="form-group" style="flex:1;min-width:120px">
+                                                            <label style="font-size:0.8rem">Type</label>
+                                                            <select class="form-control form-control-sm" @bind="poi.Type">
+                                                                <option value="">— Select —</option>
+                                                                <option value="Undefined">Undefined</option>
+                                                                <option value="Dungeon">Dungeon</option>
+                                                                <option value="Landmark">Landmark</option>
+                                                                <option value="ResourceNode">Resource Node</option>
+                                                                <option value="House">House</option>
+                                                                <option value="Guild">Guild</option>
+                                                                <option value="Temple">Temple</option>
+                                                                <option value="Library">Library</option>
+                                                                <option value="Shop">Shop</option>
+                                                                <option value="Warehouse">Warehouse</option>
+                                                                <option value="Bank">Bank</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group" style="margin-top:6px">
+                                                        <label style="font-size:0.8rem">Description</label>
+                                                        <input class="form-control form-control-sm" @bind="poi.Description" />
+                                                    </div>
+                                                </div>
+                                            }
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                @* ===== Save / Cancel ===== *@
+                <div class="form-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+                    <button class="btn btn-secondary" @onclick="CloseEditModal">Cancel</button>
+                    <button class="btn btn-primary" @onclick="SaveRegion" disabled="@_isSaving">
+                        @(_isSaving ? "Saving..." : (_isCreating ? "Create" : "Save Changes"))
+                    </button>
+                </div>
+            </div>
+        </div>
+        </div>
+    }
+
+    @* ===== Import Modal ===== *@
+    @if (_showImportModal)
+    {
+        <div class="modal-backdrop" @onclick="CloseImportModal">
+        <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:600px;max-height:80vh;overflow-y:auto;margin:10vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+            <h2>Import Region Definitions</h2>
+            <p style="color:var(--text-secondary);font-size:0.9rem">
+                Upload or paste a JSON file containing region definitions. The JSON should be an array of region objects
+                matching the existing region definition format.
+            </p>
+
+            <div class="form-group" style="margin-top:15px">
+                <label>Upload JSON File</label>
+                <InputFile OnChange="OnImportFileSelected" accept=".json,.zip" multiple class="form-control" />
+                <small style="color:var(--text-secondary);margin-top:4px;display:block">Select .json files or a .zip containing .json files. You can add more files by clicking again — they will be appended.</small>
+            </div>
+
+            <div class="form-group" style="margin-top:10px">
+                <label>Or paste JSON directly</label>
+                <textarea class="form-control" rows="10" @bind="_importJson"
+                          placeholder='[{"Tag":"my_region","Name":"My Region","Areas":[...]}]'
+                          style="font-family:monospace;font-size:0.85rem"></textarea>
+            </div>
+
+            @if (_importResult != null)
+            {
+                <div class="alert @(_importResult.Failed > 0 ? "alert-warning" : "alert-success")" style="margin-top:15px">
+                    <strong>Import complete:</strong> @_importResult.Succeeded succeeded, @_importResult.Failed failed out of @_importResult.Total total.
+                    @if (_importResult.Errors.Count > 0)
+                    {
+                        <ul style="margin-top:8px;margin-bottom:0">
+                            @foreach (var err in _importResult.Errors.Take(10))
+                            {
+                                <li style="font-size:0.85rem">@err</li>
+                            }
+                            @if (_importResult.Errors.Count > 10)
+                            {
+                                <li style="font-size:0.85rem;color:var(--text-secondary)">...and @(_importResult.Errors.Count - 10) more</li>
+                            }
+                        </ul>
+                    }
+                </div>
+            }
+
+            <div class="form-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+                <button class="btn btn-secondary" @onclick="CloseImportModal">Close</button>
+                <button class="btn btn-primary" @onclick="RunImport" disabled="@(_isSaving || string.IsNullOrWhiteSpace(_importJson))">
+                    @(_isSaving ? "Importing..." : "Import")
+                </button>
+            </div>
+        </div>
+        </div>
+    }
+
+    @* ===== Delete Confirmation Modal ===== *@
+    @if (_showDeleteConfirm)
+    {
+        <div class="modal-backdrop" @onclick="() => _showDeleteConfirm = false">
+        <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:450px;margin:15vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+            <h3>Confirm Delete</h3>
+            <p>Are you sure you want to delete region <strong>@_deleteTarget?.Name</strong> (<code>@_deleteTarget?.Tag</code>)?</p>
+            <p style="color:var(--text-secondary);font-size:0.9rem">This action cannot be undone.</p>
+            <div class="form-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+                <button class="btn btn-secondary" @onclick="() => _showDeleteConfirm = false">Cancel</button>
+                <button class="btn btn-danger" @onclick="DeleteRegion" disabled="@_isSaving">
+                    @(_isSaving ? "Deleting..." : "Delete")
+                </button>
+            </div>
+        </div>
+        </div>
+    }
+</div>
+
+<style>
+    .modal-backdrop {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 1040;
+    }
+</style>
+
+@code {
+    // ===== Endpoint State =====
+    private List<WorldEngineEndpoint> _endpoints = [];
+    private WorldEngineEndpoint? _selectedEndpoint;
+
+    // ===== Data =====
+    private List<RegionDefinitionDto> _regions = [];
+    private int _totalCount;
+    private int _page = 1;
+    private int _pageSize = 50;
+    private string _searchTerm = "";
+
+    // ===== UI State =====
+    private bool _isLoading;
+    private bool _isSaving;
+    private string? _error;
+    private string? _success;
+
+    // ===== Edit Modal =====
+    private bool _showEditModal;
+    private bool _isCreating;
+    private RegionDefinitionDto _editRegion = new();
+    private HashSet<int> _expandedAreas = new();
+
+    // ===== Import Modal =====
+    private bool _showImportModal;
+    private string _importJson = "";
+    private ImportResult? _importResult;
+
+    // ===== Delete Confirmation =====
+    private bool _showDeleteConfirm;
+    private RegionDefinitionDto? _deleteTarget;
+
+    // ===== Export =====
+    private bool _isExporting;
+
+    // ===== Lifecycle =====
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshEndpoints();
+    }
+
+    // ===== Endpoint Handling =====
+
+    private async Task RefreshEndpoints()
+    {
+        var all = await EndpointService.GetAllEndpointsAsync();
+        _endpoints = all.Where(e => e.IsEnabled).ToList();
+
+        if (_selectedEndpoint != null && !_endpoints.Any(e => e.Id == _selectedEndpoint.Id))
+            _selectedEndpoint = null;
+
+        StateHasChanged();
+    }
+
+    private async Task OnEndpointChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
+            Api.SelectEndpoint(id);
+            _page = 1;
+            await RefreshRegions();
+        }
+        else
+        {
+            _selectedEndpoint = null;
+            Api.SelectEndpoint(null);
+            _regions.Clear();
+        }
+    }
+
+    // ===== Data Loading =====
+
+    private async Task RefreshRegions()
+    {
+        if (_selectedEndpoint == null) return;
+        _isLoading = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            var result = await Api.GetAllAsync(_searchTerm, _page, _pageSize);
+            _regions = result.Items;
+            _totalCount = result.TotalCount;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to load regions");
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SearchRegions()
+    {
+        _page = 1;
+        await RefreshRegions();
+    }
+
+    private async Task PrevPage()
+    {
+        if (_page > 1) { _page--; await RefreshRegions(); }
+    }
+
+    private async Task NextPage()
+    {
+        if (_page * _pageSize < _totalCount) { _page++; await RefreshRegions(); }
+    }
+
+    // ===== Create / Edit Modal =====
+
+    private void ShowCreateModal()
+    {
+        _isCreating = true;
+        _editRegion = new RegionDefinitionDto();
+        _expandedAreas.Clear();
+        _showEditModal = true;
+    }
+
+    private void ShowEditModal(RegionDefinitionDto region)
+    {
+        _isCreating = false;
+        _expandedAreas.Clear();
+        // Deep clone to avoid modifying list data directly
+        _editRegion = new RegionDefinitionDto
+        {
+            Tag = region.Tag,
+            Name = region.Name,
+            DefaultChaos = region.DefaultChaos != null ? new ChaosStateDto
+            {
+                Danger = region.DefaultChaos.Danger,
+                Corruption = region.DefaultChaos.Corruption,
+                Density = region.DefaultChaos.Density,
+                Mutation = region.DefaultChaos.Mutation
+            } : null,
+            Areas = region.Areas.Select(a => new AreaDefinitionDto
+            {
+                ResRef = a.ResRef,
+                DefinitionTags = a.DefinitionTags.ToList(),
+                LinkedSettlement = a.LinkedSettlement,
+                Environment = new EnvironmentDataDto
+                {
+                    Climate = a.Environment.Climate,
+                    SoilQuality = a.Environment.SoilQuality,
+                    MineralQualityRange = new QualityRangeDto
+                    {
+                        Min = a.Environment.MineralQualityRange.Min,
+                        Max = a.Environment.MineralQualityRange.Max
+                    },
+                    Chaos = a.Environment.Chaos != null ? new ChaosStateDto
+                    {
+                        Danger = a.Environment.Chaos.Danger,
+                        Corruption = a.Environment.Chaos.Corruption,
+                        Density = a.Environment.Chaos.Density,
+                        Mutation = a.Environment.Chaos.Mutation
+                    } : null
+                },
+                PlacesOfInterest = a.PlacesOfInterest?.Select(p => new PlaceOfInterestDto
+                {
+                    ResRef = p.ResRef,
+                    Tag = p.Tag,
+                    Name = p.Name,
+                    Type = p.Type,
+                    Description = p.Description
+                }).ToList()
+            }).ToList()
+        };
+        _showEditModal = true;
+    }
+
+    private void CloseEditModal()
+    {
+        _showEditModal = false;
+        _editRegion = new();
+        _expandedAreas.Clear();
+    }
+
+    private async Task SaveRegion()
+    {
+        _isSaving = true;
+        _error = null;
+        try
+        {
+            if (_isCreating)
+                await Api.CreateAsync(_editRegion);
+            else
+                await Api.UpdateAsync(_editRegion.Tag, _editRegion);
+
+            _success = _isCreating ? $"Region '{_editRegion.Name}' created." : $"Region '{_editRegion.Name}' updated.";
+            _showEditModal = false;
+            await RefreshRegions();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to save region");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    // ===== Area Helpers =====
+
+    private bool IsAreaExpanded(int index) => _expandedAreas.Contains(index);
+
+    private void ToggleAreaExpanded(int index)
+    {
+        if (!_expandedAreas.Remove(index))
+            _expandedAreas.Add(index);
+    }
+
+    private void AddArea()
+    {
+        _editRegion.Areas.Add(new AreaDefinitionDto());
+        _expandedAreas.Add(_editRegion.Areas.Count - 1);
+    }
+
+    private void RemoveArea(int index)
+    {
+        _editRegion.Areas.RemoveAt(index);
+        _expandedAreas.Remove(index);
+        // Re-index expanded areas
+        var updated = new HashSet<int>();
+        foreach (var i in _expandedAreas)
+        {
+            if (i > index) updated.Add(i - 1);
+            else updated.Add(i);
+        }
+        _expandedAreas = updated;
+    }
+
+    private void OnLinkedSettlementChanged(ChangeEventArgs e, int areaIndex)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var val) && val > 0)
+            _editRegion.Areas[areaIndex].LinkedSettlement = val;
+        else
+            _editRegion.Areas[areaIndex].LinkedSettlement = null;
+    }
+
+    private void OnDefinitionTagsChanged(ChangeEventArgs e, int areaIndex)
+    {
+        var raw = e.Value?.ToString() ?? "";
+        _editRegion.Areas[areaIndex].DefinitionTags = string.IsNullOrWhiteSpace(raw)
+            ? new List<string>()
+            : raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+    }
+
+    // ===== Chaos Helpers =====
+
+    private void AddDefaultChaos() => _editRegion.DefaultChaos = new ChaosStateDto();
+    private void RemoveDefaultChaos() => _editRegion.DefaultChaos = null;
+
+    private void AddAreaChaos(int areaIndex) =>
+        _editRegion.Areas[areaIndex].Environment.Chaos = new ChaosStateDto();
+
+    private void RemoveAreaChaos(int areaIndex) =>
+        _editRegion.Areas[areaIndex].Environment.Chaos = null;
+
+    // ===== POI Helpers =====
+
+    private void AddPoi(int areaIndex)
+    {
+        _editRegion.Areas[areaIndex].PlacesOfInterest ??= new List<PlaceOfInterestDto>();
+        _editRegion.Areas[areaIndex].PlacesOfInterest!.Add(new PlaceOfInterestDto());
+    }
+
+    private void RemovePoi(int areaIndex, int poiIndex)
+    {
+        _editRegion.Areas[areaIndex].PlacesOfInterest?.RemoveAt(poiIndex);
+    }
+
+    // ===== Import =====
+
+    private List<System.Text.Json.JsonElement> _importedRegions = new();
+
+    private async Task OnImportFileSelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            foreach (var file in e.GetMultipleFiles(100))
+            {
+                if (file.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                {
+                    await ProcessZipRegions(file);
+                }
+                else
+                {
+                    await ProcessJsonFileRegions(file);
+                }
+            }
+
+            _importJson = System.Text.Json.JsonSerializer.Serialize(_importedRegions);
+            _importResult = null;
+            _success = $"Loaded {_importedRegions.Count} region(s) total. Pick more files to add more, or click Import.";
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to read file(s): {ex.Message}";
+        }
+    }
+
+    private async Task ProcessJsonFileRegions(IBrowserFile file)
+    {
+        using var reader = new StreamReader(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
+        string content = await reader.ReadToEndAsync();
+        ParseJsonRegions(content);
+    }
+
+    private async Task ProcessZipRegions(IBrowserFile file)
+    {
+        using var ms = new MemoryStream();
+        await file.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024).CopyToAsync(ms);
+        ms.Position = 0;
+        using var archive = new ZipArchive(ms, ZipArchiveMode.Read);
+        foreach (var entry in archive.Entries)
+        {
+            if (!entry.FullName.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) continue;
+            using var entryStream = entry.Open();
+            using var reader = new StreamReader(entryStream);
+            string content = await reader.ReadToEndAsync();
+            ParseJsonRegions(content);
+        }
+    }
+
+    private void ParseJsonRegions(string content)
+    {
+        using var doc = System.Text.Json.JsonDocument.Parse(content);
+        if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+            foreach (var item in doc.RootElement.EnumerateArray())
+            {
+                _importedRegions.Add(item.Clone());
+            }
+        }
+        else if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object)
+        {
+            _importedRegions.Add(doc.RootElement.Clone());
+        }
+    }
+
+    private async Task RunImport()
+    {
+        if (string.IsNullOrWhiteSpace(_importJson)) return;
+        _isSaving = true;
+        _error = null;
+        try
+        {
+            _importResult = await Api.ImportJsonAsync(_importJson);
+            if (_importResult is { Failed: 0 })
+                _success = $"Successfully imported {_importResult.Succeeded} regions.";
+            await RefreshRegions();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to import regions");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseImportModal()
+    {
+        _showImportModal = false;
+        _importJson = "";
+        _importResult = null;
+        _importedRegions.Clear();
+    }
+
+    // ===== Export =====
+
+    private async Task ExportRegions()
+    {
+        _isExporting = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            string json = await Api.ExportJsonAsync(_searchTerm);
+            string fileName = $"regions-export-{DateTime.UtcNow:yyyyMMdd-HHmmss}.json";
+            await DownloadFileAsync(fileName, json);
+            _success = "Export downloaded successfully.";
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to export regions");
+        }
+        finally
+        {
+            _isExporting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DownloadFileAsync(string fileName, string content)
+    {
+        var bytes = System.Text.Encoding.UTF8.GetBytes(content);
+        var base64 = Convert.ToBase64String(bytes);
+        await JS.InvokeVoidAsync("adminPanelDownloadFile", fileName, base64);
+    }
+
+    // ===== Delete =====
+
+    private void ConfirmDelete(RegionDefinitionDto region)
+    {
+        _deleteTarget = region;
+        _showDeleteConfirm = true;
+    }
+
+    private async Task DeleteRegion()
+    {
+        if (_deleteTarget == null) return;
+        _isSaving = true;
+        _error = null;
+        try
+        {
+            await Api.DeleteAsync(_deleteTarget.Tag);
+            _success = $"Deleted region '{_deleteTarget.Name}'.";
+            _showDeleteConfirm = false;
+            _deleteTarget = null;
+            await RefreshRegions();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to delete region");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+}

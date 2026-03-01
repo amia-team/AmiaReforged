@@ -28,16 +28,7 @@ public class RemoveRegionCommandHandler(
         }
 
         // Remove from repository
-        // Note: The current IRegionRepository doesn't have a Remove method, so we'll need to update it
-        // For now, we'll work with what we have and clear/re-add without this region
-        List<RegionDefinition> allRegions = repository.All();
-        allRegions.RemoveAll(r => r.Tag.Value == command.Tag.Value);
-
-        repository.Clear();
-        foreach (RegionDefinition region in allRegions)
-        {
-            repository.Add(region);
-        }
+        repository.Delete(command.Tag);
 
         // Publish event
         await eventBus.PublishAsync(new RegionRemovedEvent(

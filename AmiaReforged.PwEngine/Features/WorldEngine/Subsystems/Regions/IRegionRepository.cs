@@ -39,6 +39,9 @@ public interface IRegionRepository
     /// </summary>
     bool TryGetRegionForArea(string areaResRef, out RegionDefinition? region);
 
+    // Delete a single region by tag, returns true if it existed
+    bool Delete(RegionTag tag);
+
     // Clear all regions and indexes (used on reload)
     void Clear();
 }
