@@ -38,7 +38,7 @@ public class LanguageToolPresenter : ScryPresenter<LanguageToolView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(0, 100, 530f, 550f),
+            Geometry = new NuiRect(0, 100, 510f, 550f),
             Resizable = true
         };
     }

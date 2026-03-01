@@ -6,7 +6,7 @@ namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.LanguageTool;
 
 public class LanguageToolView : ScryView<LanguageToolPresenter>, IToolWindow
 {
-    private const float WindowW = 530f;
+    private const float WindowW = 510f;
     private const float WindowH = 550f;
 
     public readonly NuiBind<string> LanguageCountText = new(key: "language_count_text");
