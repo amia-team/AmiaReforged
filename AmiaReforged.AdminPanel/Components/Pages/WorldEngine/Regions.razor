@@ -3,12 +3,16 @@
 @using AmiaReforged.AdminPanel.Models
 @using AmiaReforged.AdminPanel.Services
 @using System.IO.Compression
+@using System.Text.Json
+@using System.Text.Json.Serialization
 @attribute [Authorize]
 @inject RegionApiService Api
+@inject AreaGraphApiService GraphApi
 @inject IWorldEngineEndpointService EndpointService
 @inject ILogger<Regions> Logger
 @inject IJSRuntime JS
 @rendermode InteractiveServer
+@implements IAsyncDisposable
 
 <PageTitle>Regions - World Engine</PageTitle>
 
@@ -80,6 +84,104 @@
             </div>
         </div>
 
+        @* ===== Area Graph Panel (collapsible) ===== *@
+        <div class="section" style="margin-bottom:20px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                <h3 style="margin:0">
+                    <a href="javascript:void(0)" @onclick="() => _showGraph = !_showGraph" style="text-decoration:none;color:inherit">
+                        @(_showGraph ? "▾" : "▸") Area Graph
+                    </a>
+                    @if (_graphData != null)
+                    {
+                        <small style="color:var(--text-secondary);font-weight:normal;margin-left:8px">
+                            @_graphData.Nodes.Count connected, @_graphData.DisconnectedAreas.Count disconnected
+                        </small>
+                    }
+                </h3>
+                <div style="display:flex;gap:5px">
+                    @if (!_isGraphLoading && _graphData == null)
+                    {
+                        <button class="btn btn-primary btn-sm" @onclick="LoadGraph">Load Graph</button>
+                    }
+                    else if (_graphData != null)
+                    {
+                        <button class="btn btn-warning btn-sm" @onclick="RefreshGraphData" disabled="@_isGraphLoading">
+                            @(_isGraphLoading ? "Refreshing..." : "Rescan")
+                        </button>
+                        <button class="btn btn-secondary btn-sm" @onclick="FitGraphView">Fit</button>
+                        <button class="btn btn-info btn-sm" @onclick="HighlightOrphans">Show Unassigned</button>
+                        <button class="btn btn-secondary btn-sm" @onclick="ClearGraphHighlight">Clear</button>
+                    }
+                    @if (_isGraphLoading)
+                    {
+                        <span style="color:var(--text-secondary);align-self:center;font-size:0.9rem;margin-left:6px">Loading...</span>
+                    }
+                </div>
+            </div>
+
+            @if (_showGraph)
+            {
+                @if (_graphData != null)
+                {
+                    @* Search within graph *@
+                    <div style="display:flex;gap:8px;margin-bottom:8px;align-items:end">
+                        <div class="form-group" style="flex:1">
+                            <input class="form-control form-control-sm" @bind="_graphSearchQuery" @bind:event="oninput"
+                                   placeholder="Search areas by name or ResRef..." @onkeydown="OnGraphSearchKeyDown" />
+                        </div>
+                        <button class="btn btn-primary btn-sm" @onclick="SearchInGraph">Search</button>
+                    </div>
+
+                    @* Graph container *@
+                    <div id="region-cy" style="width:100%;height:500px;border:1px solid var(--border-color);border-radius:8px;background:#1a1a1a"></div>
+
+                    @* Region color legend *@
+                    @if (_regionColors.Count > 0)
+                    {
+                        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;padding:6px 0">
+                            @foreach (var kv in _regionColors)
+                            {
+                                <span style="display:flex;align-items:center;gap:4px;font-size:0.85rem;cursor:pointer"
+                                      @onclick="() => HighlightRegionOnGraph(kv.Key)">
+                                    <span style="width:12px;height:12px;border-radius:3px;background:@kv.Value;display:inline-block"></span>
+                                    @kv.Key
+                                </span>
+                            }
+                            <span style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:var(--text-secondary)">
+                                <span style="width:12px;height:12px;border-radius:3px;background:#6b6b6b;display:inline-block"></span>
+                                Unassigned
+                            </span>
+                        </div>
+                    }
+
+                    @* Selected graph node info *@
+                    @if (_selectedGraphNode != null)
+                    {
+                        <div style="margin-top:8px;padding:10px;border:1px solid var(--border-color);border-radius:6px;background:rgba(255,255,255,0.03)">
+                            <div style="display:flex;justify-content:space-between;align-items:center">
+                                <strong>@_selectedGraphNode.Name</strong>
+                                <button class="btn btn-sm btn-secondary" style="padding:1px 8px" @onclick="() => _selectedGraphNode = null">✕</button>
+                            </div>
+                            <div style="display:flex;gap:15px;margin-top:4px;font-size:0.9rem;color:var(--text-secondary)">
+                                <span><strong>ResRef:</strong> <code>@_selectedGraphNode.ResRef</code></span>
+                                <span><strong>Region:</strong> @(!string.IsNullOrEmpty(_selectedGraphNode.Region) ? _selectedGraphNode.Region : "Unassigned")</span>
+                                @if (_selectedGraphNode.HasSpawnProfile)
+                                {
+                                    <span><strong>Profile:</strong> @(_selectedGraphNode.SpawnProfileName ?? "Yes")</span>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+                else if (!_isGraphLoading)
+                {
+                    <p style="color:var(--text-secondary);text-align:center;padding:30px 0">
+                        Click <strong>Load Graph</strong> to fetch the area connectivity graph from the server.
+                    </p>
+                }
+            }
+        </div>
+
         @* ===== Regions Table ===== *@
         @if (_isLoading)
         {
@@ -122,6 +224,10 @@
                                     }
                                 </td>
                                 <td class="actions">
+                                    @if (_graphData != null)
+                                    {
+                                        <button class="btn btn-sm btn-info" style="padding:2px 6px;font-size:0.75rem" @onclick="() => HighlightRegionOnGraph(region.Name)">Show</button>
+                                    }
                                     <button class="btn btn-sm btn-secondary" @onclick="() => ShowEditModal(region)">Edit</button>
                                     <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(region)">Delete</button>
                                 </td>
@@ -143,6 +249,71 @@
                         </div>
                     </div>
                 }
+            </div>
+        }
+
+        @* ===== Unassigned Areas ===== *@
+        @if (_graphData != null && _unassignedAreas.Count > 0)
+        {
+            <div class="section" style="margin-top:20px">
+                <h3 style="margin-bottom:12px;color:var(--text-secondary)">
+                    Unassigned Areas (@_unassignedAreas.Count)
+                </h3>
+                <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:12px">
+                    These areas exist in the module but are not assigned to any region.
+                </p>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ResRef</th>
+                            <th>Name</th>
+                            <th>Spawn Profile</th>
+                            <th>Add to Region</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var area in _unassignedAreas)
+                        {
+                            <tr>
+                                <td><code>@area.ResRef</code></td>
+                                <td>@area.Name</td>
+                                <td>
+                                    @if (area.HasSpawnProfile)
+                                    {
+                                        <span class="badge" style="background:#4ecca3;color:#1a1a1a;font-size:0.75rem">@(area.SpawnProfileName ?? "Yes")</span>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:var(--text-secondary)">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (_assigningResRef == area.ResRef)
+                                    {
+                                        <div style="display:flex;gap:4px;align-items:center">
+                                            <select class="form-control form-control-sm" style="max-width:200px" @bind="_assignTargetRegionTag">
+                                                <option value="">— Select Region —</option>
+                                                @foreach (var r in _regions)
+                                                {
+                                                    <option value="@r.Tag">@r.Name</option>
+                                                }
+                                            </select>
+                                            <button class="btn btn-sm btn-primary" disabled="@(string.IsNullOrEmpty(_assignTargetRegionTag) || _isSaving)"
+                                                    @onclick="() => AssignAreaToRegion(area.ResRef)">Add</button>
+                                            <button class="btn btn-sm btn-secondary" @onclick="() => _assigningResRef = null">✕</button>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-sm btn-primary" style="font-size:0.8rem" @onclick="() => StartAssign(area.ResRef)">
+                                            Add to Region →
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
         }
     }
@@ -219,6 +390,11 @@
                                 <strong style="font-size:0.95rem">
                                     <a href="javascript:void(0)" @onclick="() => ToggleAreaExpanded(i)" style="text-decoration:none;color:inherit">
                                         @(IsAreaExpanded(i) ? "▾" : "▸") Area @(i + 1): @(string.IsNullOrWhiteSpace(area.ResRef) ? "(new)" : area.ResRef)
+                                        @{ var areaName = GetAreaNameByResRef(area.ResRef); }
+                                        @if (!string.IsNullOrEmpty(areaName))
+                                        {
+                                            <small style="color:var(--text-secondary);font-weight:normal;margin-left:4px">— @areaName</small>
+                                        }
                                     </a>
                                 </strong>
                                 <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveArea(i)">Remove</button>
@@ -229,8 +405,23 @@
                                 <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
                                     <div class="form-row" style="display:flex;gap:10px">
                                         <div class="form-group" style="flex:1">
-                                            <label>ResRef <small style="color:var(--text-secondary)">(max 16 chars)</small></label>
-                                            <input class="form-control" @bind="area.ResRef" maxlength="16" />
+                                            <label>ResRef <small style="color:var(--text-secondary)">(area from module)</small></label>
+                                            @if (_knownAreas.Count > 0)
+                                            {
+                                                <input class="form-control" list="@($"arealist-{i}")" @bind="area.ResRef" maxlength="16"
+                                                       placeholder="Type or select an area..." />
+                                                <datalist id="@($"arealist-{i}")">
+                                                    @foreach (var ka in GetAvailableAreas(area.ResRef))
+                                                    {
+                                                        <option value="@ka.ResRef">@ka.ResRef — @ka.Name</option>
+                                                    }
+                                                </datalist>
+                                            }
+                                            else
+                                            {
+                                                <input class="form-control" @bind="area.ResRef" maxlength="16"
+                                                       placeholder="Enter area ResRef..." />
+                                            }
                                         </div>
                                         <div class="form-group" style="flex:1">
                                             <label>Linked Settlement ID <small style="color:var(--text-secondary)">(optional)</small></label>
@@ -549,11 +740,43 @@
     // ===== Export =====
     private bool _isExporting;
 
+    // ===== Area Graph =====
+    private bool _showGraph;
+    private bool _isGraphLoading;
+    private AreaGraphDto? _graphData;
+    private List<AreaNodeDto> _knownAreas = new();
+    private List<AreaNodeDto> _unassignedAreas = new();
+    private Dictionary<string, string> _regionColors = new();
+    private string _graphSearchQuery = "";
+    private DotNetObjectReference<Regions>? _dotNetRef;
+    private GraphNodeInfo? _selectedGraphNode;
+
+    // ===== Assign workflow =====
+    private string? _assigningResRef;
+    private string? _assignTargetRegionTag;
+
+    private static readonly JsonSerializerOptions CamelCase = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Converters = { new JsonStringEnumConverter() }
+    };
+
     // ===== Lifecycle =====
 
     protected override async Task OnInitializedAsync()
     {
         await RefreshEndpoints();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("regionGraph.destroy");
+        }
+        catch { /* component may already be disposed */ }
+
+        _dotNetRef?.Dispose();
     }
 
     // ===== Endpoint Handling =====
@@ -575,14 +798,24 @@
         {
             _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
             Api.SelectEndpoint(id);
+            GraphApi.SelectEndpoint(id);
             _page = 1;
+            _graphData = null;
+            _knownAreas.Clear();
+            _unassignedAreas.Clear();
+            _regionColors.Clear();
             await RefreshRegions();
         }
         else
         {
             _selectedEndpoint = null;
             Api.SelectEndpoint(null);
+            GraphApi.SelectEndpoint(null);
             _regions.Clear();
+            _graphData = null;
+            _knownAreas.Clear();
+            _unassignedAreas.Clear();
+            _regionColors.Clear();
         }
     }
 
@@ -600,6 +833,11 @@
             var result = await Api.GetAllAsync(_searchTerm, _page, _pageSize);
             _regions = result.Items;
             _totalCount = result.TotalCount;
+
+            if (_graphData != null)
+            {
+                ComputeUnassignedAreas();
+            }
         }
         catch (Exception ex)
         {
@@ -629,33 +867,293 @@
         if (_page * _pageSize < _totalCount) { _page++; await RefreshRegions(); }
     }
 
-    // ===== Create / Edit Modal =====
+    // ===== Area Graph =====
 
-    private void ShowCreateModal()
+    private async Task LoadGraph()
     {
-        _isCreating = true;
-        _editRegion = new RegionDefinitionDto();
-        _expandedAreas.Clear();
-        _showEditModal = true;
+        await FetchGraph(refresh: false);
     }
 
-    private void ShowEditModal(RegionDefinitionDto region)
+    private async Task RefreshGraphData()
     {
-        _isCreating = false;
-        _expandedAreas.Clear();
-        // Deep clone to avoid modifying list data directly
-        _editRegion = new RegionDefinitionDto
+        await FetchGraph(refresh: true);
+    }
+
+    private async Task FetchGraph(bool refresh)
+    {
+        _isGraphLoading = true;
+        _error = null;
+        StateHasChanged();
+
+        try
         {
-            Tag = region.Tag,
-            Name = region.Name,
-            DefaultChaos = region.DefaultChaos != null ? new ChaosStateDto
+            _graphData = refresh
+                ? await GraphApi.RefreshGraphAsync()
+                : await GraphApi.GetGraphAsync();
+
+            if (_graphData != null)
             {
-                Danger = region.DefaultChaos.Danger,
-                Corruption = region.DefaultChaos.Corruption,
-                Density = region.DefaultChaos.Density,
-                Mutation = region.DefaultChaos.Mutation
+                _showGraph = true;
+                BuildKnownAreas();
+                ComputeUnassignedAreas();
+                BuildRegionColors();
+
+                StateHasChanged();
+                await Task.Delay(50);
+                await RenderRegionGraph();
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load area graph: {ex.Message}";
+            Logger.LogError(ex, "Failed to load area graph");
+        }
+        finally
+        {
+            _isGraphLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void BuildKnownAreas()
+    {
+        if (_graphData == null) { _knownAreas.Clear(); return; }
+
+        var all = new List<AreaNodeDto>(_graphData.Nodes.Count + _graphData.DisconnectedAreas.Count);
+        all.AddRange(_graphData.Nodes);
+        all.AddRange(_graphData.DisconnectedAreas);
+        all.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
+        _knownAreas = all;
+    }
+
+    private void ComputeUnassignedAreas()
+    {
+        if (_graphData == null) { _unassignedAreas.Clear(); return; }
+
+        var assignedResRefs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var region in _regions)
+        {
+            foreach (var area in region.Areas)
+            {
+                if (!string.IsNullOrWhiteSpace(area.ResRef))
+                    assignedResRefs.Add(area.ResRef);
+            }
+        }
+
+        var allGraphNodes = _graphData.Nodes.Concat(_graphData.DisconnectedAreas);
+
+        _unassignedAreas = allGraphNodes
+            .Where(n => string.IsNullOrEmpty(n.Region) && !assignedResRefs.Contains(n.ResRef))
+            .OrderBy(n => n.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private void BuildRegionColors()
+    {
+        _regionColors.Clear();
+        var palette = new[]
+        {
+            "#e6194b", "#3cb44b", "#4363d8", "#f58231",
+            "#911eb4", "#42d4f4", "#f032e6", "#bfef45",
+            "#fabed4", "#469990", "#dcbeff", "#9A6324"
+        };
+
+        var regionNames = _graphData?.Nodes.Concat(_graphData.DisconnectedAreas)
+            .Select(n => n.Region)
+            .Where(r => !string.IsNullOrEmpty(r))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(r => r, StringComparer.OrdinalIgnoreCase)
+            .ToList() ?? new();
+
+        for (int i = 0; i < regionNames.Count; i++)
+        {
+            _regionColors[regionNames[i]!] = palette[i % palette.Length];
+        }
+    }
+
+    private async Task RenderRegionGraph()
+    {
+        if (_graphData == null) return;
+
+        try
+        {
+            _dotNetRef?.Dispose();
+            _dotNetRef = DotNetObjectReference.Create(this);
+
+            var regionTags = _regionColors.Keys.ToList();
+            string nodesJson = JsonSerializer.Serialize(_graphData.Nodes, CamelCase);
+            string edgesJson = JsonSerializer.Serialize(_graphData.Edges, CamelCase);
+            string disconnectedJson = JsonSerializer.Serialize(_graphData.DisconnectedAreas, CamelCase);
+            string regionTagsJson = JsonSerializer.Serialize(regionTags, CamelCase);
+
+            await JS.InvokeVoidAsync("regionGraph.init", "region-cy", nodesJson, edgesJson, disconnectedJson, regionTagsJson, _dotNetRef);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to render region graph");
+            _error = "Failed to render graph visualization.";
+        }
+    }
+
+    private async Task HighlightRegionOnGraph(string regionName)
+    {
+        try { await JS.InvokeVoidAsync("regionGraph.highlightRegion", regionName); }
+        catch { /* ignore if graph not initialized */ }
+    }
+
+    private async Task HighlightOrphans()
+    {
+        try { await JS.InvokeVoidAsync("regionGraph.highlightOrphans"); }
+        catch { /* ignore */ }
+    }
+
+    private async Task ClearGraphHighlight()
+    {
+        _selectedGraphNode = null;
+        try { await JS.InvokeVoidAsync("regionGraph.clearHighlight"); }
+        catch { /* ignore */ }
+    }
+
+    private async Task FitGraphView()
+    {
+        try { await JS.InvokeVoidAsync("regionGraph.fitView"); }
+        catch { /* ignore */ }
+    }
+
+    private async Task SearchInGraph()
+    {
+        if (string.IsNullOrWhiteSpace(_graphSearchQuery)) return;
+        try
+        {
+            bool found = await JS.InvokeAsync<bool>("regionGraph.highlightNode", _graphSearchQuery);
+            if (!found)
+                _error = $"No area found matching '{_graphSearchQuery}'.";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Graph search error");
+        }
+    }
+
+    private async Task OnGraphSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+            await SearchInGraph();
+    }
+
+    [JSInvokable]
+    public Task OnGraphNodeSelected(string json)
+    {
+        try
+        {
+            _selectedGraphNode = JsonSerializer.Deserialize<GraphNodeInfo>(json, CamelCase);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to deserialize graph node selection");
+        }
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public Task OnGraphNodeDeselected()
+    {
+        _selectedGraphNode = null;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    // ===== Known Area Helpers (for autocomplete) =====
+
+    private string? GetAreaNameByResRef(string? resRef)
+    {
+        if (string.IsNullOrWhiteSpace(resRef) || _knownAreas.Count == 0) return null;
+        return _knownAreas.FirstOrDefault(a =>
+            string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase))?.Name;
+    }
+
+    private List<AreaNodeDto> GetAvailableAreas(string? currentResRef)
+    {
+        var usedResRefs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var a in _editRegion.Areas)
+        {
+            if (!string.IsNullOrWhiteSpace(a.ResRef) &&
+                !string.Equals(a.ResRef, currentResRef, StringComparison.OrdinalIgnoreCase))
+            {
+                usedResRefs.Add(a.ResRef);
+            }
+        }
+
+        return _knownAreas.Where(a => !usedResRefs.Contains(a.ResRef)).ToList();
+    }
+
+    // ===== Assign Area to Region =====
+
+    private void StartAssign(string resRef)
+    {
+        _assigningResRef = resRef;
+        _assignTargetRegionTag = null;
+    }
+
+    private async Task AssignAreaToRegion(string resRef)
+    {
+        if (string.IsNullOrEmpty(_assignTargetRegionTag)) return;
+
+        _isSaving = true;
+        _error = null;
+
+        try
+        {
+            var targetRegion = _regions.FirstOrDefault(r =>
+                string.Equals(r.Tag, _assignTargetRegionTag, StringComparison.OrdinalIgnoreCase));
+
+            if (targetRegion == null)
+            {
+                _error = $"Region '{_assignTargetRegionTag}' not found.";
+                return;
+            }
+
+            var updatedRegion = CloneRegion(targetRegion);
+            updatedRegion.Areas.Add(new AreaDefinitionDto { ResRef = resRef });
+            await Api.UpdateAsync(updatedRegion.Tag, updatedRegion);
+
+            _success = $"Added area '{resRef}' to region '{targetRegion.Name}'.";
+            _assigningResRef = null;
+            _assignTargetRegionTag = null;
+
+            await RefreshRegions();
+            if (_graphData != null)
+            {
+                await FetchGraph(refresh: true);
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to assign area to region");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private static RegionDefinitionDto CloneRegion(RegionDefinitionDto source)
+    {
+        return new RegionDefinitionDto
+        {
+            Tag = source.Tag,
+            Name = source.Name,
+            DefaultChaos = source.DefaultChaos != null ? new ChaosStateDto
+            {
+                Danger = source.DefaultChaos.Danger,
+                Corruption = source.DefaultChaos.Corruption,
+                Density = source.DefaultChaos.Density,
+                Mutation = source.DefaultChaos.Mutation
             } : null,
-            Areas = region.Areas.Select(a => new AreaDefinitionDto
+            Areas = source.Areas.Select(a => new AreaDefinitionDto
             {
                 ResRef = a.ResRef,
                 DefinitionTags = a.DefinitionTags.ToList(),
@@ -687,6 +1185,23 @@
                 }).ToList()
             }).ToList()
         };
+    }
+
+    // ===== Create / Edit Modal =====
+
+    private void ShowCreateModal()
+    {
+        _isCreating = true;
+        _editRegion = new RegionDefinitionDto();
+        _expandedAreas.Clear();
+        _showEditModal = true;
+    }
+
+    private void ShowEditModal(RegionDefinitionDto region)
+    {
+        _isCreating = false;
+        _expandedAreas.Clear();
+        _editRegion = CloneRegion(region);
         _showEditModal = true;
     }
 
@@ -711,6 +1226,12 @@
             _success = _isCreating ? $"Region '{_editRegion.Name}' created." : $"Region '{_editRegion.Name}' updated.";
             _showEditModal = false;
             await RefreshRegions();
+
+            // Re-render graph if loaded to reflect changes
+            if (_graphData != null)
+            {
+                await FetchGraph(refresh: true);
+            }
         }
         catch (Exception ex)
         {
@@ -961,5 +1482,16 @@
             _isSaving = false;
             StateHasChanged();
         }
+    }
+
+    // ===== Inner Types =====
+
+    public class GraphNodeInfo
+    {
+        public string ResRef { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string? Region { get; set; }
+        public bool HasSpawnProfile { get; set; }
+        public string? SpawnProfileName { get; set; }
     }
 }

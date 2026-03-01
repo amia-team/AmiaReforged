@@ -2,6 +2,7 @@ using Anvil;
 using Anvil.API;
 using Anvil.Services;
 using AmiaReforged.PwEngine.Features.Encounters.Services;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions;
 using NLog;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.AreaGraph;
@@ -57,6 +58,33 @@ public class AreaGraphBuilder
             await NwTask.SwitchToMainThread();
         }
 
+        // Load region lookup (area resref -> region name)
+        Dictionary<string, string> areaToRegionName = new(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            var regionRepo = AnvilCore.GetService<IRegionRepository>();
+            if (regionRepo != null)
+            {
+                var allRegions = regionRepo.All();
+                foreach (var region in allRegions)
+                {
+                    foreach (var area in region.Areas)
+                    {
+                        if (!string.IsNullOrWhiteSpace(area.ResRef.Value))
+                        {
+                            areaToRegionName.TryAdd(area.ResRef.Value, region.Name);
+                        }
+                    }
+                }
+
+                Log.Info("Loaded {Count} area-to-region mappings for area graph", areaToRegionName.Count);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(ex, "Failed to load region mappings for area graph, continuing without them");
+        }
+
         // Build a lookup of ResRef -> AreaNode for all areas
         Dictionary<string, AreaNode> nodesByResRef = new();
         foreach (NwArea area in allAreas)
@@ -66,10 +94,11 @@ public class AreaGraphBuilder
 
             bool hasProfile = spawnProfileNames.ContainsKey(resRef);
             string? profileName = hasProfile ? spawnProfileNames[resRef] : null;
+            string? regionName = areaToRegionName.TryGetValue(resRef, out var rn) ? rn : null;
 
             // If duplicate resrefs exist, keep the first one
             nodesByResRef.TryAdd(resRef, new AreaNode(resRef, area.Name,
-                HasSpawnProfile: hasProfile, SpawnProfileName: profileName));
+                Region: regionName, HasSpawnProfile: hasProfile, SpawnProfileName: profileName));
         }
 
         // Discover all transition edges
