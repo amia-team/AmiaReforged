@@ -1,4 +1,4 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -38,7 +38,7 @@ public class LanguageToolPresenter : ScryPresenter<LanguageToolView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(0, 100, 540f, 580f),
+            Geometry = new NuiRect(0, 100, 530f, 550f),
             Resizable = true
         };
     }
@@ -122,9 +122,10 @@ public class LanguageToolPresenter : ScryPresenter<LanguageToolView>
             return;
         }
 
-        // Get all languages (automatic + chosen)
+        // Get all languages (automatic + chosen + DM-added)
         List<string> allLanguages = new List<string>(Model.AutomaticLanguages);
         allLanguages.AddRange(Model.ChosenLanguages);
+        allLanguages.AddRange(Model.DmAddedLanguages);
         allLanguages = allLanguages.Distinct().ToList();
         allLanguages.Sort();
 
@@ -216,6 +217,11 @@ public class LanguageToolPresenter : ScryPresenter<LanguageToolView>
         List<string> autoLanguages = Model.AutomaticLanguages.Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
         Token().SetBindValues(View.AutomaticLanguageLabels, autoLanguages);
         Token().SetBindValue(View.AutomaticLanguagesCount, autoLanguages.Count);
+
+        // Update DM-added languages list
+        List<string> dmAddedLanguages = Model.DmAddedLanguages.Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
+        Token().SetBindValues(View.DmAddedLanguageLabels, dmAddedLanguages);
+        Token().SetBindValue(View.DmAddedLanguagesCount, dmAddedLanguages.Count);
 
         // Update chosen languages list
         Token().SetBindValues(View.ChosenLanguageLabels, Model.ChosenLanguages);

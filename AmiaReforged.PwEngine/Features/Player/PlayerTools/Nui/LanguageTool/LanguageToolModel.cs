@@ -13,6 +13,7 @@ public class LanguageToolModel
     private const string LanguagesLockedVar = "LANGUAGES_LOCKED";
     private const string LanguagesTotalVar = "LANGUAGES_TOTAL";
     private const string LanguagesSavedVar = "LANGUAGES_SAVED";
+    private const string LanguagesDmAddedVar = "LANGUAGES_DM_ADDED";
 
     private readonly NwPlayer _player;
     private readonly NwCreature? _character;
@@ -27,6 +28,7 @@ public class LanguageToolModel
 
     public List<string> AutomaticLanguages { get; private set; } = new();
     public List<string> ChosenLanguages { get; private set; } = new();
+    public List<string> DmAddedLanguages { get; private set; } = new(); // Languages added by DMs
     public List<string> SavedLanguages { get; private set; } = new(); // Languages that were loaded from PC Key
     public List<string> PreviouslyKnownLanguages { get; private set; } = new(); // Languages from LANGUAGES_SAVED that can be re-chosen
     public List<string> AvailableLanguages { get; private set; } = new();
@@ -73,6 +75,15 @@ public class LanguageToolModel
             {
                 ChosenLanguages = savedLanguages.Split('|').ToList();
                 SavedLanguages = new List<string>(ChosenLanguages); // Keep track of what was saved
+            }
+
+            // Load DM-added languages
+            LocalVariableString dmLangVar = pcKey.GetObjectVariable<LocalVariableString>(LanguagesDmAddedVar);
+            string? dmAddedLanguages = dmLangVar.Value;
+
+            if (!string.IsNullOrEmpty(dmAddedLanguages))
+            {
+                DmAddedLanguages = dmAddedLanguages.Split('|').Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
             }
 
             // Load languages that were lost during rebuild from LANGUAGES_SAVED
@@ -153,12 +164,20 @@ public class LanguageToolModel
     {
         if (_character == null) return 0;
 
-        // Get base Intelligence modifier (without gear)
-        int baseInt = _character.GetRawAbilityScore(Ability.Intelligence);
+        // Get base Intelligence score (includes racial bonuses, excludes equipment/temporary effects)
+        int baseInt = _character.GetAbilityScore(Ability.Intelligence, true);
         int intModifier = (baseInt - 10) / 2;
 
         // Start with INT modifier only (no base +1)
         int totalLanguages = Math.Max(0, intModifier);
+
+        // Add +1 for human racial types (6, 46-53) since they only get Common automatically
+        // instead of 2 automatic languages like other playable races
+        int racialType = _character.Race.Id;
+        if (IsHumanRacialType(racialType))
+        {
+            totalLanguages += 1;
+        }
 
         // Add bonus from Lore skill (1 bonus per 10 base ranks)
         int loreBonus = GetLoreSkillBonus();
@@ -178,7 +197,8 @@ public class LanguageToolModel
     }
 
     /// <summary>
-    /// Gets language bonus from Lore skill rank (1 bonus per 10 base ranks, not including gear).
+    /// Gets language bonus from Lore skill rank (1 bonus per 10 base ranks).
+    /// Uses base ranks only, excluding ability modifiers and equipment bonuses.
     /// </summary>
     private int GetLoreSkillBonus()
     {
@@ -187,8 +207,8 @@ public class LanguageToolModel
 
         try
         {
-            // Get Lore skill rank
-            int skillRank = _character.GetSkillRank(Skill.Lore, true);
+            // Get Lore skill rank (base ranks only, excluding ability mod and equipment)
+            int skillRank = _character.GetSkillRank(Skill.Lore!, true);
 
             // Award 1 language per 10 base ranks
             return skillRank / 10;
@@ -218,6 +238,17 @@ public class LanguageToolModel
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// Checks if the given racial type is a human variant.
+    /// Human racial types only get Common automatically, so they get +1 choosable language
+    /// to compensate for other races getting 2+ automatic languages.
+    /// </summary>
+    private static bool IsHumanRacialType(int racialType)
+    {
+        // Human (6) and human subraces (46-53)
+        return racialType == 6 || (racialType >= 46 && racialType <= 53);
     }
 
     /// <summary>
@@ -269,7 +300,9 @@ public class LanguageToolModel
             // Player can ONLY re-choose previously known languages until all are restored
             foreach (string language in PreviouslyKnownLanguages)
             {
-                if (!AutomaticLanguages.Contains(language) && !ChosenLanguages.Contains(language))
+                if (!AutomaticLanguages.Contains(language) &&
+                    !ChosenLanguages.Contains(language) &&
+                    !DmAddedLanguages.Contains(language))
                 {
                     AvailableLanguages.Add(language);
                 }
@@ -292,6 +325,10 @@ public class LanguageToolModel
                 if (ChosenLanguages.Contains(language))
                     continue;
 
+                // Skip if already added by DM
+                if (DmAddedLanguages.Contains(language))
+                    continue;
+
                 AvailableLanguages.Add(language);
             }
 
@@ -310,18 +347,18 @@ public class LanguageToolModel
     {
         if (_character == null) return;
 
-        // Thorass requires 5+ INT modifier
+        // Thorass requires 4+ INT modifier
         int baseInt = _character.GetAbilityScore(Ability.Intelligence, true);
         int intModifier = (baseInt - 10) / 2;
 
-        if (intModifier >= 5 && !AutomaticLanguages.Contains(LanguageData.SpecialLanguages.Thorass)
+        if (intModifier >= 4 && !AutomaticLanguages.Contains(LanguageData.SpecialLanguages.Thorass)
             && !ChosenLanguages.Contains(LanguageData.SpecialLanguages.Thorass))
         {
             AvailableLanguages.Add(LanguageData.SpecialLanguages.Thorass);
         }
 
-        // Loross requires 8+ INT modifier
-        if (intModifier >= 8 && !AutomaticLanguages.Contains(LanguageData.SpecialLanguages.Loross)
+        // Loross requires 6+ INT modifier
+        if (intModifier >= 6 && !AutomaticLanguages.Contains(LanguageData.SpecialLanguages.Loross)
             && !ChosenLanguages.Contains(LanguageData.SpecialLanguages.Loross))
         {
             AvailableLanguages.Add(LanguageData.SpecialLanguages.Loross);
@@ -462,12 +499,14 @@ public class LanguageToolModel
     }
 
     /// <summary>
-    /// Gets all languages (automatic + chosen) as a formatted string.
+    /// Gets all languages (automatic + chosen + DM-added) as a formatted string.
     /// </summary>
     public string GetAllLanguagesString()
     {
         List<string> allLanguages = new List<string>(AutomaticLanguages);
         allLanguages.AddRange(ChosenLanguages);
+        allLanguages.AddRange(DmAddedLanguages);
+        allLanguages = allLanguages.Distinct().ToList();
         allLanguages.Sort();
         return string.Join(", ", allLanguages);
     }

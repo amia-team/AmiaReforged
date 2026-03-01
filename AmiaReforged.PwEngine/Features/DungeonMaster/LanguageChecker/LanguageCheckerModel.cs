@@ -165,12 +165,33 @@ public class LanguageCheckerModel
             // Get INT modifier bonus (characters get 1 bonus language per point of INT modifier)
             int intModifier = _selectedCharacter.GetAbilityModifier(Ability.Intelligence);
 
-            return Math.Max(intModifier, 0); // Ensure at least 0 languages
+            int baseLanguages = Math.Max(intModifier, 0); // Ensure at least 0 languages
+
+            // Add +1 for human racial types (6, 46-53) since they only get Common automatically
+            // instead of 2 automatic languages like other playable races
+            int racialType = _selectedCharacter.Race.Id;
+            if (IsHumanRacialType(racialType))
+            {
+                baseLanguages += 1;
+            }
+
+            return baseLanguages;
         }
         catch
         {
             return 0;
         }
+    }
+
+    /// <summary>
+    /// Checks if the given racial type is a human variant.
+    /// Human racial types only get Common automatically, so they get +1 choosable language
+    /// to compensate for other races getting 2+ automatic languages.
+    /// </summary>
+    private static bool IsHumanRacialType(int racialType)
+    {
+        // Human (6) and human subraces (46-53)
+        return racialType == 6 || (racialType >= 46 && racialType <= 53);
     }
 
     /// <summary>
@@ -183,8 +204,8 @@ public class LanguageCheckerModel
 
         try
         {
-            // Get Lore skill rank
-            int skillRank = _selectedCharacter.GetSkillRank(Skill.Lore);
+            // Get Lore skill rank (base ranks only, excluding ability mod and equipment)
+            int skillRank = _selectedCharacter.GetSkillRank(Skill.Lore!, true);
 
             // Award 1 language per 10 base ranks
             return skillRank / 10;

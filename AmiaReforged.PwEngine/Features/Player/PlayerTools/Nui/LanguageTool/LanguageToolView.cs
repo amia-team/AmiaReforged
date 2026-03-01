@@ -6,12 +6,14 @@ namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.LanguageTool;
 
 public class LanguageToolView : ScryView<LanguageToolPresenter>, IToolWindow
 {
-    private const float WindowW = 540f;
-    private const float WindowH = 580f;
+    private const float WindowW = 530f;
+    private const float WindowH = 550f;
 
     public readonly NuiBind<string> LanguageCountText = new(key: "language_count_text");
     public readonly NuiBind<int> AutomaticLanguagesCount = new(key: "automatic_languages_count");
     public readonly NuiBind<string> AutomaticLanguageLabels = new(key: "automatic_language_labels");
+    public readonly NuiBind<int> DmAddedLanguagesCount = new(key: "dm_added_languages_count");
+    public readonly NuiBind<string> DmAddedLanguageLabels = new(key: "dm_added_language_labels");
     public readonly NuiBind<int> ChosenLanguagesCount = new(key: "chosen_languages_count");
     public readonly NuiBind<int> AvailableLanguagesCount = new(key: "available_languages_count");
     public readonly NuiBind<string> ChosenLanguageLabels = new(key: "chosen_language_labels");
@@ -59,7 +61,7 @@ public class LanguageToolView : ScryView<LanguageToolPresenter>, IToolWindow
             Width = 0f,
             Height = 0f,
             Children = new List<NuiElement>(),
-            DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, WindowW, WindowH))]
+            DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(-10f, -10f, WindowW, WindowH))]
         };
 
         // Languages Known label
@@ -67,7 +69,7 @@ public class LanguageToolView : ScryView<LanguageToolPresenter>, IToolWindow
         {
             Children =
             {
-                new NuiSpacer { Width = 50f },
+                new NuiSpacer { Width = 30f },
                 new NuiLabel("Languages Known")
                 {
                     Height = 20f,
@@ -83,7 +85,7 @@ public class LanguageToolView : ScryView<LanguageToolPresenter>, IToolWindow
         {
             Children =
             {
-                new NuiSpacer { Width = 30f },
+                new NuiSpacer { Width = 10f },
                 new NuiLabel(LanguageCountText)
                 {
                     Height = 20f,
@@ -93,20 +95,36 @@ public class LanguageToolView : ScryView<LanguageToolPresenter>, IToolWindow
             }
         };
 
-        // Automatic Languages row with scrollable list (for viewing, selections don't do anything)
-        NuiRow automaticRow = new NuiRow
+        // Header row for Automatic and DM-Added Languages
+        NuiRow autoAndDmHeaderRow = new NuiRow
         {
             Children =
             {
-                new NuiSpacer { Width = 30f },
-                new NuiLabel("Automatic Languages:")
+                new NuiSpacer { Width = 10f },
+                new NuiLabel("Automatic Languages")
                 {
-                    Height = 70f,
-                    Width = 150f,
-                    VerticalAlign = NuiVAlign.Middle,
+                    Height = 20f,
+                    Width = 220f,
+                    HorizontalAlign = NuiHAlign.Center,
                     ForegroundColor = new Color(30, 20, 12)
                 },
-                new NuiSpacer { Width = 15f },
+                new NuiSpacer { Width = 10f },
+                new NuiLabel("DM-Added Languages")
+                {
+                    Height = 20f,
+                    Width = 220f,
+                    HorizontalAlign = NuiHAlign.Center,
+                    ForegroundColor = new Color(30, 20, 12)
+                }
+            }
+        };
+
+        // Row containing both Automatic and DM-Added language lists side by side
+        NuiRow autoAndDmListsRow = new NuiRow
+        {
+            Children =
+            {
+                new NuiSpacer { Width = 10f },
                 new NuiList(
                     [
                         new NuiListTemplateCell(new NuiLabel(AutomaticLanguageLabels)
@@ -114,12 +132,28 @@ public class LanguageToolView : ScryView<LanguageToolPresenter>, IToolWindow
                             Tooltip = "You receive these languages automatically.",
                             VerticalAlign = NuiVAlign.Middle,
                             HorizontalAlign = NuiHAlign.Center
-                        }) { Width = 120f }
+                        }) { Width = 180f }
                     ],
                     AutomaticLanguagesCount)
                 {
-                    Width = 180f,
-                    Height = 70f,
+                    Width = 220f,
+                    Height = 100f,
+                    Scrollbars = NuiScrollbars.Auto
+                },
+                new NuiSpacer { Width = 15f },
+                new NuiList(
+                    [
+                        new NuiListTemplateCell(new NuiLabel(DmAddedLanguageLabels)
+                        {
+                            Tooltip = "Languages granted by a DM.",
+                            VerticalAlign = NuiVAlign.Middle,
+                            HorizontalAlign = NuiHAlign.Center
+                        }) { Width = 180f }
+                    ],
+                    DmAddedLanguagesCount)
+                {
+                    Width = 220f,
+                    Height = 100f,
                     Scrollbars = NuiScrollbars.Auto
                 }
             }
@@ -160,20 +194,22 @@ public class LanguageToolView : ScryView<LanguageToolPresenter>, IToolWindow
         {
             Children =
             {
-                new NuiSpacer { Width = 30f },
+                new NuiSpacer { Width = 10f },
                 new NuiColumn
                 {
                     Children =
                     {
-                        new NuiLabel("Chosen Languages:")
+                        new NuiLabel("Chosen Languages")
                         {
                             Height = 20f,
+                            Width = 220f,
+                            HorizontalAlign = NuiHAlign.Center,
                             ForegroundColor = new Color(30, 20, 12)
                         },
                         new NuiList(chosenLanguagesCells, ChosenLanguagesCount)
                         {
                             Width = 220f,
-                            Height = 280f
+                            Height = 200f
                         }
                     }
                 },
@@ -182,16 +218,18 @@ public class LanguageToolView : ScryView<LanguageToolPresenter>, IToolWindow
                 {
                     Children =
                     {
-                        new NuiLabel("Available Languages:")
+                        new NuiLabel("Available Languages")
                         {
                             Height = 20f,
+                            Width = 220f,
+                            HorizontalAlign = NuiHAlign.Center,
                             ForegroundColor = new Color(30, 20, 12),
                             Tooltip = AvailableLanguagesTooltip
                         },
                         new NuiList(availableLanguagesCells, AvailableLanguagesCount)
                         {
                             Width = 220f,
-                            Height = 280f
+                            Height = 200f
                         }
                     }
                 }
@@ -229,7 +267,9 @@ public class LanguageToolView : ScryView<LanguageToolPresenter>, IToolWindow
                 new NuiSpacer { Height = 5f },
                 countRow,
                 new NuiSpacer { Height = 5f },
-                automaticRow,
+                autoAndDmHeaderRow,
+                new NuiSpacer { Height = 2f },
+                autoAndDmListsRow,
                 new NuiSpacer { Height = 5f },
                 listsRow,
                 new NuiSpacer { Height = 5f },
