@@ -1,4 +1,5 @@
 using Anvil.API;
+using Anvil.Services;
 using NLog;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.AreaGraph;
@@ -13,11 +14,14 @@ public class AreaGraphBuilder
 
     /// <summary>
     /// Scan every area in the running module and build the connectivity graph.
-    /// Must be called from the main server thread (Anvil API access).
+    /// Switches to the main NWN server thread for all VM calls.
     /// </summary>
-    public AreaGraphData Build()
+    public async Task<AreaGraphData> BuildAsync()
     {
         Log.Info("Building area graph...");
+
+        // All NWN API calls (Areas, Objects, TransitionTarget) must run on the main thread
+        await NwTask.SwitchToMainThread();
 
         var allAreas = NwModule.Instance.Areas.ToList();
         Log.Info("Found {Count} areas in module", allAreas.Count);

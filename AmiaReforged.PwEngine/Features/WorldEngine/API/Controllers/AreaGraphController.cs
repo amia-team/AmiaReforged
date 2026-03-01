@@ -20,9 +20,9 @@ public class AreaGraphController
         var cache = ResolveCacheService();
 
         bool refresh = string.Equals(ctx.GetQueryParam("refresh"), "true", StringComparison.OrdinalIgnoreCase);
-        var graph = cache.GetOrBuild(forceRefresh: refresh);
+        var graph = await cache.GetOrBuildAsync(forceRefresh: refresh);
 
-        return await Task.FromResult(new ApiResult(200, graph));
+        return new ApiResult(200, graph);
     }
 
     /// <summary>
@@ -33,9 +33,9 @@ public class AreaGraphController
     public static async Task<ApiResult> RefreshGraph(RouteContext ctx)
     {
         var cache = ResolveCacheService();
-        var graph = cache.Refresh();
+        var graph = await cache.RefreshAsync();
 
-        return await Task.FromResult(new ApiResult(200, graph));
+        return new ApiResult(200, graph);
     }
 
     private static AreaGraphCacheService ResolveCacheService()

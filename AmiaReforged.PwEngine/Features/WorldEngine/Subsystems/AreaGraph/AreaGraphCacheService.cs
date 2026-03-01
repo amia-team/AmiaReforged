@@ -39,7 +39,7 @@ public class AreaGraphCacheService
     /// Returns the current graph, building and caching it if needed.
     /// </summary>
     /// <param name="forceRefresh">When true, rebuilds the graph even if a cache exists.</param>
-    public AreaGraphData GetOrBuild(bool forceRefresh = false)
+    public async Task<AreaGraphData> GetOrBuildAsync(bool forceRefresh = false)
     {
         if (!forceRefresh && _cached != null)
         {
@@ -57,9 +57,9 @@ public class AreaGraphCacheService
             }
         }
 
-        // Build fresh
+        // Build fresh — this will switch to the main thread internally
         Log.Info("Building fresh area graph (forceRefresh={ForceRefresh})...", forceRefresh);
-        _cached = _builder.Build();
+        _cached = await _builder.BuildAsync();
         SaveToDisk(_cached);
         return _cached;
     }
@@ -67,9 +67,9 @@ public class AreaGraphCacheService
     /// <summary>
     /// Forces a full rebuild, updates cache, and returns the new graph.
     /// </summary>
-    public AreaGraphData Refresh()
+    public async Task<AreaGraphData> RefreshAsync()
     {
-        return GetOrBuild(forceRefresh: true);
+        return await GetOrBuildAsync(forceRefresh: true);
     }
 
     private void SaveToDisk(AreaGraphData data)
