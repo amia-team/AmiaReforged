@@ -846,3 +846,117 @@ a:hover {
 .area-graph-container #cy {
     background: var(--bg-dark);
 }
+
+/* ===== Area Graph Layout (graph + detail panel side by side) ===== */
+.area-graph-layout {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+/* ===== Area Detail Panel ===== */
+.area-detail-panel {
+    width: 320px;
+    flex-shrink: 0;
+    max-height: 690px;
+    overflow-y: auto;
+}
+
+.detail-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.detail-panel-header h4 {
+    margin: 0;
+    color: var(--accent);
+    font-size: 1.05rem;
+}
+
+.detail-field {
+    margin-bottom: 10px;
+}
+
+.detail-field label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 2px;
+}
+
+.detail-field span,
+.detail-field code {
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+.badge-spawn {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    background: rgba(78, 204, 163, 0.15);
+    color: var(--success);
+    border: 1px solid rgba(78, 204, 163, 0.3);
+}
+
+.detail-connections label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+}
+
+.connection-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.connection-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 0.88rem;
+}
+
+.connection-item:last-child {
+    border-bottom: none;
+}
+
+.conn-direction {
+    font-weight: bold;
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.conn-out { color: var(--info); }
+.conn-in  { color: var(--accent); }
+
+.conn-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-primary);
+}
+
+.conn-type {
+    font-size: 0.75rem;
+    padding: 1px 6px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.conn-door    { background: rgba(91,164,181,0.15); color: var(--info); }
+.conn-trigger { background: rgba(78,204,163,0.15); color: var(--success); }

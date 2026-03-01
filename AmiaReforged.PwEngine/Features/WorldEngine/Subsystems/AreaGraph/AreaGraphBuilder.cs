@@ -1,5 +1,7 @@
+using Anvil;
 using Anvil.API;
 using Anvil.Services;
+using AmiaReforged.PwEngine.Features.Encounters.Services;
 using NLog;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.AreaGraph;
@@ -26,6 +28,35 @@ public class AreaGraphBuilder
         var allAreas = NwModule.Instance.Areas.ToList();
         Log.Info("Found {Count} areas in module", allAreas.Count);
 
+        // Load spawn profile lookup (area resref -> profile name)
+        Dictionary<string, string> spawnProfileNames = new(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            var profileRepo = AnvilCore.GetService<ISpawnProfileRepository>();
+            if (profileRepo != null)
+            {
+                var profiles = await profileRepo.GetAllAsync();
+                foreach (var profile in profiles)
+                {
+                    if (!string.IsNullOrWhiteSpace(profile.AreaResRef))
+                    {
+                        spawnProfileNames.TryAdd(profile.AreaResRef, profile.Name);
+                    }
+                }
+
+                // Re-enter main thread after the async DB call
+                await NwTask.SwitchToMainThread();
+
+                Log.Info("Loaded {Count} spawn profiles for area graph", spawnProfileNames.Count);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(ex, "Failed to load spawn profiles for area graph, continuing without them");
+            // Re-enter main thread in case we left it
+            await NwTask.SwitchToMainThread();
+        }
+
         // Build a lookup of ResRef -> AreaNode for all areas
         Dictionary<string, AreaNode> nodesByResRef = new();
         foreach (NwArea area in allAreas)
@@ -33,8 +64,12 @@ public class AreaGraphBuilder
             string resRef = area.ResRef;
             if (string.IsNullOrWhiteSpace(resRef)) continue;
 
+            bool hasProfile = spawnProfileNames.ContainsKey(resRef);
+            string? profileName = hasProfile ? spawnProfileNames[resRef] : null;
+
             // If duplicate resrefs exist, keep the first one
-            nodesByResRef.TryAdd(resRef, new AreaNode(resRef, area.Name));
+            nodesByResRef.TryAdd(resRef, new AreaNode(resRef, area.Name,
+                HasSpawnProfile: hasProfile, SpawnProfileName: profileName));
         }
 
         // Discover all transition edges

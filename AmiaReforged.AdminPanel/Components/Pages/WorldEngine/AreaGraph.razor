@@ -122,9 +122,70 @@
             </span>
         </div>
 
-        @* ===== Graph Container ===== *@
-        <div class="section area-graph-container">
-            <div id="cy" style="width:100%;height:650px;"></div>
+        @* ===== Graph + Detail Panel ===== *@
+        <div class="area-graph-layout">
+            <div class="section area-graph-container" style="flex:1;min-width:0">
+                <div id="cy" style="width:100%;height:650px;"></div>
+            </div>
+
+            @if (_selectedNode != null)
+            {
+                <div class="section area-detail-panel">
+                    <div class="detail-panel-header">
+                        <h4>Area Details</h4>
+                        <button class="btn btn-sm btn-secondary" @onclick="DeselectNode">✕</button>
+                    </div>
+
+                    <div class="detail-field">
+                        <label>Name</label>
+                        <span>@_selectedNode.Name</span>
+                    </div>
+                    <div class="detail-field">
+                        <label>ResRef</label>
+                        <code>@_selectedNode.ResRef</code>
+                    </div>
+                    <div class="detail-field">
+                        <label>Region</label>
+                        <span>@(!string.IsNullOrEmpty(_selectedNode.Region) ? _selectedNode.Region : "—")</span>
+                    </div>
+
+                    <hr style="border-color:var(--border-color);margin:12px 0" />
+
+                    <div class="detail-field">
+                        <label>Spawn Profile</label>
+                        @if (_selectedNode.HasSpawnProfile)
+                        {
+                            <span class="badge badge-spawn">@(_selectedNode.SpawnProfileName ?? "Yes")</span>
+                        }
+                        else
+                        {
+                            <span style="color:var(--text-secondary)">None</span>
+                        }
+                    </div>
+
+                    @if (_selectedNode.Connections != null && _selectedNode.Connections.Count > 0)
+                    {
+                        <hr style="border-color:var(--border-color);margin:12px 0" />
+                        <div class="detail-connections">
+                            <label>Connections (@_selectedNode.Connections.Count)</label>
+                            <ul class="connection-list">
+                                @foreach (var c in _selectedNode.Connections)
+                                {
+                                    <li class="connection-item">
+                                        <span class="conn-direction @(c.Direction == "outgoing" ? "conn-out" : "conn-in")">
+                                            @(c.Direction == "outgoing" ? "→" : "←")
+                                        </span>
+                                        <span class="conn-name">@c.AreaName</span>
+                                        <span class="conn-type @(c.TransitionType == "Trigger" ? "conn-trigger" : "conn-door")">
+                                            @c.TransitionType
+                                        </span>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                </div>
+            }
         </div>
 
         @* ===== Disconnected Areas ===== *@
@@ -180,6 +241,8 @@
     private string? _error;
     private string? _success;
     private string _searchQuery = "";
+    private DotNetObjectReference<AreaGraph>? _dotNetRef;
+    private SelectedNodeInfo? _selectedNode;
 
     private static readonly JsonSerializerOptions CamelCase = new()
     {
@@ -278,9 +341,12 @@
 
         try
         {
+            _dotNetRef?.Dispose();
+            _dotNetRef = DotNetObjectReference.Create(this);
+
             string nodesJson = JsonSerializer.Serialize(_graph.Nodes, CamelCase);
             string edgesJson = JsonSerializer.Serialize(_graph.Edges, CamelCase);
-            await JS.InvokeVoidAsync("areaGraph.init", "cy", nodesJson, edgesJson);
+            await JS.InvokeVoidAsync("areaGraph.init", "cy", nodesJson, edgesJson, _dotNetRef);
         }
         catch (Exception ex)
         {
@@ -346,5 +412,59 @@
             await JS.InvokeVoidAsync("areaGraph.destroy");
         }
         catch { /* component may already be disposed */ }
+
+        _dotNetRef?.Dispose();
+    }
+
+    [JSInvokable]
+    public Task OnNodeSelected(string json)
+    {
+        try
+        {
+            _selectedNode = JsonSerializer.Deserialize<SelectedNodeInfo>(json, CamelCase);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to deserialize selected node");
+        }
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public Task OnNodeDeselected()
+    {
+        _selectedNode = null;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task DeselectNode()
+    {
+        _selectedNode = null;
+        try
+        {
+            await JS.InvokeVoidAsync("areaGraph.clearHighlight");
+        }
+        catch { /* ignore */ }
+    }
+
+    public class SelectedNodeInfo
+    {
+        public string ResRef { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string? Region { get; set; }
+        public bool HasSpawnProfile { get; set; }
+        public string? SpawnProfileName { get; set; }
+        public List<ConnectionInfo>? Connections { get; set; }
+    }
+
+    public class ConnectionInfo
+    {
+        public string Direction { get; set; } = "";
+        public string AreaResRef { get; set; } = "";
+        public string AreaName { get; set; } = "";
+        public string TransitionType { get; set; } = "";
+        public string TransitionTag { get; set; } = "";
     }
 }

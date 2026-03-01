@@ -8,7 +8,9 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.AreaGraph;
 public record AreaNode(
     string ResRef,
     string Name,
-    string? Region = null);
+    string? Region = null,
+    bool HasSpawnProfile = false,
+    string? SpawnProfileName = null);
 
 /// <summary>
 /// Represents a directed edge between two areas via a transition object.

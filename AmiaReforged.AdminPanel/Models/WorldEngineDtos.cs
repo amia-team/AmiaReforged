@@ -94,6 +94,8 @@ public class AreaNodeDto
     public string ResRef { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string? Region { get; set; }
+    public bool HasSpawnProfile { get; set; }
+    public string? SpawnProfileName { get; set; }
 }
 
 public class AreaEdgeDto
