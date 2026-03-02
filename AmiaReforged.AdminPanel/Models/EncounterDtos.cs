@@ -12,6 +12,13 @@ public enum SpawnConditionType
     MinPlayerCount = 2,
     MaxPlayerCount = 3,
     RegionTag = 4,
+    TriggerTag = 5,
+    TriggerLocalVariableInt = 10,
+    TriggerLocalVariableFloat = 11,
+    TriggerLocalVariableString = 12,
+    AreaLocalVariableInt = 20,
+    AreaLocalVariableFloat = 21,
+    AreaLocalVariableString = 22,
     Custom = 99
 }
 

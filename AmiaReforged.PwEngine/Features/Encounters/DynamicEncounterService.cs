@@ -143,7 +143,7 @@ public class DynamicEncounterService
         }
 
         // Build encounter context
-        EncounterContext context = BuildContext(area, player, profile);
+        EncounterContext context = BuildContext(obj.Trigger, area, player, profile);
 
         // Execute dynamic spawn
         _spawner.SpawnEncounter(obj.Trigger, profile, context);
@@ -155,7 +155,7 @@ public class DynamicEncounterService
         NWScript.SetLocalInt(obj.Trigger, DynamicHandledFlag, NWScript.TRUE);
     }
 
-    private EncounterContext BuildContext(NwArea area, NwPlayer player, SpawnProfile profile)
+    private EncounterContext BuildContext(NwTrigger trigger, NwArea area, NwPlayer player, SpawnProfile profile)
     {
         // Count party members in the same area
         int partySize = player.PartyMembers
@@ -188,7 +188,9 @@ public class DynamicEncounterService
             GameTime = gameTime,
             Chaos = chaos,
             RegionTag = regionTag,
-            IsInRegion = isInRegion
+            IsInRegion = isInRegion,
+            Trigger = trigger,
+            Area = area
         };
     }
 

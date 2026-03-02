@@ -457,7 +457,8 @@
                                                 <div class="form-row">
                                                     <div class="form-group">
                                                         <label>Type</label>
-                                                        <select class="form-control form-control-sm" @bind="_newConditionType">
+                                                        <select class="form-control form-control-sm" value="@_newConditionType"
+                                                                @onchange="OnNewConditionTypeChanged">
                                                             @foreach (SpawnConditionType t in Enum.GetValues<SpawnConditionType>())
                                                             {
                                                                 <option value="@t">@t</option>
@@ -466,11 +467,17 @@
                                                     </div>
                                                     <div class="form-group">
                                                         <label>Operator</label>
-                                                        <input class="form-control form-control-sm" @bind="_newConditionOp" placeholder="e.g. >=" />
+                                                        <select class="form-control form-control-sm" @bind="_newConditionOp">
+                                                            @foreach (var op in GetOperatorsForType(_newConditionType))
+                                                            {
+                                                                <option value="@op">@op</option>
+                                                            }
+                                                        </select>
                                                     </div>
                                                     <div class="form-group">
                                                         <label>Value</label>
-                                                        <input class="form-control form-control-sm" @bind="_newConditionValue" placeholder="e.g. 06:00-18:00" />
+                                                        <input class="form-control form-control-sm" @bind="_newConditionValue"
+                                                               placeholder="@GetValuePlaceholder(_newConditionType)" />
                                                     </div>
                                                 </div>
                                                 <div class="form-actions">
@@ -509,11 +516,17 @@
                                                                 </select>
                                                             </td>
                                                             <td>
-                                                                <input class="form-control form-control-sm" value="@cond.Operator"
-                                                                       @onchange="e => UpdateConditionField(cond, nameof(cond.Operator), e)" />
+                                                                <select class="form-control form-control-sm" value="@cond.Operator"
+                                                                        @onchange="e => UpdateConditionField(cond, nameof(cond.Operator), e)">
+                                                                    @foreach (var op in GetOperatorsForType(cond.Type))
+                                                                    {
+                                                                        <option value="@op" selected="@(op == cond.Operator)">@op</option>
+                                                                    }
+                                                                </select>
                                                             </td>
                                                             <td>
                                                                 <input class="form-control form-control-sm" value="@cond.Value"
+                                                                       placeholder="@GetValuePlaceholder(cond.Type)"
                                                                        @onchange="e => UpdateConditionField(cond, nameof(cond.Value), e)" />
                                                             </td>
                                                             <td>
@@ -1681,8 +1694,66 @@
         {
             _addConditionGroupId = groupId;
             _newConditionType = SpawnConditionType.TimeOfDay;
-            _newConditionOp = "";
+            _newConditionOp = GetOperatorsForType(SpawnConditionType.TimeOfDay)[0];
             _newConditionValue = "";
+        }
+    }
+
+    // ===== Condition Operator Helpers =====
+
+    /// <summary>
+    /// Returns the allowed operators for a given condition type.
+    /// </summary>
+    private static string[] GetOperatorsForType(SpawnConditionType type) => type switch
+    {
+        SpawnConditionType.TimeOfDay => ["between"],
+        SpawnConditionType.ChaosThreshold => ["==", "!=", ">", ">=", "<", "<="],
+        SpawnConditionType.MinPlayerCount => [">="],
+        SpawnConditionType.MaxPlayerCount => ["<="],
+        SpawnConditionType.RegionTag => ["==", "!=", "contains", "startswith"],
+        SpawnConditionType.TriggerTag => ["==", "!=", "contains", "startswith"],
+        SpawnConditionType.TriggerLocalVariableInt => ["==", "!=", ">", ">=", "<", "<=", "%"],
+        SpawnConditionType.TriggerLocalVariableFloat => ["==", "!=", ">", ">=", "<", "<=", "%"],
+        SpawnConditionType.TriggerLocalVariableString => ["==", "!=", "contains", "startswith"],
+        SpawnConditionType.AreaLocalVariableInt => ["==", "!=", ">", ">=", "<", "<=", "%"],
+        SpawnConditionType.AreaLocalVariableFloat => ["==", "!=", ">", ">=", "<", "<=", "%"],
+        SpawnConditionType.AreaLocalVariableString => ["==", "!=", "contains", "startswith"],
+        SpawnConditionType.Custom => ["=="],
+        _ => ["=="]
+    };
+
+    /// <summary>
+    /// Returns a placeholder hint for the value field based on condition type.
+    /// </summary>
+    private static string GetValuePlaceholder(SpawnConditionType type) => type switch
+    {
+        SpawnConditionType.TimeOfDay => "06:00-18:00",
+        SpawnConditionType.ChaosThreshold => "Danger:50",
+        SpawnConditionType.MinPlayerCount => "3",
+        SpawnConditionType.MaxPlayerCount => "6",
+        SpawnConditionType.RegionTag => "region_cordor",
+        SpawnConditionType.TriggerTag => "db_spawntrigger",
+        SpawnConditionType.TriggerLocalVariableInt => "var_name:1",
+        SpawnConditionType.TriggerLocalVariableFloat => "var_name:1.5",
+        SpawnConditionType.TriggerLocalVariableString => "var_name:some_value",
+        SpawnConditionType.AreaLocalVariableInt => "var_name:1",
+        SpawnConditionType.AreaLocalVariableFloat => "var_name:1.5",
+        SpawnConditionType.AreaLocalVariableString => "var_name:some_value",
+        SpawnConditionType.Custom => "(ignored)",
+        _ => ""
+    };
+
+    /// <summary>
+    /// When condition type changes, auto-select the first valid operator.
+    /// </summary>
+    private void OnNewConditionTypeChanged(ChangeEventArgs e)
+    {
+        if (Enum.TryParse<SpawnConditionType>(e.Value?.ToString(), out var t))
+        {
+            _newConditionType = t;
+            var ops = GetOperatorsForType(t);
+            if (ops.Length > 0 && !ops.Contains(_newConditionOp))
+                _newConditionOp = ops[0];
         }
     }
 

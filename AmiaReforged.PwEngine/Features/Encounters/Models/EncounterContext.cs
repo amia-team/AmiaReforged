@@ -1,3 +1,5 @@
+using Anvil.API;
+
 namespace AmiaReforged.PwEngine.Features.Encounters.Models;
 
 /// <summary>
@@ -38,4 +40,16 @@ public class EncounterContext
     /// (chaos scaling, region-gated spawn groups, etc.).
     /// </summary>
     public bool IsInRegion { get; init; }
+
+    /// <summary>
+    /// The spawn trigger that initiated this encounter. Used for TriggerTag and
+    /// TriggerLocalVariable* condition evaluations.
+    /// </summary>
+    public NwTrigger? Trigger { get; init; }
+
+    /// <summary>
+    /// The area object where the encounter is triggered. Used for AreaLocalVariable*
+    /// condition evaluations.
+    /// </summary>
+    public NwArea? Area { get; init; }
 }

@@ -1,6 +1,7 @@
 using AmiaReforged.PwEngine.Features.Encounters.Models;
 using Anvil.Services;
 using NLog;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.Encounters.Services;
 
@@ -36,6 +37,13 @@ public class SpawnConditionEvaluator
                 SpawnConditionType.MinPlayerCount => EvaluateMinPlayerCount(condition, context),
                 SpawnConditionType.MaxPlayerCount => EvaluateMaxPlayerCount(condition, context),
                 SpawnConditionType.RegionTag => EvaluateRegionTag(condition, context),
+                SpawnConditionType.TriggerTag => EvaluateTriggerTag(condition, context),
+                SpawnConditionType.TriggerLocalVariableInt => EvaluateTriggerLocalInt(condition, context),
+                SpawnConditionType.TriggerLocalVariableFloat => EvaluateTriggerLocalFloat(condition, context),
+                SpawnConditionType.TriggerLocalVariableString => EvaluateTriggerLocalString(condition, context),
+                SpawnConditionType.AreaLocalVariableInt => EvaluateAreaLocalInt(condition, context),
+                SpawnConditionType.AreaLocalVariableFloat => EvaluateAreaLocalFloat(condition, context),
+                SpawnConditionType.AreaLocalVariableString => EvaluateAreaLocalString(condition, context),
                 SpawnConditionType.Custom => true, // Custom conditions always pass (future extensibility)
                 _ => true
             };
@@ -47,6 +55,8 @@ public class SpawnConditionEvaluator
             return false;
         }
     }
+
+    // ==================== Original Condition Types ====================
 
     /// <summary>
     /// Evaluates a time-of-day condition. Value format: "HH:mm-HH:mm" (e.g., "06:00-18:00").
@@ -72,7 +82,6 @@ public class SpawnConditionEvaluator
 
     /// <summary>
     /// Evaluates a chaos threshold condition. Value format: "AxisName:threshold" (e.g., "Danger:50").
-    /// Operator: ">=", ">", "==", "&lt;=", "&lt;".
     /// </summary>
     private static bool EvaluateChaosThreshold(SpawnCondition condition, EncounterContext context)
     {
@@ -89,6 +98,7 @@ public class SpawnConditionEvaluator
             ">=" => axisValue >= threshold,
             ">" => axisValue > threshold,
             "==" => axisValue == threshold,
+            "!=" => axisValue != threshold,
             "<=" => axisValue <= threshold,
             "<" => axisValue < threshold,
             _ => false
@@ -132,5 +142,264 @@ public class SpawnConditionEvaluator
     {
         if (context.RegionTag == null) return false;
         return string.Equals(context.RegionTag, condition.Value, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // ==================== Trigger Tag ====================
+
+    /// <summary>
+    /// Evaluates the spawn trigger's tag. Operators: ==, !=, contains, startswith.
+    /// </summary>
+    private static bool EvaluateTriggerTag(SpawnCondition condition, EncounterContext context)
+    {
+        if (context.Trigger == null) return false;
+        string triggerTag = context.Trigger.Tag ?? "";
+        return EvaluateStringComparison(condition.Operator, triggerTag, condition.Value);
+    }
+
+    // ==================== Trigger Local Variables ====================
+
+    /// <summary>
+    /// Evaluates a local int variable on the spawn trigger.
+    /// Value format: "VariableName:CompareValue". For % operator: "VariableName:Divisor:Remainder".
+    /// </summary>
+    private static bool EvaluateTriggerLocalInt(SpawnCondition condition, EncounterContext context)
+    {
+        if (context.Trigger == null) return false;
+        if (!TryParseVarNameAndIntValue(condition, out string varName, out int compareValue)) return false;
+
+        int actual = NWScript.GetLocalInt(context.Trigger, varName);
+
+        if (condition.Operator == "%")
+            return EvaluateModuloInt(condition.Value, actual);
+
+        return EvaluateIntComparison(condition.Operator, actual, compareValue);
+    }
+
+    /// <summary>
+    /// Evaluates a local float variable on the spawn trigger.
+    /// Value format: "VariableName:CompareValue". For % operator: "VariableName:Divisor:Remainder".
+    /// </summary>
+    private static bool EvaluateTriggerLocalFloat(SpawnCondition condition, EncounterContext context)
+    {
+        if (context.Trigger == null) return false;
+        if (!TryParseVarNameAndFloatValue(condition, out string varName, out float compareValue)) return false;
+
+        float actual = NWScript.GetLocalFloat(context.Trigger, varName);
+
+        if (condition.Operator == "%")
+            return EvaluateModuloFloat(condition.Value, actual);
+
+        return EvaluateFloatComparison(condition.Operator, actual, compareValue);
+    }
+
+    /// <summary>
+    /// Evaluates a local string variable on the spawn trigger.
+    /// Value format: "VariableName:CompareValue".
+    /// </summary>
+    private static bool EvaluateTriggerLocalString(SpawnCondition condition, EncounterContext context)
+    {
+        if (context.Trigger == null) return false;
+        if (!TryParseVarNameAndStringValue(condition.Value, out string varName, out string compareValue)) return false;
+
+        string actual = NWScript.GetLocalString(context.Trigger, varName);
+        return EvaluateStringComparison(condition.Operator, actual, compareValue);
+    }
+
+    // ==================== Area Local Variables ====================
+
+    /// <summary>
+    /// Evaluates a local int variable on the area.
+    /// Value format: "VariableName:CompareValue". For % operator: "VariableName:Divisor:Remainder".
+    /// </summary>
+    private static bool EvaluateAreaLocalInt(SpawnCondition condition, EncounterContext context)
+    {
+        if (context.Area == null) return false;
+        if (!TryParseVarNameAndIntValue(condition, out string varName, out int compareValue)) return false;
+
+        int actual = NWScript.GetLocalInt(context.Area, varName);
+
+        if (condition.Operator == "%")
+            return EvaluateModuloInt(condition.Value, actual);
+
+        return EvaluateIntComparison(condition.Operator, actual, compareValue);
+    }
+
+    /// <summary>
+    /// Evaluates a local float variable on the area.
+    /// Value format: "VariableName:CompareValue". For % operator: "VariableName:Divisor:Remainder".
+    /// </summary>
+    private static bool EvaluateAreaLocalFloat(SpawnCondition condition, EncounterContext context)
+    {
+        if (context.Area == null) return false;
+        if (!TryParseVarNameAndFloatValue(condition, out string varName, out float compareValue)) return false;
+
+        float actual = NWScript.GetLocalFloat(context.Area, varName);
+
+        if (condition.Operator == "%")
+            return EvaluateModuloFloat(condition.Value, actual);
+
+        return EvaluateFloatComparison(condition.Operator, actual, compareValue);
+    }
+
+    /// <summary>
+    /// Evaluates a local string variable on the area.
+    /// Value format: "VariableName:CompareValue".
+    /// </summary>
+    private static bool EvaluateAreaLocalString(SpawnCondition condition, EncounterContext context)
+    {
+        if (context.Area == null) return false;
+        if (!TryParseVarNameAndStringValue(condition.Value, out string varName, out string compareValue)) return false;
+
+        string actual = NWScript.GetLocalString(context.Area, varName);
+        return EvaluateStringComparison(condition.Operator, actual, compareValue);
+    }
+
+    // ==================== Shared Comparison Helpers ====================
+
+    /// <summary>
+    /// Parses "VariableName:CompareValue" from the condition value for int comparisons.
+    /// For non-modulo operators, expects exactly 2 colon-separated parts.
+    /// </summary>
+    private static bool TryParseVarNameAndIntValue(SpawnCondition condition, out string varName, out int compareValue)
+    {
+        varName = "";
+        compareValue = 0;
+
+        // For modulo, the value parsing is handled separately
+        if (condition.Operator == "%")
+        {
+            string[] modParts = condition.Value.Split(':');
+            if (modParts.Length < 3) return false;
+            varName = modParts[0].Trim();
+            return !string.IsNullOrEmpty(varName);
+        }
+
+        string[] parts = condition.Value.Split(':');
+        if (parts.Length != 2) return false;
+
+        varName = parts[0].Trim();
+        return !string.IsNullOrEmpty(varName) && int.TryParse(parts[1].Trim(), out compareValue);
+    }
+
+    /// <summary>
+    /// Parses "VariableName:CompareValue" from the condition value for float comparisons.
+    /// </summary>
+    private static bool TryParseVarNameAndFloatValue(SpawnCondition condition, out string varName, out float compareValue)
+    {
+        varName = "";
+        compareValue = 0f;
+
+        if (condition.Operator == "%")
+        {
+            string[] modParts = condition.Value.Split(':');
+            if (modParts.Length < 3) return false;
+            varName = modParts[0].Trim();
+            return !string.IsNullOrEmpty(varName);
+        }
+
+        string[] parts = condition.Value.Split(':');
+        if (parts.Length != 2) return false;
+
+        varName = parts[0].Trim();
+        return !string.IsNullOrEmpty(varName) && float.TryParse(parts[1].Trim(), out compareValue);
+    }
+
+    /// <summary>
+    /// Parses "VariableName:CompareValue" for string comparisons.
+    /// Everything after the first colon is the compare value (allows colons in values).
+    /// </summary>
+    private static bool TryParseVarNameAndStringValue(string value, out string varName, out string compareValue)
+    {
+        varName = "";
+        compareValue = "";
+
+        int colonIdx = value.IndexOf(':');
+        if (colonIdx < 1) return false;
+
+        varName = value[..colonIdx].Trim();
+        compareValue = value[(colonIdx + 1)..];
+        return !string.IsNullOrEmpty(varName);
+    }
+
+    /// <summary>
+    /// Compares two integers using the given operator.
+    /// </summary>
+    private static bool EvaluateIntComparison(string op, int actual, int expected)
+    {
+        return op switch
+        {
+            "==" => actual == expected,
+            "!=" => actual != expected,
+            ">" => actual > expected,
+            ">=" => actual >= expected,
+            "<" => actual < expected,
+            "<=" => actual <= expected,
+            _ => false
+        };
+    }
+
+    /// <summary>
+    /// Compares two floats using the given operator.
+    /// Uses a small epsilon for equality checks.
+    /// </summary>
+    private static bool EvaluateFloatComparison(string op, float actual, float expected)
+    {
+        const float epsilon = 0.0001f;
+        return op switch
+        {
+            "==" => Math.Abs(actual - expected) < epsilon,
+            "!=" => Math.Abs(actual - expected) >= epsilon,
+            ">" => actual > expected,
+            ">=" => actual >= expected,
+            "<" => actual < expected,
+            "<=" => actual <= expected,
+            _ => false
+        };
+    }
+
+    /// <summary>
+    /// Compares two strings using the given operator. Case-insensitive.
+    /// </summary>
+    private static bool EvaluateStringComparison(string op, string actual, string expected)
+    {
+        return op.ToLowerInvariant() switch
+        {
+            "==" => string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase),
+            "!=" => !string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase),
+            "contains" => actual.Contains(expected, StringComparison.OrdinalIgnoreCase),
+            "startswith" => actual.StartsWith(expected, StringComparison.OrdinalIgnoreCase),
+            _ => false
+        };
+    }
+
+    /// <summary>
+    /// Evaluates modulo for integers. Value format: "VarName:Divisor:Remainder".
+    /// Returns true if actual % divisor == remainder.
+    /// </summary>
+    private static bool EvaluateModuloInt(string value, int actual)
+    {
+        string[] parts = value.Split(':');
+        if (parts.Length != 3) return false;
+
+        if (!int.TryParse(parts[1].Trim(), out int divisor) || divisor == 0) return false;
+        if (!int.TryParse(parts[2].Trim(), out int remainder)) return false;
+
+        return actual % divisor == remainder;
+    }
+
+    /// <summary>
+    /// Evaluates modulo for floats. Value format: "VarName:Divisor:Remainder".
+    /// Returns true if actual % divisor ≈ remainder (within epsilon).
+    /// </summary>
+    private static bool EvaluateModuloFloat(string value, float actual)
+    {
+        string[] parts = value.Split(':');
+        if (parts.Length != 3) return false;
+
+        if (!float.TryParse(parts[1].Trim(), out float divisor) || Math.Abs(divisor) < 0.0001f) return false;
+        if (!float.TryParse(parts[2].Trim(), out float remainder)) return false;
+
+        float result = actual % divisor;
+        return Math.Abs(result - remainder) < 0.0001f;
     }
 }
