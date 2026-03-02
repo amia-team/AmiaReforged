@@ -1040,6 +1040,56 @@
         catch { /* ignore */ }
     }
 
+    /// <summary>
+    /// Lightweight graph update: recolors nodes in-place based on current region assignments.
+    /// No server rescan, no Cytoscape destroy/rebuild, no layout rerun.
+    /// </summary>
+    private async Task UpdateGraphRegionData()
+    {
+        if (_graphData == null) return;
+
+        try
+        {
+            // Rebuild the region color palette from in-memory graph data
+            BuildRegionColors();
+            ComputeUnassignedAreas();
+
+            // Build resRef -> regionTag map from the current _regions list
+            var assignments = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var region in _regions)
+            {
+                foreach (var area in region.Areas)
+                {
+                    if (!string.IsNullOrWhiteSpace(area.ResRef))
+                        assignments[area.ResRef] = region.Tag;
+                }
+            }
+
+            // Also update the in-memory graph data node regions so future operations are consistent
+            foreach (var node in _graphData.Nodes.Concat(_graphData.DisconnectedAreas))
+            {
+                node.Region = assignments.TryGetValue(node.ResRef, out var tag) ? tag : null;
+            }
+
+            // Rebuild colors again with the updated node data
+            BuildRegionColors();
+            ComputeUnassignedAreas();
+
+            var regionTags = _regionColors.Keys.ToList();
+            string assignmentsJson = JsonSerializer.Serialize(assignments, CamelCase);
+            string regionTagsJson = JsonSerializer.Serialize(regionTags, CamelCase);
+
+            await JS.InvokeVoidAsync("regionGraph.updateRegionData", assignmentsJson, regionTagsJson);
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to update graph region data");
+            // Silently degrade — graph is still functional, just colors may be stale
+        }
+    }
+
     private async Task SearchInGraph()
     {
         if (string.IsNullOrWhiteSpace(_graphSearchQuery)) return;
@@ -1143,9 +1193,10 @@
             _assignTargetRegionTag = null;
 
             await RefreshRegions();
+            // Lightweight graph update: recolor the assigned node in-place
             if (_graphData != null)
             {
-                await FetchGraph(refresh: true);
+                await UpdateGraphRegionData();
             }
         }
         catch (Exception ex)
@@ -1264,10 +1315,10 @@
             _showEditModal = false;
             await RefreshRegions();
 
-            // Re-render graph if loaded to reflect changes
+            // Lightweight graph update: recolor nodes in-place without full rebuild
             if (_graphData != null)
             {
-                await FetchGraph(refresh: true);
+                await UpdateGraphRegionData();
             }
         }
         catch (Exception ex)

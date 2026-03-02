@@ -347,6 +347,66 @@ window.regionGraph = (function () {
         cy.elements().removeClass('highlighted dimmed region-highlight selected-node');
     }
 
+    /**
+     * Update region assignments and colors on existing nodes in-place.
+     * No layout rerun — nodes stay at their current positions.
+     * @param {string} assignmentsJson JSON object { resRef: regionTag, ... }
+     * @param {string} regionTagsJson JSON array of region tag strings (for color palette)
+     */
+    function updateRegionData(assignmentsJson, regionTagsJson) {
+        if (!cy) return;
+
+        var assignments = JSON.parse(assignmentsJson);
+        var regionTags = JSON.parse(regionTagsJson);
+
+        // Rebuild region -> color map
+        regionColorMap = {};
+        regionTags.forEach(function (tag, idx) {
+            regionColorMap[tag.toLowerCase()] = REGION_PALETTE[idx % REGION_PALETTE.length];
+        });
+
+        cy.startBatch();
+        cy.nodes().forEach(function (node) {
+            var resRef = node.data('resRef');
+            var newRegion = assignments[resRef] || '';
+            var regionTag = newRegion.toLowerCase();
+            var color = regionColorMap[regionTag] || COLORS.unassigned;
+            var borderColor = regionColorMap[regionTag] ? darken(color, 0.3) : COLORS.unassignedBorder;
+
+            node.data('region', newRegion);
+            node.data('nodeColor', color);
+            node.data('nodeBorder', borderColor);
+        });
+        cy.endBatch();
+    }
+
+    /**
+     * Update a single node's region assignment in-place.
+     * @param {string} resRef The area resRef to update
+     * @param {string} regionTag The new region tag (or '' for unassigned)
+     * @param {string} regionTagsJson Updated JSON array of region tag strings
+     */
+    function updateSingleNode(resRef, regionTag, regionTagsJson) {
+        if (!cy) return;
+
+        var regionTags = JSON.parse(regionTagsJson);
+        regionColorMap = {};
+        regionTags.forEach(function (tag, idx) {
+            regionColorMap[tag.toLowerCase()] = REGION_PALETTE[idx % REGION_PALETTE.length];
+        });
+
+        var node = cy.getElementById(resRef);
+        if (node && node.length > 0) {
+            var lowerTag = (regionTag || '').toLowerCase();
+            var color = regionColorMap[lowerTag] || COLORS.unassigned;
+            var borderColor = regionColorMap[lowerTag] ? darken(color, 0.3) : COLORS.unassignedBorder;
+
+            node.data('region', regionTag || '');
+            node.data('nodeColor', color);
+            node.data('nodeBorder', borderColor);
+        }
+    }
+
     function fitView() {
         if (!cy) return;
         cy.animate({
@@ -393,6 +453,8 @@ window.regionGraph = (function () {
         clearHighlight: clearHighlight,
         fitView: fitView,
         destroy: destroy,
-        getRegionColors: getRegionColors
+        getRegionColors: getRegionColors,
+        updateRegionData: updateRegionData,
+        updateSingleNode: updateSingleNode
     };
 })();
