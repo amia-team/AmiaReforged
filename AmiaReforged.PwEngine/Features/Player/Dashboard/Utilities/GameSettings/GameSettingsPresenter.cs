@@ -1,7 +1,9 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿using AmiaReforged.PwEngine.Features.WindowingSystem;
+using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil;
 using Anvil.API;
 using Anvil.API.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.Player.Dashboard.Utilities.GameSettings;
 
@@ -10,10 +12,19 @@ public sealed class GameSettingsPresenter : ScryPresenter<GameSettingsView>
     private readonly NwPlayer _player;
     private NuiWindowToken _token;
     private NuiWindow? _window;
+    private float _scaleFactor = 1.0f;
 
     // Geometry bind to force window position
     private readonly NuiBind<NuiRect> _geometryBind = new("window_geometry");
-    private static readonly NuiRect WindowPosition = new(177f, 130f, 220f, 70f);
+
+    // Base window dimensions (at 100% GUI scale)
+    private const float BaseWindowX = 137f;
+    private const float BaseWindowY = 130f;
+    private const float BaseWindowWidth = 220f;
+    private const float BaseWindowHeight = 70f;
+
+    [Inject]
+    private DevicePropertyService DevicePropertyService { get; init; } = null!;
 
     public override GameSettingsView View { get; }
 
@@ -27,6 +38,13 @@ public sealed class GameSettingsPresenter : ScryPresenter<GameSettingsView>
 
     public override void InitBefore()
     {
+        // Get GUI scale and calculate scale factor
+        int guiScalePercent = DevicePropertyService.GetGuiScale(_player);
+        _scaleFactor = guiScalePercent / 100f;
+
+        // Set the scale factor on the view so it can adjust element sizes
+        View.SetScaleFactor(_scaleFactor);
+
         _window = new NuiWindow(View.RootLayout(), null!)
         {
             Geometry = _geometryBind,
@@ -48,8 +66,16 @@ public sealed class GameSettingsPresenter : ScryPresenter<GameSettingsView>
 
         _player.TryCreateNuiWindow(_window, out _token);
 
-        // Force the window position using the bind
-        Token().SetBindValue(_geometryBind, WindowPosition);
+        // Calculate scaled position - only scale width/height, not X/Y
+        // NWN's GUI scaling handles the position automatically
+        NuiRect scaledPosition = new(
+            BaseWindowX,
+            BaseWindowY,
+            BaseWindowWidth / _scaleFactor,
+            BaseWindowHeight / _scaleFactor
+        );
+
+        Token().SetBindValue(_geometryBind, scaledPosition);
 
         UpdateXpBlockTooltip();
     }
@@ -153,9 +179,18 @@ public sealed class GameSettingsPresenter : ScryPresenter<GameSettingsView>
             return;
         }
 
+        // Get the injection service
+        InjectionService? injector = AnvilCore.GetService<InjectionService>();
+        if (injector is null)
+        {
+            _player.SendServerMessage("Failed to load party advertiser. Please report this bug.", ColorConstants.Red);
+            return;
+        }
+
         // Create and open PartyAdvertiser window
         PartyAdvertiserView partyView = new();
         PartyAdvertiserPresenter partyPresenter = new(partyView, _player);
+        injector.Inject(partyPresenter);
         windowDirector.OpenWindow(partyPresenter);
     }
 

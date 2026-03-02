@@ -5,6 +5,9 @@ namespace AmiaReforged.PwEngine.Features.Player.Dashboard.Utilities.GameSettings
 
 public sealed class PartyAdvertiserView : IScryView
 {
+    // Scale factor for GUI scaling compensation (1.0 = no scaling)
+    private float _scaleFactor = 1.0f;
+
     public NuiBind<bool> IsAdvertising { get; } = new("is_advertising");
     public NuiBind<string> AdvertiseButtonLabel { get; } = new("advertise_label");
     public NuiBind<string> PartyListText { get; } = new("party_list");
@@ -20,6 +23,31 @@ public sealed class PartyAdvertiserView : IScryView
     // Custom message input
     public NuiBind<string> CustomMessage { get; } = new("custom_message");
 
+    /// <summary>
+    /// Sets the scale factor for GUI scaling compensation.
+    /// Call this before creating the window.
+    /// </summary>
+    public void SetScaleFactor(float scaleFactor)
+    {
+        _scaleFactor = scaleFactor;
+    }
+
+    /// <summary>
+    /// Gets the background image resref based on the current scale factor.
+    /// 1.0 = ui_bg_party, 1.1 = ui_bg_party1, 1.2 = ui_bg_party2, etc.
+    /// </summary>
+    private string GetBackgroundImage()
+    {
+        return _scaleFactor switch
+        {
+            >= 1.35f => "ui_bg_party4",  // 1.4 scale
+            >= 1.25f => "ui_bg_party3",  // 1.3 scale
+            >= 1.15f => "ui_bg_party2",  // 1.2 scale
+            >= 1.05f => "ui_bg_party1",  // 1.1 scale
+            _ => "ui_bg_party"           // 1.0 scale (default)
+        };
+    }
+
     public NuiLayout RootLayout()
     {
         Color labelColor = new(30, 20, 12);
@@ -33,7 +61,7 @@ public sealed class PartyAdvertiserView : IScryView
                     Width = 0f,
                     Height = 0f,
                     Children = new List<NuiElement>(),
-                    DrawList = new List<NuiDrawListItem> { new NuiDrawListImage("ui_bg_party", new NuiRect(0f, 0f, 500f, 650f)) }
+                    DrawList = new List<NuiDrawListItem> { new NuiDrawListImage(GetBackgroundImage(), new NuiRect(0f, 0f, 500f, 650f)) }
                 },
                 new NuiSpacer { Height = 10f },
                 new NuiRow

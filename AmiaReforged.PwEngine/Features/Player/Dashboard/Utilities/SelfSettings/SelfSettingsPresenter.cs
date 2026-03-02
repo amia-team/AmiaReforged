@@ -1,7 +1,9 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿using AmiaReforged.PwEngine.Features.WindowingSystem;
+using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil;
 using Anvil.API;
 using Anvil.API.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.Player.Dashboard.Utilities.SelfSettings;
 
@@ -10,10 +12,19 @@ public sealed class SelfSettingsPresenter : ScryPresenter<SelfSettingsView>
     private readonly NwPlayer _player;
     private NuiWindowToken _token;
     private NuiWindow? _window;
+    private float _scaleFactor = 1.0f;
 
     // Geometry bind to force window position
     private readonly NuiBind<NuiRect> _geometryBind = new("window_geometry");
-    private static readonly NuiRect WindowPosition = new(45f, 130f, 170f, 70f);
+
+    // Base window dimensions (at 100% GUI scale)
+    private const float BaseWindowX = 45f;
+    private const float BaseWindowY = 130f;
+    private const float BaseWindowWidth = 130f;
+    private const float BaseWindowHeight = 70f;
+
+    [Inject]
+    private DevicePropertyService DevicePropertyService { get; init; } = null!;
 
     public override SelfSettingsView View { get; }
 
@@ -27,6 +38,13 @@ public sealed class SelfSettingsPresenter : ScryPresenter<SelfSettingsView>
 
     public override void InitBefore()
     {
+        // Get GUI scale and calculate scale factor
+        int guiScalePercent = DevicePropertyService.GetGuiScale(_player);
+        _scaleFactor = guiScalePercent / 100f;
+
+        // Set the scale factor on the view so it can adjust element sizes
+        View.SetScaleFactor(_scaleFactor);
+
         _window = new NuiWindow(View.RootLayout(), null!)
         {
             Geometry = _geometryBind,
@@ -48,10 +66,16 @@ public sealed class SelfSettingsPresenter : ScryPresenter<SelfSettingsView>
 
         _player.TryCreateNuiWindow(_window, out _token);
 
-        // Force the window position using the bind
-        Token().SetBindValue(_geometryBind, WindowPosition);
+        // Calculate scaled position - only scale width/height, not X/Y
+        // NWN's GUI scaling handles the position automatically
+        NuiRect scaledPosition = new(
+            BaseWindowX,
+            BaseWindowY,
+            BaseWindowWidth / _scaleFactor,
+            BaseWindowHeight / _scaleFactor
+        );
 
-        UpdateBubbleTooltip();
+        Token().SetBindValue(_geometryBind, scaledPosition);
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent ev)
@@ -61,9 +85,6 @@ public sealed class SelfSettingsPresenter : ScryPresenter<SelfSettingsView>
 
         switch (ev.ElementId)
         {
-            case "btn_bubble":
-                HandleCollisionBubbleToggle();
-                break;
             case "btn_hurt":
                 HandleHurtYourself();
                 break;
@@ -73,58 +94,6 @@ public sealed class SelfSettingsPresenter : ScryPresenter<SelfSettingsView>
         }
     }
 
-    private void HandleCollisionBubbleToggle()
-    {
-        NwCreature? creature = _player.LoginCreature;
-        if (creature == null)
-        {
-            _player.SendServerMessage("Error: Could not find your character.", ColorConstants.Red);
-            return;
-        }
-
-        // Check if the cutscene ghost effect is already applied
-        bool hasGhostEffect = false;
-        foreach (Effect effect in creature.ActiveEffects)
-        {
-            if (effect.EffectType == EffectType.CutsceneGhost)
-            {
-                hasGhostEffect = true;
-                creature.RemoveEffect(effect);
-                _player.SendServerMessage("Collision bubble applied.", ColorConstants.Cyan);
-                break;
-            }
-        }
-
-        if (!hasGhostEffect)
-        {
-            // Apply cutscene ghost effect (removes collision)
-            Effect ghostEffect = Effect.CutsceneGhost();
-            creature.ApplyEffect(EffectDuration.Permanent, ghostEffect);
-            _player.SendServerMessage("Collision bubble removed.", ColorConstants.Cyan);
-        }
-
-        UpdateBubbleTooltip();
-    }
-
-    private void UpdateBubbleTooltip()
-    {
-        NwCreature? creature = _player.LoginCreature;
-        if (creature == null) return;
-
-        bool hasGhostEffect = false;
-        foreach (Effect effect in creature.ActiveEffects)
-        {
-            if (effect.EffectType == EffectType.CutsceneGhost)
-            {
-                hasGhostEffect = true;
-                break;
-            }
-        }
-
-        // When CutsceneGhost is active, collision is REMOVED, so tooltip should say "Apply Collision Bubble"
-        // When CutsceneGhost is not active, collision exists, so tooltip should say "Remove Collision Bubble"
-        Token().SetBindValue(View.BubbleTooltip, hasGhostEffect ? "Apply Collision Bubble" : "Remove Collision Bubble");
-    }
 
     private void HandleHurtYourself()
     {

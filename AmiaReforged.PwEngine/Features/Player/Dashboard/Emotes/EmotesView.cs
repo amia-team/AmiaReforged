@@ -5,6 +5,9 @@ namespace AmiaReforged.PwEngine.Features.Player.Dashboard.Emotes;
 
 public sealed class EmotesView : IScryView
 {
+    // Scale factor for GUI scaling compensation (1.0 = no scaling)
+    private float _scaleFactor = 1.0f;
+
     // Binds
     public NuiBind<string> TargetName { get; } = new("target_name");
     public NuiBind<List<NuiComboEntry>> IndividualEmoteOptions { get; } = new("individual_emotes");
@@ -13,18 +16,45 @@ public sealed class EmotesView : IScryView
     public NuiBind<int> SelectedMutual { get; } = new("selected_mutual");
     public NuiBind<bool> PerformButtonEnabled { get; } = new("perform_button_enabled");
 
+    /// <summary>
+    /// Sets the scale factor for GUI scaling compensation.
+    /// Call this before creating the window.
+    /// </summary>
+    public void SetScaleFactor(float scaleFactor)
+    {
+        _scaleFactor = scaleFactor;
+    }
+
+    /// <summary>
+    /// Gets the background image resref based on the current scale factor.
+    /// 1.0 = ui_bg_emote, 1.1 = ui_bg_emote1, 1.2 = ui_bg_emote2, etc.
+    /// </summary>
+    private string GetBackgroundImage()
+    {
+        return _scaleFactor switch
+        {
+            >= 1.35f => "ui_bg_emote4",  // 1.4 scale
+            >= 1.25f => "ui_bg_emote3",  // 1.3 scale
+            >= 1.15f => "ui_bg_emote2",  // 1.2 scale
+            >= 1.05f => "ui_bg_emote1",  // 1.1 scale
+            _ => "ui_bg_emote"           // 1.0 scale (default)
+        };
+    }
+
     public NuiLayout RootLayout()
     {
         // Background layer - DrawList doesn't participate in constraints
+        // Note: Background image dimensions are NOT scaled because we use pre-scaled images
         NuiRow bgLayer = new()
         {
             Width = 0f,
             Height = 0f,
             Children = new List<NuiElement>(),
-            DrawList = new List<NuiDrawListItem> { new NuiDrawListImage("ui_bg_emote", new NuiRect(0f, 0f, 300, 300)) }
+            DrawList = new List<NuiDrawListItem> { new NuiDrawListImage(GetBackgroundImage(), new NuiRect(0f, 0f, 300f, 300f)) }
         };
 
         // Simple flat column structure - no nesting
+        // Note: No scaling applied - we use pre-scaled background images
         NuiColumn root = new()
         {
             Children = new List<NuiElement>

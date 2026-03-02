@@ -1,6 +1,8 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem;
+using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.Player.Dashboard.Emotes;
 
@@ -13,7 +15,17 @@ public sealed class EmoteTransformPresenter : ScryPresenter<EmoteTransformView>
 
     // Geometry bind to force window position
     private readonly NuiBind<NuiRect> _geometryBind = new("window_geometry");
-    private static readonly NuiRect WindowPosition = new(350f, 100f, 220f, 180f);
+
+    // Base window dimensions (at 100% GUI scale)
+    private const float BaseWindowX = 350f;
+    private const float BaseWindowY = 100f;
+    private const float BaseWindowWidth = 240f;
+    private const float BaseWindowHeight = 180f;
+
+    private float _scaleFactor = 1.0f;
+
+    [Inject]
+    private DevicePropertyService DevicePropertyService { get; init; } = null!;
 
     public EmoteTransformPresenter(EmoteTransformView view, NwPlayer player, NwCreature targetCreature)
     {
@@ -28,6 +40,10 @@ public sealed class EmoteTransformPresenter : ScryPresenter<EmoteTransformView>
 
     public override void InitBefore()
     {
+        // Get GUI scale and calculate scale factor before building the layout
+        int guiScalePercent = DevicePropertyService.GetGuiScale(_player);
+        _scaleFactor = guiScalePercent / 100f;
+
         _window = new NuiWindow(View.RootLayout(), null!)
         {
             Geometry = _geometryBind,
@@ -51,8 +67,15 @@ public sealed class EmoteTransformPresenter : ScryPresenter<EmoteTransformView>
 
         _player.TryCreateNuiWindow(_window, out _token);
 
-        // Force the window position using the bind
-        Token().SetBindValue(_geometryBind, WindowPosition);
+        // Scale X position so the transform window stays to the right of the emotes window at higher GUI scales
+        NuiRect windowPosition = new(
+            BaseWindowX * _scaleFactor,
+            BaseWindowY,
+            BaseWindowWidth,
+            BaseWindowHeight
+        );
+
+        Token().SetBindValue(_geometryBind, windowPosition);
 
         // Get current transform values from the target creature
         float currentX = _targetCreature.VisualTransform.Translation.X;
