@@ -567,12 +567,32 @@
                                                     </div>
                                                     <div style="display:flex;gap:8px;flex-wrap:wrap">
                                                         <div class="form-group" style="flex:1;min-width:120px">
-                                                            <label style="font-size:0.8rem">ResRef</label>
-                                                            <input class="form-control form-control-sm" @bind="poi.ResRef" maxlength="16" />
+                                                            <label style="font-size:0.8rem">ResRef <small style="color:var(--text-secondary)">(area from module)</small></label>
+                                                            @if (_knownAreas.Count > 0)
+                                                            {
+                                                                <input class="form-control form-control-sm" list="@($"poiarealist-{i}-{pi}")" @bind="poi.ResRef" maxlength="16"
+                                                                       placeholder="Type or select an area..." />
+                                                                <datalist id="@($"poiarealist-{i}-{pi}")">
+                                                                    @foreach (var ka in _knownAreas)
+                                                                    {
+                                                                        <option value="@ka.ResRef">@ka.ResRef — @ka.Name</option>
+                                                                    }
+                                                                </datalist>
+                                                            }
+                                                            else
+                                                            {
+                                                                <input class="form-control form-control-sm" @bind="poi.ResRef" maxlength="16"
+                                                                       placeholder="Enter area ResRef..." />
+                                                            }
                                                         </div>
                                                         <div class="form-group" style="flex:1;min-width:120px">
-                                                            <label style="font-size:0.8rem">Tag</label>
-                                                            <input class="form-control form-control-sm" @bind="poi.Tag" />
+                                                            <label style="font-size:0.8rem">Tag <small style="color:var(--text-secondary)">(must be unique)</small></label>
+                                                            @{ var tagDup = IsPoiTagDuplicate(poi.Tag, i, pi); }
+                                                            <input class="form-control form-control-sm @(tagDup ? "is-invalid" : "")" @bind="poi.Tag" />
+                                                            @if (tagDup)
+                                                            {
+                                                                <div class="invalid-feedback" style="display:block;font-size:0.75rem">Duplicate tag — PoI tags must be unique across the region.</div>
+                                                            }
                                                         </div>
                                                         <div class="form-group" style="flex:1;min-width:120px">
                                                             <label style="font-size:0.8rem">Name</label>
@@ -1218,6 +1238,23 @@
         _error = null;
         try
         {
+            // Validate PoI tag uniqueness
+            var allPoiTags = _editRegion.Areas
+                .SelectMany(a => a.PlacesOfInterest ?? new())
+                .Where(p => !string.IsNullOrWhiteSpace(p.Tag))
+                .Select(p => p.Tag)
+                .ToList();
+            var duplicateTags = allPoiTags
+                .GroupBy(t => t, StringComparer.OrdinalIgnoreCase)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .ToList();
+            if (duplicateTags.Count > 0)
+            {
+                _error = $"Duplicate PoI tags: {string.Join(", ", duplicateTags)}. Each PoI tag must be unique within the region.";
+                return;
+            }
+
             if (_isCreating)
                 await Api.CreateAsync(_editRegion);
             else
@@ -1313,6 +1350,27 @@
     private void RemovePoi(int areaIndex, int poiIndex)
     {
         _editRegion.Areas[areaIndex].PlacesOfInterest?.RemoveAt(poiIndex);
+    }
+
+    /// <summary>
+    /// Returns true if the given PoI tag is duplicated elsewhere in the region.
+    /// </summary>
+    private bool IsPoiTagDuplicate(string? tag, int areaIndex, int poiIndex)
+    {
+        if (string.IsNullOrWhiteSpace(tag)) return false;
+
+        for (int a = 0; a < _editRegion.Areas.Count; a++)
+        {
+            var pois = _editRegion.Areas[a].PlacesOfInterest;
+            if (pois == null) continue;
+            for (int p = 0; p < pois.Count; p++)
+            {
+                if (a == areaIndex && p == poiIndex) continue; // skip self
+                if (string.Equals(pois[p].Tag, tag, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+        }
+        return false;
     }
 
     // ===== Import =====
