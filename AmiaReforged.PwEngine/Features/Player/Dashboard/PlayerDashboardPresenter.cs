@@ -1,7 +1,8 @@
-﻿using AmiaReforged.PwEngine.Features.Player.Dashboard.Emotes;
+﻿﻿using AmiaReforged.PwEngine.Features.Player.Dashboard.Emotes;
 using AmiaReforged.PwEngine.Features.Player.Dashboard.Hide;
 using AmiaReforged.PwEngine.Features.Player.Dashboard.Pray;
 using AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui;
+using AmiaReforged.PwEngine.Features.WindowingSystem;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil;
 using Anvil.API;
@@ -17,13 +18,22 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
     private readonly NwPlayer _player;
     private NuiWindowToken _token;
     private NuiWindow? _window;
+    private float _scaleFactor = 1.0f;
 
     // Geometry bind to force window position
     private readonly NuiBind<NuiRect> _geometryBind = new("window_geometry");
-    private static readonly NuiRect DashboardPosition = new(0f, 40f, 280f, 80f);
+
+    // Base dashboard dimensions (at 100% GUI scale)
+    private const float BaseDashboardX = 0f;
+    private const float BaseDashboardY = 40f;
+    private const float BaseDashboardWidth = 320f;
+    private const float BaseDashboardHeight = 80f;
 
     [Inject]
     private PlayerDashboardService DashboardService { get; init; } = null!;
+
+    [Inject]
+    private DevicePropertyService DevicePropertyService { get; init; } = null!;
 
     [Inject]
     private PrayerService PrayerService { get; init; } = null!;
@@ -43,6 +53,15 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
 
     public override void InitBefore()
     {
+        // Get GUI scale and calculate scale factor before building the layout
+        // This ensures the View uses the correct sizes when RootLayout() is called
+        // GUI scale is returned as percentage (100 = 100%, 150 = 150%)
+        int guiScalePercent = DevicePropertyService.GetGuiScale(_player);
+        _scaleFactor = guiScalePercent / 100f;
+
+        // Set the scale factor on the view so it can adjust element sizes
+        View.SetScaleFactor(_scaleFactor);
+
         _window = new NuiWindow(View.RootLayout(), null!)
         {
             Geometry = _geometryBind,
@@ -67,8 +86,18 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
 
         _player.TryCreateNuiWindow(_window, out _token);
 
+        // Calculate the scaled dashboard position using the scale factor from InitBefore()
+        // We divide by scale factor to compensate - when GUI is scaled up 1.5x,
+        // we make our window 1/1.5 = 0.67x smaller so it appears at normal size
+        NuiRect scaledPosition = new(
+            BaseDashboardX / _scaleFactor,
+            BaseDashboardY / _scaleFactor,
+            BaseDashboardWidth / _scaleFactor,
+            BaseDashboardHeight / _scaleFactor
+        );
+
         // Force the window position using the bind
-        Token().SetBindValue(_geometryBind, DashboardPosition);
+        Token().SetBindValue(_geometryBind, scaledPosition);
 
         // Don't subscribe to OnNuiEvent here - WindowDirector.HandleNuiEvents already handles this
         // and calls presenter.ProcessEvent(obj) when events occur
@@ -92,6 +121,9 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
                 break;
             case "btn_emotes":
                 HandleEmotesButtonClick();
+                break;
+            case "btn_bubble":
+                HandleCollisionBubbleToggle();
                 break;
             case "btn_player_tools":
                 HandlePlayerToolsButtonClick();
@@ -180,10 +212,18 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
             return;
         }
 
+        // Get the injection service
+        InjectionService? injector = AnvilCore.GetService<InjectionService>();
+        if (injector is null)
+        {
+            _player.SendServerMessage("Failed to load the hide equipment window. Please report this bug.", ColorConstants.Red);
+            return;
+        }
+
         // Create the Hide Equipment window and let WindowDirector manage it
         HideEquipmentView hideView = new();
         HideEquipmentPresenter hidePresenter = new(hideView, _player);
-        // Don't call InitBefore/Create - WindowDirector.OpenWindow does that
+        injector.Inject(hidePresenter);
         WindowDirector.Value.OpenWindow(hidePresenter);
     }
 
@@ -202,9 +242,20 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
             return;
         }
 
-        // Create the Emotes window and let WindowDirector manage it
+        // Get the injection service
+        InjectionService? injector = AnvilCore.GetService<InjectionService>();
+        if (injector is null)
+        {
+            _player.SendServerMessage(
+                "Failed to load the emotes window due to missing DI container. Screenshot this and report it as a bug.",
+                ColorConstants.Red);
+            return;
+        }
+
+        // Create the Emotes window and inject dependencies before opening
         EmotesView emotesView = new();
         EmotesPresenter emotesPresenter = new(emotesView, _player);
+        injector.Inject(emotesPresenter);
         WindowDirector.Value.OpenWindow(emotesPresenter);
     }
 
@@ -252,15 +303,92 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
             return;
         }
 
+        // Get the injection service
+        InjectionService? injector = AnvilCore.GetService<InjectionService>();
+        if (injector is null)
+        {
+            _player.SendServerMessage("Failed to load the utilities window. Please report this bug.", ColorConstants.Red);
+            return;
+        }
+
         // Create the Utilities window
         Utilities.UtilitiesView utilitiesView = new();
         Utilities.UtilitiesPresenter utilitiesPresenter = new(utilitiesView, _player);
+        injector.Inject(utilitiesPresenter);
         WindowDirector.Value.OpenWindow(utilitiesPresenter);
+    }
+
+    private void HandleCollisionBubbleToggle()
+    {
+        NwCreature? creature = _player.LoginCreature;
+        if (creature == null)
+        {
+            _player.SendServerMessage("Error: Could not find your character.", ColorConstants.Red);
+            return;
+        }
+
+        // Get PC Key to save preference
+        NwItem? pcKey = creature.Inventory.Items.FirstOrDefault(i => i.ResRef == "ds_pckey");
+
+        // Check if the cutscene ghost effect is already applied
+        bool hasGhostEffect = false;
+        foreach (Effect effect in creature.ActiveEffects)
+        {
+            if (effect.EffectType == EffectType.CutsceneGhost)
+            {
+                hasGhostEffect = true;
+                creature.RemoveEffect(effect);
+                _player.SendServerMessage("Collision bubble applied.", ColorConstants.Cyan);
+
+                // Save preference: 0 means bubble is ON (ghost effect removed)
+                if (pcKey != null)
+                {
+                    pcKey.GetObjectVariable<LocalVariableInt>("EffectGhost").Value = 0;
+                }
+                break;
+            }
+        }
+
+        if (!hasGhostEffect)
+        {
+            // Apply cutscene ghost effect (removes collision)
+            Effect ghostEffect = Effect.CutsceneGhost();
+            creature.ApplyEffect(EffectDuration.Permanent, ghostEffect);
+            _player.SendServerMessage("Collision bubble removed.", ColorConstants.Cyan);
+
+            // Save preference: 1 means bubble is OFF (ghost effect applied)
+            if (pcKey != null)
+            {
+                pcKey.GetObjectVariable<LocalVariableInt>("EffectGhost").Value = 1;
+            }
+        }
+
+        UpdateBubbleTooltip();
+    }
+
+    private void UpdateBubbleTooltip()
+    {
+        NwCreature? creature = _player.LoginCreature;
+        if (creature == null) return;
+
+        bool hasGhostEffect = false;
+        foreach (Effect effect in creature.ActiveEffects)
+        {
+            if (effect.EffectType == EffectType.CutsceneGhost)
+            {
+                hasGhostEffect = true;
+                break;
+            }
+        }
+
+        // When CutsceneGhost is active, collision is REMOVED, so tooltip should say "Apply Collision Bubble"
+        // When CutsceneGhost is not active, collision exists, so tooltip should say "Remove Collision Bubble"
+        Token().SetBindValue(View.BubbleTooltip, hasGhostEffect ? "Apply Collision Bubble" : "Remove Collision Bubble");
     }
 
     public override void UpdateView()
     {
-        // Update any dynamic content here in the future
+        UpdateBubbleTooltip();
     }
 
     public override void Close()
