@@ -36,7 +36,7 @@ public partial class ChatToolModel(NwPlayer player)
         foreach (Match match in matches)
         {
             string emote = match.Groups[1].Value;
-            message = message.Replace($"*{emote}*", $"<c{ColorConstants.Purple.ToColorToken()}>*{emote}*</c>");
+            message = message.Replace($"*{emote}*", $"<c{ColorConstants.Cyan.ToColorToken()}>*{emote}*</c>");
         }
 
         // Clean up trailing spaces.
