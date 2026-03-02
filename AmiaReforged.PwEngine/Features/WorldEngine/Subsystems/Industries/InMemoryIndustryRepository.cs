@@ -1,9 +1,11 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
-using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
 
-[ServiceBinding(typeof(IIndustryRepository))]
+/// <summary>
+/// In-memory implementation retained for unit testing and caching scenarios.
+/// The DB-backed DbIndustryRepository is now the active service binding.
+/// </summary>
 public class InMemoryIndustryRepository : IIndustryRepository
 {
     private readonly List<Industry> _industries = [];

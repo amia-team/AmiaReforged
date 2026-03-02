@@ -39,26 +39,31 @@ public class EconomyLoaderService
         _shopLoader = shopLoader;
         _coinhouseLoader = coinhouseLoader;
 
-        resourceWatcherService.FileSystemChanged += ReloadChanges;
+        // Hot-reload from JSON files is no longer active.
+        // All definitions are now managed via the admin panel and persisted in the database.
+        // resourceWatcherService.FileSystemChanged += ReloadChanges; — removed
     }
 
-    private void ReloadChanges(object? sender, FileSystemEventArgs e)
-    {
-        if(e.Name is null) return;
-
-        if(!e.Name.EndsWith(".json")) return;
-        Log.Info($"Reloading {e.Name}");
-        LoadDefinitions();
-    }
-
+    /// <summary>
+    /// No-op. Definition loading from JSON files on startup has been removed.
+    /// All definitions (regions, industries, blueprints, shops, coinhouses) are now
+    /// managed via the admin panel and persisted in the database.
+    /// </summary>
     public void Startup()
     {
-        LoadDefinitions();
+        Log.Info("=== WorldEngine Economy Definition Loading ===");
+        Log.Info("All definitions are now database-backed. JSON-based startup loading has been removed.");
+        Log.Info("Manage definitions via the WorldEngine admin panel.");
     }
 
-    private void LoadDefinitions()
+    /// <summary>
+    /// Loads definitions from JSON files on disk. This is no longer called on startup.
+    /// Retained for manual bulk-import scenarios via the admin panel.
+    /// WARNING: RegionDefinitionLoadingService.Load() calls repository.Clear() — use with care.
+    /// </summary>
+    public void LoadDefinitions()
     {
-        Log.Info("=== Starting WorldEngine Economy Definition Loading ===");
+        Log.Info("=== Starting WorldEngine Economy Definition Loading (manual) ===");
         DateTime startTime = DateTime.UtcNow;
 
         Log.Info("Loading Industries...");

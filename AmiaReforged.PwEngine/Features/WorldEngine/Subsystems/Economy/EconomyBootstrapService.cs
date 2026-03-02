@@ -29,7 +29,11 @@ public class EconomyBootstrapService
         _nodes = nodes;
         _regions = regions;
 
-        loader.Startup();
+        // Definition loading from JSON is no longer done on startup.
+        // All definitions (regions, industries, blueprints, shops, coinhouses)
+        // are now managed via the admin panel and persisted in the database.
+        // loader.Startup(); — removed: no JSON loading on boot
+
         LoadFromDatabase();
     }
 
