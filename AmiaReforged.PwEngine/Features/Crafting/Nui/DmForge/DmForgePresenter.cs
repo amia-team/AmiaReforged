@@ -1,8 +1,11 @@
 using AmiaReforged.PwEngine.Features.Crafting.Models;
 using AmiaReforged.PwEngine.Features.NwObjectHelpers;
+using AmiaReforged.PwEngine.Features.WindowingSystem;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using Anvil;
 using Anvil.API;
 using Anvil.API.Events;
+using Anvil.Services;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.Crafting.Nui.DmForge;
@@ -63,6 +66,17 @@ public sealed class DmForgePresenter : ScryPresenter<DmForgeView>
     /// </summary>
     private NuiWindow? _window;
 
+    [Inject]
+    private DevicePropertyService DevicePropertyService { get; init; } = null!;
+
+    private float _scaleFactor = 1.0f;
+
+    // Base window dimensions (at 100% GUI scale)
+    private const float BaseWindowX = 300f;
+    private const float BaseWindowY = 200f;
+    private const float BaseWindowWidth = 1100f;
+    private const float BaseWindowHeight = 640f;
+
     /// <summary>
     /// Represents a collection of crafting properties available for display and interaction
     /// in the context of the DM Forge interface. The collection is populated based on
@@ -108,6 +122,9 @@ public sealed class DmForgePresenter : ScryPresenter<DmForgeView>
         _item = item;
         _propertyData = propData;
         View = new DmForgeView(this);
+
+        InjectionService injector = AnvilCore.GetService<InjectionService>()!;
+        injector.Inject(this);
 
         BuildCaches();
     }
@@ -240,9 +257,22 @@ public sealed class DmForgePresenter : ScryPresenter<DmForgeView>
     /// </remarks>
     public override void InitBefore()
     {
+        // Get GUI scale and calculate scale factor
+        int guiScalePercent = DevicePropertyService.GetGuiScale(_player);
+        _scaleFactor = guiScalePercent / 100f;
+
+        // Set the scale factor on the view so it can select the correct background image
+        View.SetScaleFactor(_scaleFactor);
+
+        // Don't scale window dimensions - we use pre-scaled background images
+        // and NWN's GUI scaling handles the internal element sizing automatically
         _window = new NuiWindow(View.RootLayout(), WindowTitle)
         {
-            Geometry = new NuiRect(300f, 200f, 1100f, 640f)
+            Geometry = new NuiRect(
+                BaseWindowX,
+                BaseWindowY,
+                BaseWindowWidth,
+                BaseWindowHeight)
         };
     }
 

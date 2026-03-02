@@ -21,6 +21,33 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
 
     public readonly ActivePropertiesView ActivePropertiesView;
 
+    private float _scaleFactor = 1.0f;
+
+    /// <summary>
+    /// Sets the scale factor for GUI scaling compensation.
+    /// Call this before building the layout.
+    /// </summary>
+    public void SetScaleFactor(float scaleFactor)
+    {
+        _scaleFactor = scaleFactor;
+    }
+
+    /// <summary>
+    /// Gets the background image resref based on the current scale factor.
+    /// 1.0 = ui_forge, 1.1 = ui_forge1, 1.2 = ui_forge2, etc.
+    /// </summary>
+    private string GetBackgroundImage()
+    {
+        return _scaleFactor switch
+        {
+            >= 1.35f => "ui_forge4",  // 1.4 scale
+            >= 1.25f => "ui_forge3",  // 1.3 scale
+            >= 1.15f => "ui_forge2",  // 1.2 scale
+            >= 1.05f => "ui_forge1",  // 1.1 scale
+            _ => "ui_forge"           // 1.0 scale (default)
+        };
+    }
+
 
     /// <summary>
     ///     Gets the category view for the Mythal Forge. Public so that the presenter can access it.
@@ -97,7 +124,7 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
                     Width = 0f,
                     Height = 0f,
                     Children = new List<NuiElement>(),
-                    DrawList = [new NuiDrawListImage("ui_forge", new NuiRect(-5f, -25f, 1220f, 813f))]
+                    DrawList = [new NuiDrawListImage(GetBackgroundImage(), new NuiRect(-5f, -25f, 1220f, 813f))]
                 },
                 new NuiButtonImage("ui_btn_forgehelp")
                 {

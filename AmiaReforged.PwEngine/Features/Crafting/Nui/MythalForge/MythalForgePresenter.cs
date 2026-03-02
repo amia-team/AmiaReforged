@@ -4,12 +4,12 @@ using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.ChangeLis
 using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 using AmiaReforged.PwEngine.Features.NwObjectHelpers;
 using AmiaReforged.PwEngine.Features.Player.PlayerTools.Services;
+using AmiaReforged.PwEngine.Features.WindowingSystem;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry.GenericWindows;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using NLog;
 
 namespace AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge;
 
@@ -72,6 +72,16 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     [Inject] private Lazy<IRenameItemService> RenameService { get; init; } = null!;
 
     [Inject] private Lazy<WindowDirector> WindowDirector { get; init; } = null!;
+
+    [Inject] private DevicePropertyService DevicePropertyService { get; init; } = null!;
+
+    private float _scaleFactor = 1.0f;
+
+    // Base window dimensions (at 100% GUI scale)
+    private const float BaseWindowX = 250f;
+    private const float BaseWindowY = 100f;
+    private const float BaseWindowWidth = 1200f;
+    private const float BaseWindowHeight = 620f;
 
     /// <summary>
     /// Represents the token used to manage the Nui window associated with the Mythal Forge view.
@@ -597,9 +607,22 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// </summary>
     public override void InitBefore()
     {
+        // Get GUI scale and calculate scale factor
+        int guiScalePercent = DevicePropertyService.GetGuiScale(_player);
+        _scaleFactor = guiScalePercent / 100f;
+
+        // Set the scale factor on the view so it can select the correct background image
+        View.SetScaleFactor(_scaleFactor);
+
+        // Don't scale window dimensions - we use pre-scaled background images
+        // and NWN's GUI scaling handles the internal element sizing automatically
         _window = new NuiWindow(View.RootLayout(), WindowTitle)
         {
-            Geometry = new NuiRect(250f, 100f, 1200f, 620f)
+            Geometry = new NuiRect(
+                BaseWindowX,
+                BaseWindowY,
+                BaseWindowWidth,
+                BaseWindowHeight)
         };
     }
 

@@ -8,6 +8,33 @@ public sealed class DmForgeView : ScryView<DmForgePresenter>
     public const string ApplyNameButtonId = "dm_apply_name";
     public const string CloseId = "dm_close";
 
+    private float _scaleFactor = 1.0f;
+
+    /// <summary>
+    /// Sets the scale factor for GUI scaling compensation.
+    /// Call this before building the layout.
+    /// </summary>
+    public void SetScaleFactor(float scaleFactor)
+    {
+        _scaleFactor = scaleFactor;
+    }
+
+    /// <summary>
+    /// Gets the background image resref based on the current scale factor.
+    /// 1.0 = ui_forge_dm, 1.1 = ui_forge_dm1, 1.2 = ui_forge_dm2, etc.
+    /// </summary>
+    private string GetBackgroundImage()
+    {
+        return _scaleFactor switch
+        {
+            >= 1.35f => "ui_forge_dm4",  // 1.4 scale
+            >= 1.25f => "ui_forge_dm3",  // 1.3 scale
+            >= 1.15f => "ui_forge_dm2",  // 1.2 scale
+            >= 1.05f => "ui_forge_dm1",  // 1.1 scale
+            _ => "ui_forge_dm"           // 1.0 scale (default)
+        };
+    }
+
     public DmForgeView(DmForgePresenter presenter)
     {
         Presenter = presenter;
@@ -82,7 +109,7 @@ public sealed class DmForgeView : ScryView<DmForgePresenter>
                     Width = 0f,
                     Height = 0f,
                     Children = new List<NuiElement>(),
-                    DrawList = [new NuiDrawListImage("ui_forge_dm", new NuiRect(-30f, -15f, 1220f, 813f))]
+                    DrawList = [new NuiDrawListImage(GetBackgroundImage(), new NuiRect(-30f, -15f, 1220f, 813f))]
                 },
                 new NuiSpacer { Height = 180f },
 
