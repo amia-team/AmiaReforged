@@ -285,15 +285,17 @@ public class RegionController
     {
         if (string.IsNullOrWhiteSpace(dto.Tag)) return "Tag is required";
         if (string.IsNullOrWhiteSpace(dto.Name)) return "Name is required";
-        if (dto.Areas == null || dto.Areas.Length == 0) return "At least one area is required";
 
-        for (int i = 0; i < dto.Areas.Length; i++)
+        if (dto.Areas != null)
         {
-            var area = dto.Areas[i];
-            if (string.IsNullOrWhiteSpace(area.ResRef))
-                return $"Area [{i}]: ResRef is required";
-            if (area.ResRef.Length > 16)
-                return $"Area [{i}]: ResRef must not exceed 16 characters";
+            for (int i = 0; i < dto.Areas.Length; i++)
+            {
+                var area = dto.Areas[i];
+                if (string.IsNullOrWhiteSpace(area.ResRef))
+                    return $"Area [{i}]: ResRef is required";
+                if (area.ResRef.Length > 16)
+                    return $"Area [{i}]: ResRef must not exceed 16 characters";
+            }
         }
 
         return null;
