@@ -303,6 +303,11 @@
                                     <input class="form-control" type="number" @bind="_editMaxTotalSpawns" placeholder="No cap" />
                                     <small class="form-text">0 = no cap</small>
                                 </div>
+                                <div class="form-group">
+                                    <label>Boss Chance %</label>
+                                    <input class="form-control" type="number" @bind="_editBossSpawnChance" min="0" max="100" />
+                                    <small class="form-text">0 = disabled</small>
+                                </div>
                             </div>
                             <div class="form-actions">
                                 <button class="btn btn-primary" @onclick="SaveProfileSettings" disabled="@_isSaving">Save</button>
@@ -870,6 +875,273 @@
                             </div>
                         }
                     </div>
+
+                    @* --- Boss Pool --- *@
+                    <div class="section">
+                        <div class="section-header-row">
+                            <h2>Boss Pool (@_selectedProfile.BossConfigs.Count)</h2>
+                            <button class="btn btn-sm btn-primary" @onclick="() => _showAddBoss = !_showAddBoss">@(_showAddBoss ? "Cancel" : "+ Add Boss")</button>
+                        </div>
+
+                        @if (_showAddBoss)
+                        {
+                            <div class="inline-form" style="margin-bottom:15px;padding:15px;background:var(--bg-input);border-radius:8px">
+                                <div class="form-row">
+                                    <div class="form-group" style="flex:2">
+                                        <label>Creature ResRef</label>
+                                        <input class="form-control form-control-sm" @bind="_newBossResRef" placeholder="e.g. ds_boss_lich" maxlength="32" />
+                                    </div>
+                                    <div class="form-group" style="flex:2">
+                                        <label>Display Name</label>
+                                        <input class="form-control form-control-sm" @bind="_newBossName" placeholder="e.g. Ancient Lich" maxlength="128" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Weight</label>
+                                        <input class="form-control form-control-sm" type="number" @bind="_newBossWeight" min="1" />
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <button class="btn btn-success btn-sm" @onclick="AddBoss" disabled="@_isSaving">Add</button>
+                                    <button class="btn btn-secondary btn-sm" @onclick="() => _showAddBoss = false">Cancel</button>
+                                </div>
+                            </div>
+                        }
+
+                        @if (_selectedProfile.BossConfigs.Count == 0)
+                        {
+                            <p style="color:var(--text-secondary)">No bosses configured. Add creature resrefs above.</p>
+                        }
+                        else
+                        {
+                            @foreach (var boss in _selectedProfile.BossConfigs)
+                            {
+                                var bossExpanded = _expandedBosses.Contains(boss.Id);
+                                <div class="group-card">
+                                    <div class="group-card-header" @onclick="() => ToggleBossExpanded(boss.Id)">
+                                        <span class="expand-icon">@(bossExpanded ? "▼" : "▶")</span>
+                                        <span class="state-badge @(boss.IsActive ? "running" : "stopped")" style="margin-right:8px">
+                                            @(boss.IsActive ? "Active" : "Inactive")
+                                        </span>
+                                        <strong>@boss.Name</strong>
+                                        <span style="color:var(--text-secondary);margin-left:10px">
+                                            <code>@boss.CreatureResRef</code> · Weight: @boss.Weight · @boss.Conditions.Count conditions
+                                        </span>
+                                        <div class="group-card-actions" @onclick:stopPropagation="true">
+                                            <button class="btn btn-sm @(boss.IsActive ? "btn-warning" : "btn-success")"
+                                                    @onclick="() => ToggleBossActive(boss)">
+                                                @(boss.IsActive ? "Disable" : "Enable")
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteBoss(boss)">Delete</button>
+                                        </div>
+                                    </div>
+                                    @if (bossExpanded)
+                                    {
+                                        <div class="group-card-body">
+                                            @* -- Boss Name/ResRef/Weight Edit -- *@
+                                            <div class="inline-form" style="margin-bottom:15px">
+                                                <div class="form-row">
+                                                    <div class="form-group" style="flex:2">
+                                                        <label>Display Name</label>
+                                                        <input class="form-control form-control-sm" value="@boss.Name"
+                                                               @onchange="e => UpdateBossField(boss, nameof(UpdateBossConfigRequest.Name), e)" />
+                                                    </div>
+                                                    <div class="form-group" style="flex:2">
+                                                        <label>Creature ResRef</label>
+                                                        <input class="form-control form-control-sm" value="@boss.CreatureResRef"
+                                                               @onchange="e => UpdateBossField(boss, nameof(UpdateBossConfigRequest.CreatureResRef), e)" />
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label>Weight</label>
+                                                        <input class="form-control form-control-sm" type="number" value="@boss.Weight"
+                                                               @onchange="e => UpdateBossField(boss, nameof(UpdateBossConfigRequest.Weight), e)" />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            @* -- Boss Conditions -- *@
+                                            <div class="section-header-row" style="margin-top:10px">
+                                                <h3>Conditions (@boss.Conditions.Count)</h3>
+                                                <button class="btn btn-sm btn-primary" @onclick="() => ToggleAddBossCondition(boss.Id)">+ Add Condition</button>
+                                            </div>
+
+                                            @if (_addBossConditionId == boss.Id)
+                                            {
+                                                <div class="inline-form" style="margin-bottom:10px;padding:10px;background:var(--bg-dark);border-radius:6px">
+                                                    <div class="form-row">
+                                                        <div class="form-group">
+                                                            <label>Type</label>
+                                                            <select class="form-control form-control-sm" value="@_newBossConditionType"
+                                                                    @onchange="OnNewBossConditionTypeChanged">
+                                                                @foreach (SpawnConditionType t in Enum.GetValues<SpawnConditionType>())
+                                                                {
+                                                                    <option value="@t">@t</option>
+                                                                }
+                                                            </select>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label>Operator</label>
+                                                            <select class="form-control form-control-sm" @bind="_newBossConditionOp">
+                                                                @foreach (var op in GetOperatorsForType(_newBossConditionType))
+                                                                {
+                                                                    <option value="@op">@op</option>
+                                                                }
+                                                            </select>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label>Value</label>
+                                                            <input class="form-control form-control-sm" @bind="_newBossConditionValue"
+                                                                   placeholder="@GetValuePlaceholder(_newBossConditionType)" />
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-actions">
+                                                        <button class="btn btn-success btn-sm" @onclick="() => AddBossCondition(boss.Id)" disabled="@_isSaving">Add</button>
+                                                        <button class="btn btn-secondary btn-sm" @onclick="() => _addBossConditionId = null">Cancel</button>
+                                                    </div>
+                                                </div>
+                                            }
+
+                                            @if (boss.Conditions.Count == 0)
+                                            {
+                                                <p style="color:var(--text-secondary);font-size:0.9rem">No conditions — boss is always eligible.</p>
+                                            }
+                                            else
+                                            {
+                                                <table class="table table-compact">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Type</th>
+                                                            <th>Operator</th>
+                                                            <th>Value</th>
+                                                            <th style="width:60px"></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var cond in boss.Conditions)
+                                                        {
+                                                            <tr>
+                                                                <td>
+                                                                    <select class="form-control form-control-sm" value="@cond.Type"
+                                                                            @onchange="e => UpdateBossConditionField(cond, nameof(cond.Type), e)">
+                                                                        @foreach (SpawnConditionType t in Enum.GetValues<SpawnConditionType>())
+                                                                        {
+                                                                            <option value="@t" selected="@(t == cond.Type)">@t</option>
+                                                                        }
+                                                                    </select>
+                                                                </td>
+                                                                <td>
+                                                                    <select class="form-control form-control-sm" value="@cond.Operator"
+                                                                            @onchange="e => UpdateBossConditionField(cond, nameof(cond.Operator), e)">
+                                                                        @foreach (var op in GetOperatorsForType(cond.Type))
+                                                                        {
+                                                                            <option value="@op" selected="@(op == cond.Operator)">@op</option>
+                                                                        }
+                                                                    </select>
+                                                                </td>
+                                                                <td>
+                                                                    <input class="form-control form-control-sm" value="@cond.Value"
+                                                                           placeholder="@GetValuePlaceholder(cond.Type)"
+                                                                           @onchange="e => UpdateBossConditionField(cond, nameof(cond.Value), e)" />
+                                                                </td>
+                                                                <td>
+                                                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteBossCondition(cond)">✕</button>
+                                                                </td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            }
+
+                                            @* -- Boss Bonuses -- *@
+                                            <div class="section-header-row" style="margin-top:15px">
+                                                <h3>Bonuses (@boss.Bonuses.Count)</h3>
+                                                <button class="btn btn-sm btn-primary" @onclick="() => ToggleAddBossBonus(boss.Id)">+ Add Bonus</button>
+                                            </div>
+
+                                            @if (_addBossBonusId == boss.Id)
+                                            {
+                                                <div class="inline-form" style="margin-bottom:10px;padding:10px;background:var(--bg-dark);border-radius:6px">
+                                                    <div class="form-row">
+                                                        <div class="form-group">
+                                                            <label>Name</label>
+                                                            <input class="form-control form-control-sm" @bind="_newBossBonusName" placeholder="Bonus name" />
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label>Type</label>
+                                                            <select class="form-select form-select-sm" @bind="_newBossBonusType">
+                                                                @foreach (var t in Enum.GetValues<SpawnBonusType>())
+                                                                {
+                                                                    <option value="@t">@t</option>
+                                                                }
+                                                            </select>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label>Value</label>
+                                                            <input type="number" class="form-control form-control-sm" @bind="_newBossBonusValue" />
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label>Duration (s)</label>
+                                                            <input type="number" class="form-control form-control-sm" @bind="_newBossBonusDuration" />
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-actions">
+                                                        <button class="btn btn-success btn-sm" @onclick="() => AddBossBonus(boss.Id)" disabled="@_isSaving">Add</button>
+                                                        <button class="btn btn-secondary btn-sm" @onclick="() => _addBossBonusId = null">Cancel</button>
+                                                    </div>
+                                                </div>
+                                            }
+
+                                            @if (boss.Bonuses.Count > 0)
+                                            {
+                                                <table class="table table-compact">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Name</th>
+                                                            <th>Type</th>
+                                                            <th>Value</th>
+                                                            <th>Duration (s)</th>
+                                                            <th>Active</th>
+                                                            <th style="width:50px"></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var b in boss.Bonuses)
+                                                        {
+                                                            <tr>
+                                                                <td><input class="form-control form-control-sm" value="@b.Name"
+                                                                           @onchange="e => UpdateBossBonusField(b, nameof(SpawnBonusDto.Name), e)" /></td>
+                                                                <td>
+                                                                    <select class="form-select form-select-sm" value="@b.Type"
+                                                                            @onchange="e => UpdateBossBonusField(b, nameof(SpawnBonusDto.Type), e)">
+                                                                        @foreach (var t in Enum.GetValues<SpawnBonusType>())
+                                                                        {
+                                                                            <option value="@t" selected="@(t == b.Type)">@t</option>
+                                                                        }
+                                                                    </select>
+                                                                </td>
+                                                                <td><input type="number" class="form-control form-control-sm" value="@b.Value"
+                                                                           @onchange="e => UpdateBossBonusField(b, nameof(SpawnBonusDto.Value), e)" /></td>
+                                                                <td><input type="number" class="form-control form-control-sm" value="@b.DurationSeconds"
+                                                                           @onchange="e => UpdateBossBonusField(b, nameof(SpawnBonusDto.DurationSeconds), e)" /></td>
+                                                                <td>
+                                                                    <input type="checkbox" checked="@b.IsActive"
+                                                                           @onchange="() => ToggleBossBonusActive(b)" />
+                                                                </td>
+                                                                <td><button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteBossBonus(b)">✕</button></td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            }
+                                            else
+                                            {
+                                                <p style="color:var(--text-secondary);font-size:0.9rem">No bonuses on this boss.</p>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
                 </div>
             </div>
             </div>
@@ -1188,6 +1460,27 @@
     private int _newMbBonusValue = 10;
     private int _newMbBonusDuration;
 
+    // ===== Boss Pool =====
+    private HashSet<Guid> _expandedBosses = [];
+    private bool _showAddBoss;
+    private string _newBossResRef = "";
+    private string _newBossName = "";
+    private int _newBossWeight = 1;
+    private int _editBossSpawnChance;
+
+    // Boss condition form
+    private Guid? _addBossConditionId;
+    private SpawnConditionType _newBossConditionType = SpawnConditionType.TimeOfDay;
+    private string _newBossConditionOp = "";
+    private string _newBossConditionValue = "";
+
+    // Boss bonus form
+    private Guid? _addBossBonusId;
+    private string _newBossBonusName = "";
+    private SpawnBonusType _newBossBonusType = SpawnBonusType.TempHP;
+    private int _newBossBonusValue = 10;
+    private int _newBossBonusDuration;
+
     // ===== Mutations =====
     private List<MutationTemplateDto> _mutations = [];
     private HashSet<Guid> _expandedMutations = [];
@@ -1398,18 +1691,23 @@
         _editCooldown = profile.CooldownSeconds;
         _editDespawn = profile.DespawnSeconds;
         _editMaxTotalSpawns = profile.MaxTotalSpawns ?? 0;
+        _editBossSpawnChance = profile.BossSpawnChancePercent;
         _selectedBonusIds.Clear();
         _showAddGroup = false;
         _showAddBonus = false;
+        _showAddBoss = false;
+        _expandedBosses.Clear();
     }
 
     private void CloseProfileModal()
     {
         _selectedProfile = null;
         _expandedGroups.Clear();
+        _expandedBosses.Clear();
         _selectedBonusIds.Clear();
         _showAddGroup = false;
         _showAddBonus = false;
+        _showAddBoss = false;
     }
 
     // ===== Profile CRUD =====
@@ -1449,7 +1747,8 @@
         {
             await Api.UpdateProfileAsync(_selectedProfile.Id, new UpdateProfileRequest(
                 _editName, null, _editCooldown, _editDespawn,
-                _editMaxTotalSpawns > 0 ? _editMaxTotalSpawns : null));
+                _editMaxTotalSpawns > 0 ? _editMaxTotalSpawns : null,
+                _editBossSpawnChance));
             _success = "Profile settings saved.";
             await RefreshProfiles();
         }
@@ -1949,6 +2248,225 @@
         {
             await Api.DeleteBonusAsync(bonus.Id);
             _success = $"Mini-boss bonus '{bonus.Name}' deleted.";
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    // ===== Boss Pool CRUD =====
+
+    private void ToggleBossExpanded(Guid bossId)
+    {
+        if (!_expandedBosses.Remove(bossId))
+            _expandedBosses.Add(bossId);
+    }
+
+    private async Task AddBoss()
+    {
+        if (_selectedProfile == null || string.IsNullOrWhiteSpace(_newBossResRef) || string.IsNullOrWhiteSpace(_newBossName)) return;
+        _isSaving = true;
+        try
+        {
+            await Api.CreateBossConfigAsync(_selectedProfile.Id,
+                new CreateBossConfigRequest(_newBossResRef.Trim(), _newBossName.Trim(), _newBossWeight));
+            _success = $"Boss '{_newBossName}' added.";
+            _newBossResRef = "";
+            _newBossName = "";
+            _newBossWeight = 1;
+            _showAddBoss = false;
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task UpdateBossField(BossConfigDto boss, string field, ChangeEventArgs e)
+    {
+        string? val = e.Value?.ToString();
+        if (string.IsNullOrEmpty(val)) return;
+        try
+        {
+            UpdateBossConfigRequest req = field switch
+            {
+                nameof(UpdateBossConfigRequest.Name) => new UpdateBossConfigRequest(Name: val),
+                nameof(UpdateBossConfigRequest.CreatureResRef) => new UpdateBossConfigRequest(CreatureResRef: val),
+                nameof(UpdateBossConfigRequest.Weight) when int.TryParse(val, out int w) => new UpdateBossConfigRequest(Weight: w),
+                _ => throw new ArgumentException($"Unknown field: {field}")
+            };
+            await Api.UpdateBossConfigAsync(boss.Id, req);
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private async Task ToggleBossActive(BossConfigDto boss)
+    {
+        try
+        {
+            await Api.UpdateBossConfigAsync(boss.Id, new UpdateBossConfigRequest(IsActive: !boss.IsActive));
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private async Task DeleteBoss(BossConfigDto boss)
+    {
+        _isSaving = true;
+        try
+        {
+            await Api.DeleteBossConfigAsync(boss.Id);
+            _success = $"Boss '{boss.Name}' deleted.";
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    // ===== Boss Condition CRUD =====
+
+    private void ToggleAddBossCondition(Guid bossId)
+    {
+        if (_addBossConditionId == bossId)
+        {
+            _addBossConditionId = null;
+        }
+        else
+        {
+            _addBossConditionId = bossId;
+            _newBossConditionType = SpawnConditionType.TimeOfDay;
+            _newBossConditionOp = GetOperatorsForType(SpawnConditionType.TimeOfDay)[0];
+            _newBossConditionValue = "";
+        }
+    }
+
+    private void OnNewBossConditionTypeChanged(ChangeEventArgs e)
+    {
+        if (Enum.TryParse<SpawnConditionType>(e.Value?.ToString(), out var t))
+        {
+            _newBossConditionType = t;
+            var ops = GetOperatorsForType(t);
+            if (ops.Length > 0 && !ops.Contains(_newBossConditionOp))
+                _newBossConditionOp = ops[0];
+        }
+    }
+
+    private async Task AddBossCondition(Guid bossId)
+    {
+        if (string.IsNullOrWhiteSpace(_newBossConditionOp)) return;
+        _isSaving = true;
+        try
+        {
+            await Api.AddBossConditionAsync(bossId,
+                new CreateConditionRequest(_newBossConditionType, _newBossConditionOp, _newBossConditionValue));
+            _success = "Boss condition added.";
+            _addBossConditionId = null;
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task UpdateBossConditionField(SpawnConditionDto cond, string field, ChangeEventArgs e)
+    {
+        string? val = e.Value?.ToString();
+        if (string.IsNullOrEmpty(val)) return;
+        try
+        {
+            UpdateConditionRequest req = field switch
+            {
+                nameof(SpawnConditionDto.Type) when Enum.TryParse<SpawnConditionType>(val, out var t) =>
+                    new UpdateConditionRequest(Type: t),
+                nameof(SpawnConditionDto.Operator) => new UpdateConditionRequest(Operator: val),
+                nameof(SpawnConditionDto.Value) => new UpdateConditionRequest(Value: val),
+                _ => throw new ArgumentException($"Unknown field: {field}")
+            };
+            await Api.UpdateBossConditionAsync(cond.Id, req);
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private async Task DeleteBossCondition(SpawnConditionDto cond)
+    {
+        try
+        {
+            await Api.DeleteBossConditionAsync(cond.Id);
+            _success = "Boss condition deleted.";
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    // ===== Boss Bonus CRUD =====
+
+    private void ToggleAddBossBonus(Guid bossId)
+    {
+        if (_addBossBonusId == bossId)
+        {
+            _addBossBonusId = null;
+        }
+        else
+        {
+            _addBossBonusId = bossId;
+            _newBossBonusName = "";
+            _newBossBonusType = SpawnBonusType.TempHP;
+            _newBossBonusValue = 10;
+            _newBossBonusDuration = 0;
+        }
+    }
+
+    private async Task AddBossBonus(Guid bossId)
+    {
+        if (string.IsNullOrWhiteSpace(_newBossBonusName)) return;
+        _isSaving = true;
+        try
+        {
+            await Api.AddBossBonusAsync(bossId,
+                new CreateBonusRequest(_newBossBonusName.Trim(), _newBossBonusType, _newBossBonusValue, _newBossBonusDuration));
+            _success = $"Boss bonus '{_newBossBonusName}' added.";
+            _addBossBonusId = null;
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _isSaving = false; }
+    }
+
+    private async Task UpdateBossBonusField(SpawnBonusDto bonus, string field, ChangeEventArgs e)
+    {
+        string? val = e.Value?.ToString();
+        if (string.IsNullOrEmpty(val)) return;
+        try
+        {
+            UpdateBonusRequest req = field switch
+            {
+                nameof(SpawnBonusDto.Name) => new UpdateBonusRequest(Name: val),
+                nameof(SpawnBonusDto.Type) when Enum.TryParse<SpawnBonusType>(val, out var t) => new UpdateBonusRequest(Type: t),
+                nameof(SpawnBonusDto.Value) when int.TryParse(val, out int v) => new UpdateBonusRequest(Value: v),
+                nameof(SpawnBonusDto.DurationSeconds) when int.TryParse(val, out int d) => new UpdateBonusRequest(DurationSeconds: d),
+                _ => throw new ArgumentException($"Unknown field: {field}")
+            };
+            await Api.UpdateBonusAsync(bonus.Id, req);
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private async Task ToggleBossBonusActive(SpawnBonusDto bonus)
+    {
+        try
+        {
+            await Api.UpdateBonusAsync(bonus.Id, new UpdateBonusRequest(IsActive: !bonus.IsActive));
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private async Task DeleteBossBonus(SpawnBonusDto bonus)
+    {
+        try
+        {
+            await Api.DeleteBonusAsync(bonus.Id);
+            _success = $"Boss bonus '{bonus.Name}' deleted.";
             await RefreshProfiles();
         }
         catch (Exception ex) { _error = ex.Message; }

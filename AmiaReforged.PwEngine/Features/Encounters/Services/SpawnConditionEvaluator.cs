@@ -6,8 +6,9 @@ using NWN.Core;
 namespace AmiaReforged.PwEngine.Features.Encounters.Services;
 
 /// <summary>
-/// Evaluates <see cref="SpawnCondition"/> instances against a runtime <see cref="EncounterContext"/>.
-/// All conditions on a group must pass (AND logic) for the group to be eligible.
+/// Evaluates <see cref="SpawnCondition"/> and <see cref="BossCondition"/> instances against
+/// a runtime <see cref="EncounterContext"/>. All conditions on a group/boss must pass
+/// (AND logic) for the group/boss to be eligible.
 /// </summary>
 [ServiceBinding(typeof(SpawnConditionEvaluator))]
 public class SpawnConditionEvaluator
@@ -15,7 +16,7 @@ public class SpawnConditionEvaluator
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     /// <summary>
-    /// Returns true if all conditions in the collection are satisfied by the given context.
+    /// Returns true if all spawn conditions are satisfied by the given context.
     /// An empty condition list evaluates to true (unconditional group).
     /// </summary>
     public bool AllConditionsMet(IReadOnlyList<SpawnCondition> conditions, EncounterContext context)
@@ -24,26 +25,51 @@ public class SpawnConditionEvaluator
     }
 
     /// <summary>
-    /// Evaluates a single condition against the context.
+    /// Returns true if all boss conditions are satisfied by the given context.
+    /// An empty condition list evaluates to true (unconditional boss).
+    /// </summary>
+    public bool AllConditionsMet(IReadOnlyList<BossCondition> conditions, EncounterContext context)
+    {
+        return conditions.Count == 0 || conditions.All(c => Evaluate(c, context));
+    }
+
+    /// <summary>
+    /// Evaluates a single spawn condition against the context.
     /// </summary>
     public bool Evaluate(SpawnCondition condition, EncounterContext context)
     {
+        return EvaluateCore(condition.Type, condition.Operator, condition.Value, context);
+    }
+
+    /// <summary>
+    /// Evaluates a single boss condition against the context.
+    /// </summary>
+    public bool Evaluate(BossCondition condition, EncounterContext context)
+    {
+        return EvaluateCore(condition.Type, condition.Operator, condition.Value, context);
+    }
+
+    /// <summary>
+    /// Core evaluation logic shared by all condition entity types.
+    /// </summary>
+    private bool EvaluateCore(SpawnConditionType type, string op, string value, EncounterContext context)
+    {
         try
         {
-            return condition.Type switch
+            return type switch
             {
-                SpawnConditionType.TimeOfDay => EvaluateTimeOfDay(condition, context),
-                SpawnConditionType.ChaosThreshold => EvaluateChaosThreshold(condition, context),
-                SpawnConditionType.MinPlayerCount => EvaluateMinPlayerCount(condition, context),
-                SpawnConditionType.MaxPlayerCount => EvaluateMaxPlayerCount(condition, context),
-                SpawnConditionType.RegionTag => EvaluateRegionTag(condition, context),
-                SpawnConditionType.TriggerTag => EvaluateTriggerTag(condition, context),
-                SpawnConditionType.TriggerLocalVariableInt => EvaluateTriggerLocalInt(condition, context),
-                SpawnConditionType.TriggerLocalVariableFloat => EvaluateTriggerLocalFloat(condition, context),
-                SpawnConditionType.TriggerLocalVariableString => EvaluateTriggerLocalString(condition, context),
-                SpawnConditionType.AreaLocalVariableInt => EvaluateAreaLocalInt(condition, context),
-                SpawnConditionType.AreaLocalVariableFloat => EvaluateAreaLocalFloat(condition, context),
-                SpawnConditionType.AreaLocalVariableString => EvaluateAreaLocalString(condition, context),
+                SpawnConditionType.TimeOfDay => EvaluateTimeOfDay(value, context),
+                SpawnConditionType.ChaosThreshold => EvaluateChaosThreshold(op, value, context),
+                SpawnConditionType.MinPlayerCount => EvaluateMinPlayerCount(value, context),
+                SpawnConditionType.MaxPlayerCount => EvaluateMaxPlayerCount(value, context),
+                SpawnConditionType.RegionTag => EvaluateRegionTag(value, context),
+                SpawnConditionType.TriggerTag => EvaluateTriggerTag(op, value, context),
+                SpawnConditionType.TriggerLocalVariableInt => EvaluateTriggerLocalInt(op, value, context),
+                SpawnConditionType.TriggerLocalVariableFloat => EvaluateTriggerLocalFloat(op, value, context),
+                SpawnConditionType.TriggerLocalVariableString => EvaluateTriggerLocalString(op, value, context),
+                SpawnConditionType.AreaLocalVariableInt => EvaluateAreaLocalInt(op, value, context),
+                SpawnConditionType.AreaLocalVariableFloat => EvaluateAreaLocalFloat(op, value, context),
+                SpawnConditionType.AreaLocalVariableString => EvaluateAreaLocalString(op, value, context),
                 SpawnConditionType.Custom => true, // Custom conditions always pass (future extensibility)
                 _ => true
             };
@@ -51,7 +77,7 @@ public class SpawnConditionEvaluator
         catch (Exception ex)
         {
             Log.Warn(ex, "Failed to evaluate spawn condition {Type} with value '{Value}'. Defaulting to false.",
-                condition.Type, condition.Value);
+                type, value);
             return false;
         }
     }
@@ -62,9 +88,9 @@ public class SpawnConditionEvaluator
     /// Evaluates a time-of-day condition. Value format: "HH:mm-HH:mm" (e.g., "06:00-18:00").
     /// Supports overnight ranges (e.g., "18:00-06:00").
     /// </summary>
-    private static bool EvaluateTimeOfDay(SpawnCondition condition, EncounterContext context)
+    private static bool EvaluateTimeOfDay(string value, EncounterContext context)
     {
-        string[] parts = condition.Value.Split('-');
+        string[] parts = value.Split('-');
         if (parts.Length != 2) return false;
 
         if (!TimeSpan.TryParse(parts[0].Trim(), out TimeSpan start)) return false;
@@ -83,9 +109,9 @@ public class SpawnConditionEvaluator
     /// <summary>
     /// Evaluates a chaos threshold condition. Value format: "AxisName:threshold" (e.g., "Danger:50").
     /// </summary>
-    private static bool EvaluateChaosThreshold(SpawnCondition condition, EncounterContext context)
+    private static bool EvaluateChaosThreshold(string op, string value, EncounterContext context)
     {
-        string[] parts = condition.Value.Split(':');
+        string[] parts = value.Split(':');
         if (parts.Length != 2) return false;
 
         string axisName = parts[0].Trim();
@@ -93,7 +119,7 @@ public class SpawnConditionEvaluator
 
         int axisValue = GetChaosAxisValue(context.Chaos, axisName);
 
-        return condition.Operator switch
+        return op switch
         {
             ">=" => axisValue >= threshold,
             ">" => axisValue > threshold,
@@ -120,28 +146,28 @@ public class SpawnConditionEvaluator
     /// <summary>
     /// Evaluates minimum player count. Value is a simple integer string.
     /// </summary>
-    private static bool EvaluateMinPlayerCount(SpawnCondition condition, EncounterContext context)
+    private static bool EvaluateMinPlayerCount(string value, EncounterContext context)
     {
-        if (!int.TryParse(condition.Value, out int minCount)) return false;
+        if (!int.TryParse(value, out int minCount)) return false;
         return context.PartySize >= minCount;
     }
 
     /// <summary>
     /// Evaluates maximum player count. Value is a simple integer string.
     /// </summary>
-    private static bool EvaluateMaxPlayerCount(SpawnCondition condition, EncounterContext context)
+    private static bool EvaluateMaxPlayerCount(string value, EncounterContext context)
     {
-        if (!int.TryParse(condition.Value, out int maxCount)) return false;
+        if (!int.TryParse(value, out int maxCount)) return false;
         return context.PartySize <= maxCount;
     }
 
     /// <summary>
     /// Evaluates a region tag match. Value is the region tag string.
     /// </summary>
-    private static bool EvaluateRegionTag(SpawnCondition condition, EncounterContext context)
+    private static bool EvaluateRegionTag(string value, EncounterContext context)
     {
         if (context.RegionTag == null) return false;
-        return string.Equals(context.RegionTag, condition.Value, StringComparison.OrdinalIgnoreCase);
+        return string.Equals(context.RegionTag, value, StringComparison.OrdinalIgnoreCase);
     }
 
     // ==================== Trigger Tag ====================
@@ -149,11 +175,11 @@ public class SpawnConditionEvaluator
     /// <summary>
     /// Evaluates the spawn trigger's tag. Operators: ==, !=, contains, startswith.
     /// </summary>
-    private static bool EvaluateTriggerTag(SpawnCondition condition, EncounterContext context)
+    private static bool EvaluateTriggerTag(string op, string value, EncounterContext context)
     {
         if (context.Trigger == null) return false;
         string triggerTag = context.Trigger.Tag ?? "";
-        return EvaluateStringComparison(condition.Operator, triggerTag, condition.Value);
+        return EvaluateStringComparison(op, triggerTag, value);
     }
 
     // ==================== Trigger Local Variables ====================
@@ -162,47 +188,47 @@ public class SpawnConditionEvaluator
     /// Evaluates a local int variable on the spawn trigger.
     /// Value format: "VariableName:CompareValue". For % operator: "VariableName:Divisor:Remainder".
     /// </summary>
-    private static bool EvaluateTriggerLocalInt(SpawnCondition condition, EncounterContext context)
+    private static bool EvaluateTriggerLocalInt(string op, string value, EncounterContext context)
     {
         if (context.Trigger == null) return false;
-        if (!TryParseVarNameAndIntValue(condition, out string varName, out int compareValue)) return false;
+        if (!TryParseVarNameAndIntValue(op, value, out string varName, out int compareValue)) return false;
 
         int actual = NWScript.GetLocalInt(context.Trigger, varName);
 
-        if (condition.Operator == "%")
-            return EvaluateModuloInt(condition.Value, actual);
+        if (op == "%")
+            return EvaluateModuloInt(value, actual);
 
-        return EvaluateIntComparison(condition.Operator, actual, compareValue);
+        return EvaluateIntComparison(op, actual, compareValue);
     }
 
     /// <summary>
     /// Evaluates a local float variable on the spawn trigger.
     /// Value format: "VariableName:CompareValue". For % operator: "VariableName:Divisor:Remainder".
     /// </summary>
-    private static bool EvaluateTriggerLocalFloat(SpawnCondition condition, EncounterContext context)
+    private static bool EvaluateTriggerLocalFloat(string op, string value, EncounterContext context)
     {
         if (context.Trigger == null) return false;
-        if (!TryParseVarNameAndFloatValue(condition, out string varName, out float compareValue)) return false;
+        if (!TryParseVarNameAndFloatValue(op, value, out string varName, out float compareValue)) return false;
 
         float actual = NWScript.GetLocalFloat(context.Trigger, varName);
 
-        if (condition.Operator == "%")
-            return EvaluateModuloFloat(condition.Value, actual);
+        if (op == "%")
+            return EvaluateModuloFloat(value, actual);
 
-        return EvaluateFloatComparison(condition.Operator, actual, compareValue);
+        return EvaluateFloatComparison(op, actual, compareValue);
     }
 
     /// <summary>
     /// Evaluates a local string variable on the spawn trigger.
     /// Value format: "VariableName:CompareValue".
     /// </summary>
-    private static bool EvaluateTriggerLocalString(SpawnCondition condition, EncounterContext context)
+    private static bool EvaluateTriggerLocalString(string op, string value, EncounterContext context)
     {
         if (context.Trigger == null) return false;
-        if (!TryParseVarNameAndStringValue(condition.Value, out string varName, out string compareValue)) return false;
+        if (!TryParseVarNameAndStringValue(value, out string varName, out string compareValue)) return false;
 
         string actual = NWScript.GetLocalString(context.Trigger, varName);
-        return EvaluateStringComparison(condition.Operator, actual, compareValue);
+        return EvaluateStringComparison(op, actual, compareValue);
     }
 
     // ==================== Area Local Variables ====================
@@ -211,47 +237,47 @@ public class SpawnConditionEvaluator
     /// Evaluates a local int variable on the area.
     /// Value format: "VariableName:CompareValue". For % operator: "VariableName:Divisor:Remainder".
     /// </summary>
-    private static bool EvaluateAreaLocalInt(SpawnCondition condition, EncounterContext context)
+    private static bool EvaluateAreaLocalInt(string op, string value, EncounterContext context)
     {
         if (context.Area == null) return false;
-        if (!TryParseVarNameAndIntValue(condition, out string varName, out int compareValue)) return false;
+        if (!TryParseVarNameAndIntValue(op, value, out string varName, out int compareValue)) return false;
 
         int actual = NWScript.GetLocalInt(context.Area, varName);
 
-        if (condition.Operator == "%")
-            return EvaluateModuloInt(condition.Value, actual);
+        if (op == "%")
+            return EvaluateModuloInt(value, actual);
 
-        return EvaluateIntComparison(condition.Operator, actual, compareValue);
+        return EvaluateIntComparison(op, actual, compareValue);
     }
 
     /// <summary>
     /// Evaluates a local float variable on the area.
     /// Value format: "VariableName:CompareValue". For % operator: "VariableName:Divisor:Remainder".
     /// </summary>
-    private static bool EvaluateAreaLocalFloat(SpawnCondition condition, EncounterContext context)
+    private static bool EvaluateAreaLocalFloat(string op, string value, EncounterContext context)
     {
         if (context.Area == null) return false;
-        if (!TryParseVarNameAndFloatValue(condition, out string varName, out float compareValue)) return false;
+        if (!TryParseVarNameAndFloatValue(op, value, out string varName, out float compareValue)) return false;
 
         float actual = NWScript.GetLocalFloat(context.Area, varName);
 
-        if (condition.Operator == "%")
-            return EvaluateModuloFloat(condition.Value, actual);
+        if (op == "%")
+            return EvaluateModuloFloat(value, actual);
 
-        return EvaluateFloatComparison(condition.Operator, actual, compareValue);
+        return EvaluateFloatComparison(op, actual, compareValue);
     }
 
     /// <summary>
     /// Evaluates a local string variable on the area.
     /// Value format: "VariableName:CompareValue".
     /// </summary>
-    private static bool EvaluateAreaLocalString(SpawnCondition condition, EncounterContext context)
+    private static bool EvaluateAreaLocalString(string op, string value, EncounterContext context)
     {
         if (context.Area == null) return false;
-        if (!TryParseVarNameAndStringValue(condition.Value, out string varName, out string compareValue)) return false;
+        if (!TryParseVarNameAndStringValue(value, out string varName, out string compareValue)) return false;
 
         string actual = NWScript.GetLocalString(context.Area, varName);
-        return EvaluateStringComparison(condition.Operator, actual, compareValue);
+        return EvaluateStringComparison(op, actual, compareValue);
     }
 
     // ==================== Shared Comparison Helpers ====================
@@ -260,21 +286,21 @@ public class SpawnConditionEvaluator
     /// Parses "VariableName:CompareValue" from the condition value for int comparisons.
     /// For non-modulo operators, expects exactly 2 colon-separated parts.
     /// </summary>
-    private static bool TryParseVarNameAndIntValue(SpawnCondition condition, out string varName, out int compareValue)
+    private static bool TryParseVarNameAndIntValue(string op, string value, out string varName, out int compareValue)
     {
         varName = "";
         compareValue = 0;
 
         // For modulo, the value parsing is handled separately
-        if (condition.Operator == "%")
+        if (op == "%")
         {
-            string[] modParts = condition.Value.Split(':');
+            string[] modParts = value.Split(':');
             if (modParts.Length < 3) return false;
             varName = modParts[0].Trim();
             return !string.IsNullOrEmpty(varName);
         }
 
-        string[] parts = condition.Value.Split(':');
+        string[] parts = value.Split(':');
         if (parts.Length != 2) return false;
 
         varName = parts[0].Trim();
@@ -284,20 +310,20 @@ public class SpawnConditionEvaluator
     /// <summary>
     /// Parses "VariableName:CompareValue" from the condition value for float comparisons.
     /// </summary>
-    private static bool TryParseVarNameAndFloatValue(SpawnCondition condition, out string varName, out float compareValue)
+    private static bool TryParseVarNameAndFloatValue(string op, string value, out string varName, out float compareValue)
     {
         varName = "";
         compareValue = 0f;
 
-        if (condition.Operator == "%")
+        if (op == "%")
         {
-            string[] modParts = condition.Value.Split(':');
+            string[] modParts = value.Split(':');
             if (modParts.Length < 3) return false;
             varName = modParts[0].Trim();
             return !string.IsNullOrEmpty(varName);
         }
 
-        string[] parts = condition.Value.Split(':');
+        string[] parts = value.Split(':');
         if (parts.Length != 2) return false;
 
         varName = parts[0].Trim();

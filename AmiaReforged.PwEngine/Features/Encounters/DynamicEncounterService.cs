@@ -72,6 +72,13 @@ public class DynamicEncounterService
             trigger.OnEnter += OnTriggerEnter;
         }
 
+        // Subscribe to all boss triggers
+        IEnumerable<NwTrigger> bossTriggers = NwObject.FindObjectsWithTag<NwTrigger>("db_bosstrigger");
+        foreach (NwTrigger trigger in bossTriggers)
+        {
+            trigger.OnEnter += OnBossTriggerEnter;
+        }
+
         Log.Info("Dynamic encounter service initialized.");
     }
 
@@ -152,6 +159,55 @@ public class DynamicEncounterService
         InitDynamicCooldown(obj.Trigger, profile.CooldownSeconds);
 
         // Flag trigger as handled so legacy EncounterService skips
+        NWScript.SetLocalInt(obj.Trigger, DynamicHandledFlag, NWScript.TRUE);
+    }
+
+    /// <summary>
+    /// Boss-only trigger handler. When a player enters a <c>db_bosstrigger</c>, only boss
+    /// spawning logic runs (no regular mob spawn groups). The boss pool is evaluated from the
+    /// area's <see cref="SpawnProfile"/>. Falls back to legacy if no active profile exists.
+    /// </summary>
+    private void OnBossTriggerEnter(TriggerEvents.OnEnter obj)
+    {
+        NWScript.SetLocalInt(obj.Trigger, DynamicHandledFlag, NWScript.FALSE);
+
+        if (!obj.EnteringObject.IsPlayerControlled(out NwPlayer? player)) return;
+        if (player.IsDM || player.IsPlayerDM) return;
+
+        NwArea? area = obj.Trigger.Area;
+        if (area == null) return;
+
+        string areaResRef = area.ResRef;
+
+        if (!_profileCache.TryGetValue(areaResRef, out SpawnProfile? profile))
+        {
+            Log.Info("Area '{AreaResRef}': no active dynamic profile for boss trigger — using legacy boss system.", areaResRef);
+            return;
+        }
+
+        if (profile.BossSpawnChancePercent <= 0 || profile.BossConfigs.Count == 0)
+        {
+            Log.Debug("Area '{AreaResRef}': profile '{ProfileName}' has no boss pool configured.", areaResRef, profile.Name);
+            return;
+        }
+
+        // Check no_spawn
+        if (NWScript.GetLocalInt(area, "no_spawn") == NWScript.TRUE) return;
+
+        // Check dynamic cooldown (boss triggers share the same cooldown mechanism)
+        if (IsDynamicCooldownActive(obj.Trigger, profile.CooldownSeconds))
+        {
+            player.SendServerMessage("You see signs of recent fighting here.");
+            NWScript.SetLocalInt(obj.Trigger, DynamicHandledFlag, NWScript.TRUE);
+            return;
+        }
+
+        EncounterContext context = BuildContext(obj.Trigger, area, player, profile);
+
+        // Execute boss-only spawn
+        _spawner.SpawnBossOnly(obj.Trigger, profile, context);
+
+        InitDynamicCooldown(obj.Trigger, profile.CooldownSeconds);
         NWScript.SetLocalInt(obj.Trigger, DynamicHandledFlag, NWScript.TRUE);
     }
 

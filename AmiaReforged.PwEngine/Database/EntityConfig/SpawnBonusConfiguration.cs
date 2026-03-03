@@ -43,5 +43,11 @@ public class SpawnBonusConfiguration : IEntityTypeConfiguration<SpawnBonus>
 
         builder.HasIndex(b => b.MiniBossConfigId)
             .HasDatabaseName("IX_SpawnBonuses_MiniBossConfigId");
+
+        builder.Property(b => b.BossConfigId)
+            .HasColumnName("boss_config_id");
+
+        builder.HasIndex(b => b.BossConfigId)
+            .HasDatabaseName("IX_SpawnBonuses_BossConfigId");
     }
 }

@@ -108,6 +108,8 @@ public class PwEngineContext : DbContext
     public DbSet<SpawnEntry> SpawnEntries { get; set; } = null!;
     public DbSet<SpawnBonus> SpawnBonuses { get; set; } = null!;
     public DbSet<MiniBossConfig> MiniBossConfigs { get; set; } = null!;
+    public DbSet<BossConfig> BossConfigs { get; set; } = null!;
+    public DbSet<BossCondition> BossConditions { get; set; } = null!;
     public DbSet<MutationTemplate> MutationTemplates { get; set; } = null!;
     public DbSet<MutationEffect> MutationEffects { get; set; } = null!;
     public DbSet<GroupMutationOverride> GroupMutationOverrides { get; set; } = null!;
@@ -197,6 +199,8 @@ public class PwEngineContext : DbContext
         modelBuilder.ApplyConfiguration(new SpawnEntryConfiguration());
         modelBuilder.ApplyConfiguration(new SpawnBonusConfiguration());
         modelBuilder.ApplyConfiguration(new MiniBossConfigConfiguration());
+        modelBuilder.ApplyConfiguration(new BossConfigConfiguration());
+        modelBuilder.ApplyConfiguration(new BossConditionConfiguration());
 
         // Mutation System
         modelBuilder.ApplyConfiguration(new MutationTemplateConfiguration());

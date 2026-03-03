@@ -23,6 +23,11 @@ public class SpawnBonus
     public Guid? MiniBossConfigId { get; set; }
 
     /// <summary>
+    /// FK to the owning <see cref="BossConfig"/>. Null if not boss-specific.
+    /// </summary>
+    public Guid? BossConfigId { get; set; }
+
+    /// <summary>
     /// Human-readable name for this bonus (e.g., "Chaos Tempering", "Region AC Buff").
     /// </summary>
     [Required]
@@ -58,4 +63,9 @@ public class SpawnBonus
     /// Navigation property back to the owning mini-boss config (if mini-boss specific).
     /// </summary>
     public virtual MiniBossConfig? MiniBossConfig { get; set; }
+
+    /// <summary>
+    /// Navigation property back to the owning boss config (if boss-specific).
+    /// </summary>
+    public virtual BossConfig? BossConfig { get; set; }
 }

@@ -65,4 +65,16 @@ public class SpawnProfile
     /// Optional mini-boss configuration for this profile.
     /// </summary>
     public virtual MiniBossConfig? MiniBoss { get; set; }
+
+    /// <summary>
+    /// Profile-level chance (0–100) that a boss spawns when the trigger fires.
+    /// 0 means boss spawning is disabled for this profile.
+    /// </summary>
+    public int BossSpawnChancePercent { get; set; }
+
+    /// <summary>
+    /// The boss pool for this profile. When the boss chance roll succeeds, one active,
+    /// eligible boss is selected via weighted random from this collection.
+    /// </summary>
+    public virtual List<BossConfig> BossConfigs { get; set; } = [];
 }

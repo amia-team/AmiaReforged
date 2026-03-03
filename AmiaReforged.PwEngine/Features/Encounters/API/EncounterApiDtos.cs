@@ -18,11 +18,13 @@ public static class EncounterApiDtos
         int CooldownSeconds,
         int DespawnSeconds,
         int? MaxTotalSpawns,
+        int BossSpawnChancePercent,
         DateTime CreatedAt,
         DateTime UpdatedAt,
         List<SpawnGroupDto> SpawnGroups,
         List<SpawnBonusDto> Bonuses,
-        MiniBossConfigDto? MiniBoss);
+        MiniBossConfigDto? MiniBoss,
+        List<BossConfigDto> BossConfigs);
 
     public record SpawnGroupDto(
         Guid Id,
@@ -66,6 +68,15 @@ public static class EncounterApiDtos
         int SpawnChancePercent,
         List<SpawnBonusDto> Bonuses);
 
+    public record BossConfigDto(
+        Guid Id,
+        string CreatureResRef,
+        string Name,
+        int Weight,
+        bool IsActive,
+        List<SpawnConditionDto> Conditions,
+        List<SpawnBonusDto> Bonuses);
+
     // --- Request DTOs ---
 
     public record CreateProfileRequest(
@@ -74,14 +85,16 @@ public static class EncounterApiDtos
         bool IsActive = false,
         int CooldownSeconds = 900,
         int DespawnSeconds = 600,
-        int? MaxTotalSpawns = null);
+        int? MaxTotalSpawns = null,
+        int BossSpawnChancePercent = 0);
 
     public record UpdateProfileRequest(
         string? Name = null,
         bool? IsActive = null,
         int? CooldownSeconds = null,
         int? DespawnSeconds = null,
-        int? MaxTotalSpawns = null);
+        int? MaxTotalSpawns = null,
+        int? BossSpawnChancePercent = null);
 
     public record CreateGroupRequest(
         string Name,
@@ -137,6 +150,20 @@ public static class EncounterApiDtos
     public record UpdateMiniBossRequest(
         string? CreatureResRef = null,
         int? SpawnChancePercent = null);
+
+    // --- Boss Config DTOs ---
+
+    public record CreateBossConfigRequest(
+        string CreatureResRef,
+        string Name,
+        int Weight = 1,
+        bool IsActive = true);
+
+    public record UpdateBossConfigRequest(
+        string? CreatureResRef = null,
+        string? Name = null,
+        int? Weight = null,
+        bool? IsActive = null);
 
     // --- Mutation DTOs ---
 
@@ -203,10 +230,12 @@ public static class EncounterApiDtos
     public static SpawnProfileDto ToDto(SpawnProfile p) => new(
         p.Id, p.AreaResRef, p.Name, p.IsActive,
         p.CooldownSeconds, p.DespawnSeconds, p.MaxTotalSpawns,
+        p.BossSpawnChancePercent,
         p.CreatedAt, p.UpdatedAt,
         p.SpawnGroups.Select(ToDto).ToList(),
         p.Bonuses.Select(ToDto).ToList(),
-        p.MiniBoss != null ? ToDto(p.MiniBoss) : null);
+        p.MiniBoss != null ? ToDto(p.MiniBoss) : null,
+        p.BossConfigs.Select(ToDto).ToList());
 
     public static SpawnGroupDto ToDto(SpawnGroup g) => new(
         g.Id, g.Name, g.Weight, g.OverrideMutations,
@@ -231,6 +260,14 @@ public static class EncounterApiDtos
     public static MiniBossConfigDto ToDto(MiniBossConfig m) => new(
         m.Id, m.CreatureResRef, m.SpawnChancePercent,
         m.Bonuses.Select(ToDto).ToList());
+
+    public static BossConfigDto ToDto(BossConfig b) => new(
+        b.Id, b.CreatureResRef, b.Name, b.Weight, b.IsActive,
+        b.Conditions.Select(ToBossConditionDto).ToList(),
+        b.Bonuses.Select(ToDto).ToList());
+
+    public static SpawnConditionDto ToBossConditionDto(BossCondition c) => new(
+        c.Id, c.Type, c.Operator, c.Value);
 
     public static MutationTemplateDto ToMutationDto(MutationTemplate t) => new(
         t.Id, t.Prefix, t.Description, t.SpawnChancePercent, t.IsActive,

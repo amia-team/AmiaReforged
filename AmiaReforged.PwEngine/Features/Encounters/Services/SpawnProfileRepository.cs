@@ -303,7 +303,99 @@ public class SpawnProfileRepository : ISpawnProfileRepository
             .Include(p => p.Bonuses)
             .Include(p => p.MiniBoss)
                 .ThenInclude(m => m!.Bonuses)
+            .Include(p => p.BossConfigs)
+                .ThenInclude(b => b.Conditions)
+            .Include(p => p.BossConfigs)
+                .ThenInclude(b => b.Bonuses)
             .AsSplitQuery();
+    }
+
+    // === Boss Config Operations ===
+
+    public async Task<BossConfig?> GetBossConfigByIdAsync(Guid bossConfigId)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        return await ctx.BossConfigs
+            .Include(b => b.Conditions)
+            .Include(b => b.Bonuses)
+            .FirstOrDefaultAsync(b => b.Id == bossConfigId);
+    }
+
+    public async Task<BossConfig> AddBossConfigAsync(Guid profileId, BossConfig config)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        config.SpawnProfileId = profileId;
+        ctx.BossConfigs.Add(config);
+        await ctx.SaveChangesAsync();
+        return config;
+    }
+
+    public async Task<BossConfig> UpdateBossConfigAsync(BossConfig config)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        ctx.BossConfigs.Update(config);
+        await ctx.SaveChangesAsync();
+        return config;
+    }
+
+    public async Task DeleteBossConfigAsync(Guid bossConfigId)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        BossConfig? config = await ctx.BossConfigs.FindAsync(bossConfigId);
+        if (config != null)
+        {
+            ctx.BossConfigs.Remove(config);
+            await ctx.SaveChangesAsync();
+        }
+    }
+
+    // === Boss Condition Operations ===
+
+    public async Task<BossCondition?> GetBossConditionByIdAsync(Guid conditionId)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        return await ctx.BossConditions.FindAsync(conditionId);
+    }
+
+    public async Task<BossCondition> AddBossConditionAsync(Guid bossConfigId, BossCondition condition)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        condition.BossConfigId = bossConfigId;
+        ctx.BossConditions.Add(condition);
+        await ctx.SaveChangesAsync();
+        return condition;
+    }
+
+    public async Task<BossCondition> UpdateBossConditionAsync(BossCondition condition)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        ctx.BossConditions.Update(condition);
+        await ctx.SaveChangesAsync();
+        return condition;
+    }
+
+    public async Task DeleteBossConditionAsync(Guid conditionId)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        BossCondition? condition = await ctx.BossConditions.FindAsync(conditionId);
+        if (condition != null)
+        {
+            ctx.BossConditions.Remove(condition);
+            await ctx.SaveChangesAsync();
+        }
+    }
+
+    // === Boss Bonus Operations ===
+
+    public async Task<SpawnBonus> AddBossBonusAsync(Guid bossConfigId, SpawnBonus bonus)
+    {
+        await using PwEngineContext ctx = await _factory.CreateDbContextAsync();
+        bonus.BossConfigId = bossConfigId;
+        bonus.SpawnProfileId = null;
+        bonus.MiniBossConfigId = null;
+        ctx.SpawnBonuses.Add(bonus);
+        await ctx.SaveChangesAsync();
+        return bonus;
     }
 
     // === Bulk Operations ===

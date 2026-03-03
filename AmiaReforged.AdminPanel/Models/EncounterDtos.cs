@@ -88,11 +88,13 @@ public record SpawnProfileDto(
     int CooldownSeconds,
     int DespawnSeconds,
     int? MaxTotalSpawns,
+    int BossSpawnChancePercent,
     DateTime CreatedAt,
     DateTime UpdatedAt,
     List<SpawnGroupDto> SpawnGroups,
     List<SpawnBonusDto> Bonuses,
-    MiniBossConfigDto? MiniBoss);
+    MiniBossConfigDto? MiniBoss,
+    List<BossConfigDto> BossConfigs);
 
 public record SpawnGroupDto(
     Guid Id,
@@ -136,6 +138,15 @@ public record MiniBossConfigDto(
     int SpawnChancePercent,
     List<SpawnBonusDto> Bonuses);
 
+public record BossConfigDto(
+    Guid Id,
+    string CreatureResRef,
+    string Name,
+    int Weight,
+    bool IsActive,
+    List<SpawnConditionDto> Conditions,
+    List<SpawnBonusDto> Bonuses);
+
 public record MutationTemplateDto(
     Guid Id,
     string Prefix,
@@ -161,14 +172,16 @@ public record CreateProfileRequest(
     bool IsActive = false,
     int CooldownSeconds = 900,
     int DespawnSeconds = 600,
-    int? MaxTotalSpawns = null);
+    int? MaxTotalSpawns = null,
+    int BossSpawnChancePercent = 0);
 
 public record UpdateProfileRequest(
     string? Name = null,
     bool? IsActive = null,
     int? CooldownSeconds = null,
     int? DespawnSeconds = null,
-    int? MaxTotalSpawns = null);
+    int? MaxTotalSpawns = null,
+    int? BossSpawnChancePercent = null);
 
 public record CreateGroupRequest(
     string Name,
@@ -224,6 +237,18 @@ public record CreateMiniBossRequest(
 public record UpdateMiniBossRequest(
     string? CreatureResRef = null,
     int? SpawnChancePercent = null);
+
+public record CreateBossConfigRequest(
+    string CreatureResRef,
+    string Name,
+    int Weight = 1,
+    bool IsActive = true);
+
+public record UpdateBossConfigRequest(
+    string? CreatureResRef = null,
+    string? Name = null,
+    int? Weight = null,
+    bool? IsActive = null);
 
 public record CreateMutationRequest(
     string Prefix,

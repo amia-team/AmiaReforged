@@ -21,19 +21,37 @@ public class DynamicCreatureSpawner
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private static readonly Random Rng = new();
     private const string SpawnWaypointTag = "ds_spwn";
+    private const string BossWaypointTag = "CS_WP_BOSS";
 
     private readonly SpawnGroupSelector _groupSelector;
+    private readonly BossSelector _bossSelector;
     private readonly SpawnBonusApplicator _bonusApplicator;
     private readonly MutationApplicator _mutationApplicator;
 
     public DynamicCreatureSpawner(
         SpawnGroupSelector groupSelector,
+        BossSelector bossSelector,
         SpawnBonusApplicator bonusApplicator,
         MutationApplicator mutationApplicator)
     {
         _groupSelector = groupSelector;
+        _bossSelector = bossSelector;
         _bonusApplicator = bonusApplicator;
         _mutationApplicator = mutationApplicator;
+    }
+
+    /// <summary>
+    /// Executes a boss-only spawn for a boss trigger. No regular mob groups or mini-boss
+    /// spawning occurs — only the boss pool is evaluated. Called by the
+    /// <c>db_bosstrigger</c> handler in <see cref="DynamicEncounterService"/>.
+    /// </summary>
+    public void SpawnBossOnly(
+        NwTrigger trigger,
+        SpawnProfile profile,
+        EncounterContext context)
+    {
+        if (profile.BossSpawnChancePercent <= 0 || profile.BossConfigs.Count == 0) return;
+        TrySpawnBoss(profile, context, trigger, profile.DespawnSeconds);
     }
 
     /// <summary>
@@ -89,6 +107,12 @@ public class DynamicCreatureSpawner
         if (profile.MiniBoss != null)
         {
             TrySpawnMiniBoss(profile.MiniBoss, spawnLocation, profile.DespawnSeconds, context.Chaos);
+        }
+
+        // Boss (from boss pool)
+        if (profile.BossSpawnChancePercent > 0 && profile.BossConfigs.Count > 0)
+        {
+            TrySpawnBoss(profile, context, trigger, profile.DespawnSeconds);
         }
     }
 
@@ -228,5 +252,75 @@ public class DynamicCreatureSpawner
 
         Log.Info("Mini-boss spawned: resref='{ResRef}', name='{Name}'.",
             config.CreatureResRef, NWScript.GetName(boss));
+    }
+
+    /// <summary>
+    /// Attempts to spawn a boss from the profile's boss pool.
+    /// First rolls against <see cref="SpawnProfile.BossSpawnChancePercent"/>, then selects
+    /// an eligible active boss via <see cref="BossSelector"/> and spawns it at CS_WP_BOSS.
+    /// </summary>
+    private void TrySpawnBoss(
+        SpawnProfile profile,
+        EncounterContext context,
+        NwTrigger trigger,
+        int despawnSeconds)
+    {
+        int roll = Rng.Next(100) + 1;
+        if (roll > profile.BossSpawnChancePercent) return;
+
+        BossConfig? selected = _bossSelector.SelectBoss(profile, context);
+        if (selected == null)
+        {
+            Log.Debug("Boss chance roll succeeded but no eligible boss for profile '{Name}'.", profile.Name);
+            return;
+        }
+
+        IntPtr bossLocation = GetBossSpawnLocation(trigger);
+        if (bossLocation == IntPtr.Zero)
+        {
+            Log.Warn("No CS_WP_BOSS waypoint found for profile '{Name}' (area {Area}). Boss spawn skipped.",
+                profile.Name, profile.AreaResRef);
+            return;
+        }
+
+        uint boss = NWScript.CreateObject(
+            NWScript.OBJECT_TYPE_CREATURE,
+            selected.CreatureResRef,
+            bossLocation);
+
+        if (boss == NWScript.OBJECT_INVALID)
+        {
+            Log.Warn("Failed to spawn boss with resref '{ResRef}'.", selected.CreatureResRef);
+            return;
+        }
+
+        NWScript.ChangeToStandardFaction(boss, NWScript.STANDARD_FACTION_HOSTILE);
+        NWScript.DestroyObject(boss, despawnSeconds);
+
+        // Apply boss-specific bonuses
+        IReadOnlyList<SpawnBonus> bossBonuses = selected.Bonuses.Where(b => b.IsActive).ToList();
+        _bonusApplicator.ApplyBonuses(boss, bossBonuses, context.Chaos);
+
+        Log.Info("Boss spawned: resref='{ResRef}', name='{BossName}', configName='{ConfigName}'.",
+            selected.CreatureResRef, NWScript.GetName(boss), selected.Name);
+    }
+
+    /// <summary>
+    /// Finds the nearest CS_WP_BOSS waypoint inside or near the trigger and returns its location.
+    /// </summary>
+    private static IntPtr GetBossSpawnLocation(NwTrigger trigger)
+    {
+        // First check for a boss waypoint inside the trigger
+        uint waypoint = NWScript.GetFirstInPersistentObject(trigger, NWScript.OBJECT_TYPE_WAYPOINT);
+        while (waypoint != NWScript.OBJECT_INVALID)
+        {
+            if (NWScript.GetTag(waypoint) == BossWaypointTag)
+                return NWScript.GetLocation(waypoint);
+            waypoint = NWScript.GetNextInPersistentObject(trigger, NWScript.OBJECT_TYPE_WAYPOINT);
+        }
+
+        // Fallback: nearest waypoint with the tag
+        uint nearest = NWScript.GetNearestObjectByTag(BossWaypointTag, trigger);
+        return nearest != NWScript.OBJECT_INVALID ? NWScript.GetLocation(nearest) : IntPtr.Zero;
     }
 }

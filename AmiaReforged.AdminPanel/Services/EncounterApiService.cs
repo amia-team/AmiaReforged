@@ -32,6 +32,8 @@ public class EncounterApiService
     private const string ConditionsBase = "/api/worldengine/encounters/conditions";
     private const string BonusesBase = "/api/worldengine/encounters/bonuses";
     private const string MiniBossBase = "/api/worldengine/encounters/miniboss";
+    private const string BossesBase = "/api/worldengine/encounters/bosses";
+    private const string BossConditionsBase = "/api/worldengine/encounters/boss-conditions";
     private const string MutationsBase = "/api/worldengine/encounters/mutations";
     private const string MutationEffectsBase = "/api/worldengine/encounters/effects";
     private const string CacheBase = "/api/worldengine/encounters/cache";
@@ -223,6 +225,48 @@ public class EncounterApiService
     public async Task<SpawnBonusDto?> AddMiniBossBonusAsync(Guid miniBossId, CreateBonusRequest request)
     {
         return await PostAsync<SpawnBonusDto>($"{MiniBossBase}/{miniBossId}/bonuses", request);
+    }
+
+    // ==================== Boss Pool ====================
+
+    public async Task<List<BossConfigDto>> GetBossConfigsAsync(Guid profileId)
+    {
+        return await GetAsync<List<BossConfigDto>>($"{ProfilesBase}/{profileId}/bosses") ?? [];
+    }
+
+    public async Task<BossConfigDto?> CreateBossConfigAsync(Guid profileId, CreateBossConfigRequest request)
+    {
+        return await PostAsync<BossConfigDto>($"{ProfilesBase}/{profileId}/bosses", request);
+    }
+
+    public async Task<BossConfigDto?> UpdateBossConfigAsync(Guid bossId, UpdateBossConfigRequest request)
+    {
+        return await PutAsync<BossConfigDto>($"{BossesBase}/{bossId}", request);
+    }
+
+    public async Task DeleteBossConfigAsync(Guid bossId)
+    {
+        await DeleteAsync($"{BossesBase}/{bossId}");
+    }
+
+    public async Task<SpawnConditionDto?> AddBossConditionAsync(Guid bossId, CreateConditionRequest request)
+    {
+        return await PostAsync<SpawnConditionDto>($"{BossesBase}/{bossId}/conditions", request);
+    }
+
+    public async Task<SpawnConditionDto?> UpdateBossConditionAsync(Guid conditionId, UpdateConditionRequest request)
+    {
+        return await PutAsync<SpawnConditionDto>($"{BossConditionsBase}/{conditionId}", request);
+    }
+
+    public async Task DeleteBossConditionAsync(Guid conditionId)
+    {
+        await DeleteAsync($"{BossConditionsBase}/{conditionId}");
+    }
+
+    public async Task<SpawnBonusDto?> AddBossBonusAsync(Guid bossId, CreateBonusRequest request)
+    {
+        return await PostAsync<SpawnBonusDto>($"{BossesBase}/{bossId}/bonuses", request);
     }
 
     // ==================== Mutations ====================

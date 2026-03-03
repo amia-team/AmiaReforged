@@ -62,5 +62,14 @@ public class SpawnProfileConfiguration : IEntityTypeConfiguration<SpawnProfile>
             .WithOne(m => m.SpawnProfile)
             .HasForeignKey<MiniBossConfig>(m => m.SpawnProfileId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Property(p => p.BossSpawnChancePercent)
+            .HasColumnName("boss_spawn_chance_percent")
+            .HasDefaultValue(0);
+
+        builder.HasMany(p => p.BossConfigs)
+            .WithOne(b => b.SpawnProfile)
+            .HasForeignKey(b => b.SpawnProfileId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

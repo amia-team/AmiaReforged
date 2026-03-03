@@ -89,7 +89,8 @@ public class SpawnProfileController
             IsActive = req.IsActive,
             CooldownSeconds = req.CooldownSeconds,
             DespawnSeconds = req.DespawnSeconds,
-            MaxTotalSpawns = req.MaxTotalSpawns
+            MaxTotalSpawns = req.MaxTotalSpawns,
+            BossSpawnChancePercent = Math.Clamp(req.BossSpawnChancePercent, 0, 100)
         };
 
         await Repository.CreateAsync(profile);
@@ -125,6 +126,8 @@ public class SpawnProfileController
         // MaxTotalSpawns: 0 = clear the cap (set to null), >0 = set cap, null = don't change
         if (req.MaxTotalSpawns.HasValue)
             profile.MaxTotalSpawns = req.MaxTotalSpawns.Value > 0 ? req.MaxTotalSpawns.Value : null;
+        if (req.BossSpawnChancePercent.HasValue)
+            profile.BossSpawnChancePercent = Math.Clamp(req.BossSpawnChancePercent.Value, 0, 100);
 
         await Repository.UpdateAsync(profile);
 
@@ -696,6 +699,229 @@ public class SpawnProfileController
         };
 
         await Repository.AddMiniBossBonusAsync(miniBossId, bonus);
+        return new ApiResult(201, ToDto(bonus));
+    }
+
+    // ==================== Boss Pool Management ====================
+
+    /// <summary>
+    /// GET /api/worldengine/encounters/profiles/{id}/bosses — List boss configs for a profile
+    /// </summary>
+    [HttpGet("/api/worldengine/encounters/profiles/{id}/bosses")]
+    public static async Task<ApiResult> ListBossConfigs(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("id"), out Guid id))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid profile ID."));
+
+        SpawnProfile? profile = await Repository.GetByIdAsync(id);
+        if (profile == null)
+            return new ApiResult(404, new ErrorResponse("Not found", $"Profile {id} not found."));
+
+        return new ApiResult(200, profile.BossConfigs.Select(ToDto).ToList());
+    }
+
+    /// <summary>
+    /// POST /api/worldengine/encounters/profiles/{id}/bosses — Add a boss to the pool
+    /// </summary>
+    [HttpPost("/api/worldengine/encounters/profiles/{id}/bosses")]
+    public static async Task<ApiResult> AddBossConfig(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("id"), out Guid id))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid profile ID."));
+
+        SpawnProfile? profile = await Repository.GetByIdAsync(id);
+        if (profile == null)
+            return new ApiResult(404, new ErrorResponse("Not found", $"Profile {id} not found."));
+
+        CreateBossConfigRequest? req = await ctx.ReadJsonBodyAsync<CreateBossConfigRequest>();
+        if (req == null || string.IsNullOrWhiteSpace(req.CreatureResRef) || string.IsNullOrWhiteSpace(req.Name))
+            return new ApiResult(400, new ErrorResponse("Bad request", "CreatureResRef and Name are required."));
+
+        BossConfig config = new()
+        {
+            Id = Guid.NewGuid(),
+            SpawnProfileId = id,
+            CreatureResRef = req.CreatureResRef,
+            Name = req.Name,
+            Weight = Math.Max(req.Weight, 1),
+            IsActive = req.IsActive
+        };
+
+        await Repository.AddBossConfigAsync(id, config);
+
+        if (EncounterService != null)
+            await EncounterService.RefreshProfileCacheAsync(profile.AreaResRef);
+
+        return new ApiResult(201, ToDto(config));
+    }
+
+    /// <summary>
+    /// PUT /api/worldengine/encounters/bosses/{bossId} — Update a boss config
+    /// </summary>
+    [HttpPut("/api/worldengine/encounters/bosses/{bossId}")]
+    public static async Task<ApiResult> UpdateBossConfig(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("bossId"), out Guid bossId))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid boss config ID."));
+
+        BossConfig? config = await Repository.GetBossConfigByIdAsync(bossId);
+        if (config == null)
+            return new ApiResult(404, new ErrorResponse("Not found", $"Boss config {bossId} not found."));
+
+        UpdateBossConfigRequest? req = await ctx.ReadJsonBodyAsync<UpdateBossConfigRequest>();
+        if (req == null) return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required."));
+
+        if (req.CreatureResRef != null) config.CreatureResRef = req.CreatureResRef;
+        if (req.Name != null) config.Name = req.Name;
+        if (req.Weight.HasValue) config.Weight = Math.Max(req.Weight.Value, 1);
+        if (req.IsActive.HasValue) config.IsActive = req.IsActive.Value;
+
+        await Repository.UpdateBossConfigAsync(config);
+
+        SpawnProfile? profile = await Repository.GetByIdAsync(config.SpawnProfileId);
+        if (profile != null && EncounterService != null)
+            await EncounterService.RefreshProfileCacheAsync(profile.AreaResRef);
+
+        return new ApiResult(200, ToDto(config));
+    }
+
+    /// <summary>
+    /// DELETE /api/worldengine/encounters/bosses/{bossId} — Remove a boss from the pool
+    /// </summary>
+    [HttpDelete("/api/worldengine/encounters/bosses/{bossId}")]
+    public static async Task<ApiResult> DeleteBossConfig(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("bossId"), out Guid bossId))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid boss config ID."));
+
+        BossConfig? config = await Repository.GetBossConfigByIdAsync(bossId);
+        Guid? profileId = config?.SpawnProfileId;
+
+        await Repository.DeleteBossConfigAsync(bossId);
+
+        if (profileId.HasValue)
+        {
+            SpawnProfile? profile = await Repository.GetByIdAsync(profileId.Value);
+            if (profile != null && EncounterService != null)
+                await EncounterService.RefreshProfileCacheAsync(profile.AreaResRef);
+        }
+
+        return new ApiResult(200, new { message = "Boss config removed.", bossId });
+    }
+
+    /// <summary>
+    /// POST /api/worldengine/encounters/bosses/{bossId}/conditions — Add a condition to a boss
+    /// </summary>
+    [HttpPost("/api/worldengine/encounters/bosses/{bossId}/conditions")]
+    public static async Task<ApiResult> AddBossCondition(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("bossId"), out Guid bossId))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid boss config ID."));
+
+        BossConfig? config = await Repository.GetBossConfigByIdAsync(bossId);
+        if (config == null)
+            return new ApiResult(404, new ErrorResponse("Not found", $"Boss config {bossId} not found."));
+
+        CreateConditionRequest? req = await ctx.ReadJsonBodyAsync<CreateConditionRequest>();
+        if (req == null || string.IsNullOrWhiteSpace(req.Value))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Condition value is required."));
+
+        BossCondition condition = new()
+        {
+            Id = Guid.NewGuid(),
+            BossConfigId = bossId,
+            Type = req.Type,
+            Operator = req.Operator,
+            Value = req.Value
+        };
+
+        await Repository.AddBossConditionAsync(bossId, condition);
+
+        SpawnProfile? profile = await Repository.GetByIdAsync(config.SpawnProfileId);
+        if (profile != null && EncounterService != null)
+            await EncounterService.RefreshProfileCacheAsync(profile.AreaResRef);
+
+        return new ApiResult(201, ToBossConditionDto(condition));
+    }
+
+    /// <summary>
+    /// PUT /api/worldengine/encounters/boss-conditions/{conditionId} — Update a boss condition
+    /// </summary>
+    [HttpPut("/api/worldengine/encounters/boss-conditions/{conditionId}")]
+    public static async Task<ApiResult> UpdateBossCondition(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("conditionId"), out Guid conditionId))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid condition ID."));
+
+        BossCondition? condition = await Repository.GetBossConditionByIdAsync(conditionId);
+        if (condition == null)
+            return new ApiResult(404, new ErrorResponse("Not found", $"Boss condition {conditionId} not found."));
+
+        UpdateConditionRequest? req = await ctx.ReadJsonBodyAsync<UpdateConditionRequest>();
+        if (req == null) return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required."));
+
+        if (req.Type.HasValue) condition.Type = req.Type.Value;
+        if (req.Operator != null) condition.Operator = req.Operator;
+        if (req.Value != null) condition.Value = req.Value;
+
+        await Repository.UpdateBossConditionAsync(condition);
+        return new ApiResult(200, ToBossConditionDto(condition));
+    }
+
+    /// <summary>
+    /// DELETE /api/worldengine/encounters/boss-conditions/{conditionId} — Remove a boss condition
+    /// </summary>
+    [HttpDelete("/api/worldengine/encounters/boss-conditions/{conditionId}")]
+    public static async Task<ApiResult> DeleteBossCondition(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("conditionId"), out Guid conditionId))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid condition ID."));
+
+        await Repository.DeleteBossConditionAsync(conditionId);
+        return new ApiResult(200, new { message = "Boss condition removed.", conditionId });
+    }
+
+    /// <summary>
+    /// POST /api/worldengine/encounters/bosses/{bossId}/bonuses — Add a bonus to a boss
+    /// </summary>
+    [HttpPost("/api/worldengine/encounters/bosses/{bossId}/bonuses")]
+    public static async Task<ApiResult> AddBossBonus(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("bossId"), out Guid bossId))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid boss config ID."));
+
+        CreateBonusRequest? req = await ctx.ReadJsonBodyAsync<CreateBonusRequest>();
+        if (req == null || string.IsNullOrWhiteSpace(req.Name))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Bonus name is required."));
+
+        SpawnBonus bonus = new()
+        {
+            Id = Guid.NewGuid(),
+            BossConfigId = bossId,
+            Name = req.Name,
+            Type = req.Type,
+            Value = req.Value,
+            DurationSeconds = req.DurationSeconds,
+            IsActive = req.IsActive
+        };
+
+        await Repository.AddBossBonusAsync(bossId, bonus);
         return new ApiResult(201, ToDto(bonus));
     }
 
