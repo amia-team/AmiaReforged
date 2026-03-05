@@ -88,7 +88,7 @@ public class DynamicEncounterService
 
         // Subscribe to ALL areas for OnAreaEnter distribution groups.
         // The handler is a lightweight no-op for areas without a matching profile.
-        IEnumerable<NwArea> areas = NwObject.FindObjectsOfType<NwArea>();
+        IEnumerable<NwArea> areas = NwModule.Instance.Areas;
         int areaCount = 0;
         foreach (NwArea area in areas)
         {
