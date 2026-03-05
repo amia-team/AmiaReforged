@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
 
 namespace AmiaReforged.PwEngine.Database.Entities;
 
@@ -28,9 +29,9 @@ public class PersistedLoreDefinition
     public required string Content { get; set; }
 
     /// <summary>
-    /// Integer value of <c>LoreCategory</c> enum (Arcana = 0, ... Ooc = 10).
+    /// Knowledge-skill category. Stored in the database as the enum name string.
     /// </summary>
-    public int Category { get; set; }
+    public LoreCategory Category { get; set; }
 
     /// <summary>
     /// Integer value of <c>LoreTier</c> enum (Common = 0, Uncommon = 1, Rare = 2, Legendary = 3).

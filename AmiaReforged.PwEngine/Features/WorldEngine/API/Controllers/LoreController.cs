@@ -41,8 +41,8 @@ public class LoreController
 
         if (!string.IsNullOrWhiteSpace(category))
         {
-            if (int.TryParse(category.Trim(), out int catInt))
-                query = query.Where(d => d.Category == catInt);
+            if (int.TryParse(category.Trim(), out int catInt) && Enum.IsDefined(typeof(LoreCategory), catInt))
+                query = query.Where(d => d.Category == (LoreCategory)catInt);
         }
 
         int totalCount = await query.CountAsync();
@@ -155,7 +155,7 @@ public class LoreController
         // Update mutable fields — LoreId is immutable
         existing.Title = dto.Title;
         existing.Content = dto.Content;
-        existing.Category = dto.Category;
+        existing.Category = (LoreCategory)dto.Category;
         existing.Tier = dto.Tier;
         existing.Keywords = dto.Keywords;
         existing.IsAlwaysAvailable = dto.IsAlwaysAvailable;
@@ -240,10 +240,8 @@ public class LoreController
             def.LoreId,
             def.Title,
             def.Content,
-            def.Category,
-            CategoryName = Enum.IsDefined(typeof(LoreCategory), def.Category)
-                ? ((LoreCategory)def.Category).DisplayName()
-                : "Unknown",
+            Category = (int)def.Category,
+            CategoryName = def.Category.DisplayName(),
             def.Tier,
             def.Keywords,
             def.IsAlwaysAvailable,
@@ -258,7 +256,7 @@ public class LoreController
             LoreId = dto.LoreId.Trim(),
             Title = dto.Title.Trim(),
             Content = dto.Content,
-            Category = dto.Category,
+            Category = (LoreCategory)dto.Category,
             Tier = dto.Tier,
             Keywords = string.IsNullOrWhiteSpace(dto.Keywords) ? null : dto.Keywords.Trim(),
             IsAlwaysAvailable = dto.IsAlwaysAvailable

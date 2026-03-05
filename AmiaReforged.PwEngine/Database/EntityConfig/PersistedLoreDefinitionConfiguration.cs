@@ -32,6 +32,8 @@ public sealed class PersistedLoreDefinitionConfiguration : IEntityTypeConfigurat
 
         builder.Property(d => d.Category)
             .HasColumnName("category")
+            .HasConversion<string>()
+            .HasMaxLength(100)
             .IsRequired();
 
         builder.Property(d => d.Tier)
