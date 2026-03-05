@@ -62,16 +62,9 @@ public class DynamicCreatureSpawner
         SpawnProfile profile,
         EncounterContext context)
     {
-        IntPtr spawnLocation = GetRandomSpawnLocation(trigger);
-        if (spawnLocation == IntPtr.Zero)
-        {
-            Log.Warn("No spawn waypoints found in trigger for profile '{Name}' (area {Area}).",
-                profile.Name, profile.AreaResRef);
-            return;
-        }
-
-        // Select a group
-        SpawnGroup? group = _groupSelector.SelectGroup(profile, context);
+        // Select a group (filter to trigger-based distribution methods only)
+        SpawnGroup? group = _groupSelector.SelectGroup(profile, context,
+            g => g.DistributionMethod != DistributionMethod.OnAreaEnter);
         if (group == null)
         {
             Log.Debug("No eligible spawn group selected for profile '{Name}'. Skipping dynamic spawn.",
@@ -88,12 +81,12 @@ public class DynamicCreatureSpawner
         if (profile.MaxTotalSpawns.HasValue)
             scaledCount = Math.Min(scaledCount, profile.MaxTotalSpawns.Value);
 
-        Log.Info("Dynamic spawn: profile='{Name}', group='{GroupName}', count={Count} (base={Base}, cap={Cap}), area={Area}",
-            profile.Name, group.Name, scaledCount, baseCount,
+        Log.Info("Dynamic spawn: profile='{Name}', group='{GroupName}', method={Method}, count={Count} (base={Base}, cap={Cap}), area={Area}",
+            profile.Name, group.Name, group.DistributionMethod, scaledCount, baseCount,
             profile.MaxTotalSpawns?.ToString() ?? "none", profile.AreaResRef);
 
-        // Spawn creatures
-        List<uint> spawned = SpawnCreaturesFromGroup(group, scaledCount, spawnLocation, profile.DespawnSeconds);
+        // Spawn creatures using distribution method
+        List<uint> spawned = SpawnWithDistribution(group, scaledCount, trigger, context, profile.DespawnSeconds);
 
         // Apply profile bonuses and attempt mutation
         IReadOnlyList<SpawnBonus> activeBonuses = profile.Bonuses.Where(b => b.IsActive).ToList();
@@ -103,16 +96,66 @@ public class DynamicCreatureSpawner
             _mutationApplicator.TryApplyMutation(creature, context.Chaos, group);
         }
 
-        // Mini-boss
-        if (profile.MiniBoss != null)
+        // Mini-boss (use first available spawn location for placement)
+        IntPtr miniBossLocation = GetRandomSpawnLocation(trigger);
+        if (profile.MiniBoss != null && miniBossLocation != IntPtr.Zero)
         {
-            TrySpawnMiniBoss(profile.MiniBoss, spawnLocation, profile.DespawnSeconds, context.Chaos);
+            TrySpawnMiniBoss(profile.MiniBoss, miniBossLocation, profile.DespawnSeconds, context.Chaos);
         }
 
         // Boss (from boss pool)
         if (profile.BossSpawnChancePercent > 0 && profile.BossConfigs.Count > 0)
         {
             TrySpawnBoss(profile, context, trigger, profile.DespawnSeconds);
+        }
+    }
+
+    /// <summary>
+    /// Executes the dynamic encounter spawn for an area-enter event (no trigger).
+    /// Only considers groups with <see cref="DistributionMethod.OnAreaEnter"/>.
+    /// </summary>
+    public void SpawnAreaEnterEncounter(
+        NwArea area,
+        SpawnProfile profile,
+        EncounterContext context)
+    {
+        // Select a group (only OnAreaEnter groups)
+        SpawnGroup? group = _groupSelector.SelectGroup(profile, context,
+            g => g.DistributionMethod == DistributionMethod.OnAreaEnter);
+        if (group == null)
+        {
+            Log.Debug("No eligible OnAreaEnter group for profile '{Name}'. Skipping area spawn.",
+                profile.Name);
+            return;
+        }
+
+        // Calculate spawn count, scaled by chaos density
+        int baseCount = CalculateBaseSpawnCount(group);
+        int scaledCount = ScaleByDensity(baseCount, context.Chaos.Density);
+        if (context.PartySize > 6) scaledCount *= 2;
+
+        if (profile.MaxTotalSpawns.HasValue)
+            scaledCount = Math.Min(scaledCount, profile.MaxTotalSpawns.Value);
+
+        Log.Info("Area-enter spawn: profile='{Name}', group='{GroupName}', count={Count}, area={Area}",
+            profile.Name, group.Name, scaledCount, profile.AreaResRef);
+
+        // Get all ds_spwn waypoints in the area
+        List<IntPtr> areaLocations = GetAreaWideSpawnLocations(area);
+        if (areaLocations.Count == 0)
+        {
+            Log.Warn("No ds_spwn waypoints found in area for OnAreaEnter profile '{Name}'.", profile.Name);
+            return;
+        }
+
+        // Spawn distributed across area waypoints
+        List<uint> spawned = SpawnCreaturesDistributed(group, scaledCount, areaLocations, profile.DespawnSeconds);
+
+        IReadOnlyList<SpawnBonus> activeBonuses = profile.Bonuses.Where(b => b.IsActive).ToList();
+        foreach (uint creature in spawned)
+        {
+            _bonusApplicator.ApplyBonuses(creature, activeBonuses, context.Chaos);
+            _mutationApplicator.TryApplyMutation(creature, context.Chaos, group);
         }
     }
 
@@ -167,9 +210,73 @@ public class DynamicCreatureSpawner
     }
 
     /// <summary>
-    /// Spawns creatures from the selected group using weighted random entry selection.
+    /// Routes spawn placement based on the group's <see cref="DistributionMethod"/>.
     /// </summary>
-    private static List<uint> SpawnCreaturesFromGroup(
+    private List<uint> SpawnWithDistribution(
+        SpawnGroup group,
+        int count,
+        NwTrigger trigger,
+        EncounterContext context,
+        int despawnSeconds)
+    {
+        switch (group.DistributionMethod)
+        {
+            case DistributionMethod.EvenlyDistributed:
+            {
+                List<IntPtr> locations = GetAllSpawnLocations(trigger);
+                if (locations.Count == 0)
+                {
+                    Log.Warn("No ds_spwn waypoints for EvenlyDistributed in profile area {Area}.", context.AreaResRef);
+                    return [];
+                }
+                return SpawnCreaturesDistributed(group, count, locations, despawnSeconds);
+            }
+
+            case DistributionMethod.PlayerProximity:
+            {
+                if (context.PlayerLocation == IntPtr.Zero)
+                {
+                    Log.Warn("PlayerProximity selected but no player location available. Falling back to random waypoint.");
+                    IntPtr fallback = GetRandomSpawnLocation(trigger);
+                    return fallback == IntPtr.Zero ? [] : SpawnCreaturesAtLocation(group, count, fallback, despawnSeconds);
+                }
+                return SpawnCreaturesAtLocation(group, count, context.PlayerLocation, despawnSeconds);
+            }
+
+            case DistributionMethod.Roaming:
+            {
+                List<IntPtr> locations = GetAllSpawnLocations(trigger);
+                if (locations.Count == 0)
+                {
+                    Log.Warn("No ds_spwn waypoints for Roaming in profile area {Area}.", context.AreaResRef);
+                    return [];
+                }
+                List<uint> spawned = SpawnCreaturesDistributed(group, count, locations, despawnSeconds);
+                foreach (uint creature in spawned)
+                {
+                    NWScript.AssignCommand(creature, () => NWScript.ActionRandomWalk());
+                }
+                return spawned;
+            }
+
+            case DistributionMethod.None:
+            default:
+            {
+                IntPtr loc = GetRandomSpawnLocation(trigger);
+                if (loc == IntPtr.Zero)
+                {
+                    Log.Warn("No spawn waypoints found in trigger for profile area {Area}.", context.AreaResRef);
+                    return [];
+                }
+                return SpawnCreaturesAtLocation(group, count, loc, despawnSeconds);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Spawns all creatures at a single location (original behaviour).
+    /// </summary>
+    private static List<uint> SpawnCreaturesAtLocation(
         SpawnGroup group,
         int count,
         IntPtr spawnLocation,
@@ -178,31 +285,72 @@ public class DynamicCreatureSpawner
         List<uint> spawned = [];
         if (group.Entries.Count == 0) return spawned;
 
-        // Build weighted list
         int totalWeight = group.Entries.Sum(e => Math.Max(e.RelativeWeight, 1));
 
         for (int i = 0; i < count; i++)
         {
             SpawnEntry entry = WeightedSelectEntry(group.Entries, totalWeight);
-
-            uint creature = NWScript.CreateObject(
-                NWScript.OBJECT_TYPE_CREATURE,
-                entry.CreatureResRef,
-                spawnLocation);
-
-            if (creature == NWScript.OBJECT_INVALID)
-            {
-                Log.Warn("Failed to spawn creature with resref '{ResRef}' — returned OBJECT_INVALID.",
-                    entry.CreatureResRef);
-                continue;
-            }
-
-            NWScript.ChangeToStandardFaction(creature, NWScript.STANDARD_FACTION_HOSTILE);
-            NWScript.DestroyObject(creature, despawnSeconds);
-            spawned.Add(creature);
+            uint creature = CreateAndConfigureCreature(entry.CreatureResRef, spawnLocation, despawnSeconds);
+            if (creature != NWScript.OBJECT_INVALID)
+                spawned.Add(creature);
         }
 
         return spawned;
+    }
+
+    /// <summary>
+    /// Spawns creatures distributed round-robin across multiple locations.
+    /// </summary>
+    private static List<uint> SpawnCreaturesDistributed(
+        SpawnGroup group,
+        int count,
+        List<IntPtr> locations,
+        int despawnSeconds)
+    {
+        List<uint> spawned = [];
+        if (group.Entries.Count == 0 || locations.Count == 0) return spawned;
+
+        int totalWeight = group.Entries.Sum(e => Math.Max(e.RelativeWeight, 1));
+
+        for (int i = 0; i < count; i++)
+        {
+            SpawnEntry entry = WeightedSelectEntry(group.Entries, totalWeight);
+            IntPtr location = locations[i % locations.Count];
+            uint creature = CreateAndConfigureCreature(entry.CreatureResRef, location, despawnSeconds);
+            if (creature != NWScript.OBJECT_INVALID)
+                spawned.Add(creature);
+        }
+
+        return spawned;
+    }
+
+    /// <summary>
+    /// Creates a creature, makes it hostile, and optionally schedules despawn.
+    /// When <paramref name="despawnSeconds"/> is 0 or negative, the creature
+    /// never auto-despawns — it lives until killed or server reset.
+    /// </summary>
+    private static uint CreateAndConfigureCreature(string resRef, IntPtr location, int despawnSeconds)
+    {
+        uint creature = NWScript.CreateObject(
+            NWScript.OBJECT_TYPE_CREATURE,
+            resRef,
+            location);
+
+        if (creature == NWScript.OBJECT_INVALID)
+        {
+            Log.Warn("Failed to spawn creature with resref '{ResRef}' — returned OBJECT_INVALID.", resRef);
+            return NWScript.OBJECT_INVALID;
+        }
+
+        NWScript.ChangeToStandardFaction(creature, NWScript.STANDARD_FACTION_HOSTILE);
+
+        // DespawnSeconds <= 0 means never auto-despawn (lives until killed or server reset)
+        if (despawnSeconds > 0)
+        {
+            NWScript.DestroyObject(creature, despawnSeconds);
+        }
+
+        return creature;
     }
 
     private static SpawnEntry WeightedSelectEntry(List<SpawnEntry> entries, int totalWeight)
@@ -244,7 +392,11 @@ public class DynamicCreatureSpawner
         }
 
         NWScript.ChangeToStandardFaction(boss, NWScript.STANDARD_FACTION_HOSTILE);
-        NWScript.DestroyObject(boss, despawnSeconds);
+
+        if (despawnSeconds > 0)
+        {
+            NWScript.DestroyObject(boss, despawnSeconds);
+        }
 
         // Apply mini-boss-specific bonuses
         IReadOnlyList<SpawnBonus> bossBonuses = config.Bonuses.Where(b => b.IsActive).ToList();
@@ -295,7 +447,11 @@ public class DynamicCreatureSpawner
         }
 
         NWScript.ChangeToStandardFaction(boss, NWScript.STANDARD_FACTION_HOSTILE);
-        NWScript.DestroyObject(boss, despawnSeconds);
+
+        if (despawnSeconds > 0)
+        {
+            NWScript.DestroyObject(boss, despawnSeconds);
+        }
 
         // Apply boss-specific bonuses
         IReadOnlyList<SpawnBonus> bossBonuses = selected.Bonuses.Where(b => b.IsActive).ToList();
@@ -303,6 +459,54 @@ public class DynamicCreatureSpawner
 
         Log.Info("Boss spawned: resref='{ResRef}', name='{BossName}', configName='{ConfigName}'.",
             selected.CreatureResRef, NWScript.GetName(boss), selected.Name);
+    }
+
+    /// <summary>
+    /// Returns all <c>ds_spwn</c> waypoint locations inside the trigger.
+    /// </summary>
+    private static List<IntPtr> GetAllSpawnLocations(NwTrigger trigger)
+    {
+        List<IntPtr> locations = [];
+
+        uint waypoint = NWScript.GetFirstInPersistentObject(trigger, NWScript.OBJECT_TYPE_WAYPOINT);
+        while (waypoint != NWScript.OBJECT_INVALID)
+        {
+            if (NWScript.GetTag(waypoint) == SpawnWaypointTag)
+                locations.Add(NWScript.GetLocation(waypoint));
+            waypoint = NWScript.GetNextInPersistentObject(trigger, NWScript.OBJECT_TYPE_WAYPOINT);
+        }
+
+        // Fallback: at least grab the nearest waypoint
+        if (locations.Count == 0)
+        {
+            uint nearest = NWScript.GetNearestObjectByTag(SpawnWaypointTag, trigger);
+            if (nearest != NWScript.OBJECT_INVALID)
+                locations.Add(NWScript.GetLocation(nearest));
+        }
+
+        return locations;
+    }
+
+    /// <summary>
+    /// Returns all <c>ds_spwn</c> waypoint locations anywhere in the area.
+    /// Used by <see cref="DistributionMethod.OnAreaEnter"/> which is not trigger-bound.
+    /// </summary>
+    internal static List<IntPtr> GetAreaWideSpawnLocations(NwArea area)
+    {
+        List<IntPtr> locations = [];
+
+        // Iterate all objects in the area with the spawn waypoint tag
+        int idx = 1;
+        uint wp = NWScript.GetObjectByTag(SpawnWaypointTag, idx - 1);
+        while (wp != NWScript.OBJECT_INVALID)
+        {
+            if (NWScript.GetArea(wp) == area)
+                locations.Add(NWScript.GetLocation(wp));
+            wp = NWScript.GetObjectByTag(SpawnWaypointTag, idx);
+            idx++;
+        }
+
+        return locations;
     }
 
     /// <summary>

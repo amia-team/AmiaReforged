@@ -32,6 +32,12 @@ public class DynamicEncounterService
     private const string CooldownStartVar = "dyn_cooldown_start";
     private const string CooldownActiveVar = "dyn_on_cooldown";
 
+    /// <summary>
+    /// Area-level cooldown vars for OnAreaEnter distribution (uses area instead of trigger).
+    /// </summary>
+    private const string AreaCooldownStartVar = "dyn_area_cooldown_start";
+    private const string AreaCooldownActiveVar = "dyn_area_on_cooldown";
+
     private readonly ISpawnProfileRepository _repository;
     private readonly IRegionSubsystem _regionSubsystem;
     private readonly DynamicCreatureSpawner _spawner;
@@ -41,6 +47,11 @@ public class DynamicEncounterService
     /// Refreshed at startup; profiles activated/deactivated via API update this cache.
     /// </summary>
     private readonly Dictionary<string, SpawnProfile> _profileCache = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Tracks which areas we have subscribed to OnEnter for area-enter distribution groups.
+    /// </summary>
+    private readonly HashSet<string> _areaEnterSubscriptions = new(StringComparer.OrdinalIgnoreCase);
 
     public DynamicEncounterService(
         ISpawnProfileRepository repository,
@@ -79,6 +90,9 @@ public class DynamicEncounterService
             trigger.OnEnter += OnBossTriggerEnter;
         }
 
+        // Subscribe to area OnEnter for profiles that have OnAreaEnter groups
+        RefreshAreaEnterSubscriptions();
+
         Log.Info("Dynamic encounter service initialized.");
     }
 
@@ -110,7 +124,51 @@ public class DynamicEncounterService
             _profileCache[profile.AreaResRef] = profile;
         }
 
+        RefreshAreaEnterSubscriptions();
+
         Log.Info("Dynamic encounter cache refreshed: {Count} active profiles.", _profileCache.Count);
+    }
+
+    /// <summary>
+    /// Scans the profile cache for profiles that have at least one group with
+    /// <see cref="DistributionMethod.OnAreaEnter"/> and subscribes to the
+    /// corresponding area's OnEnter event. Existing subscriptions are preserved
+    /// and stale ones cleaned up.
+    /// </summary>
+    private void RefreshAreaEnterSubscriptions()
+    {
+        HashSet<string> neededResRefs = new(StringComparer.OrdinalIgnoreCase);
+
+        foreach ((string areaResRef, SpawnProfile profile) in _profileCache)
+        {
+            if (profile.SpawnGroups.Any(g => g.DistributionMethod == DistributionMethod.OnAreaEnter))
+            {
+                neededResRefs.Add(areaResRef);
+            }
+        }
+
+        // Subscribe to new areas
+        foreach (string resRef in neededResRefs)
+        {
+            if (_areaEnterSubscriptions.Contains(resRef)) continue;
+
+            NwArea? area = NwObject.FindObjectsOfType<NwArea>()
+                .FirstOrDefault(a => string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
+
+            if (area == null)
+            {
+                Log.Debug("Area '{ResRef}' not found in module for OnAreaEnter subscription.", resRef);
+                continue;
+            }
+
+            area.OnEnter += OnAreaEnter;
+            _areaEnterSubscriptions.Add(resRef);
+            Log.Info("Subscribed to area OnEnter for '{ResRef}' (OnAreaEnter distribution).", resRef);
+        }
+
+        // Note: we do not unsubscribe stale ones because NWN area objects may be
+        // reloaded / the event handlers are lightweight no-ops when no profile matches.
+        // Tracking is primarily to avoid duplicate subscriptions.
     }
 
     private void OnTriggerEnter(TriggerEvents.OnEnter obj)
@@ -160,6 +218,46 @@ public class DynamicEncounterService
 
         // Flag trigger as handled so legacy EncounterService skips
         NWScript.SetLocalInt(obj.Trigger, DynamicHandledFlag, NWScript.TRUE);
+    }
+
+    /// <summary>
+    /// Area OnEnter handler for <see cref="DistributionMethod.OnAreaEnter"/> groups.
+    /// Fires independently of spawn triggers — creatures are placed at any <c>ds_spwn</c>
+    /// waypoint in the area.
+    /// </summary>
+    private void OnAreaEnter(AreaEvents.OnEnter obj)
+    {
+        if (!obj.EnteringObject.IsPlayerControlled(out NwPlayer? player)) return;
+        if (player.IsDM || player.IsPlayerDM) return;
+
+        NwArea area = obj.Area;
+        string areaResRef = area.ResRef;
+
+        if (!_profileCache.TryGetValue(areaResRef, out SpawnProfile? profile)) return;
+
+        // Only proceed if the profile has OnAreaEnter groups
+        bool hasAreaEnterGroups = profile.SpawnGroups
+            .Any(g => g.DistributionMethod == DistributionMethod.OnAreaEnter);
+        if (!hasAreaEnterGroups) return;
+
+        // Check no_spawn
+        if (NWScript.GetLocalInt(area, "no_spawn") == NWScript.TRUE) return;
+
+        // Area-level cooldown (separate from trigger cooldowns)
+        if (IsAreaCooldownActive(area, profile.CooldownSeconds))
+        {
+            Log.Debug("Area '{AreaResRef}': OnAreaEnter cooldown active.", areaResRef);
+            return;
+        }
+
+        EncounterContext context = BuildContextForArea(area, player, profile);
+
+        _spawner.SpawnAreaEnterEncounter(area, profile, context);
+
+        InitAreaCooldown(area, profile.CooldownSeconds);
+
+        Log.Info("Area-enter spawn fired for profile '{Name}' in area '{Area}'.",
+            profile.Name, areaResRef);
     }
 
     /// <summary>
@@ -237,6 +335,11 @@ public class DynamicEncounterService
             ? _regionSubsystem.GetRegionTagForArea(area.ResRef)
             : null;
 
+        // Capture player location for PlayerProximity distribution
+        IntPtr playerLocation = player.LoginCreature != null
+            ? NWScript.GetLocation(player.LoginCreature)
+            : IntPtr.Zero;
+
         return new EncounterContext
         {
             AreaResRef = area.ResRef,
@@ -246,7 +349,48 @@ public class DynamicEncounterService
             RegionTag = regionTag,
             IsInRegion = isInRegion,
             Trigger = trigger,
-            Area = area
+            Area = area,
+            PlayerLocation = playerLocation
+        };
+    }
+
+    /// <summary>
+    /// Builds context for area-enter events (no trigger available).
+    /// </summary>
+    private EncounterContext BuildContextForArea(NwArea area, NwPlayer player, SpawnProfile profile)
+    {
+        int partySize = player.PartyMembers
+            .Count(pm => pm.LoginCreature?.Area == area);
+
+        int hour = NWScript.GetTimeHour();
+        int minute = NWScript.GetTimeMinute();
+        TimeSpan gameTime = new(hour, minute, 0);
+
+        bool isInRegion = _regionSubsystem.IsAreaInRegion(area.ResRef);
+
+        ChaosState chaos = isInRegion
+            ? _regionSubsystem.GetChaosForAreaAsync(area.ResRef).GetAwaiter().GetResult()
+            : ChaosState.Default;
+
+        string? regionTag = isInRegion
+            ? _regionSubsystem.GetRegionTagForArea(area.ResRef)
+            : null;
+
+        IntPtr playerLocation = player.LoginCreature != null
+            ? NWScript.GetLocation(player.LoginCreature)
+            : IntPtr.Zero;
+
+        return new EncounterContext
+        {
+            AreaResRef = area.ResRef,
+            PartySize = partySize,
+            GameTime = gameTime,
+            Chaos = chaos,
+            RegionTag = regionTag,
+            IsInRegion = isInRegion,
+            Trigger = null,
+            Area = area,
+            PlayerLocation = playerLocation
         };
     }
 
@@ -266,5 +410,29 @@ public class DynamicEncounterService
         NWScript.SetLocalInt(trigger, CooldownActiveVar, CooldownFlagVar);
         NWScript.DelayCommand(cooldownSeconds,
             () => NWScript.SetLocalInt(trigger, CooldownActiveVar, NWScript.FALSE));
+    }
+
+    /// <summary>
+    /// Checks area-level cooldown for OnAreaEnter distribution.
+    /// </summary>
+    private static bool IsAreaCooldownActive(NwArea area, int cooldownSeconds)
+    {
+        if (NWScript.GetLocalInt(area, AreaCooldownActiveVar) != CooldownFlagVar)
+            return false;
+
+        int startTime = NWScript.GetLocalInt(area, AreaCooldownStartVar);
+        int now = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
+        return now - startTime <= cooldownSeconds;
+    }
+
+    /// <summary>
+    /// Initialises area-level cooldown for OnAreaEnter distribution.
+    /// </summary>
+    private static void InitAreaCooldown(NwArea area, int cooldownSeconds)
+    {
+        NWScript.SetLocalInt(area, AreaCooldownStartVar, (int)DateTimeOffset.Now.ToUnixTimeSeconds());
+        NWScript.SetLocalInt(area, AreaCooldownActiveVar, CooldownFlagVar);
+        NWScript.DelayCommand(cooldownSeconds,
+            () => NWScript.SetLocalInt(area, AreaCooldownActiveVar, NWScript.FALSE));
     }
 }

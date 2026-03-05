@@ -334,6 +334,16 @@
                                         <label>Weight</label>
                                         <input class="form-control" type="number" @bind="_newGroupWeight" />
                                     </div>
+                                    <div class="form-group" style="flex:2">
+                                        <label>Distribution</label>
+                                        <select class="form-control" @bind="_newGroupDistribution">
+                                            @foreach (var method in Enum.GetValues<DistributionMethod>())
+                                            {
+                                                <option value="@method">@GetDistributionLabel(method)</option>
+                                            }
+                                        </select>
+                                        <small class="text-muted">@GetDistributionDescription(_newGroupDistribution)</small>
+                                    </div>
                                 </div>
                                 <div class="form-actions">
                                     <button class="btn btn-success btn-sm" @onclick="AddGroup" disabled="@_isSaving">Add</button>
@@ -349,7 +359,7 @@
                                 <div class="group-card-header" @onclick="() => ToggleGroupExpanded(group.Id)">
                                     <span class="expand-icon">@(expanded ? "▼" : "▶")</span>
                                     <strong>@group.Name</strong>
-                                    <span style="color:var(--text-secondary);margin-left:10px">Weight: @group.Weight · @group.Entries.Count entries · @group.Conditions.Count conditions</span>
+                                    <span style="color:var(--text-secondary);margin-left:10px">Weight: @group.Weight · @GetDistributionLabel(group.DistributionMethod) · @group.Entries.Count entries · @group.Conditions.Count conditions</span>
                                     <div class="group-card-actions" @onclick:stopPropagation="true">
                                         <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteGroup(group)">Delete</button>
                                     </div>
@@ -357,7 +367,7 @@
                                 @if (expanded)
                                 {
                                     <div class="group-card-body">
-                                        @* -- Group Name/Weight Edit -- *@
+                                        @* -- Group Name/Weight/Distribution Edit -- *@
                                         <div class="inline-form" style="margin-bottom:15px">
                                             <div class="form-row">
                                                 <div class="form-group">
@@ -367,6 +377,16 @@
                                                 <div class="form-group">
                                                     <label>Weight</label>
                                                     <input class="form-control" type="number" value="@group.Weight" @onchange="e => UpdateGroupWeight(group, e)" />
+                                                </div>
+                                                <div class="form-group" style="flex:2">
+                                                    <label>Distribution Method</label>
+                                                    <select class="form-control" value="@group.DistributionMethod" @onchange="e => UpdateGroupDistribution(group, e)">
+                                                        @foreach (var method in Enum.GetValues<DistributionMethod>())
+                                                        {
+                                                            <option value="@method" selected="@(method == group.DistributionMethod)">@GetDistributionLabel(method)</option>
+                                                        }
+                                                    </select>
+                                                    <small class="text-muted">@GetDistributionDescription(group.DistributionMethod)</small>
                                                 </div>
                                             </div>
                                         </div>
@@ -1425,6 +1445,7 @@
     private bool _showAddGroup;
     private string _newGroupName = "";
     private int _newGroupWeight = 1;
+    private DistributionMethod _newGroupDistribution = DistributionMethod.None;
 
     // ===== Add Bonus Form =====
     private bool _showAddBonus;
@@ -1796,10 +1817,11 @@
         try
         {
             await Api.AddGroupAsync(_selectedProfile.Id,
-                new CreateGroupRequest(_newGroupName.Trim(), _newGroupWeight));
+                new CreateGroupRequest(_newGroupName.Trim(), _newGroupWeight, _newGroupDistribution));
             _success = $"Group '{_newGroupName}' added.";
             _newGroupName = "";
             _newGroupWeight = 1;
+            _newGroupDistribution = DistributionMethod.None;
             _showAddGroup = false;
             await RefreshProfiles();
         }
@@ -1829,6 +1851,37 @@
         }
         catch (Exception ex) { _error = ex.Message; }
     }
+
+    private async Task UpdateGroupDistribution(SpawnGroupDto group, ChangeEventArgs e)
+    {
+        if (!Enum.TryParse<DistributionMethod>(e.Value?.ToString(), out var method) || method == group.DistributionMethod) return;
+        try
+        {
+            await Api.UpdateGroupAsync(group.Id, new UpdateGroupRequest(DistributionMethod: method));
+            await RefreshProfiles();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private static string GetDistributionLabel(DistributionMethod method) => method switch
+    {
+        DistributionMethod.None => "Default (cluster)",
+        DistributionMethod.OnAreaEnter => "On Area Enter",
+        DistributionMethod.EvenlyDistributed => "Evenly Distributed",
+        DistributionMethod.PlayerProximity => "Player Proximity (ambush)",
+        DistributionMethod.Roaming => "Roaming (patrol)",
+        _ => method.ToString()
+    };
+
+    private static string GetDistributionDescription(DistributionMethod method) => method switch
+    {
+        DistributionMethod.None => "All creatures cluster at one random ds_spwn waypoint inside a trigger.",
+        DistributionMethod.OnAreaEnter => "Spawns when a player enters the area (no trigger needed). Uses any ds_spwn waypoint in the area.",
+        DistributionMethod.EvenlyDistributed => "Trigger-based. Distributes creatures round-robin across all ds_spwn waypoints inside the trigger.",
+        DistributionMethod.PlayerProximity => "Trigger-based. Creatures spawn at the entering player's location — great for ambushes.",
+        DistributionMethod.Roaming => "Like Evenly Distributed, but creatures wander/patrol after spawning.",
+        _ => ""
+    };
 
     private async Task DeleteGroup(SpawnGroupDto group)
     {

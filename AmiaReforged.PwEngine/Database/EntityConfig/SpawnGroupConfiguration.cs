@@ -29,6 +29,11 @@ public class SpawnGroupConfiguration : IEntityTypeConfiguration<SpawnGroup>
             .HasColumnName("override_mutations")
             .HasDefaultValue(false);
 
+        builder.Property(g => g.DistributionMethod)
+            .HasColumnName("distribution_method")
+            .HasDefaultValue(DistributionMethod.None)
+            .HasConversion<int>();
+
         builder.HasIndex(g => g.SpawnProfileId)
             .HasDatabaseName("IX_SpawnGroups_SpawnProfileId");
 

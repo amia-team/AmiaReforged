@@ -78,6 +78,16 @@ public enum NwnDamageType
     Sonic = 2048
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum DistributionMethod
+{
+    None = 0,
+    OnAreaEnter = 1,
+    EvenlyDistributed = 2,
+    PlayerProximity = 3,
+    Roaming = 4
+}
+
 // ===================== Response DTOs =====================
 
 public record SpawnProfileDto(
@@ -101,6 +111,7 @@ public record SpawnGroupDto(
     string Name,
     int Weight,
     bool OverrideMutations,
+    DistributionMethod DistributionMethod,
     List<SpawnConditionDto> Conditions,
     List<SpawnEntryDto> Entries,
     List<GroupMutationOverrideDto> MutationOverrides);
@@ -186,6 +197,7 @@ public record UpdateProfileRequest(
 public record CreateGroupRequest(
     string Name,
     int Weight = 1,
+    DistributionMethod DistributionMethod = DistributionMethod.None,
     List<CreateConditionRequest>? Conditions = null,
     List<CreateEntryRequest>? Entries = null);
 
@@ -203,7 +215,8 @@ public record CreateEntryRequest(
 public record UpdateGroupRequest(
     string? Name = null,
     int? Weight = null,
-    bool? OverrideMutations = null);
+    bool? OverrideMutations = null,
+    DistributionMethod? DistributionMethod = null);
 
 public record UpdateEntryRequest(
     string? CreatureResRef = null,

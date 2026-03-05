@@ -31,6 +31,7 @@ public static class EncounterApiDtos
         string Name,
         int Weight,
         bool OverrideMutations,
+        DistributionMethod DistributionMethod,
         List<SpawnConditionDto> Conditions,
         List<SpawnEntryDto> Entries,
         List<GroupMutationOverrideDto> MutationOverrides);
@@ -99,6 +100,7 @@ public static class EncounterApiDtos
     public record CreateGroupRequest(
         string Name,
         int Weight = 1,
+        DistributionMethod DistributionMethod = DistributionMethod.None,
         List<CreateConditionRequest>? Conditions = null,
         List<CreateEntryRequest>? Entries = null);
 
@@ -116,7 +118,8 @@ public static class EncounterApiDtos
     public record UpdateGroupRequest(
         string? Name = null,
         int? Weight = null,
-        bool? OverrideMutations = null);
+        bool? OverrideMutations = null,
+        DistributionMethod? DistributionMethod = null);
 
     public record UpdateEntryRequest(
         string? CreatureResRef = null,
@@ -239,6 +242,7 @@ public static class EncounterApiDtos
 
     public static SpawnGroupDto ToDto(SpawnGroup g) => new(
         g.Id, g.Name, g.Weight, g.OverrideMutations,
+        g.DistributionMethod,
         g.Conditions.Select(ToDto).ToList(),
         g.Entries.Select(ToDto).ToList(),
         g.MutationOverrides.Select(ToOverrideDto).ToList());

@@ -52,4 +52,11 @@ public class EncounterContext
     /// condition evaluations.
     /// </summary>
     public NwArea? Area { get; init; }
+
+    /// <summary>
+    /// The entering player's location at the time the encounter triggered.
+    /// Used by <see cref="DistributionMethod.PlayerProximity"/> to spawn creatures
+    /// near the player instead of at waypoints.
+    /// </summary>
+    public IntPtr PlayerLocation { get; init; }
 }

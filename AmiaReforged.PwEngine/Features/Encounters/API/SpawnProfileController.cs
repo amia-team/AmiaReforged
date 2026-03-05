@@ -248,6 +248,7 @@ public class SpawnProfileController
             SpawnProfileId = id,
             Name = req.Name,
             Weight = req.Weight,
+            DistributionMethod = req.DistributionMethod,
             Conditions = req.Conditions?.Select(c => new SpawnCondition
             {
                 Id = Guid.NewGuid(),
@@ -295,6 +296,7 @@ public class SpawnProfileController
         if (req.Name != null) group.Name = req.Name;
         if (req.Weight.HasValue) group.Weight = req.Weight.Value;
         if (req.OverrideMutations.HasValue) group.OverrideMutations = req.OverrideMutations.Value;
+        if (req.DistributionMethod.HasValue) group.DistributionMethod = req.DistributionMethod.Value;
 
         await Repository.UpdateGroupAsync(group);
         return new ApiResult(200, ToDto(group));

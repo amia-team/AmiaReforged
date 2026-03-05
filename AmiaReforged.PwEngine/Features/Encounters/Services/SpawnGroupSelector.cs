@@ -27,7 +27,22 @@ public class SpawnGroupSelector
     /// </summary>
     public SpawnGroup? SelectGroup(SpawnProfile profile, EncounterContext context)
     {
-        List<SpawnGroup> eligible = profile.SpawnGroups
+        return SelectGroup(profile, context, filter: null);
+    }
+
+    /// <summary>
+    /// Selects a spawn group from the profile, optionally filtering by a predicate
+    /// (e.g. to include only trigger-based or only area-enter groups).
+    /// Returns null if no groups are eligible.
+    /// </summary>
+    public SpawnGroup? SelectGroup(SpawnProfile profile, EncounterContext context,
+        Func<SpawnGroup, bool>? filter)
+    {
+        IEnumerable<SpawnGroup> candidates = profile.SpawnGroups;
+        if (filter != null)
+            candidates = candidates.Where(filter);
+
+        List<SpawnGroup> eligible = candidates
             .Where(g => _evaluator.AllConditionsMet(g.Conditions, context))
             .ToList();
 

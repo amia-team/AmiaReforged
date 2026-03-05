@@ -40,6 +40,12 @@ public class SpawnGroup
     public virtual List<SpawnEntry> Entries { get; set; } = [];
 
     /// <summary>
+    /// Controls how and when creatures from this group are placed in the world.
+    /// Defaults to <see cref="Models.DistributionMethod.None"/> (cluster at one random waypoint).
+    /// </summary>
+    public DistributionMethod DistributionMethod { get; set; } = DistributionMethod.None;
+
+    /// <summary>
     /// When true, only the mutations listed in <see cref="MutationOverrides"/> are
     /// considered for this group's creatures (using each override's custom chance).
     /// If true but no overrides are defined, no mutations are ever applied.
