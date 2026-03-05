@@ -69,11 +69,6 @@ public class LoreApiService
         await DeleteRequestAsync($"{LoreBase}/{Uri.EscapeDataString(loreId)}");
     }
 
-    public async Task<List<string>> GetCategoriesAsync()
-    {
-        return await GetAsync<List<string>>($"{LoreBase}/categories") ?? new List<string>();
-    }
-
     // ==================== HTTP Helpers ====================
 
     private async Task<(Uri BaseUri, string ApiKey)> ResolveEndpointAsync()

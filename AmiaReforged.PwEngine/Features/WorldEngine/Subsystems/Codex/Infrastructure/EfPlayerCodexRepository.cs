@@ -275,7 +275,7 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
             LoreId = (LoreId)def.LoreId,
             Title = def.Title,
             Content = def.Content,
-            Category = def.Category,
+            Category = (LoreCategory)def.Category,
             Tier = (LoreTier)def.Tier,
             DateDiscovered = unlock.DateDiscovered,
             DiscoveryLocation = unlock.DiscoveryLocation,
@@ -297,7 +297,7 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
             LoreId = (LoreId)def.LoreId,
             Title = def.Title,
             Content = def.Content,
-            Category = def.Category,
+            Category = (LoreCategory)def.Category,
             Tier = (LoreTier)def.Tier,
             DateDiscovered = def.CreatedUtc,
             DiscoveryLocation = null,
@@ -327,7 +327,7 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
             LoreId = lore.LoreId.Value,
             Title = lore.Title,
             Content = lore.Content,
-            Category = lore.Category,
+            Category = (int)lore.Category,
             Tier = (int)lore.Tier,
             Keywords = lore.Keywords.Count > 0
                 ? string.Join(",", lore.Keywords.Select(k => (string)k))

@@ -992,7 +992,7 @@ public class PlayerCodexTests
             LoreId = new LoreId(loreId),
             Title = title,
             Content = $"Content for {title}",
-            Category = "Test Category",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = _testDate
         };
@@ -1005,7 +1005,7 @@ public class PlayerCodexTests
             LoreId = new LoreId(loreId),
             Title = title,
             Content = $"Content for {title}",
-            Category = "Test Category",
+            Category = LoreCategory.History,
             Tier = tier,
             DateDiscovered = _testDate
         };

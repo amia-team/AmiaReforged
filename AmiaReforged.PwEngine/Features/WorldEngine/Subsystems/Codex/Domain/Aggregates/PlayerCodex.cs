@@ -275,7 +275,7 @@ public class PlayerCodex
     /// <summary>
     /// Gets all lore in a specific category
     /// </summary>
-    public IEnumerable<CodexLoreEntry> GetLoreByCategory(string category) =>
+    public IEnumerable<CodexLoreEntry> GetLoreByCategory(LoreCategory category) =>
         _lore.Values.Where(l => l.MatchesCategory(category));
 
     /// <summary>

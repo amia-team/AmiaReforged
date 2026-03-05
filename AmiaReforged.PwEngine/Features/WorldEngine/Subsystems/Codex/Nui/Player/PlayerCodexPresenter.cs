@@ -215,8 +215,8 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
 
         if (_activeCategory == "all")
             entries = await QueryService!.Value.GetAllLoreAsync(cid);
-        else if (Enum.TryParse<LoreTier>(_activeCategory, true, out LoreTier tier))
-            entries = await QueryService!.Value.GetLoreByTierAsync(cid, tier);
+        else if (Enum.TryParse<LoreCategory>(_activeCategory, true, out LoreCategory cat))
+            entries = await QueryService!.Value.GetLoreByCategoryAsync(cid, cat);
         else
             entries = await QueryService!.Value.GetAllLoreAsync(cid);
 
@@ -320,10 +320,17 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
         {
             CodexTab.Knowledge => BuildCategoryColumn(
                 ("All", "all"),
-                ("Common", "common"),
-                ("Uncommon", "uncommon"),
-                ("Rare", "rare"),
-                ("Legendary", "legendary")),
+                ("Arcana", "arcana"),
+                ("Arch & Eng", "architectureandengineering"),
+                ("Dungeoneering", "dungeoneering"),
+                ("Geography", "geography"),
+                ("History", "history"),
+                ("Local", "local"),
+                ("Nature", "nature"),
+                ("Nobility", "nobilityandRoyalty"),
+                ("Religion", "religion"),
+                ("The Planes", "theplanes"),
+                ("OOC", "ooc")),
 
             CodexTab.Quests => BuildCategoryColumn(
                 ("All", "all"),

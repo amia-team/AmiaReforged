@@ -28,10 +28,9 @@ public class PersistedLoreDefinition
     public required string Content { get; set; }
 
     /// <summary>
-    /// Category label (e.g. "History", "Geography", "Religion").
+    /// Integer value of <c>LoreCategory</c> enum (Arcana = 0, ... Ooc = 10).
     /// </summary>
-    [MaxLength(100)]
-    public required string Category { get; set; }
+    public int Category { get; set; }
 
     /// <summary>
     /// Integer value of <c>LoreTier</c> enum (Common = 0, Uncommon = 1, Rare = 2, Legendary = 3).

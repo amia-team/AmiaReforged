@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
 using Anvil;
 using Microsoft.EntityFrameworkCore;
 
@@ -35,14 +36,13 @@ public class LoreController
             query = query.Where(d =>
                 d.LoreId.ToLower().Contains(term) ||
                 d.Title.ToLower().Contains(term) ||
-                d.Category.ToLower().Contains(term) ||
                 (d.Keywords != null && d.Keywords.ToLower().Contains(term)));
         }
 
         if (!string.IsNullOrWhiteSpace(category))
         {
-            string cat = category.Trim();
-            query = query.Where(d => d.Category == cat);
+            if (int.TryParse(category.Trim(), out int catInt))
+                query = query.Where(d => d.Category == catInt);
         }
 
         int totalCount = await query.CountAsync();
@@ -201,12 +201,10 @@ public class LoreController
     [HttpGet(BasePath + "/categories")]
     public static async Task<ApiResult> GetCategories(RouteContext ctx)
     {
-        using var context = ResolveContext();
-        var categories = await context.CodexLoreDefinitions
-            .Select(d => d.Category)
-            .Distinct()
-            .OrderBy(c => c)
-            .ToListAsync();
+        var categories = Enum.GetValues<LoreCategory>()
+            .Select(c => new { id = (int)c, name = c.DisplayName() })
+            .OrderBy(c => c.id)
+            .ToList();
 
         return new ApiResult(200, categories);
     }
@@ -229,8 +227,7 @@ public class LoreController
         if (string.IsNullOrWhiteSpace(dto.Title)) return "Title is required";
         if (dto.Title.Length > 200) return "Title must not exceed 200 characters";
         if (string.IsNullOrWhiteSpace(dto.Content)) return "Content is required";
-        if (string.IsNullOrWhiteSpace(dto.Category)) return "Category is required";
-        if (dto.Category.Length > 100) return "Category must not exceed 100 characters";
+        if (!Enum.IsDefined(typeof(LoreCategory), dto.Category)) return $"Category must be a valid LoreCategory (0–{(int)LoreCategory.Ooc})";
         if (dto.Tier is < 0 or > 3) return "Tier must be between 0 (Common) and 3 (Legendary)";
         if (dto.Keywords is { Length: > 1000 }) return "Keywords must not exceed 1000 characters";
         return null;
@@ -244,6 +241,9 @@ public class LoreController
             def.Title,
             def.Content,
             def.Category,
+            CategoryName = Enum.IsDefined(typeof(LoreCategory), def.Category)
+                ? ((LoreCategory)def.Category).DisplayName()
+                : "Unknown",
             def.Tier,
             def.Keywords,
             def.IsAlwaysAvailable,
@@ -258,7 +258,7 @@ public class LoreController
             LoreId = dto.LoreId.Trim(),
             Title = dto.Title.Trim(),
             Content = dto.Content,
-            Category = dto.Category.Trim(),
+            Category = dto.Category,
             Tier = dto.Tier,
             Keywords = string.IsNullOrWhiteSpace(dto.Keywords) ? null : dto.Keywords.Trim(),
             IsAlwaysAvailable = dto.IsAlwaysAvailable
@@ -274,7 +274,7 @@ public class LoreController
         public string LoreId { get; init; } = string.Empty;
         public string Title { get; init; } = string.Empty;
         public string Content { get; init; } = string.Empty;
-        public string Category { get; init; } = string.Empty;
+        public int Category { get; init; }
         public int Tier { get; init; }
         public string? Keywords { get; init; }
         public bool IsAlwaysAvailable { get; init; }

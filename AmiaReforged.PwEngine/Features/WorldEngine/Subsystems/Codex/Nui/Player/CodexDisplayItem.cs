@@ -29,8 +29,7 @@ public sealed class LoreDisplayItem : ICodexDisplayItem
         get
         {
             string body = _entry.Content;
-            if (!string.IsNullOrEmpty(_entry.Category))
-                body = $"Category: {_entry.Category}\n\n{body}";
+            body = $"Category: {_entry.Category.DisplayName()}\n\n{body}";
             if (!string.IsNullOrEmpty(_entry.DiscoverySource))
                 body += $"\n\nSource: {_entry.DiscoverySource}";
             if (!string.IsNullOrEmpty(_entry.DiscoveryLocation))

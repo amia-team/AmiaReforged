@@ -76,10 +76,17 @@
                     <label>Category</label>
                     <select class="form-control" @bind="_categoryFilter">
                         <option value="">All Categories</option>
-                        @foreach (var cat in _categories)
-                        {
-                            <option value="@cat">@cat</option>
-                        }
+                        <option value="0">Arcana</option>
+                        <option value="1">Architecture &amp; Engineering</option>
+                        <option value="2">Dungeoneering</option>
+                        <option value="3">Geography</option>
+                        <option value="4">History</option>
+                        <option value="5">Local</option>
+                        <option value="6">Nature</option>
+                        <option value="7">Nobility &amp; Royalty</option>
+                        <option value="8">Religion</option>
+                        <option value="9">The Planes</option>
+                        <option value="10">OOC</option>
                     </select>
                 </div>
                 <button class="btn btn-primary btn-sm" @onclick="SearchLore" disabled="@_isLoading">Search</button>
@@ -118,7 +125,7 @@
                             <tr>
                                 <td style="font-family:monospace;font-size:0.9rem">@item.LoreId</td>
                                 <td>@item.Title</td>
-                                <td>@item.Category</td>
+                                <td>@(item.CategoryName ?? GetCategoryName(item.Category))</td>
                                 <td>
                                     <span class="badge @GetTierBadgeClass(item.Tier)">@GetTierName(item.Tier)</span>
                                 </td>
@@ -190,8 +197,19 @@
                 <div class="form-row" style="display:flex;gap:10px">
                     <div class="form-group" style="flex:1">
                         <label>Category</label>
-                        <input class="form-control" @bind="_editItem.Category" maxlength="100"
-                               placeholder="e.g. History, Geography, Religion" />
+                        <select class="form-control" @bind="_editItem.Category">
+                            <option value="0">Arcana</option>
+                            <option value="1">Architecture &amp; Engineering</option>
+                            <option value="2">Dungeoneering</option>
+                            <option value="3">Geography</option>
+                            <option value="4">History</option>
+                            <option value="5">Local</option>
+                            <option value="6">Nature</option>
+                            <option value="7">Nobility &amp; Royalty</option>
+                            <option value="8">Religion</option>
+                            <option value="9">The Planes</option>
+                            <option value="10">OOC</option>
+                        </select>
                     </div>
                     <div class="form-group" style="flex:1">
                         <label>Tier</label>
@@ -266,7 +284,6 @@
 
     // ===== Data =====
     private List<LoreDefinitionDto> _items = [];
-    private List<string> _categories = [];
     private int _totalCount;
     private int _page = 1;
     private int _pageSize = 50;
@@ -316,14 +333,12 @@
             Api.SelectEndpoint(id);
             _page = 1;
             await RefreshLore();
-            await RefreshCategories();
         }
         else
         {
             _selectedEndpoint = null;
             Api.SelectEndpoint(null);
             _items.Clear();
-            _categories.Clear();
         }
     }
 
@@ -351,18 +366,6 @@
         {
             _isLoading = false;
             StateHasChanged();
-        }
-    }
-
-    private async Task RefreshCategories()
-    {
-        try
-        {
-            _categories = await Api.GetCategoriesAsync();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogWarning(ex, "Failed to load categories");
         }
     }
 
@@ -428,7 +431,6 @@
             _success = _isCreating ? $"Lore entry '{_editItem.Title}' created." : $"Lore entry '{_editItem.Title}' updated.";
             _showEditModal = false;
             await RefreshLore();
-            await RefreshCategories();
         }
         catch (Exception ex)
         {
@@ -462,7 +464,6 @@
             _showDeleteConfirm = false;
             _deleteTarget = null;
             await RefreshLore();
-            await RefreshCategories();
         }
         catch (Exception ex)
         {
@@ -494,5 +495,21 @@
         2 => "bg-primary",
         3 => "bg-warning text-dark",
         _ => "bg-secondary"
+    };
+
+    private static string GetCategoryName(int category) => category switch
+    {
+        0 => "Arcana",
+        1 => "Architecture & Engineering",
+        2 => "Dungeoneering",
+        3 => "Geography",
+        4 => "History",
+        5 => "Local",
+        6 => "Nature",
+        7 => "Nobility & Royalty",
+        8 => "Religion",
+        9 => "The Planes",
+        10 => "OOC",
+        _ => "Unknown"
     };
 }

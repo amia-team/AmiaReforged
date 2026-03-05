@@ -177,6 +177,7 @@ public class CodexEventProcessorTests
             Title: "The Fall of Netheril",
             Summary: "Ancient empire that fell due to hubris",
             Source: "Ancient Tome",
+            Category: LoreCategory.History,
             Tier: LoreTier.Common,
             Keywords: keywords
         );
@@ -210,6 +211,7 @@ public class CodexEventProcessorTests
             Title: "Lore 1",
             Summary: "Summary 1",
             Source: "Source 1",
+            Category: LoreCategory.History,
             Tier: LoreTier.Common,
             Keywords: new List<Keyword>()
         );
@@ -220,6 +222,7 @@ public class CodexEventProcessorTests
             Title: "Lore 2",
             Summary: "Summary 2",
             Source: "Source 2",
+            Category: LoreCategory.Arcana,
             Tier: LoreTier.Rare,
             Keywords: new List<Keyword>()
         );
@@ -418,7 +421,7 @@ public class CodexEventProcessorTests
         List<CodexDomainEvent> events = new List<CodexDomainEvent>
         {
             new QuestStartedEvent(_characterId, DateTime.UtcNow, questId, "Quest", "Description"),
-            new LoreDiscoveredEvent(_characterId, DateTime.UtcNow, loreId, "Lore", "Summary", "Source", LoreTier.Common, new List<Keyword>()),
+            new LoreDiscoveredEvent(_characterId, DateTime.UtcNow, loreId, "Lore", "Summary", "Source", LoreCategory.History, LoreTier.Common, new List<Keyword>()),
             new NoteAddedEvent(_characterId, DateTime.UtcNow, noteId, "Note", NoteCategory.General, false, false),
             new ReputationChangedEvent(_characterId, DateTime.UtcNow, factionId, ReputationScore.Parse(10), "Test")
         };

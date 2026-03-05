@@ -25,9 +25,9 @@ public class CodexLoreEntry
     public required string Content { get; init; }
 
     /// <summary>
-    /// Category or source of the lore (e.g., "History", "Geography", "Religion")
+    /// Knowledge-skill category of the lore (e.g. History, Arcana, Religion).
     /// </summary>
-    public required string Category { get; init; }
+    public required LoreCategory Category { get; init; }
 
     /// <summary>
     /// Rarity/importance tier of this lore
@@ -66,7 +66,7 @@ public class CodexLoreEntry
 
         return Title.Contains(lowerSearch, StringComparison.OrdinalIgnoreCase) ||
                Content.Contains(lowerSearch, StringComparison.OrdinalIgnoreCase) ||
-               Category.Contains(lowerSearch, StringComparison.OrdinalIgnoreCase) ||
+               Category.DisplayName().Contains(lowerSearch, StringComparison.OrdinalIgnoreCase) ||
                (DiscoveryLocation?.Contains(lowerSearch, StringComparison.OrdinalIgnoreCase) ?? false) ||
                (DiscoverySource?.Contains(lowerSearch, StringComparison.OrdinalIgnoreCase) ?? false) ||
                Keywords.Any(k => k.Matches(searchTerm));
@@ -80,11 +80,5 @@ public class CodexLoreEntry
     /// <summary>
     /// Checks if the lore entry belongs to the specified category
     /// </summary>
-    public bool MatchesCategory(string category)
-    {
-        if (string.IsNullOrWhiteSpace(category))
-            return false;
-
-        return Category.Equals(category, StringComparison.OrdinalIgnoreCase);
-    }
+    public bool MatchesCategory(LoreCategory category) => Category == category;
 }

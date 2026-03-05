@@ -157,7 +157,7 @@ public class CodexQueryServiceTests
             LoreId = LoreId.NewId(),
             Title = "Lore 1",
             Content = "Content 1",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = DateTime.UtcNow
         };
@@ -166,7 +166,7 @@ public class CodexQueryServiceTests
             LoreId = LoreId.NewId(),
             Title = "Lore 2",
             Content = "Content 2",
-            Category = "Geography",
+            Category = LoreCategory.Geography,
             Tier = LoreTier.Rare,
             DateDiscovered = DateTime.UtcNow
         };
@@ -191,7 +191,7 @@ public class CodexQueryServiceTests
             LoreId = LoreId.NewId(),
             Title = "Common Lore",
             Content = "Common content",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = DateTime.UtcNow
         };
@@ -200,7 +200,7 @@ public class CodexQueryServiceTests
             LoreId = LoreId.NewId(),
             Title = "Rare Lore",
             Content = "Rare content",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Rare,
             DateDiscovered = DateTime.UtcNow
         };
@@ -229,7 +229,7 @@ public class CodexQueryServiceTests
             LoreId = LoreId.NewId(),
             Title = "History Lore",
             Content = "Historical content",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = DateTime.UtcNow
         };
@@ -238,7 +238,7 @@ public class CodexQueryServiceTests
             LoreId = LoreId.NewId(),
             Title = "Geography Lore",
             Content = "Geographical content",
-            Category = "Geography",
+            Category = LoreCategory.Geography,
             Tier = LoreTier.Common,
             DateDiscovered = DateTime.UtcNow
         };
@@ -248,8 +248,8 @@ public class CodexQueryServiceTests
         await _repository.SaveAsync(_codex);
 
         // When
-        IReadOnlyList<CodexLoreEntry> history = await _queryService.GetLoreByCategoryAsync(_characterId, "History");
-        IReadOnlyList<CodexLoreEntry> geography = await _queryService.GetLoreByCategoryAsync(_characterId, "Geography");
+        IReadOnlyList<CodexLoreEntry> history = await _queryService.GetLoreByCategoryAsync(_characterId, LoreCategory.History);
+        IReadOnlyList<CodexLoreEntry> geography = await _queryService.GetLoreByCategoryAsync(_characterId, LoreCategory.Geography);
 
         // Then
         Assert.That(history.Count, Is.EqualTo(1));
@@ -267,7 +267,7 @@ public class CodexQueryServiceTests
             LoreId = LoreId.NewId(),
             Title = "The Ancient Dragons",
             Content = "Dragons ruled the land in ancient times",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = DateTime.UtcNow
         };
@@ -276,7 +276,7 @@ public class CodexQueryServiceTests
             LoreId = LoreId.NewId(),
             Title = "The Elven Kingdoms",
             Content = "Elves established great kingdoms",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = DateTime.UtcNow
         };

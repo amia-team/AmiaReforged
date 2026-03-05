@@ -87,7 +87,7 @@ public class CodexQueryService
     /// </summary>
     public async Task<IReadOnlyList<CodexLoreEntry>> GetLoreByCategoryAsync(
         CharacterId characterId,
-        string category,
+        LoreCategory category,
         CancellationToken cancellationToken = default)
     {
         PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);

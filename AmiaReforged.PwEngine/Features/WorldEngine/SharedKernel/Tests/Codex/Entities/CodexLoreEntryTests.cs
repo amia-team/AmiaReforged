@@ -27,7 +27,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_001"),
             Title = "The Ancient Dragon Wars",
             Content = "Long ago, dragons ruled the skies...",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = _testDate
         };
@@ -36,7 +36,7 @@ public class CodexLoreEntryTests
         Assert.That(lore.LoreId.Value, Is.EqualTo("lore_001"));
         Assert.That(lore.Title, Is.EqualTo("The Ancient Dragon Wars"));
         Assert.That(lore.Content, Is.EqualTo("Long ago, dragons ruled the skies..."));
-        Assert.That(lore.Category, Is.EqualTo("History"));
+        Assert.That(lore.Category, Is.EqualTo(LoreCategory.History));
         Assert.That(lore.Tier, Is.EqualTo(LoreTier.Common));
         Assert.That(lore.DateDiscovered, Is.EqualTo(_testDate));
     }
@@ -50,7 +50,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_002"),
             Title = "The Lost City",
             Content = "A magnificent city that vanished...",
-            Category = "Geography",
+            Category = LoreCategory.Geography,
             Tier = LoreTier.Rare,
             DateDiscovered = _testDate,
             DiscoveryLocation = "Ancient Library",
@@ -73,7 +73,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_003"),
             Title = "Simple Lore",
             Content = "Simple content",
-            Category = "General",
+            Category = LoreCategory.Arcana,
             Tier = LoreTier.Common,
             DateDiscovered = _testDate
         };
@@ -92,7 +92,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_common"),
             Title = "Common Knowledge",
             Content = "Everyone knows this",
-            Category = "General",
+            Category = LoreCategory.Arcana,
             Tier = LoreTier.Common,
             DateDiscovered = _testDate
         };
@@ -102,7 +102,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_uncommon"),
             Title = "Uncommon Knowledge",
             Content = "Some know this",
-            Category = "General",
+            Category = LoreCategory.Arcana,
             Tier = LoreTier.Uncommon,
             DateDiscovered = _testDate
         };
@@ -112,7 +112,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_rare"),
             Title = "Rare Knowledge",
             Content = "Few know this",
-            Category = "General",
+            Category = LoreCategory.Arcana,
             Tier = LoreTier.Rare,
             DateDiscovered = _testDate
         };
@@ -122,7 +122,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_legendary"),
             Title = "Legendary Knowledge",
             Content = "Almost no one knows this",
-            Category = "General",
+            Category = LoreCategory.Arcana,
             Tier = LoreTier.Legendary,
             DateDiscovered = _testDate
         };
@@ -147,7 +147,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_004"),
             Title = "The Ancient Dragon Wars",
             Content = "Content here",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = _testDate
         };
@@ -167,7 +167,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_005"),
             Title = "Simple Title",
             Content = "Long ago, the legendary heroes fought against the darkness",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = _testDate
         };
@@ -187,7 +187,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_006"),
             Title = "Test",
             Content = "Test content",
-            Category = "Geography",
+            Category = LoreCategory.Geography,
             Tier = LoreTier.Common,
             DateDiscovered = _testDate
         };
@@ -206,7 +206,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_007"),
             Title = "Test",
             Content = "Test content",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = _testDate,
             DiscoveryLocation = "Ancient Library"
@@ -226,7 +226,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_008"),
             Title = "Test",
             Content = "Test content",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = _testDate,
             DiscoverySource = "Dusty Tome"
@@ -246,7 +246,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_009"),
             Title = "Test",
             Content = "Test content",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = _testDate,
             Keywords = new List<Keyword> { new Keyword("dragons"), new Keyword("magic") }
@@ -266,7 +266,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_010"),
             Title = "Simple Title",
             Content = "Simple content",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = _testDate
         };
@@ -285,7 +285,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_011"),
             Title = "Test",
             Content = "Test content",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = _testDate,
             DiscoveryLocation = null
@@ -304,7 +304,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_012"),
             Title = "Test",
             Content = "Test content",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = _testDate,
             DiscoverySource = null
@@ -323,7 +323,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_013"),
             Title = "Test",
             Content = "Test content",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = _testDate
         };
@@ -342,7 +342,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_014"),
             Title = "Test",
             Content = "Test content",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = _testDate
         };
@@ -360,7 +360,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_015"),
             Title = "The ANCIENT Dragon Wars",
             Content = "legendary content here",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = _testDate,
             DiscoveryLocation = "Ancient LIBRARY",
@@ -387,7 +387,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_016"),
             Title = "Test",
             Content = "Test content",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Rare,
             DateDiscovered = _testDate
         };
@@ -405,7 +405,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_017"),
             Title = "Test",
             Content = "Test content",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = _testDate
         };
@@ -424,7 +424,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_018"),
             Title = "Common",
             Content = "Content",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = _testDate
         };
@@ -434,7 +434,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_019"),
             Title = "Uncommon",
             Content = "Content",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Uncommon,
             DateDiscovered = _testDate
         };
@@ -444,7 +444,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_020"),
             Title = "Rare",
             Content = "Content",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Rare,
             DateDiscovered = _testDate
         };
@@ -454,7 +454,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_021"),
             Title = "Legendary",
             Content = "Content",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Legendary,
             DateDiscovered = _testDate
         };
@@ -471,7 +471,7 @@ public class CodexLoreEntryTests
     #region MatchesCategory Tests
 
     [Test]
-    public void MatchesCategory_WithExactMatch_ReturnsTrue()
+    public void MatchesCategory_WithMatchingCategory_ReturnsTrue()
     {
         // Arrange
         CodexLoreEntry lore = new CodexLoreEntry
@@ -479,34 +479,13 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_022"),
             Title = "Test",
             Content = "Test content",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = _testDate
         };
 
         // Act & Assert
-        Assert.That(lore.MatchesCategory("History"), Is.True);
-    }
-
-    [Test]
-    public void MatchesCategory_IsCaseInsensitive()
-    {
-        // Arrange
-        CodexLoreEntry lore = new CodexLoreEntry
-        {
-            LoreId = new LoreId("lore_023"),
-            Title = "Test",
-            Content = "Test content",
-            Category = "Geography",
-            Tier = LoreTier.Common,
-            DateDiscovered = _testDate
-        };
-
-        // Act & Assert
-        Assert.That(lore.MatchesCategory("geography"), Is.True);
-        Assert.That(lore.MatchesCategory("GEOGRAPHY"), Is.True);
-        Assert.That(lore.MatchesCategory("Geography"), Is.True);
-        Assert.That(lore.MatchesCategory("gEoGrApHy"), Is.True);
+        Assert.That(lore.MatchesCategory(LoreCategory.History), Is.True);
     }
 
     [Test]
@@ -515,73 +494,41 @@ public class CodexLoreEntryTests
         // Arrange
         CodexLoreEntry lore = new CodexLoreEntry
         {
-            LoreId = new LoreId("lore_024"),
+            LoreId = new LoreId("lore_023"),
             Title = "Test",
             Content = "Test content",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = _testDate
         };
 
         // Act & Assert
-        Assert.That(lore.MatchesCategory("Geography"), Is.False);
-        Assert.That(lore.MatchesCategory("Religion"), Is.False);
+        Assert.That(lore.MatchesCategory(LoreCategory.Geography), Is.False);
+        Assert.That(lore.MatchesCategory(LoreCategory.Religion), Is.False);
     }
 
     [Test]
-    public void MatchesCategory_WithEmptyString_ReturnsFalse()
+    public void MatchesCategory_WithAllCategories_MatchesCorrectly()
     {
-        // Arrange
-        CodexLoreEntry lore = new CodexLoreEntry
+        // Arrange & Act & Assert
+        foreach (LoreCategory cat in Enum.GetValues<LoreCategory>())
         {
-            LoreId = new LoreId("lore_025"),
-            Title = "Test",
-            Content = "Test content",
-            Category = "History",
-            Tier = LoreTier.Common,
-            DateDiscovered = _testDate
-        };
+            CodexLoreEntry lore = new CodexLoreEntry
+            {
+                LoreId = new LoreId($"lore_cat_{(int)cat}"),
+                Title = "Test",
+                Content = "Test content",
+                Category = cat,
+                Tier = LoreTier.Common,
+                DateDiscovered = _testDate
+            };
 
-        // Act & Assert
-        Assert.That(lore.MatchesCategory(""), Is.False);
-        Assert.That(lore.MatchesCategory("   "), Is.False);
-    }
+            Assert.That(lore.MatchesCategory(cat), Is.True, $"Category {cat} should match itself");
 
-    [Test]
-    public void MatchesCategory_WithNullString_ReturnsFalse()
-    {
-        // Arrange
-        CodexLoreEntry lore = new CodexLoreEntry
-        {
-            LoreId = new LoreId("lore_026"),
-            Title = "Test",
-            Content = "Test content",
-            Category = "History",
-            Tier = LoreTier.Common,
-            DateDiscovered = _testDate
-        };
-
-        // Act & Assert
-        Assert.That(lore.MatchesCategory(null!), Is.False);
-    }
-
-    [Test]
-    public void MatchesCategory_WithPartialMatch_ReturnsFalse()
-    {
-        // Arrange
-        CodexLoreEntry lore = new CodexLoreEntry
-        {
-            LoreId = new LoreId("lore_027"),
-            Title = "Test",
-            Content = "Test content",
-            Category = "History",
-            Tier = LoreTier.Common,
-            DateDiscovered = _testDate
-        };
-
-        // Act & Assert
-        Assert.That(lore.MatchesCategory("Hist"), Is.False);
-        Assert.That(lore.MatchesCategory("story"), Is.False);
+            // Pick a different category to verify mismatch
+            LoreCategory other = cat == LoreCategory.Arcana ? LoreCategory.History : LoreCategory.Arcana;
+            Assert.That(lore.MatchesCategory(other), Is.False, $"Category {cat} should not match {other}");
+        }
     }
 
     #endregion
@@ -597,7 +544,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_028"),
             Title = "Test",
             Content = "Test content",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = _testDate,
             DiscoveryLocation = null,
@@ -620,7 +567,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_029"),
             Title = "Test",
             Content = "Test content",
-            Category = "History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = _testDate,
             Keywords = new List<Keyword>()
@@ -639,7 +586,7 @@ public class CodexLoreEntryTests
             LoreId = new LoreId("lore_030"),
             Title = "Dragon",
             Content = "Dragon lore",
-            Category = "Dragon History",
+            Category = LoreCategory.History,
             Tier = LoreTier.Common,
             DateDiscovered = _testDate,
             DiscoveryLocation = "Dragon Cave",

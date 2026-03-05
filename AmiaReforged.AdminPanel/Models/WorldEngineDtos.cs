@@ -171,7 +171,8 @@ public class LoreDefinitionDto
     public string LoreId { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
-    public string Category { get; set; } = string.Empty;
+    public int Category { get; set; }
+    public string? CategoryName { get; set; }
     public int Tier { get; set; }
     public string? Keywords { get; set; }
     public bool IsAlwaysAvailable { get; set; }

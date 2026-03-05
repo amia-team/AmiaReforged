@@ -217,7 +217,7 @@ public class CodexEventProcessor
             LoreId = evt.LoreId,
             Title = evt.Title,
             Content = evt.Summary,
-            Category = evt.Source,
+            Category = evt.Category,
             Tier = evt.Tier,
             DateDiscovered = evt.OccurredAt,
             DiscoverySource = evt.Source,

@@ -11,6 +11,7 @@ public sealed record LoreDiscoveredEvent(
     string Title,
     string Summary,
     string Source,
+    LoreCategory Category,
     LoreTier Tier,
     IReadOnlyList<Keyword> Keywords
 ) : CodexDomainEvent(CharacterId, OccurredAt);
