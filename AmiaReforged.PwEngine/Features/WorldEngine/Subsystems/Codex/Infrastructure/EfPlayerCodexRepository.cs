@@ -5,6 +5,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Aggrega
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Repositories;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using NLog;
@@ -13,8 +14,9 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Infrastruc
 
 /// <summary>
 /// EF Core implementation of <see cref="IPlayerCodexRepository"/>.
-/// Persists notes to the <c>codex_notes</c> table. Quest, lore, and reputation
-/// data remains in-memory until their own tables are created.
+/// Persists notes to <c>codex_notes</c> and lore to <c>codex_lore_definitions</c> /
+/// <c>codex_lore_unlocks</c>. Quest and reputation data remains in-memory until
+/// their own tables are created.
 /// </summary>
 [ServiceBinding(typeof(IPlayerCodexRepository))]
 public class EfPlayerCodexRepository : IPlayerCodexRepository
@@ -27,8 +29,12 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
         _factory = factory;
     }
 
+    // ═══════════════════════════════════════════════════════════════════
+    //  Load
+    // ═══════════════════════════════════════════════════════════════════
+
     /// <summary>
-    /// Loads a player's codex, hydrating notes from the database.
+    /// Loads a player's codex, hydrating notes and lore from the database.
     /// </summary>
     public async Task<PlayerCodex?> LoadAsync(CharacterId characterId, CancellationToken cancellationToken = default)
     {
@@ -36,21 +42,43 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
         {
             using PwEngineContext context = _factory.CreateDbContext();
 
-            List<PersistedCodexNote> rows = await context.CodexNotes
+            // ── Notes ──
+            List<PersistedCodexNote> noteRows = await context.CodexNotes
                 .Where(n => n.CharacterId == characterId.Value)
                 .ToListAsync(cancellationToken);
 
-            if (rows.Count == 0)
+            // ── Lore unlocks (with definition eagerly loaded) ──
+            List<PersistedLoreUnlock> loreRows = await context.CodexLoreUnlocks
+                .Include(u => u.LoreDefinition)
+                .Where(u => u.CharacterId == characterId.Value)
+                .ToListAsync(cancellationToken);
+
+            if (noteRows.Count == 0 && loreRows.Count == 0)
                 return null;
 
-            // Determine creation date from the earliest note
-            DateTime earliest = rows.Min(r => r.CreatedUtc);
+            // Determine creation date from the earliest persisted record
+            DateTime earliest = DateTime.UtcNow;
+            if (noteRows.Count > 0)
+                earliest = noteRows.Min(r => r.CreatedUtc);
+            if (loreRows.Count > 0)
+            {
+                DateTime loreEarliest = loreRows.Min(r => r.DateDiscovered);
+                if (loreEarliest < earliest) earliest = loreEarliest;
+            }
+
             PlayerCodex codex = new(characterId, earliest);
 
-            foreach (PersistedCodexNote row in rows)
+            foreach (PersistedCodexNote row in noteRows)
             {
-                CodexNoteEntry note = ToDomain(row);
+                CodexNoteEntry note = NoteToDomain(row);
                 codex.AddNote(note, row.CreatedUtc);
+            }
+
+            foreach (PersistedLoreUnlock row in loreRows)
+            {
+                if (row.LoreDefinition is null) continue;
+                CodexLoreEntry lore = LoreToDomain(row.LoreDefinition, row);
+                codex.RecordLoreDiscovered(lore, row.DateDiscovered);
             }
 
             return codex;
@@ -62,8 +90,12 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════════
+    //  Save
+    // ═══════════════════════════════════════════════════════════════════
+
     /// <summary>
-    /// Saves a player's codex, upserting all notes to the database.
+    /// Saves a player's codex, upserting notes and lore to the database.
     /// </summary>
     public async Task SaveAsync(PlayerCodex codex, CancellationToken cancellationToken = default)
     {
@@ -71,38 +103,8 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
         {
             using PwEngineContext context = _factory.CreateDbContext();
 
-            // Load existing note IDs for this character
-            HashSet<Guid> existingIds = (await context.CodexNotes
-                    .Where(n => n.CharacterId == codex.OwnerId.Value)
-                    .Select(n => n.Id)
-                    .ToListAsync(cancellationToken))
-                .ToHashSet();
-
-            HashSet<Guid> domainIds = codex.Notes.Select(n => n.Id).ToHashSet();
-
-            // Delete notes removed from the aggregate
-            List<Guid> toDelete = existingIds.Except(domainIds).ToList();
-            if (toDelete.Count > 0)
-            {
-                await context.CodexNotes
-                    .Where(n => toDelete.Contains(n.Id))
-                    .ExecuteDeleteAsync(cancellationToken);
-            }
-
-            // Upsert each note
-            foreach (CodexNoteEntry note in codex.Notes)
-            {
-                PersistedCodexNote entity = ToEntity(note, codex.OwnerId);
-
-                if (existingIds.Contains(note.Id))
-                {
-                    context.CodexNotes.Update(entity);
-                }
-                else
-                {
-                    context.CodexNotes.Add(entity);
-                }
-            }
+            await SaveNotesAsync(context, codex, cancellationToken);
+            await SaveLoreAsync(context, codex, cancellationToken);
 
             await context.SaveChangesAsync(cancellationToken);
         }
@@ -112,9 +114,95 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
         }
     }
 
-    // ── Mapping helpers ──
+    // ── Notes persistence ──
 
-    private static CodexNoteEntry ToDomain(PersistedCodexNote row)
+    private static async Task SaveNotesAsync(
+        PwEngineContext context, PlayerCodex codex, CancellationToken ct)
+    {
+        HashSet<Guid> existingIds = (await context.CodexNotes
+                .Where(n => n.CharacterId == codex.OwnerId.Value)
+                .Select(n => n.Id)
+                .ToListAsync(ct))
+            .ToHashSet();
+
+        HashSet<Guid> domainIds = codex.Notes.Select(n => n.Id).ToHashSet();
+
+        // Delete notes removed from the aggregate
+        List<Guid> toDelete = existingIds.Except(domainIds).ToList();
+        if (toDelete.Count > 0)
+        {
+            await context.CodexNotes
+                .Where(n => toDelete.Contains(n.Id))
+                .ExecuteDeleteAsync(ct);
+        }
+
+        // Upsert each note
+        foreach (CodexNoteEntry note in codex.Notes)
+        {
+            PersistedCodexNote entity = NoteToEntity(note, codex.OwnerId);
+
+            if (existingIds.Contains(note.Id))
+                context.CodexNotes.Update(entity);
+            else
+                context.CodexNotes.Add(entity);
+        }
+    }
+
+    // ── Lore persistence ──
+
+    private static async Task SaveLoreAsync(
+        PwEngineContext context, PlayerCodex codex, CancellationToken ct)
+    {
+        // Existing unlock lore IDs for this character
+        HashSet<string> existingUnlockIds = (await context.CodexLoreUnlocks
+                .Where(u => u.CharacterId == codex.OwnerId.Value)
+                .Select(u => u.LoreId)
+                .ToListAsync(ct))
+            .ToHashSet();
+
+        HashSet<string> domainLoreIds = codex.Lore.Select(l => l.LoreId.Value).ToHashSet();
+
+        // Remove unlocks that are no longer in the aggregate
+        List<string> toRemove = existingUnlockIds.Except(domainLoreIds).ToList();
+        if (toRemove.Count > 0)
+        {
+            await context.CodexLoreUnlocks
+                .Where(u => u.CharacterId == codex.OwnerId.Value && toRemove.Contains(u.LoreId))
+                .ExecuteDeleteAsync(ct);
+        }
+
+        // Upsert definitions and unlocks
+        HashSet<string> existingDefIds = (await context.CodexLoreDefinitions
+                .Select(d => d.LoreId)
+                .ToListAsync(ct))
+            .ToHashSet();
+
+        foreach (CodexLoreEntry lore in codex.Lore)
+        {
+            (PersistedLoreDefinition def, PersistedLoreUnlock unlock) = LoreToEntities(lore, codex.OwnerId);
+
+            // Upsert global definition (may already exist from another player)
+            if (existingDefIds.Contains(def.LoreId))
+                context.CodexLoreDefinitions.Update(def);
+            else
+            {
+                context.CodexLoreDefinitions.Add(def);
+                existingDefIds.Add(def.LoreId);
+            }
+
+            // Upsert unlock record
+            if (existingUnlockIds.Contains(lore.LoreId.Value))
+                context.CodexLoreUnlocks.Update(unlock);
+            else
+                context.CodexLoreUnlocks.Add(unlock);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Mapping helpers — Notes
+    // ═══════════════════════════════════════════════════════════════════
+
+    private static CodexNoteEntry NoteToDomain(PersistedCodexNote row)
     {
         return new CodexNoteEntry(
             id: row.Id,
@@ -127,7 +215,7 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
         );
     }
 
-    private static PersistedCodexNote ToEntity(CodexNoteEntry note, CharacterId ownerId)
+    private static PersistedCodexNote NoteToEntity(CodexNoteEntry note, CharacterId ownerId)
     {
         return new PersistedCodexNote
         {
@@ -141,5 +229,67 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
             CreatedUtc = note.DateCreated,
             ModifiedUtc = note.LastModified
         };
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Mapping helpers — Lore
+    // ═══════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Merges a global lore definition with a per-player unlock to produce a
+    /// <see cref="CodexLoreEntry"/> domain object.
+    /// </summary>
+    private static CodexLoreEntry LoreToDomain(PersistedLoreDefinition def, PersistedLoreUnlock unlock)
+    {
+        List<Keyword> keywords = string.IsNullOrWhiteSpace(def.Keywords)
+            ? []
+            : def.Keywords.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(k => (Keyword)k)
+                .ToList();
+
+        return new CodexLoreEntry
+        {
+            LoreId = (LoreId)def.LoreId,
+            Title = def.Title,
+            Content = def.Content,
+            Category = def.Category,
+            Tier = (LoreTier)def.Tier,
+            DateDiscovered = unlock.DateDiscovered,
+            DiscoveryLocation = unlock.DiscoveryLocation,
+            DiscoverySource = unlock.DiscoverySource,
+            Keywords = keywords
+        };
+    }
+
+    /// <summary>
+    /// Splits a <see cref="CodexLoreEntry"/> domain object back into a global definition
+    /// entity and a per-player unlock entity.
+    /// </summary>
+    private static (PersistedLoreDefinition Def, PersistedLoreUnlock Unlock) LoreToEntities(
+        CodexLoreEntry lore, CharacterId ownerId)
+    {
+        PersistedLoreDefinition def = new()
+        {
+            LoreId = lore.LoreId.Value,
+            Title = lore.Title,
+            Content = lore.Content,
+            Category = lore.Category,
+            Tier = (int)lore.Tier,
+            Keywords = lore.Keywords.Count > 0
+                ? string.Join(",", lore.Keywords.Select(k => (string)k))
+                : null,
+            CreatedUtc = DateTime.UtcNow
+        };
+
+        PersistedLoreUnlock unlock = new()
+        {
+            CharacterId = ownerId.Value,
+            LoreId = lore.LoreId.Value,
+            DateDiscovered = lore.DateDiscovered,
+            DiscoveryLocation = lore.DiscoveryLocation,
+            DiscoverySource = lore.DiscoverySource
+        };
+
+        return (def, unlock);
     }
 }

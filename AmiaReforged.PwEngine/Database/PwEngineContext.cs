@@ -117,6 +117,8 @@ public class PwEngineContext : DbContext
     // === Codex ===
 
     public DbSet<PersistedCodexNote> CodexNotes { get; set; } = null!;
+    public DbSet<PersistedLoreDefinition> CodexLoreDefinitions { get; set; } = null!;
+    public DbSet<PersistedLoreUnlock> CodexLoreUnlocks { get; set; } = null!;
 
     // === World Engine Definition Management ===
 
@@ -213,6 +215,8 @@ public class PwEngineContext : DbContext
 
         // Codex
         modelBuilder.ApplyConfiguration(new PersistedCodexNoteConfiguration());
+        modelBuilder.ApplyConfiguration(new PersistedLoreDefinitionConfiguration());
+        modelBuilder.ApplyConfiguration(new PersistedLoreUnlockConfiguration());
 
         // World Engine Definition Management
         modelBuilder.ApplyConfiguration(new PersistedItemBlueprintConfiguration());
