@@ -32,12 +32,6 @@ public class DynamicEncounterService
     private const string CooldownStartVar = "dyn_cooldown_start";
     private const string CooldownActiveVar = "dyn_on_cooldown";
 
-    /// <summary>
-    /// Area-level cooldown vars for OnAreaEnter distribution (uses area instead of trigger).
-    /// </summary>
-    private const string AreaCooldownStartVar = "dyn_area_cooldown_start";
-    private const string AreaCooldownActiveVar = "dyn_area_on_cooldown";
-
     private readonly ISpawnProfileRepository _repository;
     private readonly IRegionSubsystem _regionSubsystem;
     private readonly DynamicCreatureSpawner _spawner;
@@ -225,8 +219,8 @@ public class DynamicEncounterService
 
     /// <summary>
     /// Area OnEnter handler for <see cref="DistributionMethod.OnAreaEnter"/> groups.
-    /// Fires independently of spawn triggers — creatures are placed at any <c>ds_spwn</c>
-    /// waypoint in the area.
+    /// Iterates every <c>db_spawntrigger</c> in the area, checks per-trigger cooldowns,
+    /// and spawns eligible OnAreaEnter groups at each trigger's <c>ds_spwn</c> waypoints.
     /// </summary>
     private void OnAreaEnter(AreaEvents.OnEnter obj)
     {
@@ -246,21 +240,37 @@ public class DynamicEncounterService
         // Check no_spawn
         if (NWScript.GetLocalInt(area, "no_spawn") == NWScript.TRUE) return;
 
-        // Area-level cooldown (separate from trigger cooldowns)
-        if (IsAreaCooldownActive(area, profile.CooldownSeconds))
+        // Find all db_spawntrigger triggers in this area
+        List<NwTrigger> areaTriggers = NwObject.FindObjectsWithTag<NwTrigger>("db_spawntrigger")
+            .Where(t => t.Area == area)
+            .ToList();
+
+        if (areaTriggers.Count == 0)
         {
-            Log.Debug("Area '{AreaResRef}': OnAreaEnter cooldown active.", areaResRef);
+            Log.Debug("Area '{AreaResRef}': no db_spawntrigger triggers found for OnAreaEnter.", areaResRef);
             return;
         }
 
-        EncounterContext context = BuildContextForArea(area, player, profile);
+        int triggersSpawned = 0;
+        foreach (NwTrigger trigger in areaTriggers)
+        {
+            // Per-trigger cooldown — same mechanism as normal trigger spawns
+            if (IsDynamicCooldownActive(trigger, profile.CooldownSeconds))
+                continue;
 
-        _spawner.SpawnAreaEnterEncounter(area, profile, context);
+            EncounterContext context = BuildContext(trigger, area, player, profile);
 
-        InitAreaCooldown(area, profile.CooldownSeconds);
+            bool spawned = _spawner.SpawnAreaEnterEncounter(trigger, profile, context);
+            if (!spawned) continue;
 
-        Log.Info("Area-enter spawn fired for profile '{Name}' in area '{Area}'.",
-            profile.Name, areaResRef);
+            // Set cooldown and flag so legacy system doesn't double-fire
+            InitDynamicCooldown(trigger, profile.CooldownSeconds);
+            NWScript.SetLocalInt(trigger, DynamicHandledFlag, NWScript.TRUE);
+            triggersSpawned++;
+        }
+
+        Log.Info("Area-enter spawn fired for profile '{Name}' in area '{Area}': {Count}/{Total} triggers spawned.",
+            profile.Name, areaResRef, triggersSpawned, areaTriggers.Count);
     }
 
     /// <summary>
@@ -357,46 +367,6 @@ public class DynamicEncounterService
         };
     }
 
-    /// <summary>
-    /// Builds context for area-enter events (no trigger available).
-    /// </summary>
-    private EncounterContext BuildContextForArea(NwArea area, NwPlayer player, SpawnProfile profile)
-    {
-        int partySize = player.PartyMembers
-            .Count(pm => pm.LoginCreature?.Area == area);
-
-        int hour = NWScript.GetTimeHour();
-        int minute = NWScript.GetTimeMinute();
-        TimeSpan gameTime = new(hour, minute, 0);
-
-        bool isInRegion = _regionSubsystem.IsAreaInRegion(area.ResRef);
-
-        ChaosState chaos = isInRegion
-            ? _regionSubsystem.GetChaosForAreaAsync(area.ResRef).GetAwaiter().GetResult()
-            : ChaosState.Default;
-
-        string? regionTag = isInRegion
-            ? _regionSubsystem.GetRegionTagForArea(area.ResRef)
-            : null;
-
-        IntPtr playerLocation = player.LoginCreature != null
-            ? NWScript.GetLocation(player.LoginCreature)
-            : IntPtr.Zero;
-
-        return new EncounterContext
-        {
-            AreaResRef = area.ResRef,
-            PartySize = partySize,
-            GameTime = gameTime,
-            Chaos = chaos,
-            RegionTag = regionTag,
-            IsInRegion = isInRegion,
-            Trigger = null,
-            Area = area,
-            PlayerLocation = playerLocation
-        };
-    }
-
     private static bool IsDynamicCooldownActive(NwTrigger trigger, int cooldownSeconds)
     {
         if (NWScript.GetLocalInt(trigger, CooldownActiveVar) != CooldownFlagVar)
@@ -413,29 +383,5 @@ public class DynamicEncounterService
         NWScript.SetLocalInt(trigger, CooldownActiveVar, CooldownFlagVar);
         NWScript.DelayCommand(cooldownSeconds,
             () => NWScript.SetLocalInt(trigger, CooldownActiveVar, NWScript.FALSE));
-    }
-
-    /// <summary>
-    /// Checks area-level cooldown for OnAreaEnter distribution.
-    /// </summary>
-    private static bool IsAreaCooldownActive(NwArea area, int cooldownSeconds)
-    {
-        if (NWScript.GetLocalInt(area, AreaCooldownActiveVar) != CooldownFlagVar)
-            return false;
-
-        int startTime = NWScript.GetLocalInt(area, AreaCooldownStartVar);
-        int now = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
-        return now - startTime <= cooldownSeconds;
-    }
-
-    /// <summary>
-    /// Initialises area-level cooldown for OnAreaEnter distribution.
-    /// </summary>
-    private static void InitAreaCooldown(NwArea area, int cooldownSeconds)
-    {
-        NWScript.SetLocalInt(area, AreaCooldownStartVar, (int)DateTimeOffset.Now.ToUnixTimeSeconds());
-        NWScript.SetLocalInt(area, AreaCooldownActiveVar, CooldownFlagVar);
-        NWScript.DelayCommand(cooldownSeconds,
-            () => NWScript.SetLocalInt(area, AreaCooldownActiveVar, NWScript.FALSE));
     }
 }

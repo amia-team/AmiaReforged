@@ -117,11 +117,13 @@ public class DynamicCreatureSpawner
     }
 
     /// <summary>
-    /// Executes the dynamic encounter spawn for an area-enter event (no trigger).
-    /// All eligible groups with <see cref="DistributionMethod.OnAreaEnter"/> are spawned.
+    /// Executes the dynamic encounter spawn for an area-enter event at a specific trigger.
+    /// All eligible groups with <see cref="DistributionMethod.OnAreaEnter"/> are spawned
+    /// at the trigger's <c>ds_spwn</c> waypoints.
+    /// Returns true if any creatures were spawned.
     /// </summary>
-    public void SpawnAreaEnterEncounter(
-        NwArea area,
+    public bool SpawnAreaEnterEncounter(
+        NwTrigger trigger,
         SpawnProfile profile,
         EncounterContext context)
     {
@@ -130,20 +132,21 @@ public class DynamicCreatureSpawner
             g => g.DistributionMethod == DistributionMethod.OnAreaEnter);
         if (groups.Count == 0)
         {
-            Log.Debug("No eligible OnAreaEnter groups for profile '{Name}'. Skipping area spawn.",
+            Log.Debug("No eligible OnAreaEnter groups for profile '{Name}'. Skipping trigger spawn.",
                 profile.Name);
-            return;
+            return false;
         }
 
-        // Get all ds_spwn waypoints in the area (shared across all groups)
-        List<IntPtr> areaLocations = GetAreaWideSpawnLocations(area);
-        if (areaLocations.Count == 0)
+        // Get ds_spwn waypoints inside this trigger
+        List<IntPtr> locations = GetAllSpawnLocations(trigger);
+        if (locations.Count == 0)
         {
-            Log.Warn("No ds_spwn waypoints found in area for OnAreaEnter profile '{Name}'.", profile.Name);
-            return;
+            Log.Debug("No ds_spwn waypoints in trigger for OnAreaEnter profile '{Name}'.", profile.Name);
+            return false;
         }
 
         IReadOnlyList<SpawnBonus> activeBonuses = profile.Bonuses.Where(b => b.IsActive).ToList();
+        bool anySpawned = false;
 
         foreach (SpawnGroup group in groups)
         {
@@ -158,15 +161,19 @@ public class DynamicCreatureSpawner
             Log.Info("Area-enter spawn: profile='{Name}', group='{GroupName}', count={Count}, area={Area}",
                 profile.Name, group.Name, scaledCount, profile.AreaResRef);
 
-            // Spawn distributed across area waypoints
-            List<uint> spawned = SpawnCreaturesDistributed(group, scaledCount, areaLocations, profile.DespawnSeconds);
+            // Spawn distributed across the trigger's waypoints
+            List<uint> spawned = SpawnCreaturesDistributed(group, scaledCount, locations, profile.DespawnSeconds);
 
             foreach (uint creature in spawned)
             {
                 _bonusApplicator.ApplyBonuses(creature, activeBonuses, context.Chaos);
                 _mutationApplicator.TryApplyMutation(creature, context.Chaos, group);
             }
+
+            if (spawned.Count > 0) anySpawned = true;
         }
+
+        return anySpawned;
     }
 
     /// <summary>
@@ -492,28 +499,6 @@ public class DynamicCreatureSpawner
             uint nearest = NWScript.GetNearestObjectByTag(SpawnWaypointTag, trigger);
             if (nearest != NWScript.OBJECT_INVALID)
                 locations.Add(NWScript.GetLocation(nearest));
-        }
-
-        return locations;
-    }
-
-    /// <summary>
-    /// Returns all <c>ds_spwn</c> waypoint locations anywhere in the area.
-    /// Used by <see cref="DistributionMethod.OnAreaEnter"/> which is not trigger-bound.
-    /// </summary>
-    internal static List<IntPtr> GetAreaWideSpawnLocations(NwArea area)
-    {
-        List<IntPtr> locations = [];
-
-        // Iterate all objects in the area with the spawn waypoint tag
-        int idx = 1;
-        uint wp = NWScript.GetObjectByTag(SpawnWaypointTag, idx - 1);
-        while (wp != NWScript.OBJECT_INVALID)
-        {
-            if (NWScript.GetArea(wp) == area)
-                locations.Add(NWScript.GetLocation(wp));
-            wp = NWScript.GetObjectByTag(SpawnWaypointTag, idx);
-            idx++;
         }
 
         return locations;
