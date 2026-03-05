@@ -88,6 +88,37 @@ public class SpawnGroupSelector
     }
 
     /// <summary>
+    /// Returns ALL eligible spawn groups from the profile whose conditions are met,
+    /// optionally filtered by a predicate. Groups are returned ordered by specificity
+    /// (most conditions first, then generic). Returns an empty list if no groups match.
+    /// </summary>
+    public List<SpawnGroup> SelectAllGroups(SpawnProfile profile, EncounterContext context,
+        Func<SpawnGroup, bool>? filter = null)
+    {
+        IEnumerable<SpawnGroup> candidates = profile.SpawnGroups;
+        if (filter != null)
+            candidates = candidates.Where(filter);
+
+        List<SpawnGroup> eligible = candidates
+            .Where(g => _evaluator.AllConditionsMet(g.Conditions, context))
+            .OrderByDescending(g => g.Conditions.Count)
+            .ToList();
+
+        if (eligible.Count == 0)
+        {
+            Log.Debug("No eligible spawn groups for profile '{Name}' (area {Area}).",
+                profile.Name, profile.AreaResRef);
+        }
+        else
+        {
+            Log.Debug("Found {Count} eligible group(s) for profile '{Name}' (area {Area}).",
+                eligible.Count, profile.Name, profile.AreaResRef);
+        }
+
+        return eligible;
+    }
+
+    /// <summary>
     /// Picks one group from the list using weighted random selection based on <see cref="SpawnGroup.Weight"/>.
     /// </summary>
     private static SpawnGroup WeightedRandomSelect(List<SpawnGroup> groups)

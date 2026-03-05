@@ -56,54 +56,60 @@ public class DynamicCreatureSpawner
 
     /// <summary>
     /// Executes the dynamic encounter spawn for a trigger with the given profile and context.
+    /// All eligible groups (whose conditions are met) are spawned — not just one.
+    /// Mini-boss and boss are rolled once regardless of group count.
     /// </summary>
     public void SpawnEncounter(
         NwTrigger trigger,
         SpawnProfile profile,
         EncounterContext context)
     {
-        // Select a group (filter to trigger-based distribution methods only)
-        SpawnGroup? group = _groupSelector.SelectGroup(profile, context,
+        // Select ALL eligible groups (filter out OnAreaEnter — those fire via area enter)
+        List<SpawnGroup> groups = _groupSelector.SelectAllGroups(profile, context,
             g => g.DistributionMethod != DistributionMethod.OnAreaEnter);
-        if (group == null)
+        if (groups.Count == 0)
         {
-            Log.Debug("No eligible spawn group selected for profile '{Name}'. Skipping dynamic spawn.",
+            Log.Debug("No eligible spawn groups for profile '{Name}'. Skipping dynamic spawn.",
                 profile.Name);
             return;
         }
 
-        // Calculate spawn count, scaled by chaos density
-        int baseCount = CalculateBaseSpawnCount(group);
-        int scaledCount = ScaleByDensity(baseCount, context.Chaos.Density);
-        if (context.PartySize > 6) scaledCount *= 2; // Double spawns for large parties
-
-        // Enforce profile-level spawn cap (mini-boss is exempt)
-        if (profile.MaxTotalSpawns.HasValue)
-            scaledCount = Math.Min(scaledCount, profile.MaxTotalSpawns.Value);
-
-        Log.Info("Dynamic spawn: profile='{Name}', group='{GroupName}', method={Method}, count={Count} (base={Base}, cap={Cap}), area={Area}",
-            profile.Name, group.Name, group.DistributionMethod, scaledCount, baseCount,
-            profile.MaxTotalSpawns?.ToString() ?? "none", profile.AreaResRef);
-
-        // Spawn creatures using distribution method
-        List<uint> spawned = SpawnWithDistribution(group, scaledCount, trigger, context, profile.DespawnSeconds);
-
-        // Apply profile bonuses and attempt mutation
         IReadOnlyList<SpawnBonus> activeBonuses = profile.Bonuses.Where(b => b.IsActive).ToList();
-        foreach (uint creature in spawned)
+
+        foreach (SpawnGroup group in groups)
         {
-            _bonusApplicator.ApplyBonuses(creature, activeBonuses, context.Chaos);
-            _mutationApplicator.TryApplyMutation(creature, context.Chaos, group);
+            // Calculate spawn count, scaled by chaos density
+            int baseCount = CalculateBaseSpawnCount(group);
+            int scaledCount = ScaleByDensity(baseCount, context.Chaos.Density);
+            if (context.PartySize > 6) scaledCount *= 2; // Double spawns for large parties
+
+            // Enforce profile-level spawn cap (mini-boss is exempt)
+            if (profile.MaxTotalSpawns.HasValue)
+                scaledCount = Math.Min(scaledCount, profile.MaxTotalSpawns.Value);
+
+            Log.Info("Dynamic spawn: profile='{Name}', group='{GroupName}', method={Method}, count={Count} (base={Base}, cap={Cap}), area={Area}",
+                profile.Name, group.Name, group.DistributionMethod, scaledCount, baseCount,
+                profile.MaxTotalSpawns?.ToString() ?? "none", profile.AreaResRef);
+
+            // Spawn creatures using distribution method
+            List<uint> spawned = SpawnWithDistribution(group, scaledCount, trigger, context, profile.DespawnSeconds);
+
+            // Apply profile bonuses and attempt mutation
+            foreach (uint creature in spawned)
+            {
+                _bonusApplicator.ApplyBonuses(creature, activeBonuses, context.Chaos);
+                _mutationApplicator.TryApplyMutation(creature, context.Chaos, group);
+            }
         }
 
-        // Mini-boss (use first available spawn location for placement)
+        // Mini-boss (use first available spawn location for placement) — rolled once
         IntPtr miniBossLocation = GetRandomSpawnLocation(trigger);
         if (profile.MiniBoss != null && miniBossLocation != IntPtr.Zero)
         {
             TrySpawnMiniBoss(profile.MiniBoss, miniBossLocation, profile.DespawnSeconds, context.Chaos);
         }
 
-        // Boss (from boss pool)
+        // Boss (from boss pool) — rolled once
         if (profile.BossSpawnChancePercent > 0 && profile.BossConfigs.Count > 0)
         {
             TrySpawnBoss(profile, context, trigger, profile.DespawnSeconds);
@@ -112,35 +118,24 @@ public class DynamicCreatureSpawner
 
     /// <summary>
     /// Executes the dynamic encounter spawn for an area-enter event (no trigger).
-    /// Only considers groups with <see cref="DistributionMethod.OnAreaEnter"/>.
+    /// All eligible groups with <see cref="DistributionMethod.OnAreaEnter"/> are spawned.
     /// </summary>
     public void SpawnAreaEnterEncounter(
         NwArea area,
         SpawnProfile profile,
         EncounterContext context)
     {
-        // Select a group (only OnAreaEnter groups)
-        SpawnGroup? group = _groupSelector.SelectGroup(profile, context,
+        // Select ALL eligible OnAreaEnter groups
+        List<SpawnGroup> groups = _groupSelector.SelectAllGroups(profile, context,
             g => g.DistributionMethod == DistributionMethod.OnAreaEnter);
-        if (group == null)
+        if (groups.Count == 0)
         {
-            Log.Debug("No eligible OnAreaEnter group for profile '{Name}'. Skipping area spawn.",
+            Log.Debug("No eligible OnAreaEnter groups for profile '{Name}'. Skipping area spawn.",
                 profile.Name);
             return;
         }
 
-        // Calculate spawn count, scaled by chaos density
-        int baseCount = CalculateBaseSpawnCount(group);
-        int scaledCount = ScaleByDensity(baseCount, context.Chaos.Density);
-        if (context.PartySize > 6) scaledCount *= 2;
-
-        if (profile.MaxTotalSpawns.HasValue)
-            scaledCount = Math.Min(scaledCount, profile.MaxTotalSpawns.Value);
-
-        Log.Info("Area-enter spawn: profile='{Name}', group='{GroupName}', count={Count}, area={Area}",
-            profile.Name, group.Name, scaledCount, profile.AreaResRef);
-
-        // Get all ds_spwn waypoints in the area
+        // Get all ds_spwn waypoints in the area (shared across all groups)
         List<IntPtr> areaLocations = GetAreaWideSpawnLocations(area);
         if (areaLocations.Count == 0)
         {
@@ -148,14 +143,29 @@ public class DynamicCreatureSpawner
             return;
         }
 
-        // Spawn distributed across area waypoints
-        List<uint> spawned = SpawnCreaturesDistributed(group, scaledCount, areaLocations, profile.DespawnSeconds);
-
         IReadOnlyList<SpawnBonus> activeBonuses = profile.Bonuses.Where(b => b.IsActive).ToList();
-        foreach (uint creature in spawned)
+
+        foreach (SpawnGroup group in groups)
         {
-            _bonusApplicator.ApplyBonuses(creature, activeBonuses, context.Chaos);
-            _mutationApplicator.TryApplyMutation(creature, context.Chaos, group);
+            // Calculate spawn count, scaled by chaos density
+            int baseCount = CalculateBaseSpawnCount(group);
+            int scaledCount = ScaleByDensity(baseCount, context.Chaos.Density);
+            if (context.PartySize > 6) scaledCount *= 2;
+
+            if (profile.MaxTotalSpawns.HasValue)
+                scaledCount = Math.Min(scaledCount, profile.MaxTotalSpawns.Value);
+
+            Log.Info("Area-enter spawn: profile='{Name}', group='{GroupName}', count={Count}, area={Area}",
+                profile.Name, group.Name, scaledCount, profile.AreaResRef);
+
+            // Spawn distributed across area waypoints
+            List<uint> spawned = SpawnCreaturesDistributed(group, scaledCount, areaLocations, profile.DespawnSeconds);
+
+            foreach (uint creature in spawned)
+            {
+                _bonusApplicator.ApplyBonuses(creature, activeBonuses, context.Chaos);
+                _mutationApplicator.TryApplyMutation(creature, context.Chaos, group);
+            }
         }
     }
 

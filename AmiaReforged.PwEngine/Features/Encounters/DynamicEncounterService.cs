@@ -98,6 +98,7 @@ public class DynamicEncounterService
 
     /// <summary>
     /// Refreshes the cached profile for a given area. Call after API create/update/delete/activate.
+    /// Also refreshes area-enter subscriptions in case group distribution methods changed.
     /// </summary>
     public async Task RefreshProfileCacheAsync(string areaResRef)
     {
@@ -110,6 +111,8 @@ public class DynamicEncounterService
         {
             _profileCache.Remove(areaResRef);
         }
+
+        RefreshAreaEnterSubscriptions();
     }
 
     /// <summary>
