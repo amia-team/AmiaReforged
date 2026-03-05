@@ -22,10 +22,20 @@ public class CodexEventProcessor
     private readonly CancellationTokenSource _cts;
     private Task? _processingTask;
 
-    public CodexEventProcessor(IPlayerCodexRepository repository, Channel<CodexDomainEvent>? channel = null)
+    public CodexEventProcessor(IPlayerCodexRepository repository)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
-        _eventChannel = channel ?? Channel.CreateUnbounded<CodexDomainEvent>();
+        _eventChannel = Channel.CreateUnbounded<CodexDomainEvent>();
+        _cts = new CancellationTokenSource();
+    }
+
+    /// <summary>
+    /// Internal constructor for testing that allows injecting a custom channel
+    /// </summary>
+    internal CodexEventProcessor(IPlayerCodexRepository repository, Channel<CodexDomainEvent> channel)
+    {
+        _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+        _eventChannel = channel ?? throw new ArgumentNullException(nameof(channel));
         _cts = new CancellationTokenSource();
     }
 
