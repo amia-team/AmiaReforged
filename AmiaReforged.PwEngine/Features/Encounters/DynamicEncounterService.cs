@@ -32,6 +32,13 @@ public class DynamicEncounterService
     private const string CooldownStartVar = "dyn_cooldown_start";
     private const string CooldownActiveVar = "dyn_on_cooldown";
 
+    /// <summary>
+    /// Area-level flag that indicates OnAreaEnter groups have already been spawned.
+    /// Prevents re-spawning when subsequent triggers fire in the same area.
+    /// Reset when the cooldown expires via <see cref="NWScript.DelayCommand"/>.
+    /// </summary>
+    private const string AreaEnterSpawnedFlag = "dyn_area_enter_spawned";
+
     private readonly ISpawnProfileRepository _repository;
     private readonly IRegionSubsystem _regionSubsystem;
     private readonly DynamicCreatureSpawner _spawner;
@@ -41,11 +48,6 @@ public class DynamicEncounterService
     /// Refreshed at startup; profiles activated/deactivated via API update this cache.
     /// </summary>
     private readonly Dictionary<string, SpawnProfile> _profileCache = new(StringComparer.OrdinalIgnoreCase);
-
-    /// <summary>
-    /// Tracks which areas we have subscribed to OnEnter for area-enter distribution groups.
-    /// </summary>
-    private readonly HashSet<string> _areaEnterSubscriptions = new(StringComparer.OrdinalIgnoreCase);
 
     public DynamicEncounterService(
         ISpawnProfileRepository repository,
@@ -84,15 +86,11 @@ public class DynamicEncounterService
             trigger.OnEnter += OnBossTriggerEnter;
         }
 
-        // Subscribe to area OnEnter for profiles that have OnAreaEnter groups
-        RefreshAreaEnterSubscriptions();
-
         Log.Info("Dynamic encounter service initialized.");
     }
 
     /// <summary>
     /// Refreshes the cached profile for a given area. Call after API create/update/delete/activate.
-    /// Also refreshes area-enter subscriptions in case group distribution methods changed.
     /// </summary>
     public async Task RefreshProfileCacheAsync(string areaResRef)
     {
@@ -105,8 +103,6 @@ public class DynamicEncounterService
         {
             _profileCache.Remove(areaResRef);
         }
-
-        RefreshAreaEnterSubscriptions();
     }
 
     /// <summary>
@@ -121,51 +117,7 @@ public class DynamicEncounterService
             _profileCache[profile.AreaResRef] = profile;
         }
 
-        RefreshAreaEnterSubscriptions();
-
         Log.Info("Dynamic encounter cache refreshed: {Count} active profiles.", _profileCache.Count);
-    }
-
-    /// <summary>
-    /// Scans the profile cache for profiles that have at least one group with
-    /// <see cref="DistributionMethod.OnAreaEnter"/> and subscribes to the
-    /// corresponding area's OnEnter event. Existing subscriptions are preserved
-    /// and stale ones cleaned up.
-    /// </summary>
-    private void RefreshAreaEnterSubscriptions()
-    {
-        HashSet<string> neededResRefs = new(StringComparer.OrdinalIgnoreCase);
-
-        foreach ((string areaResRef, SpawnProfile profile) in _profileCache)
-        {
-            if (profile.SpawnGroups.Any(g => g.DistributionMethod == DistributionMethod.OnAreaEnter))
-            {
-                neededResRefs.Add(areaResRef);
-            }
-        }
-
-        // Subscribe to new areas
-        foreach (string resRef in neededResRefs)
-        {
-            if (_areaEnterSubscriptions.Contains(resRef)) continue;
-
-            NwArea? area = NwObject.FindObjectsOfType<NwArea>()
-                .FirstOrDefault(a => string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
-
-            if (area == null)
-            {
-                Log.Debug("Area '{ResRef}' not found in module for OnAreaEnter subscription.", resRef);
-                continue;
-            }
-
-            area.OnEnter += OnAreaEnter;
-            _areaEnterSubscriptions.Add(resRef);
-            Log.Info("Subscribed to area OnEnter for '{ResRef}' (OnAreaEnter distribution).", resRef);
-        }
-
-        // Note: we do not unsubscribe stale ones because NWN area objects may be
-        // reloaded / the event handlers are lightweight no-ops when no profile matches.
-        // Tracking is primarily to avoid duplicate subscriptions.
     }
 
     private void OnTriggerEnter(TriggerEvents.OnEnter obj)
@@ -195,11 +147,19 @@ public class DynamicEncounterService
         // Check no_spawn
         if (NWScript.GetLocalInt(area, "no_spawn") == NWScript.TRUE) return;
 
-        // Check dynamic cooldown
+        // ── OnAreaEnter groups: pre-populate ALL triggers in the area on first entry ──
+        bool hasAreaEnterGroups = profile.SpawnGroups
+            .Any(g => g.DistributionMethod == DistributionMethod.OnAreaEnter);
+
+        if (hasAreaEnterGroups && NWScript.GetLocalInt(area, AreaEnterSpawnedFlag) != CooldownFlagVar)
+        {
+            SpawnOnAreaEnterGroups(area, player, profile);
+        }
+
+        // ── Trigger-local groups (non-OnAreaEnter) at this specific trigger ──
         if (IsDynamicCooldownActive(obj.Trigger, profile.CooldownSeconds))
         {
             player.SendServerMessage("You see signs of recent fighting here.");
-            // Flag as handled so legacy doesn't double-fire
             NWScript.SetLocalInt(obj.Trigger, DynamicHandledFlag, NWScript.TRUE);
             return;
         }
@@ -207,7 +167,7 @@ public class DynamicEncounterService
         // Build encounter context
         EncounterContext context = BuildContext(obj.Trigger, area, player, profile);
 
-        // Execute dynamic spawn
+        // Execute dynamic spawn (non-OnAreaEnter groups only)
         _spawner.SpawnEncounter(obj.Trigger, profile, context);
 
         // Set cooldown
@@ -218,59 +178,46 @@ public class DynamicEncounterService
     }
 
     /// <summary>
-    /// Area OnEnter handler for <see cref="DistributionMethod.OnAreaEnter"/> groups.
-    /// Iterates every <c>db_spawntrigger</c> in the area, checks per-trigger cooldowns,
-    /// and spawns eligible OnAreaEnter groups at each trigger's <c>ds_spwn</c> waypoints.
+    /// Spawns <see cref="DistributionMethod.OnAreaEnter"/> groups at every
+    /// <c>db_spawntrigger</c> in the area. Called once per area cooldown cycle
+    /// on the first trigger entry. Sets an area-level flag and cooldown so
+    /// subsequent trigger entries (or other players) don't re-spawn.
     /// </summary>
-    private void OnAreaEnter(AreaEvents.OnEnter obj)
+    private void SpawnOnAreaEnterGroups(NwArea area, NwPlayer player, SpawnProfile profile)
     {
-        if (!obj.EnteringObject.IsPlayerControlled(out NwPlayer? player)) return;
-        if (player.IsDM || player.IsPlayerDM) return;
-
-        NwArea area = obj.Area;
-        string areaResRef = area.ResRef;
-
-        if (!_profileCache.TryGetValue(areaResRef, out SpawnProfile? profile)) return;
-
-        // Only proceed if the profile has OnAreaEnter groups
-        bool hasAreaEnterGroups = profile.SpawnGroups
-            .Any(g => g.DistributionMethod == DistributionMethod.OnAreaEnter);
-        if (!hasAreaEnterGroups) return;
-
-        // Check no_spawn
-        if (NWScript.GetLocalInt(area, "no_spawn") == NWScript.TRUE) return;
-
-        // Find all db_spawntrigger triggers in this area
         List<NwTrigger> areaTriggers = NwObject.FindObjectsWithTag<NwTrigger>("db_spawntrigger")
             .Where(t => t.Area == area)
             .ToList();
 
         if (areaTriggers.Count == 0)
         {
-            Log.Debug("Area '{AreaResRef}': no db_spawntrigger triggers found for OnAreaEnter.", areaResRef);
+            Log.Debug("Area '{AreaResRef}': no db_spawntrigger triggers found for OnAreaEnter.", area.ResRef);
             return;
         }
+
+        // Mark area as spawned immediately to prevent races with other players
+        NWScript.SetLocalInt(area, AreaEnterSpawnedFlag, CooldownFlagVar);
 
         int triggersSpawned = 0;
         foreach (NwTrigger trigger in areaTriggers)
         {
-            // Per-trigger cooldown — same mechanism as normal trigger spawns
-            if (IsDynamicCooldownActive(trigger, profile.CooldownSeconds))
-                continue;
-
             EncounterContext context = BuildContext(trigger, area, player, profile);
 
             bool spawned = _spawner.SpawnAreaEnterEncounter(trigger, profile, context);
             if (!spawned) continue;
 
-            // Set cooldown and flag so legacy system doesn't double-fire
+            // Set per-trigger cooldown so normal trigger-enter doesn't double-fire
             InitDynamicCooldown(trigger, profile.CooldownSeconds);
             NWScript.SetLocalInt(trigger, DynamicHandledFlag, NWScript.TRUE);
             triggersSpawned++;
         }
 
-        Log.Info("Area-enter spawn fired for profile '{Name}' in area '{Area}': {Count}/{Total} triggers spawned.",
-            profile.Name, areaResRef, triggersSpawned, areaTriggers.Count);
+        // Schedule area flag reset after cooldown so the area can re-spawn later
+        NWScript.DelayCommand(profile.CooldownSeconds,
+            () => NWScript.SetLocalInt(area, AreaEnterSpawnedFlag, NWScript.FALSE));
+
+        Log.Info("OnAreaEnter spawn for profile '{Name}' in area '{Area}': {Count}/{Total} triggers spawned.",
+            profile.Name, area.ResRef, triggersSpawned, areaTriggers.Count);
     }
 
     /// <summary>
