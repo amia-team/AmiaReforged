@@ -1,0 +1,498 @@
+@page "/worldengine/lore"
+@using Microsoft.AspNetCore.Authorization
+@using AmiaReforged.AdminPanel.Models
+@using AmiaReforged.AdminPanel.Services
+@attribute [Authorize]
+@inject LoreApiService Api
+@inject IWorldEngineEndpointService EndpointService
+@inject ILogger<Lore> Logger
+@rendermode InteractiveServer
+
+<PageTitle>Codex Lore - World Engine</PageTitle>
+
+<div class="encounters-page">
+    <div class="dashboard-header">
+        <h1>Codex Lore Definitions</h1>
+        <div class="header-actions">
+            @if (_endpoints.Count > 0)
+            {
+                <div class="instance-selector">
+                    <label class="instance-label">Server:</label>
+                    <select class="form-control form-control-sm" value="@(_selectedEndpoint?.Id.ToString() ?? "")" @onchange="OnEndpointChanged">
+                        <option value="">— Select —</option>
+                        @foreach (var ep in _endpoints)
+                        {
+                            <option value="@ep.Id">@ep.Name</option>
+                        }
+                    </select>
+                </div>
+            }
+            @if (_selectedEndpoint != null)
+            {
+                <button class="btn btn-secondary btn-sm" @onclick="RefreshLore">Refresh</button>
+                <button class="btn btn-primary btn-sm" @onclick="ShowCreateModal">+ New Lore Entry</button>
+            }
+            <a href="/" class="btn btn-secondary btn-sm">← Dashboard</a>
+        </div>
+    </div>
+
+    @if (_error != null)
+    {
+        <div class="alert alert-danger">@_error <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _error = null">Dismiss</button></div>
+    }
+    @if (_success != null)
+    {
+        <div class="alert alert-success">@_success <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _success = null">Dismiss</button></div>
+    }
+
+    @if (_selectedEndpoint == null)
+    {
+        <div class="section" style="text-align:center;padding:60px 20px">
+            @if (_endpoints.Count == 0)
+            {
+                <p style="color:var(--text-secondary);font-size:1.1rem">
+                    No WorldEngine servers configured. Go to
+                    <a href="/encounters">Encounters</a> to add one.
+                </p>
+            }
+            else
+            {
+                <p style="color:var(--text-secondary);font-size:1.1rem">Select a server from the dropdown above to manage codex lore definitions.</p>
+            }
+        </div>
+    }
+
+    @* ===== Search & Filter ===== *@
+    @if (_selectedEndpoint != null)
+    {
+        <div class="section" style="margin-bottom:20px">
+            <div class="form-row" style="display:flex;gap:10px;align-items:end">
+                <div class="form-group" style="flex:1">
+                    <label>Search</label>
+                    <input class="form-control" @bind="_searchTerm" @bind:event="oninput"
+                           placeholder="Search by ID, title, category, or keywords..." />
+                </div>
+                <div class="form-group" style="width:200px">
+                    <label>Category</label>
+                    <select class="form-control" @bind="_categoryFilter">
+                        <option value="">All Categories</option>
+                        @foreach (var cat in _categories)
+                        {
+                            <option value="@cat">@cat</option>
+                        }
+                    </select>
+                </div>
+                <button class="btn btn-primary btn-sm" @onclick="SearchLore" disabled="@_isLoading">Search</button>
+            </div>
+        </div>
+
+        @* ===== Lore Table ===== *@
+        @if (_isLoading)
+        {
+            <div class="section" style="text-align:center;padding:40px"><em>Loading...</em></div>
+        }
+        else if (_items.Count == 0)
+        {
+            <div class="section" style="text-align:center;padding:40px">
+                <p style="color:var(--text-secondary)">No lore definitions found.</p>
+            </div>
+        }
+        else
+        {
+            <div class="section">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Lore ID</th>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th>Tier</th>
+                            <th>Always Available</th>
+                            <th>Keywords</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in _items)
+                        {
+                            <tr>
+                                <td style="font-family:monospace;font-size:0.9rem">@item.LoreId</td>
+                                <td>@item.Title</td>
+                                <td>@item.Category</td>
+                                <td>
+                                    <span class="badge @GetTierBadgeClass(item.Tier)">@GetTierName(item.Tier)</span>
+                                </td>
+                                <td>
+                                    @if (item.IsAlwaysAvailable)
+                                    {
+                                        <span class="badge bg-info">Yes</span>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:var(--text-secondary)">No</span>
+                                    }
+                                </td>
+                                <td style="color:var(--text-secondary);font-size:0.85rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                                    @(item.Keywords ?? "—")
+                                </td>
+                                <td class="actions">
+                                    <button class="btn btn-sm btn-secondary" @onclick="() => ShowEditModal(item)">Edit</button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(item)">Delete</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                @* Pagination *@
+                @if (_totalCount > _pageSize)
+                {
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+                        <span style="color:var(--text-secondary);font-size:0.9rem">
+                            Showing @((_page - 1) * _pageSize + 1)–@(Math.Min(_page * _pageSize, _totalCount)) of @_totalCount
+                        </span>
+                        <div style="display:flex;gap:5px">
+                            <button class="btn btn-sm btn-secondary" disabled="@(_page <= 1)" @onclick="PrevPage">← Prev</button>
+                            <button class="btn btn-sm btn-secondary" disabled="@(_page * _pageSize >= _totalCount)" @onclick="NextPage">Next →</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+
+    @* ===== Create / Edit Modal ===== *@
+    @if (_showEditModal)
+    {
+        <div class="modal-backdrop" @onclick="CloseEditModal">
+        <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:700px;max-height:85vh;overflow-y:auto;margin:5vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+            <h2>@(_isCreating ? "Create Lore Definition" : $"Edit: {_editItem.Title}")</h2>
+
+            <div style="display:flex;flex-direction:column;gap:12px;margin-top:15px">
+                <div class="form-group">
+                    <label>Lore ID <small style="color:var(--text-secondary)">(unique identifier, max 100 chars)</small></label>
+                    <input class="form-control" @bind="_editItem.LoreId" maxlength="100" disabled="@(!_isCreating)"
+                           placeholder="e.g. lore_ancient_wars" />
+                </div>
+
+                <div class="form-group">
+                    <label>Title</label>
+                    <input class="form-control" @bind="_editItem.Title" maxlength="200"
+                           placeholder="e.g. The Ancient Dragon Wars" />
+                </div>
+
+                <div class="form-group">
+                    <label>Content</label>
+                    <textarea class="form-control" rows="8" @bind="_editItem.Content"
+                              placeholder="Full lore entry body text..."></textarea>
+                </div>
+
+                <div class="form-row" style="display:flex;gap:10px">
+                    <div class="form-group" style="flex:1">
+                        <label>Category</label>
+                        <input class="form-control" @bind="_editItem.Category" maxlength="100"
+                               placeholder="e.g. History, Geography, Religion" />
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Tier</label>
+                        <select class="form-control" @bind="_editItem.Tier">
+                            <option value="0">Common</option>
+                            <option value="1">Uncommon</option>
+                            <option value="2">Rare</option>
+                            <option value="3">Legendary</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Keywords <small style="color:var(--text-secondary)">(comma-separated, for search/filtering)</small></label>
+                    <input class="form-control" @bind="_editItem.Keywords"
+                           placeholder="e.g. dragons, war, ancient" />
+                </div>
+
+                <div class="form-check" style="margin-top:5px">
+                    <input class="form-check-input" type="checkbox" id="alwaysAvailable" @bind="_editItem.IsAlwaysAvailable" />
+                    <label class="form-check-label" for="alwaysAvailable">
+                        Always Available
+                        <small style="color:var(--text-secondary);display:block">
+                            When enabled, this entry is visible to all players without needing to be unlocked (e.g. server rules, OOC information).
+                        </small>
+                    </label>
+                </div>
+
+                <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px">
+                    <button class="btn btn-secondary" @onclick="CloseEditModal">Cancel</button>
+                    <button class="btn btn-primary" @onclick="SaveLore" disabled="@_isSaving">
+                        @(_isSaving ? "Saving..." : _isCreating ? "Create" : "Save Changes")
+                    </button>
+                </div>
+            </div>
+        </div>
+        </div>
+    }
+
+    @* ===== Delete Confirmation Modal ===== *@
+    @if (_showDeleteConfirm)
+    {
+        <div class="modal-backdrop" @onclick="() => _showDeleteConfirm = false">
+        <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:500px;margin:20vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+            <h2>Confirm Delete</h2>
+            <p>Are you sure you want to delete <strong>@(_deleteTarget?.Title ?? "")</strong>?</p>
+            <p style="color:var(--text-secondary);font-size:0.9rem">This will also remove all player unlock records for this entry.</p>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+                <button class="btn btn-secondary" @onclick="() => _showDeleteConfirm = false">Cancel</button>
+                <button class="btn btn-danger" @onclick="DeleteLore" disabled="@_isSaving">
+                    @(_isSaving ? "Deleting..." : "Delete")
+                </button>
+            </div>
+        </div>
+        </div>
+    }
+</div>
+
+<style>
+    .modal-backdrop {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 1040;
+    }
+</style>
+
+@code {
+    // ===== Endpoint State =====
+    private List<WorldEngineEndpoint> _endpoints = [];
+    private WorldEngineEndpoint? _selectedEndpoint;
+
+    // ===== Data =====
+    private List<LoreDefinitionDto> _items = [];
+    private List<string> _categories = [];
+    private int _totalCount;
+    private int _page = 1;
+    private int _pageSize = 50;
+    private string _searchTerm = "";
+    private string _categoryFilter = "";
+
+    // ===== UI State =====
+    private bool _isLoading;
+    private bool _isSaving;
+    private string? _error;
+    private string? _success;
+
+    // ===== Edit Modal =====
+    private bool _showEditModal;
+    private bool _isCreating;
+    private LoreDefinitionDto _editItem = new();
+
+    // ===== Delete Confirmation =====
+    private bool _showDeleteConfirm;
+    private LoreDefinitionDto? _deleteTarget;
+
+    // ===== Lifecycle =====
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshEndpoints();
+    }
+
+    // ===== Endpoint Handling =====
+
+    private async Task RefreshEndpoints()
+    {
+        var all = await EndpointService.GetAllEndpointsAsync();
+        _endpoints = all.Where(e => e.IsEnabled).ToList();
+
+        if (_selectedEndpoint != null && !_endpoints.Any(e => e.Id == _selectedEndpoint.Id))
+            _selectedEndpoint = null;
+
+        StateHasChanged();
+    }
+
+    private async Task OnEndpointChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
+            Api.SelectEndpoint(id);
+            _page = 1;
+            await RefreshLore();
+            await RefreshCategories();
+        }
+        else
+        {
+            _selectedEndpoint = null;
+            Api.SelectEndpoint(null);
+            _items.Clear();
+            _categories.Clear();
+        }
+    }
+
+    // ===== Data Loading =====
+
+    private async Task RefreshLore()
+    {
+        if (_selectedEndpoint == null) return;
+        _isLoading = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            var result = await Api.GetAllAsync(_searchTerm, _categoryFilter, _page, _pageSize);
+            _items = result.Items;
+            _totalCount = result.TotalCount;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to load lore definitions");
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshCategories()
+    {
+        try
+        {
+            _categories = await Api.GetCategoriesAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load categories");
+        }
+    }
+
+    private async Task SearchLore()
+    {
+        _page = 1;
+        await RefreshLore();
+    }
+
+    private async Task PrevPage()
+    {
+        if (_page > 1) { _page--; await RefreshLore(); }
+    }
+
+    private async Task NextPage()
+    {
+        if (_page * _pageSize < _totalCount) { _page++; await RefreshLore(); }
+    }
+
+    // ===== Create / Edit Modal =====
+
+    private void ShowCreateModal()
+    {
+        _isCreating = true;
+        _editItem = new LoreDefinitionDto();
+        _showEditModal = true;
+    }
+
+    private void ShowEditModal(LoreDefinitionDto item)
+    {
+        _isCreating = false;
+        _editItem = new LoreDefinitionDto
+        {
+            LoreId = item.LoreId,
+            Title = item.Title,
+            Content = item.Content,
+            Category = item.Category,
+            Tier = item.Tier,
+            Keywords = item.Keywords,
+            IsAlwaysAvailable = item.IsAlwaysAvailable,
+            CreatedUtc = item.CreatedUtc
+        };
+        _showEditModal = true;
+    }
+
+    private void CloseEditModal()
+    {
+        _showEditModal = false;
+        _editItem = new();
+    }
+
+    private async Task SaveLore()
+    {
+        _isSaving = true;
+        _error = null;
+        try
+        {
+            if (_isCreating)
+                await Api.CreateAsync(_editItem);
+            else
+                await Api.UpdateAsync(_editItem.LoreId, _editItem);
+
+            _success = _isCreating ? $"Lore entry '{_editItem.Title}' created." : $"Lore entry '{_editItem.Title}' updated.";
+            _showEditModal = false;
+            await RefreshLore();
+            await RefreshCategories();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to save lore definition");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    // ===== Delete =====
+
+    private void ConfirmDelete(LoreDefinitionDto item)
+    {
+        _deleteTarget = item;
+        _showDeleteConfirm = true;
+    }
+
+    private async Task DeleteLore()
+    {
+        if (_deleteTarget == null) return;
+        _isSaving = true;
+        _error = null;
+        try
+        {
+            await Api.DeleteAsync(_deleteTarget.LoreId);
+            _success = $"Deleted lore entry '{_deleteTarget.Title}'.";
+            _showDeleteConfirm = false;
+            _deleteTarget = null;
+            await RefreshLore();
+            await RefreshCategories();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to delete lore definition");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    // ===== Tier Display Helpers =====
+
+    private static string GetTierName(int tier) => tier switch
+    {
+        0 => "Common",
+        1 => "Uncommon",
+        2 => "Rare",
+        3 => "Legendary",
+        _ => "Unknown"
+    };
+
+    private static string GetTierBadgeClass(int tier) => tier switch
+    {
+        0 => "bg-secondary",
+        1 => "bg-success",
+        2 => "bg-primary",
+        3 => "bg-warning text-dark",
+        _ => "bg-secondary"
+    };
+}

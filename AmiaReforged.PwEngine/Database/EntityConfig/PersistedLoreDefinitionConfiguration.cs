@@ -43,6 +43,10 @@ public sealed class PersistedLoreDefinitionConfiguration : IEntityTypeConfigurat
             .HasColumnName("keywords")
             .HasMaxLength(1000);
 
+        builder.Property(d => d.IsAlwaysAvailable)
+            .HasColumnName("is_always_available")
+            .HasDefaultValue(false);
+
         builder.Property(d => d.CreatedUtc)
             .HasColumnName("created_utc")
             .HasDefaultValueSql("CURRENT_TIMESTAMP");
@@ -54,5 +58,9 @@ public sealed class PersistedLoreDefinitionConfiguration : IEntityTypeConfigurat
         // Index for filtering by tier
         builder.HasIndex(d => d.Tier)
             .HasDatabaseName("codex_lore_definitions_tier_idx");
+
+        // Index for loading always-available entries efficiently
+        builder.HasIndex(d => d.IsAlwaysAvailable)
+            .HasDatabaseName("codex_lore_definitions_always_available_idx");
     }
 }

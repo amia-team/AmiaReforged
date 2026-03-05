@@ -45,6 +45,12 @@ public class PersistedLoreDefinition
     public string? Keywords { get; set; }
 
     /// <summary>
+    /// When <c>true</c>, this lore entry is visible to every player without
+    /// requiring an unlock record (e.g. server rules, OOC information).
+    /// </summary>
+    public bool IsAlwaysAvailable { get; set; }
+
+    /// <summary>
     /// UTC timestamp when the definition was first persisted.
     /// </summary>
     public DateTime CreatedUtc { get; set; }

@@ -53,7 +53,17 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
                 .Where(u => u.CharacterId == characterId.Value)
                 .ToListAsync(cancellationToken);
 
-            if (noteRows.Count == 0 && loreRows.Count == 0)
+            // ── Always-available definitions (no unlock record needed) ──
+            HashSet<string> unlockedIds = loreRows
+                .Where(r => r.LoreDefinition is not null)
+                .Select(r => r.LoreId)
+                .ToHashSet();
+
+            List<PersistedLoreDefinition> alwaysAvailable = await context.CodexLoreDefinitions
+                .Where(d => d.IsAlwaysAvailable && !unlockedIds.Contains(d.LoreId))
+                .ToListAsync(cancellationToken);
+
+            if (noteRows.Count == 0 && loreRows.Count == 0 && alwaysAvailable.Count == 0)
                 return null;
 
             // Determine creation date from the earliest persisted record
@@ -79,6 +89,13 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
                 if (row.LoreDefinition is null) continue;
                 CodexLoreEntry lore = LoreToDomain(row.LoreDefinition, row);
                 codex.RecordLoreDiscovered(lore, row.DateDiscovered);
+            }
+
+            // Add always-available entries with a synthetic discovery date
+            foreach (PersistedLoreDefinition def in alwaysAvailable)
+            {
+                CodexLoreEntry lore = AlwaysAvailableToDomain(def);
+                codex.RecordLoreDiscovered(lore, def.CreatedUtc);
             }
 
             return codex;
@@ -172,6 +189,11 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
         }
 
         // Upsert definitions and unlocks
+        // Load existing definitions so we can preserve admin-managed fields (IsAlwaysAvailable)
+        Dictionary<string, PersistedLoreDefinition> existingDefs = await context.CodexLoreDefinitions
+            .Where(d => codex.Lore.Select(l => l.LoreId.Value).Contains(d.LoreId))
+            .ToDictionaryAsync(d => d.LoreId, ct);
+
         HashSet<string> existingDefIds = (await context.CodexLoreDefinitions
                 .Select(d => d.LoreId)
                 .ToListAsync(ct))
@@ -181,9 +203,14 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
         {
             (PersistedLoreDefinition def, PersistedLoreUnlock unlock) = LoreToEntities(lore, codex.OwnerId);
 
-            // Upsert global definition (may already exist from another player)
+            // Upsert global definition (may already exist from another player or admin)
             if (existingDefIds.Contains(def.LoreId))
+            {
+                // Preserve admin-managed IsAlwaysAvailable flag
+                if (existingDefs.TryGetValue(def.LoreId, out var existing))
+                    def.IsAlwaysAvailable = existing.IsAlwaysAvailable;
                 context.CodexLoreDefinitions.Update(def);
+            }
             else
             {
                 context.CodexLoreDefinitions.Add(def);
@@ -241,11 +268,7 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
     /// </summary>
     private static CodexLoreEntry LoreToDomain(PersistedLoreDefinition def, PersistedLoreUnlock unlock)
     {
-        List<Keyword> keywords = string.IsNullOrWhiteSpace(def.Keywords)
-            ? []
-            : def.Keywords.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Select(k => (Keyword)k)
-                .ToList();
+        List<Keyword> keywords = ParseKeywords(def.Keywords);
 
         return new CodexLoreEntry
         {
@@ -259,6 +282,37 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
             DiscoverySource = unlock.DiscoverySource,
             Keywords = keywords
         };
+    }
+
+    /// <summary>
+    /// Converts an always-available definition into a <see cref="CodexLoreEntry"/>
+    /// domain object without requiring an unlock record.
+    /// </summary>
+    private static CodexLoreEntry AlwaysAvailableToDomain(PersistedLoreDefinition def)
+    {
+        List<Keyword> keywords = ParseKeywords(def.Keywords);
+
+        return new CodexLoreEntry
+        {
+            LoreId = (LoreId)def.LoreId,
+            Title = def.Title,
+            Content = def.Content,
+            Category = def.Category,
+            Tier = (LoreTier)def.Tier,
+            DateDiscovered = def.CreatedUtc,
+            DiscoveryLocation = null,
+            DiscoverySource = "Always Available",
+            Keywords = keywords
+        };
+    }
+
+    private static List<Keyword> ParseKeywords(string? keywordsString)
+    {
+        return string.IsNullOrWhiteSpace(keywordsString)
+            ? []
+            : keywordsString.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(k => (Keyword)k)
+                .ToList();
     }
 
     /// <summary>
