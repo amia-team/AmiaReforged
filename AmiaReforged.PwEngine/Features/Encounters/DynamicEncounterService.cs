@@ -187,18 +187,18 @@ public class DynamicEncounterService
     /// </summary>
     private void OnAreaEnter(AreaEvents.OnEnter obj)
     {
-        Log.Debug("OnAreaEnter fired for area '{Area}', entering object: {Object}.",
+        Log.Info("OnAreaEnter fired for area '{Area}', entering object: {Object}.",
             obj.Area.ResRef, obj.EnteringObject.Name);
 
         if (!obj.EnteringObject.IsPlayerControlled(out NwPlayer? player))
         {
-            Log.Debug("OnAreaEnter: entering object is not player-controlled. Skipping.");
+            Log.Info("OnAreaEnter: entering object is not player-controlled. Skipping.");
             return;
         }
 
         if (player.IsDM || player.IsPlayerDM)
         {
-            Log.Debug("OnAreaEnter: player '{Player}' is DM. Skipping.", player.PlayerName);
+            Log.Info("OnAreaEnter: player '{Player}' is DM. Skipping.", player.PlayerName);
             return;
         }
 
@@ -207,7 +207,7 @@ public class DynamicEncounterService
 
         if (!_profileCache.TryGetValue(areaResRef, out SpawnProfile? profile))
         {
-            Log.Debug("OnAreaEnter: no cached profile for area '{AreaResRef}'. Skipping.", areaResRef);
+            Log.Info("OnAreaEnter: no cached profile for area '{AreaResRef}'. Skipping.", areaResRef);
             return;
         }
 
@@ -216,7 +216,7 @@ public class DynamicEncounterService
             .Any(g => g.DistributionMethod == DistributionMethod.OnAreaEnter);
         if (!hasAreaEnterGroups)
         {
-            Log.Debug("OnAreaEnter: profile '{Name}' for area '{Area}' has no OnAreaEnter groups. Skipping.",
+            Log.Info("OnAreaEnter: profile '{Name}' for area '{Area}' has no OnAreaEnter groups. Skipping.",
                 profile.Name, areaResRef);
             return;
         }
@@ -224,14 +224,14 @@ public class DynamicEncounterService
         // Check no_spawn
         if (NWScript.GetLocalInt(area, "no_spawn") == NWScript.TRUE)
         {
-            Log.Debug("OnAreaEnter: area '{Area}' has no_spawn set. Skipping.", areaResRef);
+            Log.Info("OnAreaEnter: area '{Area}' has no_spawn set. Skipping.", areaResRef);
             return;
         }
 
         // Check area-level flag to avoid re-spawning
         if (NWScript.GetLocalInt(area, AreaEnterSpawnedFlag) == CooldownFlagVar)
         {
-            Log.Debug("OnAreaEnter: area '{Area}' already has AreaEnterSpawnedFlag set. Skipping.", areaResRef);
+            Log.Info("OnAreaEnter: area '{Area}' already has AreaEnterSpawnedFlag set. Skipping.", areaResRef);
             return;
         }
 
@@ -255,7 +255,7 @@ public class DynamicEncounterService
 
         if (areaTriggers.Count == 0)
         {
-            Log.Debug("Area '{AreaResRef}': no db_spawntrigger triggers found for OnAreaEnter.", area.ResRef);
+            Log.Info("Area '{AreaResRef}': no db_spawntrigger triggers found for OnAreaEnter.", area.ResRef);
             return;
         }
 
@@ -309,7 +309,7 @@ public class DynamicEncounterService
 
         if (profile.BossSpawnChancePercent <= 0 || profile.BossConfigs.Count == 0)
         {
-            Log.Debug("Area '{AreaResRef}': profile '{ProfileName}' has no boss pool configured.", areaResRef, profile.Name);
+            Log.Info("Area '{AreaResRef}': profile '{ProfileName}' has no boss pool configured.", areaResRef, profile.Name);
             return;
         }
 
