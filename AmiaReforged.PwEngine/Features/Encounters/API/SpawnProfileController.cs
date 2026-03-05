@@ -299,6 +299,12 @@ public class SpawnProfileController
         if (req.DistributionMethod.HasValue) group.DistributionMethod = req.DistributionMethod.Value;
 
         await Repository.UpdateGroupAsync(group);
+
+        // Refresh the in-memory profile cache so changes take effect immediately
+        SpawnProfile? profile = await Repository.GetByIdAsync(group.SpawnProfileId);
+        if (profile != null)
+            await EncounterService.RefreshProfileCacheAsync(profile.AreaResRef);
+
         return new ApiResult(200, ToDto(group));
     }
 
@@ -313,7 +319,20 @@ public class SpawnProfileController
         if (!Guid.TryParse(ctx.GetRouteValue("groupId"), out Guid groupId))
             return new ApiResult(400, new ErrorResponse("Bad request", "Invalid group ID."));
 
+        // Look up the group first to get its profile for cache refresh
+        SpawnGroup? group = await Repository.GetGroupByIdAsync(groupId);
+        Guid? profileId = group?.SpawnProfileId;
+
         await Repository.DeleteGroupAsync(groupId);
+
+        // Refresh cache so removed group is reflected immediately
+        if (profileId.HasValue)
+        {
+            SpawnProfile? profile = await Repository.GetByIdAsync(profileId.Value);
+            if (profile != null)
+                await EncounterService.RefreshProfileCacheAsync(profile.AreaResRef);
+        }
+
         return new ApiResult(200, new { message = "Group deleted.", groupId });
     }
 
