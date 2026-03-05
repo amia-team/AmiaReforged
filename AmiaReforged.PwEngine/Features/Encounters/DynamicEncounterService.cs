@@ -191,18 +191,13 @@ public class DynamicEncounterService
     /// </summary>
     private void OnAreaEnter(AreaEvents.OnEnter obj)
     {
-        Log.Info("OnAreaEnter fired for area '{Area}', entering object: {Object}.",
-            obj.Area.ResRef, obj.EnteringObject.Name);
-
         if (!obj.EnteringObject.IsPlayerControlled(out NwPlayer? player))
         {
-            Log.Info("OnAreaEnter: entering object is not player-controlled. Skipping.");
             return;
         }
 
         if (player.IsDM || player.IsPlayerDM)
         {
-            Log.Info("OnAreaEnter: player '{Player}' is DM. Skipping.", player.PlayerName);
             return;
         }
 
