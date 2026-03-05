@@ -308,26 +308,8 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
 
     private void SetDetailContent(string title, string body)
     {
-        NuiColumn detailLayout = new()
-        {
-            Children = new List<NuiElement>
-            {
-                new NuiLabel(title)
-                {
-                    Height = 30f,
-                    HorizontalAlign = NuiHAlign.Center,
-                    VerticalAlign = NuiVAlign.Middle
-                },
-                new NuiSpacer { Height = 4f },
-                new NuiText(body)
-                {
-                    Height = PlayerCodexView.WindowH - 170f,
-                    Scrollbars = NuiScrollbars.Y
-                }
-            }
-        };
-
-        _token.SetGroupLayout(View.DetailGroup, detailLayout);
+        _token.SetBindValue(View.DetailTitle, title);
+        _token.SetBindValue(View.DetailBody, body);
     }
 
     // ──────────────────────── Category sidebar ────────────────────────

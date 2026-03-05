@@ -21,8 +21,9 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
     // --- Category sidebar group (swapped via SetGroupLayout per tab) ---
     public NuiGroup CategoryGroup = null!;
 
-    // --- Detail pane group (swapped via SetGroupLayout on entry selection) ---
-    public NuiGroup DetailGroup = null!;
+    // --- Detail pane binds (updated via SetBindValue — no SetGroupLayout needed) ---
+    public readonly NuiBind<string> DetailTitle = new("codex_detail_title");
+    public readonly NuiBind<string> DetailBody = new("codex_detail_body");
 
     // --- Pagination binds ---
     public readonly NuiBind<string> PageInfo = new("codex_page_info");
@@ -81,16 +82,8 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
                         // Entry list column
                         BuildEntryListColumn(),
 
-                        // Detail pane
-                        new NuiGroup
-                        {
-                            Id = "grp_detail",
-                            Element = new NuiColumn { Children = new List<NuiElement> { new NuiSpacer() } },
-                            Width = 370f,
-                            Height = WindowH - 90f,
-                            Scrollbars = NuiScrollbars.Y,
-                            Border = true
-                        }.Assign(out DetailGroup)
+                        // Detail pane (static layout with bound content)
+                        BuildDetailPane()
                     }
                 },
 
@@ -119,6 +112,35 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
                 new NuiButton("Quests") { Id = "tab_quests", Height = 35f },
                 new NuiButton("Notes") { Id = "tab_notes", Height = 35f },
                 new NuiButton("Reputation") { Id = "tab_reputation", Height = 35f }
+            }
+        };
+    }
+
+    private NuiGroup BuildDetailPane()
+    {
+        return new NuiGroup
+        {
+            Width = 370f,
+            Height = WindowH - 90f,
+            Scrollbars = NuiScrollbars.Y,
+            Border = true,
+            Element = new NuiColumn
+            {
+                Children = new List<NuiElement>
+                {
+                    new NuiLabel(DetailTitle)
+                    {
+                        Height = 30f,
+                        HorizontalAlign = NuiHAlign.Center,
+                        VerticalAlign = NuiVAlign.Middle
+                    },
+                    new NuiSpacer { Height = 4f },
+                    new NuiText(DetailBody)
+                    {
+                        Height = WindowH - 170f,
+                        Scrollbars = NuiScrollbars.Y
+                    }
+                }
             }
         };
     }
