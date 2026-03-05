@@ -1,9 +1,12 @@
+using System.Text.Json.Serialization;
+
 namespace AmiaReforged.PwEngine.Features.Encounters.Models;
 
 /// <summary>
 /// Controls how and when creatures from a <see cref="SpawnGroup"/> are placed in the world.
 /// Each group can have its own distribution method, allowing mixed behavior within a single area.
 /// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum DistributionMethod
 {
     /// <summary>

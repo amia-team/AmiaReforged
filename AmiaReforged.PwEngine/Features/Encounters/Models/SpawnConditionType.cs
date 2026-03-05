@@ -1,8 +1,11 @@
+using System.Text.Json.Serialization;
+
 namespace AmiaReforged.PwEngine.Features.Encounters.Models;
 
 /// <summary>
 /// Types of conditions that control when a spawn group is eligible to activate.
 /// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum SpawnConditionType
 {
     /// <summary>

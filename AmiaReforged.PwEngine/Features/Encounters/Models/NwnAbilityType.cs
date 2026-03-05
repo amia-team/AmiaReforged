@@ -1,9 +1,12 @@
+using System.Text.Json.Serialization;
+
 namespace AmiaReforged.PwEngine.Features.Encounters.Models;
 
 /// <summary>
 /// NWN ability type constants for ability bonus effects.
 /// Values match the NWScript ABILITY_* constants.
 /// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum NwnAbilityType
 {
     Strength = 0,

@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace AmiaReforged.PwEngine.Features.Encounters.Models;
 
 /// <summary>
@@ -5,6 +7,7 @@ namespace AmiaReforged.PwEngine.Features.Encounters.Models;
 /// These form a separate bonus layer that stacks alongside the legacy addon system
 /// (Greater/Cagey/Retribution/Ghostly).
 /// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum SpawnBonusType
 {
     TempHP = 0,

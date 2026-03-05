@@ -1,8 +1,11 @@
+using System.Text.Json.Serialization;
+
 namespace AmiaReforged.PwEngine.Features.Encounters.Models;
 
 /// <summary>
 /// Types of effects that a mutation can apply to a creature.
 /// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum MutationEffectType
 {
     AbilityBonus = 0,

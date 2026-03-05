@@ -1,9 +1,12 @@
+using System.Text.Json.Serialization;
+
 namespace AmiaReforged.PwEngine.Features.Encounters.Models;
 
 /// <summary>
 /// NWN damage type constants used for damage bonus effects.
 /// Values match the NWScript DAMAGE_TYPE_* constants.
 /// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum NwnDamageType
 {
     Bludgeoning = 1,
