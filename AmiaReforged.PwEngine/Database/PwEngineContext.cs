@@ -114,6 +114,10 @@ public class PwEngineContext : DbContext
     public DbSet<MutationEffect> MutationEffects { get; set; } = null!;
     public DbSet<GroupMutationOverride> GroupMutationOverrides { get; set; } = null!;
 
+    // === Codex ===
+
+    public DbSet<PersistedCodexNote> CodexNotes { get; set; } = null!;
+
     // === World Engine Definition Management ===
 
     public DbSet<PersistedItemBlueprint> ItemBlueprints { get; set; } = null!;
@@ -206,6 +210,9 @@ public class PwEngineContext : DbContext
         modelBuilder.ApplyConfiguration(new MutationTemplateConfiguration());
         modelBuilder.ApplyConfiguration(new MutationEffectConfiguration());
         modelBuilder.ApplyConfiguration(new GroupMutationOverrideConfiguration());
+
+        // Codex
+        modelBuilder.ApplyConfiguration(new PersistedCodexNoteConfiguration());
 
         // World Engine Definition Management
         modelBuilder.ApplyConfiguration(new PersistedItemBlueprintConfiguration());

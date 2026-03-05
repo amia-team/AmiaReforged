@@ -4,6 +4,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Aggregates;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Repositories;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application;
 
@@ -11,6 +12,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Applicatio
 /// Query service for read-only codex operations.
 /// Provides DTOs and search capabilities without exposing aggregate internals.
 /// </summary>
+[ServiceBinding(typeof(CodexQueryService))]
 public class CodexQueryService
 {
     private readonly IPlayerCodexRepository _repository;

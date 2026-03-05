@@ -6,6 +6,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Aggregates;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Repositories;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application;
 
@@ -13,6 +14,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Applicatio
 /// Processes codex events from a channel and applies them to PlayerCodex aggregates.
 /// Ensures sequential processing per character to maintain consistency.
 /// </summary>
+[ServiceBinding(typeof(CodexEventProcessor))]
 public class CodexEventProcessor
 {
     private readonly IPlayerCodexRepository _repository;

@@ -6,8 +6,8 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Reposit
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Infrastructure;
 
 /// <summary>
-/// In-memory implementation of IPlayerCodexRepository for testing.
-/// NOT intended for production use - use a persistent implementation instead.
+/// In-memory implementation of IPlayerCodexRepository for unit testing.
+/// Production code uses <see cref="EfPlayerCodexRepository"/> instead.
 /// </summary>
 public class InMemoryPlayerCodexRepository : IPlayerCodexRepository
 {
