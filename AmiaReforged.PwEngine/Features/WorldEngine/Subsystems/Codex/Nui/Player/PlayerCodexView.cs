@@ -55,6 +55,9 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
 
     public override NuiLayout RootLayout()
     {
+        // Available height for the main body area
+        const float bodyH = WindowH - 90f;
+
         return new NuiColumn
         {
             Children = new List<NuiElement>
@@ -65,22 +68,27 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
                 // ── Main body: sidebar | entry list | detail pane ──
                 new NuiRow
                 {
-                    Height = WindowH - 90f,
+                    Height = bodyH,
                     Children = new List<NuiElement>
                     {
-                        // Category sidebar
+                        // Category sidebar (swapped via SetGroupLayout)
                         new NuiGroup
                         {
                             Id = "grp_categories",
                             Element = new NuiColumn { Children = new List<NuiElement> { new NuiSpacer() } },
-                            Width = 140f,
-                            Height = WindowH - 90f,
+                            Width = 130f,
                             Scrollbars = NuiScrollbars.None,
                             Border = true
                         }.Assign(out CategoryGroup),
 
-                        // Entry list column
-                        BuildEntryListColumn(),
+                        // Entry list
+                        new NuiGroup
+                        {
+                            Element = BuildEntryListInner(),
+                            Width = 270f,
+                            Scrollbars = NuiScrollbars.None,
+                            Border = true
+                        },
 
                         // Detail pane (static layout with bound content)
                         BuildDetailPane()
@@ -120,8 +128,7 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
     {
         return new NuiGroup
         {
-            Width = 370f,
-            Height = WindowH - 90f,
+            Width = 350f,
             Scrollbars = NuiScrollbars.Y,
             Border = true,
             Element = new NuiColumn
@@ -137,15 +144,14 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
                     new NuiSpacer { Height = 4f },
                     new NuiText(DetailBody)
                     {
-                        Height = WindowH - 170f,
-                        Scrollbars = NuiScrollbars.Y
+                        Scrollbars = NuiScrollbars.None
                     }
                 }
             }
         };
     }
 
-    private NuiColumn BuildEntryListColumn()
+    private NuiColumn BuildEntryListInner()
     {
         List<NuiElement> children = new();
 
@@ -160,7 +166,6 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
                 {
                     new NuiColumn
                     {
-                        Width = 210f,
                         Children = new List<NuiElement>
                         {
                             new NuiLabel(EntryNames[i])
@@ -203,14 +208,14 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
                     Visible = ShowPrevPage,
                     Tooltip = "Previous page"
                 },
-                new NuiSpacer { Width = 10f },
+                new NuiSpacer(),
                 new NuiLabel(PageInfo)
                 {
-                    Width = 100f,
+                    Width = 80f,
                     HorizontalAlign = NuiHAlign.Center,
                     VerticalAlign = NuiVAlign.Middle
                 },
-                new NuiSpacer { Width = 10f },
+                new NuiSpacer(),
                 new NuiButton(">")
                 {
                     Id = "btn_next_page",
@@ -222,11 +227,6 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
             }
         });
 
-        return new NuiColumn
-        {
-            Width = 280f,
-            Height = WindowH - 90f,
-            Children = children
-        };
+        return new NuiColumn { Children = children };
     }
 }
