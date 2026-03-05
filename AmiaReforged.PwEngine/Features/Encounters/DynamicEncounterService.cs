@@ -105,6 +105,8 @@ public class DynamicEncounterService
     public async Task RefreshProfileCacheAsync(string areaResRef)
     {
         SpawnProfile? profile = await _repository.GetByAreaResRefAsync(areaResRef);
+        await NwTask.SwitchToMainThread();
+
         if (profile is { IsActive: true })
         {
             _profileCache[areaResRef] = profile;
@@ -122,6 +124,8 @@ public class DynamicEncounterService
     {
         _profileCache.Clear();
         List<SpawnProfile> activeProfiles = await _repository.GetAllActiveAsync();
+        await NwTask.SwitchToMainThread();
+
         foreach (SpawnProfile profile in activeProfiles)
         {
             _profileCache[profile.AreaResRef] = profile;

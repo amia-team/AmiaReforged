@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.Encounters.Models;
+using Anvil.API;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
@@ -44,6 +45,8 @@ public class MutationApplicator
     public async Task RefreshCacheAsync()
     {
         _cachedTemplates = await _repository.GetAllActiveAsync();
+        await NwTask.SwitchToMainThread();
+
         Log.Info("Mutation template cache refreshed — {Count} active templates loaded.", _cachedTemplates.Count);
     }
 
