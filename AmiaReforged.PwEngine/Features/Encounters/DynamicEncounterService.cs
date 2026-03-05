@@ -58,13 +58,13 @@ public class DynamicEncounterService
         _regionSubsystem = regionSubsystem;
         _spawner = spawner;
 
-        InitializeAsync().GetAwaiter().GetResult();
+        Initialize();
     }
 
-    private async Task InitializeAsync()
+    private void Initialize()
     {
         // Load active profiles into cache
-        List<SpawnProfile> activeProfiles = await _repository.GetAllActiveAsync();
+        List<SpawnProfile> activeProfiles = _repository.GetAllActiveAsync().GetAwaiter().GetResult();
         foreach (SpawnProfile profile in activeProfiles)
         {
             _profileCache[profile.AreaResRef] = profile;
@@ -187,24 +187,53 @@ public class DynamicEncounterService
     /// </summary>
     private void OnAreaEnter(AreaEvents.OnEnter obj)
     {
-        if (!obj.EnteringObject.IsPlayerControlled(out NwPlayer? player)) return;
-        if (player.IsDM || player.IsPlayerDM) return;
+        Log.Debug("OnAreaEnter fired for area '{Area}', entering object: {Object}.",
+            obj.Area.ResRef, obj.EnteringObject.Name);
+
+        if (!obj.EnteringObject.IsPlayerControlled(out NwPlayer? player))
+        {
+            Log.Debug("OnAreaEnter: entering object is not player-controlled. Skipping.");
+            return;
+        }
+
+        if (player.IsDM || player.IsPlayerDM)
+        {
+            Log.Debug("OnAreaEnter: player '{Player}' is DM. Skipping.", player.PlayerName);
+            return;
+        }
 
         NwArea area = obj.Area;
         string areaResRef = area.ResRef;
 
-        if (!_profileCache.TryGetValue(areaResRef, out SpawnProfile? profile)) return;
+        if (!_profileCache.TryGetValue(areaResRef, out SpawnProfile? profile))
+        {
+            Log.Debug("OnAreaEnter: no cached profile for area '{AreaResRef}'. Skipping.", areaResRef);
+            return;
+        }
 
         // Only proceed if the profile has OnAreaEnter groups
         bool hasAreaEnterGroups = profile.SpawnGroups
             .Any(g => g.DistributionMethod == DistributionMethod.OnAreaEnter);
-        if (!hasAreaEnterGroups) return;
+        if (!hasAreaEnterGroups)
+        {
+            Log.Debug("OnAreaEnter: profile '{Name}' for area '{Area}' has no OnAreaEnter groups. Skipping.",
+                profile.Name, areaResRef);
+            return;
+        }
 
         // Check no_spawn
-        if (NWScript.GetLocalInt(area, "no_spawn") == NWScript.TRUE) return;
+        if (NWScript.GetLocalInt(area, "no_spawn") == NWScript.TRUE)
+        {
+            Log.Debug("OnAreaEnter: area '{Area}' has no_spawn set. Skipping.", areaResRef);
+            return;
+        }
 
         // Check area-level flag to avoid re-spawning
-        if (NWScript.GetLocalInt(area, AreaEnterSpawnedFlag) == CooldownFlagVar) return;
+        if (NWScript.GetLocalInt(area, AreaEnterSpawnedFlag) == CooldownFlagVar)
+        {
+            Log.Debug("OnAreaEnter: area '{Area}' already has AreaEnterSpawnedFlag set. Skipping.", areaResRef);
+            return;
+        }
 
         Log.Info("OnAreaEnter triggered for profile '{Name}' in area '{Area}' by player '{Player}'.",
             profile.Name, areaResRef, player.PlayerName);
