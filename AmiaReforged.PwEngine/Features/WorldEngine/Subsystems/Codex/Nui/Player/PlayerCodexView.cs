@@ -71,6 +71,7 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
                         new NuiGroup
                         {
                             Id = "grp_categories",
+                            Element = new NuiColumn { Children = new List<NuiElement> { new NuiSpacer() } },
                             Width = 140f,
                             Height = WindowH - 90f,
                             Scrollbars = NuiScrollbars.None,
@@ -84,6 +85,7 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
                         new NuiGroup
                         {
                             Id = "grp_detail",
+                            Element = new NuiColumn { Children = new List<NuiElement> { new NuiSpacer() } },
                             Width = 370f,
                             Height = WindowH - 90f,
                             Scrollbars = NuiScrollbars.Y,
