@@ -59,4 +59,10 @@ public class GlyphNodeDefinition
     /// Null means the node is available across all script categories (universal).
     /// </summary>
     public GlyphScriptCategory? ScriptCategory { get; init; }
+
+    /// <summary>
+    /// The archetype of this node, which determines how the interpreter handles its execution result.
+    /// Defaults to <see cref="GlyphNodeArchetype.PureFunction"/> (no exec pins, lazily evaluated).
+    /// </summary>
+    public GlyphNodeArchetype Archetype { get; init; } = GlyphNodeArchetype.PureFunction;
 }

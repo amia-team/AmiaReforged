@@ -45,6 +45,7 @@ public class DespawnCreatureExecutor : IGlyphNodeExecutor
         Category = "Actions",
         Description = "Destroys a creature, optionally after a delay.",
         ColorClass = "node-action",
+        Archetype = GlyphNodeArchetype.Action,
         InputPins =
         [
             new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input },

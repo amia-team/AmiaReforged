@@ -52,6 +52,7 @@ public class SetLocalVariableExecutor : IGlyphNodeExecutor
         Category = "Actions",
         Description = "Sets a local variable (int, string, or float) on an NWN object.",
         ColorClass = "node-action",
+        Archetype = GlyphNodeArchetype.Action,
         InputPins =
         [
             new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input },

@@ -39,6 +39,7 @@ public class OnTraitRemovedEventExecutor : IGlyphNodeExecutor
         Description = "Entry point for scripts that run when a trait is removed from a character. " +
                       "Provides the character ID, trait tag, and target creature reference.",
         ColorClass = "node-event",
+        Archetype = GlyphNodeArchetype.EventEntry,
         IsSingleton = true,
         RestrictToEventType = GlyphEventType.OnTraitRemoved,
         ScriptCategory = GlyphScriptCategory.Trait,

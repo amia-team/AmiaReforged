@@ -10,7 +10,7 @@ public class GetRandomIntExecutor : IGlyphNodeExecutor
     public const string NodeTypeId = "getter.random_int";
     public string TypeId => NodeTypeId;
 
-    private static readonly Random Rng = new();
+    private static readonly Random Rng = Random.Shared;
 
     public async Task<GlyphNodeResult> ExecuteAsync(
         GlyphNodeInstance node, GlyphExecutionContext context, Func<string, Task<object?>> resolveInput)

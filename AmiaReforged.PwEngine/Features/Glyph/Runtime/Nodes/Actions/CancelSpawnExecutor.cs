@@ -29,6 +29,7 @@ public class CancelSpawnExecutor : IGlyphNodeExecutor
         Category = "Actions",
         Description = "Prevents the current spawn group from spawning. Only works in BeforeGroupSpawn graphs.",
         ColorClass = "node-action",
+        Archetype = GlyphNodeArchetype.Action,
         RestrictToEventType = GlyphEventType.BeforeGroupSpawn,
         InputPins =
         [

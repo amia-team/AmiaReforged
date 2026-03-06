@@ -49,6 +49,7 @@ public class OnCreatureDeathEventExecutor : IGlyphNodeExecutor
         Description = "Entry point for scripts that run when a dynamically spawned creature dies. " +
                       "Provides the dead creature, killer, and encounter context.",
         ColorClass = "node-event",
+        Archetype = GlyphNodeArchetype.EventEntry,
         IsSingleton = true,
         RestrictToEventType = GlyphEventType.OnCreatureDeath,
         InputPins = [],

@@ -33,6 +33,7 @@ public class BranchExecutor : IGlyphNodeExecutor
         Category = "Flow Control",
         Description = "If/else branch. Evaluates the condition and follows the True or False path.",
         ColorClass = "node-flow",
+        Archetype = GlyphNodeArchetype.FlowControl,
         InputPins =
         [
             new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input },

@@ -39,6 +39,7 @@ public class OnTraitGrantedEventExecutor : IGlyphNodeExecutor
         Description = "Entry point for scripts that run when a trait is granted to a character. " +
                       "Provides the character ID, trait tag, and target creature reference.",
         ColorClass = "node-event",
+        Archetype = GlyphNodeArchetype.EventEntry,
         IsSingleton = true,
         RestrictToEventType = GlyphEventType.OnTraitGranted,
         ScriptCategory = GlyphScriptCategory.Trait,

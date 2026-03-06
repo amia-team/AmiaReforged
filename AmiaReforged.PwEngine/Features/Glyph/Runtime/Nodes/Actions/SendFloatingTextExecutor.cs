@@ -39,6 +39,7 @@ public class SendFloatingTextExecutor : IGlyphNodeExecutor
         Category = "Actions",
         Description = "Displays floating text above a creature.",
         ColorClass = "node-action",
+        Archetype = GlyphNodeArchetype.Action,
         InputPins =
         [
             new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input },

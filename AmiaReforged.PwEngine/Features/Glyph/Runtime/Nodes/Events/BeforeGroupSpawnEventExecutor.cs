@@ -52,6 +52,7 @@ public class BeforeGroupSpawnEventExecutor : IGlyphNodeExecutor
         Description = "Entry point for scripts that run before a spawn group's creatures are created. " +
                       "Can modify spawn count or cancel the spawn.",
         ColorClass = "node-event",
+        Archetype = GlyphNodeArchetype.EventEntry,
         IsSingleton = true,
         RestrictToEventType = GlyphEventType.BeforeGroupSpawn,
         InputPins = [],

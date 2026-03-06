@@ -35,6 +35,7 @@ public class ModifySpawnCountExecutor : IGlyphNodeExecutor
         Description = "Changes the number of creatures that will spawn for this group. " +
                       "Only works in BeforeGroupSpawn graphs.",
         ColorClass = "node-action",
+        Archetype = GlyphNodeArchetype.Action,
         RestrictToEventType = GlyphEventType.BeforeGroupSpawn,
         InputPins =
         [

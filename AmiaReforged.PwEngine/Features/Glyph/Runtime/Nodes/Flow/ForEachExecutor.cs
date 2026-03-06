@@ -7,9 +7,14 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Flow;
 /// Exposes the current element and index as output data pins during each iteration.
 /// After the loop completes, execution continues via the "completed" Exec output.
 /// <para>
-/// Note: This node is special — the interpreter must handle it differently from
-/// normal nodes because it needs to re-execute the loop body branch multiple times.
-/// The executor signals this by returning a special result.
+/// The executor manages its own iteration state via <see cref="GlyphExecutionContext.Variables"/>,
+/// keyed by the node instance ID. On each execution:
+/// <list type="bullet">
+/// <item>First call: stores the list and sets index to 0, returns <see cref="GlyphNodeResult.LoopBody"/>.</item>
+/// <item>Subsequent calls (re-execution by the interpreter after loop body completes): advances the index.
+///   If more elements remain, returns <see cref="GlyphNodeResult.LoopBody"/>. Otherwise returns
+///   <see cref="GlyphNodeResult.Continue"/> with "completed".</item>
+/// </list>
 /// </para>
 /// </summary>
 public class ForEachExecutor : IGlyphNodeExecutor
@@ -23,17 +28,47 @@ public class ForEachExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
+        string listKey = $"__foreach_{node.InstanceId}_list";
+        string indexKey = $"__foreach_{node.InstanceId}_index";
+
+        // Check if this is a re-entry (loop continuation) or first call
+        if (context.Variables.TryGetValue(listKey, out object? existingList) &&
+            context.Variables.TryGetValue(indexKey, out object? existingIndex))
+        {
+            // Re-entry: advance to next iteration
+            IList<object?> items = (IList<object?>)existingList!;
+            int nextIndex = Convert.ToInt32(existingIndex) + 1;
+
+            if (nextIndex >= items.Count)
+            {
+                // Loop complete — clean up and signal completion
+                context.Variables.Remove(listKey);
+                context.Variables.Remove(indexKey);
+                return GlyphNodeResult.Continue("completed");
+            }
+
+            // Store updated index
+            context.Variables[indexKey] = nextIndex;
+
+            return GlyphNodeResult.LoopBody("loop_body", new Dictionary<string, object?>
+            {
+                ["element"] = items[nextIndex],
+                ["index"] = nextIndex,
+                ["count"] = items.Count,
+            });
+        }
+
+        // First call: resolve the list input and initialize iteration state
         object? listValue = await resolveInput("list");
 
-        // Try to interpret the input as a list
-        IList<object?> items;
+        IList<object?> inputItems;
         if (listValue is IEnumerable<object?> enumerable)
         {
-            items = enumerable.ToList();
+            inputItems = enumerable.ToList();
         }
         else if (listValue is System.Collections.IEnumerable rawEnumerable)
         {
-            items = rawEnumerable.Cast<object?>().ToList();
+            inputItems = rawEnumerable.Cast<object?>().ToList();
         }
         else
         {
@@ -41,77 +76,21 @@ public class ForEachExecutor : IGlyphNodeExecutor
             return GlyphNodeResult.Continue("completed");
         }
 
-        if (items.Count == 0)
+        if (inputItems.Count == 0)
         {
             return GlyphNodeResult.Continue("completed");
         }
 
-        // Store the list and current index in context variables keyed by this node instance
-        string listKey = $"__foreach_{node.InstanceId}_list";
-        string indexKey = $"__foreach_{node.InstanceId}_index";
-
-        context.Variables[listKey] = items;
+        // Store iteration state
+        context.Variables[listKey] = inputItems;
         context.Variables[indexKey] = 0;
 
-        // Set the first element's output values
-        var outputs = new Dictionary<string, object?>
+        return GlyphNodeResult.LoopBody("loop_body", new Dictionary<string, object?>
         {
-            ["element"] = items[0],
+            ["element"] = inputItems[0],
             ["index"] = 0,
-            ["count"] = items.Count
-        };
-
-        return new GlyphNodeResult
-        {
-            NextExecPinId = "loop_body",
-            OutputValues = outputs
-        };
-    }
-
-    /// <summary>
-    /// Called by the interpreter after the loop body branch completes to advance to
-    /// the next iteration. Returns null when the loop is finished.
-    /// </summary>
-    public static GlyphNodeResult? AdvanceIteration(
-        GlyphNodeInstance node,
-        GlyphExecutionContext context)
-    {
-        string listKey = $"__foreach_{node.InstanceId}_list";
-        string indexKey = $"__foreach_{node.InstanceId}_index";
-
-        if (!context.Variables.TryGetValue(listKey, out object? listObj) ||
-            !context.Variables.TryGetValue(indexKey, out object? indexObj))
-        {
-            return null;
-        }
-
-        IList<object?> items = (IList<object?>)listObj!;
-        int nextIndex = Convert.ToInt32(indexObj) + 1;
-
-        if (nextIndex >= items.Count)
-        {
-            // Loop complete — clean up and signal completion
-            context.Variables.Remove(listKey);
-            context.Variables.Remove(indexKey);
-            return GlyphNodeResult.Continue("completed");
-        }
-
-        // Store updated index
-        context.Variables[indexKey] = nextIndex;
-
-        // Update output values for the next iteration
-        var outputs = new Dictionary<string, object?>
-        {
-            ["element"] = items[nextIndex],
-            ["index"] = nextIndex,
-            ["count"] = items.Count
-        };
-
-        return new GlyphNodeResult
-        {
-            NextExecPinId = "loop_body",
-            OutputValues = outputs
-        };
+            ["count"] = inputItems.Count,
+        });
     }
 
     /// <summary>
@@ -125,6 +104,7 @@ public class ForEachExecutor : IGlyphNodeExecutor
         Description = "Iterates over a list, executing the loop body once per element. " +
                       "Exposes the current Element and Index as output pins.",
         ColorClass = "node-flow",
+        Archetype = GlyphNodeArchetype.FlowControl,
         InputPins =
         [
             new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input },

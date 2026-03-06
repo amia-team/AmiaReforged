@@ -50,6 +50,7 @@ public class AfterGroupSpawnEventExecutor : IGlyphNodeExecutor
         Description = "Entry point for scripts that run after a spawn group's creatures are placed in the world. " +
                       "Can modify spawned creatures, apply effects, or trigger interactions.",
         ColorClass = "node-event",
+        Archetype = GlyphNodeArchetype.EventEntry,
         IsSingleton = true,
         RestrictToEventType = GlyphEventType.AfterGroupSpawn,
         InputPins = [],

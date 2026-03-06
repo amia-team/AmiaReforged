@@ -53,6 +53,8 @@ public class GlyphGraph
             GlyphEventType.BeforeGroupSpawn => "event.before_group_spawn",
             GlyphEventType.AfterGroupSpawn => "event.after_group_spawn",
             GlyphEventType.OnCreatureDeath => "event.on_creature_death",
+            GlyphEventType.OnTraitGranted => "event.on_trait_granted",
+            GlyphEventType.OnTraitRemoved => "event.on_trait_removed",
             _ => string.Empty
         };
 

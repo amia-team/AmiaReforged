@@ -71,6 +71,7 @@ public class ApplyEffectExecutor : IGlyphNodeExecutor
         Description = "Applies an NWN effect to a creature. Supports TempHP, AC, Attack, Damage, " +
                       "Concealment, Haste, Slow, Regenerate, and visual effects.",
         ColorClass = "node-action",
+        Archetype = GlyphNodeArchetype.Action,
         InputPins =
         [
             new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input },

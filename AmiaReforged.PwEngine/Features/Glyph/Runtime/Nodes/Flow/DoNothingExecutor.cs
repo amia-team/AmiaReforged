@@ -30,6 +30,7 @@ public class DoNothingExecutor : IGlyphNodeExecutor
         Category = "Flow Control",
         Description = "No-op terminal node. Explicitly ends an execution branch.",
         ColorClass = "node-flow",
+        Archetype = GlyphNodeArchetype.FlowControl,
         InputPins =
         [
             new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input }

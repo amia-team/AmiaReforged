@@ -64,6 +64,7 @@ public class GetLocalVariableExecutor : IGlyphNodeExecutor
         Category = "Getters",
         Description = "Gets a local variable (int, string, or float) from an NWN game object.",
         ColorClass = "node-getter",
+        Archetype = GlyphNodeArchetype.Action,
         InputPins =
         [
             new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input },

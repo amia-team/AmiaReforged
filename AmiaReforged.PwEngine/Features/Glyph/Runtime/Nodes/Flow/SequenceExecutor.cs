@@ -6,6 +6,11 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Flow;
 /// Sequence node — executes multiple Exec outputs in order. Each output branch
 /// runs to completion before the next one starts. Useful for performing
 /// multiple independent actions from a single execution point.
+/// <para>
+/// The executor inspects the graph to find which then_N pins actually have outgoing edges,
+/// and returns a <see cref="GlyphNodeResult.MultiBranch"/> result so the interpreter
+/// runs all connected branches in order.
+/// </para>
 /// </summary>
 public class SequenceExecutor : IGlyphNodeExecutor
 {
@@ -23,18 +28,24 @@ public class SequenceExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        // The interpreter handles Sequence specially — it iterates through outputs 0..N.
-        // We just signal the first output to start.
-        return Task.FromResult(GlyphNodeResult.Continue("then_0"));
-    }
+        // Collect all output exec pins that have outgoing edges
+        List<string> connectedPins = [];
 
-    /// <summary>
-    /// Returns the next Exec pin ID in the sequence, or null if all executed.
-    /// </summary>
-    public static string? GetNextOutputPin(int completedIndex)
-    {
-        int next = completedIndex + 1;
-        return next < MaxOutputs ? $"then_{next}" : null;
+        for (int i = 0; i < MaxOutputs; i++)
+        {
+            string pinId = $"then_{i}";
+            if (context.Graph.GetEdgesFrom(node.InstanceId, pinId).Any())
+            {
+                connectedPins.Add(pinId);
+            }
+        }
+
+        if (connectedPins.Count == 0)
+        {
+            return Task.FromResult(GlyphNodeResult.Done());
+        }
+
+        return Task.FromResult(GlyphNodeResult.MultiBranch(connectedPins.ToArray()));
     }
 
     /// <summary>
@@ -47,6 +58,7 @@ public class SequenceExecutor : IGlyphNodeExecutor
         Category = "Flow Control",
         Description = "Executes multiple output branches in order, one after another.",
         ColorClass = "node-flow",
+        Archetype = GlyphNodeArchetype.FlowControl,
         InputPins =
         [
             new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input }
