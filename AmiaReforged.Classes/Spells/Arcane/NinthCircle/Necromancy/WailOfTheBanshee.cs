@@ -42,6 +42,8 @@ public class WailOfTheBanshee(DeathSpellService deathSpellService) : ISpell
 
         Effect wailVfx = Effect.VisualEffect(VfxType.FnfWailOBanshees);
         Effect deathVfx = Effect.VisualEffect(VfxType.ImpDeath);
+        Effect death = Effect.Death();
+        death.SubType = EffectSubType.Magical;
 
         // Apply the FNF VFX impact at the target location
         eventData.TargetLocation.ApplyEffect(EffectDuration.Instant, wailVfx);
@@ -72,7 +74,7 @@ public class WailOfTheBanshee(DeathSpellService deathSpellService) : ISpell
             }
 
             // Apply death effect (with save) and percentage-based damage (no save, with delay)
-            _ = ApplyDeathEffect(caster, target, dc, deathVfx);
+            _ = ApplyDeathEffect(caster, target, dc, deathVfx, death);
             _ = ApplyDelayedDeathSpellDamage(caster, target);
 
             targetCount++;
@@ -110,7 +112,7 @@ public class WailOfTheBanshee(DeathSpellService deathSpellService) : ISpell
             .ToList();
     }
 
-    private static async Task ApplyDeathEffect(NwCreature caster, NwCreature target, int dc, Effect deathVfx)
+    private static async Task ApplyDeathEffect(NwCreature caster, NwCreature target, int dc, Effect deathVfx, Effect death)
     {
         TimeSpan delay = SpellUtils.GetRandomDelay(3.0, 4.0);
         await NwTask.Delay(delay);
@@ -127,7 +129,7 @@ public class WailOfTheBanshee(DeathSpellService deathSpellService) : ISpell
         await caster.WaitForObjectContext();
 
         target.ApplyEffect(EffectDuration.Instant, deathVfx);
-        target.ApplyEffect(EffectDuration.Instant, Effect.Death());
+        target.ApplyEffect(EffectDuration.Instant, death);
     }
 
     public void SetSpellResisted(bool result)
