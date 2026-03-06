@@ -1,10 +1,12 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
+using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Constants;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Events;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Flow;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Math;
+using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Traits;
 using Anvil.Services;
 using NLog;
 
@@ -49,6 +51,8 @@ public class GlyphBootstrap
         registry.Register(BeforeGroupSpawnEventExecutor.CreateDefinition());
         registry.Register(AfterGroupSpawnEventExecutor.CreateDefinition());
         registry.Register(OnCreatureDeathEventExecutor.CreateDefinition());
+        registry.Register(OnTraitGrantedEventExecutor.CreateDefinition());
+        registry.Register(OnTraitRemovedEventExecutor.CreateDefinition());
 
         // Flow control
         registry.Register(BranchExecutor.CreateDefinition());
@@ -64,18 +68,33 @@ public class GlyphBootstrap
         registry.Register(SetLocalVariableExecutor.CreateDefinition());
         registry.Register(DespawnCreatureExecutor.CreateDefinition());
 
+        // Constants
+        registry.Register(StringConstantExecutor.CreateDefinition());
+        registry.Register(IntConstantExecutor.CreateDefinition());
+        registry.Register(FloatConstantExecutor.CreateDefinition());
+        registry.Register(BoolConstantExecutor.CreateDefinition());
+
         // Getters
         registry.Register(GetCreatureHPExecutor.CreateDefinition());
         registry.Register(GetPartySizeExecutor.CreateDefinition());
         registry.Register(GetChaosStateExecutor.CreateDefinition());
         registry.Register(GetTimeOfDayExecutor.CreateDefinition());
         registry.Register(GetRandomIntExecutor.CreateDefinition());
+        registry.Register(GetAreaResRefExecutor.CreateDefinition());
+        registry.Register(GetRegionInfoExecutor.CreateDefinition());
+        registry.Register(GetCreatureLevelExecutor.CreateDefinition());
+        registry.Register(GetPartyMembersExecutor.CreateDefinition());
+        registry.Register(GetLocalVariableExecutor.CreateDefinition());
 
         // Math / Logic
         registry.Register(CompareExecutor.CreateDefinition());
         registry.Register(MathOpExecutor.CreateDefinition());
         registry.Register(BooleanOpExecutor.CreateDefinition());
         registry.Register(NotExecutor.CreateDefinition());
+
+        // Traits
+        registry.Register(HasTraitExecutor.CreateDefinition());
+        registry.Register(GetCreatureTraitsExecutor.CreateDefinition());
     }
 
     private static List<IGlyphNodeExecutor> CreateExecutors() =>
@@ -84,6 +103,8 @@ public class GlyphBootstrap
         new BeforeGroupSpawnEventExecutor(),
         new AfterGroupSpawnEventExecutor(),
         new OnCreatureDeathEventExecutor(),
+        new OnTraitGrantedEventExecutor(),
+        new OnTraitRemovedEventExecutor(),
 
         // Flow
         new BranchExecutor(),
@@ -99,17 +120,32 @@ public class GlyphBootstrap
         new SetLocalVariableExecutor(),
         new DespawnCreatureExecutor(),
 
+        // Constants
+        new StringConstantExecutor(),
+        new IntConstantExecutor(),
+        new FloatConstantExecutor(),
+        new BoolConstantExecutor(),
+
         // Getters
         new GetCreatureHPExecutor(),
         new GetPartySizeExecutor(),
         new GetChaosStateExecutor(),
         new GetTimeOfDayExecutor(),
         new GetRandomIntExecutor(),
+        new GetAreaResRefExecutor(),
+        new GetRegionInfoExecutor(),
+        new GetCreatureLevelExecutor(),
+        new GetPartyMembersExecutor(),
+        new GetLocalVariableExecutor(),
 
         // Math / Logic
         new CompareExecutor(),
         new MathOpExecutor(),
         new BooleanOpExecutor(),
-        new NotExecutor()
+        new NotExecutor(),
+
+        // Traits
+        new HasTraitExecutor(),
+        new GetCreatureTraitsExecutor()
     ];
 }

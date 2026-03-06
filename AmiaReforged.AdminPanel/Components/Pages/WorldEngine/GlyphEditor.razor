@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using AmiaReforged.AdminPanel.Models
 @using AmiaReforged.AdminPanel.Services
+@using System.Text.Json
 @attribute [Authorize]
 @inject GlyphApiService Api
 @inject IWorldEngineEndpointService EndpointService
@@ -118,6 +119,59 @@
                             }
                         </div>
                     </div>
+
+                    @* Property Editor *@
+                    @if (_selectedNodeInfo != null)
+                    {
+                        <div class="card mt-3" style="background:var(--surface-color);border-color:var(--border-color)">
+                            <div class="card-header" style="background:var(--surface-hover);color:var(--text-primary)">
+                                <strong>Properties</strong>
+                                <small class="d-block" style="color:var(--text-secondary)">@_selectedNodeInfo.DisplayName</small>
+                            </div>
+                            <div class="card-body p-2">
+                                @{ var editablePins = _selectedNodeInfo.InputPins?.Where(p => !p.IsConnected).ToList() ?? []; }
+                                @if (editablePins.Count == 0)
+                                {
+                                    <p class="mb-0" style="color:var(--text-secondary);font-size:0.85rem">No editable properties. Connect or add data input pins.</p>
+                                }
+                                else
+                                {
+                                    @foreach (var pin in editablePins)
+                                    {
+                                        <div class="mb-2">
+                                            <label class="form-label mb-0" style="font-size:0.8rem;color:var(--text-secondary)">@pin.Name <small>(@pin.DataType)</small></label>
+                                            @if (pin.DataType == "Bool")
+                                            {
+                                                <div class="form-check">
+                                                    <input type="checkbox" class="form-check-input"
+                                                           checked="@(GetPinValue(pin) == "true")"
+                                                           @onchange="@(e => OnPropertyChanged(pin, e.Value is true ? "true" : "false"))" />
+                                                </div>
+                                            }
+                                            else if (pin.DataType == "Int")
+                                            {
+                                                <input type="number" class="form-control form-control-sm"
+                                                       value="@GetPinValue(pin)" step="1"
+                                                       @onchange="@(e => OnPropertyChanged(pin, e.Value?.ToString() ?? string.Empty))" />
+                                            }
+                                            else if (pin.DataType == "Float")
+                                            {
+                                                <input type="number" class="form-control form-control-sm"
+                                                       value="@GetPinValue(pin)" step="0.1"
+                                                       @onchange="@(e => OnPropertyChanged(pin, e.Value?.ToString() ?? string.Empty))" />
+                                            }
+                                            else
+                                            {
+                                                <input type="text" class="form-control form-control-sm"
+                                                       value="@GetPinValue(pin)"
+                                                       @onchange="@(e => OnPropertyChanged(pin, e.Value?.ToString() ?? string.Empty))" />
+                                            }
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    }
                 </div>
 
                 @* Graph Canvas *@
@@ -148,6 +202,7 @@
                     <thead>
                     <tr>
                         <th>Name</th>
+                        <th>Category</th>
                         <th>Event Type</th>
                         <th>Active</th>
                         <th>Updated</th>
@@ -159,6 +214,7 @@
                     {
                         <tr>
                             <td>@def.Name</td>
+                            <td><span class="badge bg-secondary">@def.Category</span></td>
                             <td><span class="badge bg-info">@def.EventType</span></td>
                             <td>
                                 @if (def.IsActive)
@@ -202,12 +258,22 @@
                             <input type="text" class="form-control" @bind="_createName" />
                         </div>
                         <div class="mb-3">
+                            <label class="form-label">Category</label>
+                            <select class="form-control" @bind="_createCategory">
+                                <option value="Encounter">Encounter</option>
+                                <option value="Trait">Trait</option>
+                                <option value="Environmental">Environmental</option>
+                                <option value="Narrative">Narrative</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label">Event Type</label>
                             <select class="form-control" @bind="_createEventType">
                                 <option value="">— Select —</option>
-                                <option value="BeforeGroupSpawn">BeforeGroupSpawn</option>
-                                <option value="AfterGroupSpawn">AfterGroupSpawn</option>
-                                <option value="OnCreatureDeath">OnCreatureDeath</option>
+                                @foreach (var et in GetEventTypesForCategory(_createCategory))
+                                {
+                                    <option value="@et">@et</option>
+                                }
                             </select>
                         </div>
                         <div class="mb-3">
@@ -264,6 +330,7 @@
     // Create modal
     private bool _showCreateModal;
     private string _createName = "";
+    private string _createCategory = "Encounter";
     private string _createEventType = "";
     private string _createDescription = "";
 
@@ -275,6 +342,10 @@
 
     // JS interop reference for cleanup
     private IJSObjectReference? _editorModule;
+    private DotNetObjectReference<GlyphEditor>? _dotNetRef;
+
+    // Selected node (from JS callback)
+    private SelectedNodeInfo? _selectedNodeInfo;
 
     private IEnumerable<IGrouping<string, GlyphNodeCatalogEntryDto>> FilteredCatalog
     {
@@ -288,6 +359,15 @@
                 nodes = nodes.Where(n =>
                     n.RestrictToEventType == null ||
                     n.RestrictToEventType == _editingDefinition.EventType);
+
+                // Filter by script category - show universal nodes (null) + matching category
+                string? editCategory = _editingDefinition.Category;
+                if (!string.IsNullOrEmpty(editCategory))
+                {
+                    nodes = nodes.Where(n =>
+                        n.ScriptCategory == null ||
+                        n.ScriptCategory.Equals(editCategory, StringComparison.OrdinalIgnoreCase));
+                }
             }
 
             // Filter by search text
@@ -320,6 +400,8 @@
                 await _editorModule.InvokeVoidAsync("destroy");
                 await _editorModule.DisposeAsync();
             }
+
+            _dotNetRef?.Dispose();
         }
         catch
         {
@@ -400,6 +482,7 @@
     private void ShowCreateModal()
     {
         _createName = "";
+        _createCategory = "Encounter";
         _createEventType = "";
         _createDescription = "";
         _showCreateModal = true;
@@ -419,6 +502,7 @@
             var request = new CreateGlyphRequest(
                 _createName.Trim(),
                 _createEventType,
+                _createCategory,
                 string.IsNullOrWhiteSpace(_createDescription) ? null : _createDescription.Trim(),
                 "{}", // Empty graph
                 false
@@ -521,8 +605,11 @@
     private void CloseEditor()
     {
         _editingDefinition = null;
+        _selectedNodeInfo = null;
         _error = null;
         _success = null;
+        _dotNetRef?.Dispose();
+        _dotNetRef = null;
     }
 
     private async Task InitializeEditor()
@@ -530,12 +617,13 @@
         try
         {
             _editorModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js");
+            _dotNetRef = DotNetObjectReference.Create(this);
 
             // Pass the node catalog and current graph JSON to the JS editor
             var catalogJson = System.Text.Json.JsonSerializer.Serialize(_nodeCatalog);
             var graphJson = _editingDefinition?.GraphJson ?? "{}";
 
-            await _editorModule.InvokeVoidAsync("initGlyphEditor", "glyph-rete-canvas", catalogJson, graphJson);
+            await _editorModule.InvokeVoidAsync("initGlyphEditor", "glyph-rete-canvas", catalogJson, graphJson, _dotNetRef);
         }
         catch (Exception ex)
         {
@@ -605,5 +693,85 @@
             "logic" => "#1abc9c",
             _ => "#7f8c8d"
         };
+    }
+
+    // ==================== Property Editor ====================
+
+    [JSInvokable]
+    public Task OnNodeSelectionChanged(string? json)
+    {
+        if (string.IsNullOrEmpty(json) || json == "null")
+        {
+            _selectedNodeInfo = null;
+        }
+        else
+        {
+            try
+            {
+                _selectedNodeInfo = JsonSerializer.Deserialize<SelectedNodeInfo>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+            }
+            catch
+            {
+                _selectedNodeInfo = null;
+            }
+        }
+
+        InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
+    }
+
+    private string GetPinValue(SelectedPinInfo pin)
+    {
+        return pin.OverrideValue ?? pin.DefaultValue ?? "";
+    }
+
+    private async Task OnPropertyChanged(SelectedPinInfo pin, string value)
+    {
+        if (_editorModule == null || _selectedNodeInfo == null) return;
+
+        try
+        {
+            await _editorModule.InvokeVoidAsync("setPropertyOverride", _selectedNodeInfo.NodeId, pin.Id, value);
+            pin.OverrideValue = string.IsNullOrEmpty(value) ? null : value;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to set property override");
+        }
+    }
+
+    private static List<string> GetEventTypesForCategory(string category)
+    {
+        return category switch
+        {
+            "Encounter" => ["BeforeGroupSpawn", "AfterGroupSpawn", "OnCreatureDeath"],
+            "Trait" => ["OnTraitGranted", "OnTraitRemoved"],
+            "Environmental" => ["BeforeGroupSpawn", "AfterGroupSpawn", "OnCreatureDeath"],
+            "Narrative" => ["BeforeGroupSpawn", "AfterGroupSpawn", "OnCreatureDeath"],
+            _ => ["BeforeGroupSpawn", "AfterGroupSpawn", "OnCreatureDeath"]
+        };
+    }
+
+    // ==================== DTOs for JS Interop ====================
+
+    private class SelectedNodeInfo
+    {
+        public string NodeId { get; set; } = "";
+        public string TypeId { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+        public List<SelectedPinInfo> InputPins { get; set; } = [];
+    }
+
+    private class SelectedPinInfo
+    {
+        public string Id { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string DataType { get; set; } = "";
+        public string? DefaultValue { get; set; }
+        public string? OverrideValue { get; set; }
+        public bool IsConnected { get; set; }
     }
 }

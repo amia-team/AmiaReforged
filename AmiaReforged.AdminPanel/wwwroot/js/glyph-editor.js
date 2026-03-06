@@ -5,9 +5,11 @@
  * a GlyphGraph JSON structure compatible with the server-side GlyphInterpreter.
  *
  * Exported API (ES module):
- *   initGlyphEditor(containerId, catalogJson, graphJson) — mount the editor
+ *   initGlyphEditor(containerId, catalogJson, graphJson, dotNetRef) — mount the editor
  *   getGraphJson() — serialize the current graph state
  *   addNode(nodeDefJson) — add a node from the palette
+ *   getSelectedNode() — get the currently selected node info (for property panel)
+ *   setPropertyOverride(nodeId, pinId, value) — set a property override on a node's input pin
  *   destroy() — clean up
  */
 
@@ -64,6 +66,7 @@ let connectingFrom = null; // { nodeId, pinId, pin, x, y }
 let mouseX = 0, mouseY = 0;
 let selectedNodeId = null;
 let hoveredPin = null;
+let blazorRef = null; // DotNet object reference for callbacks
 
 // ==================== Graph JSON Helpers ====================
 
@@ -85,7 +88,7 @@ function buildGraphJson() {
             TypeId: n.typeId,
             PositionX: Math.round(n.x),
             PositionY: Math.round(n.y),
-            PropertyOverrides: {},
+            PropertyOverrides: n.propertyOverrides || {},
             Comment: null,
         })),
         Edges: edges.map(e => ({
@@ -115,7 +118,11 @@ function loadGraphJson(json) {
         for (const n of g.Nodes) {
             const def = catalog.find(d => d.TypeId === n.TypeId);
             if (!def) continue;
-            nodes.push(createNodeInstance(def, n.PositionX, n.PositionY, n.InstanceId));
+            const nodeInst = createNodeInstance(def, n.PositionX, n.PositionY, n.InstanceId);
+            if (n.PropertyOverrides) {
+                nodeInst.propertyOverrides = { ...n.PropertyOverrides };
+            }
+            nodes.push(nodeInst);
         }
     }
 
@@ -173,6 +180,7 @@ function createNodeInstance(def, x, y, existingId) {
         def,
         inputPins,
         outputPins,
+        propertyOverrides: {},
     };
 }
 
@@ -291,14 +299,14 @@ function drawNode(node) {
 
     // Pins
     for (const pin of node.inputPins) {
-        drawPin(node.x + pin.nodeX, node.y + pin.nodeY, pin, 'input');
+        drawPin(node.x + pin.nodeX, node.y + pin.nodeY, pin, 'input', node);
     }
     for (const pin of node.outputPins) {
-        drawPin(node.x + pin.nodeX, node.y + pin.nodeY, pin, 'output');
+        drawPin(node.x + pin.nodeX, node.y + pin.nodeY, pin, 'output', node);
     }
 }
 
-function drawPin(x, y, pin, dir) {
+function drawPin(x, y, pin, dir, node) {
     const typeColor = DATA_TYPE_COLORS[pin.DataType] || '#aaaaaa';
     const isExec = pin.DataType === 'Exec';
     const isHovered = hoveredPin && hoveredPin.pin === pin;
@@ -338,6 +346,18 @@ function drawPin(x, y, pin, dir) {
     if (dir === 'input') {
         ctx.textAlign = 'left';
         ctx.fillText(pin.Name, x + PIN_RADIUS + 5, y);
+
+        // Show override or default value on unconnected data input pins
+        if (!isExec && node && !isPinConnected(node.id, pin.Id, 'input')) {
+            const overrides = node.propertyOverrides || {};
+            const val = overrides[pin.Id] !== undefined ? overrides[pin.Id] : (pin.DefaultValue ?? '');
+            if (val !== '' && val !== undefined && val !== null) {
+                ctx.fillStyle = '#777799';
+                ctx.font = 'italic 9px sans-serif';
+                const labelWidth = ctx.measureText(pin.Name).width;
+                ctx.fillText('= ' + val, x + PIN_RADIUS + 10 + labelWidth, y);
+            }
+        }
     } else {
         ctx.textAlign = 'right';
         ctx.fillText(pin.Name, x - PIN_RADIUS - 5, y);
@@ -384,6 +404,13 @@ function roundRect(ctx, x, y, w, h, r) {
     ctx.lineTo(x, y + r);
     ctx.arcTo(x, y, x + r, y, r);
     ctx.closePath();
+}
+
+function isPinConnected(nodeId, pinId, dir) {
+    if (dir === 'input') {
+        return edges.some(e => e.tgtNodeId === nodeId && e.tgtPinId === pinId);
+    }
+    return edges.some(e => e.srcNodeId === nodeId && e.srcPinId === pinId);
 }
 
 // ==================== Hit Testing ====================
@@ -469,6 +496,7 @@ function onMouseDown(e) {
         dragOffsetX = wp.x - nodeHit.x;
         dragOffsetY = wp.y - nodeHit.y;
         selectedNodeId = nodeHit.id;
+        notifySelectionChanged();
 
         // Bring to front
         const idx = nodes.indexOf(nodeHit);
@@ -484,6 +512,7 @@ function onMouseDown(e) {
     panStartX = e.clientX;
     panStartY = e.clientY;
     selectedNodeId = null;
+    notifySelectionChanged();
 }
 
 function onMouseMove(e) {
@@ -592,6 +621,7 @@ function onKeyDown(e) {
             nodes = nodes.filter(n => n.id !== selectedNodeId);
             edges = edges.filter(e => e.srcNodeId !== selectedNodeId && e.tgtNodeId !== selectedNodeId);
             selectedNodeId = null;
+            notifySelectionChanged();
         }
     }
 }
@@ -633,6 +663,39 @@ function onContextMenu(e) {
     }
 }
 
+// ==================== Selection Helpers ====================
+
+function getSelectedNodeData() {
+    if (!selectedNodeId) return null;
+    const node = nodes.find(n => n.id === selectedNodeId);
+    if (!node) return null;
+
+    const inputPinData = node.inputPins
+        .filter(p => p.DataType !== 'Exec')
+        .map(p => ({
+            id: p.Id,
+            name: p.Name,
+            dataType: p.DataType,
+            defaultValue: p.DefaultValue ?? null,
+            overrideValue: (node.propertyOverrides || {})[p.Id] ?? null,
+            isConnected: isPinConnected(node.id, p.Id, 'input'),
+        }));
+
+    return {
+        nodeId: node.id,
+        typeId: node.typeId,
+        displayName: node.def.DisplayName,
+        inputPins: inputPinData,
+    };
+}
+
+function notifySelectionChanged() {
+    if (blazorRef) {
+        const data = getSelectedNodeData();
+        blazorRef.invokeMethodAsync('OnNodeSelectionChanged', JSON.stringify(data));
+    }
+}
+
 // ==================== Resize ====================
 
 function resizeCanvas() {
@@ -648,7 +711,8 @@ let resizeObserver = null;
 
 // ==================== Public API ====================
 
-export function initGlyphEditor(containerId, catalogJson, graphJson) {
+export function initGlyphEditor(containerId, catalogJson, graphJson, dotNetRef) {
+    blazorRef = dotNetRef || null;
     const container = document.getElementById(containerId);
     if (!container) {
         console.error('Glyph editor container not found:', containerId);
@@ -733,6 +797,21 @@ export function addNode(nodeDefJson) {
     const node = createNodeInstance(def, wp.x + ox, wp.y + oy);
     nodes.push(node);
     selectedNodeId = node.id;
+}
+
+export function getSelectedNode() {
+    return JSON.stringify(getSelectedNodeData());
+}
+
+export function setPropertyOverride(nodeId, pinId, value) {
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node) return;
+    if (!node.propertyOverrides) node.propertyOverrides = {};
+    if (value === null || value === undefined || value === '') {
+        delete node.propertyOverrides[pinId];
+    } else {
+        node.propertyOverrides[pinId] = value;
+    }
 }
 
 export function destroy() {

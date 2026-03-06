@@ -16,14 +16,14 @@ public class GlyphExecutionContext
     public required GlyphGraph Graph { get; init; }
 
     /// <summary>
-    /// The encounter context from the spawn system.
+    /// The encounter context from the spawn system. Null for non-encounter scripts.
     /// </summary>
-    public required EncounterContext EncounterContext { get; init; }
+    public EncounterContext? EncounterContext { get; init; }
 
     /// <summary>
-    /// The spawn profile that owns the encounter.
+    /// The spawn profile that owns the encounter. Null for non-encounter scripts.
     /// </summary>
-    public required SpawnProfile Profile { get; init; }
+    public SpawnProfile? Profile { get; init; }
 
     /// <summary>
     /// The spawn group being processed (null for OnCreatureDeath if group is unknown).
@@ -57,7 +57,26 @@ public class GlyphExecutionContext
     /// </summary>
     public uint Killer { get; set; }
 
+    // ==================== Trait Context ====================
+
     /// <summary>
+    /// The character ID for trait-related scripts (e.g., OnTraitGranted, OnTraitRemoved).
+    /// Null for non-trait scripts.
+    /// </summary>
+    public string? CharacterId { get; set; }
+
+    /// <summary>
+    /// The trait tag being granted/removed. Null for non-trait scripts.
+    /// </summary>
+    public string? TraitTag { get; set; }
+
+    /// <summary>
+    /// Object ID of the creature that the trait is being applied to/removed from.
+    /// </summary>
+    public uint TargetCreature { get; set; }
+
+    // ==================== Variables & Cache ====================
+
     /// Mutable variable store for the current execution run.
     /// Keys are variable names, values are boxed .NET values.
     /// Initialized from the graph's <see cref="GlyphGraph.Variables"/> defaults.

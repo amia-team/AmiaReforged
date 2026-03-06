@@ -15,7 +15,7 @@ public class GetChaosStateExecutor : IGlyphNodeExecutor
     {
         return Task.FromResult(GlyphNodeResult.Data(new Dictionary<string, object?>
         {
-            ["danger"] = context.EncounterContext.Chaos.Danger,
+            ["danger"] = context.EncounterContext!.Chaos.Danger,
             ["corruption"] = context.EncounterContext.Chaos.Corruption,
             ["density"] = context.EncounterContext.Chaos.Density,
             ["mutation"] = context.EncounterContext.Chaos.Mutation

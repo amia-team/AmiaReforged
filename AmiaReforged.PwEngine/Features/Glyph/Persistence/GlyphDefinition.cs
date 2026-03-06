@@ -34,6 +34,14 @@ public class GlyphDefinition
     public string EventType { get; set; } = string.Empty;
 
     /// <summary>
+    /// The script category (Encounter, Trait, Environmental, Narrative).
+    /// Stored as a string for forward-compatibility. Defaults to "Encounter".
+    /// </summary>
+    [Required]
+    [MaxLength(32)]
+    public string Category { get; set; } = "Encounter";
+
+    /// <summary>
     /// The complete serialized graph (nodes, edges, variables, canvas positions).
     /// </summary>
     [Required]

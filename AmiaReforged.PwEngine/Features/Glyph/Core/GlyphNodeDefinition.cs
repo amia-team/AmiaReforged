@@ -53,4 +53,10 @@ public class GlyphNodeDefinition
     /// Null means the node is available in all graph types.
     /// </summary>
     public GlyphEventType? RestrictToEventType { get; init; }
+
+    /// <summary>
+    /// When set, this node is only shown in the palette for scripts of the specified category.
+    /// Null means the node is available across all script categories (universal).
+    /// </summary>
+    public GlyphScriptCategory? ScriptCategory { get; init; }
 }

@@ -105,4 +105,42 @@ public class GlyphRepository : IGlyphRepository
         await _db.SaveChangesAsync();
         Log.Info("Deleted Glyph binding {Id}.", id);
     }
+
+    // === Trait Bindings ===
+
+    public async Task<List<TraitGlyphBinding>> GetTraitBindingsForTagAsync(string traitTag)
+    {
+        return await _db.TraitGlyphBindings
+            .Include(b => b.GlyphDefinition)
+            .Where(b => b.TraitTag == traitTag)
+            .OrderBy(b => b.Priority)
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
+    public async Task<List<TraitGlyphBinding>> GetAllTraitBindingsAsync()
+    {
+        return await _db.TraitGlyphBindings
+            .Include(b => b.GlyphDefinition)
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
+    public async Task CreateTraitBindingAsync(TraitGlyphBinding binding)
+    {
+        _db.TraitGlyphBindings.Add(binding);
+        await _db.SaveChangesAsync();
+        Log.Info("Created Glyph trait binding: tag={TraitTag}, definition={DefId}, priority={Priority}.",
+            binding.TraitTag, binding.GlyphDefinitionId, binding.Priority);
+    }
+
+    public async Task DeleteTraitBindingAsync(Guid id)
+    {
+        TraitGlyphBinding? binding = await _db.TraitGlyphBindings.FindAsync(id);
+        if (binding == null) return;
+
+        _db.TraitGlyphBindings.Remove(binding);
+        await _db.SaveChangesAsync();
+        Log.Info("Deleted Glyph trait binding {Id}.", id);
+    }
 }

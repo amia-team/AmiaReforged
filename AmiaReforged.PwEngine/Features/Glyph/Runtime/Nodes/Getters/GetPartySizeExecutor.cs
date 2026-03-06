@@ -15,7 +15,7 @@ public class GetPartySizeExecutor : IGlyphNodeExecutor
     {
         return Task.FromResult(GlyphNodeResult.Data(new Dictionary<string, object?>
         {
-            ["party_size"] = context.EncounterContext.PartySize
+            ["party_size"] = context.EncounterContext!.PartySize
         }));
     }
 

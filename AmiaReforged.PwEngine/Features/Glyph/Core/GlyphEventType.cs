@@ -22,5 +22,17 @@ public enum GlyphEventType
     /// Fires when a creature spawned by the dynamic encounter system dies.
     /// Provides the dead creature, killer, and encounter context.
     /// </summary>
-    OnCreatureDeath
+    OnCreatureDeath,
+
+    /// <summary>
+    /// Fires when a trait is granted to a character.
+    /// Provides the character ID, trait tag, and target creature reference.
+    /// </summary>
+    OnTraitGranted,
+
+    /// <summary>
+    /// Fires when a trait is removed from a character.
+    /// Provides the character ID, trait tag, and target creature reference.
+    /// </summary>
+    OnTraitRemoved
 }

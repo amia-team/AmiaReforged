@@ -136,6 +136,7 @@ public class PwEngineContext : DbContext
 
     public DbSet<GlyphDefinition> GlyphDefinitions { get; set; } = null!;
     public DbSet<SpawnProfileGlyphBinding> SpawnProfileGlyphBindings { get; set; } = null!;
+    public DbSet<TraitGlyphBinding> TraitGlyphBindings { get; set; } = null!;
 
 
     public PwEngineContext()
@@ -240,5 +241,6 @@ public class PwEngineContext : DbContext
         // Glyph Visual Scripting
         modelBuilder.ApplyConfiguration(new GlyphDefinitionConfiguration());
         modelBuilder.ApplyConfiguration(new SpawnProfileGlyphBindingConfiguration());
+        modelBuilder.ApplyConfiguration(new TraitGlyphBindingConfiguration());
     }
 }

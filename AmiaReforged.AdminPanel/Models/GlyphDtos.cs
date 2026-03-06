@@ -8,6 +8,7 @@ public record GlyphDefinitionDto(
     string Name,
     string? Description,
     string EventType,
+    string Category,
     string GraphJson,
     bool IsActive,
     DateTime CreatedAt,
@@ -35,6 +36,7 @@ public record GlyphNodeCatalogEntryDto(
     string ColorClass,
     bool IsSingleton,
     string? RestrictToEventType,
+    string? ScriptCategory,
     List<GlyphPinDto> InputPins,
     List<GlyphPinDto> OutputPins);
 
@@ -55,6 +57,7 @@ public record GlyphPinDto(
 public record CreateGlyphRequest(
     string Name,
     string EventType,
+    string Category = "Encounter",
     string? Description = null,
     string? GraphJson = null,
     bool IsActive = false);
@@ -66,6 +69,7 @@ public record UpdateGlyphRequest(
     string? Name = null,
     string? Description = null,
     string? EventType = null,
+    string? Category = null,
     string? GraphJson = null,
     bool? IsActive = null);
 

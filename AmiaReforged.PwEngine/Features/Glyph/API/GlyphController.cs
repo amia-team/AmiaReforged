@@ -73,6 +73,7 @@ public class GlyphController
             Name = req.Name,
             Description = req.Description,
             EventType = req.EventType,
+            Category = req.Category,
             GraphJson = req.GraphJson ?? "{}",
             IsActive = req.IsActive
         };
@@ -103,6 +104,7 @@ public class GlyphController
         if (req.Name != null) definition.Name = req.Name;
         if (req.Description != null) definition.Description = req.Description;
         if (req.EventType != null) definition.EventType = req.EventType;
+        if (req.Category != null) definition.Category = req.Category;
         if (req.GraphJson != null) definition.GraphJson = req.GraphJson;
         if (req.IsActive.HasValue) definition.IsActive = req.IsActive.Value;
 
@@ -207,7 +209,7 @@ public class GlyphController
         => new(503, new ErrorResponse("Service unavailable", "Glyph service is not initialized."));
 
     private static GlyphDefinitionDto ToDto(GlyphDefinition d) => new(
-        d.Id, d.Name, d.Description, d.EventType, d.GraphJson, d.IsActive,
+        d.Id, d.Name, d.Description, d.EventType, d.Category, d.GraphJson, d.IsActive,
         d.CreatedAt, d.UpdatedAt);
 
     private static GlyphBindingDto BindingToDto(SpawnProfileGlyphBinding b) => new(
@@ -217,7 +219,7 @@ public class GlyphController
 
     private static GlyphNodeCatalogEntryDto NodeDefinitionToDto(GlyphNodeDefinition d) => new(
         d.TypeId, d.DisplayName, d.Category, d.Description, d.ColorClass,
-        d.IsSingleton, d.RestrictToEventType?.ToString(),
+        d.IsSingleton, d.RestrictToEventType?.ToString(), d.ScriptCategory?.ToString(),
         d.InputPins.Select(PinToDto).ToList(),
         d.OutputPins.Select(PinToDto).ToList());
 
@@ -228,7 +230,7 @@ public class GlyphController
     // ==================== DTOs ====================
 
     public record GlyphDefinitionDto(
-        Guid Id, string Name, string? Description, string EventType,
+        Guid Id, string Name, string? Description, string EventType, string Category,
         string GraphJson, bool IsActive, DateTime CreatedAt, DateTime UpdatedAt);
 
     public record GlyphBindingDto(
@@ -237,7 +239,7 @@ public class GlyphController
 
     public record GlyphNodeCatalogEntryDto(
         string TypeId, string DisplayName, string Category, string Description,
-        string ColorClass, bool IsSingleton, string? RestrictToEventType,
+        string ColorClass, bool IsSingleton, string? RestrictToEventType, string? ScriptCategory,
         List<GlyphPinDto> InputPins, List<GlyphPinDto> OutputPins);
 
     public record GlyphPinDto(
@@ -245,12 +247,12 @@ public class GlyphController
         string? DefaultValue, bool AllowMultipleConnections);
 
     public record CreateGlyphRequest(
-        string Name, string EventType, string? Description = null,
-        string? GraphJson = null, bool IsActive = false);
+        string Name, string EventType, string Category = "Encounter",
+        string? Description = null, string? GraphJson = null, bool IsActive = false);
 
     public record UpdateGlyphRequest(
         string? Name = null, string? Description = null, string? EventType = null,
-        string? GraphJson = null, bool? IsActive = null);
+        string? Category = null, string? GraphJson = null, bool? IsActive = null);
 
     public record CreateBindingRequest(
         Guid SpawnProfileId, Guid GlyphDefinitionId, int Priority = 0);

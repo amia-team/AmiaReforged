@@ -21,13 +21,13 @@ public class OnCreatureDeathEventExecutor : IGlyphNodeExecutor
         {
             ["dead_creature"] = context.DeadCreature,
             ["killer"] = context.Killer,
-            ["party_size"] = context.EncounterContext.PartySize,
+            ["party_size"] = context.EncounterContext!.PartySize,
             ["area_resref"] = context.EncounterContext.AreaResRef,
             ["danger"] = context.EncounterContext.Chaos.Danger,
             ["corruption"] = context.EncounterContext.Chaos.Corruption,
             ["density"] = context.EncounterContext.Chaos.Density,
             ["mutation"] = context.EncounterContext.Chaos.Mutation,
-            ["profile_name"] = context.Profile.Name,
+            ["profile_name"] = context.Profile!.Name,
             ["group_name"] = context.Group?.Name ?? string.Empty
         };
 

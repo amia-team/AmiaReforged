@@ -25,6 +25,12 @@ public class GlyphDefinitionConfiguration : IEntityTypeConfiguration<GlyphDefini
             .HasMaxLength(64)
             .IsRequired();
 
+        builder.Property(g => g.Category)
+            .HasColumnName("category")
+            .HasMaxLength(32)
+            .HasDefaultValue("Encounter")
+            .IsRequired();
+
         builder.Property(g => g.GraphJson)
             .HasColumnName("graph_json")
             .HasColumnType("text")

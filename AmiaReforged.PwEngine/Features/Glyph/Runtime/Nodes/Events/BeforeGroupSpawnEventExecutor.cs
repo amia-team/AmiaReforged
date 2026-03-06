@@ -20,7 +20,7 @@ public class BeforeGroupSpawnEventExecutor : IGlyphNodeExecutor
         // Expose encounter data as output values for downstream nodes to consume
         var outputs = new Dictionary<string, object?>
         {
-            ["party_size"] = context.EncounterContext.PartySize,
+            ["party_size"] = context.EncounterContext!.PartySize,
             ["area_resref"] = context.EncounterContext.AreaResRef,
             ["game_time"] = context.EncounterContext.GameTime.TotalHours,
             ["danger"] = context.EncounterContext.Chaos.Danger,
@@ -28,9 +28,9 @@ public class BeforeGroupSpawnEventExecutor : IGlyphNodeExecutor
             ["density"] = context.EncounterContext.Chaos.Density,
             ["mutation"] = context.EncounterContext.Chaos.Mutation,
             ["spawn_count"] = context.SpawnCount,
-            ["profile_name"] = context.Profile.Name,
+            ["profile_name"] = context.Profile!.Name,
             ["group_name"] = context.Group?.Name ?? string.Empty,
-            ["is_in_region"] = context.EncounterContext.IsInRegion,
+            ["is_in_region"] = context.EncounterContext!.IsInRegion,
             ["region_tag"] = context.EncounterContext.RegionTag ?? string.Empty
         };
 

@@ -3,33 +3,36 @@ using AmiaReforged.PwEngine.Features.Glyph.Core;
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
 /// <summary>
-/// Returns the current NWN game time as total hours (a float).
+/// Returns the area ResRef from the encounter context.
 /// </summary>
-public class GetTimeOfDayExecutor : IGlyphNodeExecutor
+public class GetAreaResRefExecutor : IGlyphNodeExecutor
 {
-    public const string NodeTypeId = "getter.time_of_day";
+    public const string NodeTypeId = "getter.area_resref";
     public string TypeId => NodeTypeId;
 
     public Task<GlyphNodeResult> ExecuteAsync(
         GlyphNodeInstance node, GlyphExecutionContext context, Func<string, Task<object?>> resolveInput)
     {
+        string resref = context.EncounterContext?.AreaResRef ?? string.Empty;
+
         return Task.FromResult(GlyphNodeResult.Data(new Dictionary<string, object?>
         {
-            ["hours"] = context.EncounterContext!.GameTime.TotalHours
+            ["area_resref"] = resref
         }));
     }
 
     public static GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
-        DisplayName = "Get Time of Day",
+        DisplayName = "Get Area ResRef",
         Category = "Getters",
-        Description = "Returns the current NWN game time as total hours (0.0 – 24.0).",
+        Description = "Returns the ResRef of the current area.",
         ColorClass = "node-getter",
+        ScriptCategory = GlyphScriptCategory.Encounter,
         InputPins = [],
         OutputPins =
         [
-            new GlyphPin { Id = "hours", Name = "Hours", DataType = GlyphDataType.Float, Direction = GlyphPinDirection.Output }
+            new GlyphPin { Id = "area_resref", Name = "Area ResRef", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output }
         ]
     };
 }

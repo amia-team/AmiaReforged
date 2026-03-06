@@ -18,4 +18,10 @@ public interface IGlyphRepository
     Task<SpawnProfileGlyphBinding?> GetBindingByIdAsync(Guid id);
     Task CreateBindingAsync(SpawnProfileGlyphBinding binding);
     Task DeleteBindingAsync(Guid id);
+
+    // === Trait Bindings ===
+    Task<List<TraitGlyphBinding>> GetTraitBindingsForTagAsync(string traitTag);
+    Task<List<TraitGlyphBinding>> GetAllTraitBindingsAsync();
+    Task CreateTraitBindingAsync(TraitGlyphBinding binding);
+    Task DeleteTraitBindingAsync(Guid id);
 }
