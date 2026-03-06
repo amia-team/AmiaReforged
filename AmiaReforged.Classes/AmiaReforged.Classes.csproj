@@ -23,4 +23,8 @@
         <ProjectReference Include="..\AmiaReforged.Core\AmiaReforged.Core.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Associates\Bonuses\Strategies\Companions\" />
+    </ItemGroup>
+
 </Project>
