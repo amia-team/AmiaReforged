@@ -225,14 +225,14 @@ public class TraitController
                 "Not found", $"No trait definition with tag '{tag}'"));
         }
 
-        // Check if any characters currently have this trait
-        bool inUse = await context.CharacterTraits.AnyAsync(ct => ct.TraitTag == tag);
-        if (inUse)
+        // Remove any character trait selections referencing this definition
+        var characterTraits = await context.CharacterTraits
+            .Where(ct => ct.TraitTag == tag)
+            .ToListAsync();
+
+        if (characterTraits.Count > 0)
         {
-            return new ApiResult(409, new ErrorResponse(
-                "Conflict",
-                $"Cannot delete trait '{tag}' — it is currently assigned to one or more characters. " +
-                "Remove it from all characters first."));
+            context.CharacterTraits.RemoveRange(characterTraits);
         }
 
         context.TraitDefinitions.Remove(existing);
