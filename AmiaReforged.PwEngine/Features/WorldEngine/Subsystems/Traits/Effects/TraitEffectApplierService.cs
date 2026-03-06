@@ -1,4 +1,6 @@
+using System.Text.Json;
 using AmiaReforged.Core.UserInterface;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -17,12 +19,19 @@ public class TraitEffectApplierService
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     private readonly TraitEffectApplicationService _effectService;
+    private readonly ICharacterTraitRepository _characterTraitRepo;
+    private readonly ITraitRepository _traitRepo;
     private readonly AbilityResolver _abilityResolver = new();
     private readonly SkillResolver _skillResolver = new();
 
-    public TraitEffectApplierService(TraitEffectApplicationService effectService)
+    public TraitEffectApplierService(
+        TraitEffectApplicationService effectService,
+        ICharacterTraitRepository characterTraitRepo,
+        ITraitRepository traitRepo)
     {
         _effectService = effectService;
+        _characterTraitRepo = characterTraitRepo;
+        _traitRepo = traitRepo;
 
         NwModule.Instance.OnClientEnter += OnClientEnter;
         NwModule.Instance.OnPlayerLevelUp += OnPlayerLevelUp;
@@ -44,6 +53,7 @@ public class TraitEffectApplierService
         Guid characterId = PcKeyUtils.GetPcKey(player);
         if (characterId == Guid.Empty) return;
 
+        RefundOrphanedTraits(player, characterId);
         StripTraitEffects(creature);
         ApplyActiveTraitEffects(creature, characterId);
     }
@@ -53,6 +63,44 @@ public class TraitEffectApplierService
     private void OnPlayerLevelUp(ModuleEvents.OnPlayerLevelUp e) => ApplyTraits(e.Player);
 
     private void OnPlayerRespawn(ModuleEvents.OnPlayerRespawn e) => ApplyTraits(e.Player);
+
+    /// <summary>
+    ///     Detects character traits whose definitions no longer exist in the in-memory repository,
+    ///     deletes them from the database, and records the refund on the player's <c>ds_pckey</c> item.
+    ///     Budget points are freed automatically because <see cref="TraitBudget" /> derives used points
+    ///     from the character_traits table — removing the row restores the points.
+    /// </summary>
+    /// <param name="player">The player whose <c>ds_pckey</c> will store the refund audit trail.</param>
+    /// <param name="characterId">The persisted character identifier.</param>
+    private void RefundOrphanedTraits(NwPlayer player, Guid characterId)
+    {
+        List<CharacterTrait> allTraits =
+            _characterTraitRepo.GetByCharacterId(CharacterId.From(characterId));
+
+        List<CharacterTrait> orphans = allTraits
+            .Where(ct => _traitRepo.Get(ct.TraitTag) == null)
+            .ToList();
+
+        if (orphans.Count == 0) return;
+
+        foreach (CharacterTrait orphan in orphans)
+        {
+            _characterTraitRepo.Delete(orphan.Id);
+            Log.Info($"Deleted orphaned trait '{orphan.TraitTag}' for character {characterId}.");
+        }
+
+        NwItem? pcKey = player.LoginCreature?.Inventory.Items
+            .FirstOrDefault(i => i.ResRef == "ds_pckey");
+
+        if (pcKey != null)
+        {
+            OrphanedTraitRecorder.Record(pcKey, orphans);
+        }
+
+        player.SendServerMessage(
+            $"{orphans.Count} trait(s) were removed because their definitions no longer exist. Points refunded.",
+            ColorConstants.Orange);
+    }
 
     /// <summary>
     ///     Removes all effects whose tag starts with <see cref="TraitEffectApplicationService.EffectTagPrefix" />.
@@ -108,6 +156,60 @@ public class TraitEffectApplierService
             _ => null
         };
     }
+
+    /// <summary>
+    ///     Appends orphaned-trait refund records to the <c>trait_refunds_json</c> local variable
+    ///     on the player's <c>ds_pckey</c> item. The variable persists across server resets
+    ///     because it is stored on a BIC-saved inventory item.
+    /// </summary>
+    private static class OrphanedTraitRecorder
+    {
+        private const string VarName = "trait_refunds_json";
+
+        /// <summary>
+        ///     Appends one <see cref="TraitRefundRecord" /> per orphan to the existing JSON array
+        ///     on the <paramref name="pcKey" /> item.
+        /// </summary>
+        /// <param name="pcKey">The <c>ds_pckey</c> inventory item.</param>
+        /// <param name="orphans">The orphaned character traits being refunded.</param>
+        public static void Record(NwItem pcKey, List<CharacterTrait> orphans)
+        {
+            LocalVariableString local = pcKey.GetObjectVariable<LocalVariableString>(VarName);
+
+            List<TraitRefundRecord> records = DeserializeExisting(local);
+
+            foreach (CharacterTrait orphan in orphans)
+            {
+                records.Add(new TraitRefundRecord(orphan.TraitTag, DateTime.UtcNow));
+            }
+
+            local.Value = JsonSerializer.Serialize(records);
+        }
+
+        private static List<TraitRefundRecord> DeserializeExisting(LocalVariableString local)
+        {
+            if (!local.HasValue || string.IsNullOrWhiteSpace(local.Value))
+                return new List<TraitRefundRecord>();
+
+            try
+            {
+                return JsonSerializer.Deserialize<List<TraitRefundRecord>>(local.Value)
+                       ?? new List<TraitRefundRecord>();
+            }
+            catch (JsonException)
+            {
+                return new List<TraitRefundRecord>();
+            }
+        }
+    }
+
+    /// <summary>
+    ///     Immutable record stored in the <c>trait_refunds_json</c> local variable
+    ///     on <c>ds_pckey</c> to provide an audit trail of orphaned-trait refunds.
+    /// </summary>
+    /// <param name="Tag">The tag of the trait definition that was removed.</param>
+    /// <param name="RefundedAt">UTC timestamp when the refund occurred.</param>
+    private record TraitRefundRecord(string Tag, DateTime RefundedAt);
 
     /// <summary>
     ///     Resolves <see cref="TraitEffect" /> instances targeting an ability (Strength, Intelligence, etc.)
