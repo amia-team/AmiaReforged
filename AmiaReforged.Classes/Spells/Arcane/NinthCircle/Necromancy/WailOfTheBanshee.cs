@@ -26,9 +26,6 @@ namespace AmiaReforged.Classes.Spells.Arcane.NinthCircle.Necromancy;
 [ServiceBinding(typeof(ISpell))]
 public class WailOfTheBanshee(DeathSpellService deathSpellService) : ISpell
 {
-    private const int PaleMasterClassId = 24;
-    private const float EffectRadius = 10.0f;
-
     public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "NW_S0_WailBansh";
@@ -38,7 +35,7 @@ public class WailOfTheBanshee(DeathSpellService deathSpellService) : ISpell
         if (eventData.Caster is not NwCreature caster) return;
         if (eventData.TargetLocation == null) return;
 
-        int paleMasterLevel = GetPaleMasterLevel(caster);
+        int paleMasterLevel = caster.GetClassInfo(ClassType.PaleMaster)?.Level ?? 0;
         int casterLevel = caster.CasterLevel + paleMasterLevel;
         int maxTargets = casterLevel;
         int dc = eventData.SaveDC;
@@ -49,7 +46,7 @@ public class WailOfTheBanshee(DeathSpellService deathSpellService) : ISpell
         // Apply the FNF VFX impact at the target location
         eventData.TargetLocation.ApplyEffect(EffectDuration.Instant, wailVfx);
 
-        // Get targets sorted by distance from the spell target location
+        // Get hostile creatures sorted by distance from the spell target location
         List<NwCreature> targets = GetTargetsByDistance(eventData, caster, maxTargets);
 
         int targetCount = 0;
@@ -58,7 +55,7 @@ public class WailOfTheBanshee(DeathSpellService deathSpellService) : ISpell
             if (targetCount >= maxTargets) break;
 
             // Signal spell cast at event
-            SpellUtils.SignalSpell(caster, target, eventData.Spell);
+            CreatureEvents.OnSpellCastAt.Signal(caster, target, eventData.Spell);
 
             // Apply temporary spell resistance decrease based on Pale Master level
             if (paleMasterLevel > 0)
@@ -94,34 +91,16 @@ public class WailOfTheBanshee(DeathSpellService deathSpellService) : ISpell
 
     private static List<NwCreature> GetTargetsByDistance(SpellEvents.OnSpellCast eventData, NwCreature caster, int maxTargets)
     {
-        Location targetLocation = eventData.TargetLocation!;
+        if (eventData.TargetLocation is not {} targetLocation) return [];
         List<(NwCreature creature, float distance)> targetsWithDistance = [];
 
-        // Check if there's a direct target first
-        if (eventData.TargetObject is NwCreature directTarget &&
-            SpellUtils.IsValidHostileTarget(directTarget, caster))
-        {
-            float directDistance = Vector3.Distance(targetLocation.Position, directTarget.Position);
-            if (directDistance <= EffectRadius)
-            {
-                targetsWithDistance.Add((directTarget, directDistance));
-            }
-        }
-
-        // Get all creatures in the area
-        foreach (NwCreature creature in targetLocation.GetObjectsInShapeByType<NwCreature>(
-                     Shape.Sphere, EffectRadius, false))
-        {
-            // Skip if already added as direct target
-            if (eventData.TargetObject is NwCreature directTarget2 && creature == directTarget2)
-                continue;
-
-            if (!SpellUtils.IsValidHostileTarget(creature, caster))
-                continue;
-
-            float distance = Vector3.Distance(targetLocation.Position, creature.Position);
-            targetsWithDistance.Add((creature, distance));
-        }
+        // Get creatures and their distance from target location within colossal area that are hostile and not dead
+        targetsWithDistance
+            .AddRange(from creature in targetLocation
+                    .GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal, false)
+            where caster.IsReactionTypeHostile(creature) && !creature.IsDead
+            let distance = Vector3.Distance(targetLocation.Position, creature.Position)
+            select (creature, distance));
 
         // Sort by distance and take up to maxTargets
         return targetsWithDistance
@@ -149,16 +128,6 @@ public class WailOfTheBanshee(DeathSpellService deathSpellService) : ISpell
 
         target.ApplyEffect(EffectDuration.Instant, deathVfx);
         target.ApplyEffect(EffectDuration.Instant, Effect.Death());
-    }
-
-    private static int GetPaleMasterLevel(NwCreature creature)
-    {
-        foreach (CreatureClassInfo classInfo in creature.Classes)
-        {
-            if (classInfo.Class.Id == PaleMasterClassId)
-                return classInfo.Level;
-        }
-        return 0;
     }
 
     public void SetSpellResisted(bool result)
