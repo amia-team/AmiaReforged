@@ -1,6 +1,7 @@
 using AmiaReforged.PwEngine.Features.Encounters.Models;
 using AmiaReforged.PwEngine.Features.Glyph.Integration;
 using Anvil.API;
+using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
@@ -120,6 +121,9 @@ public class DynamicCreatureSpawner
 
                 // Tag creature with profile ID for Glyph OnCreatureDeath resolution
                 NWScript.SetLocalString(creature, GlyphProfileIdVar, profile.Id.ToString());
+
+                // Subscribe to per-creature OnDeath for Glyph hooks
+                SubscribeCreatureOnDeath(creature, profile, context);
             }
 
             // === Glyph: AfterGroupSpawn hook ===
@@ -203,6 +207,9 @@ public class DynamicCreatureSpawner
 
                 // Tag creature with profile ID for Glyph OnCreatureDeath resolution
                 NWScript.SetLocalString(creature, GlyphProfileIdVar, profile.Id.ToString());
+
+                // Subscribe to per-creature OnDeath for Glyph hooks
+                SubscribeCreatureOnDeath(creature, profile, context);
             }
 
             // === Glyph: AfterGroupSpawn hook ===
@@ -406,6 +413,34 @@ public class DynamicCreatureSpawner
         }
 
         return creature;
+    }
+
+    /// <summary>
+    /// Subscribes to a spawned creature's <see cref="NwCreature.OnDeath"/> event so that
+    /// any Glyph <see cref="GlyphEventType.OnCreatureDeath"/> graphs bound to the profile
+    /// are executed when the creature dies. The profile and encounter context from spawn time
+    /// are captured in the closure.
+    /// </summary>
+    private void SubscribeCreatureOnDeath(uint creatureId, SpawnProfile profile, EncounterContext spawnContext)
+    {
+        NwCreature? nwCreature = creatureId.ToNwObject<NwCreature>();
+        if (nwCreature == null) return;
+
+        if (!_glyphHooks.HasBindingsForProfile(profile.Id)) return;
+
+        nwCreature.OnDeath += OnSpawnedCreatureDeath;
+        return;
+
+        void OnSpawnedCreatureDeath(CreatureEvents.OnDeath deathEvent)
+        {
+            // Unsubscribe immediately — each creature dies at most once
+            deathEvent.KilledCreature.OnDeath -= OnSpawnedCreatureDeath;
+
+            uint dead = deathEvent.KilledCreature;
+            uint killer = deathEvent.Killer ?? NWScript.OBJECT_INVALID;
+
+            _glyphHooks.RunOnCreatureDeath(dead, killer, profile, spawnContext);
+        }
     }
 
     private static SpawnEntry WeightedSelectEntry(List<SpawnEntry> entries, int totalWeight)

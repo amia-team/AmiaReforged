@@ -52,13 +52,13 @@ public class ApplyEffectExecutor : IGlyphNodeExecutor
             "ATTACK" => NWScript.EffectAttackIncrease(magnitude),
             "DAMAGE" => NWScript.EffectDamageIncrease(magnitude, NWScript.DAMAGE_TYPE_MAGICAL),
             "SAVING_THROW" => NWScript.EffectSavingThrowIncrease(NWScript.SAVING_THROW_ALL, magnitude),
-            "CONCEALMENT" => NWScript.EffectConcealment(Math.Clamp(magnitude, 1, 100)),
+            "CONCEALMENT" => NWScript.EffectConcealment(System.Math.Clamp(magnitude, 1, 100)),
             "HASTE" => NWScript.EffectHaste(),
             "SLOW" => NWScript.EffectSlow(),
             "REGENERATE" => NWScript.EffectRegenerate(magnitude, 6.0f),
             "VISUAL_FIRE" => NWScript.EffectVisualEffect(NWScript.VFX_DUR_AURA_FIRE),
             "VISUAL_COLD" => NWScript.EffectVisualEffect(NWScript.VFX_DUR_AURA_COLD),
-            "VISUAL_EVIL" => NWScript.EffectVisualEffect(NWScript.VFX_DUR_AURA_EVIL),
+            "VISUAL_EVIL" => NWScript.EffectVisualEffect(NWScript.VFX_DUR_AURA_PURPLE),
             _ => IntPtr.Zero
         };
     }

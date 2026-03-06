@@ -22,7 +22,7 @@ public class ModifySpawnCountExecutor : IGlyphNodeExecutor
         int newCount = Convert.ToInt32(newCountValue);
 
         // Clamp to a reasonable range
-        context.SpawnCount = Math.Clamp(newCount, 0, 100);
+        context.SpawnCount = System.Math.Clamp(newCount, 0, 100);
 
         return GlyphNodeResult.Continue("exec_out");
     }
