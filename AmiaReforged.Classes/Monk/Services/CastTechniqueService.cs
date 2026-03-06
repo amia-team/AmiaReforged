@@ -26,6 +26,7 @@ public class CastTechniqueService
         TechniqueCooldowns.Keys.Select(x => (int)x).ToHashSet();
     private static readonly NwFeat? WholenessOfBody = NwFeat.FromFeatId(MonkFeat.WholenessOfBodyNew);
     private static string GetCooldownTag(TechniqueType technique) => $"{technique}_cd";
+    private const string NoSpecialAbilitiesVar = "NoSpecialAbilities";
 
     public CastTechniqueService(TechniqueFactory techniqueFactory)
     {
@@ -40,7 +41,8 @@ public class CastTechniqueService
         if (castData.Caster is not NwCreature monk
             || !monk.KnowsFeat(WholenessOfBody!)
             || castData.Spell?.FeatReference?.Id is not { } featId
-            || !SupportedFeatIds.Contains(featId)) return;
+            || !SupportedFeatIds.Contains(featId)
+            || IsSpecialAbilityRestricted(monk)) return;
 
         string techniqueName = castData.Spell.FeatReference.Name.ToString();
         TechniqueType castTechnique = (TechniqueType)castData.Spell.FeatReference.Id;
@@ -49,7 +51,7 @@ public class CastTechniqueService
 
         if (TechniqueOnCooldown(monk, techniqueCdTag, techniqueName)) return;
 
-        if (TechniqueRestricted(monk, techniqueName)) return;
+        if (IsTechniqueRestricted(monk, techniqueName)) return;
 
         Effect techniqueCd = Effect.VisualEffect(VfxType.None);
         techniqueCd.SubType = EffectSubType.Supernatural;
@@ -78,7 +80,7 @@ public class CastTechniqueService
         return true;
     }
 
-    private static bool TechniqueRestricted(NwCreature monk, string techniqueName)
+    private static bool IsTechniqueRestricted(NwCreature monk, string techniqueName)
     {
         bool hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
         bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category == BaseItemCategory.Shield;
@@ -96,6 +98,15 @@ public class CastTechniqueService
         }
 
         return false;
+    }
+
+    private static bool IsSpecialAbilityRestricted(NwCreature monk)
+    {
+        if (monk.Area?.GetObjectVariable<LocalVariableInt>(NoSpecialAbilitiesVar).Value != 1) return false;
+
+        monk.ControllingPlayer?
+            .FloatingTextString("- You may not use this Special Ability in this area! -", false);
+        return true;
     }
 
 }
