@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Effects;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -21,6 +22,7 @@ public sealed class TraitSelectionPresenter : ScryPresenter<TraitSelectionView>
 
     [Inject] private Lazy<TraitSelectionService>? SelectionService { get; init; }
     [Inject] private Lazy<ITraitRepository>? TraitRepository { get; init; }
+    [Inject] private Lazy<TraitEffectApplierService>? EffectApplier { get; init; }
 
     private TraitSelectionModel? _model;
     private int _currentPage;
@@ -287,6 +289,10 @@ public sealed class TraitSelectionPresenter : ScryPresenter<TraitSelectionView>
         if (_model!.ConfirmTraits())
         {
             _player.SendServerMessage("Traits confirmed!".ColorString(ColorConstants.Green));
+
+            // Apply trait effects immediately after confirmation
+            EffectApplier?.Value.ApplyTraits(_player);
+
             RefreshEntryList();
             RefreshBudget();
             HideActionButtons();
