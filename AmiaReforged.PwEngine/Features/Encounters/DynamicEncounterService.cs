@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Features.Encounters.Models;
 using AmiaReforged.PwEngine.Features.Encounters.Services;
+using AmiaReforged.PwEngine.Features.Glyph.Integration;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
 using Anvil.API;
 using Anvil.API.Events;
@@ -42,6 +43,7 @@ public class DynamicEncounterService
     private readonly ISpawnProfileRepository _repository;
     private readonly IRegionSubsystem _regionSubsystem;
     private readonly DynamicCreatureSpawner _spawner;
+    private readonly GlyphEncounterHookService _glyphHooks;
 
     /// <summary>
     /// In-memory cache of active profiles keyed by area resref.
@@ -52,11 +54,13 @@ public class DynamicEncounterService
     public DynamicEncounterService(
         ISpawnProfileRepository repository,
         IRegionSubsystem regionSubsystem,
-        DynamicCreatureSpawner spawner)
+        DynamicCreatureSpawner spawner,
+        GlyphEncounterHookService glyphHooks)
     {
         _repository = repository;
         _regionSubsystem = regionSubsystem;
         _spawner = spawner;
+        _glyphHooks = glyphHooks;
 
         Initialize();
     }
@@ -97,6 +101,9 @@ public class DynamicEncounterService
         }
 
         Log.Info("Dynamic encounter service initialized. Subscribed to {AreaCount} areas.", areaCount);
+
+        // Subscribe to module-wide creature death for Glyph OnCreatureDeath hooks
+        NwModule.Instance.OnCreatureDeath += OnCreatureDeath;
     }
 
     /// <summary>
@@ -330,6 +337,54 @@ public class DynamicEncounterService
 
         InitDynamicCooldown(obj.Trigger, profile.CooldownSeconds);
         NWScript.SetLocalInt(obj.Trigger, DynamicHandledFlag, NWScript.TRUE);
+    }
+
+    /// <summary>
+    /// Module-wide creature death handler. Checks if the dead creature was spawned by the
+    /// dynamic encounter system (via the <see cref="DynamicCreatureSpawner.GlyphProfileIdVar"/>
+    /// local variable). If so, looks up the profile and runs any bound Glyph OnCreatureDeath graphs.
+    /// </summary>
+    private void OnCreatureDeath(ModuleEvents.OnCreatureDeath obj)
+    {
+        NwCreature? dead = obj.DeadCreature;
+        if (dead == null) return;
+
+        string profileIdStr = NWScript.GetLocalString(dead, DynamicCreatureSpawner.GlyphProfileIdVar);
+        if (string.IsNullOrEmpty(profileIdStr)) return;
+
+        if (!Guid.TryParse(profileIdStr, out Guid profileId)) return;
+
+        // Find the profile from cache (any area)
+        SpawnProfile? profile = _profileCache.Values.FirstOrDefault(p => p.Id == profileId);
+        if (profile == null) return;
+
+        // Only proceed if there are Glyph bindings for this profile
+        if (!_glyphHooks.HasBindingsForProfile(profileId)) return;
+
+        NwArea? area = dead.Area;
+        if (area == null) return;
+
+        // Build a lightweight encounter context for the death event
+        bool isInRegion = _regionSubsystem.IsAreaInRegion(area.ResRef);
+        ChaosState chaos = isInRegion
+            ? _regionSubsystem.GetChaosForAreaAsync(area.ResRef).GetAwaiter().GetResult()
+            : ChaosState.Default;
+
+        EncounterContext context = new()
+        {
+            AreaResRef = area.ResRef,
+            PartySize = 0,
+            GameTime = new TimeSpan(NWScript.GetTimeHour(), NWScript.GetTimeMinute(), 0),
+            Chaos = chaos,
+            RegionTag = isInRegion ? _regionSubsystem.GetRegionTagForArea(area.ResRef) : null,
+            IsInRegion = isInRegion,
+            Trigger = null,
+            Area = area,
+            PlayerLocation = IntPtr.Zero
+        };
+
+        uint killer = obj.Killer != null ? obj.Killer : NWScript.OBJECT_INVALID;
+        _glyphHooks.RunOnCreatureDeath(dead, killer, profile, context);
     }
 
     private EncounterContext BuildContext(NwTrigger trigger, NwArea area, NwPlayer player, SpawnProfile profile)

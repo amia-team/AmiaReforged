@@ -12,6 +12,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.Persistence;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.Persistence;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions.Persistence;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.Persistence;
+using AmiaReforged.PwEngine.Features.Glyph.Persistence;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -131,6 +132,11 @@ public class PwEngineContext : DbContext
     public DbSet<PersistedRegionDefinition> RegionDefinitions { get; set; } = null!;
     public DbSet<PersistedIndustryDefinition> IndustryDefinitions { get; set; } = null!;
 
+    // === Glyph Visual Scripting ===
+
+    public DbSet<GlyphDefinition> GlyphDefinitions { get; set; } = null!;
+    public DbSet<SpawnProfileGlyphBinding> SpawnProfileGlyphBindings { get; set; } = null!;
+
 
     public PwEngineContext()
     {
@@ -230,5 +236,9 @@ public class PwEngineContext : DbContext
         modelBuilder.ApplyConfiguration(new PersistedResourceNodeDefinitionConfiguration());
         modelBuilder.ApplyConfiguration(new PersistedRegionDefinitionConfiguration());
         modelBuilder.ApplyConfiguration(new PersistedIndustryDefinitionConfiguration());
+
+        // Glyph Visual Scripting
+        modelBuilder.ApplyConfiguration(new GlyphDefinitionConfiguration());
+        modelBuilder.ApplyConfiguration(new SpawnProfileGlyphBindingConfiguration());
     }
 }

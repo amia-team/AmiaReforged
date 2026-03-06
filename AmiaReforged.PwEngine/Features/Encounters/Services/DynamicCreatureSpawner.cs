@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.Encounters.Models;
+using AmiaReforged.PwEngine.Features.Glyph.Integration;
 using Anvil.API;
 using Anvil.Services;
 using NLog;
@@ -27,17 +28,26 @@ public class DynamicCreatureSpawner
     private readonly BossSelector _bossSelector;
     private readonly SpawnBonusApplicator _bonusApplicator;
     private readonly MutationApplicator _mutationApplicator;
+    private readonly GlyphEncounterHookService _glyphHooks;
+
+    /// <summary>
+    /// Local variable name set on each spawned creature to track which profile spawned it.
+    /// Used by the Glyph OnCreatureDeath hook to resolve the correct graphs.
+    /// </summary>
+    public const string GlyphProfileIdVar = "glyph_profile_id";
 
     public DynamicCreatureSpawner(
         SpawnGroupSelector groupSelector,
         BossSelector bossSelector,
         SpawnBonusApplicator bonusApplicator,
-        MutationApplicator mutationApplicator)
+        MutationApplicator mutationApplicator,
+        GlyphEncounterHookService glyphHooks)
     {
         _groupSelector = groupSelector;
         _bossSelector = bossSelector;
         _bonusApplicator = bonusApplicator;
         _mutationApplicator = mutationApplicator;
+        _glyphHooks = glyphHooks;
     }
 
     /// <summary>
@@ -87,6 +97,14 @@ public class DynamicCreatureSpawner
             if (profile.MaxTotalSpawns.HasValue)
                 scaledCount = Math.Min(scaledCount, profile.MaxTotalSpawns.Value);
 
+            // === Glyph: BeforeGroupSpawn hook ===
+            if (!_glyphHooks.RunBeforeGroupSpawn(profile, group, context, ref scaledCount))
+            {
+                Log.Info("Glyph cancelled spawn for group '{GroupName}' in profile '{Name}'.",
+                    group.Name, profile.Name);
+                continue;
+            }
+
             Log.Info("Dynamic spawn: profile='{Name}', group='{GroupName}', method={Method}, count={Count} (base={Base}, cap={Cap}), area={Area}",
                 profile.Name, group.Name, group.DistributionMethod, scaledCount, baseCount,
                 profile.MaxTotalSpawns?.ToString() ?? "none", profile.AreaResRef);
@@ -99,7 +117,13 @@ public class DynamicCreatureSpawner
             {
                 _bonusApplicator.ApplyBonuses(creature, activeBonuses, context.Chaos);
                 _mutationApplicator.TryApplyMutation(creature, context.Chaos, group);
+
+                // Tag creature with profile ID for Glyph OnCreatureDeath resolution
+                NWScript.SetLocalString(creature, GlyphProfileIdVar, profile.Id.ToString());
             }
+
+            // === Glyph: AfterGroupSpawn hook ===
+            _glyphHooks.RunAfterGroupSpawn(profile, group, context, spawned);
         }
 
         // Mini-boss (use first available spawn location for placement) — rolled once
@@ -158,6 +182,14 @@ public class DynamicCreatureSpawner
             if (profile.MaxTotalSpawns.HasValue)
                 scaledCount = Math.Min(scaledCount, profile.MaxTotalSpawns.Value);
 
+            // === Glyph: BeforeGroupSpawn hook ===
+            if (!_glyphHooks.RunBeforeGroupSpawn(profile, group, context, ref scaledCount))
+            {
+                Log.Info("Glyph cancelled area-enter spawn for group '{GroupName}' in profile '{Name}'.",
+                    group.Name, profile.Name);
+                continue;
+            }
+
             Log.Info("Area-enter spawn: profile='{Name}', group='{GroupName}', count={Count}, area={Area}",
                 profile.Name, group.Name, scaledCount, profile.AreaResRef);
 
@@ -168,7 +200,13 @@ public class DynamicCreatureSpawner
             {
                 _bonusApplicator.ApplyBonuses(creature, activeBonuses, context.Chaos);
                 _mutationApplicator.TryApplyMutation(creature, context.Chaos, group);
+
+                // Tag creature with profile ID for Glyph OnCreatureDeath resolution
+                NWScript.SetLocalString(creature, GlyphProfileIdVar, profile.Id.ToString());
             }
+
+            // === Glyph: AfterGroupSpawn hook ===
+            _glyphHooks.RunAfterGroupSpawn(profile, group, context, spawned);
 
             if (spawned.Count > 0) anySpawned = true;
         }

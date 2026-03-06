@@ -1,0 +1,609 @@
+@page "/worldengine/glyphs"
+@using Microsoft.AspNetCore.Authorization
+@using AmiaReforged.AdminPanel.Models
+@using AmiaReforged.AdminPanel.Services
+@attribute [Authorize]
+@inject GlyphApiService Api
+@inject IWorldEngineEndpointService EndpointService
+@inject IJSRuntime JS
+@inject ILogger<GlyphEditor> Logger
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+
+<PageTitle>Glyph Scripts - World Engine</PageTitle>
+
+<div class="encounters-page">
+    <div class="dashboard-header">
+        <h1>Glyph Visual Scripts</h1>
+        <div class="header-actions">
+            @if (_endpoints.Count > 0)
+            {
+                <div class="instance-selector">
+                    <label class="instance-label">Server:</label>
+                    <select class="form-control form-control-sm" value="@(_selectedEndpoint?.Id.ToString() ?? "")" @onchange="OnEndpointChanged">
+                        <option value="">— Select —</option>
+                        @foreach (var ep in _endpoints)
+                        {
+                            <option value="@ep.Id">@ep.Name</option>
+                        }
+                    </select>
+                </div>
+            }
+            @if (_selectedEndpoint != null)
+            {
+                <button class="btn btn-secondary btn-sm" @onclick="RefreshDefinitions">Refresh</button>
+                <button class="btn btn-primary btn-sm" @onclick="ShowCreateModal">+ New Script</button>
+            }
+            <a href="/" class="btn btn-secondary btn-sm">← Dashboard</a>
+        </div>
+    </div>
+
+    @if (_error != null)
+    {
+        <div class="alert alert-danger">@_error <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _error = null">Dismiss</button></div>
+    }
+    @if (_success != null)
+    {
+        <div class="alert alert-success">@_success <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _success = null">Dismiss</button></div>
+    }
+
+    @if (_selectedEndpoint == null)
+    {
+        <div class="section" style="text-align:center;padding:60px 20px">
+            @if (_endpoints.Count == 0)
+            {
+                <p style="color:var(--text-secondary);font-size:1.1rem">
+                    No WorldEngine servers configured. Go to
+                    <a href="/encounters">Encounters</a> to add one.
+                </p>
+            }
+            else
+            {
+                <p style="color:var(--text-secondary);font-size:1.1rem">Select a server from the dropdown above to manage Glyph scripts.</p>
+            }
+        </div>
+    }
+    else if (_isLoading)
+    {
+        <div class="section" style="text-align:center;padding:40px"><em>Loading...</em></div>
+    }
+    else if (_editingDefinition != null)
+    {
+        @* ==================== Graph Editor View ==================== *@
+        <div class="section">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <button class="btn btn-secondary btn-sm" @onclick="CloseEditor">← Back to List</button>
+                    <strong class="ms-3">@_editingDefinition.Name</strong>
+                    <span class="badge bg-info ms-2">@_editingDefinition.EventType</span>
+                    @if (_editingDefinition.IsActive)
+                    {
+                        <span class="badge bg-success ms-1">Active</span>
+                    }
+                </div>
+                <div>
+                    <button class="btn btn-primary btn-sm" @onclick="SaveGraph" disabled="@_isSaving">
+                        @(_isSaving ? "Saving..." : "Save Graph")
+                    </button>
+                </div>
+            </div>
+
+            <div class="row">
+                @* Node Palette *@
+                <div class="col-md-3">
+                    <div class="card" style="background:var(--surface-color);border-color:var(--border-color)">
+                        <div class="card-header" style="background:var(--surface-hover);color:var(--text-primary)">
+                            <strong>Node Palette</strong>
+                            <input type="text" class="form-control form-control-sm mt-2" placeholder="Search nodes..."
+                                   @bind="_nodeSearchFilter" @bind:event="oninput" />
+                        </div>
+                        <div class="card-body p-0" style="max-height:600px;overflow-y:auto">
+                            @foreach (var category in FilteredCatalog)
+                            {
+                                <div class="px-3 py-1" style="background:var(--surface-hover);color:var(--text-secondary);font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">
+                                    @category.Key
+                                </div>
+                                @foreach (var node in category)
+                                {
+                                    <div class="px-3 py-2 glyph-node-entry" style="border-bottom:1px solid var(--border-color);cursor:pointer"
+                                         @onclick="() => AddNodeToGraph(node)" title="@node.Description">
+                                        <span class="badge me-1" style="background:@GetNodeColor(node.ColorClass)">@node.ColorClass</span>
+                                        <span style="color:var(--text-primary)">@node.DisplayName</span>
+                                        @if (node.RestrictToEventType != null)
+                                        {
+                                            <br /><small style="color:var(--text-secondary)">@node.RestrictToEventType only</small>
+                                        }
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                @* Graph Canvas *@
+                <div class="col-md-9">
+                    <div id="glyph-editor-container"
+                         style="width:100%;height:650px;background:#1a1a2e;border:2px solid var(--border-color);border-radius:8px;position:relative;overflow:hidden">
+                        <div id="glyph-rete-canvas" style="width:100%;height:100%"></div>
+                        <div style="position:absolute;bottom:8px;right:12px;color:#666;font-size:0.75rem">
+                            Glyph Visual Editor — Drag nodes from palette
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        @* ==================== Definitions List View ==================== *@
+        <div class="section">
+            <h3 style="color:var(--text-primary)">Glyph Definitions</h3>
+            @if (_definitions.Count == 0)
+            {
+                <p style="color:var(--text-secondary)">No Glyph scripts defined yet. Click "+ New Script" to create one.</p>
+            }
+            else
+            {
+                <table class="table table-sm" style="color:var(--text-primary)">
+                    <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Event Type</th>
+                        <th>Active</th>
+                        <th>Updated</th>
+                        <th style="width:200px">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var def in _definitions)
+                    {
+                        <tr>
+                            <td>@def.Name</td>
+                            <td><span class="badge bg-info">@def.EventType</span></td>
+                            <td>
+                                @if (def.IsActive)
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Inactive</span>
+                                }
+                            </td>
+                            <td>@def.UpdatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>
+                                <button class="btn btn-primary btn-sm" @onclick="() => OpenEditor(def)">Edit</button>
+                                <button class="btn btn-warning btn-sm" @onclick="() => ToggleActive(def)">
+                                    @(def.IsActive ? "Deactivate" : "Activate")
+                                </button>
+                                <button class="btn btn-danger btn-sm" @onclick="() => ConfirmDelete(def)">Delete</button>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </div>
+    }
+
+    @* ==================== Create / Edit Metadata Modal ==================== *@
+    @if (_showCreateModal)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5)">
+            <div class="modal-dialog">
+                <div class="modal-content" style="background:var(--surface-color);color:var(--text-primary)">
+                    <div class="modal-header" style="border-color:var(--border-color)">
+                        <h5 class="modal-title">New Glyph Script</h5>
+                        <button type="button" class="btn-close btn-close-white" @onclick="() => _showCreateModal = false"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Name</label>
+                            <input type="text" class="form-control" @bind="_createName" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Event Type</label>
+                            <select class="form-control" @bind="_createEventType">
+                                <option value="">— Select —</option>
+                                <option value="BeforeGroupSpawn">BeforeGroupSpawn</option>
+                                <option value="AfterGroupSpawn">AfterGroupSpawn</option>
+                                <option value="OnCreatureDeath">OnCreatureDeath</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" rows="2" @bind="_createDescription"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="border-color:var(--border-color)">
+                        <button class="btn btn-secondary" @onclick="() => _showCreateModal = false">Cancel</button>
+                        <button class="btn btn-primary" @onclick="CreateDefinition" disabled="@_isSaving">
+                            @(_isSaving ? "Creating..." : "Create")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* ==================== Delete Confirmation Modal ==================== *@
+    @if (_deleteTarget != null)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5)">
+            <div class="modal-dialog modal-sm">
+                <div class="modal-content" style="background:var(--surface-color);color:var(--text-primary)">
+                    <div class="modal-header" style="border-color:var(--border-color)">
+                        <h5 class="modal-title">Confirm Delete</h5>
+                    </div>
+                    <div class="modal-body">
+                        Delete script <strong>@_deleteTarget.Name</strong> and all its bindings?
+                    </div>
+                    <div class="modal-footer" style="border-color:var(--border-color)">
+                        <button class="btn btn-secondary" @onclick="() => _deleteTarget = null">Cancel</button>
+                        <button class="btn btn-danger" @onclick="DeleteDefinition">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    // ==================== State ====================
+    private List<WorldEngineEndpoint> _endpoints = [];
+    private WorldEngineEndpoint? _selectedEndpoint;
+    private List<GlyphDefinitionDto> _definitions = [];
+    private List<GlyphNodeCatalogEntryDto> _nodeCatalog = [];
+    private GlyphDefinitionDto? _editingDefinition;
+
+    private bool _isLoading;
+    private bool _isSaving;
+    private string? _error;
+    private string? _success;
+
+    // Create modal
+    private bool _showCreateModal;
+    private string _createName = "";
+    private string _createEventType = "";
+    private string _createDescription = "";
+
+    // Delete confirmation
+    private GlyphDefinitionDto? _deleteTarget;
+
+    // Node palette search
+    private string _nodeSearchFilter = "";
+
+    // JS interop reference for cleanup
+    private IJSObjectReference? _editorModule;
+
+    private IEnumerable<IGrouping<string, GlyphNodeCatalogEntryDto>> FilteredCatalog
+    {
+        get
+        {
+            IEnumerable<GlyphNodeCatalogEntryDto> nodes = _nodeCatalog;
+
+            // Filter by event type if editing a definition
+            if (_editingDefinition != null)
+            {
+                nodes = nodes.Where(n =>
+                    n.RestrictToEventType == null ||
+                    n.RestrictToEventType == _editingDefinition.EventType);
+            }
+
+            // Filter by search text
+            if (!string.IsNullOrWhiteSpace(_nodeSearchFilter))
+            {
+                string filter = _nodeSearchFilter.Trim().ToLowerInvariant();
+                nodes = nodes.Where(n =>
+                    n.DisplayName.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
+                    n.Category.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
+                    n.Description.Contains(filter, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return nodes.GroupBy(n => n.Category).OrderBy(g => g.Key);
+        }
+    }
+
+    // ==================== Lifecycle ====================
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshEndpoints();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_editorModule != null)
+            {
+                await _editorModule.InvokeVoidAsync("destroy");
+                await _editorModule.DisposeAsync();
+            }
+        }
+        catch
+        {
+            // Ignore disposal errors during navigation
+        }
+    }
+
+    // ==================== Endpoint Management ====================
+
+    private async Task RefreshEndpoints()
+    {
+        try
+        {
+            var all = await EndpointService.GetEnabledEndpointsAsync();
+            _endpoints = all.ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load endpoints");
+            _error = "Failed to load endpoints.";
+        }
+    }
+
+    private async Task OnEndpointChanged(ChangeEventArgs e)
+    {
+        _error = null;
+        _success = null;
+        _editingDefinition = null;
+
+        string val = e.Value?.ToString() ?? "";
+        if (Guid.TryParse(val, out Guid id))
+        {
+            _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
+            Api.SelectEndpoint(id);
+            await LoadData();
+        }
+        else
+        {
+            _selectedEndpoint = null;
+            Api.SelectEndpoint(null);
+            _definitions = [];
+            _nodeCatalog = [];
+        }
+    }
+
+    // ==================== Data Loading ====================
+
+    private async Task LoadData()
+    {
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            _definitions = await Api.GetAllDefinitionsAsync();
+            _nodeCatalog = await Api.GetNodeCatalogAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load Glyph data");
+            _error = $"Failed to load data: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task RefreshDefinitions()
+    {
+        _error = null;
+        _success = null;
+        await LoadData();
+    }
+
+    // ==================== CRUD Operations ====================
+
+    private void ShowCreateModal()
+    {
+        _createName = "";
+        _createEventType = "";
+        _createDescription = "";
+        _showCreateModal = true;
+    }
+
+    private async Task CreateDefinition()
+    {
+        if (string.IsNullOrWhiteSpace(_createName) || string.IsNullOrWhiteSpace(_createEventType))
+        {
+            _error = "Name and Event Type are required.";
+            return;
+        }
+
+        _isSaving = true;
+        try
+        {
+            var request = new CreateGlyphRequest(
+                _createName.Trim(),
+                _createEventType,
+                string.IsNullOrWhiteSpace(_createDescription) ? null : _createDescription.Trim(),
+                "{}", // Empty graph
+                false
+            );
+
+            var created = await Api.CreateDefinitionAsync(request);
+            if (created != null)
+            {
+                _definitions.Add(created);
+                _success = $"Created script '{created.Name}'.";
+            }
+
+            _showCreateModal = false;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to create Glyph definition");
+            _error = $"Failed to create: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task ToggleActive(GlyphDefinitionDto def)
+    {
+        try
+        {
+            var request = new UpdateGlyphRequest(IsActive: !def.IsActive);
+            var updated = await Api.UpdateDefinitionAsync(def.Id, request);
+            if (updated != null)
+            {
+                int idx = _definitions.FindIndex(d => d.Id == def.Id);
+                if (idx >= 0) _definitions[idx] = updated;
+                _success = $"'{updated.Name}' is now {(updated.IsActive ? "active" : "inactive")}.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to toggle active state");
+            _error = $"Failed to update: {ex.Message}";
+        }
+    }
+
+    private void ConfirmDelete(GlyphDefinitionDto def) => _deleteTarget = def;
+
+    private async Task DeleteDefinition()
+    {
+        if (_deleteTarget == null) return;
+
+        try
+        {
+            await Api.DeleteDefinitionAsync(_deleteTarget.Id);
+            _definitions.RemoveAll(d => d.Id == _deleteTarget.Id);
+            _success = $"Deleted '{_deleteTarget.Name}'.";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to delete Glyph definition");
+            _error = $"Failed to delete: {ex.Message}";
+        }
+        finally
+        {
+            _deleteTarget = null;
+        }
+    }
+
+    // ==================== Graph Editor ====================
+
+    private async Task OpenEditor(GlyphDefinitionDto def)
+    {
+        _error = null;
+        _success = null;
+
+        // Re-fetch to get the full GraphJson
+        try
+        {
+            var full = await Api.GetDefinitionAsync(def.Id);
+            if (full == null)
+            {
+                _error = "Failed to load definition details.";
+                return;
+            }
+
+            _editingDefinition = full;
+            StateHasChanged();
+
+            // Wait for DOM to render, then initialize Rete.js editor
+            await Task.Delay(100); // Give Blazor a tick to render the container
+            await InitializeEditor();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to open editor");
+            _error = $"Failed to open editor: {ex.Message}";
+        }
+    }
+
+    private void CloseEditor()
+    {
+        _editingDefinition = null;
+        _error = null;
+        _success = null;
+    }
+
+    private async Task InitializeEditor()
+    {
+        try
+        {
+            _editorModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js");
+
+            // Pass the node catalog and current graph JSON to the JS editor
+            var catalogJson = System.Text.Json.JsonSerializer.Serialize(_nodeCatalog);
+            var graphJson = _editingDefinition?.GraphJson ?? "{}";
+
+            await _editorModule.InvokeVoidAsync("initGlyphEditor", "glyph-rete-canvas", catalogJson, graphJson);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Glyph editor JS init failed — editor may not be available yet");
+            _error = "Graph editor failed to initialize. Make sure glyph-editor.js is deployed.";
+        }
+    }
+
+    private async Task SaveGraph()
+    {
+        if (_editingDefinition == null || _editorModule == null) return;
+
+        _isSaving = true;
+        try
+        {
+            // Get the current graph state from the JS editor
+            string graphJson = await _editorModule.InvokeAsync<string>("getGraphJson");
+
+            var request = new UpdateGlyphRequest(GraphJson: graphJson);
+            var updated = await Api.UpdateDefinitionAsync(_editingDefinition.Id, request);
+
+            if (updated != null)
+            {
+                _editingDefinition = updated;
+                int idx = _definitions.FindIndex(d => d.Id == updated.Id);
+                if (idx >= 0) _definitions[idx] = updated;
+                _success = "Graph saved.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to save graph");
+            _error = $"Failed to save: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task AddNodeToGraph(GlyphNodeCatalogEntryDto node)
+    {
+        if (_editorModule == null) return;
+
+        try
+        {
+            var nodeJson = System.Text.Json.JsonSerializer.Serialize(node);
+            await _editorModule.InvokeVoidAsync("addNode", nodeJson);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to add node to graph");
+        }
+    }
+
+    // ==================== Helpers ====================
+
+    private static string GetNodeColor(string colorClass)
+    {
+        return colorClass.ToLowerInvariant() switch
+        {
+            "event" => "#e74c3c",
+            "flow" => "#3498db",
+            "action" => "#2ecc71",
+            "getter" => "#9b59b6",
+            "math" => "#f39c12",
+            "logic" => "#1abc9c",
+            _ => "#7f8c8d"
+        };
+    }
+}
