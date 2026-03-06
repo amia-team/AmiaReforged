@@ -128,9 +128,9 @@ public class GlyphController
     // ==================== Node Catalog ====================
 
     /// <summary>
-    /// GET /api/worldengine/glyphs/node-catalog — Return all registered node definitions for the editor palette.
+    /// GET /api/worldengine/glyph-catalog — Return all registered node definitions for the editor palette.
     /// </summary>
-    [HttpGet("/api/worldengine/glyphs/node-catalog")]
+    [HttpGet("/api/worldengine/glyph-catalog")]
     public static Task<ApiResult> GetNodeCatalog(RouteContext ctx)
     {
         if (NodeRegistry == null) return Task.FromResult(ServiceUnavailable());

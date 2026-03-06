@@ -24,7 +24,7 @@ public class GlyphApiService
     };
 
     private const string DefinitionsBase = "/api/worldengine/glyphs";
-    private const string NodeCatalogPath = "/api/worldengine/glyphs/node-catalog";
+    private const string NodeCatalogPath = "/api/worldengine/glyph-catalog";
     private const string BindingsBase = "/api/worldengine/glyphs/bindings";
 
     public GlyphApiService(IHttpClientFactory httpClientFactory, IWorldEngineEndpointService endpointService)
