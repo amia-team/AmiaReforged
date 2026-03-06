@@ -3,7 +3,6 @@ using Anvil.API.Events;
 using Anvil.Services;
 using AmiaReforged.PwEngine.Features.Player.PlayerTools.Services;
 using NWN.Core;
-using YamlDotNet.Serialization;
 
 namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.ItemTool;
 
@@ -63,6 +62,12 @@ internal sealed class ItemToolModel(NwPlayer player, IRenameItemService renameSe
             return;
         }
 
+        if (item.Tag.Equals("dm_no_change", StringComparison.OrdinalIgnoreCase))
+        {
+            player.SendServerMessage("This is a verified item. You cannot change it.", ColorConstants.Red);
+            return;
+        }
+
         Selected = item;
         OnNewSelection?.Invoke();
     }
@@ -115,7 +120,7 @@ internal sealed class ItemToolModel(NwPlayer player, IRenameItemService renameSe
     public void UpdateBasic(string name, string description)
     {
         if (Selected is null) return;
-        
+
         // Use the rename service for name changes
         if (Selected.Name != name)
         {
@@ -126,7 +131,7 @@ internal sealed class ItemToolModel(NwPlayer player, IRenameItemService renameSe
                 return;
             }
         }
-        
+
         Selected.Description = description;
     }
 
