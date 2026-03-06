@@ -28,6 +28,12 @@ public class InMemoryTraitRepository : ITraitRepository
         _traits.Add(trait);
     }
 
+    public bool Remove(string traitTag)
+    {
+        Trait? existing = _traits.FirstOrDefault(t => t.Tag == traitTag);
+        return existing != null && _traits.Remove(existing);
+    }
+
     public Trait? Get(string traitTag)
     {
         return _traits.FirstOrDefault(t => t.Tag == traitTag);

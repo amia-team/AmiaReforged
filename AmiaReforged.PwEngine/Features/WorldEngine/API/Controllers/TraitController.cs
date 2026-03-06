@@ -238,6 +238,9 @@ public class TraitController
         context.TraitDefinitions.Remove(existing);
         await context.SaveChangesAsync();
 
+        // Remove from in-memory cache
+        RemoveFromInMemoryCache(tag);
+
         return new ApiResult(204, new { message = "Deleted" });
     }
 
@@ -313,6 +316,19 @@ public class TraitController
         catch
         {
             // Best-effort cache refresh — trait will be loaded on next server restart
+        }
+    }
+
+    private static void RemoveFromInMemoryCache(string traitTag)
+    {
+        try
+        {
+            var repository = AnvilCore.GetService<ITraitRepository>();
+            repository?.Remove(traitTag);
+        }
+        catch
+        {
+            // Best-effort cache removal — trait will be gone on next server restart
         }
     }
 

@@ -26,6 +26,13 @@ public interface ITraitRepository
     Trait? Get(string traitTag);
 
     /// <summary>
+    /// Removes a trait definition from the registry.
+    /// </summary>
+    /// <param name="traitTag">Unique tag of the trait to remove</param>
+    /// <returns>True if the trait was found and removed, false otherwise</returns>
+    bool Remove(string traitTag);
+
+    /// <summary>
     /// Retrieves all trait definitions.
     /// </summary>
     /// <returns>List of all registered traits</returns>
