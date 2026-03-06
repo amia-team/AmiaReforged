@@ -118,6 +118,9 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
             case "tab_reputation":
                 SwitchTab(CodexTab.Reputation);
                 break;
+            case "tab_traits":
+                SwitchTab(CodexTab.Traits);
+                break;
 
             case "btn_prev_page":
                 if (_currentPage > 0) { _currentPage--; RefreshEntryList(); }
@@ -206,6 +209,9 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
             case CodexTab.Reputation:
                 _currentEntries = await LoadReputationEntries(cid);
                 break;
+            case CodexTab.Traits:
+                _currentEntries = await LoadTraitEntries(cid);
+                break;
         }
     }
 
@@ -263,6 +269,20 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
             entries = await QueryService!.Value.GetAllReputationsAsync(cid);
 
         return entries.Select(e => (ICodexDisplayItem)new ReputationDisplayItem(e)).ToList();
+    }
+
+    private async Task<List<ICodexDisplayItem>> LoadTraitEntries(CharacterId cid)
+    {
+        IReadOnlyList<CodexTraitEntry> entries;
+
+        if (_activeCategory == "all")
+            entries = await QueryService!.Value.GetAllTraitsAsync(cid);
+        else if (Enum.TryParse<TraitCategory>(_activeCategory, true, out TraitCategory cat))
+            entries = await QueryService!.Value.GetTraitsByCategoryAsync(cid, cat);
+        else
+            entries = await QueryService!.Value.GetAllTraitsAsync(cid);
+
+        return entries.Select(e => (ICodexDisplayItem)new TraitDisplayItem(e)).ToList();
     }
 
     // ──────────────────────── Entry list refresh ────────────────────────
@@ -352,6 +372,17 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
                 ("All", "all"),
                 ("Positive", "positive"),
                 ("Negative", "negative")),
+
+            CodexTab.Traits => BuildCategoryColumn(
+                ("All", "all"),
+                ("Background", "background"),
+                ("Personality", "personality"),
+                ("Physical", "physical"),
+                ("Mental", "mental"),
+                ("Social", "social"),
+                ("Supernatur.", "supernatural"),
+                ("Curse", "curse"),
+                ("Blessing", "blessing")),
 
             _ => BuildCategoryColumn(("All", "all"))
         };

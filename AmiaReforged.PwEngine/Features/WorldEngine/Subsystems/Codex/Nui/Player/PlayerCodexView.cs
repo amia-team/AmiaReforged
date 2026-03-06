@@ -119,7 +119,8 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
                 new NuiButton("Knowledge") { Id = "tab_knowledge", Height = 35f },
                 new NuiButton("Quests") { Id = "tab_quests", Height = 35f },
                 new NuiButton("Notes") { Id = "tab_notes", Height = 35f },
-                new NuiButton("Reputation") { Id = "tab_reputation", Height = 35f }
+                new NuiButton("Reputation") { Id = "tab_reputation", Height = 35f },
+                new NuiButton("Traits") { Id = "tab_traits", Height = 35f }
             }
         };
     }

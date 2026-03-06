@@ -1,6 +1,5 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
-
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Nui.Player;
 
 /// <summary>
@@ -136,4 +135,29 @@ public sealed class ReputationDisplayItem : ICodexDisplayItem
     }
 
     public string Subtitle => $"{_entry.CurrentScore.Value} ({_entry.GetStanding()})";
+}
+
+public sealed class TraitDisplayItem : ICodexDisplayItem
+{
+    private readonly CodexTraitEntry _entry;
+
+    public TraitDisplayItem(CodexTraitEntry entry) => _entry = entry;
+
+    public string DisplayName => _entry.Name;
+    public string DetailTitle => _entry.Name;
+
+    public string DetailBody
+    {
+        get
+        {
+            string body = $"Category: {_entry.Category.DisplayName()}";
+            body += $"\nAcquired: {_entry.DateAcquired:yyyy-MM-dd}";
+            body += $"\nMethod: {_entry.AcquisitionMethod}";
+            if (!string.IsNullOrEmpty(_entry.Description))
+                body += $"\n\n{_entry.Description}";
+            return body;
+        }
+    }
+
+    public string Subtitle => _entry.Category.DisplayName();
 }

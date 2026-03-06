@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Aggregates;
@@ -417,6 +418,85 @@ public class CodexQueryServiceTests
         // Then
         Assert.That(negative.Count, Is.EqualTo(1));
         Assert.That(negative.First().CurrentScore.Value, Is.LessThan(0));
+    }
+
+    #endregion
+
+    #region Trait Queries
+
+    [Test]
+    public async Task Given_CodexWithTraits_When_GetAllTraits_Then_ReturnsAllTraits()
+    {
+        // Given
+        CodexTraitEntry trait1 = CreateTestTrait("brave", "Brave", TraitCategory.Personality);
+        CodexTraitEntry trait2 = CreateTestTrait("strong", "Strong", TraitCategory.Physical);
+        _codex.RecordTraitAcquired(trait1, DateTime.UtcNow);
+        _codex.RecordTraitAcquired(trait2, DateTime.UtcNow);
+        await _repository.SaveAsync(_codex);
+
+        // When
+        IReadOnlyList<CodexTraitEntry> traits = await _queryService.GetAllTraitsAsync(_characterId);
+
+        // Then
+        Assert.That(traits.Count, Is.EqualTo(2));
+        Assert.That(traits.Any(t => t.Name == "Brave"), Is.True);
+        Assert.That(traits.Any(t => t.Name == "Strong"), Is.True);
+    }
+
+    [Test]
+    public async Task Given_NoCodex_When_GetAllTraits_Then_ReturnsEmptyList()
+    {
+        // When
+        IReadOnlyList<CodexTraitEntry> traits = await _queryService.GetAllTraitsAsync(_characterId);
+
+        // Then
+        Assert.That(traits, Is.Empty);
+    }
+
+    [Test]
+    public async Task Given_CodexWithMixedTraitCategories_When_GetTraitsByCategory_Then_ReturnsFilteredTraits()
+    {
+        // Given
+        _codex.RecordTraitAcquired(CreateTestTrait("brave", "Brave", TraitCategory.Personality), DateTime.UtcNow);
+        _codex.RecordTraitAcquired(CreateTestTrait("strong", "Strong", TraitCategory.Physical), DateTime.UtcNow);
+        _codex.RecordTraitAcquired(CreateTestTrait("kind", "Kind", TraitCategory.Personality), DateTime.UtcNow);
+        await _repository.SaveAsync(_codex);
+
+        // When
+        IReadOnlyList<CodexTraitEntry> personality = await _queryService.GetTraitsByCategoryAsync(_characterId, TraitCategory.Personality);
+
+        // Then
+        Assert.That(personality.Count, Is.EqualTo(2));
+        Assert.That(personality.All(t => t.Category == TraitCategory.Personality), Is.True);
+    }
+
+    [Test]
+    public async Task Given_CodexWithTraits_When_SearchTraits_Then_ReturnsMatchingTraits()
+    {
+        // Given
+        _codex.RecordTraitAcquired(CreateTestTrait("brave", "Brave", TraitCategory.Personality), DateTime.UtcNow);
+        _codex.RecordTraitAcquired(CreateTestTrait("strong", "Strong", TraitCategory.Physical), DateTime.UtcNow);
+        await _repository.SaveAsync(_codex);
+
+        // When
+        IReadOnlyList<CodexTraitEntry> results = await _queryService.SearchTraitsAsync(_characterId, "strong");
+
+        // Then
+        Assert.That(results.Count, Is.EqualTo(1));
+        Assert.That(results.First().Name, Is.EqualTo("Strong"));
+    }
+
+    private CodexTraitEntry CreateTestTrait(string tag, string name, TraitCategory category)
+    {
+        return new CodexTraitEntry
+        {
+            TraitTag = new TraitTag(tag),
+            Name = name,
+            Description = $"Description for {name}",
+            Category = category,
+            AcquisitionMethod = "Character Creation",
+            DateAcquired = DateTime.UtcNow
+        };
     }
 
     #endregion

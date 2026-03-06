@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Aggregates;
@@ -44,6 +45,7 @@ public class PlayerCodexTests
         Assert.That(codex.Lore, Is.Empty);
         Assert.That(codex.Notes, Is.Empty);
         Assert.That(codex.Reputations, Is.Empty);
+        Assert.That(codex.Traits, Is.Empty);
     }
 
     #endregion
@@ -604,6 +606,93 @@ public class PlayerCodexTests
 
     #endregion
 
+    #region Trait Command Tests
+
+    [Test]
+    public void RecordTraitAcquired_WithValidTrait_AddsTrait()
+    {
+        // Arrange
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexTraitEntry trait = CreateTestTrait("brave", "Brave");
+        DateTime occurredAt = _testDate.AddHours(1);
+
+        // Act
+        codex.RecordTraitAcquired(trait, occurredAt);
+
+        // Assert
+        Assert.That(codex.Traits, Has.Count.EqualTo(1));
+        Assert.That(codex.HasTrait(new TraitTag("brave")), Is.True);
+        Assert.That(codex.LastUpdated, Is.EqualTo(occurredAt));
+    }
+
+    [Test]
+    public void RecordTraitAcquired_WithDuplicateTraitTag_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexTraitEntry trait1 = CreateTestTrait("brave", "Brave");
+        CodexTraitEntry trait2 = CreateTestTrait("brave", "Also Brave");
+        codex.RecordTraitAcquired(trait1, _testDate);
+
+        // Act & Assert
+        InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
+            codex.RecordTraitAcquired(trait2, _testDate.AddHours(1)));
+        Assert.That(ex!.Message, Does.Contain("brave"));
+        Assert.That(ex.Message, Does.Contain("already exists"));
+    }
+
+    [Test]
+    public void RecordTraitAcquired_WithNullTrait_ThrowsArgumentNullException()
+    {
+        // Arrange
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() =>
+            codex.RecordTraitAcquired(null!, _testDate));
+    }
+
+    [Test]
+    public void GetTrait_WithExistingTag_ReturnsTrait()
+    {
+        // Arrange
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexTraitEntry trait = CreateTestTrait("brave", "Brave");
+        codex.RecordTraitAcquired(trait, _testDate);
+
+        // Act
+        CodexTraitEntry? found = codex.GetTrait(new TraitTag("brave"));
+
+        // Assert
+        Assert.That(found, Is.Not.Null);
+        Assert.That(found!.Name, Is.EqualTo("Brave"));
+    }
+
+    [Test]
+    public void GetTrait_WithNonExistingTag_ReturnsNull()
+    {
+        // Arrange
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+
+        // Act
+        CodexTraitEntry? found = codex.GetTrait(new TraitTag("nonexistent"));
+
+        // Assert
+        Assert.That(found, Is.Null);
+    }
+
+    [Test]
+    public void HasTrait_WithNonExistingTag_ReturnsFalse()
+    {
+        // Arrange
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+
+        // Act & Assert
+        Assert.That(codex.HasTrait(new TraitTag("nonexistent")), Is.False);
+    }
+
+    #endregion
+
     #region Query Method Tests
 
     [Test]
@@ -892,6 +981,54 @@ public class PlayerCodexTests
         Assert.That(count, Is.EqualTo(0));
     }
 
+    [Test]
+    public void GetTraitsByCategory_WithMatchingCategory_ReturnsFilteredTraits()
+    {
+        // Arrange
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        codex.RecordTraitAcquired(CreateTestTrait("brave", "Brave", TraitCategory.Personality), _testDate);
+        codex.RecordTraitAcquired(CreateTestTrait("strong", "Strong", TraitCategory.Physical), _testDate);
+        codex.RecordTraitAcquired(CreateTestTrait("kind", "Kind", TraitCategory.Personality), _testDate);
+
+        // Act
+        List<CodexTraitEntry> personality = codex.GetTraitsByCategory(TraitCategory.Personality).ToList();
+
+        // Assert
+        Assert.That(personality, Has.Count.EqualTo(2));
+        Assert.That(personality.All(t => t.Category == TraitCategory.Personality), Is.True);
+    }
+
+    [Test]
+    public void SearchTraits_WithMatchingTerm_ReturnsMatchingTraits()
+    {
+        // Arrange
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        codex.RecordTraitAcquired(CreateTestTrait("brave", "Brave", TraitCategory.Personality), _testDate);
+        codex.RecordTraitAcquired(CreateTestTrait("strong", "Strong", TraitCategory.Physical), _testDate);
+
+        // Act
+        List<CodexTraitEntry> results = codex.SearchTraits("brave").ToList();
+
+        // Assert
+        Assert.That(results, Has.Count.EqualTo(1));
+        Assert.That(results[0].Name, Is.EqualTo("Brave"));
+    }
+
+    [Test]
+    public void GetTotalEntryCount_IncludesTraits()
+    {
+        // Arrange
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        codex.RecordTraitAcquired(CreateTestTrait("brave", "Brave"), _testDate);
+        codex.RecordTraitAcquired(CreateTestTrait("strong", "Strong"), _testDate);
+
+        // Act
+        int count = codex.GetTotalEntryCount();
+
+        // Assert
+        Assert.That(count, Is.EqualTo(2));
+    }
+
     #endregion
 
     #region DM Support Tests
@@ -1033,6 +1170,19 @@ public class PlayerCodexTests
             false,
             false
         );
+    }
+
+    private CodexTraitEntry CreateTestTrait(string tag, string name, TraitCategory category = TraitCategory.Personality)
+    {
+        return new CodexTraitEntry
+        {
+            TraitTag = new TraitTag(tag),
+            Name = name,
+            Description = $"Description for {name}",
+            Category = category,
+            AcquisitionMethod = "Character Creation",
+            DateAcquired = _testDate
+        };
     }
 
     #endregion

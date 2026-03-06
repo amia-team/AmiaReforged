@@ -203,6 +203,43 @@ public class CodexQueryService
 
     #endregion
 
+    #region Trait Queries
+
+    /// <summary>
+    /// Gets all traits for a character
+    /// </summary>
+    public async Task<IReadOnlyList<CodexTraitEntry>> GetAllTraitsAsync(CharacterId characterId, CancellationToken cancellationToken = default)
+    {
+        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
+        return codex?.Traits.ToList() ?? new List<CodexTraitEntry>();
+    }
+
+    /// <summary>
+    /// Gets traits by category
+    /// </summary>
+    public async Task<IReadOnlyList<CodexTraitEntry>> GetTraitsByCategoryAsync(
+        CharacterId characterId,
+        TraitCategory category,
+        CancellationToken cancellationToken = default)
+    {
+        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
+        return codex?.GetTraitsByCategory(category).ToList() ?? new List<CodexTraitEntry>();
+    }
+
+    /// <summary>
+    /// Searches traits by text
+    /// </summary>
+    public async Task<IReadOnlyList<CodexTraitEntry>> SearchTraitsAsync(
+        CharacterId characterId,
+        string searchTerm,
+        CancellationToken cancellationToken = default)
+    {
+        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
+        return codex?.SearchTraits(searchTerm).ToList() ?? new List<CodexTraitEntry>();
+    }
+
+    #endregion
+
     #region Summary Queries
 
     /// <summary>
@@ -221,6 +258,7 @@ public class CodexQueryService
                 TotalLore: 0,
                 TotalNotes: 0,
                 TotalFactions: 0,
+                TotalTraits: 0,
                 LastUpdated: null
             );
         }
@@ -232,6 +270,7 @@ public class CodexQueryService
             TotalLore: codex.Lore.Count,
             TotalNotes: codex.Notes.Count,
             TotalFactions: codex.Reputations.Count,
+            TotalTraits: codex.Traits.Count,
             LastUpdated: codex.LastUpdated
         );
     }
@@ -249,5 +288,6 @@ public record CodexStatistics(
     int TotalLore,
     int TotalNotes,
     int TotalFactions,
+    int TotalTraits,
     DateTime? LastUpdated
 );

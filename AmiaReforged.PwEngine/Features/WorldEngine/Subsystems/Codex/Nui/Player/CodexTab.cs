@@ -8,5 +8,6 @@ public enum CodexTab
     Knowledge,
     Quests,
     Notes,
-    Reputation
+    Reputation,
+    Traits
 }

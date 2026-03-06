@@ -18,13 +18,15 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Applicatio
 public class CodexEventProcessor
 {
     private readonly IPlayerCodexRepository _repository;
+    private readonly ITraitSubsystem? _traitSubsystem;
     private readonly Channel<CodexDomainEvent> _eventChannel;
     private readonly CancellationTokenSource _cts;
     private Task? _processingTask;
 
-    public CodexEventProcessor(IPlayerCodexRepository repository)
+    public CodexEventProcessor(IPlayerCodexRepository repository, ITraitSubsystem? traitSubsystem = null)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+        _traitSubsystem = traitSubsystem;
         _eventChannel = Channel.CreateUnbounded<CodexDomainEvent>();
         _cts = new CancellationTokenSource();
     }
@@ -32,9 +34,10 @@ public class CodexEventProcessor
     /// <summary>
     /// Internal constructor for testing that allows injecting a custom channel
     /// </summary>
-    internal CodexEventProcessor(IPlayerCodexRepository repository, Channel<CodexDomainEvent> channel)
+    internal CodexEventProcessor(IPlayerCodexRepository repository, Channel<CodexDomainEvent> channel, ITraitSubsystem? traitSubsystem = null)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+        _traitSubsystem = traitSubsystem;
         _eventChannel = channel ?? throw new ArgumentNullException(nameof(channel));
         _cts = new CancellationTokenSource();
     }
@@ -113,16 +116,17 @@ public class CodexEventProcessor
                             ?? new PlayerCodex(domainEvent.CharacterId, domainEvent.OccurredAt);
 
         // Apply event to aggregate
-        ApplyEvent(codex, domainEvent);
+        await ApplyEventAsync(codex, domainEvent, cancellationToken);
 
         // Save updated codex
         await _repository.SaveAsync(codex, cancellationToken);
     }
 
     /// <summary>
-    /// Applies a domain event to the PlayerCodex aggregate
+    /// Applies a domain event to the PlayerCodex aggregate.
+    /// Async because trait resolution requires a subsystem lookup.
     /// </summary>
-    private void ApplyEvent(PlayerCodex codex, CodexDomainEvent domainEvent)
+    private async Task ApplyEventAsync(PlayerCodex codex, CodexDomainEvent domainEvent, CancellationToken cancellationToken)
     {
         switch (domainEvent)
         {
@@ -169,6 +173,11 @@ public class CodexEventProcessor
 
             case NoteDeletedEvent nde:
                 codex.DeleteNote(nde.NoteId, nde.OccurredAt);
+                break;
+
+            case TraitAcquiredEvent tae:
+                CodexTraitEntry traitEntry = await CreateTraitEntryAsync(tae, cancellationToken);
+                codex.RecordTraitAcquired(traitEntry, tae.OccurredAt);
                 break;
 
             default:
@@ -240,5 +249,38 @@ public class CodexEventProcessor
             title: null
         );
     }
+
+    /// <summary>
+    /// Creates a CodexTraitEntry from a TraitAcquiredEvent by resolving metadata from the trait subsystem.
+    /// Falls back to the TraitTag value as name if the subsystem is unavailable or the trait is unknown.
+    /// </summary>
+    private async Task<CodexTraitEntry> CreateTraitEntryAsync(TraitAcquiredEvent evt, CancellationToken cancellationToken)
+    {
+        string name = evt.TraitTag.Value;
+        string description = string.Empty;
+        TraitCategory category = TraitCategory.Background;
+
+        if (_traitSubsystem != null)
+        {
+            TraitDefinition? definition = await _traitSubsystem.GetTraitAsync(evt.TraitTag, cancellationToken);
+            if (definition != null)
+            {
+                name = definition.Name;
+                description = definition.Description;
+                category = definition.Category;
+            }
+        }
+
+        return new CodexTraitEntry
+        {
+            TraitTag = evt.TraitTag,
+            Name = name,
+            Description = description,
+            Category = category,
+            AcquisitionMethod = evt.AcquisitionMethod,
+            DateAcquired = evt.OccurredAt
+        };
+    }
+
 }
 

@@ -5,6 +5,8 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Aggrega
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Infrastructure;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Codex.Application;
@@ -407,6 +409,105 @@ public class CodexEventProcessorTests
 
     #endregion
 
+    #region Trait Event Tests
+
+    [Test]
+    public async Task Given_TraitAcquiredEvent_When_Processed_WithSubsystem_Then_TraitAddedWithResolvedMetadata()
+    {
+        // Given
+        StubTraitSubsystem subsystem = new();
+        subsystem.AddDefinition(new Subsystems.TraitDefinition(
+            new TraitTag("brave"),
+            "Brave",
+            "This character is exceptionally courageous.",
+            TraitCategory.Personality,
+            new Dictionary<string, object>()));
+
+        CodexEventProcessor processor = new(_repository, traitSubsystem: subsystem);
+        TraitAcquiredEvent evt = new(
+            CharacterId: _characterId,
+            OccurredAt: DateTime.UtcNow,
+            TraitTag: new TraitTag("brave"),
+            AcquisitionMethod: "Character Creation"
+        );
+
+        // When
+        processor.Start();
+        await processor.EnqueueEventAsync(evt);
+        await Task.Delay(100);
+        await processor.StopAsync();
+
+        // Then
+        PlayerCodex? codex = await _repository.LoadAsync(_characterId);
+        Assert.That(codex, Is.Not.Null);
+        Assert.That(codex!.Traits.Count, Is.EqualTo(1));
+
+        CodexTraitEntry trait = codex.Traits.First();
+        Assert.That(trait.TraitTag.Value, Is.EqualTo("brave"));
+        Assert.That(trait.Name, Is.EqualTo("Brave"));
+        Assert.That(trait.Description, Is.EqualTo("This character is exceptionally courageous."));
+        Assert.That(trait.Category, Is.EqualTo(TraitCategory.Personality));
+        Assert.That(trait.AcquisitionMethod, Is.EqualTo("Character Creation"));
+    }
+
+    [Test]
+    public async Task Given_TraitAcquiredEvent_When_Processed_WithoutSubsystem_Then_FallsBackToTagAsName()
+    {
+        // Given — no subsystem (null)
+        TraitAcquiredEvent evt = new(
+            CharacterId: _characterId,
+            OccurredAt: DateTime.UtcNow,
+            TraitTag: new TraitTag("unknown_trait"),
+            AcquisitionMethod: "DM Grant"
+        );
+
+        // When
+        _processor.Start();
+        await _processor.EnqueueEventAsync(evt);
+        await Task.Delay(100);
+        await _processor.StopAsync();
+
+        // Then
+        PlayerCodex? codex = await _repository.LoadAsync(_characterId);
+        Assert.That(codex, Is.Not.Null);
+        Assert.That(codex!.Traits.Count, Is.EqualTo(1));
+
+        CodexTraitEntry trait = codex.Traits.First();
+        Assert.That(trait.TraitTag.Value, Is.EqualTo("unknown_trait"));
+        Assert.That(trait.Name, Is.EqualTo("unknown_trait")); // fallback to tag value
+        Assert.That(trait.Description, Is.EqualTo(string.Empty));
+        Assert.That(trait.Category, Is.EqualTo(TraitCategory.Background)); // default
+    }
+
+    [Test]
+    public async Task Given_TraitAcquiredEvent_When_SubsystemDoesNotKnowTrait_Then_FallsBackToTagAsName()
+    {
+        // Given — subsystem exists but trait not registered
+        StubTraitSubsystem subsystem = new();
+        CodexEventProcessor processor = new(_repository, traitSubsystem: subsystem);
+
+        TraitAcquiredEvent evt = new(
+            CharacterId: _characterId,
+            OccurredAt: DateTime.UtcNow,
+            TraitTag: new TraitTag("unknown_trait"),
+            AcquisitionMethod: "Quest Reward"
+        );
+
+        // When
+        processor.Start();
+        await processor.EnqueueEventAsync(evt);
+        await Task.Delay(100);
+        await processor.StopAsync();
+
+        // Then
+        PlayerCodex? codex = await _repository.LoadAsync(_characterId);
+        CodexTraitEntry trait = codex!.Traits.First();
+        Assert.That(trait.Name, Is.EqualTo("unknown_trait"));
+        Assert.That(trait.Description, Is.EqualTo(string.Empty));
+    }
+
+    #endregion
+
     #region Integration Tests
 
     [Test]
@@ -499,5 +600,37 @@ public class CodexEventProcessorTests
     }
 
     #endregion
+}
+
+/// <summary>
+/// Simple in-memory stub of ITraitSubsystem for testing.
+/// </summary>
+internal class StubTraitSubsystem : Subsystems.ITraitSubsystem
+{
+    private readonly Dictionary<string, Subsystems.TraitDefinition> _definitions = new();
+
+    public void AddDefinition(Subsystems.TraitDefinition definition) =>
+        _definitions[definition.Tag.Value] = definition;
+
+    public Task<Subsystems.TraitDefinition?> GetTraitAsync(TraitTag traitTag, CancellationToken ct = default) =>
+        Task.FromResult(_definitions.GetValueOrDefault(traitTag.Value));
+
+    public Task<List<Subsystems.TraitDefinition>> GetAllTraitsAsync(CancellationToken ct = default) =>
+        Task.FromResult(_definitions.Values.ToList());
+
+    public Task<CommandResult> GrantTraitAsync(CharacterId characterId, TraitTag traitTag, CancellationToken ct = default) =>
+        Task.FromResult(CommandResult.Ok());
+
+    public Task<CommandResult> RemoveTraitAsync(CharacterId characterId, TraitTag traitTag, CancellationToken ct = default) =>
+        Task.FromResult(CommandResult.Ok());
+
+    public Task<List<Subsystems.CharacterTrait>> GetCharacterTraitsAsync(CharacterId characterId, CancellationToken ct = default) =>
+        Task.FromResult(new List<Subsystems.CharacterTrait>());
+
+    public Task<bool> HasTraitAsync(CharacterId characterId, TraitTag traitTag, CancellationToken ct = default) =>
+        Task.FromResult(false);
+
+    public Task<Subsystems.TraitEffectsSummary> CalculateTraitEffectsAsync(CharacterId characterId, CancellationToken ct = default) =>
+        Task.FromResult(new Subsystems.TraitEffectsSummary(characterId, new Dictionary<string, int>(), new List<string>(), new List<string>()));
 }
 

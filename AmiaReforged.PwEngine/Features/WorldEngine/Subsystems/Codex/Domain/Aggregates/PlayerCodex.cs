@@ -31,6 +31,7 @@ public class PlayerCodex
     private readonly Dictionary<LoreId, CodexLoreEntry> _lore = new();
     private readonly Dictionary<Guid, CodexNoteEntry> _notes = new();
     private readonly Dictionary<FactionId, FactionReputation> _reputations = new();
+    private readonly Dictionary<TraitTag, CodexTraitEntry> _traits = new();
 
     /// <summary>
     /// Read-only view of all quests
@@ -51,6 +52,11 @@ public class PlayerCodex
     /// Read-only view of all faction reputations
     /// </summary>
     public IReadOnlyCollection<FactionReputation> Reputations => _reputations.Values;
+
+    /// <summary>
+    /// Read-only view of all traits
+    /// </summary>
+    public IReadOnlyCollection<CodexTraitEntry> Traits => _traits.Values;
 
     public PlayerCodex(CharacterId ownerId, DateTime dateCreated)
     {
@@ -258,6 +264,34 @@ public class PlayerCodex
 
     #endregion
 
+    #region Trait Commands
+
+    /// <summary>
+    /// Records a newly acquired trait in the codex.
+    /// </summary>
+    public void RecordTraitAcquired(CodexTraitEntry trait, DateTime occurredAt)
+    {
+        ArgumentNullException.ThrowIfNull(trait);
+
+        if (_traits.ContainsKey(trait.TraitTag))
+            throw new InvalidOperationException($"Trait {trait.TraitTag.Value} already exists in codex");
+
+        _traits[trait.TraitTag] = trait;
+        LastUpdated = occurredAt;
+    }
+
+    /// <summary>
+    /// Gets a trait by tag.
+    /// </summary>
+    public CodexTraitEntry? GetTrait(TraitTag traitTag) => _traits.GetValueOrDefault(traitTag);
+
+    /// <summary>
+    /// Checks if a trait exists in the codex.
+    /// </summary>
+    public bool HasTrait(TraitTag traitTag) => _traits.ContainsKey(traitTag);
+
+    #endregion
+
     #region Query Methods
 
     /// <summary>
@@ -303,9 +337,21 @@ public class PlayerCodex
         _notes.Values.Where(n => n.MatchesSearch(searchTerm));
 
     /// <summary>
+    /// Gets all traits in a specific category
+    /// </summary>
+    public IEnumerable<CodexTraitEntry> GetTraitsByCategory(TraitCategory category) =>
+        _traits.Values.Where(t => t.MatchesCategory(category));
+
+    /// <summary>
+    /// Searches traits by search term
+    /// </summary>
+    public IEnumerable<CodexTraitEntry> SearchTraits(string searchTerm) =>
+        _traits.Values.Where(t => t.MatchesSearch(searchTerm));
+
+    /// <summary>
     /// Gets total count of all codex entries
     /// </summary>
-    public int GetTotalEntryCount() => _quests.Count + _lore.Count + _notes.Count + _reputations.Count;
+    public int GetTotalEntryCount() => _quests.Count + _lore.Count + _notes.Count + _reputations.Count + _traits.Count;
 
     #endregion
 }
