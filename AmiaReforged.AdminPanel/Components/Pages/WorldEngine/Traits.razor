@@ -1,0 +1,744 @@
+@page "/worldengine/traits"
+@using Microsoft.AspNetCore.Authorization
+@using AmiaReforged.AdminPanel.Models
+@using AmiaReforged.AdminPanel.Services
+@attribute [Authorize]
+@inject TraitApiService Api
+@inject IWorldEngineEndpointService EndpointService
+@inject ILogger<Traits> Logger
+@rendermode InteractiveServer
+
+<PageTitle>Traits - World Engine</PageTitle>
+
+<div class="encounters-page">
+    <div class="dashboard-header">
+        <h1>Trait Definitions</h1>
+        <div class="header-actions">
+            @if (_endpoints.Count > 0)
+            {
+                <div class="instance-selector">
+                    <label class="instance-label">Server:</label>
+                    <select class="form-control form-control-sm" value="@(_selectedEndpoint?.Id.ToString() ?? "")" @onchange="OnEndpointChanged">
+                        <option value="">— Select —</option>
+                        @foreach (var ep in _endpoints)
+                        {
+                            <option value="@ep.Id">@ep.Name</option>
+                        }
+                    </select>
+                </div>
+            }
+            @if (_selectedEndpoint != null)
+            {
+                <button class="btn btn-secondary btn-sm" @onclick="RefreshTraits">Refresh</button>
+                <button class="btn btn-primary btn-sm" @onclick="ShowCreateModal">+ New Trait</button>
+            }
+            <a href="/" class="btn btn-secondary btn-sm">← Dashboard</a>
+        </div>
+    </div>
+
+    @if (_error != null)
+    {
+        <div class="alert alert-danger">@_error <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _error = null">Dismiss</button></div>
+    }
+    @if (_success != null)
+    {
+        <div class="alert alert-success">@_success <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _success = null">Dismiss</button></div>
+    }
+
+    @if (_selectedEndpoint == null)
+    {
+        <div class="section" style="text-align:center;padding:60px 20px">
+            @if (_endpoints.Count == 0)
+            {
+                <p style="color:var(--text-secondary);font-size:1.1rem">
+                    No WorldEngine servers configured. Go to
+                    <a href="/encounters">Encounters</a> to add one.
+                </p>
+            }
+            else
+            {
+                <p style="color:var(--text-secondary);font-size:1.1rem">Select a server from the dropdown above to manage trait definitions.</p>
+            }
+        </div>
+    }
+
+    @* ===== Search & Filter ===== *@
+    @if (_selectedEndpoint != null)
+    {
+        <div class="section" style="margin-bottom:20px">
+            <div class="form-row" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+                <div class="form-group" style="flex:2;min-width:200px">
+                    <label>Search</label>
+                    <input class="form-control" @bind="_searchTerm" @bind:event="oninput"
+                           placeholder="Search by tag, name, or description..." />
+                </div>
+                <div class="form-group" style="width:170px">
+                    <label>Category</label>
+                    <select class="form-control" @bind="_categoryFilter">
+                        <option value="">All</option>
+                        @foreach (var cat in _categories)
+                        {
+                            <option value="@cat.Name">@cat.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group" style="width:170px">
+                    <label>Death Behavior</label>
+                    <select class="form-control" @bind="_deathBehaviorFilter">
+                        <option value="">All</option>
+                        @foreach (var db in _deathBehaviors)
+                        {
+                            <option value="@db.Name">@db.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group" style="width:120px">
+                    <label>DM Only</label>
+                    <select class="form-control" @bind="_dmOnlyFilter">
+                        <option value="">All</option>
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary btn-sm" @onclick="SearchTraits" disabled="@_isLoading">Search</button>
+            </div>
+        </div>
+
+        @* ===== Traits Table ===== *@
+        @if (_isLoading)
+        {
+            <div class="section" style="text-align:center;padding:40px"><em>Loading...</em></div>
+        }
+        else if (_items.Count == 0)
+        {
+            <div class="section" style="text-align:center;padding:40px">
+                <p style="color:var(--text-secondary)">No trait definitions found.</p>
+            </div>
+        }
+        else
+        {
+            <div class="section">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Tag</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Cost</th>
+                            <th>Death</th>
+                            <th>DM Only</th>
+                            <th>Effects</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in _items)
+                        {
+                            <tr>
+                                <td style="font-family:monospace;font-size:0.9rem">@item.Tag</td>
+                                <td>@item.Name</td>
+                                <td><span class="badge @GetCategoryBadgeClass(item.Category)">@item.Category</span></td>
+                                <td>@item.PointCost</td>
+                                <td><span class="badge @GetDeathBadgeClass(item.DeathBehavior)">@item.DeathBehavior</span></td>
+                                <td>
+                                    @if (item.DmOnly) { <span class="badge bg-warning text-dark">DM</span> }
+                                    else { <span style="color:var(--text-secondary)">No</span> }
+                                </td>
+                                <td>@item.Effects.Count</td>
+                                <td class="actions">
+                                    <button class="btn btn-sm btn-secondary" @onclick="() => ShowEditModal(item)">Edit</button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(item)">Delete</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                @* Pagination *@
+                @if (_totalCount > _pageSize)
+                {
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+                        <span style="color:var(--text-secondary);font-size:0.9rem">
+                            Showing @((_page - 1) * _pageSize + 1)–@(Math.Min(_page * _pageSize, _totalCount)) of @_totalCount
+                        </span>
+                        <div style="display:flex;gap:5px">
+                            <button class="btn btn-sm btn-secondary" disabled="@(_page <= 1)" @onclick="PrevPage">← Prev</button>
+                            <button class="btn btn-sm btn-secondary" disabled="@(_page * _pageSize >= _totalCount)" @onclick="NextPage">Next →</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+
+    @* ===== Create / Edit Modal ===== *@
+    @if (_showEditModal)
+    {
+        <div class="modal-backdrop" @onclick="CloseEditModal">
+        <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:850px;max-height:90vh;overflow-y:auto;margin:3vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+            <h2>@(_isCreating ? "Create Trait Definition" : $"Edit: {_editItem.Name}")</h2>
+
+            <div style="display:flex;flex-direction:column;gap:12px;margin-top:15px">
+                @* === Row 1: Tag + Name === *@
+                <div class="form-row" style="display:flex;gap:10px">
+                    <div class="form-group" style="flex:1">
+                        <label>Tag <small style="color:var(--text-secondary)">(unique identifier, max 50 chars)</small></label>
+                        <input class="form-control" @bind="_editItem.Tag" maxlength="50" disabled="@(!_isCreating)"
+                               placeholder="e.g. trait_brave" />
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Name</label>
+                        <input class="form-control" @bind="_editItem.Name" maxlength="200"
+                               placeholder="e.g. Brave" />
+                    </div>
+                </div>
+
+                @* === Description === *@
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea class="form-control" rows="4" @bind="_editItem.Description"
+                              placeholder="Full description of the trait..."></textarea>
+                </div>
+
+                @* === Row 2: Category, Death Behavior, Point Cost === *@
+                <div class="form-row" style="display:flex;gap:10px">
+                    <div class="form-group" style="flex:1">
+                        <label>Category</label>
+                        <select class="form-control" @bind="_editItem.Category">
+                            @foreach (var cat in _categories)
+                            {
+                                <option value="@cat.Name">@cat.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Death Behavior</label>
+                        <select class="form-control" @bind="_editItem.DeathBehavior">
+                            @foreach (var db in _deathBehaviors)
+                            {
+                                <option value="@db.Name">@db.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group" style="width:120px">
+                        <label>Point Cost</label>
+                        <input type="number" class="form-control" @bind="_editItem.PointCost" />
+                    </div>
+                </div>
+
+                @* === Flags === *@
+                <div class="form-row" style="display:flex;gap:20px">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="requiresUnlock" @bind="_editItem.RequiresUnlock" />
+                        <label class="form-check-label" for="requiresUnlock">
+                            Requires Unlock
+                            <small style="color:var(--text-secondary);display:block">Cannot be selected at character creation; must be earned.</small>
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="dmOnly" @bind="_editItem.DmOnly" />
+                        <label class="form-check-label" for="dmOnly">
+                            DM Only
+                            <small style="color:var(--text-secondary);display:block">Can only be assigned by a DM.</small>
+                        </label>
+                    </div>
+                </div>
+
+                @* ===== Effects Editor ===== *@
+                <div style="border:1px solid var(--border-color);border-radius:8px;padding:15px;margin-top:5px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                        <label style="font-weight:600;margin:0">Effects</label>
+                        <button class="btn btn-sm btn-outline-primary" @onclick="AddEffect">+ Add Effect</button>
+                    </div>
+
+                    @if (_editItem.Effects.Count == 0)
+                    {
+                        <p style="color:var(--text-secondary);text-align:center;margin:10px 0">No effects defined. This trait is flavor-only.</p>
+                    }
+                    else
+                    {
+                        @for (int i = 0; i < _editItem.Effects.Count; i++)
+                        {
+                            int idx = i;
+                            var effect = _editItem.Effects[idx];
+                            <div style="display:flex;gap:8px;align-items:end;margin-bottom:8px;padding:8px;background:var(--bg-darker,rgba(0,0,0,0.1));border-radius:6px">
+                                <div class="form-group" style="width:160px;margin:0">
+                                    <label style="font-size:0.8rem">Type</label>
+                                    <select class="form-control form-control-sm" @bind="_editItem.Effects[idx].EffectType">
+                                        @foreach (var et in _effectTypes)
+                                        {
+                                            <option value="@et.Id">@et.Name</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="form-group" style="flex:1;margin:0">
+                                    <label style="font-size:0.8rem">Target</label>
+                                    <input class="form-control form-control-sm" @bind="_editItem.Effects[idx].Target"
+                                           placeholder="e.g. Persuade, Strength" />
+                                </div>
+                                <div class="form-group" style="width:90px;margin:0">
+                                    <label style="font-size:0.8rem">Magnitude</label>
+                                    <input type="number" class="form-control form-control-sm" @bind="_editItem.Effects[idx].Magnitude" />
+                                </div>
+                                <div class="form-group" style="flex:1;margin:0">
+                                    <label style="font-size:0.8rem">Description</label>
+                                    <input class="form-control form-control-sm" @bind="_editItem.Effects[idx].Description"
+                                           placeholder="e.g. +2 to Persuade" />
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger" style="margin-bottom:0" @onclick="() => RemoveEffect(idx)">✕</button>
+                            </div>
+                        }
+                    }
+                </div>
+
+                @* ===== Race / Class Restrictions ===== *@
+                <div style="border:1px solid var(--border-color);border-radius:8px;padding:15px;margin-top:5px">
+                    <label style="font-weight:600;margin-bottom:10px;display:block">Race &amp; Class Restrictions</label>
+
+                    <div class="form-row" style="display:flex;gap:10px">
+                        <div class="form-group" style="flex:1">
+                            <label>Allowed Races <small style="color:var(--text-secondary)">(comma-separated, empty = all)</small></label>
+                            <input class="form-control" @bind="_allowedRacesText"
+                                   placeholder="e.g. Human, Elf, Half-Elf" />
+                        </div>
+                        <div class="form-group" style="flex:1">
+                            <label>Forbidden Races <small style="color:var(--text-secondary)">(comma-separated)</small></label>
+                            <input class="form-control" @bind="_forbiddenRacesText"
+                                   placeholder="e.g. Construct" />
+                        </div>
+                    </div>
+
+                    <div class="form-row" style="display:flex;gap:10px;margin-top:8px">
+                        <div class="form-group" style="flex:1">
+                            <label>Allowed Classes <small style="color:var(--text-secondary)">(comma-separated, empty = all)</small></label>
+                            <input class="form-control" @bind="_allowedClassesText"
+                                   placeholder="e.g. Fighter, Paladin" />
+                        </div>
+                        <div class="form-group" style="flex:1">
+                            <label>Forbidden Classes <small style="color:var(--text-secondary)">(comma-separated)</small></label>
+                            <input class="form-control" @bind="_forbiddenClassesText"
+                                   placeholder="e.g. Monk" />
+                        </div>
+                    </div>
+                </div>
+
+                @* ===== Trait Dependencies ===== *@
+                <div style="border:1px solid var(--border-color);border-radius:8px;padding:15px;margin-top:5px">
+                    <label style="font-weight:600;margin-bottom:10px;display:block">Trait Dependencies</label>
+
+                    <div class="form-row" style="display:flex;gap:10px">
+                        <div class="form-group" style="flex:1">
+                            <label>Prerequisite Traits <small style="color:var(--text-secondary)">(tags, comma-separated)</small></label>
+                            <input class="form-control" @bind="_prerequisiteTraitsText"
+                                   placeholder="e.g. trait_basic_magic" />
+                        </div>
+                        <div class="form-group" style="flex:1">
+                            <label>Conflicting Traits <small style="color:var(--text-secondary)">(tags, comma-separated)</small></label>
+                            <input class="form-control" @bind="_conflictingTraitsText"
+                                   placeholder="e.g. trait_cowardly" />
+                        </div>
+                    </div>
+                </div>
+
+                @* === Save / Cancel === *@
+                <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px">
+                    <button class="btn btn-secondary" @onclick="CloseEditModal">Cancel</button>
+                    <button class="btn btn-primary" @onclick="SaveTrait" disabled="@_isSaving">
+                        @(_isSaving ? "Saving..." : _isCreating ? "Create" : "Save Changes")
+                    </button>
+                </div>
+            </div>
+        </div>
+        </div>
+    }
+
+    @* ===== Delete Confirmation Modal ===== *@
+    @if (_showDeleteConfirm)
+    {
+        <div class="modal-backdrop" @onclick="() => _showDeleteConfirm = false">
+        <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:500px;margin:20vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+            <h2>Confirm Delete</h2>
+            <p>Are you sure you want to delete trait <strong>@(_deleteTarget?.Name ?? "")</strong> (<code>@(_deleteTarget?.Tag ?? "")</code>)?</p>
+            <p style="color:var(--text-secondary);font-size:0.9rem">
+                This cannot be undone. If any characters currently have this trait, deletion will be blocked.
+            </p>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+                <button class="btn btn-secondary" @onclick="() => _showDeleteConfirm = false">Cancel</button>
+                <button class="btn btn-danger" @onclick="DeleteTrait" disabled="@_isSaving">
+                    @(_isSaving ? "Deleting..." : "Delete")
+                </button>
+            </div>
+        </div>
+        </div>
+    }
+</div>
+
+<style>
+    .modal-backdrop {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 1040;
+    }
+</style>
+
+@code {
+    // ===== Endpoint State =====
+    private List<WorldEngineEndpoint> _endpoints = [];
+    private WorldEngineEndpoint? _selectedEndpoint;
+
+    // ===== Data =====
+    private List<TraitDefinitionDto> _items = [];
+    private int _totalCount;
+    private int _page = 1;
+    private int _pageSize = 50;
+    private string _searchTerm = "";
+    private string _categoryFilter = "";
+    private string _deathBehaviorFilter = "";
+    private string _dmOnlyFilter = "";
+
+    // ===== Enum Lookups =====
+    private List<EnumValueDto> _categories = [];
+    private List<EnumValueDto> _deathBehaviors = [];
+    private List<EnumValueDto> _effectTypes = [];
+
+    // ===== UI State =====
+    private bool _isLoading;
+    private bool _isSaving;
+    private string? _error;
+    private string? _success;
+
+    // ===== Edit Modal =====
+    private bool _showEditModal;
+    private bool _isCreating;
+    private TraitDefinitionDto _editItem = new();
+
+    // Comma-separated text fields for list properties
+    private string _allowedRacesText = "";
+    private string _forbiddenRacesText = "";
+    private string _allowedClassesText = "";
+    private string _forbiddenClassesText = "";
+    private string _prerequisiteTraitsText = "";
+    private string _conflictingTraitsText = "";
+
+    // ===== Delete Confirmation =====
+    private bool _showDeleteConfirm;
+    private TraitDefinitionDto? _deleteTarget;
+
+    // ===== Lifecycle =====
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshEndpoints();
+    }
+
+    // ===== Endpoint Handling =====
+
+    private async Task RefreshEndpoints()
+    {
+        var all = await EndpointService.GetAllEndpointsAsync();
+        _endpoints = all.Where(e => e.IsEnabled).ToList();
+
+        if (_selectedEndpoint != null && !_endpoints.Any(e => e.Id == _selectedEndpoint.Id))
+            _selectedEndpoint = null;
+
+        StateHasChanged();
+    }
+
+    private async Task OnEndpointChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
+            Api.SelectEndpoint(id);
+            _page = 1;
+            await LoadEnumValues();
+            await RefreshTraits();
+        }
+        else
+        {
+            _selectedEndpoint = null;
+            Api.SelectEndpoint(null);
+            _items.Clear();
+        }
+    }
+
+    // ===== Enum Loading =====
+
+    private async Task LoadEnumValues()
+    {
+        try
+        {
+            _categories = await Api.GetCategoriesAsync();
+            _deathBehaviors = await Api.GetDeathBehaviorsAsync();
+            _effectTypes = await Api.GetEffectTypesAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load enum values, using fallback");
+            // Fallback defaults
+            if (_categories.Count == 0)
+            {
+                _categories = [
+                    new() { Id = 0, Name = "Background" },
+                    new() { Id = 1, Name = "Personality" },
+                    new() { Id = 2, Name = "Physical" },
+                    new() { Id = 3, Name = "Mental" },
+                    new() { Id = 4, Name = "Social" },
+                    new() { Id = 5, Name = "Supernatural" },
+                    new() { Id = 6, Name = "Curse" },
+                    new() { Id = 7, Name = "Blessing" }
+                ];
+            }
+            if (_deathBehaviors.Count == 0)
+            {
+                _deathBehaviors = [
+                    new() { Id = 0, Name = "Persist" },
+                    new() { Id = 1, Name = "ResetOnDeath" },
+                    new() { Id = 2, Name = "Permadeath" },
+                    new() { Id = 3, Name = "RemoveOnDeath" }
+                ];
+            }
+            if (_effectTypes.Count == 0)
+            {
+                _effectTypes = [
+                    new() { Id = 0, Name = "None" },
+                    new() { Id = 1, Name = "SkillModifier" },
+                    new() { Id = 2, Name = "AttributeModifier" },
+                    new() { Id = 3, Name = "KnowledgePoints" },
+                    new() { Id = 99, Name = "Custom" }
+                ];
+            }
+        }
+    }
+
+    // ===== Data Loading =====
+
+    private async Task RefreshTraits()
+    {
+        if (_selectedEndpoint == null) return;
+        _isLoading = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            bool? dmOnly = _dmOnlyFilter switch
+            {
+                "true" => true,
+                "false" => false,
+                _ => null
+            };
+
+            var result = await Api.GetAllAsync(_searchTerm, _categoryFilter, _deathBehaviorFilter, dmOnly, _page, _pageSize);
+            _items = result.Items;
+            _totalCount = result.TotalCount;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to load trait definitions");
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SearchTraits()
+    {
+        _page = 1;
+        await RefreshTraits();
+    }
+
+    private async Task PrevPage()
+    {
+        if (_page > 1) { _page--; await RefreshTraits(); }
+    }
+
+    private async Task NextPage()
+    {
+        if (_page * _pageSize < _totalCount) { _page++; await RefreshTraits(); }
+    }
+
+    // ===== Create / Edit Modal =====
+
+    private void ShowCreateModal()
+    {
+        _isCreating = true;
+        _editItem = new TraitDefinitionDto();
+        ClearListFields();
+        _showEditModal = true;
+    }
+
+    private void ShowEditModal(TraitDefinitionDto item)
+    {
+        _isCreating = false;
+        _editItem = new TraitDefinitionDto
+        {
+            Tag = item.Tag,
+            Name = item.Name,
+            Description = item.Description,
+            PointCost = item.PointCost,
+            Category = item.Category,
+            DeathBehavior = item.DeathBehavior,
+            RequiresUnlock = item.RequiresUnlock,
+            DmOnly = item.DmOnly,
+            Effects = item.Effects.Select(e => new TraitEffectDto
+            {
+                EffectType = e.EffectType,
+                Target = e.Target,
+                Magnitude = e.Magnitude,
+                Description = e.Description
+            }).ToList(),
+            AllowedRaces = [..item.AllowedRaces],
+            AllowedClasses = [..item.AllowedClasses],
+            ForbiddenRaces = [..item.ForbiddenRaces],
+            ForbiddenClasses = [..item.ForbiddenClasses],
+            ConflictingTraits = [..item.ConflictingTraits],
+            PrerequisiteTraits = [..item.PrerequisiteTraits],
+            CreatedUtc = item.CreatedUtc,
+            UpdatedUtc = item.UpdatedUtc
+        };
+
+        _allowedRacesText = string.Join(", ", item.AllowedRaces);
+        _forbiddenRacesText = string.Join(", ", item.ForbiddenRaces);
+        _allowedClassesText = string.Join(", ", item.AllowedClasses);
+        _forbiddenClassesText = string.Join(", ", item.ForbiddenClasses);
+        _prerequisiteTraitsText = string.Join(", ", item.PrerequisiteTraits);
+        _conflictingTraitsText = string.Join(", ", item.ConflictingTraits);
+
+        _showEditModal = true;
+    }
+
+    private void CloseEditModal()
+    {
+        _showEditModal = false;
+        _editItem = new();
+        ClearListFields();
+    }
+
+    private void ClearListFields()
+    {
+        _allowedRacesText = "";
+        _forbiddenRacesText = "";
+        _allowedClassesText = "";
+        _forbiddenClassesText = "";
+        _prerequisiteTraitsText = "";
+        _conflictingTraitsText = "";
+    }
+
+    private async Task SaveTrait()
+    {
+        _isSaving = true;
+        _error = null;
+        try
+        {
+            // Parse comma-separated fields into lists
+            _editItem.AllowedRaces = ParseCsv(_allowedRacesText);
+            _editItem.ForbiddenRaces = ParseCsv(_forbiddenRacesText);
+            _editItem.AllowedClasses = ParseCsv(_allowedClassesText);
+            _editItem.ForbiddenClasses = ParseCsv(_forbiddenClassesText);
+            _editItem.PrerequisiteTraits = ParseCsv(_prerequisiteTraitsText);
+            _editItem.ConflictingTraits = ParseCsv(_conflictingTraitsText);
+
+            if (_isCreating)
+                await Api.CreateAsync(_editItem);
+            else
+                await Api.UpdateAsync(_editItem.Tag, _editItem);
+
+            _success = _isCreating ? $"Trait '{_editItem.Name}' created." : $"Trait '{_editItem.Name}' updated.";
+            _showEditModal = false;
+            await RefreshTraits();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to save trait definition");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    // ===== Effects Editor =====
+
+    private void AddEffect()
+    {
+        _editItem.Effects.Add(new TraitEffectDto());
+    }
+
+    private void RemoveEffect(int index)
+    {
+        if (index >= 0 && index < _editItem.Effects.Count)
+            _editItem.Effects.RemoveAt(index);
+    }
+
+    // ===== Delete =====
+
+    private void ConfirmDelete(TraitDefinitionDto item)
+    {
+        _deleteTarget = item;
+        _showDeleteConfirm = true;
+    }
+
+    private async Task DeleteTrait()
+    {
+        if (_deleteTarget == null) return;
+        _isSaving = true;
+        _error = null;
+        try
+        {
+            await Api.DeleteAsync(_deleteTarget.Tag);
+            _success = $"Deleted trait '{_deleteTarget.Name}'.";
+            _showDeleteConfirm = false;
+            _deleteTarget = null;
+            await RefreshTraits();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to delete trait definition");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    // ===== Helpers =====
+
+    private static List<string> ParseCsv(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return [];
+        return text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .ToList();
+    }
+
+    private static string GetCategoryBadgeClass(string category) => category switch
+    {
+        "Background" => "bg-secondary",
+        "Personality" => "bg-info",
+        "Physical" => "bg-success",
+        "Mental" => "bg-primary",
+        "Social" => "bg-info text-dark",
+        "Supernatural" => "bg-warning text-dark",
+        "Curse" => "bg-danger",
+        "Blessing" => "bg-warning text-dark",
+        _ => "bg-secondary"
+    };
+
+    private static string GetDeathBadgeClass(string behavior) => behavior switch
+    {
+        "Persist" => "bg-secondary",
+        "ResetOnDeath" => "bg-warning text-dark",
+        "Permadeath" => "bg-danger",
+        "RemoveOnDeath" => "bg-warning text-dark",
+        _ => "bg-secondary"
+    };
+}

@@ -62,6 +62,7 @@ public class Program
             builder.Services.AddScoped<RegionApiService>();
             builder.Services.AddScoped<AreaGraphApiService>();
             builder.Services.AddScoped<LoreApiService>();
+            builder.Services.AddScoped<TraitApiService>();
 
             // Cookie Authentication
             builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

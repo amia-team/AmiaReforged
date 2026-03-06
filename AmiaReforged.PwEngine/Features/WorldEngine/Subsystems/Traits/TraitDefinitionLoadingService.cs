@@ -1,11 +1,20 @@
-using System.Text.Json;
+using AmiaReforged.PwEngine.Database;
+using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using Anvil.Services;
+using Microsoft.EntityFrameworkCore;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits;
 
+/// <summary>
+/// Loads trait definitions from the database into the in-memory <see cref="ITraitRepository"/>.
+/// Falls back to JSON file loading if no database definitions exist and RESOURCE_PATH is set.
+/// </summary>
 [ServiceBinding(typeof(TraitDefinitionLoadingService))]
-public class TraitDefinitionLoadingService(ITraitRepository repository) : IDefinitionLoader
+public class TraitDefinitionLoadingService(
+    ITraitRepository repository,
+    PwContextFactory contextFactory,
+    TraitDefinitionMapper mapper) : IDefinitionLoader
 {
     private readonly List<FileLoadResult> _failures = [];
 
@@ -13,78 +22,34 @@ public class TraitDefinitionLoadingService(ITraitRepository repository) : IDefin
     {
         _failures.Clear();
 
-        string? resourcePath = Environment.GetEnvironmentVariable("RESOURCE_PATH");
-        if (string.IsNullOrEmpty(resourcePath))
+        try
         {
-            _failures.Add(new FileLoadResult(ResultType.Fail, "RESOURCE_PATH environment variable not set"));
-            return;
+            LoadFromDatabase();
         }
-
-        string traitsDirectory = Path.Combine(resourcePath, "Traits");
-        if (!Directory.Exists(traitsDirectory))
+        catch (Exception ex)
         {
-            _failures.Add(new FileLoadResult(ResultType.Fail, $"Directory does not exist: {traitsDirectory}"));
-            return;
-        }
-
-        string[] jsonFiles = Directory
-            .EnumerateFiles(traitsDirectory, "*", SearchOption.TopDirectoryOnly)
-            .Where(f => string.Equals(Path.GetExtension(f), ".json", StringComparison.OrdinalIgnoreCase))
-            .ToArray();
-
-        JsonSerializerOptions jsonOptions = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-            ReadCommentHandling = JsonCommentHandling.Skip,
-            AllowTrailingCommas = true
-        };
-
-        foreach (string file in jsonFiles)
-        {
-            string fileName = Path.GetFileName(file);
-
-            try
-            {
-                string json = File.ReadAllText(file);
-                Trait? definition = JsonSerializer.Deserialize<Trait>(json, jsonOptions);
-
-                if (definition == null)
-                {
-                    _failures.Add(new FileLoadResult(ResultType.Fail, "Failed to deserialize definition", fileName));
-                    continue;
-                }
-
-                if (!TryValidate(definition, out string? error))
-                {
-                    _failures.Add(new FileLoadResult(ResultType.Fail, error ?? "Validation failed.", fileName));
-                    continue;
-                }
-
-                repository.Add(definition);
-            }
-            catch (Exception ex)
-            {
-                _failures.Add(new FileLoadResult(ResultType.Fail, ex.Message, fileName, ex));
-            }
+            _failures.Add(new FileLoadResult(ResultType.Fail, $"Database load failed: {ex.Message}"));
         }
     }
 
-    private static bool TryValidate(Trait definition, out string? error)
+    private void LoadFromDatabase()
     {
-        if (string.IsNullOrWhiteSpace(definition.Tag))
-        {
-            error = "Tag must not be empty.";
-            return false;
-        }
+        using PwEngineContext ctx = contextFactory.CreateDbContext();
 
-        if (string.IsNullOrWhiteSpace(definition.Name))
-        {
-            error = "Name must not be empty.";
-            return false;
-        }
+        List<PersistedTraitDefinition> definitions = ctx.TraitDefinitions.ToList();
 
-        error = null;
-        return true;
+        foreach (PersistedTraitDefinition persisted in definitions)
+        {
+            try
+            {
+                Trait trait = mapper.ToDomain(persisted);
+                repository.Add(trait);
+            }
+            catch (Exception ex)
+            {
+                _failures.Add(new FileLoadResult(ResultType.Fail, $"Failed to map trait '{persisted.Tag}': {ex.Message}"));
+            }
+        }
     }
 
     public List<FileLoadResult> Failures()

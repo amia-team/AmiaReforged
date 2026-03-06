@@ -178,3 +178,40 @@ public class LoreDefinitionDto
     public bool IsAlwaysAvailable { get; set; }
     public DateTime CreatedUtc { get; set; }
 }
+
+// ==================== Trait Definition DTOs ====================
+
+public class TraitDefinitionDto
+{
+    public string Tag { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public int PointCost { get; set; }
+    public string Category { get; set; } = "Background";
+    public string DeathBehavior { get; set; } = "Persist";
+    public bool RequiresUnlock { get; set; }
+    public bool DmOnly { get; set; }
+    public List<TraitEffectDto> Effects { get; set; } = [];
+    public List<string> AllowedRaces { get; set; } = [];
+    public List<string> AllowedClasses { get; set; } = [];
+    public List<string> ForbiddenRaces { get; set; } = [];
+    public List<string> ForbiddenClasses { get; set; } = [];
+    public List<string> ConflictingTraits { get; set; } = [];
+    public List<string> PrerequisiteTraits { get; set; } = [];
+    public DateTime CreatedUtc { get; set; }
+    public DateTime UpdatedUtc { get; set; }
+}
+
+public class TraitEffectDto
+{
+    public int EffectType { get; set; }
+    public string? Target { get; set; }
+    public int Magnitude { get; set; }
+    public string? Description { get; set; }
+}
+
+public class EnumValueDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+}

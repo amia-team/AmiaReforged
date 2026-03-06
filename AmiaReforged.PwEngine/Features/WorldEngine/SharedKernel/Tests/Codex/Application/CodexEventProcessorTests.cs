@@ -7,6 +7,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entitie
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Infrastructure;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Codex.Application;
@@ -421,6 +422,10 @@ public class CodexEventProcessorTests
             "Brave",
             "This character is exceptionally courageous.",
             TraitCategory.Personality,
+            PointCost: 2,
+            DeathBehavior: TraitDeathBehavior.Persist,
+            RequiresUnlock: false,
+            DmOnly: false,
             new Dictionary<string, object>()));
 
         CodexEventProcessor processor = new(_repository, traitSubsystem: subsystem);

@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
 
@@ -64,13 +65,17 @@ public interface ITraitSubsystem
 }
 
 /// <summary>
-/// Represents a trait definition.
+/// Represents a trait definition exposed via the subsystem facade.
 /// </summary>
 public record TraitDefinition(
     TraitTag Tag,
     string Name,
     string Description,
     TraitCategory Category,
+    int PointCost,
+    TraitDeathBehavior DeathBehavior,
+    bool RequiresUnlock,
+    bool DmOnly,
     Dictionary<string, object> Effects);
 
 /// <summary>

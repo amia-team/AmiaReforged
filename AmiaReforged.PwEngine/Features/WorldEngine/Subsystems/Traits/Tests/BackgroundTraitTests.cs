@@ -743,73 +743,38 @@ public class BackgroundTraitTests
     }
 
     [Test]
-    public void TraitDefinition_ShouldLoad_FromJson()
+    public void TraitDefinition_ShouldBeStoredInRepository_WhenAdded()
     {
-        // Arrange - Create a temporary directory structure with Traits subfolder
-        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-        string traitsDir = Path.Combine(tempDir, "Traits");
-        Directory.CreateDirectory(traitsDir);
-
-        string jsonContent = """
-        {
-            "Tag": "brave",
-            "Name": "Brave",
-            "Description": "Fearless in combat",
-            "PointCost": 1,
-            "RequiresUnlock": false,
-            "DeathBehavior": 0,
-            "Effects": [
-                {
-                    "EffectType": 1,
-                    "Target": "Intimidate",
-                    "Magnitude": 2
-                }
-            ],
-            "AllowedRaces": [],
-            "AllowedClasses": [],
-            "ForbiddenRaces": [],
-            "ForbiddenClasses": [],
-            "ConflictingTraits": ["cowardly"],
-            "PrerequisiteTraits": []
-        }
-        """;
-
-        string jsonFile = Path.Combine(traitsDir, "brave.json");
-        File.WriteAllText(jsonFile, jsonContent);
-
-        // Set up environment and service
-        string? originalPath = Environment.GetEnvironmentVariable("RESOURCE_PATH");
-        Environment.SetEnvironmentVariable("RESOURCE_PATH", tempDir);
-
+        // Arrange — trait definitions are now loaded from the database by TraitDefinitionLoadingService.
+        // This test verifies the in-memory repository accepts and retrieves traits correctly.
         ITraitRepository repo = InMemoryTraitRepository.Create();
-        TraitDefinitionLoadingService service = new(repo);
 
-        try
+        Trait trait = new()
         {
-            // Act
-            service.Load();
-            Trait? loadedTrait = repo.Get("brave");
+            Tag = "brave",
+            Name = "Brave",
+            Description = "Fearless in combat",
+            PointCost = 1,
+            RequiresUnlock = false,
+            DeathBehavior = TraitDeathBehavior.Persist,
+            Effects = [TraitEffect.SkillModifier("Intimidate", 2)],
+            ConflictingTraits = ["cowardly"]
+        };
 
-            // Assert
-            Assert.That(loadedTrait, Is.Not.Null, "Trait should be loaded");
-            Assert.That(loadedTrait!.Tag, Is.EqualTo("brave"));
-            Assert.That(loadedTrait.Name, Is.EqualTo("Brave"));
-            Assert.That(loadedTrait.Description, Is.EqualTo("Fearless in combat"));
-            Assert.That(loadedTrait.PointCost, Is.EqualTo(1));
-            Assert.That(loadedTrait.RequiresUnlock, Is.False);
-            Assert.That(loadedTrait.DeathBehavior, Is.EqualTo(TraitDeathBehavior.Persist));
-            Assert.That(loadedTrait.Effects, Has.Count.EqualTo(1));
-            Assert.That(loadedTrait.ConflictingTraits, Contains.Item("cowardly"));
-        }
-        finally
-        {
-            // Cleanup
-            Environment.SetEnvironmentVariable("RESOURCE_PATH", originalPath);
-            if (Directory.Exists(tempDir))
-            {
-                Directory.Delete(tempDir, true);
-            }
-        }
+        // Act
+        repo.Add(trait);
+        Trait? loadedTrait = repo.Get("brave");
+
+        // Assert
+        Assert.That(loadedTrait, Is.Not.Null, "Trait should be loaded");
+        Assert.That(loadedTrait!.Tag, Is.EqualTo("brave"));
+        Assert.That(loadedTrait.Name, Is.EqualTo("Brave"));
+        Assert.That(loadedTrait.Description, Is.EqualTo("Fearless in combat"));
+        Assert.That(loadedTrait.PointCost, Is.EqualTo(1));
+        Assert.That(loadedTrait.RequiresUnlock, Is.False);
+        Assert.That(loadedTrait.DeathBehavior, Is.EqualTo(TraitDeathBehavior.Persist));
+        Assert.That(loadedTrait.Effects, Has.Count.EqualTo(1));
+        Assert.That(loadedTrait.ConflictingTraits, Contains.Item("cowardly"));
     }
 
     [Test]

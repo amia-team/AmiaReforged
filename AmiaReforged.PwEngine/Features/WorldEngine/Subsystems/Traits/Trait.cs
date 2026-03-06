@@ -3,7 +3,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits;
 /// <summary>
 /// Aggregate root representing a trait definition.
 /// Traits are background characteristics that provide bonuses, penalties, or special behaviors.
-/// Loaded from JSON at startup and stored in memory via ITraitRepository.
+/// Loaded from the database at startup and stored in memory via ITraitRepository.
 /// </summary>
 public class Trait
 {
@@ -28,10 +28,20 @@ public class Trait
     public required int PointCost { get; init; }
 
     /// <summary>
+    /// The broad category this trait falls under (Background, Personality, Physical, etc.).
+    /// </summary>
+    public TraitCategory Category { get; init; } = TraitCategory.Background;
+
+    /// <summary>
     /// If true, this trait must be unlocked via DM event or special achievement before selection.
     /// If false, trait is available to all characters at creation.
     /// </summary>
     public bool RequiresUnlock { get; init; }
+
+    /// <summary>
+    /// If true, this trait can only be granted via a DM command and is never player-selectable.
+    /// </summary>
+    public bool DmOnly { get; init; }
 
     /// <summary>
     /// Defines how this trait behaves when the character dies.

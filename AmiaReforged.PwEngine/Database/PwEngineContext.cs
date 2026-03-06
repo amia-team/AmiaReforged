@@ -120,6 +120,10 @@ public class PwEngineContext : DbContext
     public DbSet<PersistedLoreDefinition> CodexLoreDefinitions { get; set; } = null!;
     public DbSet<PersistedLoreUnlock> CodexLoreUnlocks { get; set; } = null!;
 
+    // === Trait Definitions ===
+
+    public DbSet<PersistedTraitDefinition> TraitDefinitions { get; set; } = null!;
+
     // === World Engine Definition Management ===
 
     public DbSet<PersistedItemBlueprint> ItemBlueprints { get; set; } = null!;
@@ -217,6 +221,9 @@ public class PwEngineContext : DbContext
         modelBuilder.ApplyConfiguration(new PersistedCodexNoteConfiguration());
         modelBuilder.ApplyConfiguration(new PersistedLoreDefinitionConfiguration());
         modelBuilder.ApplyConfiguration(new PersistedLoreUnlockConfiguration());
+
+        // Trait Definitions
+        modelBuilder.ApplyConfiguration(new PersistedTraitDefinitionConfiguration());
 
         // World Engine Definition Management
         modelBuilder.ApplyConfiguration(new PersistedItemBlueprintConfiguration());
