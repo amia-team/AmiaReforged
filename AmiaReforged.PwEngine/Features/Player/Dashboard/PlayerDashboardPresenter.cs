@@ -151,6 +151,7 @@ public sealed class PlayerDashboardPresenter : ScryPresenter<PlayerDashboardView
         if (environment != "live")
         {
             creature.ForceRest();
+            _player.FloatingTextString("Test Insta Rest, Be Refreshed!", false, false);
             return;
         }
 
