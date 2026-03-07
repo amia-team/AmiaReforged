@@ -4,9 +4,11 @@
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @rendermode InteractiveServer
+@implements IDisposable
 
 @inject IndustryApiService IndustryApi
 @inject WorkstationApiService WorkstationApi
+@inject ItemApiService ItemApi
 @inject IWorldEngineEndpointService EndpointService
 @inject ILogger<Industries> Logger
 
@@ -506,8 +508,47 @@
                 @for (int idx = 0; idx < _editRecipe.Ingredients.Count; idx++)
                 {
                     int i = idx;
+                    var ingredientKey = $"ingredient-{i}";
                     <div style="display:flex;gap:8px;margin-top:4px;align-items:center">
-                        <input class="form-control form-control-sm" style="flex:3" placeholder="Item Tag" @bind="_editRecipe.Ingredients[i].ItemTag" />
+                        <div class="item-picker-wrapper" style="flex:3">
+                            <input class="form-control form-control-sm"
+                                   placeholder="Search items..."
+                                   value="@(_activePickerKey == ingredientKey ? _itemPickerSearch : _editRecipe.Ingredients[i].ItemTag)"
+                                   @onfocus="() => OpenItemPicker(ingredientKey, _editRecipe.Ingredients[i].ItemTag)"
+                                   @oninput="(e) => OnItemPickerInput(e, ingredientKey)"
+                                   @onblur="DismissPickerDelayed" />
+                            @if (!string.IsNullOrEmpty(_editRecipe.Ingredients[i].ItemTag) && _activePickerKey != ingredientKey)
+                            {
+                                <span class="item-picker-tag-badge">@_editRecipe.Ingredients[i].ItemTag</span>
+                            }
+                            @if (_activePickerKey == ingredientKey)
+                            {
+                                <div class="item-picker-dropdown">
+                                    @if (_itemPickerLoading)
+                                    {
+                                        <div class="item-picker-status">Searching...</div>
+                                    }
+                                    else if (_itemPickerResults.Count == 0 && _itemPickerSearch.Length >= 2)
+                                    {
+                                        <div class="item-picker-status">No items found</div>
+                                    }
+                                    else if (_itemPickerSearch.Length < 2)
+                                    {
+                                        <div class="item-picker-status">Type at least 2 characters</div>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var item in _itemPickerResults)
+                                        {
+                                            <div class="item-picker-item" @onmousedown="() => SelectItemForIngredient(i, item.ItemTag)" @onmousedown:preventDefault>
+                                                <div class="item-picker-name">@item.Name</div>
+                                                <div class="item-picker-detail">@item.ItemTag</div>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            }
+                        </div>
                         <input type="number" class="form-control form-control-sm" style="flex:1" placeholder="Qty" @bind="_editRecipe.Ingredients[i].Quantity" />
                         <label style="display:flex;align-items:center;gap:4px;white-space:nowrap;font-size:0.85rem">
                             <input type="checkbox" @bind="_editRecipe.Ingredients[i].IsConsumed" /> Consumed
@@ -524,8 +565,47 @@
                 @for (int idx = 0; idx < _editRecipe.Products.Count; idx++)
                 {
                     int i = idx;
+                    var productKey = $"product-{i}";
                     <div style="display:flex;gap:8px;margin-top:4px;align-items:center">
-                        <input class="form-control form-control-sm" style="flex:3" placeholder="Item Tag" @bind="_editRecipe.Products[i].ItemTag" />
+                        <div class="item-picker-wrapper" style="flex:3">
+                            <input class="form-control form-control-sm"
+                                   placeholder="Search items..."
+                                   value="@(_activePickerKey == productKey ? _itemPickerSearch : _editRecipe.Products[i].ItemTag)"
+                                   @onfocus="() => OpenItemPicker(productKey, _editRecipe.Products[i].ItemTag)"
+                                   @oninput="(e) => OnItemPickerInput(e, productKey)"
+                                   @onblur="DismissPickerDelayed" />
+                            @if (!string.IsNullOrEmpty(_editRecipe.Products[i].ItemTag) && _activePickerKey != productKey)
+                            {
+                                <span class="item-picker-tag-badge">@_editRecipe.Products[i].ItemTag</span>
+                            }
+                            @if (_activePickerKey == productKey)
+                            {
+                                <div class="item-picker-dropdown">
+                                    @if (_itemPickerLoading)
+                                    {
+                                        <div class="item-picker-status">Searching...</div>
+                                    }
+                                    else if (_itemPickerResults.Count == 0 && _itemPickerSearch.Length >= 2)
+                                    {
+                                        <div class="item-picker-status">No items found</div>
+                                    }
+                                    else if (_itemPickerSearch.Length < 2)
+                                    {
+                                        <div class="item-picker-status">Type at least 2 characters</div>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var item in _itemPickerResults)
+                                        {
+                                            <div class="item-picker-item" @onmousedown="() => SelectItemForProduct(i, item.ItemTag)" @onmousedown:preventDefault>
+                                                <div class="item-picker-name">@item.Name</div>
+                                                <div class="item-picker-detail">@item.ItemTag</div>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            }
+                        </div>
                         <input type="number" class="form-control form-control-sm" style="flex:1" placeholder="Qty" @bind="_editRecipe.Products[i].Quantity" />
                         <button class="btn btn-sm btn-outline-danger" @onclick="() => _editRecipe.Products.RemoveAt(i)">X</button>
                     </div>
@@ -619,6 +699,13 @@
     private string _deleteTargetName = "";
     private Func<Task>? _deleteAction;
 
+    // Item picker (searchable dropdown)
+    private string? _activePickerKey;
+    private string _itemPickerSearch = "";
+    private List<ItemBlueprintDto> _itemPickerResults = [];
+    private bool _itemPickerLoading;
+    private System.Threading.Timer? _debounceTimer;
+
     // ==================== Lifecycle ====================
 
     protected override async Task OnInitializedAsync()
@@ -633,6 +720,7 @@
         {
             IndustryApi.SelectEndpoint(id);
             WorkstationApi.SelectEndpoint(id);
+            ItemApi.SelectEndpoint(id);
             await RefreshAll();
         }
     }
@@ -1059,5 +1147,173 @@
         _showRecipeModal = false;
         _showDeleteConfirm = false;
         _deleteAction = null;
+        DismissItemPicker();
+    }
+
+    // ==================== Item Picker ====================
+
+    private void OpenItemPicker(string key, string currentValue)
+    {
+        _activePickerKey = key;
+        _itemPickerSearch = currentValue ?? "";
+        _itemPickerResults = [];
+    }
+
+    private void OnItemPickerInput(ChangeEventArgs e, string key)
+    {
+        _activePickerKey = key;
+        _itemPickerSearch = e.Value?.ToString() ?? "";
+
+        _debounceTimer?.Dispose();
+
+        if (_itemPickerSearch.Length < 2)
+        {
+            _itemPickerResults = [];
+            _itemPickerLoading = false;
+            return;
+        }
+
+        _itemPickerLoading = true;
+        var searchText = _itemPickerSearch;
+
+        _debounceTimer = new System.Threading.Timer(async _ =>
+        {
+            try
+            {
+                var result = await ItemApi.GetAllAsync(searchText, 1, 15);
+                await InvokeAsync(() =>
+                {
+                    if (_activePickerKey == key && _itemPickerSearch == searchText)
+                    {
+                        _itemPickerResults = result.Items;
+                        _itemPickerLoading = false;
+                        StateHasChanged();
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Item search failed");
+                await InvokeAsync(() =>
+                {
+                    _itemPickerLoading = false;
+                    _itemPickerResults = [];
+                    StateHasChanged();
+                });
+            }
+        }, null, 300, Timeout.Infinite);
+    }
+
+    private void SelectItemForIngredient(int index, string itemTag)
+    {
+        if (index >= 0 && index < _editRecipe.Ingredients.Count)
+        {
+            _editRecipe.Ingredients[index].ItemTag = itemTag;
+        }
+        DismissItemPicker();
+    }
+
+    private void SelectItemForProduct(int index, string itemTag)
+    {
+        if (index >= 0 && index < _editRecipe.Products.Count)
+        {
+            _editRecipe.Products[index].ItemTag = itemTag;
+        }
+        DismissItemPicker();
+    }
+
+    private void DismissItemPicker()
+    {
+        _activePickerKey = null;
+        _itemPickerSearch = "";
+        _itemPickerResults = [];
+        _itemPickerLoading = false;
+    }
+
+    private async Task DismissPickerDelayed()
+    {
+        // Short delay so @onmousedown on dropdown items fires before the blur dismisses the picker
+        await Task.Delay(200);
+        await InvokeAsync(() =>
+        {
+            DismissItemPicker();
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        _debounceTimer?.Dispose();
     }
 }
+
+<style>
+    .item-picker-wrapper {
+        position: relative;
+    }
+
+    .item-picker-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 1060;
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-top: none;
+        border-radius: 0 0 6px 6px;
+        max-height: 220px;
+        overflow-y: auto;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    }
+
+    .item-picker-item {
+        padding: 6px 10px;
+        cursor: pointer;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .item-picker-item:last-child {
+        border-bottom: none;
+    }
+
+    .item-picker-item:hover {
+        background: var(--bg-input);
+    }
+
+    .item-picker-item:hover .item-picker-name {
+        color: var(--accent);
+    }
+
+    .item-picker-name {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .item-picker-detail {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+    }
+
+    .item-picker-status {
+        padding: 8px 10px;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        text-align: center;
+        font-style: italic;
+    }
+
+    .item-picker-tag-badge {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.7rem;
+        color: var(--accent);
+        background: rgba(201,168,76,0.1);
+        padding: 1px 6px;
+        border-radius: 3px;
+        pointer-events: none;
+    }
+</style>
