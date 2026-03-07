@@ -310,14 +310,14 @@ public class IndustryController
                 RequiredProficiency = r.RequiredProficiency.ToString(),
                 Ingredients = r.Ingredients.Select(i => new
                 {
-                    i.ItemResRef,
+                    i.ItemTag,
                     Quantity = i.Quantity.Value,
                     i.MinQuality,
                     i.IsConsumed
                 }).ToArray(),
                 Products = r.Products.Select(p => new
                 {
-                    p.ItemResRef,
+                    p.ItemTag,
                     Quantity = p.Quantity.Value,
                     p.Quality,
                     p.SuccessChance
@@ -382,14 +382,14 @@ public class IndustryController
                     RequiredProficiency = proficiency,
                     Ingredients = r.Ingredients?.Select(i => new Ingredient
                     {
-                        ItemResRef = i.ItemResRef ?? string.Empty,
+                        ItemTag = i.ItemTag ?? string.Empty,
                         Quantity = SharedKernel.ValueObjects.Quantity.Parse(i.Quantity),
                         MinQuality = i.MinQuality,
                         IsConsumed = i.IsConsumed
                     }).ToList() ?? [],
                     Products = r.Products?.Select(p => new Product
                     {
-                        ItemResRef = p.ItemResRef ?? string.Empty,
+                        ItemTag = p.ItemTag ?? string.Empty,
                         Quantity = SharedKernel.ValueObjects.Quantity.Parse(p.Quantity),
                         Quality = p.Quality,
                         SuccessChance = p.SuccessChance
@@ -462,7 +462,7 @@ public class IndustryController
 
     private record IngredientDto
     {
-        public string? ItemResRef { get; init; }
+        public string? ItemTag { get; init; }
         public int Quantity { get; init; }
         public int? MinQuality { get; init; }
         public bool IsConsumed { get; init; } = true;
@@ -470,7 +470,7 @@ public class IndustryController
 
     private record ProductDto
     {
-        public string? ItemResRef { get; init; }
+        public string? ItemTag { get; init; }
         public int Quantity { get; init; }
         public int? Quality { get; init; }
         public float? SuccessChance { get; init; }

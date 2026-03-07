@@ -33,13 +33,13 @@ public class RecipeManagementTests
             [
                 new Ingredient
                 {
-                    ItemResRef = "iron_ingot",
+                    ItemTag = "iron_ingot",
                     Quantity = Quantity.Parse(3),
                     MinQuality = 1
                 },
                 new Ingredient
                 {
-                    ItemResRef = "leather_strip",
+                    ItemTag = "leather_strip",
                     Quantity = Quantity.Parse(1),
                     MinQuality = null
                 }
@@ -48,7 +48,7 @@ public class RecipeManagementTests
             [
                 new Product
                 {
-                    ItemResRef = "iron_sword",
+                    ItemTag = "iron_sword",
                     Quantity = Quantity.Parse(1),
                     Quality = 2
                 }
@@ -80,13 +80,13 @@ public class RecipeManagementTests
         Assert.That(_testRecipe.Ingredients, Has.Count.EqualTo(2));
 
         Ingredient ironIngot = _testRecipe.Ingredients[0];
-        Assert.That(ironIngot.ItemResRef, Is.EqualTo("iron_ingot"));
+        Assert.That(ironIngot.ItemTag, Is.EqualTo("iron_ingot"));
         Assert.That(ironIngot.Quantity.Value, Is.EqualTo(3));
         Assert.That(ironIngot.MinQuality, Is.EqualTo(1));
         Assert.That(ironIngot.IsConsumed, Is.True);
 
         Ingredient leatherStrip = _testRecipe.Ingredients[1];
-        Assert.That(leatherStrip.ItemResRef, Is.EqualTo("leather_strip"));
+        Assert.That(leatherStrip.ItemTag, Is.EqualTo("leather_strip"));
         Assert.That(leatherStrip.Quantity.Value, Is.EqualTo(1));
         Assert.That(leatherStrip.MinQuality, Is.Null);
     }
@@ -98,7 +98,7 @@ public class RecipeManagementTests
         Assert.That(_testRecipe.Products, Has.Count.EqualTo(1));
 
         Product sword = _testRecipe.Products[0];
-        Assert.That(sword.ItemResRef, Is.EqualTo("iron_sword"));
+        Assert.That(sword.ItemTag, Is.EqualTo("iron_sword"));
         Assert.That(sword.Quantity.Value, Is.EqualTo(1));
         Assert.That(sword.Quality, Is.EqualTo(2));
     }

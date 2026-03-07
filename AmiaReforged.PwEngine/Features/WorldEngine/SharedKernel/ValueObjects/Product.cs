@@ -6,9 +6,9 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 public record Product
 {
     /// <summary>
-    /// Resource reference for the resulting item (e.g., "iron_sword")
+    /// Item tag (domain identifier from the Item subsystem, e.g., "iron_sword")
     /// </summary>
-    public required string ItemResRef { get; init; }
+    public required string ItemTag { get; init; }
 
     /// <summary>
     /// How many of this item are produced

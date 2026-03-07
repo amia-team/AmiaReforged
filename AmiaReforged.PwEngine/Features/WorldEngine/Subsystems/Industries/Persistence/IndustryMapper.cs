@@ -130,14 +130,14 @@ public static class IndustryMapper
         RequiredProficiency = r.RequiredProficiency.ToString(),
         Ingredients = r.Ingredients.Select(i => new IngredientJsonDto
         {
-            ItemResRef = i.ItemResRef,
+            ItemTag = i.ItemTag,
             Quantity = i.Quantity.Value,
             MinQuality = i.MinQuality,
             IsConsumed = i.IsConsumed
         }).ToList(),
         Products = r.Products.Select(p => new ProductJsonDto
         {
-            ItemResRef = p.ItemResRef,
+            ItemTag = p.ItemTag,
             Quantity = p.Quantity.Value,
             Quality = p.Quality,
             SuccessChance = p.SuccessChance
@@ -163,14 +163,14 @@ public static class IndustryMapper
             RequiredProficiency = proficiency,
             Ingredients = dto.Ingredients?.Select(i => new Ingredient
             {
-                ItemResRef = i.ItemResRef,
+                ItemTag = i.ItemTag,
                 Quantity = Quantity.Parse(i.Quantity),
                 MinQuality = i.MinQuality,
                 IsConsumed = i.IsConsumed
             }).ToList() ?? [],
             Products = dto.Products?.Select(p => new Product
             {
-                ItemResRef = p.ItemResRef,
+                ItemTag = p.ItemTag,
                 Quantity = Quantity.Parse(p.Quantity),
                 Quality = p.Quality,
                 SuccessChance = p.SuccessChance
@@ -234,7 +234,7 @@ public static class IndustryMapper
 
     private class IngredientJsonDto
     {
-        public string ItemResRef { get; set; } = string.Empty;
+        public string ItemTag { get; set; } = string.Empty;
         public int Quantity { get; set; }
         public int? MinQuality { get; set; }
         public bool IsConsumed { get; set; } = true;
@@ -242,7 +242,7 @@ public static class IndustryMapper
 
     private class ProductJsonDto
     {
-        public string ItemResRef { get; set; } = string.Empty;
+        public string ItemTag { get; set; } = string.Empty;
         public int Quantity { get; set; }
         public int? Quality { get; set; }
         public float? SuccessChance { get; set; }

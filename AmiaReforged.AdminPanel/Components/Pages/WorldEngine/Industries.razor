@@ -507,7 +507,7 @@
                 {
                     int i = idx;
                     <div style="display:flex;gap:8px;margin-top:4px;align-items:center">
-                        <input class="form-control form-control-sm" style="flex:3" placeholder="ItemResRef" @bind="_editRecipe.Ingredients[i].ItemResRef" />
+                        <input class="form-control form-control-sm" style="flex:3" placeholder="Item Tag" @bind="_editRecipe.Ingredients[i].ItemTag" />
                         <input type="number" class="form-control form-control-sm" style="flex:1" placeholder="Qty" @bind="_editRecipe.Ingredients[i].Quantity" />
                         <label style="display:flex;align-items:center;gap:4px;white-space:nowrap;font-size:0.85rem">
                             <input type="checkbox" @bind="_editRecipe.Ingredients[i].IsConsumed" /> Consumed
@@ -525,7 +525,7 @@
                 {
                     int i = idx;
                     <div style="display:flex;gap:8px;margin-top:4px;align-items:center">
-                        <input class="form-control form-control-sm" style="flex:3" placeholder="ItemResRef" @bind="_editRecipe.Products[i].ItemResRef" />
+                        <input class="form-control form-control-sm" style="flex:3" placeholder="Item Tag" @bind="_editRecipe.Products[i].ItemTag" />
                         <input type="number" class="form-control form-control-sm" style="flex:1" placeholder="Qty" @bind="_editRecipe.Products[i].Quantity" />
                         <button class="btn btn-sm btn-outline-danger" @onclick="() => _editRecipe.Products.RemoveAt(i)">X</button>
                     </div>
@@ -952,14 +952,14 @@
             RequiredProficiency = r.RequiredProficiency,
             Ingredients = r.Ingredients.Select(i => new IndustryIngredientDto
             {
-                ItemResRef = i.ItemResRef,
+                ItemTag = i.ItemTag,
                 Quantity = i.Quantity,
                 MinQuality = i.MinQuality,
                 IsConsumed = i.IsConsumed
             }).ToList(),
             Products = r.Products.Select(p => new IndustryProductDto
             {
-                ItemResRef = p.ItemResRef,
+                ItemTag = p.ItemTag,
                 Quantity = p.Quantity,
                 Quality = p.Quality,
                 SuccessChance = p.SuccessChance

@@ -42,7 +42,7 @@ public class IndustryCommandTests
             [
                 new Ingredient
                 {
-                    ItemResRef = "iron_ingot",
+                    ItemTag = "iron_ingot",
                     Quantity = Quantity.Parse(3),
                     MinQuality = 1
                 }
@@ -51,7 +51,7 @@ public class IndustryCommandTests
             [
                 new Product
                 {
-                    ItemResRef = "iron_sword",
+                    ItemTag = "iron_sword",
                     Quantity = Quantity.Parse(1),
                     Quality = 2
                 }

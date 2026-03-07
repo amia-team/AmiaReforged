@@ -68,7 +68,7 @@ public class IndustryQueryTests
             [
                 new Ingredient
                 {
-                    ItemResRef = "iron_ingot",
+                    ItemTag = "iron_ingot",
                     Quantity = Quantity.Parse(3),
                     MinQuality = 1
                 }
@@ -77,7 +77,7 @@ public class IndustryQueryTests
             [
                 new Product
                 {
-                    ItemResRef = "iron_sword",
+                    ItemTag = "iron_sword",
                     Quantity = Quantity.Parse(1),
                     Quality = 2
                 }
@@ -96,7 +96,7 @@ public class IndustryQueryTests
             [
                 new Ingredient
                 {
-                    ItemResRef = "steel_ingot",
+                    ItemTag = "steel_ingot",
                     Quantity = Quantity.Parse(3),
                     MinQuality = 1
                 }
@@ -105,7 +105,7 @@ public class IndustryQueryTests
             [
                 new Product
                 {
-                    ItemResRef = "steel_sword",
+                    ItemTag = "steel_sword",
                     Quantity = Quantity.Parse(1),
                     Quality = 3
                 }

@@ -6,9 +6,9 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 public record Ingredient
 {
     /// <summary>
-    /// Resource reference for the item (e.g., "iron_ingot")
+    /// Item tag (domain identifier from the Item subsystem, e.g., "iron_ingot")
     /// </summary>
-    public required string ItemResRef { get; init; }
+    public required string ItemTag { get; init; }
 
     /// <summary>
     /// How many of this item are needed

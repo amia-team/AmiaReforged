@@ -272,7 +272,7 @@ public class IndustryRecipeDto
 
 public class IndustryIngredientDto
 {
-    public string ItemResRef { get; set; } = string.Empty;
+    public string ItemTag { get; set; } = string.Empty;
     public int Quantity { get; set; }
     public int? MinQuality { get; set; }
     public bool IsConsumed { get; set; } = true;
@@ -280,7 +280,7 @@ public class IndustryIngredientDto
 
 public class IndustryProductDto
 {
-    public string ItemResRef { get; set; } = string.Empty;
+    public string ItemTag { get; set; } = string.Empty;
     public int Quantity { get; set; }
     public int? Quality { get; set; }
     public float? SuccessChance { get; set; }
