@@ -49,9 +49,6 @@ public class AssociateAbilityRechargeService
         Log.Info("Associate Ability Recharge Service initialized (interval: 60 s).");
     }
 
-    // ──────────────────────────────────────────────────────────────
-    //  Event handlers
-    // ──────────────────────────────────────────────────────────────
 
     private void OnAssociateAdded(OnAssociateAdd eventData)
     {
@@ -137,10 +134,11 @@ public class AssociateAbilityRechargeService
         _ownerAssociates.Remove(owner);
     }
 
-    // ──────────────────────────────────────────────────────────────
-    //  Core logic
-    // ──────────────────────────────────────────────────────────────
 
+    /// <summary>
+    ///   Invoked on each recharge tick for each associate. If the associate is invalid or dead, cancels the schedule.
+    /// </summary>
+    /// <param name="associate"></param>
     private void Recharge(NwCreature? associate)
     {
         if (associate is null || !associate.IsValid || associate.IsDead)
@@ -152,6 +150,10 @@ public class AssociateAbilityRechargeService
         CreaturePlugin.RestoreSpecialAbilities(associate);
     }
 
+    /// <summary>
+    ///   Cancels the recharge schedule for the specified associate and cleans up all related mappings. Safe to call multiple times or with invalid creatures. Logs the cancellation for debugging purposes.
+    /// </summary>
+    /// <param name="associate"></param>
     private void CancelSchedule(NwCreature associate)
     {
         if (!_activeSchedules.Remove(associate, out ScheduledTask? task)) return;
