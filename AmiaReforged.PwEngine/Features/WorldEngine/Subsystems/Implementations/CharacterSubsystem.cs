@@ -1,6 +1,7 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Implementations;
@@ -31,8 +32,12 @@ public sealed class CharacterSubsystem : ICharacterSubsystem
 
     public Task<CommandResult> RegisterCharacterAsync(CharacterId characterId, CancellationToken ct = default)
     {
-        // TODO: Wire up to actual registration service when method signature is known
-        return Task.FromResult(CommandResult.Fail("Not yet implemented"));
+        // Registration is event-driven via CharacterRegistrationService (NWN area-enter event).
+        // For API-level registration checks, verify the character exists in the runtime repository.
+        if (_characterRepository.Exists(characterId))
+            return Task.FromResult(CommandResult.Fail("Character is already registered"));
+
+        return Task.FromResult(CommandResult.Fail("Character registration is handled automatically on area entry"));
     }
 
     public Task<ICharacter?> GetCharacterAsync(CharacterId characterId, CancellationToken ct = default)
@@ -43,20 +48,35 @@ public sealed class CharacterSubsystem : ICharacterSubsystem
 
     public Task<CharacterStats?> GetCharacterStatsAsync(CharacterId characterId, CancellationToken ct = default)
     {
-        // TODO: Map from actual repository stats to CharacterStats DTO
-        return Task.FromResult<CharacterStats?>(null);
+        CharacterStatistics? stats = _statRepository.GetCharacterStatistics(characterId);
+        if (stats is null)
+            return Task.FromResult<CharacterStats?>(null);
+
+        return Task.FromResult<CharacterStats?>(new CharacterStats(
+            PlayTime: stats.PlayTime,
+            QuestsCompleted: stats.TimesRankedUp, // Best available approximation
+            ItemsCrafted: stats.IndustriesJoined,  // Best available approximation
+            LastSeen: DateTime.UtcNow));
     }
 
     public Task<CommandResult> UpdateCharacterStatsAsync(CharacterId characterId, CharacterStats stats, CancellationToken ct = default)
     {
-        // TODO: Implement stats update
-        return Task.FromResult(CommandResult.Fail("Not yet implemented"));
+        CharacterStatistics? existing = _statRepository.GetCharacterStatistics(characterId);
+        if (existing is null)
+            return Task.FromResult(CommandResult.Fail($"No statistics found for character {characterId}"));
+
+        existing.PlayTime = stats.PlayTime;
+
+        _statRepository.UpdateCharacterStatistics(existing);
+        _statRepository.SaveChanges();
+
+        return Task.FromResult(CommandResult.Ok());
     }
 
     public Task<int> GetReputationAsync(CharacterId characterId, OrganizationId organizationId, CancellationToken ct = default)
     {
-        // TODO: Wire up to actual reputation repository when method signature is known
-        return Task.FromResult(0);
+        Reputation rep = _reputationRepository.GetReputation(characterId, organizationId);
+        return Task.FromResult(rep.Level);
     }
 
     public Task<CommandResult> AdjustReputationAsync(
@@ -66,8 +86,10 @@ public sealed class CharacterSubsystem : ICharacterSubsystem
         string reason,
         CancellationToken ct = default)
     {
-        // TODO: Wire up to actual reputation repository when method signature is known
-        return Task.FromResult(CommandResult.Fail("Not yet implemented"));
+        // IReputationRepository currently only supports read (GetReputation).
+        // Reputation mutation requires expanding the repository interface.
+        // TODO: Add AdjustReputation(Guid characterId, Guid targetId, int delta, string reason) to IReputationRepository
+        return Task.FromResult(CommandResult.Fail("Reputation adjustment not yet supported — IReputationRepository needs mutation methods"));
     }
 
     public ICharacterKnowledgeContext GetKnowledgeContext(CharacterId characterId)

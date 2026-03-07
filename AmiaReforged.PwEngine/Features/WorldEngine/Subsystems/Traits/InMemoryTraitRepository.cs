@@ -1,8 +1,9 @@
-using Anvil.Services;
-
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits;
 
-[ServiceBinding(typeof(ITraitRepository))]
+/// <summary>
+/// In-memory trait store used as a cache backing for <see cref="DbTraitRepository"/>
+/// and as a test double.
+/// </summary>
 public class InMemoryTraitRepository : ITraitRepository
 {
     private readonly List<Trait> _traits = [];

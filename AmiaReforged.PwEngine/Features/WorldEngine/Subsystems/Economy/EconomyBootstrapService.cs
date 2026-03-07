@@ -22,17 +22,12 @@ public class EconomyBootstrapService
     /// <summary>
     /// Responsible for loading previous economic states, such as the location of resource nodes.
     /// </summary>
-    public EconomyBootstrapService(EconomyLoaderService loader, ResourceNodeService nodeService,
+    public EconomyBootstrapService(ResourceNodeService nodeService,
         IResourceNodeInstanceRepository nodes, IRegionRepository regions)
     {
         _nodeService = nodeService;
         _nodes = nodes;
         _regions = regions;
-
-        // Definition loading from JSON is no longer done on startup.
-        // All definitions (regions, industries, blueprints, shops, coinhouses)
-        // are now managed via the admin panel and persisted in the database.
-        // loader.Startup(); — removed: no JSON loading on boot
 
         LoadFromDatabase();
     }

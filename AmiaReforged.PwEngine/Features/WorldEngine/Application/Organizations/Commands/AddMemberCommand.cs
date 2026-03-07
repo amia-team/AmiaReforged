@@ -4,6 +4,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Organizations;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Organizations.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Application.Organizations.Commands;
 
@@ -21,6 +22,7 @@ public record AddMemberCommand : ICommand
 /// <summary>
 /// Handles adding members to organizations
 /// </summary>
+[ServiceBinding(typeof(ICommandHandler<AddMemberCommand>))]
 public class AddMemberHandler : ICommandHandler<AddMemberCommand>
 {
     private readonly IOrganizationMemberRepository _memberRepository;

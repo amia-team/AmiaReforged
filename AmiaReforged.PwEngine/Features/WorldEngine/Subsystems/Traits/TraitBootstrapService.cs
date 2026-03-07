@@ -23,9 +23,9 @@ public class TraitBootstrapService
 
         if (loader.Failures().Count > 0)
         {
-            foreach (var failure in loader.Failures())
+            foreach (string failure in loader.Failures())
             {
-                Log.Warn($"Trait load failure: {failure.Message}");
+                Log.Warn($"Trait load failure: {failure}");
             }
         }
 

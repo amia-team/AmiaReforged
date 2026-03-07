@@ -9,4 +9,7 @@ public interface IIndustryRepository
     Industry? Get(string membershipIndustryTag);
     Industry? GetByTag(IndustryTag industryTag);
     List<Industry> All();
+    void Update(Industry industry);
+    bool Delete(string tag);
+    List<Industry> Search(string? searchTerm, int page, int pageSize, out int totalCount);
 }

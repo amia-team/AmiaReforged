@@ -1,59 +1,324 @@
+using AmiaReforged.PwEngine.Database;
+using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Repositories;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
 using Anvil.Services;
+using Microsoft.EntityFrameworkCore;
+using NLog;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Implementations;
 
 /// <summary>
-/// Stub implementation of the Codex subsystem.
-/// TODO: Wire up to existing Codex Application layer handlers.
+/// Wired implementation of the Codex subsystem.
+/// Maps the ICodexSubsystem "knowledge entry" API onto the underlying lore domain.
 /// </summary>
 [ServiceBinding(typeof(ICodexSubsystem))]
 public sealed class CodexSubsystem : ICodexSubsystem
 {
-    public Task<KnowledgeEntry?> GetKnowledgeEntryAsync(string entryId, CancellationToken ct = default)
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+    private readonly IPlayerCodexRepository _codexRepository;
+    private readonly PwContextFactory _contextFactory;
+
+    public CodexSubsystem(IPlayerCodexRepository codexRepository, PwContextFactory contextFactory)
     {
-        return Task.FromResult<KnowledgeEntry?>(null);
+        _codexRepository = codexRepository;
+        _contextFactory = contextFactory;
     }
 
-    public Task<List<KnowledgeEntry>> SearchKnowledgeAsync(string searchTerm, CancellationToken ct = default)
+    // ═══════════════════════════════════════════════════════════════════
+    //  Knowledge entry queries (backed by PersistedLoreDefinition)
+    // ═══════════════════════════════════════════════════════════════════
+
+    public async Task<KnowledgeEntry?> GetKnowledgeEntryAsync(string entryId, CancellationToken ct = default)
     {
-        return Task.FromResult(new List<KnowledgeEntry>());
+        try
+        {
+            using PwEngineContext ctx = _contextFactory.CreateDbContext();
+            PersistedLoreDefinition? def = await ctx.CodexLoreDefinitions
+                .AsNoTracking()
+                .FirstOrDefaultAsync(d => d.LoreId == entryId, ct);
+            return def is null ? null : ToKnowledgeEntry(def);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to load knowledge entry {EntryId}", entryId);
+            return null;
+        }
     }
 
-    public Task<List<KnowledgeEntry>> GetKnowledgeByCategoryAsync(KnowledgeCategory category, CancellationToken ct = default)
+    public async Task<List<KnowledgeEntry>> SearchKnowledgeAsync(string searchTerm, CancellationToken ct = default)
     {
-        return Task.FromResult(new List<KnowledgeEntry>());
+        try
+        {
+            using PwEngineContext ctx = _contextFactory.CreateDbContext();
+            string lower = searchTerm.ToLowerInvariant();
+            List<PersistedLoreDefinition> defs = await ctx.CodexLoreDefinitions
+                .AsNoTracking()
+                .Where(d => EF.Functions.ILike(d.Title, $"%{lower}%")
+                         || EF.Functions.ILike(d.Content, $"%{lower}%")
+                         || (d.Keywords != null && EF.Functions.ILike(d.Keywords, $"%{lower}%")))
+                .ToListAsync(ct);
+            return defs.Select(ToKnowledgeEntry).ToList();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to search knowledge for '{SearchTerm}'", searchTerm);
+            return [];
+        }
     }
 
-    public Task<CommandResult> GrantKnowledgeAsync(CharacterId characterId, string entryId, CancellationToken ct = default)
+    public async Task<List<KnowledgeEntry>> GetKnowledgeByCategoryAsync(KnowledgeCategory category, CancellationToken ct = default)
     {
-        return Task.FromResult(CommandResult.Fail("Not yet implemented"));
+        try
+        {
+            using PwEngineContext ctx = _contextFactory.CreateDbContext();
+            LoreCategory loreCategory = MapToLoreCategory(category);
+            List<PersistedLoreDefinition> defs = await ctx.CodexLoreDefinitions
+                .AsNoTracking()
+                .Where(d => d.Category == loreCategory)
+                .ToListAsync(ct);
+            return defs.Select(ToKnowledgeEntry).ToList();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to load knowledge by category {Category}", category);
+            return [];
+        }
     }
 
-    public Task<bool> HasKnowledgeAsync(CharacterId characterId, string entryId, CancellationToken ct = default)
+    // ═══════════════════════════════════════════════════════════════════
+    //  Character-specific knowledge operations
+    // ═══════════════════════════════════════════════════════════════════
+
+    public async Task<CommandResult> GrantKnowledgeAsync(CharacterId characterId, string entryId, CancellationToken ct = default)
     {
-        return Task.FromResult(false);
+        try
+        {
+            using PwEngineContext ctx = _contextFactory.CreateDbContext();
+
+            // Verify definition exists
+            bool exists = await ctx.CodexLoreDefinitions.AnyAsync(d => d.LoreId == entryId, ct);
+            if (!exists)
+                return CommandResult.Fail($"Knowledge entry '{entryId}' does not exist");
+
+            // Check if already unlocked
+            bool alreadyUnlocked = await ctx.CodexLoreUnlocks
+                .AnyAsync(u => u.CharacterId == characterId.Value && u.LoreId == entryId, ct);
+            if (alreadyUnlocked)
+                return CommandResult.Fail($"Character already has knowledge '{entryId}'");
+
+            ctx.CodexLoreUnlocks.Add(new PersistedLoreUnlock
+            {
+                CharacterId = characterId.Value,
+                LoreId = entryId,
+                DateDiscovered = DateTime.UtcNow,
+                DiscoverySource = "Admin Grant"
+            });
+            await ctx.SaveChangesAsync(ct);
+            return CommandResult.Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to grant knowledge {EntryId} to character {CharacterId}", entryId, characterId);
+            return CommandResult.Fail($"Database error: {ex.Message}");
+        }
     }
 
-    public Task<List<KnowledgeEntry>> GetCharacterKnowledgeAsync(CharacterId characterId, CancellationToken ct = default)
+    public async Task<bool> HasKnowledgeAsync(CharacterId characterId, string entryId, CancellationToken ct = default)
     {
-        return Task.FromResult(new List<KnowledgeEntry>());
+        try
+        {
+            using PwEngineContext ctx = _contextFactory.CreateDbContext();
+
+            // Check unlock table
+            bool unlocked = await ctx.CodexLoreUnlocks
+                .AnyAsync(u => u.CharacterId == characterId.Value && u.LoreId == entryId, ct);
+            if (unlocked) return true;
+
+            // Check if always-available
+            return await ctx.CodexLoreDefinitions
+                .AnyAsync(d => d.LoreId == entryId && d.IsAlwaysAvailable, ct);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to check knowledge {EntryId} for character {CharacterId}", entryId, characterId);
+            return false;
+        }
     }
 
-    public Task<CommandResult> CreateKnowledgeEntryAsync(CreateKnowledgeEntryCommand command, CancellationToken ct = default)
+    public async Task<List<KnowledgeEntry>> GetCharacterKnowledgeAsync(CharacterId characterId, CancellationToken ct = default)
     {
-        return Task.FromResult(CommandResult.Fail("Not yet implemented"));
+        try
+        {
+            using PwEngineContext ctx = _contextFactory.CreateDbContext();
+
+            // Get unlocked lore
+            List<PersistedLoreDefinition> unlocked = await ctx.CodexLoreUnlocks
+                .Include(u => u.LoreDefinition)
+                .Where(u => u.CharacterId == characterId.Value && u.LoreDefinition != null)
+                .Select(u => u.LoreDefinition!)
+                .ToListAsync(ct);
+
+            // Get always-available entries
+            HashSet<string> unlockedIds = unlocked.Select(d => d.LoreId).ToHashSet();
+            List<PersistedLoreDefinition> alwaysAvailable = await ctx.CodexLoreDefinitions
+                .Where(d => d.IsAlwaysAvailable && !unlockedIds.Contains(d.LoreId))
+                .ToListAsync(ct);
+
+            return unlocked.Concat(alwaysAvailable).Select(ToKnowledgeEntry).ToList();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to load character knowledge for {CharacterId}", characterId);
+            return [];
+        }
     }
 
-    public Task<CommandResult> UpdateKnowledgeEntryAsync(UpdateKnowledgeEntryCommand command, CancellationToken ct = default)
+    // ═══════════════════════════════════════════════════════════════════
+    //  CRUD operations on knowledge entries (lore definitions)
+    // ═══════════════════════════════════════════════════════════════════
+
+    public async Task<CommandResult> CreateKnowledgeEntryAsync(CreateKnowledgeEntryCommand command, CancellationToken ct = default)
     {
-        return Task.FromResult(CommandResult.Fail("Not yet implemented"));
+        try
+        {
+            using PwEngineContext ctx = _contextFactory.CreateDbContext();
+
+            bool exists = await ctx.CodexLoreDefinitions.AnyAsync(d => d.LoreId == command.EntryId, ct);
+            if (exists)
+                return CommandResult.Fail($"Knowledge entry '{command.EntryId}' already exists");
+
+            ctx.CodexLoreDefinitions.Add(new PersistedLoreDefinition
+            {
+                LoreId = command.EntryId,
+                Title = command.Title,
+                Content = command.Content,
+                Category = MapToLoreCategory(command.Category),
+                Tier = 0, // Default tier
+                Keywords = command.Tags.Count > 0 ? string.Join(",", command.Tags) : null,
+                IsAlwaysAvailable = false,
+                CreatedUtc = DateTime.UtcNow
+            });
+            await ctx.SaveChangesAsync(ct);
+            return CommandResult.OkWith("EntryId", command.EntryId);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to create knowledge entry {EntryId}", command.EntryId);
+            return CommandResult.Fail($"Database error: {ex.Message}");
+        }
     }
 
-    public Task<CommandResult> DeleteKnowledgeEntryAsync(string entryId, CancellationToken ct = default)
+    public async Task<CommandResult> UpdateKnowledgeEntryAsync(UpdateKnowledgeEntryCommand command, CancellationToken ct = default)
     {
-        return Task.FromResult(CommandResult.Fail("Not yet implemented"));
+        try
+        {
+            using PwEngineContext ctx = _contextFactory.CreateDbContext();
+
+            PersistedLoreDefinition? def = await ctx.CodexLoreDefinitions
+                .FirstOrDefaultAsync(d => d.LoreId == command.EntryId, ct);
+            if (def is null)
+                return CommandResult.Fail($"Knowledge entry '{command.EntryId}' not found");
+
+            if (command.Title != null) def.Title = command.Title;
+            if (command.Content != null) def.Content = command.Content;
+            if (command.Category.HasValue) def.Category = MapToLoreCategory(command.Category.Value);
+            if (command.Tags != null) def.Keywords = command.Tags.Count > 0 ? string.Join(",", command.Tags) : null;
+
+            ctx.CodexLoreDefinitions.Update(def);
+            await ctx.SaveChangesAsync(ct);
+            return CommandResult.Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to update knowledge entry {EntryId}", command.EntryId);
+            return CommandResult.Fail($"Database error: {ex.Message}");
+        }
     }
+
+    public async Task<CommandResult> DeleteKnowledgeEntryAsync(string entryId, CancellationToken ct = default)
+    {
+        try
+        {
+            using PwEngineContext ctx = _contextFactory.CreateDbContext();
+
+            PersistedLoreDefinition? def = await ctx.CodexLoreDefinitions
+                .FirstOrDefaultAsync(d => d.LoreId == entryId, ct);
+            if (def is null)
+                return CommandResult.Fail($"Knowledge entry '{entryId}' not found");
+
+            // Remove all unlock records first
+            List<PersistedLoreUnlock> unlocks = await ctx.CodexLoreUnlocks
+                .Where(u => u.LoreId == entryId)
+                .ToListAsync(ct);
+            ctx.CodexLoreUnlocks.RemoveRange(unlocks);
+
+            ctx.CodexLoreDefinitions.Remove(def);
+            await ctx.SaveChangesAsync(ct);
+            return CommandResult.Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to delete knowledge entry {EntryId}", entryId);
+            return CommandResult.Fail($"Database error: {ex.Message}");
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Mapping helpers
+    // ═══════════════════════════════════════════════════════════════════
+
+    private static KnowledgeEntry ToKnowledgeEntry(PersistedLoreDefinition def)
+    {
+        List<string> tags = string.IsNullOrWhiteSpace(def.Keywords)
+            ? []
+            : def.Keywords.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+
+        return new KnowledgeEntry(
+            EntryId: def.LoreId,
+            Title: def.Title,
+            Content: def.Content,
+            Category: MapToKnowledgeCategory(def.Category),
+            Tags: tags,
+            CreatedAt: def.CreatedUtc,
+            UpdatedAt: null);
+    }
+
+    private static LoreCategory MapToLoreCategory(KnowledgeCategory category) => category switch
+    {
+        KnowledgeCategory.History => LoreCategory.History,
+        KnowledgeCategory.Geography => LoreCategory.Geography,
+        KnowledgeCategory.Magic => LoreCategory.Arcana,
+        KnowledgeCategory.Religion => LoreCategory.Religion,
+        KnowledgeCategory.Nature => LoreCategory.Nature,
+        KnowledgeCategory.Culture => LoreCategory.Local,
+        KnowledgeCategory.Organizations => LoreCategory.NobilityAndRoyalty,
+        KnowledgeCategory.Creatures => LoreCategory.Nature,
+        KnowledgeCategory.Items => LoreCategory.Arcana,
+        KnowledgeCategory.Persons => LoreCategory.Local,
+        KnowledgeCategory.Events => LoreCategory.History,
+        KnowledgeCategory.Legends => LoreCategory.ThePlanes,
+        KnowledgeCategory.Secrets => LoreCategory.Dungeoneering,
+        _ => LoreCategory.Local
+    };
+
+    private static KnowledgeCategory MapToKnowledgeCategory(LoreCategory category) => category switch
+    {
+        LoreCategory.History => KnowledgeCategory.History,
+        LoreCategory.Geography => KnowledgeCategory.Geography,
+        LoreCategory.Arcana => KnowledgeCategory.Magic,
+        LoreCategory.Religion => KnowledgeCategory.Religion,
+        LoreCategory.Nature => KnowledgeCategory.Nature,
+        LoreCategory.Local => KnowledgeCategory.Culture,
+        LoreCategory.NobilityAndRoyalty => KnowledgeCategory.Organizations,
+        LoreCategory.ThePlanes => KnowledgeCategory.Legends,
+        LoreCategory.Dungeoneering => KnowledgeCategory.Secrets,
+        LoreCategory.ArchitectureAndEngineering => KnowledgeCategory.Culture,
+        LoreCategory.Ooc => KnowledgeCategory.Culture,
+        _ => KnowledgeCategory.Culture
+    };
 }
 

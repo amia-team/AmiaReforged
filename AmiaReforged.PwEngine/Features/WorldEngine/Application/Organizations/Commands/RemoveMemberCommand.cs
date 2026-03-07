@@ -4,6 +4,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Organizations;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Organizations.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Application.Organizations.Commands;
 
@@ -22,6 +23,7 @@ public record RemoveMemberCommand : ICommand
 /// <summary>
 /// Handles removing members from organizations
 /// </summary>
+[ServiceBinding(typeof(ICommandHandler<RemoveMemberCommand>))]
 public class RemoveMemberHandler : ICommandHandler<RemoveMemberCommand>
 {
     private readonly IOrganizationMemberRepository _memberRepository;

@@ -215,3 +215,99 @@ public class EnumValueDto
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
 }
+
+// ==================== Industry DTOs ====================
+
+public class IndustryDefinitionDto
+{
+    public string Tag { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public List<IndustryKnowledgeDto> Knowledge { get; set; } = [];
+    public List<IndustryRecipeDto> Recipes { get; set; } = [];
+}
+
+public class IndustryKnowledgeDto
+{
+    public string Tag { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string? Level { get; set; }
+    public int PointCost { get; set; }
+    public List<IndustryHarvestEffectDto> HarvestEffects { get; set; } = [];
+}
+
+public class IndustryHarvestEffectDto
+{
+    public string NodeTag { get; set; } = string.Empty;
+    public string? StepModified { get; set; }
+    public float Value { get; set; }
+    public string? Operation { get; set; }
+}
+
+public class IndustryRecipeDto
+{
+    public string RecipeId { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string IndustryTag { get; set; } = string.Empty;
+    public List<string> RequiredKnowledge { get; set; } = [];
+    public string? RequiredProficiency { get; set; }
+    public List<IndustryIngredientDto> Ingredients { get; set; } = [];
+    public List<IndustryProductDto> Products { get; set; } = [];
+    public int? CraftingTimeSeconds { get; set; }
+    public int KnowledgePointsAwarded { get; set; }
+}
+
+public class IndustryIngredientDto
+{
+    public string ItemResRef { get; set; } = string.Empty;
+    public int Quantity { get; set; }
+    public int? MinQuality { get; set; }
+    public bool IsConsumed { get; set; } = true;
+}
+
+public class IndustryProductDto
+{
+    public string ItemResRef { get; set; } = string.Empty;
+    public int Quantity { get; set; }
+    public int? Quality { get; set; }
+    public float? SuccessChance { get; set; }
+}
+
+// ==================== Organization DTOs ====================
+
+public class OrganizationDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string Type { get; set; } = string.Empty;
+    public Guid? ParentOrganizationId { get; set; }
+}
+
+public class OrganizationMemberDto
+{
+    public Guid Id { get; set; }
+    public Guid CharacterId { get; set; }
+    public Guid OrganizationId { get; set; }
+    public string Rank { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public DateTime JoinedDate { get; set; }
+    public DateTime? DepartedDate { get; set; }
+    public string? Notes { get; set; }
+    public List<string> Roles { get; set; } = [];
+}
+
+public class CreateOrganizationRequestDto
+{
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public Guid? ParentOrganizationId { get; set; }
+}
+
+public class AddMemberRequestDto
+{
+    public Guid CharacterId { get; set; }
+    public string? Rank { get; set; }
+}

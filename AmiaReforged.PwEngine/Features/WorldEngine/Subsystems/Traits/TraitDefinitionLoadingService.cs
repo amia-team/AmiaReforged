@@ -1,22 +1,20 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
-using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using Anvil.Services;
-using Microsoft.EntityFrameworkCore;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits;
 
 /// <summary>
 /// Loads trait definitions from the database into the in-memory <see cref="ITraitRepository"/>.
-/// Falls back to JSON file loading if no database definitions exist and RESOURCE_PATH is set.
+/// Used at startup by <see cref="TraitBootstrapService"/> to populate the in-memory cache.
 /// </summary>
 [ServiceBinding(typeof(TraitDefinitionLoadingService))]
 public class TraitDefinitionLoadingService(
     ITraitRepository repository,
     PwContextFactory contextFactory,
-    TraitDefinitionMapper mapper) : IDefinitionLoader
+    TraitDefinitionMapper mapper)
 {
-    private readonly List<FileLoadResult> _failures = [];
+    private readonly List<string> _failures = [];
 
     public void Load()
     {
@@ -28,7 +26,7 @@ public class TraitDefinitionLoadingService(
         }
         catch (Exception ex)
         {
-            _failures.Add(new FileLoadResult(ResultType.Fail, $"Database load failed: {ex.Message}"));
+            _failures.Add($"Database load failed: {ex.Message}");
         }
     }
 
@@ -43,17 +41,18 @@ public class TraitDefinitionLoadingService(
             try
             {
                 Trait trait = mapper.ToDomain(persisted);
-                repository.Add(trait);
+                // Use cache-only add to avoid re-persisting data we just read
+                if (repository is DbTraitRepository dbRepo)
+                    dbRepo.AddToCache(trait);
+                else
+                    repository.Add(trait);
             }
             catch (Exception ex)
             {
-                _failures.Add(new FileLoadResult(ResultType.Fail, $"Failed to map trait '{persisted.Tag}': {ex.Message}"));
+                _failures.Add($"Failed to map trait '{persisted.Tag}': {ex.Message}");
             }
         }
     }
 
-    public List<FileLoadResult> Failures()
-    {
-        return _failures;
-    }
+    public List<string> Failures() => _failures;
 }

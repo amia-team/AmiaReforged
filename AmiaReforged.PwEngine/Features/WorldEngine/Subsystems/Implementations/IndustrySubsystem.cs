@@ -35,8 +35,8 @@ public sealed class IndustrySubsystem : IIndustrySubsystem
 
     public Task<List<Industry>> GetAllIndustriesAsync(CancellationToken ct = default)
     {
-        // TODO: Implement when repository method exists
-        return Task.FromResult(new List<Industry>());
+        List<Industry> all = _industryRepository.All();
+        return Task.FromResult(all);
     }
 
     public Task<CommandResult> CraftItemAsync(CraftItemCommand command, CancellationToken ct = default)

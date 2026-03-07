@@ -67,4 +67,56 @@ public class DbIndustryRepository : IIndustryRepository
             .Select(IndustryMapper.ToDomain)
             .ToList();
     }
+
+    public void Update(Industry industry)
+    {
+        using var ctx = _contextFactory.CreateDbContext();
+
+        var existing = ctx.IndustryDefinitions
+            .FirstOrDefault(e => e.Tag == industry.Tag);
+
+        if (existing == null)
+            throw new InvalidOperationException($"Industry with tag '{industry.Tag}' not found");
+
+        IndustryMapper.UpdateEntity(existing, industry);
+        ctx.SaveChanges();
+    }
+
+    public bool Delete(string tag)
+    {
+        using var ctx = _contextFactory.CreateDbContext();
+
+        var existing = ctx.IndustryDefinitions
+            .FirstOrDefault(e => e.Tag == tag);
+
+        if (existing == null) return false;
+
+        ctx.IndustryDefinitions.Remove(existing);
+        ctx.SaveChanges();
+        return true;
+    }
+
+    public List<Industry> Search(string? searchTerm, int page, int pageSize, out int totalCount)
+    {
+        using var ctx = _contextFactory.CreateDbContext();
+
+        IQueryable<PersistedIndustryDefinition> query = ctx.IndustryDefinitions;
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            query = query.Where(e =>
+                e.Tag.Contains(searchTerm) ||
+                e.Name.Contains(searchTerm));
+        }
+
+        totalCount = query.Count();
+
+        return query
+            .OrderBy(e => e.Name)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .AsEnumerable()
+            .Select(IndustryMapper.ToDomain)
+            .ToList();
+    }
 }

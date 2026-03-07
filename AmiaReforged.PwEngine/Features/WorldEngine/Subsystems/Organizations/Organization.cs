@@ -7,8 +7,8 @@ public class Organization : IOrganization
 {
     public List<OrganizationRequest> Inbox { get; init; } = [];
     public List<CharacterId> BanList { get; init; } = [];
-    public string Name { get; init; }
-    public string Description { get; init; }
+    public string Name { get; set; }
+    public string Description { get; set; }
     public OrganizationType Type { get; init; }
     public required OrganizationId Id { get; init; }
 

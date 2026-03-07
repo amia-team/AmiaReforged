@@ -14,8 +14,8 @@ public interface IOrganizationSystem
 
 public interface IOrganization
 {
-    public string Name { get; init; }
-    public string Description { get; init; }
+    public string Name { get; set; }
+    public string Description { get; set; }
     public OrganizationType Type { get; init; }
     public OrganizationId Id { get; init; }
     public OrganizationId? ParentOrganization { get; init; }
