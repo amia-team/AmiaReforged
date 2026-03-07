@@ -4,6 +4,7 @@
 @using AmiaReforged.AdminPanel.Services
 @attribute [Authorize]
 @inject TraitApiService Api
+@inject GlyphApiService GlyphApi
 @inject IWorldEngineEndpointService EndpointService
 @inject ILogger<Traits> Logger
 @rendermode InteractiveServer
@@ -340,6 +341,54 @@
                     </div>
                 </div>
 
+                @* ===== Glyph Script Bindings ===== *@
+                <div style="border:1px solid var(--border-color);border-radius:8px;padding:15px;margin-top:5px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                        <label style="font-weight:600;margin:0">Glyph Scripts (@_traitGlyphBindings.Count)</label>
+                        <button class="btn btn-sm btn-outline-primary" @onclick="() => _showAddTraitGlyphBinding = !_showAddTraitGlyphBinding">
+                            @(_showAddTraitGlyphBinding ? "Cancel" : "+ Attach Script")
+                        </button>
+                    </div>
+
+                    @if (_showAddTraitGlyphBinding)
+                    {
+                        <div style="display:flex;gap:8px;align-items:end;margin-bottom:8px;padding:8px;background:var(--bg-darker,rgba(0,0,0,0.1));border-radius:6px">
+                            <div class="form-group" style="flex:2;margin:0">
+                                <label style="font-size:0.8rem">Script</label>
+                                <select class="form-control form-control-sm" @bind="_newTraitGlyphDefinitionId">
+                                    <option value="">— Select Script —</option>
+                                    @foreach (var def in _glyphDefinitions.Where(d => d.IsActive))
+                                    {
+                                        <option value="@def.Id">@def.Name (@def.EventType)</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="form-group" style="width:90px;margin:0">
+                                <label style="font-size:0.8rem">Priority</label>
+                                <input type="number" class="form-control form-control-sm" @bind="_newTraitGlyphPriority" />
+                            </div>
+                            <button class="btn btn-success btn-sm" style="margin-bottom:0" @onclick="AddTraitGlyphBinding" disabled="@_isSaving">Add</button>
+                        </div>
+                    }
+
+                    @if (_traitGlyphBindings.Count == 0)
+                    {
+                        <p style="color:var(--text-secondary);text-align:center;margin:10px 0">No Glyph scripts attached. Scripts run when this trait is granted or removed.</p>
+                    }
+                    else
+                    {
+                        @foreach (var binding in _traitGlyphBindings)
+                        {
+                            <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;padding:6px 8px;background:var(--bg-darker,rgba(0,0,0,0.1));border-radius:6px">
+                                <span style="flex:1;color:var(--text-primary);font-size:0.9rem">@binding.GlyphName</span>
+                                <span class="badge bg-info" style="font-size:0.75rem">@binding.EventType</span>
+                                <span style="color:var(--text-secondary);font-size:0.8rem">P: @binding.Priority</span>
+                                <button class="btn btn-sm btn-outline-danger" style="font-size:0.7rem;padding:1px 6px" @onclick="() => RemoveTraitGlyphBinding(binding.Id)">✕</button>
+                            </div>
+                        }
+                    }
+                </div>
+
                 @* === Save / Cancel === *@
                 <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px">
                     <button class="btn btn-secondary" @onclick="CloseEditModal">Cancel</button>
@@ -425,6 +474,13 @@
     private bool _showDeleteConfirm;
     private TraitDefinitionDto? _deleteTarget;
 
+    // ===== Glyph Script Bindings =====
+    private List<TraitGlyphBindingDto> _traitGlyphBindings = [];
+    private List<GlyphDefinitionDto> _glyphDefinitions = [];
+    private bool _showAddTraitGlyphBinding;
+    private string _newTraitGlyphDefinitionId = "";
+    private int _newTraitGlyphPriority;
+
     // ===== Lifecycle =====
 
     protected override async Task OnInitializedAsync()
@@ -451,15 +507,22 @@
         {
             _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
             Api.SelectEndpoint(id);
+            GlyphApi.SelectEndpoint(id);
             _page = 1;
             await LoadEnumValues();
             await RefreshTraits();
+
+            // Load active glyph definitions for the binding dropdown
+            try { _glyphDefinitions = await GlyphApi.GetAllDefinitionsAsync(); }
+            catch { _glyphDefinitions = []; }
         }
         else
         {
             _selectedEndpoint = null;
             Api.SelectEndpoint(null);
+            GlyphApi.SelectEndpoint(null);
             _items.Clear();
+            _glyphDefinitions = [];
         }
     }
 
@@ -569,10 +632,12 @@
         _isCreating = true;
         _editItem = new TraitDefinitionDto();
         ClearListFields();
+        _traitGlyphBindings = [];
+        _showAddTraitGlyphBinding = false;
         _showEditModal = true;
     }
 
-    private void ShowEditModal(TraitDefinitionDto item)
+    private async Task ShowEditModal(TraitDefinitionDto item)
     {
         _isCreating = false;
         _editItem = new TraitDefinitionDto
@@ -609,6 +674,11 @@
         _prerequisiteTraitsText = string.Join(", ", item.PrerequisiteTraits);
         _conflictingTraitsText = string.Join(", ", item.ConflictingTraits);
 
+        // Load glyph bindings for this trait
+        _showAddTraitGlyphBinding = false;
+        try { _traitGlyphBindings = await GlyphApi.GetTraitBindingsAsync(item.Tag); }
+        catch { _traitGlyphBindings = []; }
+
         _showEditModal = true;
     }
 
@@ -617,6 +687,8 @@
         _showEditModal = false;
         _editItem = new();
         ClearListFields();
+        _traitGlyphBindings = [];
+        _showAddTraitGlyphBinding = false;
     }
 
     private void ClearListFields()
@@ -741,4 +813,46 @@
         "RemoveOnDeath" => "bg-warning text-dark",
         _ => "bg-secondary"
     };
+
+    // ===== Glyph Script Bindings =====
+
+    private async Task AddTraitGlyphBinding()
+    {
+        if (string.IsNullOrWhiteSpace(_editItem.Tag) || string.IsNullOrEmpty(_newTraitGlyphDefinitionId)) return;
+        if (!Guid.TryParse(_newTraitGlyphDefinitionId, out Guid defId)) return;
+
+        _isSaving = true;
+        try
+        {
+            await GlyphApi.CreateTraitBindingAsync(new CreateTraitGlyphBindingRequest(
+                _editItem.Tag, defId, _newTraitGlyphPriority));
+            _traitGlyphBindings = await GlyphApi.GetTraitBindingsAsync(_editItem.Tag);
+            _showAddTraitGlyphBinding = false;
+            _newTraitGlyphDefinitionId = "";
+            _newTraitGlyphPriority = 0;
+            _success = "Glyph script attached to trait.";
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to attach script: {ex.Message}";
+            Logger.LogError(ex, "Failed to add trait glyph binding");
+        }
+        finally { _isSaving = false; }
+    }
+
+    private async Task RemoveTraitGlyphBinding(Guid bindingId)
+    {
+        try
+        {
+            await GlyphApi.DeleteTraitBindingAsync(bindingId);
+            if (!string.IsNullOrEmpty(_editItem.Tag))
+                _traitGlyphBindings = await GlyphApi.GetTraitBindingsAsync(_editItem.Tag);
+            _success = "Glyph script detached from trait.";
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to detach script: {ex.Message}";
+            Logger.LogError(ex, "Failed to remove trait glyph binding");
+        }
+    }
 }

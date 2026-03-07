@@ -80,3 +80,29 @@ public record CreateGlyphBindingRequest(
     Guid SpawnProfileId,
     Guid GlyphDefinitionId,
     int Priority = 0);
+
+/// <summary>
+/// A binding that links a Glyph definition to a trait tag.
+/// </summary>
+public record TraitGlyphBindingDto(
+    Guid Id,
+    string TraitTag,
+    Guid GlyphDefinitionId,
+    string GlyphName,
+    string EventType,
+    int Priority);
+
+/// <summary>
+/// Request to bind a Glyph definition to a trait tag.
+/// </summary>
+public record CreateTraitGlyphBindingRequest(
+    string TraitTag,
+    Guid GlyphDefinitionId,
+    int Priority = 0);
+
+/// <summary>
+/// Combined response containing both spawn profile and trait bindings for a definition.
+/// </summary>
+public record DefinitionBindingsDto(
+    List<GlyphBindingDto> SpawnProfileBindings,
+    List<TraitGlyphBindingDto> TraitBindings);

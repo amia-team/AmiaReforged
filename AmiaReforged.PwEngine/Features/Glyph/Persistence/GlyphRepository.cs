@@ -143,4 +143,26 @@ public class GlyphRepository : IGlyphRepository
         await _db.SaveChangesAsync();
         Log.Info("Deleted Glyph trait binding {Id}.", id);
     }
+
+    // === Definition-Scoped Bindings ===
+
+    public async Task<List<SpawnProfileGlyphBinding>> GetSpawnBindingsForDefinitionAsync(Guid definitionId)
+    {
+        return await _db.SpawnProfileGlyphBindings
+            .Include(b => b.GlyphDefinition)
+            .Where(b => b.GlyphDefinitionId == definitionId)
+            .OrderBy(b => b.Priority)
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
+    public async Task<List<TraitGlyphBinding>> GetTraitBindingsForDefinitionAsync(Guid definitionId)
+    {
+        return await _db.TraitGlyphBindings
+            .Include(b => b.GlyphDefinition)
+            .Where(b => b.GlyphDefinitionId == definitionId)
+            .OrderBy(b => b.Priority)
+            .AsNoTracking()
+            .ToListAsync();
+    }
 }

@@ -15,6 +15,8 @@ public class GlyphController
 {
     internal static IGlyphRepository? Repository;
     internal static IGlyphNodeDefinitionRegistry? NodeRegistry;
+    internal static Integration.GlyphEncounterHookService? EncounterHooks;
+    internal static Integration.GlyphTraitHookService? TraitHooks;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -185,6 +187,10 @@ public class GlyphController
         };
 
         await Repository.CreateBindingAsync(binding);
+
+        // Auto-refresh encounter hook cache so the new binding takes effect immediately
+        if (EncounterHooks != null) await EncounterHooks.RefreshCacheAsync();
+
         return new ApiResult(201, BindingToDto(binding));
     }
 
@@ -200,7 +206,102 @@ public class GlyphController
             return new ApiResult(400, new ErrorResponse("Bad request", "Invalid binding ID."));
 
         await Repository.DeleteBindingAsync(id);
+
+        // Auto-refresh encounter hook cache
+        if (EncounterHooks != null) await EncounterHooks.RefreshCacheAsync();
+
         return new ApiResult(204, new { });
+    }
+
+    // ==================== Trait Bindings ====================
+
+    /// <summary>
+    /// GET /api/worldengine/glyphs/trait-bindings?traitTag={tag} — List trait bindings, optionally filtered by tag.
+    /// </summary>
+    [HttpGet("/api/worldengine/glyphs/trait-bindings")]
+    public static async Task<ApiResult> ListTraitBindings(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        string? traitTag = ctx.GetQueryParam("traitTag");
+        if (!string.IsNullOrEmpty(traitTag))
+        {
+            List<TraitGlyphBinding> bindings = await Repository.GetTraitBindingsForTagAsync(traitTag);
+            return new ApiResult(200, bindings.Select(TraitBindingToDto).ToList());
+        }
+
+        List<TraitGlyphBinding> allBindings = await Repository.GetAllTraitBindingsAsync();
+        return new ApiResult(200, allBindings.Select(TraitBindingToDto).ToList());
+    }
+
+    /// <summary>
+    /// POST /api/worldengine/glyphs/trait-bindings — Bind a Glyph definition to a trait tag.
+    /// </summary>
+    [HttpPost("/api/worldengine/glyphs/trait-bindings")]
+    public static async Task<ApiResult> CreateTraitBinding(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        CreateTraitBindingRequest? req = await ctx.ReadJsonBodyAsync<CreateTraitBindingRequest>();
+        if (req == null || string.IsNullOrWhiteSpace(req.TraitTag))
+            return new ApiResult(400, new ErrorResponse("Bad request", "TraitTag and GlyphDefinitionId are required."));
+
+        TraitGlyphBinding binding = new()
+        {
+            Id = Guid.NewGuid(),
+            TraitTag = req.TraitTag.Trim(),
+            GlyphDefinitionId = req.GlyphDefinitionId,
+            Priority = req.Priority
+        };
+
+        await Repository.CreateTraitBindingAsync(binding);
+
+        // Auto-refresh trait hook cache so the new binding takes effect immediately
+        if (TraitHooks != null) await TraitHooks.RefreshCacheAsync();
+
+        return new ApiResult(201, TraitBindingToDto(binding));
+    }
+
+    /// <summary>
+    /// DELETE /api/worldengine/glyphs/trait-bindings/{id} — Remove a trait binding.
+    /// </summary>
+    [HttpDelete("/api/worldengine/glyphs/trait-bindings/{id}")]
+    public static async Task<ApiResult> DeleteTraitBinding(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("id"), out Guid id))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid binding ID."));
+
+        await Repository.DeleteTraitBindingAsync(id);
+
+        // Auto-refresh trait hook cache
+        if (TraitHooks != null) await TraitHooks.RefreshCacheAsync();
+
+        return new ApiResult(204, new { });
+    }
+
+    // ==================== Definition-Scoped Bindings ====================
+
+    /// <summary>
+    /// GET /api/worldengine/glyphs/{id}/bindings — Get all bindings (spawn profile + trait) for a definition.
+    /// Used by the GlyphEditor's binding panel to show "what is this script bound to?"
+    /// </summary>
+    [HttpGet("/api/worldengine/glyphs/{id}/bindings")]
+    public static async Task<ApiResult> GetDefinitionBindings(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("id"), out Guid id))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid definition ID."));
+
+        List<SpawnProfileGlyphBinding> spawnBindings = await Repository.GetSpawnBindingsForDefinitionAsync(id);
+        List<TraitGlyphBinding> traitBindings = await Repository.GetTraitBindingsForDefinitionAsync(id);
+
+        return new ApiResult(200, new DefinitionBindingsResponse(
+            spawnBindings.Select(BindingToDto).ToList(),
+            traitBindings.Select(TraitBindingToDto).ToList()
+        ));
     }
 
     // ==================== Helpers ====================
@@ -214,6 +315,11 @@ public class GlyphController
 
     private static GlyphBindingDto BindingToDto(SpawnProfileGlyphBinding b) => new(
         b.Id, b.SpawnProfileId, b.GlyphDefinitionId,
+        b.GlyphDefinition?.Name ?? string.Empty, b.GlyphDefinition?.EventType ?? string.Empty,
+        b.Priority);
+
+    private static TraitGlyphBindingDto TraitBindingToDto(TraitGlyphBinding b) => new(
+        b.Id, b.TraitTag, b.GlyphDefinitionId,
         b.GlyphDefinition?.Name ?? string.Empty, b.GlyphDefinition?.EventType ?? string.Empty,
         b.Priority);
 
@@ -237,6 +343,14 @@ public class GlyphController
         Guid Id, Guid SpawnProfileId, Guid GlyphDefinitionId,
         string GlyphName, string EventType, int Priority);
 
+    public record TraitGlyphBindingDto(
+        Guid Id, string TraitTag, Guid GlyphDefinitionId,
+        string GlyphName, string EventType, int Priority);
+
+    public record DefinitionBindingsResponse(
+        List<GlyphBindingDto> SpawnProfileBindings,
+        List<TraitGlyphBindingDto> TraitBindings);
+
     public record GlyphNodeCatalogEntryDto(
         string TypeId, string DisplayName, string Category, string Description,
         string ColorClass, bool IsSingleton, string? RestrictToEventType, string? ScriptCategory,
@@ -256,4 +370,7 @@ public class GlyphController
 
     public record CreateBindingRequest(
         Guid SpawnProfileId, Guid GlyphDefinitionId, int Priority = 0);
+
+    public record CreateTraitBindingRequest(
+        string TraitTag, Guid GlyphDefinitionId, int Priority = 0);
 }

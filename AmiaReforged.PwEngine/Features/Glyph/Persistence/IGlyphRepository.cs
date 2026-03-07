@@ -24,4 +24,8 @@ public interface IGlyphRepository
     Task<List<TraitGlyphBinding>> GetAllTraitBindingsAsync();
     Task CreateTraitBindingAsync(TraitGlyphBinding binding);
     Task DeleteTraitBindingAsync(Guid id);
+
+    // === Definition-Scoped Bindings ===
+    Task<List<SpawnProfileGlyphBinding>> GetSpawnBindingsForDefinitionAsync(Guid definitionId);
+    Task<List<TraitGlyphBinding>> GetTraitBindingsForDefinitionAsync(Guid definitionId);
 }

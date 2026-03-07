@@ -4,6 +4,7 @@
 @using AmiaReforged.AdminPanel.Services
 @attribute [Authorize]
 @inject EncounterApiService Api
+@inject GlyphApiService GlyphApi
 @inject IWorldEngineEndpointService EndpointService
 @inject ILogger<Encounters> Logger
 @rendermode InteractiveServer
@@ -1162,6 +1163,73 @@
                             }
                         }
                     </div>
+
+                    @* --- Glyph Scripts --- *@
+                    <div class="section">
+                        <div class="section-header-row">
+                            <h2>Glyph Scripts (@(_profileGlyphBindings?.Count ?? 0))</h2>
+                            <button class="btn btn-sm btn-primary" @onclick="() => _showAddGlyphBinding = !_showAddGlyphBinding">
+                                @(_showAddGlyphBinding ? "Cancel" : "+ Attach Script")
+                            </button>
+                        </div>
+
+                        @if (_showAddGlyphBinding)
+                        {
+                            <div class="inline-form" style="margin-bottom:15px;padding:15px;background:var(--bg-input);border-radius:8px">
+                                <div class="form-row">
+                                    <div class="form-group" style="flex:2">
+                                        <label>Glyph Script</label>
+                                        <select class="form-control form-control-sm" @bind="_newGlyphBindingDefinitionId">
+                                            <option value="">— Select Script —</option>
+                                            @foreach (var def in _glyphDefinitions.Where(d => d.IsActive))
+                                            {
+                                                <option value="@def.Id">@def.Name (@def.EventType)</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Priority</label>
+                                        <input type="number" class="form-control form-control-sm" @bind="_newGlyphBindingPriority" />
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <button class="btn btn-success btn-sm" @onclick="AddGlyphBinding" disabled="@_isSaving">Add</button>
+                                    <button class="btn btn-secondary btn-sm" @onclick="() => _showAddGlyphBinding = false">Cancel</button>
+                                </div>
+                            </div>
+                        }
+
+                        @if (_profileGlyphBindings == null || _profileGlyphBindings.Count == 0)
+                        {
+                            <p style="color:var(--text-secondary)">No Glyph scripts attached. Attach scripts to run visual logic on encounter events.</p>
+                        }
+                        else
+                        {
+                            <table class="table table-compact">
+                                <thead>
+                                    <tr>
+                                        <th>Script Name</th>
+                                        <th>Event Type</th>
+                                        <th>Priority</th>
+                                        <th style="width:60px"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var binding in _profileGlyphBindings)
+                                    {
+                                        <tr>
+                                            <td>@binding.GlyphName</td>
+                                            <td><span class="badge bg-info">@binding.EventType</span></td>
+                                            <td>@binding.Priority</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveGlyphBinding(binding.Id)">✕</button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </div>
                 </div>
             </div>
             </div>
@@ -1502,6 +1570,13 @@
     private int _newBossBonusValue = 10;
     private int _newBossBonusDuration;
 
+    // ===== Glyph Script Bindings =====
+    private List<GlyphBindingDto> _profileGlyphBindings = [];
+    private List<GlyphDefinitionDto> _glyphDefinitions = [];
+    private bool _showAddGlyphBinding;
+    private string _newGlyphBindingDefinitionId = "";
+    private int _newGlyphBindingPriority;
+
     // ===== Mutations =====
     private List<MutationTemplateDto> _mutations = [];
     private HashSet<Guid> _expandedMutations = [];
@@ -1556,7 +1631,9 @@
         {
             _selectedEndpoint = null;
             Api.SelectEndpoint(null);
+            GlyphApi.SelectEndpoint(null);
             _profiles = [];
+            _glyphDefinitions = [];
             return;
         }
 
@@ -1566,9 +1643,14 @@
         if (_selectedEndpoint == null) return;
 
         Api.SelectEndpoint(_selectedEndpoint.Id);
+        GlyphApi.SelectEndpoint(_selectedEndpoint.Id);
         ResetEncounterState();
         await RefreshProfiles();
         await LoadMutations();
+
+        // Load active glyph definitions for the binding dropdown
+        try { _glyphDefinitions = await GlyphApi.GetAllDefinitionsAsync(); }
+        catch { _glyphDefinitions = []; }
     }
 
     private void ResetEncounterState()
@@ -1581,6 +1663,8 @@
         _showCreateForm = false;
         _showAddGroup = false;
         _showAddBonus = false;
+        _showAddGlyphBinding = false;
+        _profileGlyphBindings = [];
         _error = null;
         _success = null;
     }
@@ -1705,7 +1789,7 @@
         }
     }
 
-    private void SelectProfile(SpawnProfileDto profile)
+    private async Task SelectProfile(SpawnProfileDto profile)
     {
         _selectedProfile = profile;
         _editName = profile.Name;
@@ -1717,7 +1801,12 @@
         _showAddGroup = false;
         _showAddBonus = false;
         _showAddBoss = false;
+        _showAddGlyphBinding = false;
         _expandedBosses.Clear();
+
+        // Load glyph bindings for this profile
+        try { _profileGlyphBindings = await GlyphApi.GetBindingsForProfileAsync(profile.Id); }
+        catch { _profileGlyphBindings = []; }
     }
 
     private void CloseProfileModal()
@@ -1729,6 +1818,8 @@
         _showAddGroup = false;
         _showAddBonus = false;
         _showAddBoss = false;
+        _showAddGlyphBinding = false;
+        _profileGlyphBindings = [];
     }
 
     // ===== Profile CRUD =====
@@ -2868,5 +2959,47 @@
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _isSaving = false; }
+    }
+
+    // ===== Glyph Script Bindings =====
+
+    private async Task AddGlyphBinding()
+    {
+        if (_selectedProfile == null || string.IsNullOrEmpty(_newGlyphBindingDefinitionId)) return;
+        if (!Guid.TryParse(_newGlyphBindingDefinitionId, out Guid defId)) return;
+
+        _isSaving = true;
+        try
+        {
+            await GlyphApi.CreateBindingAsync(new CreateGlyphBindingRequest(
+                _selectedProfile.Id, defId, _newGlyphBindingPriority));
+            _profileGlyphBindings = await GlyphApi.GetBindingsForProfileAsync(_selectedProfile.Id);
+            _showAddGlyphBinding = false;
+            _newGlyphBindingDefinitionId = "";
+            _newGlyphBindingPriority = 0;
+            _success = "Glyph script attached.";
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to attach script: {ex.Message}";
+            Logger.LogError(ex, "Failed to add glyph binding");
+        }
+        finally { _isSaving = false; }
+    }
+
+    private async Task RemoveGlyphBinding(Guid bindingId)
+    {
+        if (_selectedProfile == null) return;
+        try
+        {
+            await GlyphApi.DeleteBindingAsync(bindingId);
+            _profileGlyphBindings = await GlyphApi.GetBindingsForProfileAsync(_selectedProfile.Id);
+            _success = "Glyph script detached.";
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to detach script: {ex.Message}";
+            Logger.LogError(ex, "Failed to remove glyph binding");
+        }
     }
 }

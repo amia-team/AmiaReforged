@@ -26,6 +26,7 @@ public class GlyphApiService
     private const string DefinitionsBase = "/api/worldengine/glyphs";
     private const string NodeCatalogPath = "/api/worldengine/glyph-catalog";
     private const string BindingsBase = "/api/worldengine/glyphs/bindings";
+    private const string TraitBindingsBase = "/api/worldengine/glyphs/trait-bindings";
 
     public GlyphApiService(IHttpClientFactory httpClientFactory, IWorldEngineEndpointService endpointService)
     {
@@ -91,6 +92,33 @@ public class GlyphApiService
     public async Task DeleteBindingAsync(Guid id)
     {
         await DeleteAsync($"{BindingsBase}/{id}");
+    }
+
+    // ==================== Trait Bindings ====================
+
+    public async Task<List<TraitGlyphBindingDto>> GetTraitBindingsAsync(string? traitTag = null)
+    {
+        string url = string.IsNullOrEmpty(traitTag)
+            ? TraitBindingsBase
+            : $"{TraitBindingsBase}?traitTag={Uri.EscapeDataString(traitTag)}";
+        return await GetAsync<List<TraitGlyphBindingDto>>(url) ?? [];
+    }
+
+    public async Task<TraitGlyphBindingDto?> CreateTraitBindingAsync(CreateTraitGlyphBindingRequest request)
+    {
+        return await PostAsync<TraitGlyphBindingDto>(TraitBindingsBase, request);
+    }
+
+    public async Task DeleteTraitBindingAsync(Guid id)
+    {
+        await DeleteAsync($"{TraitBindingsBase}/{id}");
+    }
+
+    // ==================== Definition-Scoped Bindings ====================
+
+    public async Task<DefinitionBindingsDto?> GetBindingsForDefinitionAsync(Guid definitionId)
+    {
+        return await GetAsync<DefinitionBindingsDto>($"{DefinitionsBase}/{definitionId}/bindings");
     }
 
     // ==================== HTTP Helpers ====================

@@ -5,6 +5,8 @@
 @using System.Text.Json
 @attribute [Authorize]
 @inject GlyphApiService Api
+@inject EncounterApiService EncounterApi
+@inject TraitApiService TraitApi
 @inject IWorldEngineEndpointService EndpointService
 @inject IJSRuntime JS
 @inject ILogger<GlyphEditor> Logger
@@ -169,6 +171,100 @@
                                         </div>
                                     }
                                 }
+                            </div>
+                        </div>
+                    }
+
+                    @* Bindings Panel *@
+                    @if (_editingDefinition != null)
+                    {
+                        <div class="card mt-3" style="background:var(--surface-color);border-color:var(--border-color)">
+                            <div class="card-header" style="background:var(--surface-hover);color:var(--text-primary)">
+                                <strong>Bindings</strong>
+                                <small class="d-block" style="color:var(--text-secondary)">Where this script is attached</small>
+                            </div>
+                            <div class="card-body p-2">
+                                @* --- Spawn Profile Bindings --- *@
+                                <div style="margin-bottom:8px">
+                                    <label style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em">Spawn Profiles</label>
+                                    @if (_definitionBindings?.SpawnProfileBindings.Count > 0)
+                                    {
+                                        @foreach (var b in _definitionBindings.SpawnProfileBindings)
+                                        {
+                                            <div class="d-flex justify-content-between align-items-center py-1" style="border-bottom:1px solid var(--border-color)">
+                                                <div>
+                                                    <span style="color:var(--text-primary);font-size:0.85rem">@GetProfileName(b.SpawnProfileId)</span>
+                                                    <br /><small style="color:var(--text-secondary)">Priority: @b.Priority</small>
+                                                </div>
+                                                <button class="btn btn-outline-danger btn-sm" style="font-size:0.7rem;padding:1px 6px" @onclick="() => RemoveSpawnBinding(b.Id)">✕</button>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <p style="color:var(--text-secondary);font-size:0.8rem;margin:4px 0">No spawn profile bindings.</p>
+                                    }
+
+                                    @if (_showAddSpawnBinding)
+                                    {
+                                        <div style="margin-top:6px;padding:8px;background:var(--surface-hover);border-radius:6px">
+                                            <select class="form-control form-control-sm mb-1" @bind="_newSpawnBindingProfileId">
+                                                <option value="">— Select Profile —</option>
+                                                @foreach (var p in _availableProfiles)
+                                                {
+                                                    <option value="@p.Id">@p.Name</option>
+                                                }
+                                            </select>
+                                            <input type="number" class="form-control form-control-sm mb-1" @bind="_newSpawnBindingPriority" placeholder="Priority (0)" />
+                                            <div class="d-flex gap-1">
+                                                <button class="btn btn-success btn-sm" style="font-size:0.75rem" @onclick="AddSpawnBinding" disabled="@_isSaving">Add</button>
+                                                <button class="btn btn-secondary btn-sm" style="font-size:0.75rem" @onclick="() => _showAddSpawnBinding = false">Cancel</button>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-outline-primary btn-sm mt-1" style="font-size:0.75rem" @onclick="() => _showAddSpawnBinding = true">+ Attach Profile</button>
+                                    }
+                                </div>
+
+                                @* --- Trait Bindings --- *@
+                                <div>
+                                    <label style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em">Traits</label>
+                                    @if (_definitionBindings?.TraitBindings.Count > 0)
+                                    {
+                                        @foreach (var b in _definitionBindings.TraitBindings)
+                                        {
+                                            <div class="d-flex justify-content-between align-items-center py-1" style="border-bottom:1px solid var(--border-color)">
+                                                <div>
+                                                    <span style="color:var(--text-primary);font-size:0.85rem;font-family:monospace">@b.TraitTag</span>
+                                                    <br /><small style="color:var(--text-secondary)">Priority: @b.Priority</small>
+                                                </div>
+                                                <button class="btn btn-outline-danger btn-sm" style="font-size:0.7rem;padding:1px 6px" @onclick="() => RemoveTraitBinding(b.Id)">✕</button>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <p style="color:var(--text-secondary);font-size:0.8rem;margin:4px 0">No trait bindings.</p>
+                                    }
+
+                                    @if (_showAddTraitBinding)
+                                    {
+                                        <div style="margin-top:6px;padding:8px;background:var(--surface-hover);border-radius:6px">
+                                            <input type="text" class="form-control form-control-sm mb-1" @bind="_newTraitBindingTag" placeholder="Trait tag (e.g. trait_cursed)" />
+                                            <input type="number" class="form-control form-control-sm mb-1" @bind="_newTraitBindingPriority" placeholder="Priority (0)" />
+                                            <div class="d-flex gap-1">
+                                                <button class="btn btn-success btn-sm" style="font-size:0.75rem" @onclick="AddTraitBinding" disabled="@_isSaving">Add</button>
+                                                <button class="btn btn-secondary btn-sm" style="font-size:0.75rem" @onclick="() => _showAddTraitBinding = false">Cancel</button>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-outline-primary btn-sm mt-1" style="font-size:0.75rem" @onclick="() => _showAddTraitBinding = true">+ Attach Trait</button>
+                                    }
+                                </div>
                             </div>
                         </div>
                     }
@@ -347,6 +443,16 @@
     // Selected node (from JS callback)
     private SelectedNodeInfo? _selectedNodeInfo;
 
+    // Bindings panel
+    private DefinitionBindingsDto? _definitionBindings;
+    private List<SpawnProfileDto> _availableProfiles = [];
+    private bool _showAddSpawnBinding;
+    private string _newSpawnBindingProfileId = "";
+    private int _newSpawnBindingPriority;
+    private bool _showAddTraitBinding;
+    private string _newTraitBindingTag = "";
+    private int _newTraitBindingPriority;
+
     private IEnumerable<IGrouping<string, GlyphNodeCatalogEntryDto>> FilteredCatalog
     {
         get
@@ -436,14 +542,19 @@
         {
             _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
             Api.SelectEndpoint(id);
+            EncounterApi.SelectEndpoint(id);
+            TraitApi.SelectEndpoint(id);
             await LoadData();
         }
         else
         {
             _selectedEndpoint = null;
             Api.SelectEndpoint(null);
+            EncounterApi.SelectEndpoint(null);
+            TraitApi.SelectEndpoint(null);
             _definitions = [];
             _nodeCatalog = [];
+            _availableProfiles = [];
         }
     }
 
@@ -458,6 +569,10 @@
         {
             _definitions = await Api.GetAllDefinitionsAsync();
             _nodeCatalog = await Api.GetNodeCatalogAsync();
+
+            // Load available profiles for binding panel
+            try { _availableProfiles = await EncounterApi.GetAllProfilesAsync(); }
+            catch { _availableProfiles = []; }
         }
         catch (Exception ex)
         {
@@ -591,6 +706,9 @@
             _editingDefinition = full;
             StateHasChanged();
 
+            // Load bindings for this definition
+            await LoadDefinitionBindings(full.Id);
+
             // Wait for DOM to render, then initialize Rete.js editor
             await Task.Delay(100); // Give Blazor a tick to render the container
             await InitializeEditor();
@@ -604,6 +722,9 @@
 
     private void CloseEditor()
     {
+        _definitionBindings = null;
+        _showAddSpawnBinding = false;
+        _showAddTraitBinding = false;
         _editingDefinition = null;
         _selectedNodeInfo = null;
         _error = null;
@@ -773,5 +894,103 @@
         public string? DefaultValue { get; set; }
         public string? OverrideValue { get; set; }
         public bool IsConnected { get; set; }
+    }
+
+    // ==================== Bindings Management ====================
+
+    private async Task LoadDefinitionBindings(Guid definitionId)
+    {
+        try
+        {
+            _definitionBindings = await Api.GetBindingsForDefinitionAsync(definitionId);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load bindings for definition {Id}", definitionId);
+            _definitionBindings = new DefinitionBindingsDto([], []);
+        }
+    }
+
+    private string GetProfileName(Guid profileId)
+    {
+        return _availableProfiles.FirstOrDefault(p => p.Id == profileId)?.Name ?? profileId.ToString()[..8] + "…";
+    }
+
+    private async Task AddSpawnBinding()
+    {
+        if (_editingDefinition == null || string.IsNullOrEmpty(_newSpawnBindingProfileId)) return;
+        if (!Guid.TryParse(_newSpawnBindingProfileId, out Guid profileId)) return;
+
+        _isSaving = true;
+        try
+        {
+            await Api.CreateBindingAsync(new CreateGlyphBindingRequest(profileId, _editingDefinition.Id, _newSpawnBindingPriority));
+            await LoadDefinitionBindings(_editingDefinition.Id);
+            _showAddSpawnBinding = false;
+            _newSpawnBindingProfileId = "";
+            _newSpawnBindingPriority = 0;
+            _success = "Spawn profile binding added.";
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to add binding: {ex.Message}";
+            Logger.LogError(ex, "Failed to add spawn binding");
+        }
+        finally { _isSaving = false; }
+    }
+
+    private async Task RemoveSpawnBinding(Guid bindingId)
+    {
+        if (_editingDefinition == null) return;
+        try
+        {
+            await Api.DeleteBindingAsync(bindingId);
+            await LoadDefinitionBindings(_editingDefinition.Id);
+            _success = "Spawn profile binding removed.";
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to remove binding: {ex.Message}";
+            Logger.LogError(ex, "Failed to remove spawn binding");
+        }
+    }
+
+    private async Task AddTraitBinding()
+    {
+        if (_editingDefinition == null || string.IsNullOrWhiteSpace(_newTraitBindingTag)) return;
+
+        _isSaving = true;
+        try
+        {
+            await Api.CreateTraitBindingAsync(new CreateTraitGlyphBindingRequest(
+                _newTraitBindingTag.Trim(), _editingDefinition.Id, _newTraitBindingPriority));
+            await LoadDefinitionBindings(_editingDefinition.Id);
+            _showAddTraitBinding = false;
+            _newTraitBindingTag = "";
+            _newTraitBindingPriority = 0;
+            _success = "Trait binding added.";
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to add trait binding: {ex.Message}";
+            Logger.LogError(ex, "Failed to add trait binding");
+        }
+        finally { _isSaving = false; }
+    }
+
+    private async Task RemoveTraitBinding(Guid bindingId)
+    {
+        if (_editingDefinition == null) return;
+        try
+        {
+            await Api.DeleteTraitBindingAsync(bindingId);
+            await LoadDefinitionBindings(_editingDefinition.Id);
+            _success = "Trait binding removed.";
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to remove trait binding: {ex.Message}";
+            Logger.LogError(ex, "Failed to remove trait binding");
+        }
     }
 }

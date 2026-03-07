@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Integration;
 using AmiaReforged.PwEngine.Features.Glyph.Persistence;
 using Anvil.Services;
 using NLog;
@@ -17,10 +18,14 @@ public class GlyphApiBootstrap
 
     public GlyphApiBootstrap(
         IGlyphRepository repository,
-        IGlyphNodeDefinitionRegistry nodeRegistry)
+        IGlyphNodeDefinitionRegistry nodeRegistry,
+        GlyphEncounterHookService encounterHooks,
+        GlyphTraitHookService traitHooks)
     {
         GlyphController.Repository = repository;
         GlyphController.NodeRegistry = nodeRegistry;
+        GlyphController.EncounterHooks = encounterHooks;
+        GlyphController.TraitHooks = traitHooks;
 
         Log.Info("Glyph API bootstrap complete — controller wired to services.");
     }
