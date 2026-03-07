@@ -308,169 +308,159 @@
 @* ==================== INDUSTRY EDIT MODAL ==================== *@
 @if (_showIndustryModal)
 {
-    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">@(_isCreating ? "Create Industry" : "Edit Industry")</h5>
-                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Tag</label>
-                        <input class="form-control" @bind="_editIndustry.Tag" disabled="@(!_isCreating)" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Name</label>
-                        <input class="form-control" @bind="_editIndustry.Name" />
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
-                    <button class="btn btn-primary" @onclick="SaveIndustry" disabled="@_isSaving">
-                        @(_isSaving ? "Saving..." : "Save")
-                    </button>
-                </div>
+    <div class="modal-backdrop" @onclick="CloseModals">
+    <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:550px;margin:15vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+        <h2>@(_isCreating ? "Create Industry" : "Edit Industry")</h2>
+
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:15px">
+            <div class="form-group">
+                <label>Tag <small style="color:var(--text-secondary)">(unique identifier)</small></label>
+                <input class="form-control" @bind="_editIndustry.Tag" disabled="@(!_isCreating)" placeholder="e.g. blacksmithing" />
+            </div>
+            <div class="form-group">
+                <label>Name</label>
+                <input class="form-control" @bind="_editIndustry.Name" placeholder="e.g. Blacksmithing" />
             </div>
         </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+            <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
+            <button class="btn btn-primary" @onclick="SaveIndustry" disabled="@_isSaving">
+                @(_isSaving ? "Saving..." : "Save")
+            </button>
+        </div>
+    </div>
     </div>
 }
 
 @* ==================== WORKSTATION EDIT MODAL ==================== *@
 @if (_showWorkstationModal)
 {
-    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">@(_isCreating ? "Create Workstation" : "Edit Workstation")</h5>
-                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+    <div class="modal-backdrop" @onclick="CloseModals">
+    <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:650px;margin:10vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+        <h2>@(_isCreating ? "Create Workstation" : "Edit Workstation")</h2>
+
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:15px">
+            <div class="form-row" style="display:flex;gap:10px">
+                <div class="form-group" style="flex:1">
+                    <label>Tag <small style="color:var(--text-secondary)">(unique identifier)</small></label>
+                    <input class="form-control" @bind="_editWorkstation.Tag" disabled="@(!_isCreating)" placeholder="e.g. forge" />
                 </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Tag</label>
-                        <input class="form-control" @bind="_editWorkstation.Tag" disabled="@(!_isCreating)" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Name</label>
-                        <input class="form-control" @bind="_editWorkstation.Name" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        <textarea class="form-control" rows="2" @bind="_editWorkstation.Description"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Placeable ResRef</label>
-                        <input class="form-control" @bind="_editWorkstation.PlaceableResRef" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Supported Industries (comma-separated tags)</label>
-                        <input class="form-control" @bind="_editWorkstationIndustriesText" />
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
-                    <button class="btn btn-primary" @onclick="SaveWorkstation" disabled="@_isSaving">
-                        @(_isSaving ? "Saving..." : "Save")
-                    </button>
+                <div class="form-group" style="flex:1">
+                    <label>Name</label>
+                    <input class="form-control" @bind="_editWorkstation.Name" placeholder="e.g. Forge" />
                 </div>
             </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea class="form-control" rows="2" @bind="_editWorkstation.Description" placeholder="What this workstation is used for..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Placeable ResRef <small style="color:var(--text-secondary)">(NWN blueprint)</small></label>
+                <input class="form-control" @bind="_editWorkstation.PlaceableResRef" placeholder="e.g. plc_forge01" />
+            </div>
+            <div class="form-group">
+                <label>Supported Industries <small style="color:var(--text-secondary)">(comma-separated tags)</small></label>
+                <input class="form-control" @bind="_editWorkstationIndustriesText" placeholder="e.g. blacksmithing, jewelcrafting" />
+            </div>
         </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+            <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
+            <button class="btn btn-primary" @onclick="SaveWorkstation" disabled="@_isSaving">
+                @(_isSaving ? "Saving..." : "Save")
+            </button>
+        </div>
+    </div>
     </div>
 }
 
 @* ==================== KNOWLEDGE EDIT MODAL ==================== *@
 @if (_showKnowledgeModal)
 {
-    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">@(_isCreating ? "Add Knowledge" : "Edit Knowledge")</h5>
-                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+    <div class="modal-backdrop" @onclick="CloseModals">
+    <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:850px;max-height:90vh;overflow-y:auto;margin:3vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+        <h2>@(_isCreating ? "Add Knowledge" : "Edit Knowledge")</h2>
+
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:15px">
+            <div class="form-row" style="display:flex;gap:10px">
+                <div class="form-group" style="flex:1">
+                    <label>Tag <small style="color:var(--text-secondary)">(unique identifier)</small></label>
+                    <input class="form-control" @bind="_editKnowledge.Tag" disabled="@(!_isCreating)" placeholder="e.g. basic_smelting" />
                 </div>
-                <div class="modal-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Tag</label>
-                            <input class="form-control" @bind="_editKnowledge.Tag" disabled="@(!_isCreating)" />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Name</label>
-                            <input class="form-control" @bind="_editKnowledge.Name" />
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        <textarea class="form-control" rows="2" @bind="_editKnowledge.Description"></textarea>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Level</label>
-                            <select class="form-select" @bind="_editKnowledge.Level">
-                                <option value="Layman">Layman</option>
-                                <option value="Novice">Novice</option>
-                                <option value="Apprentice">Apprentice</option>
-                                <option value="Journeyman">Journeyman</option>
-                                <option value="Expert">Expert</option>
-                                <option value="Master">Master</option>
-                                <option value="Grandmaster">Grandmaster</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Point Cost</label>
-                            <input type="number" class="form-control" @bind="_editKnowledge.PointCost" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Branch</label>
-                            <input class="form-control" @bind="_editKnowledge.Branch" placeholder="e.g. Bladesmith" />
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Prerequisites (comma-separated tags)</label>
-                        <input class="form-control" @bind="_editKnowledgePrereqText" placeholder="basic_smelting, ore_knowledge" />
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
-                    <button class="btn btn-primary" @onclick="SaveKnowledge" disabled="@_isSaving">
-                        @(_isSaving ? "Saving..." : "Save")
-                    </button>
+                <div class="form-group" style="flex:1">
+                    <label>Name</label>
+                    <input class="form-control" @bind="_editKnowledge.Name" placeholder="e.g. Basic Smelting" />
                 </div>
             </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea class="form-control" rows="2" @bind="_editKnowledge.Description" placeholder="What this knowledge represents..."></textarea>
+            </div>
+            <div class="form-row" style="display:flex;gap:10px">
+                <div class="form-group" style="flex:1">
+                    <label>Level</label>
+                    <select class="form-control" @bind="_editKnowledge.Level">
+                        <option value="Layman">Layman</option>
+                        <option value="Novice">Novice</option>
+                        <option value="Apprentice">Apprentice</option>
+                        <option value="Journeyman">Journeyman</option>
+                        <option value="Expert">Expert</option>
+                        <option value="Master">Master</option>
+                        <option value="Grandmaster">Grandmaster</option>
+                    </select>
+                </div>
+                <div class="form-group" style="width:120px">
+                    <label>Point Cost</label>
+                    <input type="number" class="form-control" @bind="_editKnowledge.PointCost" />
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label>Branch</label>
+                    <input class="form-control" @bind="_editKnowledge.Branch" placeholder="e.g. Bladesmith" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Prerequisites <small style="color:var(--text-secondary)">(comma-separated tags)</small></label>
+                <input class="form-control" @bind="_editKnowledgePrereqText" placeholder="basic_smelting, ore_knowledge" />
+            </div>
         </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+            <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
+            <button class="btn btn-primary" @onclick="SaveKnowledge" disabled="@_isSaving">
+                @(_isSaving ? "Saving..." : "Save")
+            </button>
+        </div>
+    </div>
     </div>
 }
 
 @* ==================== RECIPE EDIT MODAL ==================== *@
 @if (_showRecipeModal)
 {
-    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">@(_isCreating ? "Add Recipe" : "Edit Recipe")</h5>
-                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+    <div class="modal-backdrop" @onclick="CloseModals">
+    <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:850px;max-height:90vh;overflow-y:auto;margin:3vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+        <h2>@(_isCreating ? "Add Recipe" : "Edit Recipe")</h2>
+
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:15px">
+            <div class="form-row" style="display:flex;gap:10px">
+                <div class="form-group" style="flex:1">
+                    <label>Recipe ID <small style="color:var(--text-secondary)">(unique identifier)</small></label>
+                    <input class="form-control" @bind="_editRecipe.RecipeId" disabled="@(!_isCreating)" placeholder="e.g. iron_sword" />
                 </div>
-                <div class="modal-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Recipe ID</label>
-                            <input class="form-control" @bind="_editRecipe.RecipeId" disabled="@(!_isCreating)" />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Name</label>
-                            <input class="form-control" @bind="_editRecipe.Name" />
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        <textarea class="form-control" rows="2" @bind="_editRecipe.Description"></textarea>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Required Proficiency</label>
-                            <select class="form-select" @bind="_editRecipe.RequiredProficiency">
+                <div class="form-group" style="flex:1">
+                    <label>Name</label>
+                    <input class="form-control" @bind="_editRecipe.Name" placeholder="e.g. Iron Sword" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea class="form-control" rows="2" @bind="_editRecipe.Description" placeholder="What this recipe produces..."></textarea>
+            </div>
+            <div class="form-row" style="display:flex;gap:10px">
+                <div class="form-group" style="flex:1">
+                    <label>Required Proficiency</label>
+                    <select class="form-control" @bind="_editRecipe.RequiredProficiency">
                                 <option value="Layman">Layman</option>
                                 <option value="Novice">Novice</option>
                                 <option value="Apprentice">Apprentice</option>
@@ -478,114 +468,108 @@
                                 <option value="Expert">Expert</option>
                                 <option value="Master">Master</option>
                                 <option value="Grandmaster">Grandmaster</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Required Workstation</label>
-                            <select class="form-select" @bind="_editRecipe.RequiredWorkstation">
-                                <option value="">None</option>
-                                @foreach (var ws in _workstations)
-                                {
-                                    <option value="@ws.Tag">@ws.Name (@ws.Tag)</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Process ID</label>
-                            <input class="form-control" @bind="_editRecipe.ProcessId" placeholder="e.g. forge_blade" />
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Crafting Time (seconds)</label>
-                            <input type="number" class="form-control" @bind="_editRecipe.CraftingTimeSeconds" />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Knowledge Points Awarded</label>
-                            <input type="number" class="form-control" @bind="_editRecipe.KnowledgePointsAwarded" />
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Required Knowledge (comma-separated tags)</label>
-                        <input class="form-control" @bind="_editRecipeKnowledgeText" placeholder="basic_smelting" />
-                    </div>
-
-                    @* Ingredients *@
-                    <h6>Ingredients</h6>
-                    @for (int idx = 0; idx < _editRecipe.Ingredients.Count; idx++)
-                    {
-                        int i = idx;
-                        <div class="row mb-1">
-                            <div class="col-md-5">
-                                <input class="form-control form-control-sm" placeholder="ItemResRef" @bind="_editRecipe.Ingredients[i].ItemResRef" />
-                            </div>
-                            <div class="col-md-2">
-                                <input type="number" class="form-control form-control-sm" placeholder="Qty" @bind="_editRecipe.Ingredients[i].Quantity" />
-                            </div>
-                            <div class="col-md-2">
-                                <div class="form-check mt-1">
-                                    <input class="form-check-input" type="checkbox" @bind="_editRecipe.Ingredients[i].IsConsumed" />
-                                    <label class="form-check-label">Consumed</label>
-                                </div>
-                            </div>
-                            <div class="col-md-1">
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => _editRecipe.Ingredients.RemoveAt(i)">X</button>
-                            </div>
-                        </div>
-                    }
-                    <button class="btn btn-sm btn-outline-secondary mb-3" @onclick="() => _editRecipe.Ingredients.Add(new IndustryIngredientDto { IsConsumed = true })">+ Ingredient</button>
-
-                    @* Products *@
-                    <h6>Products</h6>
-                    @for (int idx = 0; idx < _editRecipe.Products.Count; idx++)
-                    {
-                        int i = idx;
-                        <div class="row mb-1">
-                            <div class="col-md-5">
-                                <input class="form-control form-control-sm" placeholder="ItemResRef" @bind="_editRecipe.Products[i].ItemResRef" />
-                            </div>
-                            <div class="col-md-2">
-                                <input type="number" class="form-control form-control-sm" placeholder="Qty" @bind="_editRecipe.Products[i].Quantity" />
-                            </div>
-                            <div class="col-md-1">
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => _editRecipe.Products.RemoveAt(i)">X</button>
-                            </div>
-                        </div>
-                    }
-                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => _editRecipe.Products.Add(new IndustryProductDto())">+ Product</button>
+                    </select>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
-                    <button class="btn btn-primary" @onclick="SaveRecipe" disabled="@_isSaving">
-                        @(_isSaving ? "Saving..." : "Save")
-                    </button>
+                <div class="form-group" style="flex:1">
+                    <label>Required Workstation</label>
+                    <select class="form-control" @bind="_editRecipe.RequiredWorkstation">
+                        <option value="">None</option>
+                        @foreach (var ws in _workstations)
+                        {
+                            <option value="@ws.Tag">@ws.Name (@ws.Tag)</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label>Process ID</label>
+                    <input class="form-control" @bind="_editRecipe.ProcessId" placeholder="e.g. forge_blade" />
                 </div>
             </div>
+            <div class="form-row" style="display:flex;gap:10px">
+                <div class="form-group" style="flex:1">
+                    <label>Crafting Time (seconds)</label>
+                    <input type="number" class="form-control" @bind="_editRecipe.CraftingTimeSeconds" />
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label>Knowledge Points Awarded</label>
+                    <input type="number" class="form-control" @bind="_editRecipe.KnowledgePointsAwarded" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Required Knowledge <small style="color:var(--text-secondary)">(comma-separated tags)</small></label>
+                <input class="form-control" @bind="_editRecipeKnowledgeText" placeholder="basic_smelting" />
+            </div>
+
+            @* Ingredients *@
+            <div style="margin-top:8px">
+                <label style="font-weight:600">Ingredients</label>
+                @for (int idx = 0; idx < _editRecipe.Ingredients.Count; idx++)
+                {
+                    int i = idx;
+                    <div style="display:flex;gap:8px;margin-top:4px;align-items:center">
+                        <input class="form-control form-control-sm" style="flex:3" placeholder="ItemResRef" @bind="_editRecipe.Ingredients[i].ItemResRef" />
+                        <input type="number" class="form-control form-control-sm" style="flex:1" placeholder="Qty" @bind="_editRecipe.Ingredients[i].Quantity" />
+                        <label style="display:flex;align-items:center;gap:4px;white-space:nowrap;font-size:0.85rem">
+                            <input type="checkbox" @bind="_editRecipe.Ingredients[i].IsConsumed" /> Consumed
+                        </label>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => _editRecipe.Ingredients.RemoveAt(i)">X</button>
+                    </div>
+                }
+                <button class="btn btn-sm btn-outline-secondary" style="margin-top:6px" @onclick="() => _editRecipe.Ingredients.Add(new IndustryIngredientDto { IsConsumed = true })">+ Ingredient</button>
+            </div>
+
+            @* Products *@
+            <div style="margin-top:8px">
+                <label style="font-weight:600">Products</label>
+                @for (int idx = 0; idx < _editRecipe.Products.Count; idx++)
+                {
+                    int i = idx;
+                    <div style="display:flex;gap:8px;margin-top:4px;align-items:center">
+                        <input class="form-control form-control-sm" style="flex:3" placeholder="ItemResRef" @bind="_editRecipe.Products[i].ItemResRef" />
+                        <input type="number" class="form-control form-control-sm" style="flex:1" placeholder="Qty" @bind="_editRecipe.Products[i].Quantity" />
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => _editRecipe.Products.RemoveAt(i)">X</button>
+                    </div>
+                }
+                <button class="btn btn-sm btn-outline-secondary" style="margin-top:6px" @onclick="() => _editRecipe.Products.Add(new IndustryProductDto())">+ Product</button>
+            </div>
         </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+            <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
+            <button class="btn btn-primary" @onclick="SaveRecipe" disabled="@_isSaving">
+                @(_isSaving ? "Saving..." : "Save")
+            </button>
+        </div>
+    </div>
     </div>
 }
 
 @* ==================== DELETE CONFIRMATION ==================== *@
 @if (_showDeleteConfirm)
 {
-    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Confirm Delete</h5>
-                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Are you sure you want to delete <strong>@_deleteTargetName</strong>?</p>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
-                    <button class="btn btn-danger" @onclick="ExecuteDelete" disabled="@_isSaving">Delete</button>
-                </div>
-            </div>
+    <div class="modal-backdrop" @onclick="CloseModals">
+    <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:500px;margin:20vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+        <h2>Confirm Delete</h2>
+        <p>Are you sure you want to delete <strong>@_deleteTargetName</strong>?</p>
+        <p style="color:var(--text-secondary);font-size:0.9rem">This action cannot be undone.</p>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+            <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
+            <button class="btn btn-danger" @onclick="ExecuteDelete" disabled="@_isSaving">
+                @(_isSaving ? "Deleting..." : "Delete")
+            </button>
         </div>
     </div>
+    </div>
 }
+
+<style>
+    .modal-backdrop {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 1040;
+    }
+</style>
 
 @code {
     // ==================== State ====================
