@@ -1,0 +1,431 @@
+@page "/worldengine/coinhouses"
+@using AmiaReforged.AdminPanel.Models
+@using AmiaReforged.AdminPanel.Services
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject CoinhouseApiService Api
+@inject IWorldEngineEndpointService EndpointService
+@inject ILogger<Coinhouses> Logger
+@rendermode InteractiveServer
+
+<PageTitle>Coinhouses — WorldEngine</PageTitle>
+
+<div class="encounters-page">
+    <div class="dashboard-header">
+        <h1>Coinhouses (Banks)</h1>
+        <div class="header-actions">
+            @if (_endpoints.Count > 0)
+            {
+                <div class="instance-selector">
+                    <label class="instance-label">Server:</label>
+                    <select class="form-control form-control-sm" value="@(_selectedEndpoint?.Id.ToString() ?? "")" @onchange="OnEndpointChanged">
+                        <option value="">— Select —</option>
+                        @foreach (var ep in _endpoints)
+                        {
+                            <option value="@ep.Id">@ep.Name</option>
+                        }
+                    </select>
+                </div>
+            }
+            @if (_selectedEndpoint != null)
+            {
+                <button class="btn btn-secondary btn-sm" @onclick="RefreshCoinhouses">Refresh</button>
+                <button class="btn btn-primary btn-sm" @onclick="ShowCreateModal">+ New Coinhouse</button>
+            }
+            <a href="/" class="btn btn-secondary btn-sm">← Dashboard</a>
+        </div>
+    </div>
+
+    @if (_error != null)
+    {
+        <div class="alert alert-danger">@_error <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _error = null">Dismiss</button></div>
+    }
+    @if (_success != null)
+    {
+        <div class="alert alert-success">@_success <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _success = null">Dismiss</button></div>
+    }
+
+    @if (_selectedEndpoint == null)
+    {
+        <div class="section" style="text-align:center;padding:60px 20px">
+            @if (_endpoints.Count == 0)
+            {
+                <p style="color:var(--text-secondary);font-size:1.1rem">
+                    No WorldEngine servers configured. Go to
+                    <a href="/encounters">Encounters</a> to add one.
+                </p>
+            }
+            else
+            {
+                <p style="color:var(--text-secondary);font-size:1.1rem">Select a server from the dropdown above to manage coinhouses.</p>
+            }
+        </div>
+    }
+
+    @* ===== Search ===== *@
+    @if (_selectedEndpoint != null)
+    {
+        <div class="section" style="margin-bottom:20px">
+            <div class="form-row" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+                <div class="form-group" style="flex:2;min-width:200px">
+                    <label>Search</label>
+                    <input class="form-control" @bind="_searchTerm" @bind:event="oninput"
+                           placeholder="Search by tag..." />
+                </div>
+                <button class="btn btn-primary" @onclick="RefreshCoinhouses" disabled="@_isLoading">
+                    @(_isLoading ? "Loading..." : "Search")
+                </button>
+            </div>
+        </div>
+
+        @* ===== Table ===== *@
+        <div class="section">
+            @if (_isLoading)
+            {
+                <p style="color:var(--text-secondary)">Loading coinhouses...</p>
+            }
+            else if (_coinhouses.Count == 0)
+            {
+                <p style="color:var(--text-secondary)">No coinhouses found. Click <strong>+ New Coinhouse</strong> to add one.</p>
+            }
+            else
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Tag</th>
+                            <th>Settlement</th>
+                            <th style="text-align:right">Stored Gold</th>
+                            <th style="text-align:right">Accounts</th>
+                            <th style="text-align:right">Total Deposits</th>
+                            <th style="text-align:right">Total Credits</th>
+                            <th style="text-align:right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var ch in _coinhouses)
+                        {
+                            <tr>
+                                <td><strong style="color:var(--accent)">@ch.Tag</strong></td>
+                                <td>@ch.Settlement</td>
+                                <td style="text-align:right">@ch.StoredGold.ToString("N0") gp</td>
+                                <td style="text-align:right">@ch.AccountCount</td>
+                                <td style="text-align:right">@ch.TotalDeposits.ToString("N0") gp</td>
+                                <td style="text-align:right">@ch.TotalCredits.ToString("N0") gp</td>
+                                <td style="text-align:right">
+                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowEditModal(ch)">Edit</button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => ShowDeleteConfirm(ch)">Delete</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                @* Pagination *@
+                @if (_totalCount > _pageSize)
+                {
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+                        <span style="color:var(--text-secondary)">
+                            Showing @(((_page - 1) * _pageSize) + 1)–@(Math.Min(_page * _pageSize, _totalCount)) of @_totalCount
+                        </span>
+                        <div style="display:flex;gap:6px">
+                            <button class="btn btn-sm btn-secondary" disabled="@(_page <= 1)" @onclick="PrevPage">← Prev</button>
+                            <button class="btn btn-sm btn-secondary" disabled="@(_page * _pageSize >= _totalCount)" @onclick="NextPage">Next →</button>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    }
+</div>
+
+@* ==================== CREATE/EDIT MODAL ==================== *@
+@if (_showModal)
+{
+    <div class="modal-backdrop" @onclick="CloseModals">
+    <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:560px;margin:10vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+        <h2>@(_isCreating ? "Create Coinhouse" : "Edit Coinhouse")</h2>
+
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:16px">
+            <div class="form-group">
+                <label>Tag <small style="color:var(--text-secondary)">(unique identifier, e.g. "cordor_bank")</small></label>
+                <input class="form-control" @bind="_editCoinhouse.Tag" disabled="@(!_isCreating)" placeholder="settlement_bank" />
+            </div>
+
+            <div class="form-group">
+                <label>Settlement ID <small style="color:var(--text-secondary)">(positive integer)</small></label>
+                <input type="number" class="form-control" @bind="_editCoinhouse.Settlement" min="1" />
+            </div>
+
+            <div class="form-group">
+                <label>Engine ID <small style="color:var(--text-secondary)">(GUID — auto-generated if blank)</small></label>
+                <input class="form-control" @bind="_editEngineIdText" placeholder="auto-generated" />
+            </div>
+
+            <div class="form-group">
+                <label>Stored Gold <small style="color:var(--text-secondary)">(bank's own reserves)</small></label>
+                <input type="number" class="form-control" @bind="_editCoinhouse.StoredGold" min="0" />
+            </div>
+
+            <div class="form-group">
+                <label>Persona ID String <small style="color:var(--text-secondary)">(optional, format: "Coinhouse:tag")</small></label>
+                <input class="form-control" @bind="_editCoinhouse.PersonaIdString" placeholder="Coinhouse:settlement_bank" />
+            </div>
+
+            @if (!_isCreating)
+            {
+                <div style="display:flex;gap:20px;margin-top:4px">
+                    <div style="color:var(--text-secondary);font-size:0.85rem">
+                        <strong>Accounts:</strong> @_editCoinhouse.AccountCount
+                    </div>
+                    <div style="color:var(--text-secondary);font-size:0.85rem">
+                        <strong>Total Deposits:</strong> @_editCoinhouse.TotalDeposits.ToString("N0") gp
+                    </div>
+                    <div style="color:var(--text-secondary);font-size:0.85rem">
+                        <strong>Total Credits:</strong> @_editCoinhouse.TotalCredits.ToString("N0") gp
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+            <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
+            <button class="btn btn-primary" @onclick="SaveCoinhouse" disabled="@_isSaving">
+                @(_isSaving ? "Saving..." : "Save")
+            </button>
+        </div>
+    </div>
+    </div>
+}
+
+@* ==================== DELETE CONFIRMATION ==================== *@
+@if (_showDeleteConfirm)
+{
+    <div class="modal-backdrop" @onclick="CloseModals">
+    <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:500px;margin:20vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+        <h2>Confirm Delete</h2>
+        <p>Are you sure you want to delete coinhouse <strong style="color:var(--accent)">@_deleteTarget?.Tag</strong>?</p>
+        @if (_deleteTarget?.AccountCount > 0)
+        {
+            <p style="color:var(--danger);font-size:0.9rem">
+                ⚠ This coinhouse has <strong>@_deleteTarget.AccountCount account(s)</strong>.
+                All accounts, holders, and transactions will be permanently removed.
+            </p>
+        }
+        <p style="color:var(--text-secondary);font-size:0.9rem">This action cannot be undone.</p>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+            <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
+            <button class="btn btn-danger" @onclick="ExecuteDelete" disabled="@_isSaving">
+                @(_isSaving ? "Deleting..." : "Delete")
+            </button>
+        </div>
+    </div>
+    </div>
+}
+
+<style>
+    .modal-backdrop {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 1040;
+    }
+</style>
+
+@code {
+    // ==================== State ====================
+    private List<WorldEngineEndpoint> _endpoints = [];
+    private WorldEngineEndpoint? _selectedEndpoint;
+
+    private List<CoinhouseDto> _coinhouses = [];
+    private string? _searchTerm;
+    private int _page = 1;
+    private int _pageSize = 50;
+    private int _totalCount;
+
+    // UI state
+    private bool _isLoading;
+    private bool _isSaving;
+    private bool _isCreating;
+    private string? _error;
+    private string? _success;
+
+    // Modals
+    private bool _showModal;
+    private bool _showDeleteConfirm;
+    private CoinhouseDto _editCoinhouse = new();
+    private string _editEngineIdText = "";
+    private CoinhouseDto? _deleteTarget;
+
+    // ==================== Lifecycle ====================
+
+    protected override async Task OnInitializedAsync()
+    {
+        _endpoints = (await EndpointService.GetAllEndpointsAsync()).ToList();
+    }
+
+    private async Task OnEndpointChanged(ChangeEventArgs e)
+    {
+        string val = e.Value?.ToString() ?? "";
+        if (Guid.TryParse(val, out var id))
+        {
+            _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
+            Api.SelectEndpoint(id);
+            await RefreshCoinhouses();
+        }
+        else
+        {
+            _selectedEndpoint = null;
+        }
+    }
+
+    // ==================== Data Loading ====================
+
+    private async Task RefreshCoinhouses()
+    {
+        try
+        {
+            _isLoading = true;
+            _error = null;
+            var result = await Api.GetAllAsync(_searchTerm, _page, _pageSize);
+            _coinhouses = result.Items;
+            _totalCount = result.TotalCount;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load coinhouses: {ex.Message}";
+            Logger.LogError(ex, "Failed to load coinhouses");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task PrevPage()
+    {
+        if (_page > 1) { _page--; await RefreshCoinhouses(); }
+    }
+
+    private async Task NextPage()
+    {
+        if (_page * _pageSize < _totalCount) { _page++; await RefreshCoinhouses(); }
+    }
+
+    // ==================== Create / Edit ====================
+
+    private void ShowCreateModal()
+    {
+        _isCreating = true;
+        _editCoinhouse = new CoinhouseDto { StoredGold = 0, Settlement = 1 };
+        _editEngineIdText = "";
+        _showModal = true;
+    }
+
+    private void ShowEditModal(CoinhouseDto ch)
+    {
+        _isCreating = false;
+        _editCoinhouse = new CoinhouseDto
+        {
+            Id = ch.Id,
+            Tag = ch.Tag,
+            Settlement = ch.Settlement,
+            EngineId = ch.EngineId,
+            StoredGold = ch.StoredGold,
+            PersonaIdString = ch.PersonaIdString,
+            AccountCount = ch.AccountCount,
+            TotalDeposits = ch.TotalDeposits,
+            TotalCredits = ch.TotalCredits
+        };
+        _editEngineIdText = ch.EngineId == Guid.Empty ? "" : ch.EngineId.ToString();
+        _showModal = true;
+    }
+
+    private async Task SaveCoinhouse()
+    {
+        try
+        {
+            _isSaving = true;
+            _error = null;
+
+            // Parse EngineId
+            if (!string.IsNullOrWhiteSpace(_editEngineIdText))
+            {
+                if (Guid.TryParse(_editEngineIdText, out var engineId))
+                    _editCoinhouse.EngineId = engineId;
+                else
+                {
+                    _error = "Engine ID must be a valid GUID or left blank.";
+                    return;
+                }
+            }
+            else
+            {
+                _editCoinhouse.EngineId = Guid.Empty; // Server will auto-generate
+            }
+
+            if (_isCreating)
+            {
+                await Api.CreateAsync(_editCoinhouse);
+                _success = $"Coinhouse '{_editCoinhouse.Tag}' created.";
+            }
+            else
+            {
+                await Api.UpdateAsync(_editCoinhouse.Tag, _editCoinhouse);
+                _success = $"Coinhouse '{_editCoinhouse.Tag}' updated.";
+            }
+
+            CloseModals();
+            await RefreshCoinhouses();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Save failed: {ex.Message}";
+            Logger.LogError(ex, "Failed to save coinhouse");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    // ==================== Delete ====================
+
+    private void ShowDeleteConfirm(CoinhouseDto ch)
+    {
+        _deleteTarget = ch;
+        _showDeleteConfirm = true;
+    }
+
+    private async Task ExecuteDelete()
+    {
+        if (_deleteTarget == null) return;
+
+        try
+        {
+            _isSaving = true;
+            await Api.DeleteAsync(_deleteTarget.Tag);
+            _success = $"Coinhouse '{_deleteTarget.Tag}' deleted.";
+            CloseModals();
+            await RefreshCoinhouses();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Delete failed: {ex.Message}";
+            Logger.LogError(ex, "Failed to delete coinhouse");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    // ==================== Shared ====================
+
+    private void CloseModals()
+    {
+        _showModal = false;
+        _showDeleteConfirm = false;
+        _deleteTarget = null;
+    }
+}

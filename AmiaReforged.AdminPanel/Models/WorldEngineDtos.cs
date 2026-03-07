@@ -334,3 +334,18 @@ public class WorkstationDefinitionDto
     public string? PlaceableResRef { get; set; }
     public List<string> SupportedIndustries { get; set; } = [];
 }
+
+// ==================== Coinhouse (Bank) DTOs ====================
+
+public class CoinhouseDto
+{
+    public long Id { get; set; }
+    public string Tag { get; set; } = string.Empty;
+    public int Settlement { get; set; }
+    public Guid EngineId { get; set; }
+    public int StoredGold { get; set; }
+    public string? PersonaIdString { get; set; }
+    public int AccountCount { get; set; }
+    public int TotalDeposits { get; set; }
+    public int TotalCredits { get; set; }
+}
