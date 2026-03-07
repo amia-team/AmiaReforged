@@ -3,6 +3,7 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Associates.Bonuses;
 
@@ -44,6 +45,8 @@ public class AssociateBonusService
         NwCreature owner = eventData.Owner;
         NwCreature associate = eventData.Associate;
         string resRef = associate.ResRef;
+
+
 
         switch (eventData.AssociateType)
         {
