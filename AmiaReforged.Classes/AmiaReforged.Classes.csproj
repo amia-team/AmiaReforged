@@ -25,7 +25,6 @@
 
     <ItemGroup>
       <Folder Include="Associates\Bonuses\Strategies\Companions\" />
-      <Folder Include="Associates\Bonuses\Strategies\Familiars\" />
     </ItemGroup>
 
 </Project>
