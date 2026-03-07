@@ -234,6 +234,16 @@ public class IndustryKnowledgeDto
     public string? Level { get; set; }
     public int PointCost { get; set; }
     public List<IndustryHarvestEffectDto> HarvestEffects { get; set; } = [];
+    public List<string> Prerequisites { get; set; } = [];
+    public string? Branch { get; set; }
+    public List<IndustryKnowledgeEffectDto> Effects { get; set; } = [];
+}
+
+public class IndustryKnowledgeEffectDto
+{
+    public string EffectType { get; set; } = string.Empty;
+    public string TargetTag { get; set; } = string.Empty;
+    public Dictionary<string, object> Metadata { get; set; } = new();
 }
 
 public class IndustryHarvestEffectDto
@@ -256,6 +266,8 @@ public class IndustryRecipeDto
     public List<IndustryProductDto> Products { get; set; } = [];
     public int? CraftingTimeSeconds { get; set; }
     public int KnowledgePointsAwarded { get; set; }
+    public string? RequiredWorkstation { get; set; }
+    public string? ProcessId { get; set; }
 }
 
 public class IndustryIngredientDto
@@ -310,4 +322,15 @@ public class AddMemberRequestDto
 {
     public Guid CharacterId { get; set; }
     public string? Rank { get; set; }
+}
+
+// ==================== Workstation DTOs ====================
+
+public class WorkstationDefinitionDto
+{
+    public string Tag { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string? PlaceableResRef { get; set; }
+    public List<string> SupportedIndustries { get; set; } = [];
 }

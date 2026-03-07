@@ -64,6 +64,9 @@ public class Program
             builder.Services.AddScoped<LoreApiService>();
             builder.Services.AddScoped<TraitApiService>();
             builder.Services.AddScoped<GlyphApiService>();
+            builder.Services.AddScoped<IndustryApiService>();
+            builder.Services.AddScoped<WorkstationApiService>();
+            builder.Services.AddScoped<OrganizationApiService>();
 
             // Cookie Authentication
             builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

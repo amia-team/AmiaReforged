@@ -131,6 +131,7 @@ public class PwEngineContext : DbContext
     public DbSet<PersistedResourceNodeDefinition> ResourceNodeDefinitions { get; set; } = null!;
     public DbSet<PersistedRegionDefinition> RegionDefinitions { get; set; } = null!;
     public DbSet<PersistedIndustryDefinition> IndustryDefinitions { get; set; } = null!;
+    public DbSet<PersistedWorkstationDefinition> WorkstationDefinitions { get; set; } = null!;
 
     // === Glyph Visual Scripting ===
 
@@ -237,6 +238,7 @@ public class PwEngineContext : DbContext
         modelBuilder.ApplyConfiguration(new PersistedResourceNodeDefinitionConfiguration());
         modelBuilder.ApplyConfiguration(new PersistedRegionDefinitionConfiguration());
         modelBuilder.ApplyConfiguration(new PersistedIndustryDefinitionConfiguration());
+        modelBuilder.ApplyConfiguration(new PersistedWorkstationDefinitionConfiguration());
 
         // Glyph Visual Scripting
         modelBuilder.ApplyConfiguration(new GlyphDefinitionConfiguration());

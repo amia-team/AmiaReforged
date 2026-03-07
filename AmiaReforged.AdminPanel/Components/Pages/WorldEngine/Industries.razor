@@ -1,0 +1,1079 @@
+@page "/worldengine/industries"
+@using AmiaReforged.AdminPanel.Models
+@using AmiaReforged.AdminPanel.Services
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@inject IndustryApiService IndustryApi
+@inject WorkstationApiService WorkstationApi
+@inject IWorldEngineEndpointService EndpointService
+@inject ILogger<Industries> Logger
+
+<PageTitle>Industries — WorldEngine</PageTitle>
+<h3>Industries &amp; Crafting</h3>
+
+@* ==================== Endpoint Selector ==================== *@
+<div class="row mb-3">
+    <div class="col-md-4">
+        <label class="form-label fw-bold">Server Endpoint</label>
+        <select class="form-select" value="@_selectedEndpointId" @onchange="OnEndpointChanged">
+            <option value="">— Select endpoint —</option>
+            @foreach (var ep in _endpoints)
+            {
+                <option value="@ep.Id">@ep.Name</option>
+            }
+        </select>
+    </div>
+</div>
+
+@if (string.IsNullOrEmpty(_selectedEndpointId))
+{
+    <div class="alert alert-info">Select a server endpoint to manage industries.</div>
+    return;
+}
+
+@* ==================== Tab Navigation ==================== *@
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <button class="nav-link @(_activeTab == "overview" ? "active" : "")" @onclick='() => SetTab("overview")'>Overview</button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link @(_activeTab == "knowledge" ? "active" : "")" @onclick='() => SetTab("knowledge")'>Knowledge Graph</button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link @(_activeTab == "recipes" ? "active" : "")" @onclick='() => SetTab("recipes")'>Recipes</button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link @(_activeTab == "workstations" ? "active" : "")" @onclick='() => SetTab("workstations")'>Workstations</button>
+    </li>
+</ul>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger alert-dismissible">
+        @_error
+        <button type="button" class="btn-close" @onclick="() => _error = null"></button>
+    </div>
+}
+@if (!string.IsNullOrEmpty(_success))
+{
+    <div class="alert alert-success alert-dismissible">
+        @_success
+        <button type="button" class="btn-close" @onclick="() => _success = null"></button>
+    </div>
+}
+
+@* ==================== OVERVIEW TAB ==================== *@
+@if (_activeTab == "overview")
+{
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <input class="form-control" placeholder="Search industries..." @bind="_industrySearch" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-primary w-100" @onclick="RefreshIndustries">Search</button>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-success w-100" @onclick="StartCreateIndustry">+ New Industry</button>
+        </div>
+    </div>
+
+    @if (_isLoading)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Tag</th>
+                    <th>Name</th>
+                    <th>Knowledge</th>
+                    <th>Recipes</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var industry in _industries)
+                {
+                    <tr>
+                        <td><code>@industry.Tag</code></td>
+                        <td>@industry.Name</td>
+                        <td>@industry.Knowledge.Count</td>
+                        <td>@industry.Recipes.Count</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => StartEditIndustry(industry)">Edit</button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDeleteIndustry(industry)">Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @* Pagination *@
+        @if (_industryTotalCount > _pageSize)
+        {
+            <nav>
+                <ul class="pagination">
+                    @for (int i = 1; i <= Math.Ceiling((double)_industryTotalCount / _pageSize); i++)
+                    {
+                        int pageNum = i;
+                        <li class="page-item @(_page == pageNum ? "active" : "")">
+                            <button class="page-link" @onclick="() => GoToPage(pageNum)">@pageNum</button>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
+    }
+}
+
+@* ==================== KNOWLEDGE GRAPH TAB ==================== *@
+@if (_activeTab == "knowledge")
+{
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <label class="form-label">Select Industry</label>
+            <select class="form-select" value="@_selectedIndustryTag" @onchange="OnIndustrySelected">
+                <option value="">— Select —</option>
+                @foreach (var ind in _industries)
+                {
+                    <option value="@ind.Tag">@ind.Name (@ind.Tag)</option>
+                }
+            </select>
+        </div>
+        @if (_selectedIndustry != null)
+        {
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-success w-100" @onclick="StartCreateKnowledge">+ Add Knowledge</button>
+            </div>
+        }
+    </div>
+
+    @if (_selectedIndustry != null)
+    {
+        @* Group by branch *@
+        var branches = _selectedIndustry.Knowledge
+            .GroupBy(k => k.Branch ?? "(No Branch)")
+            .OrderBy(g => g.Key);
+
+        @foreach (var branch in branches)
+        {
+            <h5 class="mt-3">@branch.Key</h5>
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>Tag</th>
+                        <th>Name</th>
+                        <th>Level</th>
+                        <th>Cost</th>
+                        <th>Prerequisites</th>
+                        <th>Effects</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var k in branch.OrderBy(k => k.Level).ThenBy(k => k.Tag))
+                    {
+                        <tr>
+                            <td><code>@k.Tag</code></td>
+                            <td>@k.Name</td>
+                            <td>@k.Level</td>
+                            <td>@k.PointCost</td>
+                            <td>@string.Join(", ", k.Prerequisites)</td>
+                            <td>@k.Effects.Count</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => StartEditKnowledge(k)">Edit</button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveKnowledge(k)">Remove</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
+}
+
+@* ==================== RECIPES TAB ==================== *@
+@if (_activeTab == "recipes")
+{
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <label class="form-label">Select Industry</label>
+            <select class="form-select" value="@_selectedIndustryTag" @onchange="OnIndustrySelected">
+                <option value="">— Select —</option>
+                @foreach (var ind in _industries)
+                {
+                    <option value="@ind.Tag">@ind.Name (@ind.Tag)</option>
+                }
+            </select>
+        </div>
+        @if (_selectedIndustry != null)
+        {
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-success w-100" @onclick="StartCreateRecipe">+ Add Recipe</button>
+            </div>
+        }
+    </div>
+
+    @if (_selectedIndustry != null)
+    {
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Recipe ID</th>
+                    <th>Name</th>
+                    <th>Proficiency</th>
+                    <th>Workstation</th>
+                    <th>Process</th>
+                    <th>Ingredients</th>
+                    <th>Products</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in _selectedIndustry.Recipes)
+                {
+                    <tr>
+                        <td><code>@r.RecipeId</code></td>
+                        <td>@r.Name</td>
+                        <td>@r.RequiredProficiency</td>
+                        <td>@(r.RequiredWorkstation ?? "—")</td>
+                        <td>@(r.ProcessId ?? "instant")</td>
+                        <td>@r.Ingredients.Count</td>
+                        <td>@r.Products.Count</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => StartEditRecipe(r)">Edit</button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveRecipe(r)">Remove</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@* ==================== WORKSTATIONS TAB ==================== *@
+@if (_activeTab == "workstations")
+{
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <input class="form-control" placeholder="Search workstations..." @bind="_workstationSearch" @bind:event="oninput" />
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-primary w-100" @onclick="RefreshWorkstations">Search</button>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-success w-100" @onclick="StartCreateWorkstation">+ New Workstation</button>
+        </div>
+    </div>
+
+    @if (_isLoading)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Tag</th>
+                    <th>Name</th>
+                    <th>ResRef</th>
+                    <th>Supported Industries</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var ws in _workstations)
+                {
+                    <tr>
+                        <td><code>@ws.Tag</code></td>
+                        <td>@ws.Name</td>
+                        <td>@(ws.PlaceableResRef ?? "—")</td>
+                        <td>@string.Join(", ", ws.SupportedIndustries)</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => StartEditWorkstation(ws)">Edit</button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDeleteWorkstation(ws)">Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@* ==================== INDUSTRY EDIT MODAL ==================== *@
+@if (_showIndustryModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_isCreating ? "Create Industry" : "Edit Industry")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Tag</label>
+                        <input class="form-control" @bind="_editIndustry.Tag" disabled="@(!_isCreating)" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Name</label>
+                        <input class="form-control" @bind="_editIndustry.Name" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
+                    <button class="btn btn-primary" @onclick="SaveIndustry" disabled="@_isSaving">
+                        @(_isSaving ? "Saving..." : "Save")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ==================== WORKSTATION EDIT MODAL ==================== *@
+@if (_showWorkstationModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_isCreating ? "Create Workstation" : "Edit Workstation")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Tag</label>
+                        <input class="form-control" @bind="_editWorkstation.Tag" disabled="@(!_isCreating)" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Name</label>
+                        <input class="form-control" @bind="_editWorkstation.Name" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" rows="2" @bind="_editWorkstation.Description"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Placeable ResRef</label>
+                        <input class="form-control" @bind="_editWorkstation.PlaceableResRef" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Supported Industries (comma-separated tags)</label>
+                        <input class="form-control" @bind="_editWorkstationIndustriesText" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
+                    <button class="btn btn-primary" @onclick="SaveWorkstation" disabled="@_isSaving">
+                        @(_isSaving ? "Saving..." : "Save")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ==================== KNOWLEDGE EDIT MODAL ==================== *@
+@if (_showKnowledgeModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_isCreating ? "Add Knowledge" : "Edit Knowledge")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Tag</label>
+                            <input class="form-control" @bind="_editKnowledge.Tag" disabled="@(!_isCreating)" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Name</label>
+                            <input class="form-control" @bind="_editKnowledge.Name" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" rows="2" @bind="_editKnowledge.Description"></textarea>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Level</label>
+                            <select class="form-select" @bind="_editKnowledge.Level">
+                                <option value="Layman">Layman</option>
+                                <option value="Novice">Novice</option>
+                                <option value="Apprentice">Apprentice</option>
+                                <option value="Journeyman">Journeyman</option>
+                                <option value="Expert">Expert</option>
+                                <option value="Master">Master</option>
+                                <option value="Grandmaster">Grandmaster</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Point Cost</label>
+                            <input type="number" class="form-control" @bind="_editKnowledge.PointCost" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Branch</label>
+                            <input class="form-control" @bind="_editKnowledge.Branch" placeholder="e.g. Bladesmith" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Prerequisites (comma-separated tags)</label>
+                        <input class="form-control" @bind="_editKnowledgePrereqText" placeholder="basic_smelting, ore_knowledge" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
+                    <button class="btn btn-primary" @onclick="SaveKnowledge" disabled="@_isSaving">
+                        @(_isSaving ? "Saving..." : "Save")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ==================== RECIPE EDIT MODAL ==================== *@
+@if (_showRecipeModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_isCreating ? "Add Recipe" : "Edit Recipe")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Recipe ID</label>
+                            <input class="form-control" @bind="_editRecipe.RecipeId" disabled="@(!_isCreating)" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Name</label>
+                            <input class="form-control" @bind="_editRecipe.Name" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" rows="2" @bind="_editRecipe.Description"></textarea>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Required Proficiency</label>
+                            <select class="form-select" @bind="_editRecipe.RequiredProficiency">
+                                <option value="Layman">Layman</option>
+                                <option value="Novice">Novice</option>
+                                <option value="Apprentice">Apprentice</option>
+                                <option value="Journeyman">Journeyman</option>
+                                <option value="Expert">Expert</option>
+                                <option value="Master">Master</option>
+                                <option value="Grandmaster">Grandmaster</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Required Workstation</label>
+                            <select class="form-select" @bind="_editRecipe.RequiredWorkstation">
+                                <option value="">None</option>
+                                @foreach (var ws in _workstations)
+                                {
+                                    <option value="@ws.Tag">@ws.Name (@ws.Tag)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Process ID</label>
+                            <input class="form-control" @bind="_editRecipe.ProcessId" placeholder="e.g. forge_blade" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Crafting Time (seconds)</label>
+                            <input type="number" class="form-control" @bind="_editRecipe.CraftingTimeSeconds" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Knowledge Points Awarded</label>
+                            <input type="number" class="form-control" @bind="_editRecipe.KnowledgePointsAwarded" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Required Knowledge (comma-separated tags)</label>
+                        <input class="form-control" @bind="_editRecipeKnowledgeText" placeholder="basic_smelting" />
+                    </div>
+
+                    @* Ingredients *@
+                    <h6>Ingredients</h6>
+                    @for (int idx = 0; idx < _editRecipe.Ingredients.Count; idx++)
+                    {
+                        int i = idx;
+                        <div class="row mb-1">
+                            <div class="col-md-5">
+                                <input class="form-control form-control-sm" placeholder="ItemResRef" @bind="_editRecipe.Ingredients[i].ItemResRef" />
+                            </div>
+                            <div class="col-md-2">
+                                <input type="number" class="form-control form-control-sm" placeholder="Qty" @bind="_editRecipe.Ingredients[i].Quantity" />
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-check mt-1">
+                                    <input class="form-check-input" type="checkbox" @bind="_editRecipe.Ingredients[i].IsConsumed" />
+                                    <label class="form-check-label">Consumed</label>
+                                </div>
+                            </div>
+                            <div class="col-md-1">
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => _editRecipe.Ingredients.RemoveAt(i)">X</button>
+                            </div>
+                        </div>
+                    }
+                    <button class="btn btn-sm btn-outline-secondary mb-3" @onclick="() => _editRecipe.Ingredients.Add(new IndustryIngredientDto { IsConsumed = true })">+ Ingredient</button>
+
+                    @* Products *@
+                    <h6>Products</h6>
+                    @for (int idx = 0; idx < _editRecipe.Products.Count; idx++)
+                    {
+                        int i = idx;
+                        <div class="row mb-1">
+                            <div class="col-md-5">
+                                <input class="form-control form-control-sm" placeholder="ItemResRef" @bind="_editRecipe.Products[i].ItemResRef" />
+                            </div>
+                            <div class="col-md-2">
+                                <input type="number" class="form-control form-control-sm" placeholder="Qty" @bind="_editRecipe.Products[i].Quantity" />
+                            </div>
+                            <div class="col-md-1">
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => _editRecipe.Products.RemoveAt(i)">X</button>
+                            </div>
+                        </div>
+                    }
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => _editRecipe.Products.Add(new IndustryProductDto())">+ Product</button>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
+                    <button class="btn btn-primary" @onclick="SaveRecipe" disabled="@_isSaving">
+                        @(_isSaving ? "Saving..." : "Save")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ==================== DELETE CONFIRMATION ==================== *@
+@if (_showDeleteConfirm)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Delete</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete <strong>@_deleteTargetName</strong>?</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
+                    <button class="btn btn-danger" @onclick="ExecuteDelete" disabled="@_isSaving">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    // ==================== State ====================
+    private string _activeTab = "overview";
+    private string _selectedEndpointId = "";
+    private List<WorldEngineEndpoint> _endpoints = [];
+
+    // Industry list
+    private List<IndustryDefinitionDto> _industries = [];
+    private string? _industrySearch;
+    private int _page = 1;
+    private int _pageSize = 50;
+    private int _industryTotalCount;
+
+    // Workstation list
+    private List<WorkstationDefinitionDto> _workstations = [];
+    private string? _workstationSearch;
+
+    // Selected industry for Knowledge/Recipe tabs
+    private string _selectedIndustryTag = "";
+    private IndustryDefinitionDto? _selectedIndustry;
+
+    // UI state
+    private bool _isLoading;
+    private bool _isSaving;
+    private bool _isCreating;
+    private string? _error;
+    private string? _success;
+
+    // Modals
+    private bool _showIndustryModal;
+    private bool _showWorkstationModal;
+    private bool _showKnowledgeModal;
+    private bool _showRecipeModal;
+    private bool _showDeleteConfirm;
+
+    // Edit models
+    private IndustryDefinitionDto _editIndustry = new();
+    private WorkstationDefinitionDto _editWorkstation = new();
+    private IndustryKnowledgeDto _editKnowledge = new();
+    private IndustryRecipeDto _editRecipe = new();
+    private string _editWorkstationIndustriesText = "";
+    private string _editKnowledgePrereqText = "";
+    private string _editRecipeKnowledgeText = "";
+
+    // Delete
+    private string _deleteTargetName = "";
+    private Func<Task>? _deleteAction;
+
+    // ==================== Lifecycle ====================
+
+    protected override async Task OnInitializedAsync()
+    {
+        _endpoints = (await EndpointService.GetAllEndpointsAsync()).ToList();
+    }
+
+    private async Task OnEndpointChanged(ChangeEventArgs e)
+    {
+        _selectedEndpointId = e.Value?.ToString() ?? "";
+        if (Guid.TryParse(_selectedEndpointId, out var id))
+        {
+            IndustryApi.SelectEndpoint(id);
+            WorkstationApi.SelectEndpoint(id);
+            await RefreshAll();
+        }
+    }
+
+    private void SetTab(string tab)
+    {
+        _activeTab = tab;
+        _error = null;
+        _success = null;
+    }
+
+    private async Task RefreshAll()
+    {
+        await RefreshIndustries();
+        await RefreshWorkstations();
+    }
+
+    // ==================== Industry CRUD ====================
+
+    private async Task RefreshIndustries()
+    {
+        try
+        {
+            _isLoading = true;
+            var result = await IndustryApi.GetAllAsync(_industrySearch, _page, _pageSize);
+            _industries = result.Items?.ToList() ?? [];
+            _industryTotalCount = result.TotalCount;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load industries: {ex.Message}";
+            Logger.LogError(ex, "Failed to load industries");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task OnSearchKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await RefreshIndustries();
+    }
+
+    private async Task GoToPage(int page)
+    {
+        _page = page;
+        await RefreshIndustries();
+    }
+
+    private void StartCreateIndustry()
+    {
+        _isCreating = true;
+        _editIndustry = new IndustryDefinitionDto();
+        _showIndustryModal = true;
+    }
+
+    private void StartEditIndustry(IndustryDefinitionDto industry)
+    {
+        _isCreating = false;
+        _editIndustry = new IndustryDefinitionDto
+        {
+            Tag = industry.Tag,
+            Name = industry.Name,
+            Knowledge = industry.Knowledge,
+            Recipes = industry.Recipes
+        };
+        _showIndustryModal = true;
+    }
+
+    private async Task SaveIndustry()
+    {
+        try
+        {
+            _isSaving = true;
+            if (_isCreating)
+                await IndustryApi.CreateAsync(_editIndustry);
+            else
+                await IndustryApi.UpdateAsync(_editIndustry.Tag, _editIndustry);
+
+            _success = $"Industry '{_editIndustry.Tag}' saved.";
+            CloseModals();
+            await RefreshIndustries();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Save failed: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void ConfirmDeleteIndustry(IndustryDefinitionDto industry)
+    {
+        _deleteTargetName = $"{industry.Name} ({industry.Tag})";
+        _deleteAction = async () =>
+        {
+            await IndustryApi.DeleteAsync(industry.Tag);
+            await RefreshIndustries();
+        };
+        _showDeleteConfirm = true;
+    }
+
+    // ==================== Workstation CRUD ====================
+
+    private async Task RefreshWorkstations()
+    {
+        try
+        {
+            _isLoading = true;
+            var result = await WorkstationApi.GetAllAsync(_workstationSearch);
+            _workstations = result.Items?.ToList() ?? [];
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load workstations: {ex.Message}";
+            Logger.LogError(ex, "Failed to load workstations");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void StartCreateWorkstation()
+    {
+        _isCreating = true;
+        _editWorkstation = new WorkstationDefinitionDto();
+        _editWorkstationIndustriesText = "";
+        _showWorkstationModal = true;
+    }
+
+    private void StartEditWorkstation(WorkstationDefinitionDto ws)
+    {
+        _isCreating = false;
+        _editWorkstation = new WorkstationDefinitionDto
+        {
+            Tag = ws.Tag,
+            Name = ws.Name,
+            Description = ws.Description,
+            PlaceableResRef = ws.PlaceableResRef,
+            SupportedIndustries = new List<string>(ws.SupportedIndustries)
+        };
+        _editWorkstationIndustriesText = string.Join(", ", ws.SupportedIndustries);
+        _showWorkstationModal = true;
+    }
+
+    private async Task SaveWorkstation()
+    {
+        try
+        {
+            _isSaving = true;
+            _editWorkstation.SupportedIndustries = _editWorkstationIndustriesText
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+
+            if (_isCreating)
+                await WorkstationApi.CreateAsync(_editWorkstation);
+            else
+                await WorkstationApi.UpdateAsync(_editWorkstation.Tag, _editWorkstation);
+
+            _success = $"Workstation '{_editWorkstation.Tag}' saved.";
+            CloseModals();
+            await RefreshWorkstations();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Save failed: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void ConfirmDeleteWorkstation(WorkstationDefinitionDto ws)
+    {
+        _deleteTargetName = $"{ws.Name} ({ws.Tag})";
+        _deleteAction = async () =>
+        {
+            await WorkstationApi.DeleteAsync(ws.Tag);
+            await RefreshWorkstations();
+        };
+        _showDeleteConfirm = true;
+    }
+
+    // ==================== Knowledge CRUD ====================
+
+    private async Task OnIndustrySelected(ChangeEventArgs e)
+    {
+        _selectedIndustryTag = e.Value?.ToString() ?? "";
+        if (!string.IsNullOrEmpty(_selectedIndustryTag))
+        {
+            try
+            {
+                _selectedIndustry = await IndustryApi.GetByTagAsync(_selectedIndustryTag);
+            }
+            catch (Exception ex)
+            {
+                _error = $"Failed to load industry: {ex.Message}";
+                _selectedIndustry = null;
+            }
+        }
+        else
+        {
+            _selectedIndustry = null;
+        }
+    }
+
+    private void StartCreateKnowledge()
+    {
+        _isCreating = true;
+        _editKnowledge = new IndustryKnowledgeDto { Level = "Novice" };
+        _editKnowledgePrereqText = "";
+        _showKnowledgeModal = true;
+    }
+
+    private void StartEditKnowledge(IndustryKnowledgeDto k)
+    {
+        _isCreating = false;
+        _editKnowledge = new IndustryKnowledgeDto
+        {
+            Tag = k.Tag,
+            Name = k.Name,
+            Description = k.Description,
+            Level = k.Level,
+            PointCost = k.PointCost,
+            Branch = k.Branch,
+            Prerequisites = new List<string>(k.Prerequisites),
+            HarvestEffects = new List<IndustryHarvestEffectDto>(k.HarvestEffects),
+            Effects = new List<IndustryKnowledgeEffectDto>(k.Effects)
+        };
+        _editKnowledgePrereqText = string.Join(", ", k.Prerequisites);
+        _showKnowledgeModal = true;
+    }
+
+    private async Task SaveKnowledge()
+    {
+        if (_selectedIndustry == null) return;
+
+        try
+        {
+            _isSaving = true;
+            _editKnowledge.Prerequisites = _editKnowledgePrereqText
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+
+            if (_isCreating)
+            {
+                _selectedIndustry.Knowledge.Add(_editKnowledge);
+            }
+            else
+            {
+                int idx = _selectedIndustry.Knowledge.FindIndex(k => k.Tag == _editKnowledge.Tag);
+                if (idx >= 0) _selectedIndustry.Knowledge[idx] = _editKnowledge;
+            }
+
+            await IndustryApi.UpdateAsync(_selectedIndustry.Tag, _selectedIndustry);
+            _success = $"Knowledge '{_editKnowledge.Tag}' saved.";
+            CloseModals();
+
+            _selectedIndustry = await IndustryApi.GetByTagAsync(_selectedIndustryTag);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Save failed: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task RemoveKnowledge(IndustryKnowledgeDto k)
+    {
+        if (_selectedIndustry == null) return;
+
+        try
+        {
+            _selectedIndustry.Knowledge.RemoveAll(x => x.Tag == k.Tag);
+            await IndustryApi.UpdateAsync(_selectedIndustry.Tag, _selectedIndustry);
+            _success = $"Knowledge '{k.Tag}' removed.";
+            _selectedIndustry = await IndustryApi.GetByTagAsync(_selectedIndustryTag);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Remove failed: {ex.Message}";
+        }
+    }
+
+    // ==================== Recipe CRUD ====================
+
+    private void StartCreateRecipe()
+    {
+        _isCreating = true;
+        _editRecipe = new IndustryRecipeDto
+        {
+            IndustryTag = _selectedIndustryTag,
+            RequiredProficiency = "Novice"
+        };
+        _editRecipeKnowledgeText = "";
+        _showRecipeModal = true;
+    }
+
+    private void StartEditRecipe(IndustryRecipeDto r)
+    {
+        _isCreating = false;
+        _editRecipe = new IndustryRecipeDto
+        {
+            RecipeId = r.RecipeId,
+            Name = r.Name,
+            Description = r.Description,
+            IndustryTag = r.IndustryTag,
+            RequiredKnowledge = new List<string>(r.RequiredKnowledge),
+            RequiredProficiency = r.RequiredProficiency,
+            Ingredients = r.Ingredients.Select(i => new IndustryIngredientDto
+            {
+                ItemResRef = i.ItemResRef,
+                Quantity = i.Quantity,
+                MinQuality = i.MinQuality,
+                IsConsumed = i.IsConsumed
+            }).ToList(),
+            Products = r.Products.Select(p => new IndustryProductDto
+            {
+                ItemResRef = p.ItemResRef,
+                Quantity = p.Quantity,
+                Quality = p.Quality,
+                SuccessChance = p.SuccessChance
+            }).ToList(),
+            CraftingTimeSeconds = r.CraftingTimeSeconds,
+            KnowledgePointsAwarded = r.KnowledgePointsAwarded,
+            RequiredWorkstation = r.RequiredWorkstation,
+            ProcessId = r.ProcessId
+        };
+        _editRecipeKnowledgeText = string.Join(", ", r.RequiredKnowledge);
+        _showRecipeModal = true;
+    }
+
+    private async Task SaveRecipe()
+    {
+        if (_selectedIndustry == null) return;
+
+        try
+        {
+            _isSaving = true;
+            _editRecipe.RequiredKnowledge = _editRecipeKnowledgeText
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+            _editRecipe.IndustryTag = _selectedIndustryTag;
+
+            if (_isCreating)
+            {
+                _selectedIndustry.Recipes.Add(_editRecipe);
+            }
+            else
+            {
+                int idx = _selectedIndustry.Recipes.FindIndex(r => r.RecipeId == _editRecipe.RecipeId);
+                if (idx >= 0) _selectedIndustry.Recipes[idx] = _editRecipe;
+            }
+
+            await IndustryApi.UpdateAsync(_selectedIndustry.Tag, _selectedIndustry);
+            _success = $"Recipe '{_editRecipe.RecipeId}' saved.";
+            CloseModals();
+
+            _selectedIndustry = await IndustryApi.GetByTagAsync(_selectedIndustryTag);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Save failed: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task RemoveRecipe(IndustryRecipeDto r)
+    {
+        if (_selectedIndustry == null) return;
+
+        try
+        {
+            _selectedIndustry.Recipes.RemoveAll(x => x.RecipeId == r.RecipeId);
+            await IndustryApi.UpdateAsync(_selectedIndustry.Tag, _selectedIndustry);
+            _success = $"Recipe '{r.RecipeId}' removed.";
+            _selectedIndustry = await IndustryApi.GetByTagAsync(_selectedIndustryTag);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Remove failed: {ex.Message}";
+        }
+    }
+
+    // ==================== Shared ====================
+
+    private async Task ExecuteDelete()
+    {
+        if (_deleteAction == null) return;
+
+        try
+        {
+            _isSaving = true;
+            await _deleteAction();
+            _success = $"'{_deleteTargetName}' deleted.";
+            CloseModals();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Delete failed: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void CloseModals()
+    {
+        _showIndustryModal = false;
+        _showWorkstationModal = false;
+        _showKnowledgeModal = false;
+        _showRecipeModal = false;
+        _showDeleteConfirm = false;
+        _deleteAction = null;
+    }
+}

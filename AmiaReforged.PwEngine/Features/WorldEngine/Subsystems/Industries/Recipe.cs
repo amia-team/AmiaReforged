@@ -62,5 +62,18 @@ public class Recipe
     /// Optional: Additional metadata for industry-specific logic
     /// </summary>
     public Dictionary<string, object> Metadata { get; init; } = new();
+
+    /// <summary>
+    /// The workstation type required to craft this recipe.
+    /// Null means no workstation is required (portable / instant craft).
+    /// References a global <see cref="Workstation"/> by tag.
+    /// </summary>
+    public WorkstationTag? RequiredWorkstation { get; init; }
+
+    /// <summary>
+    /// Links this recipe to a process graph definition from the crafting system.
+    /// Null means instant craft via <c>DefaultCraftingProcessor</c> (no progress bar).
+    /// </summary>
+    public string? ProcessId { get; init; }
 }
 

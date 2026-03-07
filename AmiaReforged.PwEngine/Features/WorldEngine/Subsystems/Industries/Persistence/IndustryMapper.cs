@@ -75,6 +75,14 @@ public static class IndustryMapper
             StepModified = e.StepModified.ToString(),
             Value = e.Value,
             Operation = e.Operation.ToString()
+        }).ToList(),
+        Prerequisites = k.Prerequisites,
+        Branch = k.Branch,
+        Effects = k.Effects.Select(e => new KnowledgeEffectJsonDto
+        {
+            EffectType = e.EffectType.ToString(),
+            TargetTag = e.TargetTag,
+            Metadata = e.Metadata
         }).ToList()
     };
 
@@ -94,6 +102,18 @@ public static class IndustryMapper
                 Enum.TryParse<Harvesting.HarvestStep>(e.StepModified, true, out var step);
                 Enum.TryParse<KnowledgeSubsystem.EffectOperation>(e.Operation, true, out var op);
                 return new KnowledgeHarvestEffect(e.NodeTag, step, e.Value, op);
+            }).ToList() ?? [],
+            Prerequisites = dto.Prerequisites ?? [],
+            Branch = dto.Branch,
+            Effects = dto.Effects?.Select(e =>
+            {
+                Enum.TryParse<KnowledgeEffectType>(e.EffectType, true, out var effectType);
+                return new KnowledgeEffect
+                {
+                    EffectType = effectType,
+                    TargetTag = e.TargetTag,
+                    Metadata = e.Metadata ?? new Dictionary<string, object>()
+                };
             }).ToList() ?? []
         };
     }
@@ -124,7 +144,9 @@ public static class IndustryMapper
         }).ToList(),
         CraftingTimeSeconds = r.CraftingTimeSeconds,
         KnowledgePointsAwarded = r.KnowledgePointsAwarded,
-        Metadata = r.Metadata
+        Metadata = r.Metadata,
+        RequiredWorkstation = r.RequiredWorkstation?.Value,
+        ProcessId = r.ProcessId
     };
 
     private static Recipe FromRecipeDto(RecipeJsonDto dto)
@@ -155,7 +177,11 @@ public static class IndustryMapper
             }).ToList() ?? [],
             CraftingTimeSeconds = dto.CraftingTimeSeconds,
             KnowledgePointsAwarded = dto.KnowledgePointsAwarded,
-            Metadata = dto.Metadata ?? new Dictionary<string, object>()
+            Metadata = dto.Metadata ?? new Dictionary<string, object>(),
+            RequiredWorkstation = !string.IsNullOrEmpty(dto.RequiredWorkstation)
+                ? new WorkstationTag(dto.RequiredWorkstation)
+                : null,
+            ProcessId = dto.ProcessId
         };
     }
 
@@ -169,6 +195,16 @@ public static class IndustryMapper
         public string? Level { get; set; }
         public int PointCost { get; set; }
         public List<HarvestEffectJsonDto>? HarvestEffects { get; set; }
+        public List<string>? Prerequisites { get; set; }
+        public string? Branch { get; set; }
+        public List<KnowledgeEffectJsonDto>? Effects { get; set; }
+    }
+
+    private class KnowledgeEffectJsonDto
+    {
+        public string EffectType { get; set; } = string.Empty;
+        public string TargetTag { get; set; } = string.Empty;
+        public Dictionary<string, object>? Metadata { get; set; }
     }
 
     private class HarvestEffectJsonDto
@@ -192,6 +228,8 @@ public static class IndustryMapper
         public int? CraftingTimeSeconds { get; set; }
         public int KnowledgePointsAwarded { get; set; }
         public Dictionary<string, object>? Metadata { get; set; }
+        public string? RequiredWorkstation { get; set; }
+        public string? ProcessId { get; set; }
     }
 
     private class IngredientJsonDto

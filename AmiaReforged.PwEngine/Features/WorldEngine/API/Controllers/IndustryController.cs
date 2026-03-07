@@ -290,6 +290,14 @@ public class IndustryController
                     StepModified = e.StepModified.ToString(),
                     e.Value,
                     Operation = e.Operation.ToString()
+                }).ToArray(),
+                k.Prerequisites,
+                k.Branch,
+                Effects = k.Effects.Select(e => new
+                {
+                    EffectType = e.EffectType.ToString(),
+                    e.TargetTag,
+                    e.Metadata
                 }).ToArray()
             }).ToArray(),
             Recipes = industry.Recipes.Select(r => new
@@ -315,7 +323,9 @@ public class IndustryController
                     p.SuccessChance
                 }).ToArray(),
                 r.CraftingTimeSeconds,
-                r.KnowledgePointsAwarded
+                r.KnowledgePointsAwarded,
+                RequiredWorkstation = r.RequiredWorkstation?.Value,
+                r.ProcessId
             }).ToArray()
         };
     }
@@ -343,6 +353,19 @@ public class IndustryController
                             out var op);
                         return new Subsystems.Industries.KnowledgeSubsystem.KnowledgeHarvestEffect(
                             e.NodeTag ?? string.Empty, step, e.Value, op);
+                    }).ToList() ?? [],
+                    Prerequisites = k.Prerequisites ?? [],
+                    Branch = k.Branch,
+                    Effects = k.Effects?.Select(e =>
+                    {
+                        Enum.TryParse<Subsystems.Industries.KnowledgeSubsystem.KnowledgeEffectType>(
+                            e.EffectType, true, out var effectType);
+                        return new Subsystems.Industries.KnowledgeSubsystem.KnowledgeEffect
+                        {
+                            EffectType = effectType,
+                            TargetTag = e.TargetTag ?? string.Empty,
+                            Metadata = e.Metadata ?? new Dictionary<string, object>()
+                        };
                     }).ToList() ?? []
                 };
             }).ToList() ?? [],
@@ -373,7 +396,11 @@ public class IndustryController
                     }).ToList() ?? [],
                     CraftingTimeSeconds = r.CraftingTimeSeconds,
                     KnowledgePointsAwarded = r.KnowledgePointsAwarded,
-                    Metadata = new Dictionary<string, object>()
+                    Metadata = new Dictionary<string, object>(),
+                    RequiredWorkstation = !string.IsNullOrEmpty(r.RequiredWorkstation)
+                        ? new SharedKernel.WorkstationTag(r.RequiredWorkstation)
+                        : null,
+                    ProcessId = r.ProcessId
                 };
             }).ToList() ?? []
         };
@@ -397,6 +424,16 @@ public class IndustryController
         public string? Level { get; init; }
         public int PointCost { get; init; }
         public HarvestEffectDto[]? HarvestEffects { get; init; }
+        public List<string>? Prerequisites { get; init; }
+        public string? Branch { get; init; }
+        public KnowledgeEffectDto[]? Effects { get; init; }
+    }
+
+    private record KnowledgeEffectDto
+    {
+        public string? EffectType { get; init; }
+        public string? TargetTag { get; init; }
+        public Dictionary<string, object>? Metadata { get; init; }
     }
 
     private record HarvestEffectDto
@@ -419,6 +456,8 @@ public class IndustryController
         public ProductDto[]? Products { get; init; }
         public int? CraftingTimeSeconds { get; init; }
         public int KnowledgePointsAwarded { get; init; }
+        public string? RequiredWorkstation { get; init; }
+        public string? ProcessId { get; init; }
     }
 
     private record IngredientDto

@@ -1043,6 +1043,12 @@ public class MistimeEffectDefinition
 | 2025-12-16 | Optimal windows within action windows | Skill expression through timing; rewards mastery without hard gates |
 | 2025-12-16 | Auto-craft baseline by skill tier | Passive players still succeed; engaged players get bonuses; never punishing |
 | 2025-12-16 | Misapplied actions only penalize on action | Doing nothing is safe; penalties require active mistakes |
+| 2025-07-03 | Global workstation registry (separate DB table) | Cross-industry sharing; workstations aren't owned by a single industry |
+| 2025-07-03 | Freeform knowledge graph with branches | DAG allows multi-prerequisite convergence; branches group specializations |
+| 2025-07-03 | KnowledgeEffect bridge to other subsystems | Knowledge learning can trigger codex entries, recipe unlocks, harvest changes |
+| 2025-07-03 | Single Industries page with 4 tabs | Overview, Knowledge Graph, Recipes, Workstations — all in one place |
+| 2025-07-03 | Recipe ↔ Workstation optional link | Recipes can require a workstation or be crafted anywhere |
+| 2025-07-03 | Recipe ↔ ProcessId optional link | Recipes can use a process graph minigame or instant crafting |
 
 ---
 
@@ -1053,3 +1059,139 @@ public class MistimeEffectDefinition
 3. **Collaborative Crafting** — Multiple characters contributing steps
 4. **Failure Recovery** — Partial salvage when crafting fails
 5. **Step Variants** — Same step tag with different implementations (e.g., "quench_water" vs "quench_oil")
+
+---
+
+## 🏗️ Workstations
+
+Workstations are global, reusable objects that gate which recipes can be crafted and where. They are not owned by any single industry — a "Forge" workstation might be used by both Blacksmithing and Jewelcrafting.
+
+### Domain Model
+
+```csharp
+// Value object — same pattern as IndustryTag
+public readonly record struct WorkstationTag(string Value);
+
+// Domain class
+public class Workstation
+{
+    public required WorkstationTag Tag { get; init; }
+    public required string Name { get; init; }
+    public string? Description { get; init; }
+    public string? PlaceableResRef { get; init; }  // NWN placeable blueprint
+    public List<IndustryTag> SupportedIndustries { get; init; } = [];
+}
+```
+
+### Persistence
+
+Workstations are stored in a separate `WorkstationDefinitions` DB table (not JSONB inside industries). This allows:
+- Cross-industry sharing without data duplication
+- Independent CRUD lifecycle
+- Querying all workstations globally
+
+### Recipe ↔ Workstation Link
+
+Each `Recipe` has an optional `RequiredWorkstation` field (`WorkstationTag?`). When set, the crafting system validates the player is near the correct workstation placeable before allowing the craft to proceed.
+
+### API
+
+- `GET  /api/worldengine/workstations` — List all (with optional search)
+- `POST /api/worldengine/workstations` — Create
+- `PUT  /api/worldengine/workstations/{tag}` — Update
+- `DELETE /api/worldengine/workstations/{tag}` — Delete
+- `GET  /api/worldengine/workstations/export` — Export all as JSON
+- `POST /api/worldengine/workstations/import` — Import from JSON
+
+---
+
+## 🌐 Knowledge Graph
+
+Knowledge entries within an industry form a **freeform directed acyclic graph (DAG)** — not a strict tree. Each knowledge node can have:
+
+### Prerequisites
+
+A list of other knowledge tags (within the same industry) that must be learned before this node can be acquired. This creates the graph structure:
+
+```
+[basic_smelting] → [advanced_smelting] → [master_alloys]
+                 ↘ [decorative_inlay]
+[ore_knowledge]  → [advanced_smelting]  (multiple prerequisites converge)
+```
+
+### Branches
+
+An optional `Branch` string that groups knowledge into named specialization paths (e.g., "Bladesmith", "Armorsmith", "Ornamental"). Branches are cosmetic groupings for the AdminPanel — they don't affect game logic.
+
+### Knowledge Effects
+
+When a character learns a knowledge entry, the system can trigger side effects via the `KnowledgeEffect` bridge:
+
+```csharp
+public enum KnowledgeEffectType
+{
+    UnlockRecipe,      // Makes a recipe available
+    GrantCodexEntry,   // Awards a codex entry
+    ModifyHarvest,     // Changes harvest tables
+    Custom             // Extension point
+}
+
+public class KnowledgeEffect
+{
+    public required KnowledgeEffectType EffectType { get; init; }
+    public required string TargetTag { get; init; }
+    public Dictionary<string, string> Metadata { get; init; } = new();
+}
+```
+
+Effects are processed by `IKnowledgeEffectProcessor` implementations. The current `StubKnowledgeEffectProcessor` logs effects; real processors will be added per-phase.
+
+---
+
+## 🔗 Recipe ↔ Process ↔ Workstation Integration
+
+Recipes now carry two additional fields linking them to the broader crafting pipeline:
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `RequiredWorkstation` | `WorkstationTag?` | Gates the recipe to a specific workstation type |
+| `ProcessId` | `string?` | Links to a `ProcessGraph` definition for the crafting minigame |
+
+**Flow:**
+1. Player approaches a workstation placeable (e.g., a forge)
+2. System resolves `WorkstationTag` from the placeable's ResRef
+3. Available recipes are filtered by: workstation match + proficiency + knowledge prerequisites
+4. Player selects a recipe → system loads its `ProcessGraph` (if any)
+5. Crafting session runs the progress-bar minigame
+6. On completion, products are created with quality based on performance
+
+If `RequiredWorkstation` is null, the recipe can be crafted anywhere.
+If `ProcessId` is null, the recipe uses instant crafting (no minigame).
+
+---
+
+## 🖥️ AdminPanel Management
+
+All industry data is managed through a single **Industries** page at `/worldengine/industries` with four tabs:
+
+### Overview Tab
+- List, create, edit, and delete industry definitions
+- Search and pagination
+- Shows knowledge count and recipe count per industry
+
+### Knowledge Graph Tab
+- Select an industry to view its knowledge entries
+- Entries grouped by Branch
+- Inline editing of prerequisites, branch, and effects
+- Add/remove knowledge nodes
+
+### Recipes Tab
+- Select an industry to view its recipes
+- Full recipe editing: ingredients, products, workstation, process ID
+- Ingredient consumed/quality settings
+- Product quantity and success chance
+
+### Workstations Tab
+- Global workstation registry (not industry-scoped)
+- CRUD with supported industries list
+- Placeable ResRef linking

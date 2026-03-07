@@ -2,6 +2,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Commands;
 
@@ -17,6 +18,7 @@ public record RemoveRecipeFromIndustryCommand : ICommand
 /// <summary>
 /// Handles removing recipes from industries
 /// </summary>
+[ServiceBinding(typeof(ICommandHandler<RemoveRecipeFromIndustryCommand>))]
 public class RemoveRecipeFromIndustryHandler : ICommandHandler<RemoveRecipeFromIndustryCommand>
 {
     private readonly IIndustryRepository _industryRepository;

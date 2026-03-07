@@ -2,6 +2,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Queries;
 
@@ -17,6 +18,7 @@ public record GetAvailableRecipesQuery : IQuery<List<Recipe>>
 /// <summary>
 /// Handles retrieving available recipes for a character
 /// </summary>
+[ServiceBinding(typeof(IQueryHandler<GetAvailableRecipesQuery, List<Recipe>>))]
 public class GetAvailableRecipesHandler : IQueryHandler<GetAvailableRecipesQuery, List<Recipe>>
 {
     private readonly IIndustryRepository _industryRepository;
