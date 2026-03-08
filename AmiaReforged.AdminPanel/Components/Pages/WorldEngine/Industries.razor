@@ -425,6 +425,68 @@
                 <label>Prerequisites <small style="color:var(--text-secondary)">(comma-separated tags)</small></label>
                 <input class="form-control" @bind="_editKnowledgePrereqText" placeholder="basic_smelting, ore_knowledge" />
             </div>
+
+            @* Harvest Effects *@
+            <div style="margin-top:12px">
+                <label style="font-weight:600">Harvest Effects</label>
+                <small style="color:var(--text-secondary);display:block;margin-bottom:6px">Modify harvest node behaviour when this knowledge is learned</small>
+                @for (int idx = 0; idx < _editKnowledge.HarvestEffects.Count; idx++)
+                {
+                    int i = idx;
+                    <div style="display:flex;gap:8px;margin-top:4px;align-items:center">
+                        <div class="form-group" style="flex:2">
+                            <input class="form-control form-control-sm" placeholder="Node Tag" @bind="_editKnowledge.HarvestEffects[i].NodeTag" />
+                        </div>
+                        <div class="form-group" style="flex:2">
+                            <select class="form-control form-control-sm" @bind="_editKnowledge.HarvestEffects[i].StepModified">
+                                <option value="">-- Step --</option>
+                                <option value="ItemYield">Item Yield</option>
+                                <option value="Quality">Quality</option>
+                                <option value="HarvestStepRate">Harvest Rate</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex:1">
+                            <input type="number" step="any" class="form-control form-control-sm" placeholder="Value" @bind="_editKnowledge.HarvestEffects[i].Value" />
+                        </div>
+                        <div class="form-group" style="flex:2">
+                            <select class="form-control form-control-sm" @bind="_editKnowledge.HarvestEffects[i].Operation">
+                                <option value="">-- Op --</option>
+                                <option value="Additive">Additive</option>
+                                <option value="PercentMult">Percent Mult</option>
+                                <option value="Subtractive">Subtractive</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => _editKnowledge.HarvestEffects.RemoveAt(i)">X</button>
+                    </div>
+                }
+                <button class="btn btn-sm btn-outline-secondary" style="margin-top:6px" @onclick="AddHarvestEffect">+ Harvest Effect</button>
+            </div>
+
+            @* Knowledge Effects *@
+            <div style="margin-top:12px">
+                <label style="font-weight:600">Knowledge Effects</label>
+                <small style="color:var(--text-secondary);display:block;margin-bottom:6px">Actions triggered when this knowledge is learned</small>
+                @for (int idx = 0; idx < _editKnowledge.Effects.Count; idx++)
+                {
+                    int i = idx;
+                    <div style="display:flex;gap:8px;margin-top:4px;align-items:center">
+                        <div class="form-group" style="flex:2">
+                            <select class="form-control form-control-sm" @bind="_editKnowledge.Effects[i].EffectType">
+                                <option value="">-- Effect Type --</option>
+                                <option value="UnlockRecipe">Unlock Recipe</option>
+                                <option value="GrantCodexEntry">Grant Codex Entry</option>
+                                <option value="ModifyHarvest">Modify Harvest</option>
+                                <option value="Custom">Custom</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex:3">
+                            <input class="form-control form-control-sm" placeholder="Target Tag (e.g. recipe ID or codex entry tag)" @bind="_editKnowledge.Effects[i].TargetTag" />
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => _editKnowledge.Effects.RemoveAt(i)">X</button>
+                    </div>
+                }
+                <button class="btn btn-sm btn-outline-secondary" style="margin-top:6px" @onclick="AddKnowledgeEffect">+ Knowledge Effect</button>
+            </div>
         </div>
 
         <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
@@ -1011,6 +1073,16 @@
         {
             _error = $"Remove failed: {ex.Message}";
         }
+    }
+
+    private void AddHarvestEffect()
+    {
+        _editKnowledge.HarvestEffects.Add(new IndustryHarvestEffectDto());
+    }
+
+    private void AddKnowledgeEffect()
+    {
+        _editKnowledge.Effects.Add(new IndustryKnowledgeEffectDto());
     }
 
     // ==================== Recipe CRUD ====================
