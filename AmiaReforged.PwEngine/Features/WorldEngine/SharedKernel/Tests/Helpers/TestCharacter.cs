@@ -4,6 +4,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.ResourceNodeData;
 using Anvil.API;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Helpers;
@@ -32,12 +33,18 @@ public class TestCharacter(
         return true;
     }
 
-    public List<KnowledgeHarvestEffect> KnowledgeEffectsForResource(string definitionTag)
+    public List<KnowledgeHarvestEffect> KnowledgeEffectsForResource(string definitionTag, ResourceType resourceType)
     {
         return AllKnowledge()
             .SelectMany(knowledge => knowledge.HarvestEffects
-                .Where(he => he.NodeTag == definitionTag))
+                .Where(he => he.NodeTag.Matches(definitionTag, resourceType)))
             .ToList();
+    }
+
+    /// <inheritdoc />
+    public void InvalidateEffectCache()
+    {
+        // Test character has no cache to invalidate.
     }
 
     public int GetKnowledgePoints()

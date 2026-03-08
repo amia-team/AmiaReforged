@@ -5,6 +5,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.ResourceNodeData;
 using Anvil;
 using Anvil.API;
 
@@ -54,7 +55,7 @@ public class RuntimeCharacter(
         return membershipService.CanLearnKnowledge(characterId, knowledgeTag);
     }
 
-    public List<KnowledgeHarvestEffect> KnowledgeEffectsForResource(string definitionTag)
+    public List<KnowledgeHarvestEffect> KnowledgeEffectsForResource(string definitionTag, ResourceType resourceType)
     {
         if (_nodeEffectCache.TryGetValue(definitionTag, out List<KnowledgeHarvestEffect>? effects))
         {
@@ -63,12 +64,18 @@ public class RuntimeCharacter(
 
         List<KnowledgeHarvestEffect> knowledgeEffectsForResource = AllKnowledge()
             .SelectMany(knowledge => knowledge.HarvestEffects
-                .Where(he => he.NodeTag == definitionTag))
+                .Where(he => he.NodeTag.Matches(definitionTag, resourceType)))
             .ToList();
 
         _nodeEffectCache.TryAdd(definitionTag, knowledgeEffectsForResource);
 
         return knowledgeEffectsForResource;
+    }
+
+    /// <inheritdoc />
+    public void InvalidateEffectCache()
+    {
+        _nodeEffectCache.Clear();
     }
 
     public void AddItem(ItemDto item)

@@ -55,7 +55,7 @@ public class HarvestResourceCommandHandler(
 
         // Calculate harvest progress modifications
         int harvestProgressMod = 0;
-        foreach (KnowledgeHarvestEffect effect in character.KnowledgeEffectsForResource(node.Definition.Tag)
+        foreach (KnowledgeHarvestEffect effect in character.KnowledgeEffectsForResource(node.Definition.Tag, node.Definition.Type)
                      .Where(r => r.StepModified == HarvestStep.HarvestStepRate))
         {
             switch (effect.Operation)
@@ -122,7 +122,7 @@ public class HarvestResourceCommandHandler(
     private List<HarvestedItem> CalculateHarvestOutputs(ResourceNodeInstance node, ICharacter character)
     {
         List<HarvestedItem> outputs = new List<HarvestedItem>();
-        List<KnowledgeHarvestEffect> applicable = character.KnowledgeEffectsForResource(node.Definition.Tag);
+        List<KnowledgeHarvestEffect> applicable = character.KnowledgeEffectsForResource(node.Definition.Tag, node.Definition.Type);
 
         foreach (HarvestOutput harvestOutput in node.Definition.Outputs)
         {
