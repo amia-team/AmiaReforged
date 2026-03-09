@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.ResourceNodeData;
 
@@ -12,6 +14,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.Knowl
 ///   <item><description>Type prefix: <c>"type:ore"</c> — matches any node whose <see cref="ResourceType"/> equals the suffix (case-insensitive)</description></item>
 /// </list>
 /// </summary>
+[JsonConverter(typeof(NodeTagPatternJsonConverter))]
 public readonly record struct NodeTagPattern
 {
     private const string TypePrefix = "type:";
@@ -114,4 +117,23 @@ public readonly record struct NodeTagPattern
     public static implicit operator string(NodeTagPattern pattern) => pattern.Pattern;
 
     public override string ToString() => Pattern;
+}
+
+/// <summary>
+/// Serializes <see cref="NodeTagPattern"/> as a plain JSON string (its <see cref="NodeTagPattern.Pattern"/> value)
+/// instead of as a JSON object with all properties.
+/// </summary>
+public class NodeTagPatternJsonConverter : JsonConverter<NodeTagPattern>
+{
+    public override NodeTagPattern Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        string pattern = reader.GetString()
+                         ?? throw new JsonException("NodeTagPattern value cannot be null.");
+        return new NodeTagPattern(pattern);
+    }
+
+    public override void Write(Utf8JsonWriter writer, NodeTagPattern value, JsonSerializerOptions options)
+    {
+        writer.WriteStringValue(value.Pattern);
+    }
 }
