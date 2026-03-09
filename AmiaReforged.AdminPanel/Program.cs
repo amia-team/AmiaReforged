@@ -68,6 +68,7 @@ public class Program
             builder.Services.AddScoped<WorkstationApiService>();
             builder.Services.AddScoped<OrganizationApiService>();
             builder.Services.AddScoped<CoinhouseApiService>();
+            builder.Services.AddScoped<InteractionApiService>();
 
             // Cookie Authentication
             builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

@@ -1,0 +1,803 @@
+@page "/worldengine/interactions"
+@using Microsoft.AspNetCore.Authorization
+@using AmiaReforged.AdminPanel.Models
+@using AmiaReforged.AdminPanel.Services
+@using System.IO.Compression
+@using System.Text.Json
+@attribute [Authorize]
+@inject InteractionApiService Api
+@inject IWorldEngineEndpointService EndpointService
+@inject ILogger<Interactions> Logger
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<PageTitle>Interactions - World Engine</PageTitle>
+
+<div class="encounters-page">
+    <div class="dashboard-header">
+        <h1>Interaction Definitions</h1>
+        <div class="header-actions">
+            @if (_endpoints.Count > 0)
+            {
+                <div class="instance-selector">
+                    <label class="instance-label">Server:</label>
+                    <select class="form-control form-control-sm" value="@(_selectedEndpoint?.Id.ToString() ?? "")" @onchange="OnEndpointChanged">
+                        <option value="">— Select —</option>
+                        @foreach (var ep in _endpoints)
+                        {
+                            <option value="@ep.Id">@ep.Name</option>
+                        }
+                    </select>
+                </div>
+            }
+            @if (_selectedEndpoint != null)
+            {
+                <button class="btn btn-secondary btn-sm" @onclick="RefreshInteractions">Refresh</button>
+                <button class="btn btn-primary btn-sm" @onclick="ShowCreateModal">+ New Interaction</button>
+                <button class="btn btn-info btn-sm" @onclick="() => _showImportModal = true">Import JSON</button>
+                <button class="btn btn-outline-info btn-sm" @onclick="ExportJson" disabled="@(_interactions.Count == 0)">Export JSON</button>
+            }
+            <a href="/" class="btn btn-secondary btn-sm">← Dashboard</a>
+        </div>
+    </div>
+
+    @if (_error != null)
+    {
+        <div class="alert alert-danger">@_error <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _error = null">Dismiss</button></div>
+    }
+    @if (_success != null)
+    {
+        <div class="alert alert-success">@_success <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _success = null">Dismiss</button></div>
+    }
+
+    @if (_selectedEndpoint == null)
+    {
+        <div class="section" style="text-align:center;padding:60px 20px">
+            @if (_endpoints.Count == 0)
+            {
+                <p style="color:var(--text-secondary);font-size:1.1rem">
+                    No WorldEngine servers configured. Go to
+                    <a href="/encounters">Encounters</a> to add one.
+                </p>
+            }
+            else
+            {
+                <p style="color:var(--text-secondary);font-size:1.1rem">Select a server from the dropdown above to manage interactions.</p>
+            }
+        </div>
+    }
+
+    @* ===== Search ===== *@
+    @if (_selectedEndpoint != null)
+    {
+        <div class="section" style="margin-bottom:20px">
+            <div class="form-row" style="display:flex;gap:10px;align-items:end">
+                <div class="form-group" style="flex:1">
+                    <label>Search</label>
+                    <input class="form-control" @bind="_searchTerm" @bind:event="oninput"
+                           placeholder="Search by name or tag..." />
+                </div>
+                <button class="btn btn-primary btn-sm" @onclick="SearchInteractions" disabled="@_isLoading">Search</button>
+            </div>
+        </div>
+
+        @* ===== Data Table ===== *@
+        @if (_isLoading)
+        {
+            <div class="section" style="text-align:center;padding:40px"><em>Loading...</em></div>
+        }
+        else if (_interactions.Count == 0)
+        {
+            <div class="section" style="text-align:center;padding:40px">
+                <p style="color:var(--text-secondary)">No interaction definitions found.</p>
+            </div>
+        }
+        else
+        {
+            <div class="section">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Tag</th>
+                            <th>Name</th>
+                            <th>Target Mode</th>
+                            <th>Rounds</th>
+                            <th>Prof. Reduces</th>
+                            <th>Industry Req.</th>
+                            <th>Responses</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in _interactions)
+                        {
+                            <tr>
+                                <td style="font-family:monospace;font-size:0.9rem">@item.Tag</td>
+                                <td>@item.Name</td>
+                                <td>
+                                    <span class="state-badge @GetTargetModeBadgeClass(item.TargetMode)">@item.TargetMode</span>
+                                </td>
+                                <td>@item.BaseRounds / @item.MinRounds</td>
+                                <td style="text-align:center">@(item.ProficiencyReducesRounds ? "✓" : "—")</td>
+                                <td style="text-align:center">@(item.RequiresIndustryMembership ? "✓" : "—")</td>
+                                <td style="color:var(--text-secondary);font-size:0.85rem">@item.Responses.Count response(s)</td>
+                                <td class="actions">
+                                    <button class="btn btn-sm btn-secondary" @onclick="() => ShowEditModal(item)">Edit</button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(item)">Delete</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                @* Pagination *@
+                @if (_totalCount > _pageSize)
+                {
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+                        <span style="color:var(--text-secondary);font-size:0.9rem">
+                            Showing @((_page - 1) * _pageSize + 1)–@(Math.Min(_page * _pageSize, _totalCount)) of @_totalCount
+                        </span>
+                        <div style="display:flex;gap:5px">
+                            <button class="btn btn-sm btn-secondary" disabled="@(_page <= 1)" @onclick="PrevPage">← Prev</button>
+                            <button class="btn btn-sm btn-secondary" disabled="@(_page * _pageSize >= _totalCount)" @onclick="NextPage">Next →</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+
+    @* ===== Create / Edit Modal ===== *@
+    @if (_showEditModal)
+    {
+        <div class="modal-backdrop" @onclick="CloseEditModal">
+        <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:900px;max-height:90vh;overflow-y:auto;margin:3vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+            <h2>@(_isCreating ? "Create Interaction" : $"Edit: {_editItem.Name}")</h2>
+
+            <div style="display:flex;flex-direction:column;gap:12px;margin-top:15px">
+                @* ===== Basic Fields ===== *@
+                <div class="form-row" style="display:flex;gap:10px">
+                    <div class="form-group" style="flex:1">
+                        <label>Tag</label>
+                        <input class="form-control" @bind="_editItem.Tag" disabled="@(!_isCreating)" placeholder="e.g. prospect_minerals" />
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Name</label>
+                        <input class="form-control" @bind="_editItem.Name" placeholder="e.g. Prospect for Minerals" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea class="form-control" rows="2" @bind="_editItem.Description" placeholder="Optional description..."></textarea>
+                </div>
+
+                <div class="form-row" style="display:flex;gap:10px">
+                    <div class="form-group" style="flex:1">
+                        <label>Target Mode</label>
+                        <select class="form-control" @bind="_editItem.TargetMode">
+                            <option value="Node">Node</option>
+                            <option value="Trigger">Trigger</option>
+                            <option value="Placeable">Placeable</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Base Rounds</label>
+                        <input class="form-control" type="number" min="1" @bind="_editItem.BaseRounds" />
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Min Rounds</label>
+                        <input class="form-control" type="number" min="1" @bind="_editItem.MinRounds" />
+                    </div>
+                </div>
+
+                <div class="form-row" style="display:flex;gap:20px;align-items:center;margin-top:4px">
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                        <input type="checkbox" @bind="_editItem.ProficiencyReducesRounds" />
+                        Proficiency Reduces Rounds
+                    </label>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                        <input type="checkbox" @bind="_editItem.RequiresIndustryMembership" />
+                        Requires Industry Membership
+                    </label>
+                </div>
+
+                @* ===== Responses Section ===== *@
+                <div style="border:1px solid var(--border-color);border-radius:8px;padding:15px;margin-top:5px">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <h4 style="margin:0">Responses (@_editItem.Responses.Count)</h4>
+                        <button class="btn btn-sm btn-outline-info" @onclick="AddResponse">+ Add Response</button>
+                    </div>
+
+                    @if (_editItem.Responses.Count == 0)
+                    {
+                        <p style="color:var(--text-secondary);font-size:0.85rem;margin-top:8px">No responses defined. Add at least one response.</p>
+                    }
+
+                    @for (int ri = 0; ri < _editItem.Responses.Count; ri++)
+                    {
+                        var rIdx = ri;
+                        var response = _editItem.Responses[rIdx];
+                        <div style="border:1px solid var(--border-color);border-radius:6px;padding:12px;margin-top:10px;background:rgba(255,255,255,0.02)">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                                <strong style="font-size:0.9rem">Response #@(rIdx + 1)</strong>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveResponse(rIdx)">✕ Remove</button>
+                            </div>
+
+                            <div class="form-row" style="display:flex;gap:10px">
+                                <div class="form-group" style="flex:2">
+                                    <label>Response Tag</label>
+                                    <input class="form-control form-control-sm" @bind="response.ResponseTag" placeholder="e.g. find_iron_ore" />
+                                </div>
+                                <div class="form-group" style="flex:1">
+                                    <label>Weight</label>
+                                    <input class="form-control form-control-sm" type="number" min="1" @bind="response.Weight" />
+                                </div>
+                                <div class="form-group" style="flex:1">
+                                    <label>Min Proficiency</label>
+                                    <select class="form-control form-control-sm" @bind="response.MinProficiency">
+                                        <option value="">None</option>
+                                        <option value="Layman">Layman</option>
+                                        <option value="Novice">Novice</option>
+                                        <option value="Apprentice">Apprentice</option>
+                                        <option value="Journeyman">Journeyman</option>
+                                        <option value="Expert">Expert</option>
+                                        <option value="Master">Master</option>
+                                        <option value="Grandmaster">Grandmaster</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group" style="margin-top:6px">
+                                <label>Message</label>
+                                <input class="form-control form-control-sm" @bind="response.Message" placeholder="Text shown to the player..." />
+                            </div>
+
+                            @* ===== Effects Sub-Section ===== *@
+                            <div style="border:1px solid var(--border-color);border-radius:4px;padding:10px;margin-top:8px;background:rgba(0,0,0,0.15)">
+                                <div style="display:flex;justify-content:space-between;align-items:center">
+                                    <span style="font-size:0.85rem;font-weight:600">Effects (@response.Effects.Count)</span>
+                                    <button class="btn btn-sm btn-outline-info" style="font-size:0.75rem;padding:2px 8px" @onclick="() => AddEffect(rIdx)">+ Effect</button>
+                                </div>
+
+                                @if (response.Effects.Count == 0)
+                                {
+                                    <p style="color:var(--text-secondary);font-size:0.8rem;margin:4px 0 0 0">No effects.</p>
+                                }
+
+                                @for (int ei = 0; ei < response.Effects.Count; ei++)
+                                {
+                                    var eIdx = ei;
+                                    var effect = response.Effects[eIdx];
+                                    <div style="display:flex;gap:8px;align-items:end;margin-top:6px">
+                                        <div class="form-group" style="flex:1">
+                                            @if (eIdx == 0)
+                                            {
+                                                <label style="font-size:0.8rem">Type</label>
+                                            }
+                                            <select class="form-control form-control-sm" style="font-size:0.85rem" @bind="effect.EffectType">
+                                                <option value="">— Select —</option>
+                                                <option value="FloatingText">FloatingText</option>
+                                                <option value="VfxAtLocation">VfxAtLocation</option>
+                                                <option value="VfxOnPlayer">VfxOnPlayer</option>
+                                                <option value="SpawnResourceNode">SpawnResourceNode</option>
+                                                <option value="DirectionalHint">DirectionalHint</option>
+                                                <option value="Custom">Custom</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group" style="flex:2">
+                                            @if (eIdx == 0)
+                                            {
+                                                <label style="font-size:0.8rem">Value</label>
+                                            }
+                                            <input class="form-control form-control-sm" style="font-size:0.85rem" @bind="effect.Value" placeholder="@GetEffectValueHint(effect.EffectType)" />
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-danger" style="font-size:0.75rem;padding:2px 6px;margin-bottom:2px" @onclick="() => RemoveEffect(rIdx, eIdx)">✕</button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="form-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+                <button class="btn btn-secondary" @onclick="CloseEditModal">Cancel</button>
+                <button class="btn btn-primary" @onclick="SaveInteraction" disabled="@_isSaving">
+                    @(_isSaving ? "Saving..." : (_isCreating ? "Create" : "Save Changes"))
+                </button>
+            </div>
+        </div>
+        </div>
+    }
+
+    @* ===== Import Modal ===== *@
+    @if (_showImportModal)
+    {
+        <div class="modal-backdrop" @onclick="() => _showImportModal = false">
+        <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:600px;max-height:80vh;overflow-y:auto;margin:10vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+            <h2>Import Interactions</h2>
+            <p style="color:var(--text-secondary);font-size:0.9rem">
+                Paste or upload a JSON file containing interaction definitions. The JSON should be an array of interaction objects
+                matching the existing interaction definition format.
+            </p>
+
+            <div class="form-group" style="margin-top:15px">
+                <label>Upload JSON File</label>
+                <InputFile OnChange="OnImportFileSelected" accept=".json,.zip" multiple class="form-control" />
+                <small style="color:var(--text-secondary);margin-top:4px;display:block">Select .json files or a .zip containing .json files. You can add more files by clicking again — they will be appended.</small>
+            </div>
+
+            <div class="form-group" style="margin-top:10px">
+                <label>Or paste JSON directly</label>
+                <textarea class="form-control" rows="10" @bind="_importJson"
+                          placeholder='[{"Tag":"prospect_minerals","Name":"Prospect","TargetMode":"Node",...}]'
+                          style="font-family:monospace;font-size:0.85rem"></textarea>
+            </div>
+
+            @if (_importResult != null)
+            {
+                <div class="alert @(_importResult.Failed > 0 ? "alert-warning" : "alert-success")" style="margin-top:15px">
+                    <strong>Import complete:</strong> @_importResult.Succeeded succeeded, @_importResult.Failed failed out of @_importResult.Total total.
+                    @if (_importResult.Errors.Count > 0)
+                    {
+                        <ul style="margin-top:8px;margin-bottom:0">
+                            @foreach (var err in _importResult.Errors.Take(10))
+                            {
+                                <li style="font-size:0.85rem">@err</li>
+                            }
+                            @if (_importResult.Errors.Count > 10)
+                            {
+                                <li style="font-size:0.85rem;color:var(--text-secondary)">...and @(_importResult.Errors.Count - 10) more</li>
+                            }
+                        </ul>
+                    }
+                </div>
+            }
+
+            <div class="form-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+                <button class="btn btn-secondary" @onclick="CloseImportModal">Close</button>
+                <button class="btn btn-primary" @onclick="RunImport" disabled="@(_isSaving || string.IsNullOrWhiteSpace(_importJson))">
+                    @(_isSaving ? "Importing..." : "Import")
+                </button>
+            </div>
+        </div>
+        </div>
+    }
+
+    @* ===== Delete Confirmation Modal ===== *@
+    @if (_showDeleteConfirm)
+    {
+        <div class="modal-backdrop" @onclick="() => _showDeleteConfirm = false">
+        <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:450px;margin:15vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+            <h3>Confirm Delete</h3>
+            <p>Are you sure you want to delete interaction <strong>@_deleteTarget?.Name</strong> (<code>@_deleteTarget?.Tag</code>)?</p>
+            <p style="color:var(--text-secondary);font-size:0.9rem">This action cannot be undone.</p>
+            <div class="form-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+                <button class="btn btn-secondary" @onclick="() => _showDeleteConfirm = false">Cancel</button>
+                <button class="btn btn-danger" @onclick="DeleteInteraction" disabled="@_isSaving">
+                    @(_isSaving ? "Deleting..." : "Delete")
+                </button>
+            </div>
+        </div>
+        </div>
+    }
+</div>
+
+<style>
+    .modal-backdrop {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 1040;
+    }
+</style>
+
+@code {
+    // ===== Endpoint State =====
+    private List<WorldEngineEndpoint> _endpoints = [];
+    private WorldEngineEndpoint? _selectedEndpoint;
+
+    // ===== Data =====
+    private List<InteractionDefinitionDto> _interactions = [];
+    private int _totalCount;
+    private int _page = 1;
+    private int _pageSize = 50;
+    private string _searchTerm = "";
+
+    // ===== UI State =====
+    private bool _isLoading;
+    private bool _isSaving;
+    private string? _error;
+    private string? _success;
+
+    // ===== Edit Modal =====
+    private bool _showEditModal;
+    private bool _isCreating;
+    private InteractionDefinitionDto _editItem = new();
+
+    // ===== Import Modal =====
+    private bool _showImportModal;
+    private string _importJson = "";
+    private ImportResult? _importResult;
+    private List<JsonElement> _importedItems = new();
+
+    // ===== Delete Confirmation =====
+    private bool _showDeleteConfirm;
+    private InteractionDefinitionDto? _deleteTarget;
+
+    // ===== Lifecycle =====
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshEndpoints();
+    }
+
+    // ===== Endpoint Handling =====
+
+    private async Task RefreshEndpoints()
+    {
+        var all = await EndpointService.GetAllEndpointsAsync();
+        _endpoints = all.Where(e => e.IsEnabled).ToList();
+
+        if (_selectedEndpoint != null && !_endpoints.Any(e => e.Id == _selectedEndpoint.Id))
+            _selectedEndpoint = null;
+
+        StateHasChanged();
+    }
+
+    private async Task OnEndpointChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
+            Api.SelectEndpoint(id);
+            _page = 1;
+            await RefreshInteractions();
+        }
+        else
+        {
+            _selectedEndpoint = null;
+            Api.SelectEndpoint(null);
+            _interactions.Clear();
+        }
+    }
+
+    // ===== Data Loading =====
+
+    private async Task RefreshInteractions()
+    {
+        if (_selectedEndpoint == null) return;
+        _isLoading = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            var result = await Api.GetAllAsync(_searchTerm, _page, _pageSize);
+            _interactions = result.Items;
+            _totalCount = result.TotalCount;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to load interactions");
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SearchInteractions()
+    {
+        _page = 1;
+        await RefreshInteractions();
+    }
+
+    private async Task PrevPage()
+    {
+        if (_page > 1) { _page--; await RefreshInteractions(); }
+    }
+
+    private async Task NextPage()
+    {
+        if (_page * _pageSize < _totalCount) { _page++; await RefreshInteractions(); }
+    }
+
+    // ===== Create / Edit Modal =====
+
+    private void ShowCreateModal()
+    {
+        _isCreating = true;
+        _editItem = new InteractionDefinitionDto
+        {
+            TargetMode = "Trigger",
+            BaseRounds = 4,
+            MinRounds = 2,
+            ProficiencyReducesRounds = true,
+            RequiresIndustryMembership = true,
+        };
+        _showEditModal = true;
+    }
+
+    private void ShowEditModal(InteractionDefinitionDto item)
+    {
+        _isCreating = false;
+        _editItem = DeepCopy(item);
+        _showEditModal = true;
+    }
+
+    private void CloseEditModal()
+    {
+        _showEditModal = false;
+        _editItem = new();
+    }
+
+    private async Task SaveInteraction()
+    {
+        _isSaving = true;
+        _error = null;
+        try
+        {
+            if (_isCreating)
+                await Api.CreateAsync(_editItem);
+            else
+                await Api.UpdateAsync(_editItem.Tag, _editItem);
+
+            _success = _isCreating
+                ? $"Interaction '{_editItem.Name}' created."
+                : $"Interaction '{_editItem.Name}' updated.";
+            _showEditModal = false;
+            await RefreshInteractions();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to save interaction");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    // ===== Response Management =====
+
+    private void AddResponse()
+    {
+        _editItem.Responses.Add(new InteractionResponseDto
+        {
+            ResponseTag = "",
+            Weight = 1,
+        });
+    }
+
+    private void RemoveResponse(int index)
+    {
+        if (index >= 0 && index < _editItem.Responses.Count)
+            _editItem.Responses.RemoveAt(index);
+    }
+
+    // ===== Effect Management =====
+
+    private void AddEffect(int responseIndex)
+    {
+        if (responseIndex >= 0 && responseIndex < _editItem.Responses.Count)
+        {
+            _editItem.Responses[responseIndex].Effects.Add(new InteractionResponseEffectDto());
+        }
+    }
+
+    private void RemoveEffect(int responseIndex, int effectIndex)
+    {
+        if (responseIndex >= 0 && responseIndex < _editItem.Responses.Count)
+        {
+            var effects = _editItem.Responses[responseIndex].Effects;
+            if (effectIndex >= 0 && effectIndex < effects.Count)
+                effects.RemoveAt(effectIndex);
+        }
+    }
+
+    // ===== Import =====
+
+    private async Task OnImportFileSelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            foreach (var file in e.GetMultipleFiles(100))
+            {
+                if (file.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                {
+                    await ProcessZipImport(file);
+                }
+                else
+                {
+                    await ProcessJsonFileImport(file);
+                }
+            }
+
+            _importJson = JsonSerializer.Serialize(_importedItems);
+            _importResult = null;
+            _success = $"Loaded {_importedItems.Count} interaction(s) total. Pick more files to add more, or click Import.";
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to read file(s): {ex.Message}";
+        }
+    }
+
+    private async Task ProcessJsonFileImport(IBrowserFile file)
+    {
+        using var reader = new StreamReader(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
+        string content = await reader.ReadToEndAsync();
+        ParseJsonItems(content);
+    }
+
+    private async Task ProcessZipImport(IBrowserFile file)
+    {
+        using var ms = new MemoryStream();
+        await file.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024).CopyToAsync(ms);
+        ms.Position = 0;
+        using var archive = new ZipArchive(ms, ZipArchiveMode.Read);
+        foreach (var entry in archive.Entries)
+        {
+            if (!entry.FullName.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) continue;
+            using var entryStream = entry.Open();
+            using var reader = new StreamReader(entryStream);
+            string content = await reader.ReadToEndAsync();
+            ParseJsonItems(content);
+        }
+    }
+
+    private void ParseJsonItems(string content)
+    {
+        using var doc = JsonDocument.Parse(content);
+        if (doc.RootElement.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in doc.RootElement.EnumerateArray())
+                _importedItems.Add(item.Clone());
+        }
+        else if (doc.RootElement.ValueKind == JsonValueKind.Object)
+        {
+            _importedItems.Add(doc.RootElement.Clone());
+        }
+    }
+
+    private async Task RunImport()
+    {
+        if (string.IsNullOrWhiteSpace(_importJson)) return;
+        _isSaving = true;
+        _error = null;
+        try
+        {
+            _importResult = await Api.ImportJsonAsync(_importJson);
+            if (_importResult is { Failed: 0 })
+                _success = $"Successfully imported {_importResult.Succeeded} interaction(s).";
+            await RefreshInteractions();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to import interactions");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseImportModal()
+    {
+        _showImportModal = false;
+        _importJson = "";
+        _importResult = null;
+        _importedItems.Clear();
+    }
+
+    // ===== Export =====
+
+    private async Task ExportJson()
+    {
+        try
+        {
+            var json = JsonSerializer.Serialize(_interactions, new JsonSerializerOptions { WriteIndented = true });
+            var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+            var base64 = Convert.ToBase64String(bytes);
+            await JS.InvokeVoidAsync("eval",
+                $"var a=document.createElement('a');a.href='data:application/json;base64,{base64}';a.download='interactions-export.json';document.body.appendChild(a);a.click();document.body.removeChild(a);");
+        }
+        catch (Exception ex)
+        {
+            _error = $"Export failed: {ex.Message}";
+        }
+    }
+
+    // ===== Delete =====
+
+    private void ConfirmDelete(InteractionDefinitionDto item)
+    {
+        _deleteTarget = item;
+        _showDeleteConfirm = true;
+    }
+
+    private async Task DeleteInteraction()
+    {
+        if (_deleteTarget == null) return;
+        _isSaving = true;
+        _error = null;
+        try
+        {
+            await Api.DeleteAsync(_deleteTarget.Tag);
+            _success = $"Deleted interaction '{_deleteTarget.Name}'.";
+            _showDeleteConfirm = false;
+            _deleteTarget = null;
+            await RefreshInteractions();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to delete interaction");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    // ===== Helpers =====
+
+    private static InteractionDefinitionDto DeepCopy(InteractionDefinitionDto src)
+    {
+        return new InteractionDefinitionDto
+        {
+            Tag = src.Tag,
+            Name = src.Name,
+            Description = src.Description,
+            TargetMode = src.TargetMode,
+            BaseRounds = src.BaseRounds,
+            MinRounds = src.MinRounds,
+            ProficiencyReducesRounds = src.ProficiencyReducesRounds,
+            RequiresIndustryMembership = src.RequiresIndustryMembership,
+            CreatedAt = src.CreatedAt,
+            UpdatedAt = src.UpdatedAt,
+            Responses = src.Responses.Select(r => new InteractionResponseDto
+            {
+                ResponseTag = r.ResponseTag,
+                Weight = r.Weight,
+                MinProficiency = r.MinProficiency,
+                Message = r.Message,
+                Effects = r.Effects.Select(e => new InteractionResponseEffectDto
+                {
+                    EffectType = e.EffectType,
+                    Value = e.Value,
+                    Metadata = e.Metadata != null ? new Dictionary<string, object>(e.Metadata) : null,
+                }).ToList(),
+            }).ToList(),
+        };
+    }
+
+    private static string GetEffectValueHint(string effectType) => effectType switch
+    {
+        "FloatingText" => "Text to display...",
+        "VfxAtLocation" => "VFX constant (int)",
+        "VfxOnPlayer" => "VFX constant (int)",
+        "SpawnResourceNode" => "Node tag to spawn",
+        "DirectionalHint" => "Hint parameters...",
+        "Custom" => "Custom value...",
+        _ => "Value..."
+    };
+
+    private static string GetTargetModeBadgeClass(string? mode) => mode?.ToLowerInvariant() switch
+    {
+        "node" => "running",
+        "trigger" => "",
+        "placeable" => "warning",
+        _ => ""
+    };
+}

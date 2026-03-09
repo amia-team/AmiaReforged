@@ -349,3 +349,36 @@ public class CoinhouseDto
     public int TotalDeposits { get; set; }
     public int TotalCredits { get; set; }
 }
+
+// ==================== Interaction Definition DTOs ====================
+
+public class InteractionDefinitionDto
+{
+    public string Tag { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string TargetMode { get; set; } = "Trigger";
+    public int BaseRounds { get; set; } = 4;
+    public int MinRounds { get; set; } = 2;
+    public bool ProficiencyReducesRounds { get; set; } = true;
+    public bool RequiresIndustryMembership { get; set; } = true;
+    public List<InteractionResponseDto> Responses { get; set; } = [];
+    public DateTime? CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+}
+
+public class InteractionResponseDto
+{
+    public string ResponseTag { get; set; } = string.Empty;
+    public int Weight { get; set; } = 1;
+    public string? MinProficiency { get; set; }
+    public string? Message { get; set; }
+    public List<InteractionResponseEffectDto> Effects { get; set; } = [];
+}
+
+public class InteractionResponseEffectDto
+{
+    public string EffectType { get; set; } = string.Empty;
+    public string Value { get; set; } = string.Empty;
+    public Dictionary<string, object>? Metadata { get; set; }
+}
