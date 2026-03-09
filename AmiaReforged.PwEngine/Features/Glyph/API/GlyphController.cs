@@ -112,6 +112,12 @@ public class GlyphController
         if (req.IsActive.HasValue) definition.IsActive = req.IsActive.Value;
 
         await Repository.UpdateDefinitionAsync(definition);
+
+        // Refresh all hook caches — the definition's graph JSON, active flag, or event type may have changed
+        if (EncounterHooks != null) await EncounterHooks.RefreshCacheAsync();
+        if (TraitHooks != null) await TraitHooks.RefreshCacheAsync();
+        if (InteractionHooks != null) await InteractionHooks.RefreshCacheAsync();
+
         return new ApiResult(200, ToDto(definition));
     }
 
@@ -127,6 +133,12 @@ public class GlyphController
             return new ApiResult(400, new ErrorResponse("Bad request", "Invalid definition ID."));
 
         await Repository.DeleteDefinitionAsync(id);
+
+        // Refresh all hook caches — cascade-deleted bindings are now stale in cache
+        if (EncounterHooks != null) await EncounterHooks.RefreshCacheAsync();
+        if (TraitHooks != null) await TraitHooks.RefreshCacheAsync();
+        if (InteractionHooks != null) await InteractionHooks.RefreshCacheAsync();
+
         return new ApiResult(204, new { });
     }
 

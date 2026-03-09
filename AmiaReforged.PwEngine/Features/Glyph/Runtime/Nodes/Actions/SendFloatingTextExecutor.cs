@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
+using NLog;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
@@ -9,6 +10,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 /// </summary>
 public class SendFloatingTextExecutor : IGlyphNodeExecutor
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
     public const string NodeTypeId = "action.send_floating_text";
 
     public string TypeId => NodeTypeId;
@@ -24,9 +27,18 @@ public class SendFloatingTextExecutor : IGlyphNodeExecutor
         uint creature = Convert.ToUInt32(creatureValue);
         string message = messageValue?.ToString() ?? string.Empty;
 
+        Log.Debug("[Glyph] SendFloatingText: creature=0x{Creature:X}, message=\"{Message}\", valid={Valid}",
+            creature, message, creature != NWScript.OBJECT_INVALID);
+
         if (creature != NWScript.OBJECT_INVALID && !string.IsNullOrEmpty(message))
         {
             NWScript.FloatingTextStringOnCreature(message, creature);
+            Log.Debug("[Glyph] SendFloatingText: called FloatingTextStringOnCreature successfully");
+        }
+        else
+        {
+            Log.Warn("[Glyph] SendFloatingText: skipped — creature={Creature} (invalid={IsInvalid}), message=\"{Message}\"",
+                creature, creature == NWScript.OBJECT_INVALID, message);
         }
 
         return GlyphNodeResult.Continue("exec_out");

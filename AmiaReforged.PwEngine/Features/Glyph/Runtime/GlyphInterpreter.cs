@@ -36,10 +36,15 @@ public class GlyphInterpreter
         GlyphNodeInstance? entryNode = graph.FindEntryNode();
         if (entryNode == null)
         {
-            Log.Warn("Glyph graph '{Name}' has no entry-point node for event type {EventType}.",
-                graph.Name, graph.EventType);
+            Log.Warn("[Glyph] Graph '{Name}' has no entry-point node for event type {EventType}. " +
+                     "Nodes in graph: [{NodeTypes}]",
+                graph.Name, graph.EventType,
+                string.Join(", ", graph.Nodes.Select(n => n.TypeId)));
             return false;
         }
+
+        Log.Debug("[Glyph] Found entry node '{TypeId}' ({Id}) for graph '{Name}'",
+            entryNode.TypeId, entryNode.InstanceId, graph.Name);
 
         // Initialize graph variables from defaults
         InitializeVariables(context);
@@ -243,7 +248,8 @@ public class GlyphInterpreter
 
         if (!_executors.TryGetValue(node.TypeId, out IGlyphNodeExecutor? executor))
         {
-            Log.Warn("No executor registered for Glyph node type '{TypeId}'.", node.TypeId);
+            Log.Warn("[Glyph] No executor registered for node type '{TypeId}'. Registered types: [{Types}]",
+                node.TypeId, string.Join(", ", _executors.Keys));
             return GlyphNodeResult.Done();
         }
 
@@ -261,13 +267,19 @@ public class GlyphInterpreter
             foreach (KeyValuePair<string, object?> kvp in result.OutputValues)
             {
                 context.CachePinValue(node.InstanceId, kvp.Key, kvp.Value);
+                Trace(context, $"  Output [{kvp.Key}] = {FormatValue(kvp.Value)}");
+            }
+
+            if (result.NextExecPinId != null)
+            {
+                Trace(context, $"  -> Following exec pin '{result.NextExecPinId}'");
             }
 
             return result;
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error executing Glyph node '{TypeId}' ({InstanceId}) in graph '{Graph}'.",
+            Log.Error(ex, "[Glyph] Error executing node '{TypeId}' ({InstanceId}) in graph '{Graph}'.",
                 node.TypeId, node.InstanceId, context.Graph.Name);
             Trace(context, $"ERROR in node {node.TypeId}: {ex.Message}");
             return GlyphNodeResult.Done();
@@ -291,15 +303,20 @@ public class GlyphInterpreter
             // No edge — use property override if available, otherwise pin default
             if (node.PropertyOverrides.TryGetValue(inputPinId, out string? overrideValue))
             {
-                return ParseDefaultValue(node.TypeId, inputPinId, overrideValue);
+                object? parsed = ParseDefaultValue(node.TypeId, inputPinId, overrideValue);
+                Trace(context, $"  Input [{inputPinId}] resolved from property override: {FormatValue(parsed)}");
+                return parsed;
             }
 
-            return GetPinDefaultValue(node.TypeId, inputPinId);
+            object? defaultVal = GetPinDefaultValue(node.TypeId, inputPinId);
+            Trace(context, $"  Input [{inputPinId}] resolved from default: {FormatValue(defaultVal)}");
+            return defaultVal;
         }
 
         // Check the cache first
         if (context.TryGetCachedPinValue(edge.SourceNodeId, edge.SourcePinId, out object? cachedValue))
         {
+            Trace(context, $"  Input [{inputPinId}] resolved from cache (source {edge.SourceNodeId}:{edge.SourcePinId}): {FormatValue(cachedValue)}");
             return cachedValue;
         }
 
@@ -376,5 +393,13 @@ public class GlyphInterpreter
         {
             context.TraceLog.Add($"[{DateTime.UtcNow:HH:mm:ss.fff}] {message}");
         }
+    }
+
+    private static string FormatValue(object? value)
+    {
+        if (value == null) return "(null)";
+        if (value is uint u) return $"0x{u:X} ({u})";
+        if (value is string s) return $"\"{s}\"";
+        return value.ToString() ?? "(null)";
     }
 }

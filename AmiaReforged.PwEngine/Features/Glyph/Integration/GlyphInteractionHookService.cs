@@ -5,6 +5,7 @@ using AmiaReforged.PwEngine.Features.Glyph.Persistence;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.Events;
+using Anvil.API;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
@@ -64,15 +65,23 @@ public class GlyphInteractionHookService
     public async Task RefreshCacheAsync()
     {
         List<InteractionGlyphBinding> bindings = await _repository.GetAllInteractionBindingsAsync();
+        Log.Info("[Glyph] Refreshing cache: {Count} raw bindings loaded from DB.", bindings.Count);
+
         Dictionary<(string, GlyphEventType), List<CachedBinding>> newCache = new();
 
         foreach (InteractionGlyphBinding binding in bindings)
         {
-            if (binding.GlyphDefinition is not { IsActive: true }) continue;
+            if (binding.GlyphDefinition is not { IsActive: true })
+            {
+                Log.Debug("[Glyph] Skipping binding {Id}: GlyphDefinition is null or inactive. " +
+                          "Tag='{Tag}', DefId={DefId}",
+                    binding.Id, binding.InteractionTag, binding.GlyphDefinitionId);
+                continue;
+            }
 
             if (!Enum.TryParse<GlyphEventType>(binding.GlyphDefinition.EventType, out GlyphEventType eventType))
             {
-                Log.Warn("Interaction Glyph binding {Id} has unknown event type '{EventType}'. Skipping.",
+                Log.Warn("[Glyph] Binding {Id} has unknown event type '{EventType}'. Skipping.",
                     binding.Id, binding.GlyphDefinition.EventType);
                 continue;
             }
@@ -88,6 +97,12 @@ public class GlyphInteractionHookService
             }
 
             list.Add(new CachedBinding(graph, binding.AreaResRef, binding.Priority));
+
+            Log.Info("[Glyph] Cached binding: tag='{Tag}', event={Event}, graph='{Name}' " +
+                     "(nodes={Nodes}, edges={Edges}), area={Area}, priority={Priority}",
+                binding.InteractionTag, eventType, graph.Name,
+                graph.Nodes.Count, graph.Edges.Count,
+                binding.AreaResRef ?? "(global)", binding.Priority);
         }
 
         // Sort each list by priority
@@ -116,17 +131,34 @@ public class GlyphInteractionHookService
         string? proficiency,
         Dictionary<string, object>? metadata)
     {
+        Log.Debug("[Glyph] OnAttempted hook fired for interaction '{Tag}', character={CharId}, area={Area}",
+            interactionTag, characterId, areaResRef ?? "(null)");
+
         List<GlyphGraph> graphs = GetMatchingGraphs(interactionTag, GlyphEventType.OnInteractionAttempted, areaResRef);
-        if (graphs.Count == 0) return (false, null);
+
+        if (graphs.Count == 0)
+        {
+            Log.Debug("[Glyph] OnAttempted: no matching graphs for '{Tag}'. Cache has {Count} entries: [{Keys}]",
+                interactionTag, _cache.Count,
+                string.Join(", ", _cache.Keys.Select(k => $"{k.Tag}:{k.EventType}")));
+            return (false, null);
+        }
+
+        Log.Debug("[Glyph] OnAttempted: found {Count} matching graph(s) for '{Tag}'", graphs.Count, interactionTag);
 
         foreach (GlyphGraph graph in graphs)
         {
+            uint creatureId = ResolveCreatureObjectId(characterId);
+            Log.Debug("[Glyph] OnAttempted: executing graph '{Name}' (event={EventType}, nodes={NodeCount}, edges={EdgeCount}), creature=0x{Creature:X}",
+                graph.Name, graph.EventType, graph.Nodes.Count, graph.Edges.Count, creatureId);
+
             GlyphExecutionContext ctx = CreateInteractionContext(graph, interactionTag, characterId,
                 targetId, targetMode, areaResRef, proficiency, metadata,
-                creatureObjectId: ResolveCreatureObjectId(characterId));
+                creatureObjectId: creatureId);
             try
             {
                 _bootstrap.Interpreter.ExecuteAsync(ctx).GetAwaiter().GetResult();
+                DumpTraceLog(ctx, "OnAttempted");
 
                 if (ctx.ShouldBlockInteraction)
                 {
@@ -160,14 +192,20 @@ public class GlyphInteractionHookService
         string? proficiency,
         Dictionary<string, object>? metadata)
     {
+        Log.Debug("[Glyph] OnTick hook fired for interaction '{Tag}', tick {Progress}/{Total}",
+            interactionTag, progress, requiredRounds);
+
         List<GlyphGraph> graphs = GetMatchingGraphs(interactionTag, GlyphEventType.OnInteractionTick, areaResRef);
         if (graphs.Count == 0) return (false, null);
 
+        Log.Debug("[Glyph] OnTick: found {Count} matching graph(s) for '{Tag}'", graphs.Count, interactionTag);
+
         foreach (GlyphGraph graph in graphs)
         {
+            uint creatureId = ResolveCreatureObjectId(characterId);
             GlyphExecutionContext ctx = CreateInteractionContext(graph, interactionTag, characterId,
                 targetId, null, areaResRef, proficiency, metadata,
-                creatureObjectId: ResolveCreatureObjectId(characterId));
+                creatureObjectId: creatureId);
             ctx.InteractionSessionId = sessionId;
             ctx.InteractionProgress = progress;
             ctx.InteractionRequiredRounds = requiredRounds;
@@ -175,6 +213,7 @@ public class GlyphInteractionHookService
             try
             {
                 _bootstrap.Interpreter.ExecuteAsync(ctx).GetAwaiter().GetResult();
+                DumpTraceLog(ctx, "OnTick");
 
                 if (ctx.ShouldCancelInteraction)
                 {
@@ -200,12 +239,30 @@ public class GlyphInteractionHookService
     /// </summary>
     public async Task HandleAsync(InteractionStartedEvent @event, CancellationToken cancellationToken = default)
     {
+        Log.Debug("[Glyph] OnStarted event received for interaction '{Tag}', character={CharId}",
+            @event.InteractionTag, @event.CharacterId);
+
+        // Event bus dispatches on a background thread.
+        // NWScript calls require the NWN main thread.
+        await SwitchToMainThreadSafe();
+
         List<GlyphGraph> graphs = GetMatchingGraphs(
             @event.InteractionTag, GlyphEventType.OnInteractionStarted, areaResRef: null);
-        if (graphs.Count == 0) return;
+
+        if (graphs.Count == 0)
+        {
+            Log.Debug("[Glyph] OnStarted: no matching graphs for '{Tag}'", @event.InteractionTag);
+            return;
+        }
+
+        Log.Debug("[Glyph] OnStarted: found {Count} matching graph(s) for '{Tag}'", graphs.Count, @event.InteractionTag);
 
         foreach (GlyphGraph graph in graphs)
         {
+            uint creatureId = ResolveCreatureObjectId(@event.CharacterId.ToString());
+            Log.Debug("[Glyph] OnStarted: executing graph '{Name}' (nodes={NodeCount}, edges={EdgeCount}), creature=0x{Creature:X}",
+                graph.Name, graph.Nodes.Count, graph.Edges.Count, creatureId);
+
             GlyphExecutionContext ctx = CreateInteractionContext(graph,
                 @event.InteractionTag,
                 @event.CharacterId.ToString(),
@@ -215,13 +272,14 @@ public class GlyphInteractionHookService
                 proficiency: null,
                 metadata: null,
                 cancellationToken,
-                creatureObjectId: ResolveCreatureObjectId(@event.CharacterId.ToString()));
+                creatureObjectId: creatureId);
             ctx.InteractionSessionId = @event.SessionId;
             ctx.InteractionRequiredRounds = @event.RequiredRounds;
 
             try
             {
                 await _bootstrap.Interpreter.ExecuteAsync(ctx);
+                DumpTraceLog(ctx, "OnStarted");
             }
             catch (Exception ex)
             {
@@ -237,12 +295,32 @@ public class GlyphInteractionHookService
     /// </summary>
     public async Task HandleAsync(InteractionCompletedEvent @event, CancellationToken cancellationToken = default)
     {
+        Log.Debug("[Glyph] OnCompleted event received for interaction '{Tag}', character={CharId}, success={Success}",
+            @event.InteractionTag, @event.CharacterId, @event.Success);
+
+        // Event bus dispatches on a background thread.
+        // NWScript calls require the NWN main thread.
+        await SwitchToMainThreadSafe();
+
         List<GlyphGraph> graphs = GetMatchingGraphs(
             @event.InteractionTag, GlyphEventType.OnInteractionCompleted, areaResRef: null);
-        if (graphs.Count == 0) return;
+
+        if (graphs.Count == 0)
+        {
+            Log.Debug("[Glyph] OnCompleted: no matching graphs for '{Tag}'. Cache has {Count} entries: [{Keys}]",
+                @event.InteractionTag, _cache.Count,
+                string.Join(", ", _cache.Keys.Select(k => $"{k.Tag}:{k.EventType}")));
+            return;
+        }
+
+        Log.Debug("[Glyph] OnCompleted: found {Count} matching graph(s) for '{Tag}'", graphs.Count, @event.InteractionTag);
 
         foreach (GlyphGraph graph in graphs)
         {
+            uint creatureId = ResolveCreatureObjectId(@event.CharacterId.ToString());
+            Log.Debug("[Glyph] OnCompleted: executing graph '{Name}' (nodes={NodeCount}, edges={EdgeCount}), creature=0x{Creature:X}",
+                graph.Name, graph.Nodes.Count, graph.Edges.Count, creatureId);
+
             GlyphExecutionContext ctx = CreateInteractionContext(graph,
                 @event.InteractionTag,
                 @event.CharacterId.ToString(),
@@ -252,12 +330,13 @@ public class GlyphInteractionHookService
                 proficiency: null,
                 metadata: null,
                 cancellationToken,
-                creatureObjectId: ResolveCreatureObjectId(@event.CharacterId.ToString()));
+                creatureObjectId: creatureId);
             ctx.InteractionSessionId = @event.SessionId;
 
             try
             {
                 await _bootstrap.Interpreter.ExecuteAsync(ctx);
+                DumpTraceLog(ctx, "OnCompleted");
             }
             catch (Exception ex)
             {
@@ -316,7 +395,7 @@ public class GlyphInteractionHookService
             InteractionMetadata = metadata,
             InteractionCreature = creatureObjectId,
             MaxExecutionSteps = 10_000,
-            EnableTracing = false,
+            EnableTracing = true,
             CancellationToken = cancellationToken
         };
     }
@@ -327,13 +406,23 @@ public class GlyphInteractionHookService
     /// </summary>
     private static uint ResolveCreatureObjectId(string? characterId)
     {
-        if (string.IsNullOrEmpty(characterId)) return 0;
+        if (string.IsNullOrEmpty(characterId))
+        {
+            Log.Debug("[Glyph] ResolveCreatureObjectId: characterId is null/empty, returning 0");
+            return 0;
+        }
+
         try
         {
-            return NWScript.GetObjectByUUID(characterId);
+            uint result = NWScript.GetObjectByUUID(characterId);
+            Log.Debug("[Glyph] ResolveCreatureObjectId: UUID '{CharId}' -> 0x{Result:X} (invalid={IsInvalid})",
+                characterId, result, result == NWScript.OBJECT_INVALID);
+            return result;
         }
-        catch
+        catch (Exception ex)
         {
+            Log.Warn("[Glyph] ResolveCreatureObjectId: failed for UUID '{CharId}': {Error}",
+                characterId, ex.Message);
             return 0;
         }
     }
@@ -363,5 +452,41 @@ public class GlyphInteractionHookService
     /// <summary>
     /// A cached binding entry containing the deserialized graph, optional area scope, and priority.
     /// </summary>
+    /// <summary>
+    /// Dumps the execution trace log to NLog Debug output for diagnosing script execution.
+    /// </summary>
+    private static void DumpTraceLog(GlyphExecutionContext ctx, string hookName)
+    {
+        if (ctx.TraceLog.Count == 0)
+        {
+            Log.Debug("[Glyph] {Hook} trace: (empty — no trace entries recorded)", hookName);
+            return;
+        }
+
+        Log.Debug("[Glyph] {Hook} trace ({Count} entries) for graph '{Name}':",
+            hookName, ctx.TraceLog.Count, ctx.Graph.Name);
+        foreach (string entry in ctx.TraceLog)
+        {
+            Log.Debug("[Glyph]   {Entry}", entry);
+        }
+    }
+
+    /// <summary>
+    /// Switches to the NWN main thread if running under Anvil.
+    /// No-ops gracefully in test environments where NwTask is unavailable.
+    /// </summary>
+    private static async Task SwitchToMainThreadSafe()
+    {
+        try
+        {
+            await NwTask.SwitchToMainThread();
+        }
+        catch (NullReferenceException)
+        {
+            // Test environment — no Anvil synchronization context.
+            // NWScript calls will also be no-ops/mocked in tests.
+        }
+    }
+
     private sealed record CachedBinding(GlyphGraph Graph, string? AreaResRef, int Priority);
 }
