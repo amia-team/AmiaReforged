@@ -20,12 +20,14 @@ public class GlyphApiBootstrap
         IGlyphRepository repository,
         IGlyphNodeDefinitionRegistry nodeRegistry,
         GlyphEncounterHookService encounterHooks,
-        GlyphTraitHookService traitHooks)
+        GlyphTraitHookService traitHooks,
+        GlyphInteractionHookService interactionHooks)
     {
         GlyphController.Repository = repository;
         GlyphController.NodeRegistry = nodeRegistry;
         GlyphController.EncounterHooks = encounterHooks;
         GlyphController.TraitHooks = traitHooks;
+        GlyphController.InteractionHooks = interactionHooks;
 
         Log.Info("Glyph API bootstrap complete — controller wired to services.");
     }

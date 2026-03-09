@@ -101,8 +101,30 @@ public record CreateTraitGlyphBindingRequest(
     int Priority = 0);
 
 /// <summary>
-/// Combined response containing both spawn profile and trait bindings for a definition.
+/// Combined response containing both spawn profile, trait, and interaction bindings for a definition.
 /// </summary>
 public record DefinitionBindingsDto(
     List<GlyphBindingDto> SpawnProfileBindings,
-    List<TraitGlyphBindingDto> TraitBindings);
+    List<TraitGlyphBindingDto> TraitBindings,
+    List<InteractionGlyphBindingDto> InteractionBindings);
+
+/// <summary>
+/// A binding that links a Glyph definition to an interaction tag, with optional area scope.
+/// </summary>
+public record InteractionGlyphBindingDto(
+    Guid Id,
+    string InteractionTag,
+    string? AreaResRef,
+    Guid GlyphDefinitionId,
+    string GlyphName,
+    string EventType,
+    int Priority);
+
+/// <summary>
+/// Request to bind a Glyph definition to an interaction tag.
+/// </summary>
+public record CreateInteractionGlyphBindingRequest(
+    string InteractionTag,
+    Guid GlyphDefinitionId,
+    string? AreaResRef = null,
+    int Priority = 0);

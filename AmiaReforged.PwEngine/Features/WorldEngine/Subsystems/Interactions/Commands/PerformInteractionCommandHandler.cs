@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.Glyph.Integration;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
@@ -22,7 +23,8 @@ public sealed class PerformInteractionCommandHandler(
     ICharacterRepository characterRepository,
     IInteractionHandlerRegistry handlerRegistry,
     IInteractionDefinitionRepository definitionRepository,
-    IEventBus eventBus) : ICommandHandler<PerformInteractionCommand>
+    IEventBus eventBus,
+    GlyphInteractionHookService? glyphHook = null) : ICommandHandler<PerformInteractionCommand>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -90,6 +92,30 @@ public sealed class PerformInteractionCommandHandler(
             return await CompleteInteractionAsync(handler, session, character, cancellationToken);
         }
 
+        // Glyph OnTick hook — scripts can cancel the interaction mid-progress
+        if (glyphHook is not null)
+        {
+            (bool shouldCancel, string? cancelMessage) = glyphHook.RunOnInteractionTick(
+                session.InteractionTag,
+                session.CharacterId.Value.ToString(),
+                session.TargetId,
+                session.AreaResRef,
+                session.Id,
+                session.Progress,
+                session.RequiredRounds,
+                proficiency: null,
+                session.Metadata);
+
+            if (shouldCancel)
+            {
+                Log.Info("Glyph script cancelled '{Tag}' session {SessionId}: {Message}",
+                    session.InteractionTag, session.Id, cancelMessage);
+                handler.OnCancel(session, character);
+                sessionManager.EndSession(session.CharacterId);
+                return CommandResult.Fail(cancelMessage ?? "Interaction cancelled by script");
+            }
+        }
+
         return CommandResult.OkWith("status", "InProgress");
     }
 
@@ -116,6 +142,24 @@ public sealed class PerformInteractionCommandHandler(
         PerformInteractionCommand command,
         CancellationToken ct)
     {
+        // Glyph OnAttempted hook — scripts can block the interaction before preconditions
+        if (glyphHook is not null)
+        {
+            (bool shouldBlock, string? blockMessage) = glyphHook.RunOnInteractionAttempted(
+                command.InteractionTag,
+                command.CharacterId.Value.ToString(),
+                command.TargetId,
+                handler.TargetMode.ToString(),
+                command.AreaResRef,
+                proficiency: null,
+                command.Metadata);
+
+            if (shouldBlock)
+            {
+                return CommandResult.Fail(blockMessage ?? "Interaction blocked by script");
+            }
+        }
+
         PreconditionResult canStart = handler.CanStart(character, context);
         if (!canStart.Passed)
         {

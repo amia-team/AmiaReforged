@@ -5,6 +5,7 @@ using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Constants;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Events;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Flow;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
+using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Math;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Traits;
 using Anvil.Services;
@@ -95,6 +96,15 @@ public class GlyphBootstrap
         // Traits
         registry.Register(HasTraitExecutor.CreateDefinition());
         registry.Register(GetCreatureTraitsExecutor.CreateDefinition());
+
+        // Interactions
+        registry.Register(OnInteractionAttemptedEventExecutor.CreateDefinition());
+        registry.Register(OnInteractionStartedEventExecutor.CreateDefinition());
+        registry.Register(OnInteractionTickEventExecutor.CreateDefinition());
+        registry.Register(OnInteractionCompletedEventExecutor.CreateDefinition());
+        registry.Register(BlockInteractionExecutor.CreateDefinition());
+        registry.Register(CancelInteractionExecutor.CreateDefinition());
+        registry.Register(GetInteractionInfoExecutor.CreateDefinition());
     }
 
     private static List<IGlyphNodeExecutor> CreateExecutors() =>
@@ -146,6 +156,15 @@ public class GlyphBootstrap
 
         // Traits
         new HasTraitExecutor(),
-        new GetCreatureTraitsExecutor()
+        new GetCreatureTraitsExecutor(),
+
+        // Interactions
+        new OnInteractionAttemptedEventExecutor(),
+        new OnInteractionStartedEventExecutor(),
+        new OnInteractionTickEventExecutor(),
+        new OnInteractionCompletedEventExecutor(),
+        new BlockInteractionExecutor(),
+        new CancelInteractionExecutor(),
+        new GetInteractionInfoExecutor()
     ];
 }

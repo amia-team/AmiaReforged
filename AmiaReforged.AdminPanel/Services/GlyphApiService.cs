@@ -27,6 +27,7 @@ public class GlyphApiService
     private const string NodeCatalogPath = "/api/worldengine/glyph-catalog";
     private const string BindingsBase = "/api/worldengine/glyphs/bindings";
     private const string TraitBindingsBase = "/api/worldengine/glyphs/trait-bindings";
+    private const string InteractionBindingsBase = "/api/worldengine/glyphs/interaction-bindings";
 
     public GlyphApiService(IHttpClientFactory httpClientFactory, IWorldEngineEndpointService endpointService)
     {
@@ -119,6 +120,26 @@ public class GlyphApiService
     public async Task<DefinitionBindingsDto?> GetBindingsForDefinitionAsync(Guid definitionId)
     {
         return await GetAsync<DefinitionBindingsDto>($"{DefinitionsBase}/{definitionId}/bindings");
+    }
+
+    // ==================== Interaction Bindings ====================
+
+    public async Task<List<InteractionGlyphBindingDto>> GetInteractionBindingsAsync(string? interactionTag = null)
+    {
+        string url = string.IsNullOrEmpty(interactionTag)
+            ? InteractionBindingsBase
+            : $"{InteractionBindingsBase}?interactionTag={Uri.EscapeDataString(interactionTag)}";
+        return await GetAsync<List<InteractionGlyphBindingDto>>(url) ?? [];
+    }
+
+    public async Task<InteractionGlyphBindingDto?> CreateInteractionBindingAsync(CreateInteractionGlyphBindingRequest request)
+    {
+        return await PostAsync<InteractionGlyphBindingDto>(InteractionBindingsBase, request);
+    }
+
+    public async Task DeleteInteractionBindingAsync(Guid id)
+    {
+        await DeleteAsync($"{InteractionBindingsBase}/{id}");
     }
 
     // ==================== HTTP Helpers ====================

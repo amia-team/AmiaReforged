@@ -34,5 +34,29 @@ public enum GlyphEventType
     /// Fires when a trait is removed from a character.
     /// Provides the character ID, trait tag, and target creature reference.
     /// </summary>
-    OnTraitRemoved
+    OnTraitRemoved,
+
+    /// <summary>
+    /// Fires when a character attempts to start an interaction, before precondition checks.
+    /// The script can block the interaction from starting by setting ShouldBlockInteraction.
+    /// </summary>
+    OnInteractionAttempted,
+
+    /// <summary>
+    /// Fires after an interaction session has been created and the first tick is about to run.
+    /// Can set up visual effects, messages, or modify context variables.
+    /// </summary>
+    OnInteractionStarted,
+
+    /// <summary>
+    /// Fires each round/tick of an active interaction.
+    /// Can perform per-tick logic or conditionally cancel the interaction mid-progress.
+    /// </summary>
+    OnInteractionTick,
+
+    /// <summary>
+    /// Fires when an interaction session completes (all rounds finished).
+    /// Runs before the data-driven response system to augment the outcome.
+    /// </summary>
+    OnInteractionCompleted
 }

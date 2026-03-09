@@ -75,6 +75,80 @@ public class GlyphExecutionContext
     /// </summary>
     public uint TargetCreature { get; set; }
 
+    // ==================== Interaction Context ====================
+
+    /// <summary>
+    /// The interaction definition tag (e.g., "prospect_minerals"). Null for non-interaction scripts.
+    /// </summary>
+    public string? InteractionTag { get; set; }
+
+    /// <summary>
+    /// The target entity ID for the interaction.
+    /// </summary>
+    public Guid InteractionTargetId { get; set; }
+
+    /// <summary>
+    /// The target mode string ("Node", "Trigger", "Placeable"). Null for non-interaction scripts.
+    /// </summary>
+    public string? InteractionTargetMode { get; set; }
+
+    /// <summary>
+    /// The area ResRef where the interaction is taking place. Null for non-interaction scripts.
+    /// </summary>
+    public string? InteractionAreaResRef { get; set; }
+
+    /// <summary>
+    /// The interaction session ID. <see cref="Guid.Empty"/> for OnInteractionAttempted (no session yet).
+    /// </summary>
+    public Guid InteractionSessionId { get; set; }
+
+    /// <summary>
+    /// Current progress (tick count) of the interaction session.
+    /// </summary>
+    public int InteractionProgress { get; set; }
+
+    /// <summary>
+    /// Total rounds required for the interaction to complete.
+    /// </summary>
+    public int InteractionRequiredRounds { get; set; }
+
+    /// <summary>
+    /// The character's best proficiency level name (e.g., "Novice", "Expert"). Null if unknown.
+    /// </summary>
+    public string? InteractionProficiency { get; set; }
+
+    /// <summary>
+    /// The selected response tag from the data-driven system. Populated for OnInteractionCompleted.
+    /// </summary>
+    public string? InteractionResponseTag { get; set; }
+
+    /// <summary>
+    /// When set to true by a node during OnInteractionAttempted execution,
+    /// the interaction is prevented from starting.
+    /// </summary>
+    public bool ShouldBlockInteraction { get; set; }
+
+    /// <summary>
+    /// Rejection message when <see cref="ShouldBlockInteraction"/> is true.
+    /// </summary>
+    public string? BlockInteractionMessage { get; set; }
+
+    /// <summary>
+    /// When set to true by a node during OnInteractionTick execution,
+    /// the interaction is cancelled mid-progress.
+    /// </summary>
+    public bool ShouldCancelInteraction { get; set; }
+
+    /// <summary>
+    /// Cancellation message when <see cref="ShouldCancelInteraction"/> is true.
+    /// </summary>
+    public string? CancelInteractionMessage { get; set; }
+
+    /// <summary>
+    /// Arbitrary metadata from the interaction command. Null for non-interaction scripts.
+    /// </summary>
+    public Dictionary<string, object>? InteractionMetadata { get; set; }
+
     // ==================== Variables & Cache ====================
 
     /// Mutable variable store for the current execution run.

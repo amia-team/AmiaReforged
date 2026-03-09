@@ -165,4 +165,52 @@ public class GlyphRepository : IGlyphRepository
             .AsNoTracking()
             .ToListAsync();
     }
+
+    // === Interaction Bindings ===
+
+    public async Task<List<InteractionGlyphBinding>> GetInteractionBindingsForTagAsync(string interactionTag)
+    {
+        return await _db.InteractionGlyphBindings
+            .Include(b => b.GlyphDefinition)
+            .Where(b => b.InteractionTag == interactionTag)
+            .OrderBy(b => b.Priority)
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
+    public async Task<List<InteractionGlyphBinding>> GetAllInteractionBindingsAsync()
+    {
+        return await _db.InteractionGlyphBindings
+            .Include(b => b.GlyphDefinition)
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
+    public async Task CreateInteractionBindingAsync(InteractionGlyphBinding binding)
+    {
+        _db.InteractionGlyphBindings.Add(binding);
+        await _db.SaveChangesAsync();
+        Log.Info("Created Glyph interaction binding: tag={InteractionTag}, area={AreaResRef}, definition={DefId}, priority={Priority}.",
+            binding.InteractionTag, binding.AreaResRef ?? "(global)", binding.GlyphDefinitionId, binding.Priority);
+    }
+
+    public async Task DeleteInteractionBindingAsync(Guid id)
+    {
+        InteractionGlyphBinding? binding = await _db.InteractionGlyphBindings.FindAsync(id);
+        if (binding == null) return;
+
+        _db.InteractionGlyphBindings.Remove(binding);
+        await _db.SaveChangesAsync();
+        Log.Info("Deleted Glyph interaction binding {Id}.", id);
+    }
+
+    public async Task<List<InteractionGlyphBinding>> GetInteractionBindingsForDefinitionAsync(Guid definitionId)
+    {
+        return await _db.InteractionGlyphBindings
+            .Include(b => b.GlyphDefinition)
+            .Where(b => b.GlyphDefinitionId == definitionId)
+            .OrderBy(b => b.Priority)
+            .AsNoTracking()
+            .ToListAsync();
+    }
 }

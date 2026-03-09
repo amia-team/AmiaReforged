@@ -265,6 +265,49 @@
                                         <button class="btn btn-outline-primary btn-sm mt-1" style="font-size:0.75rem" @onclick="() => _showAddTraitBinding = true">+ Attach Trait</button>
                                     }
                                 </div>
+
+                                @* --- Interaction Bindings --- *@
+                                <div>
+                                    <label style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em">Interactions</label>
+                                    @if (_definitionBindings?.InteractionBindings.Count > 0)
+                                    {
+                                        @foreach (var b in _definitionBindings.InteractionBindings)
+                                        {
+                                            <div class="d-flex justify-content-between align-items-center py-1" style="border-bottom:1px solid var(--border-color)">
+                                                <div>
+                                                    <span style="color:var(--text-primary);font-size:0.85rem;font-family:monospace">@b.InteractionTag</span>
+                                                    @if (!string.IsNullOrEmpty(b.AreaResRef))
+                                                    {
+                                                        <br /><small style="color:var(--text-secondary)">Area: @b.AreaResRef</small>
+                                                    }
+                                                    <br /><small style="color:var(--text-secondary)">Priority: @b.Priority</small>
+                                                </div>
+                                                <button class="btn btn-outline-danger btn-sm" style="font-size:0.7rem;padding:1px 6px" @onclick="() => RemoveInteractionBinding(b.Id)">✕</button>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <p style="color:var(--text-secondary);font-size:0.8rem;margin:4px 0">No interaction bindings.</p>
+                                    }
+
+                                    @if (_showAddInteractionBinding)
+                                    {
+                                        <div style="margin-top:6px;padding:8px;background:var(--surface-hover);border-radius:6px">
+                                            <input type="text" class="form-control form-control-sm mb-1" @bind="_newInteractionBindingTag" placeholder="Interaction tag (e.g. prospecting)" />
+                                            <input type="text" class="form-control form-control-sm mb-1" @bind="_newInteractionBindingAreaResRef" placeholder="Area ResRef (optional)" />
+                                            <input type="number" class="form-control form-control-sm mb-1" @bind="_newInteractionBindingPriority" placeholder="Priority (0)" />
+                                            <div class="d-flex gap-1">
+                                                <button class="btn btn-success btn-sm" style="font-size:0.75rem" @onclick="AddInteractionBinding" disabled="@_isSaving">Add</button>
+                                                <button class="btn btn-secondary btn-sm" style="font-size:0.75rem" @onclick="() => _showAddInteractionBinding = false">Cancel</button>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-outline-primary btn-sm mt-1" style="font-size:0.75rem" @onclick="() => _showAddInteractionBinding = true">+ Attach Interaction</button>
+                                    }
+                                </div>
                             </div>
                         </div>
                     }
@@ -452,6 +495,10 @@
     private bool _showAddTraitBinding;
     private string _newTraitBindingTag = "";
     private int _newTraitBindingPriority;
+    private bool _showAddInteractionBinding;
+    private string _newInteractionBindingTag = "";
+    private string _newInteractionBindingAreaResRef = "";
+    private int _newInteractionBindingPriority;
 
     private IEnumerable<IGrouping<string, GlyphNodeCatalogEntryDto>> FilteredCatalog
     {
@@ -725,6 +772,7 @@
         _definitionBindings = null;
         _showAddSpawnBinding = false;
         _showAddTraitBinding = false;
+        _showAddInteractionBinding = false;
         _editingDefinition = null;
         _selectedNodeInfo = null;
         _error = null;
@@ -907,7 +955,7 @@
         catch (Exception ex)
         {
             Logger.LogWarning(ex, "Failed to load bindings for definition {Id}", definitionId);
-            _definitionBindings = new DefinitionBindingsDto([], []);
+            _definitionBindings = new DefinitionBindingsDto([], [], []);
         }
     }
 
@@ -991,6 +1039,49 @@
         {
             _error = $"Failed to remove trait binding: {ex.Message}";
             Logger.LogError(ex, "Failed to remove trait binding");
+        }
+    }
+
+    private async Task AddInteractionBinding()
+    {
+        if (_editingDefinition == null || string.IsNullOrWhiteSpace(_newInteractionBindingTag)) return;
+
+        _isSaving = true;
+        try
+        {
+            string? area = string.IsNullOrWhiteSpace(_newInteractionBindingAreaResRef)
+                ? null
+                : _newInteractionBindingAreaResRef.Trim();
+            await Api.CreateInteractionBindingAsync(new CreateInteractionGlyphBindingRequest(
+                _newInteractionBindingTag.Trim(), _editingDefinition.Id, area, _newInteractionBindingPriority));
+            await LoadDefinitionBindings(_editingDefinition.Id);
+            _showAddInteractionBinding = false;
+            _newInteractionBindingTag = "";
+            _newInteractionBindingAreaResRef = "";
+            _newInteractionBindingPriority = 0;
+            _success = "Interaction binding added.";
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to add interaction binding: {ex.Message}";
+            Logger.LogError(ex, "Failed to add interaction binding");
+        }
+        finally { _isSaving = false; }
+    }
+
+    private async Task RemoveInteractionBinding(Guid bindingId)
+    {
+        if (_editingDefinition == null) return;
+        try
+        {
+            await Api.DeleteInteractionBindingAsync(bindingId);
+            await LoadDefinitionBindings(_editingDefinition.Id);
+            _success = "Interaction binding removed.";
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to remove interaction binding: {ex.Message}";
+            Logger.LogError(ex, "Failed to remove interaction binding");
         }
     }
 }

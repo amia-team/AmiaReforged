@@ -55,6 +55,10 @@ public class GlyphGraph
             GlyphEventType.OnCreatureDeath => "event.on_creature_death",
             GlyphEventType.OnTraitGranted => "event.on_trait_granted",
             GlyphEventType.OnTraitRemoved => "event.on_trait_removed",
+            GlyphEventType.OnInteractionAttempted => "event.on_interaction_attempted",
+            GlyphEventType.OnInteractionStarted => "event.on_interaction_started",
+            GlyphEventType.OnInteractionTick => "event.on_interaction_tick",
+            GlyphEventType.OnInteractionCompleted => "event.on_interaction_completed",
             _ => string.Empty
         };
 

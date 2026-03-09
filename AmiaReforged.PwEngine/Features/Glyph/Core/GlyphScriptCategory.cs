@@ -24,7 +24,12 @@ public enum GlyphScriptCategory
     /// <summary>
     /// Scripts for NPC dialogue, journal updates, and story-driven triggers.
     /// </summary>
-    Narrative
+    Narrative,
+
+    /// <summary>
+    /// Scripts that hook into the interaction framework lifecycle (attempt, start, tick, complete).
+    /// </summary>
+    Interaction
 }
 
 /// <summary>
@@ -42,6 +47,10 @@ public static class GlyphEventTypeExtensions
         GlyphEventType.OnCreatureDeath => GlyphScriptCategory.Encounter,
         GlyphEventType.OnTraitGranted => GlyphScriptCategory.Trait,
         GlyphEventType.OnTraitRemoved => GlyphScriptCategory.Trait,
+        GlyphEventType.OnInteractionAttempted => GlyphScriptCategory.Interaction,
+        GlyphEventType.OnInteractionStarted => GlyphScriptCategory.Interaction,
+        GlyphEventType.OnInteractionTick => GlyphScriptCategory.Interaction,
+        GlyphEventType.OnInteractionCompleted => GlyphScriptCategory.Interaction,
         _ => GlyphScriptCategory.Encounter
     };
 
@@ -54,6 +63,7 @@ public static class GlyphEventTypeExtensions
         GlyphScriptCategory.Trait => [GlyphEventType.OnTraitGranted, GlyphEventType.OnTraitRemoved],
         GlyphScriptCategory.Environmental => [],
         GlyphScriptCategory.Narrative => [],
+        GlyphScriptCategory.Interaction => [GlyphEventType.OnInteractionAttempted, GlyphEventType.OnInteractionStarted, GlyphEventType.OnInteractionTick, GlyphEventType.OnInteractionCompleted],
         _ => []
     };
 }

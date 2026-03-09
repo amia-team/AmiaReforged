@@ -17,6 +17,7 @@ public class GlyphController
     internal static IGlyphNodeDefinitionRegistry? NodeRegistry;
     internal static Integration.GlyphEncounterHookService? EncounterHooks;
     internal static Integration.GlyphTraitHookService? TraitHooks;
+    internal static Integration.GlyphInteractionHookService? InteractionHooks;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -284,7 +285,7 @@ public class GlyphController
     // ==================== Definition-Scoped Bindings ====================
 
     /// <summary>
-    /// GET /api/worldengine/glyphs/{id}/bindings — Get all bindings (spawn profile + trait) for a definition.
+    /// GET /api/worldengine/glyphs/{id}/bindings — Get all bindings (spawn profile + trait + interaction) for a definition.
     /// Used by the GlyphEditor's binding panel to show "what is this script bound to?"
     /// </summary>
     [HttpGet("/api/worldengine/glyphs/{id}/bindings")]
@@ -297,11 +298,82 @@ public class GlyphController
 
         List<SpawnProfileGlyphBinding> spawnBindings = await Repository.GetSpawnBindingsForDefinitionAsync(id);
         List<TraitGlyphBinding> traitBindings = await Repository.GetTraitBindingsForDefinitionAsync(id);
+        List<InteractionGlyphBinding> interactionBindings = await Repository.GetInteractionBindingsForDefinitionAsync(id);
 
         return new ApiResult(200, new DefinitionBindingsResponse(
             spawnBindings.Select(BindingToDto).ToList(),
-            traitBindings.Select(TraitBindingToDto).ToList()
+            traitBindings.Select(TraitBindingToDto).ToList(),
+            interactionBindings.Select(InteractionBindingToDto).ToList()
         ));
+    }
+
+    // ==================== Interaction Bindings ====================
+
+    /// <summary>
+    /// GET /api/worldengine/glyphs/interaction-bindings?interactionTag={tag} — List interaction bindings, optionally filtered by tag.
+    /// </summary>
+    [HttpGet("/api/worldengine/glyphs/interaction-bindings")]
+    public static async Task<ApiResult> ListInteractionBindings(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        string? interactionTag = ctx.GetQueryParam("interactionTag");
+        if (!string.IsNullOrEmpty(interactionTag))
+        {
+            List<InteractionGlyphBinding> bindings = await Repository.GetInteractionBindingsForTagAsync(interactionTag);
+            return new ApiResult(200, bindings.Select(InteractionBindingToDto).ToList());
+        }
+
+        List<InteractionGlyphBinding> allBindings = await Repository.GetAllInteractionBindingsAsync();
+        return new ApiResult(200, allBindings.Select(InteractionBindingToDto).ToList());
+    }
+
+    /// <summary>
+    /// POST /api/worldengine/glyphs/interaction-bindings — Bind a Glyph definition to an interaction tag.
+    /// </summary>
+    [HttpPost("/api/worldengine/glyphs/interaction-bindings")]
+    public static async Task<ApiResult> CreateInteractionBinding(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        CreateInteractionBindingRequest? req = await ctx.ReadJsonBodyAsync<CreateInteractionBindingRequest>();
+        if (req == null || string.IsNullOrWhiteSpace(req.InteractionTag))
+            return new ApiResult(400, new ErrorResponse("Bad request", "InteractionTag and GlyphDefinitionId are required."));
+
+        InteractionGlyphBinding binding = new()
+        {
+            Id = Guid.NewGuid(),
+            InteractionTag = req.InteractionTag.Trim(),
+            AreaResRef = string.IsNullOrWhiteSpace(req.AreaResRef) ? null : req.AreaResRef.Trim(),
+            GlyphDefinitionId = req.GlyphDefinitionId,
+            Priority = req.Priority
+        };
+
+        await Repository.CreateInteractionBindingAsync(binding);
+
+        // Auto-refresh interaction hook cache so the new binding takes effect immediately
+        if (InteractionHooks != null) await InteractionHooks.RefreshCacheAsync();
+
+        return new ApiResult(201, InteractionBindingToDto(binding));
+    }
+
+    /// <summary>
+    /// DELETE /api/worldengine/glyphs/interaction-bindings/{id} — Remove an interaction binding.
+    /// </summary>
+    [HttpDelete("/api/worldengine/glyphs/interaction-bindings/{id}")]
+    public static async Task<ApiResult> DeleteInteractionBinding(RouteContext ctx)
+    {
+        if (Repository == null) return ServiceUnavailable();
+
+        if (!Guid.TryParse(ctx.GetRouteValue("id"), out Guid id))
+            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid binding ID."));
+
+        await Repository.DeleteInteractionBindingAsync(id);
+
+        // Auto-refresh interaction hook cache
+        if (InteractionHooks != null) await InteractionHooks.RefreshCacheAsync();
+
+        return new ApiResult(204, new { });
     }
 
     // ==================== Helpers ====================
@@ -320,6 +392,11 @@ public class GlyphController
 
     private static TraitGlyphBindingDto TraitBindingToDto(TraitGlyphBinding b) => new(
         b.Id, b.TraitTag, b.GlyphDefinitionId,
+        b.GlyphDefinition?.Name ?? string.Empty, b.GlyphDefinition?.EventType ?? string.Empty,
+        b.Priority);
+
+    private static InteractionGlyphBindingDto InteractionBindingToDto(InteractionGlyphBinding b) => new(
+        b.Id, b.InteractionTag, b.AreaResRef, b.GlyphDefinitionId,
         b.GlyphDefinition?.Name ?? string.Empty, b.GlyphDefinition?.EventType ?? string.Empty,
         b.Priority);
 
@@ -349,7 +426,8 @@ public class GlyphController
 
     public record DefinitionBindingsResponse(
         List<GlyphBindingDto> SpawnProfileBindings,
-        List<TraitGlyphBindingDto> TraitBindings);
+        List<TraitGlyphBindingDto> TraitBindings,
+        List<InteractionGlyphBindingDto> InteractionBindings);
 
     public record GlyphNodeCatalogEntryDto(
         string TypeId, string DisplayName, string Category, string Description,
@@ -373,4 +451,11 @@ public class GlyphController
 
     public record CreateTraitBindingRequest(
         string TraitTag, Guid GlyphDefinitionId, int Priority = 0);
+
+    public record InteractionGlyphBindingDto(
+        Guid Id, string InteractionTag, string? AreaResRef, Guid GlyphDefinitionId,
+        string GlyphName, string EventType, int Priority);
+
+    public record CreateInteractionBindingRequest(
+        string InteractionTag, Guid GlyphDefinitionId, string? AreaResRef = null, int Priority = 0);
 }
