@@ -401,6 +401,7 @@
                             <select class="form-control" @bind="_createCategory">
                                 <option value="Encounter">Encounter</option>
                                 <option value="Trait">Trait</option>
+                                <option value="Interaction">Interaction</option>
                                 <option value="Environmental">Environmental</option>
                                 <option value="Narrative">Narrative</option>
                             </select>
@@ -918,6 +919,7 @@
         {
             "Encounter" => ["BeforeGroupSpawn", "AfterGroupSpawn", "OnCreatureDeath"],
             "Trait" => ["OnTraitGranted", "OnTraitRemoved"],
+            "Interaction" => ["OnInteractionAttempted", "OnInteractionStarted", "OnInteractionTick", "OnInteractionCompleted"],
             "Environmental" => ["BeforeGroupSpawn", "AfterGroupSpawn", "OnCreatureDeath"],
             "Narrative" => ["BeforeGroupSpawn", "AfterGroupSpawn", "OnCreatureDeath"],
             _ => ["BeforeGroupSpawn", "AfterGroupSpawn", "OnCreatureDeath"]
