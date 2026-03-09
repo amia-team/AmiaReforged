@@ -29,7 +29,7 @@ public class IceMephitStrategy : IFamiliarBonusStrategy
             associate.AddSpecialAbility(melfs);
         }
 
-        if (associate.Level >= 24)
+        if (associate.Level >= 21)
         {
             byte casterLevel = (byte)associate.Level;
             if (associate.Level > 15)
