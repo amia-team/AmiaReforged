@@ -22,6 +22,7 @@ public class RuntimeCharacter(
     ICharacterStatService statService) : ICharacter
 {
     private readonly Dictionary<string, List<KnowledgeHarvestEffect>> _nodeEffectCache = new();
+    private HashSet<string>? _unlockedInteractionCache;
 
     public int GetKnowledgePoints()
     {
@@ -76,6 +77,19 @@ public class RuntimeCharacter(
     public void InvalidateEffectCache()
     {
         _nodeEffectCache.Clear();
+        _unlockedInteractionCache = null;
+    }
+
+    /// <inheritdoc />
+    public bool HasUnlockedInteraction(string interactionTag)
+    {
+        _unlockedInteractionCache ??= AllKnowledge()
+            .SelectMany(k => k.Effects)
+            .Where(e => e.EffectType == KnowledgeEffectType.UnlockInteraction)
+            .Select(e => e.TargetTag)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return _unlockedInteractionCache.Contains(interactionTag);
     }
 
     public void AddItem(ItemDto item)

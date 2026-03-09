@@ -19,4 +19,10 @@ public interface ICharacterKnowledgeContext
     /// on the next call to <see cref="KnowledgeEffectsForResource"/>.
     /// </summary>
     void InvalidateEffectCache();
+
+    /// <summary>
+    /// Returns <c>true</c> if the character has learned knowledge whose effects include
+    /// <see cref="KnowledgeEffectType.UnlockInteraction"/> targeting <paramref name="interactionTag"/>.
+    /// </summary>
+    bool HasUnlockedInteraction(string interactionTag);
 }

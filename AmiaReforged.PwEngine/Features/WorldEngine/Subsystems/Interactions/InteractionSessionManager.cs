@@ -49,4 +49,8 @@ public sealed class InteractionSessionManager : IInteractionSessionManager
     /// <inheritdoc />
     public void EndSession(CharacterId characterId)
         => _sessions.TryRemove(characterId, out _);
+
+    /// <inheritdoc />
+    public IReadOnlyCollection<InteractionSession> GetAllSessions()
+        => _sessions.Values.ToList();
 }

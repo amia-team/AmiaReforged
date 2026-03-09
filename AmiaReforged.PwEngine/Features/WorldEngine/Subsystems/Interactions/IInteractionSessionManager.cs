@@ -36,4 +36,9 @@ public interface IInteractionSessionManager
     /// No-op if no session exists.
     /// </summary>
     void EndSession(CharacterId characterId);
+
+    /// <summary>
+    /// Returns a snapshot of all currently active sessions.
+    /// </summary>
+    IReadOnlyCollection<InteractionSession> GetAllSessions();
 }

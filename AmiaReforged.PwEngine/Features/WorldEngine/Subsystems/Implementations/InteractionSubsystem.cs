@@ -14,7 +14,8 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Implementations;
 public sealed class InteractionSubsystem(
     ICommandDispatcher commandDispatcher,
     IInteractionSessionManager sessionManager,
-    IInteractionHandlerRegistry handlerRegistry) : IInteractionSubsystem
+    IInteractionHandlerRegistry handlerRegistry,
+    IInteractionDefinitionRepository definitionRepository) : IInteractionSubsystem
 {
     /// <inheritdoc />
     public Task<CommandResult> PerformInteractionAsync(
@@ -51,5 +52,21 @@ public sealed class InteractionSubsystem(
 
     /// <inheritdoc />
     public IReadOnlyCollection<string> GetRegisteredInteractionTypes()
-        => handlerRegistry.GetAll().Select(h => h.InteractionTag).ToList();
+    {
+        HashSet<string> tags = new(StringComparer.OrdinalIgnoreCase);
+
+        // Compiled handlers
+        foreach (IInteractionHandler handler in handlerRegistry.GetAll())
+        {
+            tags.Add(handler.InteractionTag);
+        }
+
+        // Data-driven definitions
+        foreach (InteractionDefinition definition in definitionRepository.All())
+        {
+            tags.Add(definition.Tag);
+        }
+
+        return tags.ToList();
+    }
 }

@@ -182,4 +182,55 @@ public class InteractionSessionManagerTests
         _manager.HasActiveSession(char1).Should().BeFalse();
         _manager.HasActiveSession(char2).Should().BeTrue();
     }
+
+    [Test]
+    public void GetAllSessions_returns_empty_when_no_sessions_exist()
+    {
+        // Given no sessions started
+        // Then GetAllSessions should return empty collection
+        _manager.GetAllSessions().Should().BeEmpty();
+    }
+
+    [Test]
+    public void GetAllSessions_returns_all_active_sessions()
+    {
+        // Given multiple characters with active sessions
+        CharacterId char1 = CharacterId.New();
+        CharacterId char2 = CharacterId.New();
+        CharacterId char3 = CharacterId.New();
+
+        _manager.StartSession(char1, "harvesting",
+            Guid.NewGuid(), InteractionTargetMode.Node, 3);
+        _manager.StartSession(char2, "prospecting",
+            Guid.NewGuid(), InteractionTargetMode.Trigger, 5);
+        _manager.StartSession(char3, "surveying",
+            Guid.NewGuid(), InteractionTargetMode.Trigger, 2);
+
+        // Then GetAllSessions should return all three
+        IReadOnlyCollection<InteractionSession> sessions = _manager.GetAllSessions();
+        sessions.Should().HaveCount(3);
+
+        sessions.Select(s => s.InteractionTag)
+            .Should().Contain(new[] { "harvesting", "prospecting", "surveying" });
+    }
+
+    [Test]
+    public void GetAllSessions_reflects_ended_sessions()
+    {
+        // Given two sessions, one of which is ended
+        CharacterId char1 = CharacterId.New();
+        CharacterId char2 = CharacterId.New();
+
+        _manager.StartSession(char1, "harvesting",
+            Guid.NewGuid(), InteractionTargetMode.Node, 3);
+        _manager.StartSession(char2, "prospecting",
+            Guid.NewGuid(), InteractionTargetMode.Trigger, 5);
+
+        _manager.EndSession(char1);
+
+        // Then only the remaining session should be returned
+        IReadOnlyCollection<InteractionSession> sessions = _manager.GetAllSessions();
+        sessions.Should().HaveCount(1);
+        sessions.First().InteractionTag.Should().Be("prospecting");
+    }
 }

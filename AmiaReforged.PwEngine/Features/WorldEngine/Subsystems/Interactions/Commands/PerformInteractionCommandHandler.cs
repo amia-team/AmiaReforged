@@ -2,6 +2,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.Handlers;
 using Anvil.Services;
 using NLog;
 
@@ -11,6 +12,8 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.Com
 /// Central dispatcher for the Interaction Framework.
 /// Manages session lifecycle (create → tick → complete/cancel) and delegates
 /// domain-specific behavior to the matching <see cref="IInteractionHandler"/>.
+/// Falls back to <see cref="DataDrivenInteractionAdapter"/> when no compiled handler
+/// claims the requested tag but a matching <see cref="InteractionDefinition"/> exists.
 /// </summary>
 [ServiceBinding(typeof(ICommandHandler<PerformInteractionCommand>))]
 [ServiceBinding(typeof(ICommandHandlerMarker))]
@@ -18,6 +21,7 @@ public sealed class PerformInteractionCommandHandler(
     IInteractionSessionManager sessionManager,
     ICharacterRepository characterRepository,
     IInteractionHandlerRegistry handlerRegistry,
+    IInteractionDefinitionRepository definitionRepository,
     IEventBus eventBus) : ICommandHandler<PerformInteractionCommand>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
@@ -26,11 +30,20 @@ public sealed class PerformInteractionCommandHandler(
         PerformInteractionCommand command,
         CancellationToken cancellationToken = default)
     {
-        // 1. Resolve handler
+        // 1. Resolve handler — compiled handlers first, then data-driven definitions
         IInteractionHandler? handler = handlerRegistry.GetHandler(command.InteractionTag);
         if (handler is null)
         {
-            return CommandResult.Fail($"Unknown interaction type: {command.InteractionTag}");
+            // Fallback: check for a data-driven definition in the repository
+            InteractionDefinition? definition = definitionRepository.Get(command.InteractionTag);
+            if (definition is not null)
+            {
+                handler = new DataDrivenInteractionAdapter(definition, eventBus);
+            }
+            else
+            {
+                return CommandResult.Fail($"Unknown interaction type: {command.InteractionTag}");
+            }
         }
 
         // 2. Resolve character

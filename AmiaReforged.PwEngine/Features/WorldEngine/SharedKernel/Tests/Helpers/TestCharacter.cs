@@ -47,6 +47,15 @@ public class TestCharacter(
         // Test character has no cache to invalidate.
     }
 
+    /// <inheritdoc />
+    public bool HasUnlockedInteraction(string interactionTag)
+    {
+        return AllKnowledge()
+            .SelectMany(k => k.Effects)
+            .Any(e => e.EffectType == KnowledgeEffectType.UnlockInteraction
+                      && string.Equals(e.TargetTag, interactionTag, StringComparison.OrdinalIgnoreCase));
+    }
+
     public int GetKnowledgePoints()
     {
         return _knowledgePoints;

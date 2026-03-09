@@ -73,7 +73,8 @@ public class HarvestViaInteractionFrameworkTests
             new[] { (IInteractionHandler)harvestHandler });
 
         _commandHandler = new PerformInteractionCommandHandler(
-            _sessionManager, _characterRepository, registry, _eventBus);
+            _sessionManager, _characterRepository, registry,
+            new InMemoryInteractionDefinitionRepository(), _eventBus);
     }
 
     #region Tool Checks

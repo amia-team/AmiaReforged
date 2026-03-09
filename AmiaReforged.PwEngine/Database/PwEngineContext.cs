@@ -10,6 +10,7 @@ using AmiaReforged.PwEngine.Features.Encounters.Models;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.Persistence;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.Persistence;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.Persistence;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions.Persistence;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.Persistence;
 using AmiaReforged.PwEngine.Features.Glyph.Persistence;
@@ -132,6 +133,7 @@ public class PwEngineContext : DbContext
     public DbSet<PersistedRegionDefinition> RegionDefinitions { get; set; } = null!;
     public DbSet<PersistedIndustryDefinition> IndustryDefinitions { get; set; } = null!;
     public DbSet<PersistedWorkstationDefinition> WorkstationDefinitions { get; set; } = null!;
+    public DbSet<PersistedInteractionDefinition> InteractionDefinitions { get; set; } = null!;
 
     // === Glyph Visual Scripting ===
 
@@ -239,6 +241,7 @@ public class PwEngineContext : DbContext
         modelBuilder.ApplyConfiguration(new PersistedRegionDefinitionConfiguration());
         modelBuilder.ApplyConfiguration(new PersistedIndustryDefinitionConfiguration());
         modelBuilder.ApplyConfiguration(new PersistedWorkstationDefinitionConfiguration());
+        modelBuilder.ApplyConfiguration(new PersistedInteractionDefinitionConfiguration());
 
         // Glyph Visual Scripting
         modelBuilder.ApplyConfiguration(new GlyphDefinitionConfiguration());

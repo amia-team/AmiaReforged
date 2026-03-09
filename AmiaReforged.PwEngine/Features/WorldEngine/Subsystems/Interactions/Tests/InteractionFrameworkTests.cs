@@ -46,7 +46,8 @@ public class InteractionFrameworkTests
         _handlerRegistry = new InteractionHandlerRegistry(new[] { (IInteractionHandler)_stubHandler });
 
         _handler = new PerformInteractionCommandHandler(
-            _sessionManager, _characterRepository, _handlerRegistry, _eventBus);
+            _sessionManager, _characterRepository, _handlerRegistry,
+            new InMemoryInteractionDefinitionRepository(), _eventBus);
 
         // Create a test character
         _characterId = CharacterId.New();
