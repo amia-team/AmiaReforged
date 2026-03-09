@@ -294,6 +294,11 @@ internal class TestIndustryMembershipRepository : IIndustryMembershipRepository
         }
     }
 
+    public void Delete(Guid membershipId)
+    {
+        _memberships.RemoveAll(m => m.Id == membershipId);
+    }
+
     public void SaveChanges()
     {
         // No-op for in-memory

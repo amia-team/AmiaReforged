@@ -38,6 +38,15 @@ public class PersistentMembershipRepository(IndustryMembershipMapper mapper, PwC
         _ctx.IndustryMemberships.Update(membershipEntity);
     }
 
+    public void Delete(Guid membershipId)
+    {
+        PersistentIndustryMembership? entity = _ctx.IndustryMemberships.Find(membershipId);
+        if (entity != null)
+        {
+            _ctx.IndustryMemberships.Remove(entity);
+        }
+    }
+
     public void SaveChanges()
     {
         _ctx.SaveChanges();

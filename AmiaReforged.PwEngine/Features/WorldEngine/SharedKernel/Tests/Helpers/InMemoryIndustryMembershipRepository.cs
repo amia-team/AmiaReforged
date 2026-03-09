@@ -27,6 +27,11 @@ public class InMemoryIndustryMembershipRepository : IIndustryMembershipRepositor
         return new InMemoryIndustryMembershipRepository();
     }
 
+    public void Delete(Guid membershipId)
+    {
+        _memberships.RemoveAll(m => m.Id == membershipId);
+    }
+
     public void SaveChanges()
     {
         //nothing

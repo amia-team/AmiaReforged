@@ -476,11 +476,12 @@
                                 <option value="UnlockRecipe">Unlock Recipe</option>
                                 <option value="GrantCodexEntry">Grant Codex Entry</option>
                                 <option value="ModifyHarvest">Modify Harvest</option>
+                                <option value="UnlockInteraction">Unlock Interaction</option>
                                 <option value="Custom">Custom</option>
                             </select>
                         </div>
                         <div class="form-group" style="flex:3">
-                            <input class="form-control form-control-sm" placeholder="Target Tag (e.g. recipe ID or codex entry tag)" @bind="_editKnowledge.Effects[i].TargetTag" />
+                            <input class="form-control form-control-sm" placeholder="@GetKnowledgeEffectPlaceholder(_editKnowledge.Effects[i].EffectType)" @bind="_editKnowledge.Effects[i].TargetTag" />
                         </div>
                         <button class="btn btn-sm btn-outline-danger" @onclick="() => _editKnowledge.Effects.RemoveAt(i)">X</button>
                     </div>
@@ -1084,6 +1085,16 @@
     {
         _editKnowledge.Effects.Add(new IndustryKnowledgeEffectDto());
     }
+
+    private static string GetKnowledgeEffectPlaceholder(string effectType) => effectType switch
+    {
+        "UnlockRecipe" => "Recipe ID",
+        "GrantCodexEntry" => "Codex lore entry tag",
+        "ModifyHarvest" => "Resource node tag",
+        "UnlockInteraction" => "Interaction tag (e.g. prospect_minerals)",
+        "Custom" => "Handler key",
+        _ => "Target Tag"
+    };
 
     // ==================== Recipe CRUD ====================
 
