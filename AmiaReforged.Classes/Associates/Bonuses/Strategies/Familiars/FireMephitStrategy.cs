@@ -10,7 +10,7 @@ public class FireMephitStrategy : IFamiliarBonusStrategy
 
     public void Apply(NwCreature owner, NwCreature associate)
     {
-        int acBonus = 10 + associate.Level / 2;
-        associate.BaseAC = (sbyte)acBonus;
+        int baseAc = 10 + associate.Level / 2;
+        associate.BaseAC = (sbyte)baseAc;
     }
 }
