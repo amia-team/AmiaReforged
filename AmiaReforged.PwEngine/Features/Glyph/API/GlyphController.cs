@@ -111,6 +111,37 @@ public class GlyphController
         if (req.GraphJson != null) definition.GraphJson = req.GraphJson;
         if (req.IsActive.HasValue) definition.IsActive = req.IsActive.Value;
 
+        // Ensure the EventType inside GraphJson matches the definition's authoritative EventType column.
+        // The JS editor may not carry the EventType through correctly, so we stamp it server-side.
+        if (!string.IsNullOrEmpty(definition.GraphJson) && definition.GraphJson != "{}"
+            && !string.IsNullOrEmpty(definition.EventType))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(definition.GraphJson);
+                var root = doc.RootElement;
+
+                // Only re-write if EventType is missing or different
+                string existingEventType = root.TryGetProperty("EventType", out JsonElement et)
+                    ? et.GetString() ?? ""
+                    : "";
+
+                if (existingEventType != definition.EventType)
+                {
+                    var dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(definition.GraphJson);
+                    if (dict != null)
+                    {
+                        dict["EventType"] = JsonSerializer.SerializeToElement(definition.EventType);
+                        definition.GraphJson = JsonSerializer.Serialize(dict);
+                    }
+                }
+            }
+            catch
+            {
+                // If GraphJson is malformed, save it as-is — don't block the update
+            }
+        }
+
         await Repository.UpdateDefinitionAsync(definition);
 
         // Refresh all hook caches — the definition's graph JSON, active flag, or event type may have changed

@@ -53,6 +53,7 @@ let catalog = [];       // GlyphNodeCatalogEntryDto[]
 let nodes = [];         // Runtime node instances { id, typeId, x, y, pins[], width, height, def }
 let edges = [];         // { id, srcNodeId, srcPinId, tgtNodeId, tgtPinId }
 let variables = [];     // { name, dataType, defaultValue }
+let graphEventType = ''; // EventType loaded from the graph JSON — preserved across save cycles
 
 // Camera
 let camX = 0, camY = 0, zoom = 1.0;
@@ -82,7 +83,7 @@ function buildGraphJson() {
         Id: generateId(),
         Name: '',
         Description: '',
-        EventType: '',
+        EventType: graphEventType,
         Nodes: nodes.map(n => ({
             InstanceId: n.id,
             TypeId: n.typeId,
@@ -106,12 +107,14 @@ function loadGraphJson(json) {
     nodes = [];
     edges = [];
     variables = [];
+    graphEventType = '';
 
     if (!json || json === '{}') return;
 
     let g;
     try { g = JSON.parse(json); } catch { return; }
 
+    if (g.EventType) graphEventType = g.EventType;
     if (g.Variables) variables = g.Variables;
 
     if (g.Nodes) {
