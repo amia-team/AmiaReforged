@@ -15,6 +15,10 @@ public class BatBonusStrategy : IFamiliarBonusStrategy
 
         NwItem? bite = associate.GetItemInSlot(InventorySlot.CreatureBiteWeapon);
 
+        NwFeat? uncanny = Feat.UncannyDodge1;
+        if (uncanny != null)
+            associate.AddFeat(uncanny);
+
         if (!owner.IsPlayerControlled(out NwPlayer? player))
         {
             return;

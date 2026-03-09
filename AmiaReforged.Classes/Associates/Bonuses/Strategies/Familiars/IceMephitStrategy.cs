@@ -13,6 +13,10 @@ public class IceMephitStrategy : IFamiliarBonusStrategy
         int baseAc = 10 + associate.Level / 2;
         associate.BaseAC = (sbyte)baseAc;
 
+        NwFeat? uncanny = Feat.UncannyDodge1;
+        if (uncanny != null)
+            associate.AddFeat(uncanny);
+
         if (associate.Level >= 12)
         {
             byte casterLevel = (byte)associate.Level;
@@ -25,7 +29,7 @@ public class IceMephitStrategy : IFamiliarBonusStrategy
             associate.AddSpecialAbility(melfs);
         }
 
-        if (associate.Level >= 25)
+        if (associate.Level >= 24)
         {
             byte casterLevel = (byte)associate.Level;
             if (associate.Level > 15)

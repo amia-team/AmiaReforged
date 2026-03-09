@@ -12,5 +12,9 @@ public class FireMephitStrategy : IFamiliarBonusStrategy
     {
         int baseAc = 10 + associate.Level / 2;
         associate.BaseAC = (sbyte)baseAc;
+
+        NwFeat? uncanny = Feat.UncannyDodge1;
+        if (uncanny != null)
+            associate.AddFeat(uncanny);
     }
 }
