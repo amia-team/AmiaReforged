@@ -21,6 +21,7 @@ public class OnInteractionCompletedEventExecutor : IGlyphNodeExecutor
         var outputs = new Dictionary<string, object?>
         {
             ["character_id"] = context.CharacterId ?? string.Empty,
+            ["creature"] = context.InteractionCreature,
             ["interaction_tag"] = context.InteractionTag ?? string.Empty,
             ["target_id"] = context.InteractionTargetId.ToString(),
             ["area_resref"] = context.InteractionAreaResRef ?? string.Empty,
@@ -53,6 +54,7 @@ public class OnInteractionCompletedEventExecutor : IGlyphNodeExecutor
         [
             new GlyphPin { Id = "exec_out", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output },
             new GlyphPin { Id = "character_id", Name = "Character ID", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
+            new GlyphPin { Id = "creature", Name = "Creature", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Output },
             new GlyphPin { Id = "interaction_tag", Name = "Interaction Tag", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
             new GlyphPin { Id = "target_id", Name = "Target ID", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
             new GlyphPin { Id = "area_resref", Name = "Area ResRef", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },

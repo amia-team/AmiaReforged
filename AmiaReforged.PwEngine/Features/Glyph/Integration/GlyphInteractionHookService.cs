@@ -7,6 +7,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.Events;
 using Anvil.Services;
 using NLog;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Integration;
 
@@ -121,8 +122,8 @@ public class GlyphInteractionHookService
         foreach (GlyphGraph graph in graphs)
         {
             GlyphExecutionContext ctx = CreateInteractionContext(graph, interactionTag, characterId,
-                targetId, targetMode, areaResRef, proficiency, metadata);
-
+                targetId, targetMode, areaResRef, proficiency, metadata,
+                creatureObjectId: ResolveCreatureObjectId(characterId));
             try
             {
                 _bootstrap.Interpreter.ExecuteAsync(ctx).GetAwaiter().GetResult();
@@ -165,7 +166,8 @@ public class GlyphInteractionHookService
         foreach (GlyphGraph graph in graphs)
         {
             GlyphExecutionContext ctx = CreateInteractionContext(graph, interactionTag, characterId,
-                targetId, null, areaResRef, proficiency, metadata);
+                targetId, null, areaResRef, proficiency, metadata,
+                creatureObjectId: ResolveCreatureObjectId(characterId));
             ctx.InteractionSessionId = sessionId;
             ctx.InteractionProgress = progress;
             ctx.InteractionRequiredRounds = requiredRounds;
@@ -212,7 +214,8 @@ public class GlyphInteractionHookService
                 areaResRef: null,
                 proficiency: null,
                 metadata: null,
-                cancellationToken);
+                cancellationToken,
+                creatureObjectId: ResolveCreatureObjectId(@event.CharacterId.ToString()));
             ctx.InteractionSessionId = @event.SessionId;
             ctx.InteractionRequiredRounds = @event.RequiredRounds;
 
@@ -248,7 +251,8 @@ public class GlyphInteractionHookService
                 areaResRef: null,
                 proficiency: null,
                 metadata: null,
-                cancellationToken);
+                cancellationToken,
+                creatureObjectId: ResolveCreatureObjectId(@event.CharacterId.ToString()));
             ctx.InteractionSessionId = @event.SessionId;
 
             try
@@ -297,7 +301,8 @@ public class GlyphInteractionHookService
         string? areaResRef,
         string? proficiency,
         Dictionary<string, object>? metadata,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        uint creatureObjectId = 0)
     {
         return new GlyphExecutionContext
         {
@@ -309,10 +314,28 @@ public class GlyphInteractionHookService
             InteractionAreaResRef = areaResRef,
             InteractionProficiency = proficiency,
             InteractionMetadata = metadata,
+            InteractionCreature = creatureObjectId,
             MaxExecutionSteps = 10_000,
             EnableTracing = false,
             CancellationToken = cancellationToken
         };
+    }
+
+    /// <summary>
+    /// Attempts to resolve the NWN creature object ID from a character ID string.
+    /// Returns 0 if resolution fails (e.g., in test environments without a live server).
+    /// </summary>
+    private static uint ResolveCreatureObjectId(string? characterId)
+    {
+        if (string.IsNullOrEmpty(characterId)) return 0;
+        try
+        {
+            return NWScript.GetObjectByUUID(characterId);
+        }
+        catch
+        {
+            return 0;
+        }
     }
 
     private GlyphGraph? DeserializeGraph(GlyphDefinition definition)

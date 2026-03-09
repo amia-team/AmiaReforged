@@ -78,6 +78,12 @@ public class GlyphExecutionContext
     // ==================== Interaction Context ====================
 
     /// <summary>
+    /// NWN object ID of the creature performing the interaction.
+    /// Resolved from the character ID at graph execution time. 0 if unavailable.
+    /// </summary>
+    public uint InteractionCreature { get; set; }
+
+    /// <summary>
     /// The interaction definition tag (e.g., "prospect_minerals"). Null for non-interaction scripts.
     /// </summary>
     public string? InteractionTag { get; set; }
