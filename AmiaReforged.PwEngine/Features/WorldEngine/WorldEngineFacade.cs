@@ -28,6 +28,7 @@ public sealed class WorldEngineFacade : IWorldEngineFacade
         ITraitSubsystem traits,
         IItemSubsystem items,
         ICodexSubsystem codex,
+        IInteractionSubsystem interactions,
         ICommandDispatcher commandDispatcher,
         IQueryDispatcher queryDispatcher)
     {
@@ -41,6 +42,7 @@ public sealed class WorldEngineFacade : IWorldEngineFacade
         Traits = traits;
         Items = items;
         Codex = codex;
+        Interactions = interactions;
         _commandDispatcher = commandDispatcher;
         _queryDispatcher = queryDispatcher;
     }
@@ -74,6 +76,9 @@ public sealed class WorldEngineFacade : IWorldEngineFacade
 
     /// <inheritdoc />
     public ICodexSubsystem Codex { get; }
+
+    /// <inheritdoc />
+    public IInteractionSubsystem Interactions { get; }
 
     // === Centralized Dispatch Methods ===
 

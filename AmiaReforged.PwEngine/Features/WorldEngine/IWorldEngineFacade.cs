@@ -70,6 +70,11 @@ public interface IWorldEngineFacade
     /// </summary>
     ICodexSubsystem Codex { get; }
 
+    /// <summary>
+    /// Access to the generic interaction framework (harvesting, prospecting, etc.)
+    /// </summary>
+    IInteractionSubsystem Interactions { get; }
+
     // === Centralized Command/Query Dispatch ===
 
     /// <summary>

@@ -24,7 +24,13 @@ public enum KnowledgeEffectType
     /// <summary>
     /// Custom effect handled by an extensible processor (TargetTag = handler key).
     /// </summary>
-    Custom
+    Custom,
+
+    /// <summary>
+    /// Unlocks an interaction type for the character (TargetTag = interaction tag,
+    /// e.g., <c>"prospecting"</c>). Processed by the Interaction Framework.
+    /// </summary>
+    UnlockInteraction
 }
 
 /// <summary>
@@ -46,6 +52,7 @@ public class KnowledgeEffect
     ///   <item><description>GrantCodexEntry → codex lore definition tag</description></item>
     ///   <item><description>ModifyHarvest → resource node tag</description></item>
     ///   <item><description>Custom → handler key for extensible dispatch</description></item>
+    ///   <item><description>UnlockInteraction → interaction tag (e.g., "prospecting")</description></item>
     /// </list>
     /// </summary>
     public required string TargetTag { get; init; }
