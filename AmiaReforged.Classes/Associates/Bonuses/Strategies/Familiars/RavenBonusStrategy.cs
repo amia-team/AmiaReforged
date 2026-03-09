@@ -10,6 +10,8 @@ public class RavenBonusStrategy : IFamiliarBonusStrategy
 
     public void Apply(NwCreature owner, NwCreature associate)
     {
+        int acBonus = associate.Level / 2;
+        associate.BaseAC = (sbyte)acBonus;
 
         NwItem? claw1 = associate.GetItemInSlot(InventorySlot.CreatureLeftWeapon);
         NwItem? claw2 = associate.GetItemInSlot(InventorySlot.CreatureRightWeapon);
@@ -69,6 +71,5 @@ public class RavenBonusStrategy : IFamiliarBonusStrategy
         };
         claw1.AddItemProperty(blind, EffectDuration.Permanent);
         claw2.AddItemProperty(blind, EffectDuration.Permanent);
-
     }
 }
