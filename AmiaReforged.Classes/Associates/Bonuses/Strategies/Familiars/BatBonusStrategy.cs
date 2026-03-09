@@ -10,7 +10,7 @@ public class BatBonusStrategy : IFamiliarBonusStrategy
 
     public void Apply(NwCreature owner, NwCreature associate)
     {
-        int acBonus = associate.Level / 2;
+        int acBonus = 10 + associate.Level / 2;
         associate.BaseAC = (sbyte)acBonus;
 
         NwItem? bite = associate.GetItemInSlot(InventorySlot.CreatureBiteWeapon);
