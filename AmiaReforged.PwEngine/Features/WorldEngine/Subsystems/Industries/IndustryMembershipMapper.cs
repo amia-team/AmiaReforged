@@ -37,7 +37,7 @@ public class IndustryMembershipMapper(PersistentKnowledgeMapper knowledgeMapper,
         if (industry is null) return null;
 
         List<CharacterKnowledge> characterKnowledge = [];
-        characterKnowledge.AddRange(membership.Knowledge
+        characterKnowledge.AddRange((membership.Knowledge ?? [])
             .Select(knowledgeMapper.ToDomain).OfType<CharacterKnowledge>());
 
         return new IndustryMembership

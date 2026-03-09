@@ -1,6 +1,7 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy;
 using Anvil.Services;
+using Microsoft.EntityFrameworkCore;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
 
@@ -14,6 +15,7 @@ public class PersistentMembershipRepository(IndustryMembershipMapper mapper, PwC
     {
         List<PersistentIndustryMembership> memberships =
             _ctx.IndustryMemberships
+                .Include(x => x.Knowledge)
                 .Where(x => x.CharacterId == characterGuid)
                 .ToList();
 
