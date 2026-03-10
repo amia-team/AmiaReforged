@@ -72,15 +72,20 @@ window.regionGraph = (function () {
         // Build region -> color map
         regionColorMap = {};
         regions.forEach(function (r, idx) {
-            regionColorMap[r.tag.toLowerCase()] = REGION_PALETTE[idx % REGION_PALETTE.length];
+            var tag = String(r.tag || '');
+            if (typeof r.tag !== 'string') {
+                console.warn('[regionGraph] region.tag is not a string:', typeof r.tag, JSON.stringify(r.tag), 'in region:', JSON.stringify(r));
+            }
+            regionColorMap[tag.toLowerCase()] = REGION_PALETTE[idx % REGION_PALETTE.length];
         });
 
         // Build resRef -> regionTag lookup and POI counts
         var areaToRegion = {};
         var poiCounts = {};
         regions.forEach(function (r) {
+            var tag = String(r.tag || '');
             (r.areaResRefs || []).forEach(function (ref) {
-                areaToRegion[ref.toLowerCase()] = r.tag;
+                areaToRegion[ref.toLowerCase()] = tag;
             });
             var pc = r.poiCounts || {};
             Object.keys(pc).forEach(function (k) {
@@ -92,13 +97,15 @@ window.regionGraph = (function () {
 
         // Add region parent (compound) nodes
         regions.forEach(function (r) {
-            var color = regionColorMap[r.tag.toLowerCase()] || COLORS.unassigned;
+            var tag = String(r.tag || '');
+            var name = String(r.name || '') || tag;
+            var color = regionColorMap[tag.toLowerCase()] || COLORS.unassigned;
             elements.push({
                 group: 'nodes',
                 data: {
-                    id: 'region_' + r.tag,
-                    label: r.name || r.tag,
-                    regionTag: r.tag,
+                    id: 'region_' + tag,
+                    label: name,
+                    regionTag: tag,
                     isRegionParent: 'yes',
                     regionColor: color
                 }
@@ -923,15 +930,17 @@ window.regionGraph = (function () {
         // Rebuild region -> color map
         regionColorMap = {};
         regions.forEach(function (r, idx) {
-            regionColorMap[r.tag.toLowerCase()] = REGION_PALETTE[idx % REGION_PALETTE.length];
+            var tag = String(r.tag || '');
+            regionColorMap[tag.toLowerCase()] = REGION_PALETTE[idx % REGION_PALETTE.length];
         });
 
         // Build resRef -> regionTag and POI counts
         var areaToRegion = {};
         var poiCounts = {};
         regions.forEach(function (r) {
+            var tag = String(r.tag || '');
             (r.areaResRefs || []).forEach(function (ref) {
-                areaToRegion[ref.toLowerCase()] = r.tag;
+                areaToRegion[ref.toLowerCase()] = tag;
             });
             var pc = r.poiCounts || {};
             Object.keys(pc).forEach(function (k) {
@@ -948,19 +957,21 @@ window.regionGraph = (function () {
         });
 
         regions.forEach(function (r) {
-            var lowerTag = r.tag.toLowerCase();
+            var tag = String(r.tag || '');
+            var name = String(r.name || '') || tag;
+            var lowerTag = tag.toLowerCase();
             var color = regionColorMap[lowerTag] || COLORS.unassigned;
             if (existingParents[lowerTag]) {
-                existingParents[lowerTag].data('label', r.name || r.tag);
+                existingParents[lowerTag].data('label', name);
                 existingParents[lowerTag].data('regionColor', color);
                 delete existingParents[lowerTag];
             } else {
                 cy.add({
                     group: 'nodes',
                     data: {
-                        id: 'region_' + r.tag,
-                        label: r.name || r.tag,
-                        regionTag: r.tag,
+                        id: 'region_' + tag,
+                        label: name,
+                        regionTag: tag,
                         isRegionParent: 'yes',
                         regionColor: color
                     }
