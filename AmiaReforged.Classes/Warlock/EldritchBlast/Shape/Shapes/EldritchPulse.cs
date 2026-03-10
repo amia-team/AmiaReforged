@@ -16,9 +16,6 @@ public class EldritchPulse(ScriptHandleFactory scriptHandleFactory) : IShape
     {
         if (eventData.TargetObject is not { } targetObject || eventData.Spell is not { } spell) return;
 
-        if (targetObject is NwCreature creature && !warlock.IsReactionTypeFriendly(creature))
-            CreatureEvents.OnSpellCastAt.Signal(warlock, creature, spell);
-
         (int FlatBonus, double Multiplier) damageModifiers = GetEldritchDamageModifiers(warlock, warlockLevel);
 
         BlastContext blast = new
@@ -33,7 +30,7 @@ public class EldritchPulse(ScriptHandleFactory scriptHandleFactory) : IShape
 
         ScriptCallbackHandle pulseHandle = scriptHandleFactory.CreateUniqueHandler(_ => Pulse(targetObject, blast));
 
-        Effect eldritchPulse = Effect.RunAction(onRemovedHandle: pulseHandle);
+        Effect eldritchPulse = Effect.RunAction(onAppliedHandle: pulseHandle, onRemovedHandle: pulseHandle);
         targetObject.ApplyEffect(EffectDuration.Temporary, eldritchPulse, NwTimeSpan.FromRounds(1));
     }
 
@@ -58,7 +55,7 @@ public class EldritchPulse(ScriptHandleFactory scriptHandleFactory) : IShape
             SavingThrowResult fortSave
                 = creature.RollSavingThrow(SavingThrow.Fortitude, blast.Dc, SavingThrowType.Spell, blast.Warlock);
 
-            int damage = RollEldritchDamage(blast.DamageModifiers, blast.Cl);
+            int damage = RollEldritchDamage(blast.DamageModifiers, blast.Cl) / 2;
 
             if (fortSave == SavingThrowResult.Success)
             {
