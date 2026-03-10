@@ -5,7 +5,9 @@
 @using System.IO.Compression
 @using System.Text.Json
 @attribute [Authorize]
+@implements IAsyncDisposable
 @inject InteractionApiService Api
+@inject GlyphApiService GlyphApi
 @inject IWorldEngineEndpointService EndpointService
 @inject ILogger<Interactions> Logger
 @inject IJSRuntime JS
@@ -151,7 +153,7 @@
     @if (_showEditModal)
     {
         <div class="modal-backdrop" @onclick="CloseEditModal">
-        <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:900px;max-height:90vh;overflow-y:auto;margin:3vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+        <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:@(_showScriptsSection ? "95vw" : "900px");max-height:90vh;overflow-y:auto;margin:3vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
             <h2>@(_isCreating ? "Create Interaction" : $"Edit: {_editItem.Name}")</h2>
 
             <div style="display:flex;flex-direction:column;gap:12px;margin-top:15px">
@@ -301,6 +303,142 @@
                 </div>
             </div>
 
+            @* ===== Event Scripts Section ===== *@
+            <div style="border:1px solid var(--border-color);border-radius:8px;padding:15px;margin-top:15px">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <h4 style="margin:0">Event Scripts</h4>
+                    <button class="btn btn-sm @(_showScriptsSection ? "btn-secondary" : "btn-outline-info")"
+                            @onclick="ToggleScriptsSection">
+                        @(_showScriptsSection ? "Hide Scripts" : "Show Scripts")
+                    </button>
+                </div>
+                <p style="color:var(--text-secondary);font-size:0.85rem;margin-top:4px;margin-bottom:0">
+                    Visual scripts that run at each stage of this interaction's lifecycle.
+                </p>
+
+                @if (_showScriptsSection)
+                {
+                    @* Event Type Tabs *@
+                    <div style="display:flex;gap:4px;margin-top:12px;border-bottom:2px solid var(--border-color);padding-bottom:0">
+                        @foreach (var evt in InteractionEventTypes)
+                        {
+                            bool isActive = evt == _activeScriptTab;
+                            bool hasScript = _eventGraphJsons.TryGetValue(evt, out var json) && !string.IsNullOrEmpty(json) && json != "{}";
+                            <button class="btn btn-sm @(isActive ? "btn-primary" : "btn-outline-secondary")"
+                                    style="border-radius:6px 6px 0 0;border-bottom:none;position:relative;@(isActive ? "" : "opacity:0.8")"
+                                    @onclick="() => SwitchScriptTab(evt)">
+                                @GetEventTabLabel(evt)
+                                @if (hasScript)
+                                {
+                                    <span style="position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;background:#2ecc71"></span>
+                                }
+                            </button>
+                        }
+                    </div>
+
+                    @* Editor Area *@
+                    <div style="display:flex;gap:12px;margin-top:12px">
+                        @* Node Palette *@
+                        <div style="width:220px;flex-shrink:0">
+                            <div style="background:var(--surface-color);border:1px solid var(--border-color);border-radius:6px;overflow:hidden">
+                                <div style="background:var(--surface-hover);padding:8px 12px">
+                                    <strong style="font-size:0.85rem;color:var(--text-primary)">Node Palette</strong>
+                                    <input type="text" class="form-control form-control-sm mt-1" placeholder="Search nodes..."
+                                           @bind="_scriptNodeSearchFilter" @bind:event="oninput"
+                                           style="font-size:0.8rem" />
+                                </div>
+                                <div style="max-height:450px;overflow-y:auto">
+                                    @foreach (var category in ScriptFilteredCatalog)
+                                    {
+                                        <div style="padding:4px 12px;background:var(--surface-hover);color:var(--text-secondary);font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">
+                                            @category.Key
+                                        </div>
+                                        @foreach (var node in category)
+                                        {
+                                            <div style="padding:5px 12px;border-bottom:1px solid var(--border-color);cursor:pointer;font-size:0.85rem"
+                                                 class="glyph-node-entry"
+                                                 @onclick="() => AddScriptNode(node)" title="@node.Description">
+                                                <span class="badge me-1" style="background:@GetNodeColor(node.ColorClass);font-size:0.7rem">@node.ColorClass</span>
+                                                <span style="color:var(--text-primary)">@node.DisplayName</span>
+                                                @if (node.RestrictToEventType != null)
+                                                {
+                                                    <br /><small style="color:var(--text-secondary);font-size:0.7rem">@node.RestrictToEventType only</small>
+                                                }
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            </div>
+
+                            @* Property Editor *@
+                            @if (_scriptSelectedNodeInfo != null)
+                            {
+                                <div style="background:var(--surface-color);border:1px solid var(--border-color);border-radius:6px;overflow:hidden;margin-top:8px">
+                                    <div style="background:var(--surface-hover);padding:8px 12px">
+                                        <strong style="font-size:0.85rem;color:var(--text-primary)">Properties</strong>
+                                        <small class="d-block" style="color:var(--text-secondary);font-size:0.75rem">@_scriptSelectedNodeInfo.DisplayName</small>
+                                    </div>
+                                    <div style="padding:8px">
+                                        @{ var editablePins = _scriptSelectedNodeInfo.InputPins?.Where(p => !p.IsConnected).ToList() ?? []; }
+                                        @if (editablePins.Count == 0)
+                                        {
+                                            <p style="color:var(--text-secondary);font-size:0.8rem;margin:0">No editable properties.</p>
+                                        }
+                                        else
+                                        {
+                                            @foreach (var pin in editablePins)
+                                            {
+                                                <div style="margin-bottom:6px">
+                                                    <label style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:2px;display:block">@pin.Name <small>(@pin.DataType)</small></label>
+                                                    @if (pin.DataType == "Bool")
+                                                    {
+                                                        <select class="form-control form-control-sm" style="font-size:0.8rem"
+                                                                value="@GetScriptPinValue(pin)"
+                                                                @onchange="e => OnScriptPropertyChanged(pin, ExtractStringValue(e))">
+                                                            <option value="">default</option>
+                                                            <option value="true">true</option>
+                                                            <option value="false">false</option>
+                                                        </select>
+                                                    }
+                                                    else
+                                                    {
+                                                        <input class="form-control form-control-sm" style="font-size:0.8rem"
+                                                               type="@(pin.DataType == "Int" || pin.DataType == "Float" ? "number" : "text")"
+                                                               value="@GetScriptPinValue(pin)"
+                                                               @onchange="e => OnScriptPropertyChanged(pin, ExtractStringValue(e))"
+                                                               placeholder="@(pin.DefaultValue ?? string.Empty)" />
+                                                    }
+                                                </div>
+                                            }
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        @* Graph Canvas *@
+                        <div style="flex:1;min-height:500px;border:1px solid var(--border-color);border-radius:6px;overflow:hidden;background:#1a1a2e;position:relative">
+                            <div id="interaction-glyph-canvas" style="width:100%;height:500px"></div>
+                            @if (!_scriptEditorReady)
+                            {
+                                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--text-secondary)">
+                                    <em>Initializing editor...</em>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    @* Script Actions *@
+                    <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end">
+                        <button class="btn btn-sm btn-outline-danger"
+                                @onclick="ClearCurrentScript"
+                                disabled="@(!HasCurrentScript)">
+                            Clear Script
+                        </button>
+                    </div>
+                }
+            </div>
+
             <div class="form-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
                 <button class="btn btn-secondary" @onclick="CloseEditModal">Cancel</button>
                 <button class="btn btn-primary" @onclick="SaveInteraction" disabled="@_isSaving">
@@ -426,6 +564,56 @@
     private bool _showDeleteConfirm;
     private InteractionDefinitionDto? _deleteTarget;
 
+    // ===== Event Scripts =====
+    private static readonly string[] InteractionEventTypes =
+        ["OnInteractionAttempted", "OnInteractionStarted", "OnInteractionTick", "OnInteractionCompleted"];
+
+    private bool _showScriptsSection;
+    private string _activeScriptTab = "OnInteractionAttempted";
+    private Dictionary<string, string> _eventGraphJsons = new();        // eventType → GraphJson
+    private Dictionary<string, GlyphDefinitionDto?> _eventScripts = new(); // eventType → existing definition (null = new)
+    private List<GlyphNodeCatalogEntryDto> _nodeCatalog = [];
+    private string _scriptNodeSearchFilter = "";
+    private IJSObjectReference? _scriptEditorModule;
+    private DotNetObjectReference<Interactions>? _dotNetRef;
+    private bool _scriptEditorReady;
+
+    // Selected node in script editor (from JS callback)
+    private SelectedNodeInfo? _scriptSelectedNodeInfo;
+
+    private bool HasCurrentScript =>
+        _eventGraphJsons.TryGetValue(_activeScriptTab, out var json) && !string.IsNullOrEmpty(json) && json != "{}";
+
+    private IEnumerable<IGrouping<string, GlyphNodeCatalogEntryDto>> ScriptFilteredCatalog
+    {
+        get
+        {
+            IEnumerable<GlyphNodeCatalogEntryDto> nodes = _nodeCatalog;
+
+            // Filter by the active tab's event type
+            nodes = nodes.Where(n =>
+                n.RestrictToEventType == null ||
+                n.RestrictToEventType == _activeScriptTab);
+
+            // Show only Interaction-category nodes + universal nodes
+            nodes = nodes.Where(n =>
+                n.ScriptCategory == null ||
+                n.ScriptCategory.Equals("Interaction", StringComparison.OrdinalIgnoreCase));
+
+            // Filter by search text
+            if (!string.IsNullOrWhiteSpace(_scriptNodeSearchFilter))
+            {
+                string filter = _scriptNodeSearchFilter.Trim().ToLowerInvariant();
+                nodes = nodes.Where(n =>
+                    n.DisplayName.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
+                    n.Category.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
+                    n.Description.Contains(filter, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return nodes.GroupBy(n => n.Category).OrderBy(g => g.Key);
+        }
+    }
+
     // ===== Lifecycle =====
 
     protected override async Task OnInitializedAsync()
@@ -452,6 +640,7 @@
         {
             _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
             Api.SelectEndpoint(id);
+            GlyphApi.SelectEndpoint(id);
             _page = 1;
             await RefreshInteractions();
         }
@@ -459,6 +648,7 @@
         {
             _selectedEndpoint = null;
             Api.SelectEndpoint(null);
+            GlyphApi.SelectEndpoint(null);
             _interactions.Clear();
         }
     }
@@ -519,20 +709,28 @@
             ProficiencyReducesRounds = true,
             RequiresIndustryMembership = true,
         };
+        ResetScriptState();
         _showEditModal = true;
     }
 
-    private void ShowEditModal(InteractionDefinitionDto item)
+    private async Task ShowEditModal(InteractionDefinitionDto item)
     {
         _isCreating = false;
         _editItem = DeepCopy(item);
+        ResetScriptState();
         _showEditModal = true;
+
+        // Load existing scripts for this interaction
+        await LoadInteractionScripts(item.Tag);
     }
 
-    private void CloseEditModal()
+    private async Task CloseEditModal()
     {
+        await DestroyScriptEditor();
         _showEditModal = false;
+        _showScriptsSection = false;
         _editItem = new();
+        _scriptSelectedNodeInfo = null;
     }
 
     private async Task SaveInteraction()
@@ -541,15 +739,24 @@
         _error = null;
         try
         {
+            // Capture the current script tab's graph before saving
+            await CaptureCurrentScriptGraph();
+
             if (_isCreating)
                 await Api.CreateAsync(_editItem);
             else
                 await Api.UpdateAsync(_editItem.Tag, _editItem);
 
+            // Save event scripts (create/update glyph definitions + bindings)
+            await SaveEventScripts(_editItem.Tag);
+
             _success = _isCreating
                 ? $"Interaction '{_editItem.Name}' created."
                 : $"Interaction '{_editItem.Name}' updated.";
+
+            await DestroyScriptEditor();
             _showEditModal = false;
+            _showScriptsSection = false;
             await RefreshInteractions();
         }
         catch (Exception ex)
@@ -800,4 +1007,346 @@
         "placeable" => "warning",
         _ => ""
     };
+
+    // ===== Event Scripts — State Management =====
+
+    private void ResetScriptState()
+    {
+        _showScriptsSection = false;
+        _activeScriptTab = "OnInteractionAttempted";
+        _eventGraphJsons = new Dictionary<string, string>();
+        _eventScripts = new Dictionary<string, GlyphDefinitionDto?>();
+        _scriptNodeSearchFilter = "";
+        _scriptEditorReady = false;
+        _scriptSelectedNodeInfo = null;
+
+        foreach (var evt in InteractionEventTypes)
+        {
+            _eventGraphJsons[evt] = "{}";
+            _eventScripts[evt] = null;
+        }
+    }
+
+    private async Task LoadInteractionScripts(string interactionTag)
+    {
+        try
+        {
+            // Load node catalog if not already loaded
+            if (_nodeCatalog.Count == 0)
+            {
+                _nodeCatalog = await GlyphApi.GetNodeCatalogAsync();
+            }
+
+            // Fetch all interaction glyph bindings for this tag
+            var bindings = await GlyphApi.GetInteractionBindingsAsync(interactionTag);
+
+            foreach (var binding in bindings)
+            {
+                // Fetch the full glyph definition (with GraphJson)
+                var def = await GlyphApi.GetDefinitionAsync(binding.GlyphDefinitionId);
+                if (def == null) continue;
+
+                // Map by event type
+                string eventType = def.EventType;
+                if (_eventGraphJsons.ContainsKey(eventType))
+                {
+                    _eventGraphJsons[eventType] = def.GraphJson ?? "{}";
+                    _eventScripts[eventType] = def;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load interaction scripts for {Tag}", interactionTag);
+        }
+    }
+
+    private async Task ToggleScriptsSection()
+    {
+        if (_showScriptsSection)
+        {
+            // Closing — capture current graph and destroy editor
+            await CaptureCurrentScriptGraph();
+            await DestroyScriptEditor();
+            _showScriptsSection = false;
+            _scriptSelectedNodeInfo = null;
+        }
+        else
+        {
+            // Opening — load catalog if needed, then init editor
+            _showScriptsSection = true;
+            StateHasChanged();
+
+            if (_nodeCatalog.Count == 0)
+            {
+                try { _nodeCatalog = await GlyphApi.GetNodeCatalogAsync(); }
+                catch (Exception ex)
+                {
+                    Logger.LogWarning(ex, "Failed to load node catalog");
+                }
+            }
+
+            await Task.Delay(100); // Wait for DOM render
+            await InitScriptEditor();
+        }
+    }
+
+    private async Task SwitchScriptTab(string newEventType)
+    {
+        if (newEventType == _activeScriptTab) return;
+
+        // Save current tab's graph
+        await CaptureCurrentScriptGraph();
+        await DestroyScriptEditor();
+
+        _activeScriptTab = newEventType;
+        _scriptSelectedNodeInfo = null;
+        _scriptNodeSearchFilter = "";
+        StateHasChanged();
+
+        await Task.Delay(50); // Wait for DOM update
+        await InitScriptEditor();
+    }
+
+    private async Task CaptureCurrentScriptGraph()
+    {
+        if (_scriptEditorModule == null || !_scriptEditorReady) return;
+
+        try
+        {
+            string json = await _scriptEditorModule.InvokeAsync<string>("getGraphJson");
+            _eventGraphJsons[_activeScriptTab] = json;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to capture script graph for {EventType}", _activeScriptTab);
+        }
+    }
+
+    private async Task InitScriptEditor()
+    {
+        try
+        {
+            _scriptEditorModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js");
+            _dotNetRef ??= DotNetObjectReference.Create(this);
+
+            var catalogJson = JsonSerializer.Serialize(_nodeCatalog);
+            var graphJson = _eventGraphJsons.GetValueOrDefault(_activeScriptTab, "{}");
+
+            // Ensure EventType is set in the graph JSON even for new/empty graphs
+            if (string.IsNullOrEmpty(graphJson) || graphJson == "{}")
+            {
+                graphJson = JsonSerializer.Serialize(new { EventType = _activeScriptTab });
+            }
+
+            await _scriptEditorModule.InvokeVoidAsync("initGlyphEditor", "interaction-glyph-canvas", catalogJson, graphJson, _dotNetRef);
+            _scriptEditorReady = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Script editor init failed");
+            _scriptEditorReady = false;
+        }
+    }
+
+    private async Task DestroyScriptEditor()
+    {
+        if (_scriptEditorModule == null) return;
+
+        try
+        {
+            await _scriptEditorModule.InvokeVoidAsync("destroy");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to destroy script editor");
+        }
+
+        _scriptEditorReady = false;
+    }
+
+    private async Task ClearCurrentScript()
+    {
+        _eventGraphJsons[_activeScriptTab] = "{}";
+        _scriptSelectedNodeInfo = null;
+
+        // Re-init with empty graph
+        await DestroyScriptEditor();
+        StateHasChanged();
+        await Task.Delay(50);
+        await InitScriptEditor();
+    }
+
+    // ===== Event Scripts — Save =====
+
+    private async Task SaveEventScripts(string interactionTag)
+    {
+        foreach (var eventType in InteractionEventTypes)
+        {
+            string graphJson = _eventGraphJsons.GetValueOrDefault(eventType, "{}");
+            bool hasGraph = !string.IsNullOrEmpty(graphJson) && graphJson != "{}";
+            GlyphDefinitionDto? existingDef = _eventScripts.GetValueOrDefault(eventType);
+
+            if (hasGraph)
+            {
+                if (existingDef != null)
+                {
+                    // Update existing definition
+                    var updated = await GlyphApi.UpdateDefinitionAsync(existingDef.Id,
+                        new UpdateGlyphRequest(GraphJson: graphJson, IsActive: true));
+                    if (updated != null) _eventScripts[eventType] = updated;
+                }
+                else
+                {
+                    // Create new definition + binding
+                    string name = $"{interactionTag}/{eventType}";
+                    var created = await GlyphApi.CreateDefinitionAsync(new CreateGlyphRequest(
+                        Name: name,
+                        EventType: eventType,
+                        Category: "Interaction",
+                        Description: $"Auto-created script for interaction '{interactionTag}' — {eventType}",
+                        GraphJson: graphJson,
+                        IsActive: true));
+
+                    if (created != null)
+                    {
+                        _eventScripts[eventType] = created;
+
+                        // Create the binding
+                        await GlyphApi.CreateInteractionBindingAsync(
+                            new CreateInteractionGlyphBindingRequest(
+                                InteractionTag: interactionTag,
+                                GlyphDefinitionId: created.Id));
+                    }
+                }
+            }
+            else if (existingDef != null)
+            {
+                // Graph was cleared — soft-disable the definition
+                await GlyphApi.UpdateDefinitionAsync(existingDef.Id,
+                    new UpdateGlyphRequest(IsActive: false));
+            }
+        }
+    }
+
+    // ===== Event Scripts — Node Palette & Properties =====
+
+    private async Task AddScriptNode(GlyphNodeCatalogEntryDto node)
+    {
+        if (_scriptEditorModule == null || !_scriptEditorReady) return;
+
+        try
+        {
+            var nodeJson = JsonSerializer.Serialize(node);
+            await _scriptEditorModule.InvokeVoidAsync("addNode", nodeJson);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to add script node");
+        }
+    }
+
+    [JSInvokable]
+    public Task OnNodeSelectionChanged(string? json)
+    {
+        if (string.IsNullOrEmpty(json) || json == "null")
+        {
+            _scriptSelectedNodeInfo = null;
+        }
+        else
+        {
+            try
+            {
+                _scriptSelectedNodeInfo = JsonSerializer.Deserialize<SelectedNodeInfo>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+            }
+            catch
+            {
+                _scriptSelectedNodeInfo = null;
+            }
+        }
+
+        InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
+    }
+
+    private static string GetScriptPinValue(SelectedPinInfo pin) => pin.OverrideValue ?? pin.DefaultValue ?? "";
+
+    private async Task OnScriptPropertyChanged(SelectedPinInfo pin, string value)
+    {
+        if (_scriptEditorModule == null || _scriptSelectedNodeInfo == null) return;
+
+        try
+        {
+            await _scriptEditorModule.InvokeVoidAsync("setPropertyOverride", _scriptSelectedNodeInfo.NodeId, pin.Id, value);
+            pin.OverrideValue = string.IsNullOrEmpty(value) ? null : value;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to set script property override");
+        }
+    }
+
+    private static string GetNodeColor(string colorClass)
+    {
+        return colorClass.ToLowerInvariant() switch
+        {
+            "event" => "#e74c3c",
+            "flow" => "#3498db",
+            "action" => "#2ecc71",
+            "getter" => "#9b59b6",
+            "math" => "#f39c12",
+            "logic" => "#1abc9c",
+            _ => "#7f8c8d"
+        };
+    }
+
+    private static string GetEventTabLabel(string eventType) => eventType switch
+    {
+        "OnInteractionAttempted" => "Attempted",
+        "OnInteractionStarted" => "Started",
+        "OnInteractionTick" => "Tick",
+        "OnInteractionCompleted" => "Completed",
+        _ => eventType
+    };
+
+    private static string ExtractStringValue(ChangeEventArgs e) => e.Value?.ToString() ?? string.Empty;
+
+    // ===== DTOs for JS Interop =====
+
+    private class SelectedNodeInfo
+    {
+        public string NodeId { get; set; } = "";
+        public string TypeId { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+        public List<SelectedPinInfo> InputPins { get; set; } = [];
+    }
+
+    private class SelectedPinInfo
+    {
+        public string Id { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string DataType { get; set; } = "";
+        public string? DefaultValue { get; set; }
+        public string? OverrideValue { get; set; }
+        public bool IsConnected { get; set; }
+    }
+
+    // ===== IAsyncDisposable =====
+
+    public async ValueTask DisposeAsync()
+    {
+        await DestroyScriptEditor();
+
+        if (_scriptEditorModule != null)
+        {
+            try { await _scriptEditorModule.DisposeAsync(); }
+            catch { /* ignore during teardown */ }
+        }
+
+        _dotNetRef?.Dispose();
+    }
 }
