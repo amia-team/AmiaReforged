@@ -38,15 +38,7 @@ window.regionGraph = (function () {
     /** Document-level event handlers (for cleanup) */
     let _docClickHandler = null;
     let _docContextHandler = null;
-
-    // ===== Register fcose if available =====
-    var hasFcose = false;
-    try {
-        if (typeof cytoscapeFcose !== 'undefined') {
-            cytoscape.use(cytoscapeFcose);
-            hasFcose = true;
-        }
-    } catch (e) { /* fcose not available, fall back to cose */ }
+    let _wrapperEl = null;
 
     /**
      * Initialize the region graph visual editor.
@@ -68,6 +60,8 @@ window.regionGraph = (function () {
             console.error('[regionGraph] Container not found:', containerId);
             return;
         }
+
+        _wrapperEl = container.closest('.region-editor__graph-wrapper') || container.parentElement;
 
         try {
 
@@ -343,9 +337,8 @@ window.regionGraph = (function () {
         cy.endBatch();
 
         // Run layout
-        var layoutName = hasFcose ? 'fcose' : 'cose';
         var layoutOpts = {
-            name: layoutName,
+            name: 'cose',
             animate: 'end',
             animationDuration: 600,
             nodeRepulsion: function () { return 8000; },
@@ -357,77 +350,100 @@ window.regionGraph = (function () {
             randomize: true
         };
 
-        // fcose-specific options for compound nodes
-        if (hasFcose) {
-            layoutOpts.quality = 'default';
-            layoutOpts.nodeSeparation = 75;
-            layoutOpts.packComponents = true;
-        }
-
         cy.layout(layoutOpts).run();
 
         // ===== Node click — select =====
         cy.on('tap', 'node[isRegionParent != "yes"]', function (evt) {
-            var node = evt.target;
-            var data = node.data();
+            try {
+                var node = evt.target;
+                var data = node.data();
+                console.log('[regionGraph] tap area:', data.label);
 
-            cy.nodes().removeClass('selected-node');
-            node.addClass('selected-node');
+                cy.nodes().removeClass('selected-node');
+                node.addClass('selected-node');
 
-            if (dotNetRef) {
-                dotNetRef.invokeMethodAsync('OnGraphNodeSelected', JSON.stringify({
-                    resRef: data.resRef,
-                    name: data.label,
-                    region: data.region,
-                    hasSpawnProfile: data.hasSpawnProfile === 'yes',
-                    spawnProfileName: data.spawnProfileName,
-                    poiCount: data.poiCount || 0
-                }));
+                if (dotNetRef) {
+                    dotNetRef.invokeMethodAsync('OnGraphNodeSelected', JSON.stringify({
+                        resRef: data.resRef,
+                        name: data.label,
+                        region: data.region,
+                        hasSpawnProfile: data.hasSpawnProfile === 'yes',
+                        spawnProfileName: data.spawnProfileName,
+                        poiCount: data.poiCount || 0
+                    }));
+                }
+            } catch (err) {
+                console.error('[regionGraph] tap area error:', err);
             }
         });
 
         // ===== Region parent click =====
         cy.on('tap', 'node[isRegionParent = "yes"]', function (evt) {
-            var node = evt.target;
-            cy.nodes().removeClass('selected-node');
-            node.addClass('selected-node');
+            try {
+                var node = evt.target;
+                console.log('[regionGraph] tap region:', node.data('label'));
+                cy.nodes().removeClass('selected-node');
+                node.addClass('selected-node');
 
-            if (dotNetRef) {
-                dotNetRef.invokeMethodAsync('OnRegionParentSelected', node.data('regionTag'));
+                if (dotNetRef) {
+                    dotNetRef.invokeMethodAsync('OnRegionParentSelected', node.data('regionTag'));
+                }
+            } catch (err) {
+                console.error('[regionGraph] tap region error:', err);
             }
         });
 
         // ===== Background click — deselect =====
         cy.on('tap', function (evt) {
-            if (evt.target === cy) {
-                cy.nodes().removeClass('selected-node');
-                closeContextMenu();
-                if (dotNetRef) {
-                    dotNetRef.invokeMethodAsync('OnGraphNodeDeselected');
+            try {
+                if (evt.target === cy) {
+                    console.log('[regionGraph] tap background');
+                    cy.nodes().removeClass('selected-node');
+                    closeContextMenu();
+                    if (dotNetRef) {
+                        dotNetRef.invokeMethodAsync('OnGraphNodeDeselected');
+                    }
                 }
+            } catch (err) {
+                console.error('[regionGraph] tap background error:', err);
             }
         });
 
         // ===== Right-click context menu =====
         cy.on('cxttap', 'node[isRegionParent != "yes"]', function (evt) {
-            evt.originalEvent.preventDefault();
-            var node = evt.target;
-            var pos = evt.originalEvent;
-            showAreaContextMenu(node.data(), pos.clientX, pos.clientY);
+            try {
+                if (evt.originalEvent) evt.originalEvent.preventDefault();
+                var node = evt.target;
+                var coords = _getMenuCoords(evt, container);
+                console.log('[regionGraph] cxttap area:', node.data('label'), 'at', coords.x, coords.y);
+                showAreaContextMenu(node.data(), coords.x, coords.y);
+            } catch (err) {
+                console.error('[regionGraph] cxttap area error:', err);
+            }
         });
 
         cy.on('cxttap', 'node[isRegionParent = "yes"]', function (evt) {
-            evt.originalEvent.preventDefault();
-            var node = evt.target;
-            var pos = evt.originalEvent;
-            showRegionContextMenu(node.data(), pos.clientX, pos.clientY);
+            try {
+                if (evt.originalEvent) evt.originalEvent.preventDefault();
+                var node = evt.target;
+                var coords = _getMenuCoords(evt, container);
+                console.log('[regionGraph] cxttap region:', node.data('label'), 'at', coords.x, coords.y);
+                showRegionContextMenu(node.data(), coords.x, coords.y);
+            } catch (err) {
+                console.error('[regionGraph] cxttap region error:', err);
+            }
         });
 
         cy.on('cxttap', function (evt) {
-            if (evt.target === cy) {
-                evt.originalEvent.preventDefault();
-                var pos = evt.originalEvent;
-                showBackgroundContextMenu(pos.clientX, pos.clientY);
+            try {
+                if (evt.target === cy) {
+                    if (evt.originalEvent) evt.originalEvent.preventDefault();
+                    var coords = _getMenuCoords(evt, container);
+                    console.log('[regionGraph] cxttap background at', coords.x, coords.y);
+                    showBackgroundContextMenu(coords.x, coords.y);
+                }
+            } catch (err) {
+                console.error('[regionGraph] cxttap background error:', err);
             }
         });
 
@@ -533,7 +549,7 @@ window.regionGraph = (function () {
         document.addEventListener('click', _docClickHandler);
         document.addEventListener('contextmenu', _docContextHandler);
 
-        console.log('[regionGraph] init v5 complete — all event handlers registered');
+        console.log('[regionGraph] init v7 complete — all event handlers registered');
 
         } catch (err) {
             console.error('[regionGraph] init() failed:', err);
@@ -541,6 +557,28 @@ window.regionGraph = (function () {
     }
 
     // ========== Context Menu Functions ==========
+
+    /**
+     * Convert a Cytoscape event to coordinates relative to _wrapperEl.
+     * Falls back to renderedPosition if originalEvent is missing.
+     */
+    function _getMenuCoords(evt, containerEl) {
+        var wrapper = _wrapperEl || document.body;
+        var wr = wrapper.getBoundingClientRect();
+        if (evt.originalEvent) {
+            return {
+                x: evt.originalEvent.clientX - wr.left,
+                y: evt.originalEvent.clientY - wr.top
+            };
+        }
+        // fallback using Cytoscape rendered position
+        var rp = evt.renderedPosition || { x: 100, y: 100 };
+        var cr = containerEl ? containerEl.getBoundingClientRect() : wr;
+        return {
+            x: rp.x + (cr.left - wr.left),
+            y: rp.y + (cr.top - wr.top)
+        };
+    }
 
     function showAreaContextMenu(nodeData, x, y) {
         closeContextMenu();
@@ -620,10 +658,10 @@ window.regionGraph = (function () {
             }, true);
         }
 
-        document.body.appendChild(menu);
+        (_wrapperEl || document.body).appendChild(menu);
         contextMenuEl = menu;
 
-        // Ensure menu stays within viewport
+        // Ensure menu stays within wrapper bounds
         clampMenuPosition(menu);
     }
 
@@ -656,7 +694,7 @@ window.regionGraph = (function () {
             }
         }, true);
 
-        document.body.appendChild(menu);
+        (_wrapperEl || document.body).appendChild(menu);
         contextMenuEl = menu;
         clampMenuPosition(menu);
     }
@@ -696,7 +734,7 @@ window.regionGraph = (function () {
             }
         });
 
-        document.body.appendChild(menu);
+        (_wrapperEl || document.body).appendChild(menu);
         contextMenuEl = menu;
         clampMenuPosition(menu);
     }
@@ -727,13 +765,24 @@ window.regionGraph = (function () {
 
     function clampMenuPosition(menu) {
         requestAnimationFrame(function () {
-            var rect = menu.getBoundingClientRect();
-            if (rect.right > window.innerWidth) {
-                menu.style.left = (window.innerWidth - rect.width - 8) + 'px';
+            var wrapper = _wrapperEl || document.body;
+            var wr = wrapper.getBoundingClientRect();
+            var mr = menu.getBoundingClientRect();
+            var left = parseFloat(menu.style.left) || 0;
+            var top = parseFloat(menu.style.top) || 0;
+
+            // Clamp right edge
+            if (mr.right > wr.right - 4) {
+                menu.style.left = Math.max(4, left - (mr.right - wr.right) - 4) + 'px';
             }
-            if (rect.bottom > window.innerHeight) {
-                menu.style.top = (window.innerHeight - rect.height - 8) + 'px';
+            // Clamp bottom edge
+            if (mr.bottom > wr.bottom - 4) {
+                menu.style.top = Math.max(4, top - (mr.bottom - wr.bottom) - 4) + 'px';
             }
+            // Clamp left
+            if (parseFloat(menu.style.left) < 0) menu.style.left = '4px';
+            // Clamp top
+            if (parseFloat(menu.style.top) < 0) menu.style.top = '4px';
         });
     }
 
@@ -1095,6 +1144,7 @@ window.regionGraph = (function () {
         }
         dotNetRef = null;
         regionColorMap = {};
+        _wrapperEl = null;
     }
 
     function getRegionColors() {

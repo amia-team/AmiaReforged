@@ -72,6 +72,14 @@
                     @(_isExporting ? "..." : "Export")
                 </button>
             </div>
+
+            <div class="toolbar-divider"></div>
+
+            <div class="toolbar-group">
+                <button class="btn btn-sm @(_showOverlay ? "btn-accent" : "btn-secondary")" @onclick="ToggleOverlayPanel">
+                    📋 Regions
+                </button>
+            </div>
         }
 
         <div style="flex:1"></div>
@@ -161,27 +169,20 @@
                         </span>
                     </div>
                 }
-            </div>
 
-            @* ===== Resize Splitter ===== *@
-            <div class="region-editor__splitter" id="region-splitter"
-                 title="Drag to resize – double-click to reset">
-                <div class="region-editor__splitter-grip"></div>
-            </div>
-
-            @* ===== Side Panel ===== *@
-            <div class="region-editor__panel" id="region-panel">
+                @* ===== Overlay Panel (inside graph) ===== *@
+                <div class="region-overlay-panel @(_showOverlay ? "region-overlay-panel--open" : "")">
                 @* ---- Panel Header ---- *@
                 <div class="region-editor__panel-header">
                     @if (_panelMode == PanelMode.AreaEditor)
                     {
                         <h3>Area: @(_editAreaName ?? _editArea?.ResRef ?? "—")</h3>
-                        <button class="btn btn-sm btn-secondary" @onclick="ClosePanelEditor">✕</button>
+                        <button class="btn btn-sm btn-secondary" @onclick="CloseOverlay">✕</button>
                     }
                     else if (_panelMode == PanelMode.RegionEditor)
                     {
                         <h3>@(_isCreating ? "New Region" : $"Region: {_editRegion.Name}")</h3>
-                        <button class="btn btn-sm btn-secondary" @onclick="ClosePanelEditor">✕</button>
+                        <button class="btn btn-sm btn-secondary" @onclick="CloseOverlay">✕</button>
                     }
                     else
                     {
@@ -563,12 +564,13 @@
                 @if (_panelMode == PanelMode.RegionEditor || _panelMode == PanelMode.AreaEditor)
                 {
                     <div class="region-editor__panel-footer">
-                        <button class="btn btn-secondary btn-sm" @onclick="ClosePanelEditor">Cancel</button>
+                        <button class="btn btn-secondary btn-sm" @onclick="CloseOverlay">Cancel</button>
                         <button class="btn btn-primary btn-sm" @onclick="SaveCurrentEditor" disabled="@_isSaving">
                             @(_isSaving ? "Saving..." : "Save")
                         </button>
                     </div>
                 }
+                </div>
             </div>
         </div>
     }
@@ -632,10 +634,8 @@
         if (window.__regionEditorInit) return;
         window.__regionEditorInit = true;
 
-        var DEFAULT_PANEL_WIDTH = 340;
-
         function fixLayout() {
-            // Force all Blazor layout wrappers to fill height so the flex layout works
+            // Force all Blazor layout wrappers to fill height so the graph fits
             var editor = document.querySelector('.region-editor');
             if (!editor) return;
 
@@ -654,55 +654,9 @@
             document.body.style.overflow = 'hidden';
         }
 
-        function initSplitter() {
-            var splitter = document.getElementById('region-splitter');
-            var panel = document.getElementById('region-panel');
-            var editor = splitter ? splitter.closest('.region-editor') : null;
-            if (!splitter || !panel || !editor) return;
-
-            var startX, startWidth;
-
-            splitter.addEventListener('mousedown', function (e) {
-                e.preventDefault();
-                startX = e.clientX;
-                startWidth = panel.getBoundingClientRect().width;
-                splitter.classList.add('active');
-                editor.classList.add('resizing');
-
-                function onMouseMove(e2) {
-                    var delta = startX - e2.clientX;
-                    var newWidth = Math.min(Math.max(startWidth + delta, 260), 700);
-                    panel.style.width = newWidth + 'px';
-                    if (window.regionGraph && window.regionGraph.resize) {
-                        clearTimeout(window.__regionResizeTimer);
-                        window.__regionResizeTimer = setTimeout(function () {
-                            try { window.regionGraph.resize(); } catch (_) {}
-                        }, 100);
-                    }
-                }
-
-                function onMouseUp() {
-                    document.removeEventListener('mousemove', onMouseMove);
-                    document.removeEventListener('mouseup', onMouseUp);
-                    splitter.classList.remove('active');
-                    editor.classList.remove('resizing');
-                    window.dispatchEvent(new Event('resize'));
-                }
-
-                document.addEventListener('mousemove', onMouseMove);
-                document.addEventListener('mouseup', onMouseUp);
-            });
-
-            splitter.addEventListener('dblclick', function () {
-                panel.style.width = DEFAULT_PANEL_WIDTH + 'px';
-                window.dispatchEvent(new Event('resize'));
-            });
-        }
-
         function setup() {
             if (!document.querySelector('.region-editor')) return false;
             fixLayout();
-            initSplitter();
             return true;
         }
 
@@ -744,6 +698,7 @@
     private string? _success;
     private PanelMode _panelMode = PanelMode.RegionList;
     private string _regionListFilter = "";
+    private bool _showOverlay;
 
     // ===== Region Editor State =====
     private bool _isCreating;
@@ -1093,6 +1048,7 @@
         if (_panelMode == PanelMode.AreaEditor)
         {
             _panelMode = PanelMode.RegionList;
+            _showOverlay = false;
             StateHasChanged();
         }
         return Task.CompletedTask;
@@ -1207,6 +1163,7 @@
         _showDeleteConfirm = false;
         _showAddAreaInput = false;
         _panelMode = PanelMode.RegionEditor;
+        _showOverlay = true;
     }
 
     private void SelectRegionForEdit(RegionDefinitionDto region)
@@ -1216,6 +1173,7 @@
         _showDeleteConfirm = false;
         _showAddAreaInput = false;
         _panelMode = PanelMode.RegionEditor;
+        _showOverlay = true;
     }
 
     private bool IsRegionSelected(RegionDefinitionDto region) =>
@@ -1260,6 +1218,7 @@
         // Clone or create new if unassigned
         _editArea = found != null ? CloneAreaDefinition(found) : new AreaDefinitionDto { ResRef = resRef };
         _panelMode = PanelMode.AreaEditor;
+        _showOverlay = true;
         StateHasChanged();
     }
 
@@ -1271,6 +1230,7 @@
         _editAreaName = GetAreaNameByResRef(area.ResRef);
         _editArea = CloneAreaDefinition(area);
         _panelMode = PanelMode.AreaEditor;
+        _showOverlay = true;
     }
 
     private void ClosePanelEditor()
@@ -1279,6 +1239,26 @@
         _editArea = null;
         _showDeleteConfirm = false;
         _showAddAreaInput = false;
+        _showOverlay = false;
+    }
+
+    private void CloseOverlay()
+    {
+        _showOverlay = false;
+        _panelMode = PanelMode.RegionList;
+        _editArea = null;
+        _showDeleteConfirm = false;
+        _showAddAreaInput = false;
+    }
+
+    private void ToggleOverlayPanel()
+    {
+        _showOverlay = !_showOverlay;
+        if (_showOverlay)
+        {
+            _panelMode = PanelMode.RegionList;
+            _editArea = null;
+        }
     }
 
     // ===== Save =====
