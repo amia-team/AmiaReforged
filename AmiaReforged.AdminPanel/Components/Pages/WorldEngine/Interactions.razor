@@ -582,7 +582,28 @@
     private SelectedNodeInfo? _scriptSelectedNodeInfo;
 
     private bool HasCurrentScript =>
-        _eventGraphJsons.TryGetValue(_activeScriptTab, out var json) && !string.IsNullOrEmpty(json) && json != "{}";
+        _eventGraphJsons.TryGetValue(_activeScriptTab, out var json) && GraphHasNodes(json);
+
+    /// <summary>
+    /// Checks whether a graph JSON string contains at least one node.
+    /// Empty canvases still produce structured JSON like {"Nodes":[],...} from the JS editor,
+    /// so a simple != "{}" check is insufficient.
+    /// </summary>
+    private static bool GraphHasNodes(string? graphJson)
+    {
+        if (string.IsNullOrEmpty(graphJson) || graphJson == "{}") return false;
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(graphJson);
+            return doc.RootElement.TryGetProperty("Nodes", out var nodesEl)
+                && nodesEl.ValueKind == System.Text.Json.JsonValueKind.Array
+                && nodesEl.GetArrayLength() > 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
     private IEnumerable<IGrouping<string, GlyphNodeCatalogEntryDto>> ScriptFilteredCatalog
     {
@@ -1185,7 +1206,7 @@
         foreach (var eventType in InteractionEventTypes)
         {
             string graphJson = _eventGraphJsons.GetValueOrDefault(eventType, "{}");
-            bool hasGraph = !string.IsNullOrEmpty(graphJson) && graphJson != "{}";
+            bool hasGraph = GraphHasNodes(graphJson);
             GlyphDefinitionDto? existingDef = _eventScripts.GetValueOrDefault(eventType);
 
             if (hasGraph)
@@ -1199,25 +1220,43 @@
                 }
                 else
                 {
-                    // Create new definition + binding
-                    string name = $"{interactionTag}/{eventType}";
-                    var created = await GlyphApi.CreateDefinitionAsync(new CreateGlyphRequest(
-                        Name: name,
-                        EventType: eventType,
-                        Category: "Interaction",
-                        Description: $"Auto-created script for interaction '{interactionTag}' — {eventType}",
-                        GraphJson: graphJson,
-                        IsActive: true));
+                    // Deduplication safeguard: check if a binding already exists
+                    // for this tag + event type (e.g., from a prior failed save or
+                    // an orphaned definition). If so, update it instead of creating.
+                    var existingBindings = await GlyphApi.GetInteractionBindingsAsync(interactionTag);
+                    var matchingBinding = existingBindings.FirstOrDefault(b =>
+                        b.EventType.Equals(eventType, StringComparison.OrdinalIgnoreCase));
 
-                    if (created != null)
+                    if (matchingBinding != null)
                     {
-                        _eventScripts[eventType] = created;
+                        // Reuse the existing definition — update it and reactivate
+                        var updated = await GlyphApi.UpdateDefinitionAsync(
+                            matchingBinding.GlyphDefinitionId,
+                            new UpdateGlyphRequest(GraphJson: graphJson, IsActive: true));
+                        if (updated != null) _eventScripts[eventType] = updated;
+                    }
+                    else
+                    {
+                        // Create new definition + binding
+                        string name = $"{interactionTag}/{eventType}";
+                        var created = await GlyphApi.CreateDefinitionAsync(new CreateGlyphRequest(
+                            Name: name,
+                            EventType: eventType,
+                            Category: "Interaction",
+                            Description: $"Auto-created script for interaction '{interactionTag}' — {eventType}",
+                            GraphJson: graphJson,
+                            IsActive: true));
 
-                        // Create the binding
-                        await GlyphApi.CreateInteractionBindingAsync(
-                            new CreateInteractionGlyphBindingRequest(
-                                InteractionTag: interactionTag,
-                                GlyphDefinitionId: created.Id));
+                        if (created != null)
+                        {
+                            _eventScripts[eventType] = created;
+
+                            // Create the binding
+                            await GlyphApi.CreateInteractionBindingAsync(
+                                new CreateInteractionGlyphBindingRequest(
+                                    InteractionTag: interactionTag,
+                                    GlyphDefinitionId: created.Id));
+                        }
                     }
                 }
             }
@@ -1226,6 +1265,7 @@
                 // Graph was cleared — soft-disable the definition
                 await GlyphApi.UpdateDefinitionAsync(existingDef.Id,
                     new UpdateGlyphRequest(IsActive: false));
+                _eventScripts[eventType] = null;
             }
         }
     }
