@@ -8,7 +8,7 @@ public static class ArmoredCaster
     {
         int effectiveAsf = warlock.ArcaneSpellFailure;
 
-        byte warlockLevel = warlock.GetClassInfo(WarlockConstants.WarlockClass)?.Level ?? 0;
+        int warlockLevel = warlock.WarlockLevel();
 
         bool majorityLevelWarlock = warlockLevel > warlock.Level / 2;
         if (!majorityLevelWarlock) return effectiveAsf;
