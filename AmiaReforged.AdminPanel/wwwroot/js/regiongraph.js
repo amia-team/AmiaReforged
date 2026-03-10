@@ -35,6 +35,9 @@ window.regionGraph = (function () {
     let regionColorMap = {};
     /** Currently open context menu element */
     let contextMenuEl = null;
+    /** Document-level event handlers (for cleanup) */
+    let _docClickHandler = null;
+    let _docContextHandler = null;
 
     // ===== Register fcose if available =====
     var hasFcose = false;
@@ -55,7 +58,7 @@ window.regionGraph = (function () {
      * @param {DotNet.DotNetObject} blazorRef .NET object ref for callbacks
      */
     function init(containerId, nodesJson, edgesJson, disconnectedJson, regionsJson, blazorRef) {
-        console.log('[regionGraph] init v2 called, regionsJson type:', typeof regionsJson,
+        console.log('[regionGraph] init v5 called, regionsJson type:', typeof regionsJson,
             'length:', regionsJson ? regionsJson.length : 0);
         destroy();
         dotNetRef = blazorRef || null;
@@ -65,6 +68,8 @@ window.regionGraph = (function () {
             console.error('[regionGraph] Container not found:', containerId);
             return;
         }
+
+        try {
 
         var nodes = JSON.parse(nodesJson);
         var edges = JSON.parse(edgesJson);
@@ -427,9 +432,16 @@ window.regionGraph = (function () {
         });
 
         // ===== Drag-and-drop reassignment =====
+        var _userDragging = false;
+
+        cy.on('grab', 'node[isRegionParent != "yes"]', function () {
+            _userDragging = true;
+        });
+
         cy.on('free', 'node[isRegionParent != "yes"]', function (evt) {
+            if (!_userDragging) return;
+            _userDragging = false;
             var node = evt.target;
-            if (!node.grabbed()) return; // only on manual drag
 
             // Find the region parent closest to the drop position
             var nodePos = node.position();
@@ -509,13 +521,23 @@ window.regionGraph = (function () {
             cy.nodes('[isRegionParent = "yes"]').removeClass('drop-target');
         });
 
-        // Close context menu on click anywhere
-        document.addEventListener('click', closeContextMenu);
-        document.addEventListener('contextmenu', function (e) {
-            // Only prevent default inside the graph container
-            if (container.contains(e.target)) return;
-            closeContextMenu();
-        });
+        // Close context menu on click anywhere & suppress native menu inside graph
+        _docClickHandler = function () { closeContextMenu(); };
+        _docContextHandler = function (e) {
+            if (container.contains(e.target)) {
+                e.preventDefault();
+            } else {
+                closeContextMenu();
+            }
+        };
+        document.addEventListener('click', _docClickHandler);
+        document.addEventListener('contextmenu', _docContextHandler);
+
+        console.log('[regionGraph] init v5 complete — all event handlers registered');
+
+        } catch (err) {
+            console.error('[regionGraph] init() failed:', err);
+        }
     }
 
     // ========== Context Menu Functions ==========
@@ -1059,6 +1081,14 @@ window.regionGraph = (function () {
 
     function destroy() {
         closeContextMenu();
+        if (_docClickHandler) {
+            document.removeEventListener('click', _docClickHandler);
+            _docClickHandler = null;
+        }
+        if (_docContextHandler) {
+            document.removeEventListener('contextmenu', _docContextHandler);
+            _docContextHandler = null;
+        }
         if (cy) {
             cy.destroy();
             cy = null;
