@@ -155,6 +155,12 @@ public class GlyphExecutionContext
     /// </summary>
     public Dictionary<string, object>? InteractionMetadata { get; set; }
 
+    /// <summary>
+    /// Reference to the live interaction session. Null for OnInteractionAttempted (session not yet created)
+    /// and for non-interaction scripts. Allows nodes to modify session state directly.
+    /// </summary>
+    public AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.InteractionSession? Session { get; set; }
+
     // ==================== Variables & Cache ====================
 
     /// Mutable variable store for the current execution run.

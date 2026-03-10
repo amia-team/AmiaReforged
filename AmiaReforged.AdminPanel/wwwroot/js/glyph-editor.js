@@ -788,16 +788,34 @@ export function addNode(nodeDefJson) {
         if (exists) return; // Don't add duplicates
     }
 
-    // Place near center of view
-    const w = canvas ? canvas.width : 800;
-    const h = canvas ? canvas.height : 600;
-    const wp = screenToWorld(w / 2, h / 2);
+    // Auto-layout: place to the right of the selected node, or the rightmost node,
+    // or center of viewport if the graph is empty.
+    let placeX, placeY;
+    const hGap = 60; // horizontal gap between nodes
+    const selectedNode = selectedNodeId ? nodes.find(n => n.id === selectedNodeId) : null;
 
-    // Add slight random offset so multiple adds don't stack
-    const ox = (Math.random() - 0.5) * 60;
-    const oy = (Math.random() - 0.5) * 60;
+    if (selectedNode) {
+        // Place to the right of the selected node, same vertical center
+        placeX = selectedNode.x + selectedNode.width + hGap;
+        placeY = selectedNode.y;
+    } else if (nodes.length > 0) {
+        // Find the rightmost node and place to its right
+        let rightmost = nodes[0];
+        for (const n of nodes) {
+            if (n.x + n.width > rightmost.x + rightmost.width) rightmost = n;
+        }
+        placeX = rightmost.x + rightmost.width + hGap;
+        placeY = rightmost.y;
+    } else {
+        // Empty graph — place at center of viewport
+        const w = canvas ? canvas.width : 800;
+        const h = canvas ? canvas.height : 600;
+        const wp = screenToWorld(w / 2, h / 2);
+        placeX = wp.x;
+        placeY = wp.y;
+    }
 
-    const node = createNodeInstance(def, wp.x + ox, wp.y + oy);
+    const node = createNodeInstance(def, placeX, placeY);
     nodes.push(node);
     selectedNodeId = node.id;
 }

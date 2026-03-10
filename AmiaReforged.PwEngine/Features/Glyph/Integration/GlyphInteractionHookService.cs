@@ -3,7 +3,9 @@ using System.Text.Json.Serialization;
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using AmiaReforged.PwEngine.Features.Glyph.Persistence;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.Events;
 using Anvil.API;
 using Anvil.Services;
@@ -40,6 +42,7 @@ public class GlyphInteractionHookService
 
     private readonly GlyphBootstrap _bootstrap;
     private readonly IGlyphRepository _repository;
+    private readonly IInteractionSessionManager _sessionManager;
 
     /// <summary>
     /// Cache of active interaction bindings keyed by (InteractionTag, EventType).
@@ -49,10 +52,12 @@ public class GlyphInteractionHookService
 
     public GlyphInteractionHookService(
         GlyphBootstrap bootstrap,
-        IGlyphRepository repository)
+        IGlyphRepository repository,
+        IInteractionSessionManager sessionManager)
     {
         _bootstrap = bootstrap;
         _repository = repository;
+        _sessionManager = sessionManager;
 
         RefreshCacheAsync().GetAwaiter().GetResult();
         Log.Info("GlyphInteractionHookService initialized with {Count} cached interaction bindings.", _cache.Count);
@@ -200,12 +205,23 @@ public class GlyphInteractionHookService
 
         Log.Debug("[Glyph] OnTick: found {Count} matching graph(s) for '{Tag}'", graphs.Count, interactionTag);
 
+        // Check if OnInteractionTick has been suppressed by a prior event script
+        InteractionSession? tickSession = Guid.TryParse(characterId, out Guid tickCharGuid)
+            ? _sessionManager.GetActiveSession(new CharacterId(tickCharGuid))
+            : null;
+        if (tickSession?.SuppressedEventTypes.Contains(nameof(GlyphEventType.OnInteractionTick)) == true)
+        {
+            Log.Info("[Glyph] OnTick suppressed for '{Tag}' by prior script", interactionTag);
+            return (false, null);
+        }
+
         foreach (GlyphGraph graph in graphs)
         {
             uint creatureId = ResolveCreatureObjectId(characterId);
             GlyphExecutionContext ctx = CreateInteractionContext(graph, interactionTag, characterId,
                 targetId, null, areaResRef, proficiency, metadata,
                 creatureObjectId: creatureId);
+            ctx.Session = tickSession;
             ctx.InteractionSessionId = sessionId;
             ctx.InteractionProgress = progress;
             ctx.InteractionRequiredRounds = requiredRounds;
@@ -257,6 +273,14 @@ public class GlyphInteractionHookService
 
         Log.Debug("[Glyph] OnStarted: found {Count} matching graph(s) for '{Tag}'", graphs.Count, @event.InteractionTag);
 
+        // Check suppression
+        InteractionSession? startedSession = _sessionManager.GetActiveSession(new CharacterId(@event.CharacterId));
+        if (startedSession?.SuppressedEventTypes.Contains(nameof(GlyphEventType.OnInteractionStarted)) == true)
+        {
+            Log.Info("[Glyph] OnStarted suppressed for '{Tag}' by prior script", @event.InteractionTag);
+            return;
+        }
+
         foreach (GlyphGraph graph in graphs)
         {
             uint creatureId = ResolveCreatureObjectId(@event.CharacterId.ToString());
@@ -273,6 +297,7 @@ public class GlyphInteractionHookService
                 metadata: null,
                 cancellationToken,
                 creatureObjectId: creatureId);
+            ctx.Session = startedSession;
             ctx.InteractionSessionId = @event.SessionId;
             ctx.InteractionRequiredRounds = @event.RequiredRounds;
 
@@ -315,6 +340,14 @@ public class GlyphInteractionHookService
 
         Log.Debug("[Glyph] OnCompleted: found {Count} matching graph(s) for '{Tag}'", graphs.Count, @event.InteractionTag);
 
+        // Check suppression
+        InteractionSession? completedSession = _sessionManager.GetActiveSession(new CharacterId(@event.CharacterId));
+        if (completedSession?.SuppressedEventTypes.Contains(nameof(GlyphEventType.OnInteractionCompleted)) == true)
+        {
+            Log.Info("[Glyph] OnCompleted suppressed for '{Tag}' by prior script", @event.InteractionTag);
+            return;
+        }
+
         foreach (GlyphGraph graph in graphs)
         {
             uint creatureId = ResolveCreatureObjectId(@event.CharacterId.ToString());
@@ -331,6 +364,7 @@ public class GlyphInteractionHookService
                 metadata: null,
                 cancellationToken,
                 creatureObjectId: creatureId);
+            ctx.Session = completedSession;
             ctx.InteractionSessionId = @event.SessionId;
 
             try

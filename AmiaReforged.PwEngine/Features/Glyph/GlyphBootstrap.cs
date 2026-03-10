@@ -105,6 +105,16 @@ public class GlyphBootstrap
         registry.Register(BlockInteractionExecutor.CreateDefinition());
         registry.Register(CancelInteractionExecutor.CreateDefinition());
         registry.Register(GetInteractionInfoExecutor.CreateDefinition());
+        registry.Register(SuppressEventExecutor.CreateDefinition());
+        registry.Register(SetProgressExecutor.CreateDefinition());
+        registry.Register(SetRequiredRoundsExecutor.CreateDefinition());
+        registry.Register(SetStatusExecutor.CreateDefinition());
+        registry.Register(SetMetadataExecutor.CreateDefinition());
+        registry.Register(GetMetadataExecutor.CreateDefinition());
+        registry.Register(SkillCheckExecutor.CreateDefinition());
+        registry.Register(PlayVfxExecutor.CreateDefinition());
+        registry.Register(SendMessageExecutor.CreateDefinition());
+        registry.Register(HasItemExecutor.CreateDefinition());
     }
 
     private static List<IGlyphNodeExecutor> CreateExecutors() =>
@@ -165,6 +175,16 @@ public class GlyphBootstrap
         new OnInteractionCompletedEventExecutor(),
         new BlockInteractionExecutor(),
         new CancelInteractionExecutor(),
-        new GetInteractionInfoExecutor()
+        new GetInteractionInfoExecutor(),
+        new SuppressEventExecutor(),
+        new SetProgressExecutor(),
+        new SetRequiredRoundsExecutor(),
+        new SetStatusExecutor(),
+        new SetMetadataExecutor(),
+        new GetMetadataExecutor(),
+        new SkillCheckExecutor(),
+        new PlayVfxExecutor(),
+        new SendMessageExecutor(),
+        new HasItemExecutor()
     ];
 }

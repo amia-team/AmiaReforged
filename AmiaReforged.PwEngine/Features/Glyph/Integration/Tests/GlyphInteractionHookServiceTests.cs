@@ -5,6 +5,7 @@ using AmiaReforged.PwEngine.Features.Glyph.Persistence;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Events;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.Events;
 using FluentAssertions;
 using NUnit.Framework;
@@ -469,7 +470,7 @@ public class GlyphInteractionHookServiceTests
 
     private void CreateHookService()
     {
-        _hookService = new GlyphInteractionHookService(_bootstrap, _repository);
+        _hookService = new GlyphInteractionHookService(_bootstrap, _repository, new InteractionSessionManager());
     }
 
     // ==================== In-Memory Test Double ====================
