@@ -46,7 +46,7 @@ public class EldritchDoom : IShape
         await NwTask.Delay(SpellUtils.GetRandomDelay(0.3, 0.6));
         await blast.Warlock.WaitForObjectContext();
 
-        if (!blast.Warlock.IsReactionTypeHostile(creature) || creature.IsDead)
+        if (!creature.IsValidInvocationTarget(blast.Warlock) || creature.IsDead)
             return;
 
         CreatureEvents.OnSpellCastAt.Signal(blast.Warlock, creature, blast.Spell);
