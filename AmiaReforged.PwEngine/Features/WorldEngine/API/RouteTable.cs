@@ -82,6 +82,16 @@ public class RouteTable
             ScanType(type);
         }
 
+        // Sort routes so literal segments are matched before parameterized ones.
+        // Routes with fewer parameters are more specific and should be tried first.
+        // Among equal parameter counts, longer patterns (more segments) win.
+        _routes.Sort((a, b) =>
+        {
+            int paramDiff = a.ParameterNames.Count.CompareTo(b.ParameterNames.Count);
+            if (paramDiff != 0) return paramDiff;
+            return b.Pattern.Length.CompareTo(a.Pattern.Length);
+        });
+
         _logger.Info("Route table built with {Count} routes", _routes.Count);
     }
 
