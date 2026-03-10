@@ -629,10 +629,30 @@
 
 <script suppress-error="BL9992">
     (function () {
-        if (window.__regionSplitterInit) return;
-        window.__regionSplitterInit = true;
+        if (window.__regionEditorInit) return;
+        window.__regionEditorInit = true;
 
         var DEFAULT_PANEL_WIDTH = 340;
+
+        function fixLayout() {
+            // Force all Blazor layout wrappers to fill height so the flex layout works
+            var editor = document.querySelector('.region-editor');
+            if (!editor) return;
+
+            var el = editor.parentElement;
+            while (el && el !== document.body) {
+                el.style.height = '100%';
+                el.style.overflow = 'hidden';
+                if (el.classList.contains('content')) {
+                    el.style.padding = '0';
+                    el.style.maxWidth = '100%';
+                }
+                el = el.parentElement;
+            }
+            document.documentElement.style.height = '100%';
+            document.body.style.height = '100%';
+            document.body.style.overflow = 'hidden';
+        }
 
         function initSplitter() {
             var splitter = document.getElementById('region-splitter');
@@ -666,7 +686,6 @@
                     document.removeEventListener('mouseup', onMouseUp);
                     splitter.classList.remove('active');
                     editor.classList.remove('resizing');
-                    // Force cytoscape to notice the container changed
                     window.dispatchEvent(new Event('resize'));
                 }
 
@@ -674,25 +693,26 @@
                 document.addEventListener('mouseup', onMouseUp);
             });
 
-            // Double-click to reset width
             splitter.addEventListener('dblclick', function () {
                 panel.style.width = DEFAULT_PANEL_WIDTH + 'px';
                 window.dispatchEvent(new Event('resize'));
             });
         }
 
-        // MutationObserver to init when the DOM is ready
-        var observer = new MutationObserver(function () {
-            if (document.getElementById('region-splitter')) {
-                initSplitter();
-                observer.disconnect();
-            }
-        });
-        observer.observe(document.body, { childList: true, subtree: true });
-
-        // Also try immediately
-        if (document.getElementById('region-splitter')) {
+        function setup() {
+            if (!document.querySelector('.region-editor')) return false;
+            fixLayout();
             initSplitter();
+            return true;
+        }
+
+        // Try immediately
+        if (!setup()) {
+            // MutationObserver fallback
+            var observer = new MutationObserver(function () {
+                if (setup()) observer.disconnect();
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
         }
     })();
 </script>
