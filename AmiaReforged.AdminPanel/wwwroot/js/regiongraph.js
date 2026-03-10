@@ -50,8 +50,7 @@ window.regionGraph = (function () {
      * @param {DotNet.DotNetObject} blazorRef .NET object ref for callbacks
      */
     function init(containerId, nodesJson, edgesJson, disconnectedJson, regionsJson, blazorRef) {
-        console.log('[regionGraph] init v5 called, regionsJson type:', typeof regionsJson,
-            'length:', regionsJson ? regionsJson.length : 0);
+        console.log('[regionGraph] init v8 called');
         destroy();
         dotNetRef = blazorRef || null;
 
@@ -414,9 +413,9 @@ window.regionGraph = (function () {
             try {
                 if (evt.originalEvent) evt.originalEvent.preventDefault();
                 var node = evt.target;
-                var coords = _getMenuCoords(evt, container);
-                console.log('[regionGraph] cxttap area:', node.data('label'), 'at', coords.x, coords.y);
-                showAreaContextMenu(node.data(), coords.x, coords.y);
+                var oe = evt.originalEvent || {};
+                console.log('[regionGraph] cxttap area:', node.data('label'), 'clientX:', oe.clientX, 'clientY:', oe.clientY);
+                showAreaContextMenu(node.data(), oe.clientX || 200, oe.clientY || 200);
             } catch (err) {
                 console.error('[regionGraph] cxttap area error:', err);
             }
@@ -426,9 +425,9 @@ window.regionGraph = (function () {
             try {
                 if (evt.originalEvent) evt.originalEvent.preventDefault();
                 var node = evt.target;
-                var coords = _getMenuCoords(evt, container);
-                console.log('[regionGraph] cxttap region:', node.data('label'), 'at', coords.x, coords.y);
-                showRegionContextMenu(node.data(), coords.x, coords.y);
+                var oe = evt.originalEvent || {};
+                console.log('[regionGraph] cxttap region:', node.data('label'), 'clientX:', oe.clientX, 'clientY:', oe.clientY);
+                showRegionContextMenu(node.data(), oe.clientX || 200, oe.clientY || 200);
             } catch (err) {
                 console.error('[regionGraph] cxttap region error:', err);
             }
@@ -438,9 +437,9 @@ window.regionGraph = (function () {
             try {
                 if (evt.target === cy) {
                     if (evt.originalEvent) evt.originalEvent.preventDefault();
-                    var coords = _getMenuCoords(evt, container);
-                    console.log('[regionGraph] cxttap background at', coords.x, coords.y);
-                    showBackgroundContextMenu(coords.x, coords.y);
+                    var oe = evt.originalEvent || {};
+                    console.log('[regionGraph] cxttap background clientX:', oe.clientX, 'clientY:', oe.clientY);
+                    showBackgroundContextMenu(oe.clientX || 200, oe.clientY || 200);
                 }
             } catch (err) {
                 console.error('[regionGraph] cxttap background error:', err);
@@ -549,7 +548,7 @@ window.regionGraph = (function () {
         document.addEventListener('click', _docClickHandler);
         document.addEventListener('contextmenu', _docContextHandler);
 
-        console.log('[regionGraph] init v7 complete — all event handlers registered');
+        console.log('[regionGraph] init v8 complete — all event handlers registered');
 
         } catch (err) {
             console.error('[regionGraph] init() failed:', err);
@@ -558,40 +557,51 @@ window.regionGraph = (function () {
 
     // ========== Context Menu Functions ==========
 
-    /**
-     * Convert a Cytoscape event to coordinates relative to _wrapperEl.
-     * Falls back to renderedPosition if originalEvent is missing.
-     */
-    function _getMenuCoords(evt, containerEl) {
-        var wrapper = _wrapperEl || document.body;
-        var wr = wrapper.getBoundingClientRect();
-        if (evt.originalEvent) {
-            return {
-                x: evt.originalEvent.clientX - wr.left,
-                y: evt.originalEvent.clientY - wr.top
-            };
-        }
-        // fallback using Cytoscape rendered position
-        var rp = evt.renderedPosition || { x: 100, y: 100 };
-        var cr = containerEl ? containerEl.getBoundingClientRect() : wr;
-        return {
-            x: rp.x + (cr.left - wr.left),
-            y: rp.y + (cr.top - wr.top)
-        };
+    // Inline styles applied to every menu (no CSS dependency)
+    var MENU_STYLE = 'position:fixed;z-index:99999;min-width:180px;background:#2a2825;' +
+        'border:1px solid #3a3733;border-radius:6px;padding:4px 0;' +
+        'box-shadow:0 6px 24px rgba(0,0,0,0.5);font-size:14px;color:#d0ccc2;' +
+        'font-family:inherit;';
+
+    var ITEM_STYLE = 'display:flex;align-items:center;justify-content:space-between;' +
+        'padding:6px 14px;cursor:pointer;color:#d0ccc2;white-space:nowrap;user-select:none;';
+
+    var ITEM_DANGER_STYLE = ITEM_STYLE + 'color:#dc3545;';
+
+    var DIVIDER_STYLE = 'height:1px;background:#3a3733;margin:4px 0;';
+
+    function _createMenu(x, y) {
+        closeContextMenu();
+        var menu = document.createElement('div');
+        menu.setAttribute('style', MENU_STYLE + 'left:' + x + 'px;top:' + y + 'px;');
+        menu.className = 'region-context-menu';
+        return menu;
+    }
+
+    function _attachMenu(menu) {
+        document.body.appendChild(menu);
+        contextMenuEl = menu;
+        console.log('[regionGraph] menu attached, children:', menu.children.length,
+            'rect:', JSON.stringify(menu.getBoundingClientRect()));
+        // Clamp into viewport
+        requestAnimationFrame(function () {
+            if (!menu.parentNode) return;
+            var r = menu.getBoundingClientRect();
+            if (r.right > window.innerWidth - 4) {
+                menu.style.left = Math.max(4, window.innerWidth - r.width - 4) + 'px';
+            }
+            if (r.bottom > window.innerHeight - 4) {
+                menu.style.top = Math.max(4, window.innerHeight - r.height - 4) + 'px';
+            }
+        });
     }
 
     function showAreaContextMenu(nodeData, x, y) {
-        closeContextMenu();
-
-        var menu = document.createElement('div');
-        menu.className = 'region-context-menu';
-        menu.style.left = x + 'px';
-        menu.style.top = y + 'px';
-
+        var menu = _createMenu(x, y);
         var regionTag = nodeData.region || '';
 
-        // "Edit in Panel" item
-        addMenuItem(menu, '✏️ Edit in Panel', function () {
+        // "Edit in Panel"
+        _addItem(menu, '\u270f\ufe0f Edit in Panel', function () {
             closeContextMenu();
             if (dotNetRef) {
                 dotNetRef.invokeMethodAsync('OnGraphNodeSelected', JSON.stringify({
@@ -606,127 +616,121 @@ window.regionGraph = (function () {
         });
 
         // "Highlight Connections"
-        addMenuItem(menu, '🔗 Highlight Connections', function () {
+        _addItem(menu, '\ud83d\udd17 Highlight Connections', function () {
             closeContextMenu();
             highlightNode(nodeData.resRef);
         });
 
-        addDivider(menu);
+        _addDivider(menu);
 
-        // "Assign to Region" submenu
+        // "Assign to Region" with hover submenu
         var assignItem = document.createElement('div');
-        assignItem.className = 'region-context-menu__item';
-        assignItem.innerHTML = '📌 Assign to Region <span class="region-context-menu__submenu-arrow">▸</span>';
-        assignItem.style.position = 'relative';
+        assignItem.setAttribute('style', ITEM_STYLE + 'position:relative;');
+        assignItem.innerHTML = '\ud83d\udccc Assign to Region <span style="margin-left:10px;font-size:0.7rem;opacity:0.5">\u25b8</span>';
 
         var submenu = document.createElement('div');
-        submenu.className = 'region-context-submenu';
-        submenu.style.display = 'none';
+        submenu.setAttribute('style',
+            'display:none;position:absolute;left:100%;top:-4px;min-width:160px;' +
+            'background:#2a2825;border:1px solid #3a3733;border-radius:6px;padding:4px 0;' +
+            'box-shadow:0 6px 24px rgba(0,0,0,0.5);max-height:280px;overflow-y:auto;');
 
         var regionTags = Object.keys(regionColorMap);
         if (regionTags.length === 0) {
             var empty = document.createElement('div');
-            empty.className = 'region-context-submenu__item';
-            empty.style.color = 'var(--text-secondary)';
+            empty.setAttribute('style', 'padding:5px 12px;color:#888;font-size:13px;white-space:nowrap;');
             empty.textContent = 'No regions defined';
             submenu.appendChild(empty);
         } else {
             regionTags.forEach(function (tag) {
                 var color = regionColorMap[tag];
-                var item = document.createElement('div');
-                item.className = 'region-context-submenu__item';
-                item.innerHTML = '<span class="region-context-submenu__swatch" style="background:' + color + '"></span>' + tag;
-                item.addEventListener('click', function (e) {
+                var si = document.createElement('div');
+                si.setAttribute('style',
+                    'display:flex;align-items:center;gap:6px;padding:5px 12px;cursor:pointer;' +
+                    'color:#d0ccc2;font-size:13px;transition:background 0.1s;white-space:nowrap;');
+                si.innerHTML = '<span style="width:8px;height:8px;border-radius:2px;flex-shrink:0;background:' + color + '"></span>' + tag;
+                si.addEventListener('mouseenter', function () { si.style.background = 'rgba(201,168,76,0.15)'; });
+                si.addEventListener('mouseleave', function () { si.style.background = ''; });
+                si.addEventListener('click', function (e) {
                     e.stopPropagation();
                     closeContextMenu();
                     assignNodeToRegion(nodeData.resRef, tag);
                 });
-                submenu.appendChild(item);
+                submenu.appendChild(si);
             });
         }
 
         assignItem.appendChild(submenu);
-        assignItem.addEventListener('mouseenter', function () { submenu.style.display = 'block'; });
-        assignItem.addEventListener('mouseleave', function () { submenu.style.display = 'none'; });
+        assignItem.addEventListener('mouseenter', function () {
+            submenu.style.display = 'block';
+            assignItem.style.background = 'rgba(201,168,76,0.15)';
+        });
+        assignItem.addEventListener('mouseleave', function () {
+            submenu.style.display = 'none';
+            assignItem.style.background = '';
+        });
         menu.appendChild(assignItem);
 
         // "Remove from Region" (only if assigned)
         if (regionTag) {
-            addMenuItem(menu, '❌ Remove from Region', function () {
+            _addItem(menu, '\u274c Remove from Region', function () {
                 closeContextMenu();
                 unassignNode(nodeData.resRef);
             }, true);
         }
 
-        (_wrapperEl || document.body).appendChild(menu);
-        contextMenuEl = menu;
-
-        // Ensure menu stays within wrapper bounds
-        clampMenuPosition(menu);
+        _attachMenu(menu);
     }
 
     function showRegionContextMenu(nodeData, x, y) {
-        closeContextMenu();
+        var menu = _createMenu(x, y);
 
-        var menu = document.createElement('div');
-        menu.className = 'region-context-menu';
-        menu.style.left = x + 'px';
-        menu.style.top = y + 'px';
-
-        addMenuItem(menu, '✏️ Edit Region', function () {
+        _addItem(menu, '\u270f\ufe0f Edit Region', function () {
             closeContextMenu();
             if (dotNetRef) {
                 dotNetRef.invokeMethodAsync('OnRegionParentSelected', nodeData.regionTag);
             }
         });
 
-        addMenuItem(menu, '🔍 Highlight All Areas', function () {
+        _addItem(menu, '\ud83d\udd0d Highlight All Areas', function () {
             closeContextMenu();
             highlightRegion(nodeData.label);
         });
 
-        addDivider(menu);
+        _addDivider(menu);
 
-        addMenuItem(menu, '🗑️ Delete Region', function () {
+        _addItem(menu, '\ud83d\uddd1\ufe0f Delete Region', function () {
             closeContextMenu();
             if (dotNetRef) {
                 dotNetRef.invokeMethodAsync('OnContextMenuAction', 'deleteRegion', nodeData.regionTag);
             }
         }, true);
 
-        (_wrapperEl || document.body).appendChild(menu);
-        contextMenuEl = menu;
-        clampMenuPosition(menu);
+        _attachMenu(menu);
     }
 
     function showBackgroundContextMenu(x, y) {
-        closeContextMenu();
+        var menu = _createMenu(x, y);
 
-        var menu = document.createElement('div');
-        menu.className = 'region-context-menu';
-        menu.style.left = x + 'px';
-        menu.style.top = y + 'px';
-
-        addMenuItem(menu, '➕ New Region', function () {
+        _addItem(menu, '\u2795 New Region', function () {
             closeContextMenu();
             if (dotNetRef) {
                 dotNetRef.invokeMethodAsync('OnContextMenuAction', 'newRegion', '');
             }
         });
 
-        addMenuItem(menu, '🔎 Show Unassigned', function () {
+        _addItem(menu, '\ud83d\udd0e Show Unassigned', function () {
             closeContextMenu();
             highlightOrphans();
         });
 
-        addDivider(menu);
+        _addDivider(menu);
 
-        addMenuItem(menu, '📐 Fit View', function () {
+        _addItem(menu, '\ud83d\udcd0 Fit View', function () {
             closeContextMenu();
             fitView();
         });
 
-        addMenuItem(menu, '🧹 Clear Highlights', function () {
+        _addItem(menu, '\ud83e\uddf9 Clear Highlights', function () {
             closeContextMenu();
             clearHighlight();
             if (dotNetRef) {
@@ -734,15 +738,17 @@ window.regionGraph = (function () {
             }
         });
 
-        (_wrapperEl || document.body).appendChild(menu);
-        contextMenuEl = menu;
-        clampMenuPosition(menu);
+        _attachMenu(menu);
     }
 
-    function addMenuItem(menu, text, handler, isDanger) {
+    function _addItem(menu, text, handler, isDanger) {
         var item = document.createElement('div');
-        item.className = 'region-context-menu__item' + (isDanger ? ' region-context-menu__item--danger' : '');
+        item.setAttribute('style', isDanger ? ITEM_DANGER_STYLE : ITEM_STYLE);
         item.textContent = text;
+        item.addEventListener('mouseenter', function () {
+            item.style.background = isDanger ? 'rgba(220,53,69,0.15)' : 'rgba(201,168,76,0.15)';
+        });
+        item.addEventListener('mouseleave', function () { item.style.background = ''; });
         item.addEventListener('click', function (e) {
             e.stopPropagation();
             handler();
@@ -750,9 +756,9 @@ window.regionGraph = (function () {
         menu.appendChild(item);
     }
 
-    function addDivider(menu) {
+    function _addDivider(menu) {
         var d = document.createElement('div');
-        d.className = 'region-context-menu__divider';
+        d.setAttribute('style', DIVIDER_STYLE);
         menu.appendChild(d);
     }
 
@@ -761,29 +767,6 @@ window.regionGraph = (function () {
             contextMenuEl.parentNode.removeChild(contextMenuEl);
         }
         contextMenuEl = null;
-    }
-
-    function clampMenuPosition(menu) {
-        requestAnimationFrame(function () {
-            var wrapper = _wrapperEl || document.body;
-            var wr = wrapper.getBoundingClientRect();
-            var mr = menu.getBoundingClientRect();
-            var left = parseFloat(menu.style.left) || 0;
-            var top = parseFloat(menu.style.top) || 0;
-
-            // Clamp right edge
-            if (mr.right > wr.right - 4) {
-                menu.style.left = Math.max(4, left - (mr.right - wr.right) - 4) + 'px';
-            }
-            // Clamp bottom edge
-            if (mr.bottom > wr.bottom - 4) {
-                menu.style.top = Math.max(4, top - (mr.bottom - wr.bottom) - 4) + 'px';
-            }
-            // Clamp left
-            if (parseFloat(menu.style.left) < 0) menu.style.left = '4px';
-            // Clamp top
-            if (parseFloat(menu.style.top) < 0) menu.style.top = '4px';
-        });
     }
 
     // ========== Node Assignment Operations ==========

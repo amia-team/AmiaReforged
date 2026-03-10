@@ -171,9 +171,12 @@
                 }
 
                 @* ===== Overlay Panel (inside graph) ===== *@
-                <div class="region-overlay-panel @(_showOverlay ? "region-overlay-panel--open" : "")">
+                @if (_showOverlay)
+                {
+                <div class="region-overlay-panel region-overlay-panel--open"
+                     style="position:absolute;top:0;right:0;bottom:0;width:380px;max-width:90%;background:#26241f;border-left:2px solid #c9a84c;z-index:500;display:flex;flex-direction:column;box-shadow:-4px 0 24px rgba(0,0,0,0.4);overflow:hidden;">
                 @* ---- Panel Header ---- *@
-                <div class="region-editor__panel-header">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #3a3733;background:#1c1b19;flex-shrink:0;">
                     @if (_panelMode == PanelMode.AreaEditor)
                     {
                         <h3>Area: @(_editAreaName ?? _editArea?.ResRef ?? "—")</h3>
@@ -192,7 +195,7 @@
                 </div>
 
                 @* ---- Panel Body ---- *@
-                <div class="region-editor__panel-body">
+                <div class="region-editor__panel-body" style="flex:1;overflow-y:auto;padding:12px 14px;">
                     @if (_panelMode == PanelMode.RegionList)
                     {
                         @* ===== Region List ===== *@
@@ -563,7 +566,7 @@
                 @* ---- Panel Footer (save buttons) ---- *@
                 @if (_panelMode == PanelMode.RegionEditor || _panelMode == PanelMode.AreaEditor)
                 {
-                    <div class="region-editor__panel-footer">
+                    <div style="display:flex;gap:8px;padding:10px 14px;border-top:1px solid #3a3733;flex-shrink:0;justify-content:flex-end;">
                         <button class="btn btn-secondary btn-sm" @onclick="CloseOverlay">Cancel</button>
                         <button class="btn btn-primary btn-sm" @onclick="SaveCurrentEditor" disabled="@_isSaving">
                             @(_isSaving ? "Saving..." : "Save")
@@ -571,6 +574,7 @@
                     </div>
                 }
                 </div>
+                }
             </div>
         </div>
     }
