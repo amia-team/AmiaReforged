@@ -14,631 +14,556 @@
 @rendermode InteractiveServer
 @implements IAsyncDisposable
 
-<PageTitle>Regions - World Engine</PageTitle>
+<PageTitle>Regions — Visual Editor</PageTitle>
 
-<div class="encounters-page">
-    <div class="dashboard-header">
-        <h1>Region Definitions</h1>
-        <div class="header-actions">
-            @if (_endpoints.Count > 0)
-            {
-                <div class="instance-selector">
-                    <label class="instance-label">Server:</label>
-                    <select class="form-control form-control-sm" value="@(_selectedEndpoint?.Id.ToString() ?? "")" @onchange="OnEndpointChanged">
-                        <option value="">— Select —</option>
-                        @foreach (var ep in _endpoints)
-                        {
-                            <option value="@ep.Id">@ep.Name</option>
-                        }
-                    </select>
-                </div>
-            }
-            @if (_selectedEndpoint != null)
-            {
-                <button class="btn btn-secondary btn-sm" @onclick="RefreshRegions">Refresh</button>
-                <button class="btn btn-primary btn-sm" @onclick="ShowCreateModal">+ New Region</button>
-                <button class="btn btn-info btn-sm" @onclick="() => _showImportModal = true">Import JSON</button>
-                <button class="btn btn-success btn-sm" @onclick="ExportRegions" disabled="@_isExporting">@(_isExporting ? "Exporting..." : "Export JSON")</button>
-            }
-            <a href="/" class="btn btn-secondary btn-sm">← Dashboard</a>
-        </div>
+<div class="region-editor">
+    @* ===== Toolbar ===== *@
+    <div class="region-editor__toolbar">
+        <h1>Regions</h1>
+
+        @if (_endpoints.Count > 0)
+        {
+            <div class="toolbar-group">
+                <label style="font-size:0.82rem;color:var(--text-secondary);white-space:nowrap">Server:</label>
+                <select class="form-control form-control-sm" style="width:auto;min-width:140px"
+                        value="@(_selectedEndpoint?.Id.ToString() ?? "")" @onchange="OnEndpointChanged">
+                    <option value="">— Select —</option>
+                    @foreach (var ep in _endpoints)
+                    {
+                        <option value="@ep.Id">@ep.Name</option>
+                    }
+                </select>
+            </div>
+        }
+
+        @if (_selectedEndpoint != null)
+        {
+            <div class="toolbar-divider"></div>
+
+            <div class="toolbar-group">
+                <input class="form-control form-control-sm" style="width:200px" @bind="_graphSearchQuery" @bind:event="oninput"
+                       placeholder="Search areas..." @onkeydown="OnGraphSearchKeyDown" />
+                <button class="btn btn-primary btn-sm" @onclick="SearchInGraph">🔎</button>
+            </div>
+
+            <div class="toolbar-divider"></div>
+
+            <div class="toolbar-group">
+                @if (!_isGraphLoading && _graphData == null)
+                {
+                    <button class="btn btn-primary btn-sm" @onclick="LoadGraph">Load Graph</button>
+                }
+                else if (_graphData != null)
+                {
+                    <button class="btn btn-warning btn-sm" @onclick="RefreshGraphData" disabled="@_isGraphLoading">
+                        @(_isGraphLoading ? "Scanning..." : "Rescan")
+                    </button>
+                }
+                <button class="btn btn-info btn-sm" @onclick="HighlightOrphans" disabled="@(_graphData == null)">Unassigned</button>
+                <button class="btn btn-secondary btn-sm" @onclick="ClearGraphHighlight" disabled="@(_graphData == null)">Clear</button>
+                <button class="btn btn-secondary btn-sm" @onclick="FitGraphView" disabled="@(_graphData == null)">Fit</button>
+            </div>
+
+            <div class="toolbar-divider"></div>
+
+            <div class="toolbar-group">
+                <button class="btn btn-info btn-sm" @onclick="() => _showImportModal = true">Import</button>
+                <button class="btn btn-success btn-sm" @onclick="ExportRegions" disabled="@_isExporting">
+                    @(_isExporting ? "..." : "Export")
+                </button>
+            </div>
+        }
+
+        <div style="flex:1"></div>
+        <a href="/" class="btn btn-secondary btn-sm">← Dashboard</a>
     </div>
 
+    @* ===== Alerts ===== *@
     @if (_error != null)
     {
-        <div class="alert alert-danger">@_error <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _error = null">Dismiss</button></div>
+        <div class="alert alert-danger" style="margin:8px 0 0 0;flex-shrink:0">
+            @_error
+            <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _error = null">Dismiss</button>
+        </div>
     }
     @if (_success != null)
     {
-        <div class="alert alert-success">@_success <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _success = null">Dismiss</button></div>
+        <div class="alert alert-success" style="margin:8px 0 0 0;flex-shrink:0">
+            @_success
+            <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _success = null">Dismiss</button>
+        </div>
     }
 
+    @* ===== No server selected =====  *@
     @if (_selectedEndpoint == null)
     {
-        <div class="section" style="text-align:center;padding:60px 20px">
-            @if (_endpoints.Count == 0)
-            {
-                <p style="color:var(--text-secondary);font-size:1.1rem">
-                    No WorldEngine servers configured. Go to
-                    <a href="/encounters">Encounters</a> to add one.
-                </p>
-            }
-            else
-            {
-                <p style="color:var(--text-secondary);font-size:1.1rem">Select a server from the dropdown above to manage region definitions.</p>
-            }
+        <div style="flex:1;display:flex;align-items:center;justify-content:center">
+            <p style="color:var(--text-secondary);font-size:1.1rem">
+                @if (_endpoints.Count == 0)
+                {
+                    <span>No WorldEngine servers configured. Go to <a href="/encounters">Encounters</a> to add one.</span>
+                }
+                else
+                {
+                    <span>Select a server from the toolbar to begin editing regions.</span>
+                }
+            </p>
         </div>
     }
-
-    @* ===== Search ===== *@
-    @if (_selectedEndpoint != null)
+    else
     {
-        <div class="section" style="margin-bottom:20px">
-            <div class="form-row" style="display:flex;gap:10px;align-items:end">
-                <div class="form-group" style="flex:1">
-                    <label>Search</label>
-                    <input class="form-control" @bind="_searchTerm" @bind:event="oninput"
-                           placeholder="Search by tag or name..." />
-                </div>
-                <button class="btn btn-primary btn-sm" @onclick="SearchRegions" disabled="@_isLoading">Search</button>
-            </div>
-        </div>
+        @* ===== Main split: Graph + Side Panel ===== *@
+        <div class="region-editor__main">
+            @* ===== Graph Area ===== *@
+            <div class="region-editor__graph-wrapper">
+                @if (_graphData != null)
+                {
+                    <div class="graph-info-bar">
+                        <span>🟢 @_graphData.Nodes.Count connected</span>
+                        <span>💎 @_graphData.DisconnectedAreas.Count disconnected</span>
+                        <span>📍 @_regions.Count regions</span>
+                        <span>⏱ @_graphData.GeneratedAtUtc.ToString("HH:mm:ss") UTC</span>
+                    </div>
+                }
 
-        @* ===== Area Graph Panel (collapsible) ===== *@
-        <div class="section" style="margin-bottom:20px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-                <h3 style="margin:0">
-                    <a href="javascript:void(0)" @onclick="() => _showGraph = !_showGraph" style="text-decoration:none;color:inherit">
-                        @(_showGraph ? "▾" : "▸") Area Graph
-                    </a>
-                    @if (_graphData != null)
+                <div id="region-cy" class="region-editor__graph">
+                    @if (_graphData == null && !_isGraphLoading)
                     {
-                        <small style="color:var(--text-secondary);font-weight:normal;margin-left:8px">
-                            @_graphData.Nodes.Count connected, @_graphData.DisconnectedAreas.Count disconnected
-                        </small>
-                    }
-                </h3>
-                <div style="display:flex;gap:5px">
-                    @if (!_isGraphLoading && _graphData == null)
-                    {
-                        <button class="btn btn-primary btn-sm" @onclick="LoadGraph">Load Graph</button>
-                    }
-                    else if (_graphData != null)
-                    {
-                        <button class="btn btn-warning btn-sm" @onclick="RefreshGraphData" disabled="@_isGraphLoading">
-                            @(_isGraphLoading ? "Refreshing..." : "Rescan")
-                        </button>
-                        <button class="btn btn-secondary btn-sm" @onclick="FitGraphView">Fit</button>
-                        <button class="btn btn-info btn-sm" @onclick="HighlightOrphans">Show Unassigned</button>
-                        <button class="btn btn-secondary btn-sm" @onclick="ClearGraphHighlight">Clear</button>
+                        <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-secondary)">
+                            <div style="text-align:center">
+                                <p style="font-size:1.1rem;margin-bottom:12px">Click <strong>Load Graph</strong> in the toolbar to visualise the area graph.</p>
+                                <p style="font-size:0.85rem">Right-click the graph background to create regions, or drag areas into region groups.</p>
+                            </div>
+                        </div>
                     }
                     @if (_isGraphLoading)
                     {
-                        <span style="color:var(--text-secondary);align-self:center;font-size:0.9rem;margin-left:6px">Loading...</span>
+                        <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-secondary)">
+                            <em>Loading area graph...</em>
+                        </div>
                     }
                 </div>
-            </div>
 
-            @if (_showGraph)
-            {
-                @if (_graphData != null)
+                @* ===== Legend ===== *@
+                @if (_regionColors.Count > 0)
                 {
-                    @* Search within graph *@
-                    <div style="display:flex;gap:8px;margin-bottom:8px;align-items:end">
-                        <div class="form-group" style="flex:1">
-                            <input class="form-control form-control-sm" @bind="_graphSearchQuery" @bind:event="oninput"
-                                   placeholder="Search areas by name or ResRef..." @onkeydown="OnGraphSearchKeyDown" />
-                        </div>
-                        <button class="btn btn-primary btn-sm" @onclick="SearchInGraph">Search</button>
-                    </div>
-
-                    @* Graph container *@
-                    <div id="region-cy" style="width:100%;height:500px;border:1px solid var(--border-color);border-radius:8px;background:#1a1a1a"></div>
-
-                    @* Region color legend *@
-                    @if (_regionColors.Count > 0)
-                    {
-                        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;padding:6px 0">
-                            @foreach (var kv in _regionColors)
-                            {
-                                <span style="display:flex;align-items:center;gap:4px;font-size:0.85rem;cursor:pointer"
-                                      @onclick="() => HighlightRegionOnGraph(kv.Key)">
-                                    <span style="width:12px;height:12px;border-radius:3px;background:@kv.Value;display:inline-block"></span>
-                                    @kv.Key
-                                </span>
-                            }
-                            <span style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:var(--text-secondary)">
-                                <span style="width:12px;height:12px;border-radius:3px;background:#6b6b6b;display:inline-block"></span>
-                                Unassigned
+                    <div class="region-editor__legend">
+                        @foreach (var kv in _regionColors)
+                        {
+                            <span class="region-editor__legend-item" @onclick="() => HighlightRegionOnGraph(kv.Key)">
+                                <span class="region-editor__legend-swatch" style="background:@kv.Value"></span>
+                                @kv.Key
                             </span>
-                        </div>
-                    }
-
-                    @* Selected graph node info *@
-                    @if (_selectedGraphNode != null)
-                    {
-                        <div style="margin-top:8px;padding:10px;border:1px solid var(--border-color);border-radius:6px;background:rgba(255,255,255,0.03)">
-                            <div style="display:flex;justify-content:space-between;align-items:center">
-                                <strong>@_selectedGraphNode.Name</strong>
-                                <button class="btn btn-sm btn-secondary" style="padding:1px 8px" @onclick="() => _selectedGraphNode = null">✕</button>
-                            </div>
-                            <div style="display:flex;gap:15px;margin-top:4px;font-size:0.9rem;color:var(--text-secondary)">
-                                <span><strong>ResRef:</strong> <code>@_selectedGraphNode.ResRef</code></span>
-                                <span><strong>Region:</strong> @(!string.IsNullOrEmpty(_selectedGraphNode.Region) ? _selectedGraphNode.Region : "Unassigned")</span>
-                                @if (_selectedGraphNode.HasSpawnProfile)
-                                {
-                                    <span><strong>Profile:</strong> @(_selectedGraphNode.SpawnProfileName ?? "Yes")</span>
-                                }
-                            </div>
-                        </div>
-                    }
-                }
-                else if (!_isGraphLoading)
-                {
-                    <p style="color:var(--text-secondary);text-align:center;padding:30px 0">
-                        Click <strong>Load Graph</strong> to fetch the area connectivity graph from the server.
-                    </p>
-                }
-            }
-        </div>
-
-        @* ===== Regions Table ===== *@
-        @if (_isLoading)
-        {
-            <div class="section" style="text-align:center;padding:40px"><em>Loading...</em></div>
-        }
-        else if (_regions.Count == 0)
-        {
-            <div class="section" style="text-align:center;padding:40px">
-                <p style="color:var(--text-secondary)">No region definitions found.</p>
-            </div>
-        }
-        else
-        {
-            <div class="section">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Tag</th>
-                            <th>Name</th>
-                            <th>Areas</th>
-                            <th>Default Chaos</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var region in _regions)
-                        {
-                            <tr>
-                                <td style="font-family:monospace;font-size:0.9rem">@region.Tag</td>
-                                <td>@region.Name</td>
-                                <td>@region.Areas.Count area(s)</td>
-                                <td style="font-size:0.85rem;color:var(--text-secondary)">
-                                    @if (region.DefaultChaos != null)
-                                    {
-                                        <span>D:@region.DefaultChaos.Danger C:@region.DefaultChaos.Corruption N:@region.DefaultChaos.Density M:@region.DefaultChaos.Mutation</span>
-                                    }
-                                    else
-                                    {
-                                        <span>—</span>
-                                    }
-                                </td>
-                                <td class="actions">
-                                    @if (_graphData != null)
-                                    {
-                                        <button class="btn btn-sm btn-info" style="padding:2px 6px;font-size:0.75rem" @onclick="() => HighlightRegionOnGraph(region.Name)">Show</button>
-                                    }
-                                    <button class="btn btn-sm btn-secondary" @onclick="() => ShowEditModal(region)">Edit</button>
-                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(region)">Delete</button>
-                                </td>
-                            </tr>
                         }
-                    </tbody>
-                </table>
-
-                @* Pagination *@
-                @if (_totalCount > _pageSize)
-                {
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
-                        <span style="color:var(--text-secondary);font-size:0.9rem">
-                            Showing @((_page - 1) * _pageSize + 1)–@(Math.Min(_page * _pageSize, _totalCount)) of @_totalCount
+                        <span class="region-editor__legend-item" style="color:var(--text-secondary)">
+                            <span class="region-editor__legend-swatch" style="background:#6b6b6b"></span>
+                            Unassigned
                         </span>
-                        <div style="display:flex;gap:5px">
-                            <button class="btn btn-sm btn-secondary" disabled="@(_page <= 1)" @onclick="PrevPage">← Prev</button>
-                            <button class="btn btn-sm btn-secondary" disabled="@(_page * _pageSize >= _totalCount)" @onclick="NextPage">Next →</button>
-                        </div>
                     </div>
                 }
             </div>
-        }
 
-        @* ===== Unassigned Areas ===== *@
-        @if (_graphData != null && _unassignedAreas.Count > 0)
-        {
-            <div class="section" style="margin-top:20px">
-                <h3 style="margin-bottom:12px;color:var(--text-secondary)">
-                    Unassigned Areas (@_unassignedAreas.Count)
-                </h3>
-                <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:12px">
-                    These areas exist in the module but are not assigned to any region.
-                </p>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>ResRef</th>
-                            <th>Name</th>
-                            <th>Spawn Profile</th>
-                            <th>Add to Region</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var area in _unassignedAreas)
-                        {
-                            <tr>
-                                <td><code>@area.ResRef</code></td>
-                                <td>@area.Name</td>
-                                <td>
-                                    @if (area.HasSpawnProfile)
-                                    {
-                                        <span class="badge" style="background:#4ecca3;color:#1a1a1a;font-size:0.75rem">@(area.SpawnProfileName ?? "Yes")</span>
-                                    }
-                                    else
-                                    {
-                                        <span style="color:var(--text-secondary)">—</span>
-                                    }
-                                </td>
-                                <td>
-                                    @if (_assigningResRef == area.ResRef)
-                                    {
-                                        <div style="display:flex;gap:4px;align-items:center">
-                                            <select class="form-control form-control-sm" style="max-width:200px" @bind="_assignTargetRegionTag">
-                                                <option value="">— Select Region —</option>
-                                                @foreach (var r in _regions)
-                                                {
-                                                    <option value="@r.Tag">@r.Name</option>
-                                                }
-                                            </select>
-                                            <button class="btn btn-sm btn-primary" disabled="@(string.IsNullOrEmpty(_assignTargetRegionTag) || _isSaving)"
-                                                    @onclick="() => AssignAreaToRegion(area.ResRef)">Add</button>
-                                            <button class="btn btn-sm btn-secondary" @onclick="() => _assigningResRef = null">✕</button>
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <button class="btn btn-sm btn-primary" style="font-size:0.8rem" @onclick="() => StartAssign(area.ResRef)">
-                                            Add to Region →
-                                        </button>
-                                    }
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        }
-    }
-
-    @* ===== Create / Edit Modal ===== *@
-    @if (_showEditModal)
-    {
-        <div class="modal-backdrop" @onclick="CloseEditModal">
-        <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:850px;max-height:90vh;overflow-y:auto;margin:3vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
-            <h2>@(_isCreating ? "Create Region" : $"Edit: {_editRegion.Name}")</h2>
-
-            <div style="display:flex;flex-direction:column;gap:12px;margin-top:15px">
-                @* ===== Basic Fields ===== *@
-                <div class="form-row" style="display:flex;gap:10px">
-                    <div class="form-group" style="flex:1">
-                        <label>Tag <small style="color:var(--text-secondary)">(unique identifier)</small></label>
-                        <input class="form-control" @bind="_editRegion.Tag" disabled="@(!_isCreating)" />
-                    </div>
-                    <div class="form-group" style="flex:1">
-                        <label>Name</label>
-                        <input class="form-control" @bind="_editRegion.Name" />
-                    </div>
+            @* ===== Side Panel ===== *@
+            <div class="region-editor__panel">
+                @* ---- Panel Header ---- *@
+                <div class="region-editor__panel-header">
+                    @if (_panelMode == PanelMode.AreaEditor)
+                    {
+                        <h3>Area: @(_editAreaName ?? _editArea?.ResRef ?? "—")</h3>
+                        <button class="btn btn-sm btn-secondary" @onclick="ClosePanelEditor">✕</button>
+                    }
+                    else if (_panelMode == PanelMode.RegionEditor)
+                    {
+                        <h3>@(_isCreating ? "New Region" : $"Region: {_editRegion.Name}")</h3>
+                        <button class="btn btn-sm btn-secondary" @onclick="ClosePanelEditor">✕</button>
+                    }
+                    else
+                    {
+                        <h3>Regions (@_regions.Count)</h3>
+                        <button class="btn btn-sm btn-primary" @onclick="ShowCreateRegion">+ New</button>
+                    }
                 </div>
 
-                @* ===== Default Chaos ===== *@
-                <div style="border:1px solid var(--border-color);border-radius:8px;padding:12px;margin-top:4px">
-                    <div style="display:flex;justify-content:space-between;align-items:center">
-                        <strong>Default Chaos State</strong>
-                        @if (_editRegion.DefaultChaos == null)
+                @* ---- Panel Body ---- *@
+                <div class="region-editor__panel-body">
+                    @if (_panelMode == PanelMode.RegionList)
+                    {
+                        @* ===== Region List ===== *@
+                        @if (_isLoading)
                         {
-                            <button class="btn btn-sm btn-secondary" @onclick="AddDefaultChaos">+ Add</button>
+                            <p style="text-align:center;color:var(--text-secondary);padding:20px 0"><em>Loading...</em></p>
+                        }
+                        else if (_regions.Count == 0)
+                        {
+                            <p style="color:var(--text-secondary);text-align:center;padding:20px 0">
+                                No regions defined. Right-click the graph or click <strong>+ New</strong> to create one.
+                            </p>
                         }
                         else
                         {
-                            <button class="btn btn-sm btn-outline-danger" @onclick="RemoveDefaultChaos">Remove</button>
+                            @* Search filter for region list *@
+                            <div class="form-group" style="margin-bottom:10px">
+                                <input class="form-control form-control-sm" @bind="_regionListFilter" @bind:event="oninput"
+                                       placeholder="Filter regions..." />
+                            </div>
+
+                            @foreach (var region in FilteredRegions())
+                            {
+                                var color = _regionColors.GetValueOrDefault(region.Name, _regionColors.GetValueOrDefault(region.Tag, "#6b6b6b"));
+                                <div class="region-list-item @(IsRegionSelected(region) ? "region-list-item--active" : "")"
+                                     @onclick="() => SelectRegionForEdit(region)"
+                                     @oncontextmenu="() => SelectRegionForEdit(region)" @oncontextmenu:preventDefault>
+                                    <span class="region-list-item__swatch" style="background:@color"></span>
+                                    <div class="region-list-item__info">
+                                        <div class="region-list-item__name">@region.Name</div>
+                                        <div class="region-list-item__tag">@region.Tag</div>
+                                    </div>
+                                    <span class="region-list-item__count">@region.Areas.Count areas</span>
+                                    <button class="btn btn-sm btn-info" style="padding:1px 5px;font-size:0.7rem"
+                                            @onclick="() => HighlightRegionOnGraph(region.Name)" @onclick:stopPropagation>
+                                        Show
+                                    </button>
+                                </div>
+                            }
+
+                            @* Pagination *@
+                            @if (_totalCount > _pageSize)
+                            {
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:0.82rem">
+                                    <span style="color:var(--text-secondary)">
+                                        @((_page - 1) * _pageSize + 1)–@(Math.Min(_page * _pageSize, _totalCount)) of @_totalCount
+                                    </span>
+                                    <div style="display:flex;gap:4px">
+                                        <button class="btn btn-sm btn-secondary" disabled="@(_page <= 1)" @onclick="PrevPage">←</button>
+                                        <button class="btn btn-sm btn-secondary" disabled="@(_page * _pageSize >= _totalCount)" @onclick="NextPage">→</button>
+                                    </div>
+                                </div>
+                            }
                         }
-                    </div>
-                    @if (_editRegion.DefaultChaos != null)
+                    }
+                    else if (_panelMode == PanelMode.RegionEditor)
                     {
-                        <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
-                            <div class="form-group" style="flex:1;min-width:100px">
-                                <label>Danger <small>(@_editRegion.DefaultChaos.Danger)</small></label>
-                                <input type="range" class="form-range" min="0" max="100" @bind="_editRegion.DefaultChaos.Danger" />
+                        @* ===== Region Editor ===== *@
+                        <div class="panel-section">
+                            <strong style="font-size:0.9rem">Basic Info</strong>
+                            <div class="form-group" style="margin-top:8px">
+                                <label>Tag <small>(unique identifier)</small></label>
+                                <input class="form-control form-control-sm" @bind="_editRegion.Tag" disabled="@(!_isCreating)" />
                             </div>
-                            <div class="form-group" style="flex:1;min-width:100px">
-                                <label>Corruption <small>(@_editRegion.DefaultChaos.Corruption)</small></label>
-                                <input type="range" class="form-range" min="0" max="100" @bind="_editRegion.DefaultChaos.Corruption" />
-                            </div>
-                            <div class="form-group" style="flex:1;min-width:100px">
-                                <label>Density <small>(@_editRegion.DefaultChaos.Density)</small></label>
-                                <input type="range" class="form-range" min="0" max="100" @bind="_editRegion.DefaultChaos.Density" />
-                            </div>
-                            <div class="form-group" style="flex:1;min-width:100px">
-                                <label>Mutation <small>(@_editRegion.DefaultChaos.Mutation)</small></label>
-                                <input type="range" class="form-range" min="0" max="100" @bind="_editRegion.DefaultChaos.Mutation" />
+                            <div class="form-group">
+                                <label>Name</label>
+                                <input class="form-control form-control-sm" @bind="_editRegion.Name" />
                             </div>
                         </div>
-                    }
-                </div>
 
-                @* ===== Areas ===== *@
-                <div style="border:1px solid var(--border-color);border-radius:8px;padding:12px;margin-top:4px">
-                    <div style="display:flex;justify-content:space-between;align-items:center">
-                        <strong>Areas (@_editRegion.Areas.Count)</strong>
-                        <button class="btn btn-sm btn-primary" @onclick="AddArea">+ Add Area</button>
-                    </div>
-
-                    @for (int idx = 0; idx < _editRegion.Areas.Count; idx++)
-                    {
-                        var i = idx;
-                        var area = _editRegion.Areas[i];
-                        <div style="border:1px solid var(--border-color);border-radius:6px;padding:10px;margin-top:10px;background:rgba(255,255,255,0.02)">
-                            <div style="display:flex;justify-content:space-between;align-items:center">
-                                <strong style="font-size:0.95rem">
-                                    <a href="javascript:void(0)" @onclick="() => ToggleAreaExpanded(i)" style="text-decoration:none;color:inherit">
-                                        @(IsAreaExpanded(i) ? "▾" : "▸") Area @(i + 1): @(string.IsNullOrWhiteSpace(area.ResRef) ? "(new)" : area.ResRef)
-                                        @{ var areaName = GetAreaNameByResRef(area.ResRef); }
-                                        @if (!string.IsNullOrEmpty(areaName))
-                                        {
-                                            <small style="color:var(--text-secondary);font-weight:normal;margin-left:4px">— @areaName</small>
-                                        }
-                                    </a>
-                                </strong>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveArea(i)">Remove</button>
+                        @* Default Chaos *@
+                        <div class="panel-section">
+                            <div class="panel-section__header">
+                                <strong>Default Chaos</strong>
+                                @if (_editRegion.DefaultChaos == null)
+                                {
+                                    <button class="btn btn-sm btn-secondary" style="font-size:0.75rem" @onclick="AddDefaultChaos">+ Add</button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-sm btn-outline-danger" style="font-size:0.75rem" @onclick="RemoveDefaultChaos">Remove</button>
+                                }
                             </div>
-
-                            @if (IsAreaExpanded(i))
+                            @if (_editRegion.DefaultChaos != null)
                             {
-                                <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
-                                    <div class="form-row" style="display:flex;gap:10px">
-                                        <div class="form-group" style="flex:1">
-                                            <label>ResRef <small style="color:var(--text-secondary)">(area from module)</small></label>
-                                            @if (_knownAreas.Count > 0)
-                                            {
-                                                <input class="form-control" list="@($"arealist-{i}")" @bind="area.ResRef" maxlength="16"
-                                                       placeholder="Type or select an area..." />
-                                                <datalist id="@($"arealist-{i}")">
-                                                    @foreach (var ka in GetAvailableAreas(area.ResRef))
-                                                    {
-                                                        <option value="@ka.ResRef">@ka.ResRef — @ka.Name</option>
-                                                    }
-                                                </datalist>
-                                            }
-                                            else
-                                            {
-                                                <input class="form-control" @bind="area.ResRef" maxlength="16"
-                                                       placeholder="Enter area ResRef..." />
-                                            }
-                                        </div>
-                                        <div class="form-group" style="flex:1">
-                                            <label>Linked Settlement ID <small style="color:var(--text-secondary)">(optional)</small></label>
-                                            <input type="number" class="form-control" value="@(area.LinkedSettlement?.ToString() ?? "")"
-                                                   @onchange="(e) => OnLinkedSettlementChanged(e, i)" min="1" />
-                                        </div>
-                                    </div>
-
+                                <div style="display:flex;flex-direction:column;gap:4px">
                                     <div class="form-group">
-                                        <label>Definition Tags <small style="color:var(--text-secondary)">(comma-separated)</small></label>
-                                        <input class="form-control" value="@string.Join(", ", area.DefinitionTags)"
-                                               @onchange="(e) => OnDefinitionTagsChanged(e, i)" />
+                                        <label>Danger (@_editRegion.DefaultChaos.Danger)</label>
+                                        <input type="range" class="form-range" min="0" max="100" @bind="_editRegion.DefaultChaos.Danger" />
                                     </div>
-
-                                    @* ===== Environment ===== *@
-                                    <div style="border:1px solid var(--border-color);border-radius:6px;padding:10px;background:rgba(255,255,255,0.02)">
-                                        <strong style="font-size:0.9rem">Environment</strong>
-                                        <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
-                                            <div class="form-group" style="flex:1;min-width:150px">
-                                                <label>Climate</label>
-                                                <select class="form-control" @bind="area.Environment.Climate">
-                                                    <option value="">— Select —</option>
-                                                    <option value="Undefined">Undefined</option>
-                                                    <option value="Temperate">Temperate</option>
-                                                    <option value="Tropical">Tropical</option>
-                                                    <option value="Arid">Arid</option>
-                                                    <option value="Arctic">Arctic</option>
-                                                    <option value="Mediterranean">Mediterranean</option>
-                                                    <option value="Continental">Continental</option>
-                                                    <option value="Oceanic">Oceanic</option>
-                                                    <option value="Subarctic">Subarctic</option>
-                                                    <option value="Alpine">Alpine</option>
-                                                    <option value="Tundra">Tundra</option>
-                                                    <option value="Desert">Desert</option>
-                                                </select>
-                                            </div>
-                                            <div class="form-group" style="flex:1;min-width:150px">
-                                                <label>Soil Quality</label>
-                                                <select class="form-control" @bind="area.Environment.SoilQuality">
-                                                    <option value="">— Select —</option>
-                                                    <option value="None">None</option>
-                                                    <option value="VeryPoor">Very Poor</option>
-                                                    <option value="Poor">Poor</option>
-                                                    <option value="BelowAverage">Below Average</option>
-                                                    <option value="Average">Average</option>
-                                                    <option value="AboveAverage">Above Average</option>
-                                                    <option value="Good">Good</option>
-                                                    <option value="VeryGood">Very Good</option>
-                                                    <option value="Excellent">Excellent</option>
-                                                    <option value="Masterwork">Masterwork</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
-                                            <div class="form-group" style="flex:1;min-width:150px">
-                                                <label>Mineral Quality Min</label>
-                                                <select class="form-control" @bind="area.Environment.MineralQualityRange.Min">
-                                                    <option value="">— Select —</option>
-                                                    <option value="None">None</option>
-                                                    <option value="VeryPoor">Very Poor</option>
-                                                    <option value="Poor">Poor</option>
-                                                    <option value="BelowAverage">Below Average</option>
-                                                    <option value="Average">Average</option>
-                                                    <option value="AboveAverage">Above Average</option>
-                                                    <option value="Good">Good</option>
-                                                    <option value="VeryGood">Very Good</option>
-                                                    <option value="Excellent">Excellent</option>
-                                                    <option value="Masterwork">Masterwork</option>
-                                                </select>
-                                            </div>
-                                            <div class="form-group" style="flex:1;min-width:150px">
-                                                <label>Mineral Quality Max</label>
-                                                <select class="form-control" @bind="area.Environment.MineralQualityRange.Max">
-                                                    <option value="">— Select —</option>
-                                                    <option value="None">None</option>
-                                                    <option value="VeryPoor">Very Poor</option>
-                                                    <option value="Poor">Poor</option>
-                                                    <option value="BelowAverage">Below Average</option>
-                                                    <option value="Average">Average</option>
-                                                    <option value="AboveAverage">Above Average</option>
-                                                    <option value="Good">Good</option>
-                                                    <option value="VeryGood">Very Good</option>
-                                                    <option value="Excellent">Excellent</option>
-                                                    <option value="Masterwork">Masterwork</option>
-                                                </select>
-                                            </div>
-                                        </div>
-
-                                        @* ===== Area Chaos Override ===== *@
-                                        <div style="margin-top:8px">
-                                            <div style="display:flex;justify-content:space-between;align-items:center">
-                                                <small><strong>Chaos Override</strong></small>
-                                                @if (area.Environment.Chaos == null)
-                                                {
-                                                    <button class="btn btn-sm btn-secondary" style="font-size:0.75rem" @onclick="() => AddAreaChaos(i)">+ Add</button>
-                                                }
-                                                else
-                                                {
-                                                    <button class="btn btn-sm btn-outline-danger" style="font-size:0.75rem" @onclick="() => RemoveAreaChaos(i)">Remove</button>
-                                                }
-                                            </div>
-                                            @if (area.Environment.Chaos != null)
-                                            {
-                                                <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap">
-                                                    <div class="form-group" style="flex:1;min-width:80px">
-                                                        <label style="font-size:0.8rem">Danger <small>(@area.Environment.Chaos.Danger)</small></label>
-                                                        <input type="range" class="form-range" min="0" max="100" @bind="area.Environment.Chaos.Danger" />
-                                                    </div>
-                                                    <div class="form-group" style="flex:1;min-width:80px">
-                                                        <label style="font-size:0.8rem">Corruption <small>(@area.Environment.Chaos.Corruption)</small></label>
-                                                        <input type="range" class="form-range" min="0" max="100" @bind="area.Environment.Chaos.Corruption" />
-                                                    </div>
-                                                    <div class="form-group" style="flex:1;min-width:80px">
-                                                        <label style="font-size:0.8rem">Density <small>(@area.Environment.Chaos.Density)</small></label>
-                                                        <input type="range" class="form-range" min="0" max="100" @bind="area.Environment.Chaos.Density" />
-                                                    </div>
-                                                    <div class="form-group" style="flex:1;min-width:80px">
-                                                        <label style="font-size:0.8rem">Mutation <small>(@area.Environment.Chaos.Mutation)</small></label>
-                                                        <input type="range" class="form-range" min="0" max="100" @bind="area.Environment.Chaos.Mutation" />
-                                                    </div>
-                                                </div>
-                                            }
-                                        </div>
+                                    <div class="form-group">
+                                        <label>Corruption (@_editRegion.DefaultChaos.Corruption)</label>
+                                        <input type="range" class="form-range" min="0" max="100" @bind="_editRegion.DefaultChaos.Corruption" />
                                     </div>
-
-                                    @* ===== Places of Interest ===== *@
-                                    <div style="border:1px solid var(--border-color);border-radius:6px;padding:10px;background:rgba(255,255,255,0.02)">
-                                        <div style="display:flex;justify-content:space-between;align-items:center">
-                                            <strong style="font-size:0.9rem">Places of Interest (@(area.PlacesOfInterest?.Count ?? 0))</strong>
-                                            <button class="btn btn-sm btn-secondary" @onclick="() => AddPoi(i)">+ Add POI</button>
-                                        </div>
-
-                                        @if (area.PlacesOfInterest != null)
-                                        {
-                                            @for (int pidx = 0; pidx < area.PlacesOfInterest.Count; pidx++)
-                                            {
-                                                var pi = pidx;
-                                                var poi = area.PlacesOfInterest[pi];
-                                                <div style="border:1px dashed var(--border-color);border-radius:4px;padding:8px;margin-top:8px">
-                                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                                                        <small><strong>POI @(pi + 1): @(string.IsNullOrWhiteSpace(poi.Name) ? "(new)" : poi.Name)</strong></small>
-                                                        <button class="btn btn-sm btn-outline-danger" style="font-size:0.7rem;padding:1px 6px" @onclick="() => RemovePoi(i, pi)">✕</button>
-                                                    </div>
-                                                    <div style="display:flex;gap:8px;flex-wrap:wrap">
-                                                        <div class="form-group" style="flex:1;min-width:120px">
-                                                            <label style="font-size:0.8rem">ResRef <small style="color:var(--text-secondary)">(area from module)</small></label>
-                                                            @if (_knownAreas.Count > 0)
-                                                            {
-                                                                <input class="form-control form-control-sm" list="@($"poiarealist-{i}-{pi}")" @bind="poi.ResRef" maxlength="16"
-                                                                       placeholder="Type or select an area..." />
-                                                                <datalist id="@($"poiarealist-{i}-{pi}")">
-                                                                    @foreach (var ka in _knownAreas)
-                                                                    {
-                                                                        <option value="@ka.ResRef">@ka.ResRef — @ka.Name</option>
-                                                                    }
-                                                                </datalist>
-                                                            }
-                                                            else
-                                                            {
-                                                                <input class="form-control form-control-sm" @bind="poi.ResRef" maxlength="16"
-                                                                       placeholder="Enter area ResRef..." />
-                                                            }
-                                                        </div>
-                                                        <div class="form-group" style="flex:1;min-width:120px">
-                                                            <label style="font-size:0.8rem">Tag <small style="color:var(--text-secondary)">(must be unique)</small></label>
-                                                            @{ var tagDup = IsPoiTagDuplicate(poi.Tag, i, pi); }
-                                                            <input class="form-control form-control-sm @(tagDup ? "is-invalid" : "")" @bind="poi.Tag" />
-                                                            @if (tagDup)
-                                                            {
-                                                                <div class="invalid-feedback" style="display:block;font-size:0.75rem">Duplicate tag — PoI tags must be unique across the region.</div>
-                                                            }
-                                                        </div>
-                                                        <div class="form-group" style="flex:1;min-width:120px">
-                                                            <label style="font-size:0.8rem">Name</label>
-                                                            <input class="form-control form-control-sm" @bind="poi.Name" />
-                                                        </div>
-                                                        <div class="form-group" style="flex:1;min-width:120px">
-                                                            <label style="font-size:0.8rem">Type</label>
-                                                            <select class="form-control form-control-sm" @bind="poi.Type">
-                                                                <option value="">— Select —</option>
-                                                                <option value="Undefined">Undefined</option>
-                                                                <option value="Dungeon">Dungeon</option>
-                                                                <option value="Landmark">Landmark</option>
-                                                                <option value="ResourceNode">Resource Node</option>
-                                                                <option value="House">House</option>
-                                                                <option value="Guild">Guild</option>
-                                                                <option value="Temple">Temple</option>
-                                                                <option value="Library">Library</option>
-                                                                <option value="Shop">Shop</option>
-                                                                <option value="Warehouse">Warehouse</option>
-                                                                <option value="Bank">Bank</option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    <div class="form-group" style="margin-top:6px">
-                                                        <label style="font-size:0.8rem">Description</label>
-                                                        <input class="form-control form-control-sm" @bind="poi.Description" />
-                                                    </div>
-                                                </div>
-                                            }
-                                        }
+                                    <div class="form-group">
+                                        <label>Density (@_editRegion.DefaultChaos.Density)</label>
+                                        <input type="range" class="form-range" min="0" max="100" @bind="_editRegion.DefaultChaos.Density" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Mutation (@_editRegion.DefaultChaos.Mutation)</label>
+                                        <input type="range" class="form-range" min="0" max="100" @bind="_editRegion.DefaultChaos.Mutation" />
                                     </div>
                                 </div>
                             }
                         </div>
+
+                        @* Areas belonging to this region *@
+                        <div class="panel-section">
+                            <div class="panel-section__header">
+                                <strong>Areas (@_editRegion.Areas.Count)</strong>
+                                <button class="btn btn-sm btn-primary" style="font-size:0.75rem" @onclick="AddArea">+ Add</button>
+                            </div>
+
+                            @for (int idx = 0; idx < _editRegion.Areas.Count; idx++)
+                            {
+                                var i = idx;
+                                var area = _editRegion.Areas[i];
+                                <div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--border-subtle)">
+                                    <code style="flex:1;font-size:0.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+                                          title="@area.ResRef">
+                                        @(string.IsNullOrWhiteSpace(area.ResRef) ? "(new)" : area.ResRef)
+                                        @{ var n = GetAreaNameByResRef(area.ResRef); }
+                                        @if (!string.IsNullOrEmpty(n))
+                                        {
+                                            <small style="color:var(--text-secondary)"> — @n</small>
+                                        }
+                                    </code>
+                                    <button class="btn btn-sm btn-secondary" style="font-size:0.7rem;padding:1px 5px"
+                                            @onclick="() => EditAreaInRegion(i)">Edit</button>
+                                    <button class="btn btn-sm btn-outline-danger" style="font-size:0.7rem;padding:1px 5px"
+                                            @onclick="() => RemoveArea(i)">✕</button>
+                                </div>
+                            }
+
+                            @* New area quick-add *@
+                            @if (_showAddAreaInput)
+                            {
+                                <div style="display:flex;gap:4px;margin-top:6px;align-items:end">
+                                    @if (_knownAreas.Count > 0)
+                                    {
+                                        <input class="form-control form-control-sm" list="add-area-list" @bind="_newAreaResRef" placeholder="ResRef..."
+                                               style="flex:1" maxlength="16" />
+                                        <datalist id="add-area-list">
+                                            @foreach (var ka in GetAvailableAreas(""))
+                                            {
+                                                <option value="@ka.ResRef">@ka.ResRef — @ka.Name</option>
+                                            }
+                                        </datalist>
+                                    }
+                                    else
+                                    {
+                                        <input class="form-control form-control-sm" @bind="_newAreaResRef" placeholder="ResRef..." style="flex:1" maxlength="16" />
+                                    }
+                                    <button class="btn btn-sm btn-primary" @onclick="ConfirmAddArea" disabled="@string.IsNullOrWhiteSpace(_newAreaResRef)">Add</button>
+                                    <button class="btn btn-sm btn-secondary" @onclick="() => _showAddAreaInput = false">✕</button>
+                                </div>
+                            }
+                        </div>
+
+                        @* Delete region (inline confirm) *@
+                        @if (!_isCreating)
+                        {
+                            @if (_showDeleteConfirm)
+                            {
+                                <div class="inline-confirm">
+                                    <span>Delete <strong>@_editRegion.Name</strong>?</span>
+                                    <button class="btn btn-sm btn-danger" @onclick="DeleteRegion" disabled="@_isSaving">Yes</button>
+                                    <button class="btn btn-sm btn-secondary" @onclick="() => _showDeleteConfirm = false">No</button>
+                                </div>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-outline-danger" style="width:100%;margin-top:4px" @onclick="() => _showDeleteConfirm = true">
+                                    Delete Region
+                                </button>
+                            }
+                        }
+                    }
+                    else if (_panelMode == PanelMode.AreaEditor)
+                    {
+                        @* ===== Area Inline Editor ===== *@
+                        <div class="panel-section">
+                            <strong style="font-size:0.9rem">Area Info</strong>
+                            <div class="form-group" style="margin-top:8px">
+                                <label>ResRef</label>
+                                <input class="form-control form-control-sm" value="@_editArea!.ResRef" disabled />
+                            </div>
+                            <div class="form-group">
+                                <label>Region</label>
+                                <select class="form-control form-control-sm" value="@_editAreaRegionTag"
+                                        @onchange="OnAreaRegionChanged">
+                                    <option value="">— Unassigned —</option>
+                                    @foreach (var r in _regions)
+                                    {
+                                        <option value="@r.Tag">@r.Name (@r.Tag)</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Linked Settlement ID</label>
+                                <input type="number" class="form-control form-control-sm"
+                                       value="@(_editArea.LinkedSettlement?.ToString() ?? "")"
+                                       @onchange="OnAreaLinkedSettlementChanged" min="1" />
+                            </div>
+                            <div class="form-group">
+                                <label>Definition Tags <small>(comma-separated)</small></label>
+                                <input class="form-control form-control-sm"
+                                       value="@string.Join(", ", _editArea.DefinitionTags)"
+                                       @onchange="OnAreaDefinitionTagsChanged" />
+                            </div>
+                        </div>
+
+                        @* Environment *@
+                        <div class="panel-section">
+                            <strong style="font-size:0.9rem">Environment</strong>
+                            <div class="form-group" style="margin-top:8px">
+                                <label>Climate</label>
+                                <select class="form-control form-control-sm" @bind="_editArea.Environment.Climate">
+                                    <option value="">— Select —</option>
+                                    @foreach (var c in _climateOptions)
+                                    {
+                                        <option value="@c">@c</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Soil Quality</label>
+                                <select class="form-control form-control-sm" @bind="_editArea.Environment.SoilQuality">
+                                    <option value="">— Select —</option>
+                                    @foreach (var q in _qualityOptions)
+                                    {
+                                        <option value="@q">@q</option>
+                                    }
+                                </select>
+                            </div>
+                            <div style="display:flex;gap:8px">
+                                <div class="form-group" style="flex:1">
+                                    <label>Mineral Min</label>
+                                    <select class="form-control form-control-sm" @bind="_editArea.Environment.MineralQualityRange.Min">
+                                        <option value="">—</option>
+                                        @foreach (var q in _qualityOptions)
+                                        {
+                                            <option value="@q">@q</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="form-group" style="flex:1">
+                                    <label>Mineral Max</label>
+                                    <select class="form-control form-control-sm" @bind="_editArea.Environment.MineralQualityRange.Max">
+                                        <option value="">—</option>
+                                        @foreach (var q in _qualityOptions)
+                                        {
+                                            <option value="@q">@q</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        @* Area Chaos Override *@
+                        <div class="panel-section">
+                            <div class="panel-section__header">
+                                <strong>Chaos Override</strong>
+                                @if (_editArea.Environment.Chaos == null)
+                                {
+                                    <button class="btn btn-sm btn-secondary" style="font-size:0.75rem" @onclick="AddEditAreaChaos">+ Add</button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-sm btn-outline-danger" style="font-size:0.75rem" @onclick="RemoveEditAreaChaos">Remove</button>
+                                }
+                            </div>
+                            @if (_editArea.Environment.Chaos != null)
+                            {
+                                <div style="display:flex;flex-direction:column;gap:4px">
+                                    <div class="form-group">
+                                        <label>Danger (@_editArea.Environment.Chaos.Danger)</label>
+                                        <input type="range" class="form-range" min="0" max="100" @bind="_editArea.Environment.Chaos.Danger" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Corruption (@_editArea.Environment.Chaos.Corruption)</label>
+                                        <input type="range" class="form-range" min="0" max="100" @bind="_editArea.Environment.Chaos.Corruption" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Density (@_editArea.Environment.Chaos.Density)</label>
+                                        <input type="range" class="form-range" min="0" max="100" @bind="_editArea.Environment.Chaos.Density" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Mutation (@_editArea.Environment.Chaos.Mutation)</label>
+                                        <input type="range" class="form-range" min="0" max="100" @bind="_editArea.Environment.Chaos.Mutation" />
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        @* Places of Interest *@
+                        <div class="panel-section">
+                            <div class="panel-section__header">
+                                <strong>Places of Interest (@(_editArea.PlacesOfInterest?.Count ?? 0))</strong>
+                                <button class="btn btn-sm btn-secondary" style="font-size:0.75rem" @onclick="AddEditAreaPoi">+ POI</button>
+                            </div>
+
+                            @if (_editArea.PlacesOfInterest != null)
+                            {
+                                @for (int pidx = 0; pidx < _editArea.PlacesOfInterest.Count; pidx++)
+                                {
+                                    var pi = pidx;
+                                    var poi = _editArea.PlacesOfInterest[pi];
+                                    <div class="poi-card">
+                                        <div class="poi-card__header">
+                                            <small><strong>@(string.IsNullOrWhiteSpace(poi.Name) ? $"POI {pi + 1}" : poi.Name)</strong></small>
+                                            <button class="btn btn-sm btn-outline-danger" style="font-size:0.65rem;padding:0 5px" @onclick="() => RemoveEditAreaPoi(pi)">✕</button>
+                                        </div>
+                                        <div class="poi-card__fields">
+                                            <div class="form-group">
+                                                <label>ResRef</label>
+                                                @if (_knownAreas.Count > 0)
+                                                {
+                                                    <input class="form-control form-control-sm" list="@($"poi-area-{pi}")"
+                                                           @bind="poi.ResRef" maxlength="16" placeholder="Area..." />
+                                                    <datalist id="@($"poi-area-{pi}")">
+                                                        @foreach (var ka in _knownAreas)
+                                                        {
+                                                            <option value="@ka.ResRef">@ka.ResRef — @ka.Name</option>
+                                                        }
+                                                    </datalist>
+                                                }
+                                                else
+                                                {
+                                                    <input class="form-control form-control-sm" @bind="poi.ResRef" maxlength="16" placeholder="ResRef..." />
+                                                }
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Tag</label>
+                                                @{ var tagDup = IsPoiTagDuplicate(poi.Tag, pi); }
+                                                <input class="form-control form-control-sm @(tagDup ? "is-invalid" : "")" @bind="poi.Tag" />
+                                                @if (tagDup)
+                                                {
+                                                    <div class="invalid-feedback" style="display:block;font-size:0.7rem">Duplicate tag</div>
+                                                }
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Name</label>
+                                                <input class="form-control form-control-sm" @bind="poi.Name" />
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Type</label>
+                                                <select class="form-control form-control-sm" @bind="poi.Type">
+                                                    <option value="">—</option>
+                                                    @foreach (var t in _poiTypeOptions)
+                                                    {
+                                                        <option value="@t">@t</option>
+                                                    }
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="form-group" style="margin-top:4px">
+                                            <label>Description</label>
+                                            <input class="form-control form-control-sm" @bind="poi.Description" />
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
                     }
                 </div>
 
-                @* ===== Save / Cancel ===== *@
-                <div class="form-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
-                    <button class="btn btn-secondary" @onclick="CloseEditModal">Cancel</button>
-                    <button class="btn btn-primary" @onclick="SaveRegion" disabled="@_isSaving">
-                        @(_isSaving ? "Saving..." : (_isCreating ? "Create" : "Save Changes"))
-                    </button>
-                </div>
+                @* ---- Panel Footer (save buttons) ---- *@
+                @if (_panelMode == PanelMode.RegionEditor || _panelMode == PanelMode.AreaEditor)
+                {
+                    <div class="region-editor__panel-footer">
+                        <button class="btn btn-secondary btn-sm" @onclick="ClosePanelEditor">Cancel</button>
+                        <button class="btn btn-primary btn-sm" @onclick="SaveCurrentEditor" disabled="@_isSaving">
+                            @(_isSaving ? "Saving..." : "Save")
+                        </button>
+                    </div>
+                }
             </div>
-        </div>
         </div>
     }
 
@@ -649,27 +574,22 @@
         <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:600px;max-height:80vh;overflow-y:auto;margin:10vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
             <h2>Import Region Definitions</h2>
             <p style="color:var(--text-secondary);font-size:0.9rem">
-                Upload or paste a JSON file containing region definitions. The JSON should be an array of region objects
-                matching the existing region definition format.
+                Upload or paste JSON containing region definitions.
             </p>
-
             <div class="form-group" style="margin-top:15px">
-                <label>Upload JSON File</label>
+                <label>Upload JSON / ZIP</label>
                 <InputFile OnChange="OnImportFileSelected" accept=".json,.zip" multiple class="form-control" />
-                <small style="color:var(--text-secondary);margin-top:4px;display:block">Select .json files or a .zip containing .json files. You can add more files by clicking again — they will be appended.</small>
             </div>
-
             <div class="form-group" style="margin-top:10px">
-                <label>Or paste JSON directly</label>
-                <textarea class="form-control" rows="10" @bind="_importJson"
+                <label>Or paste JSON</label>
+                <textarea class="form-control" rows="8" @bind="_importJson"
                           placeholder='[{"Tag":"my_region","Name":"My Region","Areas":[...]}]'
                           style="font-family:monospace;font-size:0.85rem"></textarea>
             </div>
-
             @if (_importResult != null)
             {
                 <div class="alert @(_importResult.Failed > 0 ? "alert-warning" : "alert-success")" style="margin-top:15px">
-                    <strong>Import complete:</strong> @_importResult.Succeeded succeeded, @_importResult.Failed failed out of @_importResult.Total total.
+                    <strong>Import:</strong> @_importResult.Succeeded ok, @_importResult.Failed failed of @_importResult.Total.
                     @if (_importResult.Errors.Count > 0)
                     {
                         <ul style="margin-top:8px;margin-bottom:0">
@@ -677,37 +597,14 @@
                             {
                                 <li style="font-size:0.85rem">@err</li>
                             }
-                            @if (_importResult.Errors.Count > 10)
-                            {
-                                <li style="font-size:0.85rem;color:var(--text-secondary)">...and @(_importResult.Errors.Count - 10) more</li>
-                            }
                         </ul>
                     }
                 </div>
             }
-
             <div class="form-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
                 <button class="btn btn-secondary" @onclick="CloseImportModal">Close</button>
                 <button class="btn btn-primary" @onclick="RunImport" disabled="@(_isSaving || string.IsNullOrWhiteSpace(_importJson))">
                     @(_isSaving ? "Importing..." : "Import")
-                </button>
-            </div>
-        </div>
-        </div>
-    }
-
-    @* ===== Delete Confirmation Modal ===== *@
-    @if (_showDeleteConfirm)
-    {
-        <div class="modal-backdrop" @onclick="() => _showDeleteConfirm = false">
-        <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:450px;margin:15vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
-            <h3>Confirm Delete</h3>
-            <p>Are you sure you want to delete region <strong>@_deleteTarget?.Name</strong> (<code>@_deleteTarget?.Tag</code>)?</p>
-            <p style="color:var(--text-secondary);font-size:0.9rem">This action cannot be undone.</p>
-            <div class="form-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
-                <button class="btn btn-secondary" @onclick="() => _showDeleteConfirm = false">Cancel</button>
-                <button class="btn btn-danger" @onclick="DeleteRegion" disabled="@_isSaving">
-                    @(_isSaving ? "Deleting..." : "Delete")
                 </button>
             </div>
         </div>
@@ -725,6 +622,14 @@
 </style>
 
 @code {
+    // ===== Enums =====
+    private enum PanelMode { RegionList, RegionEditor, AreaEditor }
+
+    // ===== Static option lists =====
+    private static readonly string[] _climateOptions = { "Undefined", "Temperate", "Tropical", "Arid", "Arctic", "Mediterranean", "Continental", "Oceanic", "Subarctic", "Alpine", "Tundra", "Desert" };
+    private static readonly string[] _qualityOptions = { "None", "VeryPoor", "Poor", "BelowAverage", "Average", "AboveAverage", "Good", "VeryGood", "Excellent", "Masterwork" };
+    private static readonly string[] _poiTypeOptions = { "Undefined", "Dungeon", "Landmark", "ResourceNode", "House", "Guild", "Temple", "Library", "Shop", "Warehouse", "Bank" };
+
     // ===== Endpoint State =====
     private List<WorldEngineEndpoint> _endpoints = [];
     private WorldEngineEndpoint? _selectedEndpoint;
@@ -733,7 +638,7 @@
     private List<RegionDefinitionDto> _regions = [];
     private int _totalCount;
     private int _page = 1;
-    private int _pageSize = 50;
+    private int _pageSize = 200;
     private string _searchTerm = "";
 
     // ===== UI State =====
@@ -741,39 +646,38 @@
     private bool _isSaving;
     private string? _error;
     private string? _success;
+    private PanelMode _panelMode = PanelMode.RegionList;
+    private string _regionListFilter = "";
 
-    // ===== Edit Modal =====
-    private bool _showEditModal;
+    // ===== Region Editor State =====
     private bool _isCreating;
     private RegionDefinitionDto _editRegion = new();
-    private HashSet<int> _expandedAreas = new();
+    private bool _showDeleteConfirm;
+    private bool _showAddAreaInput;
+    private string _newAreaResRef = "";
 
-    // ===== Import Modal =====
+    // ===== Area Editor State =====
+    private AreaDefinitionDto? _editArea;
+    private string? _editAreaRegionTag;
+    private string? _editAreaOriginalRegionTag;
+    private string? _editAreaName;
+
+    // ===== Import =====
     private bool _showImportModal;
     private string _importJson = "";
     private ImportResult? _importResult;
-
-    // ===== Delete Confirmation =====
-    private bool _showDeleteConfirm;
-    private RegionDefinitionDto? _deleteTarget;
+    private List<System.Text.Json.JsonElement> _importedRegions = new();
 
     // ===== Export =====
     private bool _isExporting;
 
     // ===== Area Graph =====
-    private bool _showGraph;
     private bool _isGraphLoading;
     private AreaGraphDto? _graphData;
     private List<AreaNodeDto> _knownAreas = new();
-    private List<AreaNodeDto> _unassignedAreas = new();
     private Dictionary<string, string> _regionColors = new();
     private string _graphSearchQuery = "";
     private DotNetObjectReference<Regions>? _dotNetRef;
-    private GraphNodeInfo? _selectedGraphNode;
-
-    // ===== Assign workflow =====
-    private string? _assigningResRef;
-    private string? _assignTargetRegionTag;
 
     private static readonly JsonSerializerOptions CamelCase = new()
     {
@@ -790,12 +694,8 @@
 
     public async ValueTask DisposeAsync()
     {
-        try
-        {
-            await JS.InvokeVoidAsync("regionGraph.destroy");
-        }
+        try { await JS.InvokeVoidAsync("regionGraph.destroy"); }
         catch { /* component may already be disposed */ }
-
         _dotNetRef?.Dispose();
     }
 
@@ -805,10 +705,8 @@
     {
         var all = await EndpointService.GetAllEndpointsAsync();
         _endpoints = all.Where(e => e.IsEnabled).ToList();
-
         if (_selectedEndpoint != null && !_endpoints.Any(e => e.Id == _selectedEndpoint.Id))
             _selectedEndpoint = null;
-
         StateHasChanged();
     }
 
@@ -822,8 +720,8 @@
             _page = 1;
             _graphData = null;
             _knownAreas.Clear();
-            _unassignedAreas.Clear();
             _regionColors.Clear();
+            _panelMode = PanelMode.RegionList;
             await RefreshRegions();
         }
         else
@@ -834,7 +732,6 @@
             _regions.Clear();
             _graphData = null;
             _knownAreas.Clear();
-            _unassignedAreas.Clear();
             _regionColors.Clear();
         }
     }
@@ -853,11 +750,6 @@
             var result = await Api.GetAllAsync(_searchTerm, _page, _pageSize);
             _regions = result.Items;
             _totalCount = result.TotalCount;
-
-            if (_graphData != null)
-            {
-                ComputeUnassignedAreas();
-            }
         }
         catch (Exception ex)
         {
@@ -871,12 +763,6 @@
         }
     }
 
-    private async Task SearchRegions()
-    {
-        _page = 1;
-        await RefreshRegions();
-    }
-
     private async Task PrevPage()
     {
         if (_page > 1) { _page--; await RefreshRegions(); }
@@ -887,7 +773,16 @@
         if (_page * _pageSize < _totalCount) { _page++; await RefreshRegions(); }
     }
 
-    // ===== Area Graph =====
+    private IEnumerable<RegionDefinitionDto> FilteredRegions()
+    {
+        if (string.IsNullOrWhiteSpace(_regionListFilter)) return _regions;
+        var f = _regionListFilter.Trim();
+        return _regions.Where(r =>
+            r.Name.Contains(f, StringComparison.OrdinalIgnoreCase) ||
+            r.Tag.Contains(f, StringComparison.OrdinalIgnoreCase));
+    }
+
+    // ===== Area Graph Loading =====
 
     private async Task LoadGraph()
     {
@@ -913,11 +808,8 @@
 
             if (_graphData != null)
             {
-                _showGraph = true;
                 BuildKnownAreas();
-                ComputeUnassignedAreas();
                 BuildRegionColors();
-
                 StateHasChanged();
                 await Task.Delay(50);
                 await RenderRegionGraph();
@@ -938,34 +830,11 @@
     private void BuildKnownAreas()
     {
         if (_graphData == null) { _knownAreas.Clear(); return; }
-
         var all = new List<AreaNodeDto>(_graphData.Nodes.Count + _graphData.DisconnectedAreas.Count);
         all.AddRange(_graphData.Nodes);
         all.AddRange(_graphData.DisconnectedAreas);
         all.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
         _knownAreas = all;
-    }
-
-    private void ComputeUnassignedAreas()
-    {
-        if (_graphData == null) { _unassignedAreas.Clear(); return; }
-
-        var assignedResRefs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var region in _regions)
-        {
-            foreach (var area in region.Areas)
-            {
-                if (!string.IsNullOrWhiteSpace(area.ResRef))
-                    assignedResRefs.Add(area.ResRef);
-            }
-        }
-
-        var allGraphNodes = _graphData.Nodes.Concat(_graphData.DisconnectedAreas);
-
-        _unassignedAreas = allGraphNodes
-            .Where(n => string.IsNullOrEmpty(n.Region) && !assignedResRefs.Contains(n.ResRef))
-            .OrderBy(n => n.Name, StringComparer.OrdinalIgnoreCase)
-            .ToList();
     }
 
     private void BuildRegionColors()
@@ -978,17 +847,31 @@
             "#fabed4", "#469990", "#dcbeff", "#9A6324"
         };
 
-        var regionNames = _graphData?.Nodes.Concat(_graphData.DisconnectedAreas)
-            .Select(n => n.Region)
-            .Where(r => !string.IsNullOrEmpty(r))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(r => r, StringComparer.OrdinalIgnoreCase)
-            .ToList() ?? new();
-
-        for (int i = 0; i < regionNames.Count; i++)
+        // Use region tags from _regions for color assignment
+        for (int i = 0; i < _regions.Count; i++)
         {
-            _regionColors[regionNames[i]!] = palette[i % palette.Length];
+            _regionColors[_regions[i].Tag] = palette[i % palette.Length];
+            // Also store by name for legend lookups
+            if (!_regionColors.ContainsKey(_regions[i].Name))
+                _regionColors[_regions[i].Name] = palette[i % palette.Length];
         }
+    }
+
+    /// <summary>
+    /// Build the JSON that the graph JS needs: regions with their area ResRefs and POI counts.
+    /// </summary>
+    private string BuildRegionsGraphJson()
+    {
+        var data = _regions.Select(r => new
+        {
+            tag = r.Tag,
+            name = r.Name,
+            areaResRefs = r.Areas.Where(a => !string.IsNullOrWhiteSpace(a.ResRef)).Select(a => a.ResRef).ToList(),
+            poiCounts = r.Areas
+                .Where(a => !string.IsNullOrWhiteSpace(a.ResRef) && a.PlacesOfInterest?.Count > 0)
+                .ToDictionary(a => a.ResRef, a => a.PlacesOfInterest!.Count)
+        });
+        return JsonSerializer.Serialize(data, CamelCase);
     }
 
     private async Task RenderRegionGraph()
@@ -1000,13 +883,12 @@
             _dotNetRef?.Dispose();
             _dotNetRef = DotNetObjectReference.Create(this);
 
-            var regionTags = _regionColors.Keys.ToList();
             string nodesJson = JsonSerializer.Serialize(_graphData.Nodes, CamelCase);
             string edgesJson = JsonSerializer.Serialize(_graphData.Edges, CamelCase);
             string disconnectedJson = JsonSerializer.Serialize(_graphData.DisconnectedAreas, CamelCase);
-            string regionTagsJson = JsonSerializer.Serialize(regionTags, CamelCase);
+            string regionsJson = BuildRegionsGraphJson();
 
-            await JS.InvokeVoidAsync("regionGraph.init", "region-cy", nodesJson, edgesJson, disconnectedJson, regionTagsJson, _dotNetRef);
+            await JS.InvokeVoidAsync("regionGraph.init", "region-cy", nodesJson, edgesJson, disconnectedJson, regionsJson, _dotNetRef);
         }
         catch (Exception ex)
         {
@@ -1014,6 +896,8 @@
             _error = "Failed to render graph visualization.";
         }
     }
+
+    // ===== Graph Interaction =====
 
     private async Task HighlightRegionOnGraph(string regionName)
     {
@@ -1024,70 +908,19 @@
     private async Task HighlightOrphans()
     {
         try { await JS.InvokeVoidAsync("regionGraph.highlightOrphans"); }
-        catch { /* ignore */ }
+        catch { }
     }
 
     private async Task ClearGraphHighlight()
     {
-        _selectedGraphNode = null;
         try { await JS.InvokeVoidAsync("regionGraph.clearHighlight"); }
-        catch { /* ignore */ }
+        catch { }
     }
 
     private async Task FitGraphView()
     {
         try { await JS.InvokeVoidAsync("regionGraph.fitView"); }
-        catch { /* ignore */ }
-    }
-
-    /// <summary>
-    /// Lightweight graph update: recolors nodes in-place based on current region assignments.
-    /// No server rescan, no Cytoscape destroy/rebuild, no layout rerun.
-    /// </summary>
-    private async Task UpdateGraphRegionData()
-    {
-        if (_graphData == null) return;
-
-        try
-        {
-            // Rebuild the region color palette from in-memory graph data
-            BuildRegionColors();
-            ComputeUnassignedAreas();
-
-            // Build resRef -> regionTag map from the current _regions list
-            var assignments = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var region in _regions)
-            {
-                foreach (var area in region.Areas)
-                {
-                    if (!string.IsNullOrWhiteSpace(area.ResRef))
-                        assignments[area.ResRef] = region.Tag;
-                }
-            }
-
-            // Also update the in-memory graph data node regions so future operations are consistent
-            foreach (var node in _graphData.Nodes.Concat(_graphData.DisconnectedAreas))
-            {
-                node.Region = assignments.TryGetValue(node.ResRef, out var tag) ? tag : null;
-            }
-
-            // Rebuild colors again with the updated node data
-            BuildRegionColors();
-            ComputeUnassignedAreas();
-
-            var regionTags = _regionColors.Keys.ToList();
-            string assignmentsJson = JsonSerializer.Serialize(assignments, CamelCase);
-            string regionTagsJson = JsonSerializer.Serialize(regionTags, CamelCase);
-
-            await JS.InvokeVoidAsync("regionGraph.updateRegionData", assignmentsJson, regionTagsJson);
-
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Failed to update graph region data");
-            // Silently degrade — graph is still functional, just colors may be stale
-        }
+        catch { }
     }
 
     private async Task SearchInGraph()
@@ -1096,28 +929,60 @@
         try
         {
             bool found = await JS.InvokeAsync<bool>("regionGraph.highlightNode", _graphSearchQuery);
-            if (!found)
-                _error = $"No area found matching '{_graphSearchQuery}'.";
+            if (!found) _error = $"No area found matching '{_graphSearchQuery}'.";
         }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Graph search error");
-        }
+        catch (Exception ex) { Logger.LogError(ex, "Graph search error"); }
     }
 
     private async Task OnGraphSearchKeyDown(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter")
-            await SearchInGraph();
+        if (e.Key == "Enter") await SearchInGraph();
     }
+
+    /// <summary>
+    /// Lightweight graph update: pushes current region data to JS for in-place recolor/reparent.
+    /// </summary>
+    private async Task UpdateGraphRegionData()
+    {
+        if (_graphData == null) return;
+
+        try
+        {
+            BuildRegionColors();
+
+            // Update in-memory graph node regions
+            var assignments = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var region in _regions)
+                foreach (var area in region.Areas)
+                    if (!string.IsNullOrWhiteSpace(area.ResRef))
+                        assignments[area.ResRef] = region.Tag;
+
+            foreach (var node in _graphData.Nodes.Concat(_graphData.DisconnectedAreas))
+                node.Region = assignments.TryGetValue(node.ResRef, out var tag) ? tag : null;
+
+            BuildRegionColors();
+            string regionsJson = BuildRegionsGraphJson();
+            await JS.InvokeVoidAsync("regionGraph.updateRegionData", regionsJson);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to update graph region data");
+        }
+    }
+
+    // ===== JS Callbacks =====
 
     [JSInvokable]
     public Task OnGraphNodeSelected(string json)
     {
         try
         {
-            _selectedGraphNode = JsonSerializer.Deserialize<GraphNodeInfo>(json, CamelCase);
-            StateHasChanged();
+            var info = JsonSerializer.Deserialize<GraphNodeInfo>(json, CamelCase);
+            if (info != null)
+            {
+                OpenAreaEditor(info.ResRef, info.Region, info.Name);
+            }
         }
         catch (Exception ex)
         {
@@ -1129,12 +994,371 @@
     [JSInvokable]
     public Task OnGraphNodeDeselected()
     {
-        _selectedGraphNode = null;
+        if (_panelMode == PanelMode.AreaEditor)
+        {
+            _panelMode = PanelMode.RegionList;
+            StateHasChanged();
+        }
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public Task OnRegionParentSelected(string regionTag)
+    {
+        var region = _regions.FirstOrDefault(r =>
+            string.Equals(r.Tag, regionTag, StringComparison.OrdinalIgnoreCase));
+        if (region != null)
+        {
+            SelectRegionForEdit(region);
+            StateHasChanged();
+        }
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public async Task OnNodeAssignedToRegion(string resRef, string regionTag)
+    {
+        // Add the area to the target region via API
+        var targetRegion = _regions.FirstOrDefault(r =>
+            string.Equals(r.Tag, regionTag, StringComparison.OrdinalIgnoreCase));
+        if (targetRegion == null) return;
+
+        // Remove from old region if present
+        foreach (var r in _regions)
+        {
+            r.Areas.RemoveAll(a => string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Add to target
+        if (!targetRegion.Areas.Any(a => string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase)))
+        {
+            targetRegion.Areas.Add(new AreaDefinitionDto { ResRef = resRef });
+        }
+
+        try
+        {
+            // Save all affected regions
+            foreach (var r in _regions)
+            {
+                await Api.UpdateAsync(r.Tag, r);
+            }
+            _success = $"Assigned '{resRef}' to '{targetRegion.Name}'.";
+            await RefreshRegions();
+            if (_graphData != null) await UpdateGraphRegionData();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to assign area to region");
+        }
+
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public async Task OnNodeUnassigned(string resRef)
+    {
+        // Remove from all regions
+        bool changed = false;
+        foreach (var r in _regions)
+        {
+            int removed = r.Areas.RemoveAll(a => string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
+            if (removed > 0)
+            {
+                try { await Api.UpdateAsync(r.Tag, r); changed = true; }
+                catch (Exception ex) { _error = ex.Message; Logger.LogError(ex, "Failed to unassign area"); }
+            }
+        }
+
+        if (changed)
+        {
+            _success = $"Unassigned '{resRef}' from its region.";
+            await RefreshRegions();
+            if (_graphData != null) await UpdateGraphRegionData();
+        }
+
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public Task OnContextMenuAction(string action, string targetId)
+    {
+        switch (action)
+        {
+            case "newRegion":
+                ShowCreateRegion();
+                break;
+            case "deleteRegion":
+                var region = _regions.FirstOrDefault(r =>
+                    string.Equals(r.Tag, targetId, StringComparison.OrdinalIgnoreCase));
+                if (region != null)
+                {
+                    SelectRegionForEdit(region);
+                    _showDeleteConfirm = true;
+                }
+                break;
+        }
         StateHasChanged();
         return Task.CompletedTask;
     }
 
-    // ===== Known Area Helpers (for autocomplete) =====
+    // ===== Panel Mode Management =====
+
+    private void ShowCreateRegion()
+    {
+        _isCreating = true;
+        _editRegion = new RegionDefinitionDto();
+        _showDeleteConfirm = false;
+        _showAddAreaInput = false;
+        _panelMode = PanelMode.RegionEditor;
+    }
+
+    private void SelectRegionForEdit(RegionDefinitionDto region)
+    {
+        _isCreating = false;
+        _editRegion = CloneRegion(region);
+        _showDeleteConfirm = false;
+        _showAddAreaInput = false;
+        _panelMode = PanelMode.RegionEditor;
+    }
+
+    private bool IsRegionSelected(RegionDefinitionDto region) =>
+        _panelMode == PanelMode.RegionEditor && !_isCreating &&
+        string.Equals(_editRegion.Tag, region.Tag, StringComparison.OrdinalIgnoreCase);
+
+    private void OpenAreaEditor(string resRef, string? regionTag, string? areaName)
+    {
+        _editAreaRegionTag = regionTag ?? "";
+        _editAreaOriginalRegionTag = _editAreaRegionTag;
+        _editAreaName = areaName;
+
+        // Find the AreaDefinitionDto in the region's data
+        AreaDefinitionDto? found = null;
+        if (!string.IsNullOrEmpty(regionTag))
+        {
+            var region = _regions.FirstOrDefault(r =>
+                string.Equals(r.Tag, regionTag, StringComparison.OrdinalIgnoreCase));
+            if (region != null)
+            {
+                found = region.Areas.FirstOrDefault(a =>
+                    string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
+            }
+        }
+
+        // If not found in any region, search all regions
+        if (found == null)
+        {
+            foreach (var r in _regions)
+            {
+                found = r.Areas.FirstOrDefault(a =>
+                    string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
+                if (found != null)
+                {
+                    _editAreaRegionTag = r.Tag;
+                    _editAreaOriginalRegionTag = r.Tag;
+                    break;
+                }
+            }
+        }
+
+        // Clone or create new if unassigned
+        _editArea = found != null ? CloneAreaDefinition(found) : new AreaDefinitionDto { ResRef = resRef };
+        _panelMode = PanelMode.AreaEditor;
+        StateHasChanged();
+    }
+
+    private void EditAreaInRegion(int areaIndex)
+    {
+        var area = _editRegion.Areas[areaIndex];
+        _editAreaRegionTag = _editRegion.Tag;
+        _editAreaOriginalRegionTag = _editRegion.Tag;
+        _editAreaName = GetAreaNameByResRef(area.ResRef);
+        _editArea = CloneAreaDefinition(area);
+        _panelMode = PanelMode.AreaEditor;
+    }
+
+    private void ClosePanelEditor()
+    {
+        _panelMode = PanelMode.RegionList;
+        _editArea = null;
+        _showDeleteConfirm = false;
+        _showAddAreaInput = false;
+    }
+
+    // ===== Save =====
+
+    private async Task SaveCurrentEditor()
+    {
+        if (_panelMode == PanelMode.RegionEditor)
+            await SaveRegion();
+        else if (_panelMode == PanelMode.AreaEditor)
+            await SaveArea();
+    }
+
+    private async Task SaveRegion()
+    {
+        _isSaving = true;
+        _error = null;
+        try
+        {
+            // Validate PoI tag uniqueness across all areas
+            var allPoiTags = _editRegion.Areas
+                .SelectMany(a => a.PlacesOfInterest ?? new())
+                .Where(p => !string.IsNullOrWhiteSpace(p.Tag))
+                .Select(p => p.Tag)
+                .ToList();
+            var duplicates = allPoiTags
+                .GroupBy(t => t, StringComparer.OrdinalIgnoreCase)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .ToList();
+            if (duplicates.Count > 0)
+            {
+                _error = $"Duplicate PoI tags: {string.Join(", ", duplicates)}";
+                return;
+            }
+
+            if (_isCreating)
+                await Api.CreateAsync(_editRegion);
+            else
+                await Api.UpdateAsync(_editRegion.Tag, _editRegion);
+
+            _success = _isCreating ? $"Region '{_editRegion.Name}' created." : $"Region '{_editRegion.Name}' updated.";
+            await RefreshRegions();
+            if (_graphData != null) await UpdateGraphRegionData();
+            _panelMode = PanelMode.RegionList;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to save region");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SaveArea()
+    {
+        if (_editArea == null) return;
+        _isSaving = true;
+        _error = null;
+
+        try
+        {
+            var resRef = _editArea.ResRef;
+            var newRegionTag = _editAreaRegionTag;
+            var oldRegionTag = _editAreaOriginalRegionTag;
+
+            // If region changed, remove from old and add to new
+            if (!string.Equals(oldRegionTag, newRegionTag, StringComparison.OrdinalIgnoreCase))
+            {
+                // Remove from old region
+                if (!string.IsNullOrEmpty(oldRegionTag))
+                {
+                    var oldRegion = _regions.FirstOrDefault(r => string.Equals(r.Tag, oldRegionTag, StringComparison.OrdinalIgnoreCase));
+                    if (oldRegion != null)
+                    {
+                        oldRegion.Areas.RemoveAll(a => string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
+                        await Api.UpdateAsync(oldRegion.Tag, oldRegion);
+                    }
+                }
+
+                // Add to new region
+                if (!string.IsNullOrEmpty(newRegionTag))
+                {
+                    var newRegion = _regions.FirstOrDefault(r => string.Equals(r.Tag, newRegionTag, StringComparison.OrdinalIgnoreCase));
+                    if (newRegion != null)
+                    {
+                        newRegion.Areas.RemoveAll(a => string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
+                        newRegion.Areas.Add(CloneAreaDefinition(_editArea));
+                        await Api.UpdateAsync(newRegion.Tag, newRegion);
+                    }
+                }
+            }
+            else if (!string.IsNullOrEmpty(newRegionTag))
+            {
+                // Same region — just update the area data in place
+                var targetRegion = _regions.FirstOrDefault(r => string.Equals(r.Tag, newRegionTag, StringComparison.OrdinalIgnoreCase));
+                if (targetRegion != null)
+                {
+                    var idx = targetRegion.Areas.FindIndex(a => string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
+                    if (idx >= 0)
+                        targetRegion.Areas[idx] = CloneAreaDefinition(_editArea);
+                    else
+                        targetRegion.Areas.Add(CloneAreaDefinition(_editArea));
+
+                    await Api.UpdateAsync(targetRegion.Tag, targetRegion);
+                }
+            }
+
+            _success = $"Area '{resRef}' saved.";
+            await RefreshRegions();
+            if (_graphData != null) await UpdateGraphRegionData();
+            _panelMode = PanelMode.RegionList;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to save area");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    // ===== Delete =====
+
+    private async Task DeleteRegion()
+    {
+        if (_editRegion == null) return;
+        _isSaving = true;
+        _error = null;
+        try
+        {
+            await Api.DeleteAsync(_editRegion.Tag);
+            _success = $"Deleted region '{_editRegion.Name}'.";
+            _showDeleteConfirm = false;
+            _panelMode = PanelMode.RegionList;
+            await RefreshRegions();
+            if (_graphData != null) await UpdateGraphRegionData();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to delete region");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    // ===== Area Helpers =====
+
+    private void AddArea()
+    {
+        _showAddAreaInput = true;
+        _newAreaResRef = "";
+    }
+
+    private void ConfirmAddArea()
+    {
+        if (string.IsNullOrWhiteSpace(_newAreaResRef)) return;
+        _editRegion.Areas.Add(new AreaDefinitionDto { ResRef = _newAreaResRef.Trim() });
+        _newAreaResRef = "";
+        _showAddAreaInput = false;
+    }
+
+    private void RemoveArea(int index)
+    {
+        _editRegion.Areas.RemoveAt(index);
+    }
 
     private string? GetAreaNameByResRef(string? resRef)
     {
@@ -1150,283 +1374,114 @@
         {
             if (!string.IsNullOrWhiteSpace(a.ResRef) &&
                 !string.Equals(a.ResRef, currentResRef, StringComparison.OrdinalIgnoreCase))
-            {
                 usedResRefs.Add(a.ResRef);
-            }
         }
-
         return _knownAreas.Where(a => !usedResRefs.Contains(a.ResRef)).ToList();
     }
 
-    // ===== Assign Area to Region =====
+    // ===== Area Editor Helpers =====
 
-    private void StartAssign(string resRef)
+    private void OnAreaRegionChanged(ChangeEventArgs e)
     {
-        _assigningResRef = resRef;
-        _assignTargetRegionTag = null;
+        _editAreaRegionTag = e.Value?.ToString() ?? "";
     }
 
-    private async Task AssignAreaToRegion(string resRef)
+    private void OnAreaLinkedSettlementChanged(ChangeEventArgs e)
     {
-        if (string.IsNullOrEmpty(_assignTargetRegionTag)) return;
-
-        _isSaving = true;
-        _error = null;
-
-        try
-        {
-            var targetRegion = _regions.FirstOrDefault(r =>
-                string.Equals(r.Tag, _assignTargetRegionTag, StringComparison.OrdinalIgnoreCase));
-
-            if (targetRegion == null)
-            {
-                _error = $"Region '{_assignTargetRegionTag}' not found.";
-                return;
-            }
-
-            var updatedRegion = CloneRegion(targetRegion);
-            updatedRegion.Areas.Add(new AreaDefinitionDto { ResRef = resRef });
-            await Api.UpdateAsync(updatedRegion.Tag, updatedRegion);
-
-            _success = $"Added area '{resRef}' to region '{targetRegion.Name}'.";
-            _assigningResRef = null;
-            _assignTargetRegionTag = null;
-
-            await RefreshRegions();
-            // Lightweight graph update: recolor the assigned node in-place
-            if (_graphData != null)
-            {
-                await UpdateGraphRegionData();
-            }
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-            Logger.LogError(ex, "Failed to assign area to region");
-        }
-        finally
-        {
-            _isSaving = false;
-            StateHasChanged();
-        }
+        if (_editArea == null) return;
+        _editArea.LinkedSettlement = int.TryParse(e.Value?.ToString(), out var val) && val > 0 ? val : null;
     }
 
-    private static RegionDefinitionDto CloneRegion(RegionDefinitionDto source)
+    private void OnAreaDefinitionTagsChanged(ChangeEventArgs e)
     {
-        return new RegionDefinitionDto
-        {
-            Tag = source.Tag,
-            Name = source.Name,
-            DefaultChaos = source.DefaultChaos != null ? new ChaosStateDto
-            {
-                Danger = source.DefaultChaos.Danger,
-                Corruption = source.DefaultChaos.Corruption,
-                Density = source.DefaultChaos.Density,
-                Mutation = source.DefaultChaos.Mutation
-            } : null,
-            Areas = source.Areas.Select(a => new AreaDefinitionDto
-            {
-                ResRef = a.ResRef,
-                DefinitionTags = a.DefinitionTags.ToList(),
-                LinkedSettlement = a.LinkedSettlement,
-                Environment = new EnvironmentDataDto
-                {
-                    Climate = a.Environment.Climate,
-                    SoilQuality = a.Environment.SoilQuality,
-                    MineralQualityRange = new QualityRangeDto
-                    {
-                        Min = a.Environment.MineralQualityRange.Min,
-                        Max = a.Environment.MineralQualityRange.Max
-                    },
-                    Chaos = a.Environment.Chaos != null ? new ChaosStateDto
-                    {
-                        Danger = a.Environment.Chaos.Danger,
-                        Corruption = a.Environment.Chaos.Corruption,
-                        Density = a.Environment.Chaos.Density,
-                        Mutation = a.Environment.Chaos.Mutation
-                    } : null
-                },
-                PlacesOfInterest = a.PlacesOfInterest?.Select(p => new PlaceOfInterestDto
-                {
-                    ResRef = p.ResRef,
-                    Tag = p.Tag,
-                    Name = p.Name,
-                    Type = p.Type,
-                    Description = p.Description
-                }).ToList()
-            }).ToList()
-        };
-    }
-
-    // ===== Create / Edit Modal =====
-
-    private void ShowCreateModal()
-    {
-        _isCreating = true;
-        _editRegion = new RegionDefinitionDto();
-        _expandedAreas.Clear();
-        _showEditModal = true;
-    }
-
-    private void ShowEditModal(RegionDefinitionDto region)
-    {
-        _isCreating = false;
-        _expandedAreas.Clear();
-        _editRegion = CloneRegion(region);
-        _showEditModal = true;
-    }
-
-    private void CloseEditModal()
-    {
-        _showEditModal = false;
-        _editRegion = new();
-        _expandedAreas.Clear();
-    }
-
-    private async Task SaveRegion()
-    {
-        _isSaving = true;
-        _error = null;
-        try
-        {
-            // Validate PoI tag uniqueness
-            var allPoiTags = _editRegion.Areas
-                .SelectMany(a => a.PlacesOfInterest ?? new())
-                .Where(p => !string.IsNullOrWhiteSpace(p.Tag))
-                .Select(p => p.Tag)
-                .ToList();
-            var duplicateTags = allPoiTags
-                .GroupBy(t => t, StringComparer.OrdinalIgnoreCase)
-                .Where(g => g.Count() > 1)
-                .Select(g => g.Key)
-                .ToList();
-            if (duplicateTags.Count > 0)
-            {
-                _error = $"Duplicate PoI tags: {string.Join(", ", duplicateTags)}. Each PoI tag must be unique within the region.";
-                return;
-            }
-
-            if (_isCreating)
-                await Api.CreateAsync(_editRegion);
-            else
-                await Api.UpdateAsync(_editRegion.Tag, _editRegion);
-
-            _success = _isCreating ? $"Region '{_editRegion.Name}' created." : $"Region '{_editRegion.Name}' updated.";
-            _showEditModal = false;
-            await RefreshRegions();
-
-            // Lightweight graph update: recolor nodes in-place without full rebuild
-            if (_graphData != null)
-            {
-                await UpdateGraphRegionData();
-            }
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-            Logger.LogError(ex, "Failed to save region");
-        }
-        finally
-        {
-            _isSaving = false;
-            StateHasChanged();
-        }
-    }
-
-    // ===== Area Helpers =====
-
-    private bool IsAreaExpanded(int index) => _expandedAreas.Contains(index);
-
-    private void ToggleAreaExpanded(int index)
-    {
-        if (!_expandedAreas.Remove(index))
-            _expandedAreas.Add(index);
-    }
-
-    private void AddArea()
-    {
-        _editRegion.Areas.Add(new AreaDefinitionDto());
-        _expandedAreas.Add(_editRegion.Areas.Count - 1);
-    }
-
-    private void RemoveArea(int index)
-    {
-        _editRegion.Areas.RemoveAt(index);
-        _expandedAreas.Remove(index);
-        // Re-index expanded areas
-        var updated = new HashSet<int>();
-        foreach (var i in _expandedAreas)
-        {
-            if (i > index) updated.Add(i - 1);
-            else updated.Add(i);
-        }
-        _expandedAreas = updated;
-    }
-
-    private void OnLinkedSettlementChanged(ChangeEventArgs e, int areaIndex)
-    {
-        if (int.TryParse(e.Value?.ToString(), out var val) && val > 0)
-            _editRegion.Areas[areaIndex].LinkedSettlement = val;
-        else
-            _editRegion.Areas[areaIndex].LinkedSettlement = null;
-    }
-
-    private void OnDefinitionTagsChanged(ChangeEventArgs e, int areaIndex)
-    {
+        if (_editArea == null) return;
         var raw = e.Value?.ToString() ?? "";
-        _editRegion.Areas[areaIndex].DefinitionTags = string.IsNullOrWhiteSpace(raw)
+        _editArea.DefinitionTags = string.IsNullOrWhiteSpace(raw)
             ? new List<string>()
             : raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
     }
 
-    // ===== Chaos Helpers =====
+    private void AddEditAreaChaos() { if (_editArea != null) _editArea.Environment.Chaos = new ChaosStateDto(); }
+    private void RemoveEditAreaChaos() { if (_editArea != null) _editArea.Environment.Chaos = null; }
 
-    private void AddDefaultChaos() => _editRegion.DefaultChaos = new ChaosStateDto();
-    private void RemoveDefaultChaos() => _editRegion.DefaultChaos = null;
-
-    private void AddAreaChaos(int areaIndex) =>
-        _editRegion.Areas[areaIndex].Environment.Chaos = new ChaosStateDto();
-
-    private void RemoveAreaChaos(int areaIndex) =>
-        _editRegion.Areas[areaIndex].Environment.Chaos = null;
-
-    // ===== POI Helpers =====
-
-    private void AddPoi(int areaIndex)
+    private void AddEditAreaPoi()
     {
-        _editRegion.Areas[areaIndex].PlacesOfInterest ??= new List<PlaceOfInterestDto>();
-        _editRegion.Areas[areaIndex].PlacesOfInterest!.Add(new PlaceOfInterestDto());
+        if (_editArea == null) return;
+        _editArea.PlacesOfInterest ??= new List<PlaceOfInterestDto>();
+        _editArea.PlacesOfInterest.Add(new PlaceOfInterestDto());
     }
 
-    private void RemovePoi(int areaIndex, int poiIndex)
+    private void RemoveEditAreaPoi(int index)
     {
-        _editRegion.Areas[areaIndex].PlacesOfInterest?.RemoveAt(poiIndex);
+        _editArea?.PlacesOfInterest?.RemoveAt(index);
     }
 
-    /// <summary>
-    /// Returns true if the given PoI tag is duplicated elsewhere in the region.
-    /// </summary>
-    private bool IsPoiTagDuplicate(string? tag, int areaIndex, int poiIndex)
+    private bool IsPoiTagDuplicate(string? tag, int poiIndex)
     {
-        if (string.IsNullOrWhiteSpace(tag)) return false;
-
-        for (int a = 0; a < _editRegion.Areas.Count; a++)
+        if (_editArea?.PlacesOfInterest == null || string.IsNullOrWhiteSpace(tag)) return false;
+        for (int i = 0; i < _editArea.PlacesOfInterest.Count; i++)
         {
-            var pois = _editRegion.Areas[a].PlacesOfInterest;
-            if (pois == null) continue;
-            for (int p = 0; p < pois.Count; p++)
-            {
-                if (a == areaIndex && p == poiIndex) continue; // skip self
-                if (string.Equals(pois[p].Tag, tag, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
+            if (i == poiIndex) continue;
+            if (string.Equals(_editArea.PlacesOfInterest[i].Tag, tag, StringComparison.OrdinalIgnoreCase))
+                return true;
         }
         return false;
     }
 
-    // ===== Import =====
+    // ===== Chaos Helpers (Region Editor) =====
 
-    private List<System.Text.Json.JsonElement> _importedRegions = new();
+    private void AddDefaultChaos() => _editRegion.DefaultChaos = new ChaosStateDto();
+    private void RemoveDefaultChaos() => _editRegion.DefaultChaos = null;
+
+    // ===== Clone Helpers =====
+
+    private static RegionDefinitionDto CloneRegion(RegionDefinitionDto source) => new()
+    {
+        Tag = source.Tag,
+        Name = source.Name,
+        DefaultChaos = source.DefaultChaos != null ? new ChaosStateDto
+        {
+            Danger = source.DefaultChaos.Danger,
+            Corruption = source.DefaultChaos.Corruption,
+            Density = source.DefaultChaos.Density,
+            Mutation = source.DefaultChaos.Mutation
+        } : null,
+        Areas = source.Areas.Select(CloneAreaDefinition).ToList()
+    };
+
+    private static AreaDefinitionDto CloneAreaDefinition(AreaDefinitionDto a) => new()
+    {
+        ResRef = a.ResRef,
+        DefinitionTags = a.DefinitionTags.ToList(),
+        LinkedSettlement = a.LinkedSettlement,
+        Environment = new EnvironmentDataDto
+        {
+            Climate = a.Environment.Climate,
+            SoilQuality = a.Environment.SoilQuality,
+            MineralQualityRange = new QualityRangeDto
+            {
+                Min = a.Environment.MineralQualityRange.Min,
+                Max = a.Environment.MineralQualityRange.Max
+            },
+            Chaos = a.Environment.Chaos != null ? new ChaosStateDto
+            {
+                Danger = a.Environment.Chaos.Danger,
+                Corruption = a.Environment.Chaos.Corruption,
+                Density = a.Environment.Chaos.Density,
+                Mutation = a.Environment.Chaos.Mutation
+            } : null
+        },
+        PlacesOfInterest = a.PlacesOfInterest?.Select(p => new PlaceOfInterestDto
+        {
+            ResRef = p.ResRef,
+            Tag = p.Tag,
+            Name = p.Name,
+            Type = p.Type,
+            Description = p.Description
+        }).ToList()
+    };
+
+    // ===== Import =====
 
     private async Task OnImportFileSelected(InputFileChangeEventArgs e)
     {
@@ -1435,31 +1490,22 @@
             foreach (var file in e.GetMultipleFiles(100))
             {
                 if (file.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-                {
                     await ProcessZipRegions(file);
-                }
                 else
-                {
                     await ProcessJsonFileRegions(file);
-                }
             }
-
-            _importJson = System.Text.Json.JsonSerializer.Serialize(_importedRegions);
+            _importJson = JsonSerializer.Serialize(_importedRegions);
             _importResult = null;
-            _success = $"Loaded {_importedRegions.Count} region(s) total. Pick more files to add more, or click Import.";
+            _success = $"Loaded {_importedRegions.Count} region(s). Click Import to apply.";
             StateHasChanged();
         }
-        catch (Exception ex)
-        {
-            _error = $"Failed to read file(s): {ex.Message}";
-        }
+        catch (Exception ex) { _error = $"Failed to read file(s): {ex.Message}"; }
     }
 
     private async Task ProcessJsonFileRegions(IBrowserFile file)
     {
         using var reader = new StreamReader(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
-        string content = await reader.ReadToEndAsync();
-        ParseJsonRegions(content);
+        ParseJsonRegions(await reader.ReadToEndAsync());
     }
 
     private async Task ProcessZipRegions(IBrowserFile file)
@@ -1473,22 +1519,19 @@
             if (!entry.FullName.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) continue;
             using var entryStream = entry.Open();
             using var reader = new StreamReader(entryStream);
-            string content = await reader.ReadToEndAsync();
-            ParseJsonRegions(content);
+            ParseJsonRegions(await reader.ReadToEndAsync());
         }
     }
 
     private void ParseJsonRegions(string content)
     {
-        using var doc = System.Text.Json.JsonDocument.Parse(content);
-        if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+        using var doc = JsonDocument.Parse(content);
+        if (doc.RootElement.ValueKind == JsonValueKind.Array)
         {
             foreach (var item in doc.RootElement.EnumerateArray())
-            {
                 _importedRegions.Add(item.Clone());
-            }
         }
-        else if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object)
+        else if (doc.RootElement.ValueKind == JsonValueKind.Object)
         {
             _importedRegions.Add(doc.RootElement.Clone());
         }
@@ -1505,17 +1548,10 @@
             if (_importResult is { Failed: 0 })
                 _success = $"Successfully imported {_importResult.Succeeded} regions.";
             await RefreshRegions();
+            if (_graphData != null) await UpdateGraphRegionData();
         }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-            Logger.LogError(ex, "Failed to import regions");
-        }
-        finally
-        {
-            _isSaving = false;
-            StateHasChanged();
-        }
+        catch (Exception ex) { _error = ex.Message; Logger.LogError(ex, "Import failed"); }
+        finally { _isSaving = false; StateHasChanged(); }
     }
 
     private void CloseImportModal()
@@ -1533,24 +1569,15 @@
         _isExporting = true;
         _error = null;
         StateHasChanged();
-
         try
         {
             string json = await Api.ExportJsonAsync(_searchTerm);
             string fileName = $"regions-export-{DateTime.UtcNow:yyyyMMdd-HHmmss}.json";
             await DownloadFileAsync(fileName, json);
-            _success = "Export downloaded successfully.";
+            _success = "Export downloaded.";
         }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-            Logger.LogError(ex, "Failed to export regions");
-        }
-        finally
-        {
-            _isExporting = false;
-            StateHasChanged();
-        }
+        catch (Exception ex) { _error = ex.Message; Logger.LogError(ex, "Export failed"); }
+        finally { _isExporting = false; StateHasChanged(); }
     }
 
     private async Task DownloadFileAsync(string fileName, string content)
@@ -1558,39 +1585,6 @@
         var bytes = System.Text.Encoding.UTF8.GetBytes(content);
         var base64 = Convert.ToBase64String(bytes);
         await JS.InvokeVoidAsync("adminPanelDownloadFile", fileName, base64);
-    }
-
-    // ===== Delete =====
-
-    private void ConfirmDelete(RegionDefinitionDto region)
-    {
-        _deleteTarget = region;
-        _showDeleteConfirm = true;
-    }
-
-    private async Task DeleteRegion()
-    {
-        if (_deleteTarget == null) return;
-        _isSaving = true;
-        _error = null;
-        try
-        {
-            await Api.DeleteAsync(_deleteTarget.Tag);
-            _success = $"Deleted region '{_deleteTarget.Name}'.";
-            _showDeleteConfirm = false;
-            _deleteTarget = null;
-            await RefreshRegions();
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-            Logger.LogError(ex, "Failed to delete region");
-        }
-        finally
-        {
-            _isSaving = false;
-            StateHasChanged();
-        }
     }
 
     // ===== Inner Types =====
@@ -1602,5 +1596,6 @@
         public string? Region { get; set; }
         public bool HasSpawnProfile { get; set; }
         public string? SpawnProfileName { get; set; }
+        public int PoiCount { get; set; }
     }
 }
