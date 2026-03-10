@@ -864,8 +864,8 @@
     {
         var data = _regions.Select(r => new
         {
-            tag = r.Tag,
-            name = r.Name,
+            tag = r.Tag ?? "",
+            name = r.Name ?? "",
             areaResRefs = r.Areas.Where(a => !string.IsNullOrWhiteSpace(a.ResRef)).Select(a => a.ResRef).ToList(),
             poiCounts = r.Areas
                 .Where(a => !string.IsNullOrWhiteSpace(a.ResRef) && a.PlacesOfInterest?.Count > 0)

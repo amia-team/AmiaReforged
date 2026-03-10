@@ -55,6 +55,8 @@ window.regionGraph = (function () {
      * @param {DotNet.DotNetObject} blazorRef .NET object ref for callbacks
      */
     function init(containerId, nodesJson, edgesJson, disconnectedJson, regionsJson, blazorRef) {
+        console.log('[regionGraph] init v2 called, regionsJson type:', typeof regionsJson,
+            'length:', regionsJson ? regionsJson.length : 0);
         destroy();
         dotNetRef = blazorRef || null;
 
