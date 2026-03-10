@@ -59,6 +59,8 @@ public static class WarlockExtensions
             || warlock.SpellImmunityCheck(target))
             return true;
 
+        // because we want to bound warlock CL to warlock levels for immutability, we add spell pen feats separately
+        // for the spell resist check
         if (warlock.KnowsFeat(Feat.EpicSpellPenetration!))
             warlockLevel += 6;
         else if (warlock.KnowsFeat(Feat.GreaterSpellPenetration!))
