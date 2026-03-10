@@ -1051,6 +1051,12 @@ window.regionGraph = (function () {
         });
     }
 
+    function resizeGraph() {
+        if (!cy) return;
+        cy.resize();
+        cy.fit(undefined, 30);
+    }
+
     function destroy() {
         closeContextMenu();
         if (cy) {
@@ -1083,6 +1089,7 @@ window.regionGraph = (function () {
         highlightNode: highlightNode,
         clearHighlight: clearHighlight,
         fitView: fitView,
+        resize: resizeGraph,
         destroy: destroy,
         getRegionColors: getRegionColors,
         updateRegionData: updateRegionData,

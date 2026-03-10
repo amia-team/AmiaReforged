@@ -163,8 +163,14 @@
                 }
             </div>
 
+            @* ===== Resize Splitter ===== *@
+            <div class="region-editor__splitter" id="region-splitter"
+                 title="Drag to resize – double-click to reset">
+                <div class="region-editor__splitter-grip"></div>
+            </div>
+
             @* ===== Side Panel ===== *@
-            <div class="region-editor__panel">
+            <div class="region-editor__panel" id="region-panel">
                 @* ---- Panel Header ---- *@
                 <div class="region-editor__panel-header">
                     @if (_panelMode == PanelMode.AreaEditor)
@@ -620,6 +626,76 @@
         z-index: 1040;
     }
 </style>
+
+<script suppress-error="BL9992">
+    (function () {
+        if (window.__regionSplitterInit) return;
+        window.__regionSplitterInit = true;
+
+        var DEFAULT_PANEL_WIDTH = 340;
+
+        function initSplitter() {
+            var splitter = document.getElementById('region-splitter');
+            var panel = document.getElementById('region-panel');
+            var editor = splitter ? splitter.closest('.region-editor') : null;
+            if (!splitter || !panel || !editor) return;
+
+            var startX, startWidth;
+
+            splitter.addEventListener('mousedown', function (e) {
+                e.preventDefault();
+                startX = e.clientX;
+                startWidth = panel.getBoundingClientRect().width;
+                splitter.classList.add('active');
+                editor.classList.add('resizing');
+
+                function onMouseMove(e2) {
+                    var delta = startX - e2.clientX;
+                    var newWidth = Math.min(Math.max(startWidth + delta, 260), 700);
+                    panel.style.width = newWidth + 'px';
+                    if (window.regionGraph && window.regionGraph.resize) {
+                        clearTimeout(window.__regionResizeTimer);
+                        window.__regionResizeTimer = setTimeout(function () {
+                            try { window.regionGraph.resize(); } catch (_) {}
+                        }, 100);
+                    }
+                }
+
+                function onMouseUp() {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                    splitter.classList.remove('active');
+                    editor.classList.remove('resizing');
+                    // Force cytoscape to notice the container changed
+                    window.dispatchEvent(new Event('resize'));
+                }
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+
+            // Double-click to reset width
+            splitter.addEventListener('dblclick', function () {
+                panel.style.width = DEFAULT_PANEL_WIDTH + 'px';
+                window.dispatchEvent(new Event('resize'));
+            });
+        }
+
+        // MutationObserver to init when the DOM is ready
+        var observer = new MutationObserver(function () {
+            if (document.getElementById('region-splitter')) {
+                initSplitter();
+                observer.disconnect();
+            }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+
+        // Also try immediately
+        if (document.getElementById('region-splitter')) {
+            initSplitter();
+        }
+    })();
+</script>
 
 @code {
     // ===== Enums =====

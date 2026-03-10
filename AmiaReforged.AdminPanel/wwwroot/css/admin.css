@@ -968,14 +968,14 @@ a:hover {
     flex-direction: column;
     height: calc(100vh - 20px);
     gap: 0;
-    padding: 12px 16px 0 16px;
+    padding: 8px 12px 0 12px;
 }
 
 .region-editor__toolbar {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
+    gap: 8px;
+    padding: 6px 12px;
     background: var(--bg-card);
     border: 1px solid var(--border-subtle);
     border-radius: 8px 8px 0 0;
@@ -984,9 +984,9 @@ a:hover {
 }
 
 .region-editor__toolbar h1 {
-    font-size: 1.15rem;
+    font-size: 1.05rem;
     margin: 0;
-    margin-right: 8px;
+    margin-right: 6px;
     white-space: nowrap;
 }
 
@@ -1015,7 +1015,7 @@ a:hover {
 
 .region-editor__graph-wrapper {
     flex: 1;
-    min-width: 0;
+    min-width: 300px;
     display: flex;
     flex-direction: column;
     position: relative;
@@ -1025,6 +1025,47 @@ a:hover {
 .region-editor__graph {
     flex: 1;
     min-height: 0;
+}
+
+/* ===== Resize Splitter ===== */
+
+.region-editor__splitter {
+    width: 6px;
+    cursor: col-resize;
+    background: var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s;
+    position: relative;
+    z-index: 10;
+}
+
+.region-editor__splitter:hover,
+.region-editor__splitter.active {
+    background: var(--accent);
+}
+
+.region-editor__splitter-grip {
+    width: 2px;
+    height: 32px;
+    border-radius: 1px;
+    background: rgba(255,255,255,0.2);
+}
+
+.region-editor__splitter:hover .region-editor__splitter-grip,
+.region-editor__splitter.active .region-editor__splitter-grip {
+    background: rgba(255,255,255,0.5);
+}
+
+/* Prevent text selection during drag */
+.region-editor.resizing {
+    user-select: none;
+    cursor: col-resize;
+}
+.region-editor.resizing * {
+    cursor: col-resize !important;
 }
 
 .region-editor__legend {
@@ -1064,14 +1105,15 @@ a:hover {
 /* ===== Side Panel ===== */
 
 .region-editor__panel {
-    width: 380px;
-    min-width: 320px;
-    max-width: 500px;
+    width: 340px;
+    min-width: 260px;
+    max-width: 600px;
     background: var(--bg-card);
-    border-left: 1px solid var(--border-subtle);
+    border-left: none;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    flex-shrink: 0;
 }
 
 .region-editor__panel-header {
