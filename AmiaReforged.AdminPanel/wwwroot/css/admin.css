@@ -963,34 +963,8 @@ a:hover {
 
 /* ========== Region Graph Visual Editor ========== */
 
-/* Override Blazor layout wrappers to allow full-height flex */
-.page:has(.region-editor) {
-    height: 100vh;
-    overflow: hidden;
-}
-
-.page:has(.region-editor) > main {
-    height: 100%;
-    overflow: hidden;
-}
-
-.page:has(.region-editor) > main > article.content {
-    height: 100%;
-    overflow: hidden;
-    padding: 0 !important;
-    max-width: 100%;
-}
-
 .region-editor {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    max-height: 100vh;
-    gap: 0;
     padding: 8px 12px 0 12px;
-    overflow: hidden;
-    /* Fallback if parent height chain is broken */
-    min-height: 0;
 }
 
 .region-editor__toolbar {
@@ -1027,8 +1001,6 @@ a:hover {
 
 .region-editor__main {
     display: flex;
-    flex: 1 1 0;
-    min-height: 0;
     border: 1px solid var(--border-subtle);
     border-top: none;
     border-radius: 0 0 8px 8px;
@@ -1036,9 +1008,8 @@ a:hover {
 }
 
 .region-editor__graph-wrapper {
-    flex: 1 1 0;
+    flex: 1;
     min-width: 300px;
-    min-height: 0;
     display: flex;
     flex-direction: column;
     position: relative;
@@ -1046,9 +1017,7 @@ a:hover {
 }
 
 .region-editor__graph {
-    flex: 1 1 0;
-    min-height: 300px;
-    position: relative;
+    /* height set via inline style: calc(100vh - 160px) */
 }
 
 /* ===== Resize Splitter ===== */
