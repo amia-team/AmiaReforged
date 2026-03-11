@@ -699,6 +699,131 @@ function notifySelectionChanged() {
     }
 }
 
+// ==================== Layout Helpers ====================
+
+/**
+ * Returns the bounding box of all nodes in world coordinates.
+ */
+function getNodesBoundingBox() {
+    if (nodes.length === 0) return null;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const n of nodes) {
+        if (n.x < minX) minX = n.x;
+        if (n.y < minY) minY = n.y;
+        if (n.x + n.width > maxX) maxX = n.x + n.width;
+        if (n.y + n.height > maxY) maxY = n.y + n.height;
+    }
+    return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY };
+}
+
+/**
+ * Adjusts camera and zoom so that all nodes fit within the viewport with padding.
+ */
+function fitToView() {
+    if (!canvas || nodes.length === 0) return;
+    const bb = getNodesBoundingBox();
+    if (!bb) return;
+
+    const padding = 80; // px padding on each side
+    const cw = canvas.width - padding * 2;
+    const ch = canvas.height - padding * 2;
+    if (cw <= 0 || ch <= 0) return;
+
+    const scaleX = cw / bb.width;
+    const scaleY = ch / bb.height;
+    zoom = Math.min(scaleX, scaleY, ZOOM_MAX);
+    zoom = Math.max(zoom, ZOOM_MIN);
+
+    // If all nodes fit comfortably, don't zoom past 1.0
+    if (zoom > 1.0) zoom = 1.0;
+
+    const centerX = (bb.minX + bb.maxX) / 2;
+    const centerY = (bb.minY + bb.maxY) / 2;
+    camX = -centerX * zoom;
+    camY = -centerY * zoom;
+}
+
+/**
+ * Auto-arranges nodes in a layered left-to-right layout.
+ * Event nodes go in the first column, then a topological sort determines
+ * subsequent columns based on edge connections.
+ */
+function autoArrange() {
+    if (nodes.length === 0) return;
+
+    const hGap = 60;
+    const vGap = 30;
+
+    // Build adjacency: node id → set of downstream node ids
+    const downstream = new Map();
+    const upstream = new Map();
+    for (const n of nodes) {
+        downstream.set(n.id, new Set());
+        upstream.set(n.id, new Set());
+    }
+    for (const e of edges) {
+        downstream.get(e.srcNodeId)?.add(e.tgtNodeId);
+        upstream.get(e.tgtNodeId)?.add(e.srcNodeId);
+    }
+
+    // Assign layers via longest-path from roots
+    const layer = new Map();
+    const visited = new Set();
+
+    function assignLayer(nodeId, depth) {
+        if (layer.has(nodeId) && layer.get(nodeId) >= depth) return;
+        layer.set(nodeId, depth);
+        for (const childId of downstream.get(nodeId) || []) {
+            assignLayer(childId, depth + 1);
+        }
+    }
+
+    // Roots = nodes with no upstream edges (or event nodes)
+    const roots = nodes.filter(n =>
+        (upstream.get(n.id)?.size ?? 0) === 0 ||
+        n.def.ColorClass?.toLowerCase() === 'event'
+    );
+
+    // If no clear roots, just use all nodes
+    const startNodes = roots.length > 0 ? roots : [nodes[0]];
+    for (const r of startNodes) {
+        assignLayer(r.id, 0);
+    }
+
+    // Any unassigned nodes get their own layer
+    for (const n of nodes) {
+        if (!layer.has(n.id)) layer.set(n.id, 0);
+    }
+
+    // Group nodes by layer
+    const layers = new Map();
+    for (const n of nodes) {
+        const l = layer.get(n.id) || 0;
+        if (!layers.has(l)) layers.set(l, []);
+        layers.get(l).push(n);
+    }
+
+    // Position each layer
+    let xOffset = 0;
+    const sortedLayers = [...layers.keys()].sort((a, b) => a - b);
+    for (const l of sortedLayers) {
+        const layerNodes = layers.get(l);
+        let maxWidth = 0;
+        let yOffset = 0;
+
+        for (const n of layerNodes) {
+            n.x = xOffset;
+            n.y = yOffset;
+            yOffset += n.height + vGap;
+            if (n.width > maxWidth) maxWidth = n.width;
+        }
+
+        xOffset += maxWidth + hGap;
+    }
+
+    fitToView();
+}
+
 // ==================== Resize ====================
 
 function resizeCanvas() {
@@ -744,18 +869,9 @@ export function initGlyphEditor(containerId, catalogJson, graphJson, dotNetRef) 
     // Load existing graph
     loadGraphJson(graphJson);
 
-    // If no nodes, center camera at origin
+    // Fit all nodes in view (handles spread-out graphs gracefully)
     if (nodes.length > 0) {
-        // Center on existing nodes
-        let avgX = 0, avgY = 0;
-        for (const n of nodes) {
-            avgX += n.x + n.width / 2;
-            avgY += n.y + n.height / 2;
-        }
-        avgX /= nodes.length;
-        avgY /= nodes.length;
-        camX = -avgX * zoom;
-        camY = -avgY * zoom;
+        fitToView();
     }
 
     // Event listeners
@@ -788,24 +904,36 @@ export function addNode(nodeDefJson) {
         if (exists) return; // Don't add duplicates
     }
 
-    // Auto-layout: place to the right of the selected node, or the rightmost node,
-    // or center of viewport if the graph is empty.
+    // Auto-layout: place near selected node or find a compact spot.
     let placeX, placeY;
-    const hGap = 60; // horizontal gap between nodes
+    const hGap = 60;
+    const vGap = 20;
     const selectedNode = selectedNodeId ? nodes.find(n => n.id === selectedNodeId) : null;
 
     if (selectedNode) {
-        // Place to the right of the selected node, same vertical center
+        // Place right of selected node at same Y
         placeX = selectedNode.x + selectedNode.width + hGap;
         placeY = selectedNode.y;
     } else if (nodes.length > 0) {
-        // Find the rightmost node and place to its right
-        let rightmost = nodes[0];
-        for (const n of nodes) {
-            if (n.x + n.width > rightmost.x + rightmost.width) rightmost = n;
+        // Find a compact position: below the lowest node in the rightmost column,
+        // or start a new column if current column is tall.
+        const bb = getNodesBoundingBox();
+        const columnThreshold = 500; // max column height before starting new column
+
+        // Find nodes in the rightmost column (within one node-width of maxX)
+        const rightEdge = bb.maxX;
+        const columnNodes = nodes.filter(n => n.x + n.width >= rightEdge - NODE_MIN_WIDTH);
+        const columnBottom = Math.max(...columnNodes.map(n => n.y + n.height));
+
+        if (columnBottom - bb.minY > columnThreshold) {
+            // Column is tall — start a new column to the right
+            placeX = rightEdge + hGap;
+            placeY = bb.minY;
+        } else {
+            // Add below the last node in the rightmost column
+            placeX = columnNodes[0]?.x ?? bb.maxX;
+            placeY = columnBottom + vGap;
         }
-        placeX = rightmost.x + rightmost.width + hGap;
-        placeY = rightmost.y;
     } else {
         // Empty graph — place at center of viewport
         const w = canvas ? canvas.width : 800;
@@ -833,6 +961,14 @@ export function setPropertyOverride(nodeId, pinId, value) {
     } else {
         node.propertyOverrides[pinId] = value;
     }
+}
+
+export function fitAll() {
+    fitToView();
+}
+
+export function arrangeNodes() {
+    autoArrange();
 }
 
 export function destroy() {

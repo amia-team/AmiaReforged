@@ -318,8 +318,10 @@
                     <div id="glyph-editor-container"
                          style="width:100%;height:650px;background:#1a1a2e;border:2px solid var(--border-color);border-radius:8px;position:relative;overflow:hidden">
                         <div id="glyph-rete-canvas" style="width:100%;height:100%"></div>
-                        <div style="position:absolute;bottom:8px;right:12px;color:#666;font-size:0.75rem">
-                            Glyph Visual Editor — Drag nodes from palette
+                        <div style="position:absolute;bottom:8px;right:12px;display:flex;gap:6px;align-items:center">
+                            <button class="btn btn-sm btn-outline-secondary" style="font-size:0.7rem;padding:2px 8px" @onclick="FitAll" title="Fit all nodes in view">Fit All</button>
+                            <button class="btn btn-sm btn-outline-secondary" style="font-size:0.7rem;padding:2px 8px" @onclick="ArrangeNodes" title="Auto-arrange node layout">Arrange</button>
+                            <span style="color:#666;font-size:0.75rem">Glyph Visual Editor</span>
                         </div>
                     </div>
                 </div>
@@ -850,6 +852,20 @@
     }
 
     // ==================== Helpers ====================
+
+    private async Task FitAll()
+    {
+        if (_editorModule == null) return;
+        try { await _editorModule.InvokeVoidAsync("fitAll"); }
+        catch (Exception ex) { Logger.LogWarning(ex, "fitAll failed"); }
+    }
+
+    private async Task ArrangeNodes()
+    {
+        if (_editorModule == null) return;
+        try { await _editorModule.InvokeVoidAsync("arrangeNodes"); }
+        catch (Exception ex) { Logger.LogWarning(ex, "arrangeNodes failed"); }
+    }
 
     private static string GetNodeColor(string colorClass)
     {

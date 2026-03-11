@@ -425,6 +425,10 @@
                                     <em>Initializing editor...</em>
                                 </div>
                             }
+                            <div style="position:absolute;bottom:8px;right:12px;display:flex;gap:6px;align-items:center">
+                                <button class="btn btn-sm btn-outline-secondary" style="font-size:0.7rem;padding:2px 8px" @onclick="FitAll" title="Fit all nodes in view">Fit All</button>
+                                <button class="btn btn-sm btn-outline-secondary" style="font-size:0.7rem;padding:2px 8px" @onclick="ArrangeNodes" title="Auto-arrange node layout">Arrange</button>
+                            </div>
                         </div>
                     </div>
 
@@ -1197,6 +1201,20 @@
         StateHasChanged();
         await Task.Delay(50);
         await InitScriptEditor();
+    }
+
+    private async Task FitAll()
+    {
+        if (_scriptEditorModule == null) return;
+        try { await _scriptEditorModule.InvokeVoidAsync("fitAll"); }
+        catch (Exception ex) { Logger.LogWarning(ex, "fitAll failed"); }
+    }
+
+    private async Task ArrangeNodes()
+    {
+        if (_scriptEditorModule == null) return;
+        try { await _scriptEditorModule.InvokeVoidAsync("arrangeNodes"); }
+        catch (Exception ex) { Logger.LogWarning(ex, "arrangeNodes failed"); }
     }
 
     // ===== Event Scripts — Save =====
