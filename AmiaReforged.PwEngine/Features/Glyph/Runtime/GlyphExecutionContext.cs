@@ -57,6 +57,46 @@ public class GlyphExecutionContext
     /// </summary>
     public uint Killer { get; set; }
 
+    // ==================== Per-Creature Spawn Context ====================
+
+    /// <summary>
+    /// Object ID of the single creature being processed during <see cref="GlyphEventType.OnCreatureSpawn"/>
+    /// or <see cref="GlyphEventType.OnBossSpawn"/>. Not set for group-level events.
+    /// </summary>
+    public uint SpawnedCreature { get; set; }
+
+    /// <summary>
+    /// The blueprint ResRef of the creature that was spawned (populated for OnCreatureSpawn / OnBossSpawn).
+    /// </summary>
+    public string? CreatureResRef { get; set; }
+
+    /// <summary>
+    /// Zero-based index of this creature within the group's spawn list (for OnCreatureSpawn).
+    /// </summary>
+    public int SpawnIndex { get; set; }
+
+    /// <summary>
+    /// Total number of creatures being spawned in the current group (for OnCreatureSpawn).
+    /// </summary>
+    public int TotalGroupSpawnCount { get; set; }
+
+    /// <summary>
+    /// When set to true by a node during OnCreatureSpawn execution,
+    /// the data-driven bonus pipeline (ApplyBonuses) is skipped for this creature.
+    /// </summary>
+    public bool ShouldSkipBonuses { get; set; }
+
+    /// <summary>
+    /// When set to true by a node during OnCreatureSpawn execution,
+    /// the data-driven mutation pipeline (TryApplyMutation) is skipped for this creature.
+    /// </summary>
+    public bool ShouldSkipMutations { get; set; }
+
+    /// <summary>
+    /// True when the event is firing for a boss or mini-boss creature (OnBossSpawn).
+    /// </summary>
+    public bool IsBoss { get; set; }
+
     // ==================== Trait Context ====================
 
     /// <summary>

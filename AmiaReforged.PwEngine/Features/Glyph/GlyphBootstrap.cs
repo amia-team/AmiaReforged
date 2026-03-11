@@ -52,6 +52,8 @@ public class GlyphBootstrap
         registry.Register(BeforeGroupSpawnEventExecutor.CreateDefinition());
         registry.Register(AfterGroupSpawnEventExecutor.CreateDefinition());
         registry.Register(OnCreatureDeathEventExecutor.CreateDefinition());
+        registry.Register(OnCreatureSpawnEventExecutor.CreateDefinition());
+        registry.Register(OnBossSpawnEventExecutor.CreateDefinition());
         registry.Register(OnTraitGrantedEventExecutor.CreateDefinition());
         registry.Register(OnTraitRemovedEventExecutor.CreateDefinition());
 
@@ -68,6 +70,11 @@ public class GlyphBootstrap
         registry.Register(SendFloatingTextExecutor.CreateDefinition());
         registry.Register(SetLocalVariableExecutor.CreateDefinition());
         registry.Register(DespawnCreatureExecutor.CreateDefinition());
+        registry.Register(SkipBonusesExecutor.CreateDefinition());
+        registry.Register(SkipMutationsExecutor.CreateDefinition());
+        registry.Register(SetCreatureNameExecutor.CreateDefinition());
+        registry.Register(HealCreatureExecutor.CreateDefinition());
+        registry.Register(DamageCreatureExecutor.CreateDefinition());
 
         // Constants
         registry.Register(StringConstantExecutor.CreateDefinition());
@@ -86,6 +93,12 @@ public class GlyphBootstrap
         registry.Register(GetCreatureLevelExecutor.CreateDefinition());
         registry.Register(GetPartyMembersExecutor.CreateDefinition());
         registry.Register(GetLocalVariableExecutor.CreateDefinition());
+        registry.Register(GetCreatureResRefExecutor.CreateDefinition());
+        registry.Register(GetCreatureNameExecutor.CreateDefinition());
+        registry.Register(GetCreatureACExecutor.CreateDefinition());
+        registry.Register(GetCreatureAbilityScoreExecutor.CreateDefinition());
+        registry.Register(GetCreatureRaceExecutor.CreateDefinition());
+        registry.Register(GetSpawnGroupInfoExecutor.CreateDefinition());
 
         // Math / Logic
         registry.Register(CompareExecutor.CreateDefinition());
@@ -123,6 +136,8 @@ public class GlyphBootstrap
         new BeforeGroupSpawnEventExecutor(),
         new AfterGroupSpawnEventExecutor(),
         new OnCreatureDeathEventExecutor(),
+        new OnCreatureSpawnEventExecutor(),
+        new OnBossSpawnEventExecutor(),
         new OnTraitGrantedEventExecutor(),
         new OnTraitRemovedEventExecutor(),
 
@@ -139,6 +154,11 @@ public class GlyphBootstrap
         new SendFloatingTextExecutor(),
         new SetLocalVariableExecutor(),
         new DespawnCreatureExecutor(),
+        new SkipBonusesExecutor(),
+        new SkipMutationsExecutor(),
+        new SetCreatureNameExecutor(),
+        new HealCreatureExecutor(),
+        new DamageCreatureExecutor(),
 
         // Constants
         new StringConstantExecutor(),
@@ -157,6 +177,12 @@ public class GlyphBootstrap
         new GetCreatureLevelExecutor(),
         new GetPartyMembersExecutor(),
         new GetLocalVariableExecutor(),
+        new GetCreatureResRefExecutor(),
+        new GetCreatureNameExecutor(),
+        new GetCreatureACExecutor(),
+        new GetCreatureAbilityScoreExecutor(),
+        new GetCreatureRaceExecutor(),
+        new GetSpawnGroupInfoExecutor(),
 
         // Math / Logic
         new CompareExecutor(),

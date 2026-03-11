@@ -114,10 +114,21 @@ public class DynamicCreatureSpawner
             List<uint> spawned = SpawnWithDistribution(group, scaledCount, trigger, context, profile.DespawnSeconds);
 
             // Apply profile bonuses and attempt mutation
-            foreach (uint creature in spawned)
+            for (int i = 0; i < spawned.Count; i++)
             {
-                _bonusApplicator.ApplyBonuses(creature, activeBonuses, context.Chaos);
-                _mutationApplicator.TryApplyMutation(creature, context.Chaos, group);
+                uint creature = spawned[i];
+                string resref = NWScript.GetResRef(creature);
+
+                // === Glyph: OnCreatureSpawn hook (per-creature, pre-bonus) ===
+                _glyphHooks.RunOnCreatureSpawn(
+                    creature, resref, i, spawned.Count,
+                    profile, group, context,
+                    out bool skipBonuses, out bool skipMutations);
+
+                if (!skipBonuses)
+                    _bonusApplicator.ApplyBonuses(creature, activeBonuses, context.Chaos);
+                if (!skipMutations)
+                    _mutationApplicator.TryApplyMutation(creature, context.Chaos, group);
 
                 // Tag creature with profile ID for Glyph OnCreatureDeath resolution
                 NWScript.SetLocalString(creature, GlyphProfileIdVar, profile.Id.ToString());
@@ -134,7 +145,7 @@ public class DynamicCreatureSpawner
         IntPtr miniBossLocation = GetRandomSpawnLocation(trigger);
         if (profile.MiniBoss != null && miniBossLocation != IntPtr.Zero)
         {
-            TrySpawnMiniBoss(profile.MiniBoss, miniBossLocation, profile.DespawnSeconds, context.Chaos);
+            TrySpawnMiniBoss(profile.MiniBoss, miniBossLocation, profile.DespawnSeconds, context.Chaos, profile, context);
         }
 
         // Boss (from boss pool) — rolled once
@@ -200,10 +211,21 @@ public class DynamicCreatureSpawner
             // Spawn distributed across the trigger's waypoints
             List<uint> spawned = SpawnCreaturesDistributed(group, scaledCount, locations, profile.DespawnSeconds);
 
-            foreach (uint creature in spawned)
+            for (int i = 0; i < spawned.Count; i++)
             {
-                _bonusApplicator.ApplyBonuses(creature, activeBonuses, context.Chaos);
-                _mutationApplicator.TryApplyMutation(creature, context.Chaos, group);
+                uint creature = spawned[i];
+                string resref = NWScript.GetResRef(creature);
+
+                // === Glyph: OnCreatureSpawn hook (per-creature, pre-bonus) ===
+                _glyphHooks.RunOnCreatureSpawn(
+                    creature, resref, i, spawned.Count,
+                    profile, group, context,
+                    out bool skipBonuses, out bool skipMutations);
+
+                if (!skipBonuses)
+                    _bonusApplicator.ApplyBonuses(creature, activeBonuses, context.Chaos);
+                if (!skipMutations)
+                    _mutationApplicator.TryApplyMutation(creature, context.Chaos, group);
 
                 // Tag creature with profile ID for Glyph OnCreatureDeath resolution
                 NWScript.SetLocalString(creature, GlyphProfileIdVar, profile.Id.ToString());
@@ -465,7 +487,9 @@ public class DynamicCreatureSpawner
         MiniBossConfig config,
         IntPtr spawnLocation,
         int despawnSeconds,
-        ChaosState chaos)
+        ChaosState chaos,
+        SpawnProfile profile,
+        EncounterContext context)
     {
         int roll = Rng.Next(100) + 1;
         if (roll > config.SpawnChancePercent) return;
@@ -488,9 +512,15 @@ public class DynamicCreatureSpawner
             NWScript.DestroyObject(boss, despawnSeconds);
         }
 
-        // Apply mini-boss-specific bonuses
-        IReadOnlyList<SpawnBonus> bossBonuses = config.Bonuses.Where(b => b.IsActive).ToList();
-        _bonusApplicator.ApplyBonuses(boss, bossBonuses, chaos);
+        // === Glyph: OnBossSpawn hook (pre-bonus) ===
+        _glyphHooks.RunOnBossSpawn(boss, config.CreatureResRef, profile, context, out bool skipBonuses);
+
+        // Apply mini-boss-specific bonuses (unless Glyph skipped them)
+        if (!skipBonuses)
+        {
+            IReadOnlyList<SpawnBonus> bossBonuses = config.Bonuses.Where(b => b.IsActive).ToList();
+            _bonusApplicator.ApplyBonuses(boss, bossBonuses, chaos);
+        }
 
         Log.Info("Mini-boss spawned: resref='{ResRef}', name='{Name}'.",
             config.CreatureResRef, NWScript.GetName(boss));
@@ -543,9 +573,15 @@ public class DynamicCreatureSpawner
             NWScript.DestroyObject(boss, despawnSeconds);
         }
 
-        // Apply boss-specific bonuses
-        IReadOnlyList<SpawnBonus> bossBonuses = selected.Bonuses.Where(b => b.IsActive).ToList();
-        _bonusApplicator.ApplyBonuses(boss, bossBonuses, context.Chaos);
+        // === Glyph: OnBossSpawn hook (pre-bonus) ===
+        _glyphHooks.RunOnBossSpawn(boss, selected.CreatureResRef, profile, context, out bool skipBonuses);
+
+        // Apply boss-specific bonuses (unless Glyph skipped them)
+        if (!skipBonuses)
+        {
+            IReadOnlyList<SpawnBonus> bossBonuses = selected.Bonuses.Where(b => b.IsActive).ToList();
+            _bonusApplicator.ApplyBonuses(boss, bossBonuses, context.Chaos);
+        }
 
         Log.Info("Boss spawned: resref='{ResRef}', name='{BossName}', configName='{ConfigName}'.",
             selected.CreatureResRef, NWScript.GetName(boss), selected.Name);

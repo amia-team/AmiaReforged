@@ -181,6 +181,89 @@ public class GlyphEncounterHookService
     }
 
     /// <summary>
+    /// Runs all <see cref="GlyphEventType.OnCreatureSpawn"/> graphs bound to the profile.
+    /// Fires once per creature immediately after spawn, before bonuses and mutations.
+    /// Returns control flags indicating whether the caller should skip bonuses/mutations.
+    /// </summary>
+    public void RunOnCreatureSpawn(
+        uint creature,
+        string creatureResRef,
+        int spawnIndex,
+        int totalCount,
+        SpawnProfile profile,
+        SpawnGroup group,
+        EncounterContext encounterContext,
+        out bool skipBonuses,
+        out bool skipMutations)
+    {
+        skipBonuses = false;
+        skipMutations = false;
+
+        var key = (profile.Id, GlyphEventType.OnCreatureSpawn);
+        if (!_bindingCache.TryGetValue(key, out List<GlyphGraph>? graphs)) return;
+
+        foreach (GlyphGraph graph in graphs)
+        {
+            GlyphExecutionContext ctx = CreateContext(graph, profile, encounterContext, group);
+            ctx.SpawnedCreature = creature;
+            ctx.CreatureResRef = creatureResRef;
+            ctx.SpawnIndex = spawnIndex;
+            ctx.TotalGroupSpawnCount = totalCount;
+
+            try
+            {
+                _bootstrap.Interpreter.ExecuteAsync(ctx).GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error executing OnCreatureSpawn Glyph graph '{Name}'.", graph.Name);
+                continue;
+            }
+
+            if (ctx.ShouldSkipBonuses) skipBonuses = true;
+            if (ctx.ShouldSkipMutations) skipMutations = true;
+        }
+    }
+
+    /// <summary>
+    /// Runs all <see cref="GlyphEventType.OnBossSpawn"/> graphs bound to the profile.
+    /// Fires when a boss or mini-boss is spawned, before its bonuses are applied.
+    /// Returns a control flag indicating whether the caller should skip bonuses.
+    /// </summary>
+    public void RunOnBossSpawn(
+        uint boss,
+        string creatureResRef,
+        SpawnProfile profile,
+        EncounterContext encounterContext,
+        out bool skipBonuses)
+    {
+        skipBonuses = false;
+
+        var key = (profile.Id, GlyphEventType.OnBossSpawn);
+        if (!_bindingCache.TryGetValue(key, out List<GlyphGraph>? graphs)) return;
+
+        foreach (GlyphGraph graph in graphs)
+        {
+            GlyphExecutionContext ctx = CreateContext(graph, profile, encounterContext);
+            ctx.SpawnedCreature = boss;
+            ctx.CreatureResRef = creatureResRef;
+            ctx.IsBoss = true;
+
+            try
+            {
+                _bootstrap.Interpreter.ExecuteAsync(ctx).GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error executing OnBossSpawn Glyph graph '{Name}'.", graph.Name);
+                continue;
+            }
+
+            if (ctx.ShouldSkipBonuses) skipBonuses = true;
+        }
+    }
+
+    /// <summary>
     /// Checks whether any graphs are bound to the given profile for any event type.
     /// </summary>
     public bool HasBindingsForProfile(Guid profileId)

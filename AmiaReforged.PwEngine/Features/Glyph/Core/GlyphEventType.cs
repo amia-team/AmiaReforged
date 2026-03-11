@@ -58,5 +58,18 @@ public enum GlyphEventType
     /// Fires when an interaction session completes (all rounds finished).
     /// Runs before the data-driven response system to augment the outcome.
     /// </summary>
-    OnInteractionCompleted
+    OnInteractionCompleted,
+
+    /// <summary>
+    /// Fires once per creature immediately after it is spawned, before bonuses and mutations
+    /// are applied. Allows per-creature inspection, effect application, or skipping the
+    /// data-driven bonus/mutation pipeline via control flags.
+    /// </summary>
+    OnCreatureSpawn,
+
+    /// <summary>
+    /// Fires when a boss or mini-boss creature is spawned, before its bonuses are applied.
+    /// Provides the boss creature reference and encounter context.
+    /// </summary>
+    OnBossSpawn
 }
