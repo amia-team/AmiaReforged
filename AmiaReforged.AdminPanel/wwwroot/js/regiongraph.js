@@ -335,33 +335,8 @@ window.regionGraph = (function () {
         cy.add(elements);
         cy.endBatch();
 
-        // Run layout — compact settings for large graphs with compound regions
-        var totalNodeCount = allNodes.length;
-        // Scale repulsion and edge length down for larger graphs
-        var repulsion = totalNodeCount > 200 ? 1200 : (totalNodeCount > 50 ? 1800 : 2500);
-        var edgeLen = totalNodeCount > 200 ? 25 : (totalNodeCount > 50 ? 35 : 50);
-        var grav = totalNodeCount > 200 ? 2.0 : (totalNodeCount > 50 ? 1.2 : 0.8);
-
-        var layoutOpts = {
-            name: 'cose',
-            animate: 'end',
-            animationDuration: 600,
-            nodeRepulsion: function () { return repulsion; },
-            idealEdgeLength: function () { return edgeLen; },
-            edgeElasticity: function () { return 32; },
-            gravity: grav,
-            gravityCompound: grav * 1.5,
-            gravityRange: 1.5,
-            gravityRangeCompound: 2.0,
-            nestingFactor: 0.1,
-            numIter: 800,
-            padding: 15,
-            randomize: true,
-            nodeDimensionsIncludeLabels: false,
-            fit: true
-        };
-
-        cy.layout(layoutOpts).run();
+        // Run compact grid-based layout — regions in outer grid, areas in inner grids
+        _runCompactGridLayout(cy);
 
         // ===== Node click — select =====
         cy.on('tap', 'node[isRegionParent != "yes"]', function (evt) {
@@ -1123,6 +1098,81 @@ window.regionGraph = (function () {
         cy.fit(undefined, 30);
     }
 
+    /**
+     * Custom compact grid layout: places area nodes in tight grids within each
+     * region group, then arranges those region blocks in an outer grid.
+     * Compound parent bounding boxes are auto-computed by Cytoscape.
+     */
+    function _runCompactGridLayout(cyRef) {
+        var nodeSpacing = 32;   // px between area nodes within a region
+        var regionGap = 24;     // px between region blocks
+
+        // Gather region parents and their children
+        var regionParents = cyRef.nodes('[isRegionParent = "yes"]');
+        var regionBlocks = [];
+
+        regionParents.forEach(function (rp) {
+            var children = rp.children();
+            if (children.length === 0) return;
+            regionBlocks.push({ parent: rp, children: children, count: children.length });
+        });
+
+        // Orphan nodes (no parent)
+        var orphans = cyRef.nodes('[isRegionParent != "yes"]').filter(function (n) {
+            return n.parent().length === 0;
+        });
+
+        // Sort regions: largest first for better packing
+        regionBlocks.sort(function (a, b) { return b.count - a.count; });
+
+        // Add orphans as a virtual block
+        if (orphans.length > 0) {
+            regionBlocks.push({ parent: null, children: orphans, count: orphans.length });
+        }
+
+        // Outer grid: number of columns
+        var outerCols = Math.ceil(Math.sqrt(regionBlocks.length));
+
+        // Track current outer grid position
+        var outerX = 0;
+        var outerY = 0;
+        var col = 0;
+        var rowMaxH = 0;
+
+        regionBlocks.forEach(function (block) {
+            var n = block.count;
+            var innerCols = Math.ceil(Math.sqrt(n));
+            var innerRows = Math.ceil(n / innerCols);
+
+            // Position each child in a tight grid within this block
+            block.children.forEach(function (child, i) {
+                var r = Math.floor(i / innerCols);
+                var c = i % innerCols;
+                child.position({
+                    x: outerX + c * nodeSpacing,
+                    y: outerY + r * nodeSpacing
+                });
+            });
+
+            var blockW = innerCols * nodeSpacing;
+            var blockH = innerRows * nodeSpacing;
+            rowMaxH = Math.max(rowMaxH, blockH);
+
+            outerX += blockW + regionGap;
+            col++;
+
+            if (col >= outerCols) {
+                col = 0;
+                outerX = 0;
+                outerY += rowMaxH + regionGap;
+                rowMaxH = 0;
+            }
+        });
+
+        // Fit the whole graph into the viewport with some padding
+        cyRef.fit(undefined, 20);
+    }
+
     function destroy() {
         closeContextMenu();
         if (_docClickHandler) {
@@ -1165,6 +1215,7 @@ window.regionGraph = (function () {
         clearHighlight: clearHighlight,
         fitView: fitView,
         resize: resizeGraph,
+        reLayout: function () { if (cy) _runCompactGridLayout(cy); },
         destroy: destroy,
         getRegionColors: getRegionColors,
         updateRegionData: updateRegionData,
