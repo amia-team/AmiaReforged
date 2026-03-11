@@ -67,6 +67,24 @@
             <div class="toolbar-divider"></div>
 
             <div class="toolbar-group">
+                <label style="font-size:0.82rem;color:var(--text-secondary);white-space:nowrap">Layout:</label>
+                <select class="form-control form-control-sm" style="width:auto;min-width:140px"
+                        @bind="_selectedLayout" disabled="@(_graphData == null)">
+                    <option value="compact-grid">Compact Grid</option>
+                    <option value="cose">Force-Directed (CoSE)</option>
+                    <option value="fcose">Fast Force-Directed (fCoSE)</option>
+                    <option value="dagre">Hierarchical (Dagre)</option>
+                    <option value="grid">Grid</option>
+                    <option value="circle">Circle</option>
+                    <option value="concentric">Concentric</option>
+                    <option value="breadthfirst">Breadthfirst</option>
+                </select>
+                <button class="btn btn-secondary btn-sm" @onclick="ApplyLayout" disabled="@(_graphData == null)">Re-Layout</button>
+            </div>
+
+            <div class="toolbar-divider"></div>
+
+            <div class="toolbar-group">
                 <button class="btn btn-info btn-sm" @onclick="() => _showImportModal = true">Import</button>
                 <button class="btn btn-success btn-sm" @onclick="ExportRegions" disabled="@_isExporting">
                     @(_isExporting ? "..." : "Export")
@@ -732,6 +750,7 @@
     private List<AreaNodeDto> _knownAreas = new();
     private Dictionary<string, string> _regionColors = new();
     private string _graphSearchQuery = "";
+    private string _selectedLayout = "compact-grid";
     private DotNetObjectReference<Regions>? _dotNetRef;
 
     private static readonly JsonSerializerOptions CamelCase = new()
@@ -976,6 +995,12 @@
     {
         try { await JS.InvokeVoidAsync("regionGraph.fitView"); }
         catch { }
+    }
+
+    private async Task ApplyLayout()
+    {
+        try { await JS.InvokeVoidAsync("regionGraph.runLayout", _selectedLayout); }
+        catch (Exception ex) { Logger.LogError(ex, "Failed to apply layout: {Layout}", _selectedLayout); }
     }
 
     private async Task SearchInGraph()

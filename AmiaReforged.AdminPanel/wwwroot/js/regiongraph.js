@@ -5,11 +5,32 @@
  *
  * Requires: cytoscape.js, cytoscape-fcose (optional, falls back to cose).
  */
+// ===== Register optional Cytoscape extensions =====
+(function () {
+    try {
+        if (typeof cytoscape !== 'undefined') {
+            if (typeof cytoscapeFcose !== 'undefined') {
+                cytoscape.use(cytoscapeFcose);
+                console.log('[regionGraph] registered fcose extension');
+            }
+            if (typeof cytoscapeDagre !== 'undefined') {
+                cytoscape.use(cytoscapeDagre);
+                console.log('[regionGraph] registered dagre extension');
+            }
+        }
+    } catch (e) {
+        console.warn('[regionGraph] extension registration:', e);
+    }
+})();
+
 window.regionGraph = (function () {
     /** @type {import('cytoscape').Core | null} */
     let cy = null;
     /** @type {DotNet.DotNetObject | null} */
     let dotNetRef = null;
+
+    /** Currently active layout algorithm name */
+    let _currentLayout = 'compact-grid';
 
     // 12 distinct colors for region groups
     const REGION_PALETTE = [
@@ -335,8 +356,8 @@ window.regionGraph = (function () {
         cy.add(elements);
         cy.endBatch();
 
-        // Run compact grid-based layout — regions in outer grid, areas in inner grids
-        _runCompactGridLayout(cy);
+        // Run the active layout (defaults to compact-grid)
+        runLayout(_currentLayout);
 
         // ===== Node click — select =====
         cy.on('tap', 'node[isRegionParent != "yes"]', function (evt) {
@@ -1099,13 +1120,31 @@ window.regionGraph = (function () {
     }
 
     /**
+     * Extract a grouping prefix from an area label/resRef.
+     * Strips trailing segment after the last underscore to cluster
+     * similarly-named areas (e.g. "ab_wastes_cave" + "ab_wastes_main" → "ab_wastes").
+     * Falls back to the full name if there's no underscore.
+     */
+    function _namePrefix(node) {
+        var label = (node.data('resRef') || node.data('label') || node.data('id') || '').toLowerCase();
+        var lastUnderscore = label.lastIndexOf('_');
+        if (lastUnderscore > 0) {
+            return label.substring(0, lastUnderscore);
+        }
+        return label;
+    }
+
+    /**
      * Custom compact grid layout: places area nodes in tight grids within each
      * region group, then arranges those region blocks in an outer grid.
+     * Unregioned (orphan) areas are grouped by name prefix so similarly-named
+     * areas cluster together, with small gaps between prefix groups.
      * Compound parent bounding boxes are auto-computed by Cytoscape.
      */
     function _runCompactGridLayout(cyRef) {
-        var nodeSpacing = 32;   // px between area nodes within a region
+        var nodeSpacing = 32;   // px between area nodes within a region/group
         var regionGap = 24;     // px between region blocks
+        var orphanGroupGap = 12; // px between orphan prefix sub-groups (smaller than region gap)
 
         // Gather region parents and their children
         var regionParents = cyRef.nodes('[isRegionParent = "yes"]');
@@ -1114,7 +1153,7 @@ window.regionGraph = (function () {
         regionParents.forEach(function (rp) {
             var children = rp.children();
             if (children.length === 0) return;
-            regionBlocks.push({ parent: rp, children: children, count: children.length });
+            regionBlocks.push({ parent: rp, children: children, count: children.length, name: rp.data('label') || '' });
         });
 
         // Orphan nodes (no parent)
@@ -1125,9 +1164,37 @@ window.regionGraph = (function () {
         // Sort regions: largest first for better packing
         regionBlocks.sort(function (a, b) { return b.count - a.count; });
 
-        // Add orphans as a virtual block
+        // Group orphans by name prefix
         if (orphans.length > 0) {
-            regionBlocks.push({ parent: null, children: orphans, count: orphans.length });
+            var prefixMap = {};
+            orphans.forEach(function (n) {
+                var prefix = _namePrefix(n);
+                if (!prefixMap[prefix]) {
+                    prefixMap[prefix] = [];
+                }
+                prefixMap[prefix].push(n);
+            });
+
+            // Sort prefix groups: alphabetically by prefix for predictability
+            var prefixKeys = Object.keys(prefixMap).sort();
+
+            // Each prefix group becomes its own block
+            prefixKeys.forEach(function (prefix) {
+                var nodes = prefixMap[prefix];
+                // Sort nodes within group by label for consistency
+                nodes.sort(function (a, b) {
+                    var la = (a.data('label') || '').toLowerCase();
+                    var lb = (b.data('label') || '').toLowerCase();
+                    return la < lb ? -1 : (la > lb ? 1 : 0);
+                });
+                regionBlocks.push({
+                    parent: null,
+                    children: cyRef.collection().merge(nodes),
+                    count: nodes.length,
+                    name: prefix,
+                    isOrphanGroup: true
+                });
+            });
         }
 
         // Outer grid: number of columns
@@ -1158,7 +1225,9 @@ window.regionGraph = (function () {
             var blockH = innerRows * nodeSpacing;
             rowMaxH = Math.max(rowMaxH, blockH);
 
-            outerX += blockW + regionGap;
+            // Orphan sub-groups use a smaller gap between them
+            var gap = block.isOrphanGroup ? orphanGroupGap : regionGap;
+            outerX += blockW + gap;
             col++;
 
             if (col >= outerCols) {
@@ -1207,6 +1276,161 @@ window.regionGraph = (function () {
         return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
     }
 
+    /**
+     * Run a named layout algorithm on the current graph.
+     * @param {string} name Layout name: compact-grid, cose, fcose, dagre, grid, circle, concentric, breadthfirst
+     */
+    function runLayout(name) {
+        if (!cy) return;
+        _currentLayout = name || 'compact-grid';
+
+        if (_currentLayout === 'compact-grid') {
+            _runCompactGridLayout(cy);
+            return;
+        }
+
+        var totalNodes = cy.nodes('[isRegionParent != "yes"]').length;
+        var opts;
+
+        switch (_currentLayout) {
+            case 'fcose': {
+                // Check if fcose is actually registered
+                var hasFcose = false;
+                try { hasFcose = !!cytoscape && cy.layout({ name: 'fcose' }); hasFcose = true; } catch (e) { hasFcose = false; }
+                if (!hasFcose) {
+                    console.warn('[regionGraph] fcose not available, falling back to cose');
+                    _currentLayout = 'cose';
+                    // fall through to cose
+                } else {
+                    opts = {
+                        name: 'fcose',
+                        quality: 'default',
+                        randomize: true,
+                        animate: 'end',
+                        animationDuration: 500,
+                        nodeRepulsion: function () { return totalNodes > 200 ? 2000 : 4500; },
+                        idealEdgeLength: function () { return totalNodes > 200 ? 30 : 50; },
+                        edgeElasticity: function () { return 0.45; },
+                        nestingFactor: 0.15,
+                        gravity: totalNodes > 200 ? 1.5 : 0.5,
+                        gravityCompound: totalNodes > 200 ? 2.5 : 1.0,
+                        numIter: 2500,
+                        fit: true,
+                        padding: 15,
+                        nodeDimensionsIncludeLabels: false
+                    };
+                    break;
+                }
+            }
+            // falls through to cose if fcose unavailable
+            case 'cose': {
+                var repulsion = totalNodes > 200 ? 1200 : (totalNodes > 50 ? 1800 : 2500);
+                var edgeLen = totalNodes > 200 ? 25 : (totalNodes > 50 ? 35 : 50);
+                var grav = totalNodes > 200 ? 2.0 : (totalNodes > 50 ? 1.2 : 0.8);
+                opts = {
+                    name: 'cose',
+                    animate: 'end',
+                    animationDuration: 500,
+                    nodeRepulsion: function () { return repulsion; },
+                    idealEdgeLength: function () { return edgeLen; },
+                    edgeElasticity: function () { return 32; },
+                    gravity: grav,
+                    gravityCompound: grav * 1.5,
+                    gravityRange: 1.5,
+                    gravityRangeCompound: 2.0,
+                    nestingFactor: 0.1,
+                    numIter: 800,
+                    padding: 15,
+                    randomize: true,
+                    nodeDimensionsIncludeLabels: false,
+                    fit: true
+                };
+                break;
+            }
+            case 'dagre': {
+                var hasDagre = false;
+                try { hasDagre = !!cytoscape && cy.layout({ name: 'dagre' }); hasDagre = true; } catch (e) { hasDagre = false; }
+                if (!hasDagre) {
+                    console.warn('[regionGraph] dagre not available, falling back to breadthfirst');
+                    _currentLayout = 'breadthfirst';
+                    // fall through
+                } else {
+                    opts = {
+                        name: 'dagre',
+                        rankDir: 'LR',
+                        nodeSep: 18,
+                        rankSep: 35,
+                        edgeSep: 10,
+                        animate: true,
+                        animationDuration: 500,
+                        fit: true,
+                        padding: 15
+                    };
+                    break;
+                }
+            }
+            // falls through to breadthfirst if dagre unavailable
+            case 'breadthfirst': {
+                opts = {
+                    name: 'breadthfirst',
+                    directed: true,
+                    spacingFactor: totalNodes > 200 ? 0.4 : (totalNodes > 50 ? 0.6 : 0.75),
+                    animate: true,
+                    animationDuration: 500,
+                    fit: true,
+                    padding: 15,
+                    avoidOverlap: true
+                };
+                break;
+            }
+            case 'grid': {
+                opts = {
+                    name: 'grid',
+                    animate: true,
+                    animationDuration: 500,
+                    fit: true,
+                    padding: 15,
+                    avoidOverlap: true,
+                    condense: true,
+                    rows: undefined
+                };
+                break;
+            }
+            case 'circle': {
+                opts = {
+                    name: 'circle',
+                    animate: true,
+                    animationDuration: 500,
+                    fit: true,
+                    padding: 15,
+                    avoidOverlap: true
+                };
+                break;
+            }
+            case 'concentric': {
+                opts = {
+                    name: 'concentric',
+                    animate: true,
+                    animationDuration: 500,
+                    fit: true,
+                    padding: 15,
+                    avoidOverlap: true,
+                    concentric: function (node) { return node.degree(); },
+                    levelWidth: function () { return 2; },
+                    minNodeSpacing: 10
+                };
+                break;
+            }
+            default: {
+                console.warn('[regionGraph] unknown layout:', _currentLayout, '— falling back to compact-grid');
+                _runCompactGridLayout(cy);
+                return;
+            }
+        }
+
+        cy.layout(opts).run();
+    }
+
     return {
         init: init,
         highlightRegion: highlightRegion,
@@ -1215,7 +1439,8 @@ window.regionGraph = (function () {
         clearHighlight: clearHighlight,
         fitView: fitView,
         resize: resizeGraph,
-        reLayout: function () { if (cy) _runCompactGridLayout(cy); },
+        reLayout: function () { if (cy) runLayout(_currentLayout); },
+        runLayout: runLayout,
         destroy: destroy,
         getRegionColors: getRegionColors,
         updateRegionData: updateRegionData,
