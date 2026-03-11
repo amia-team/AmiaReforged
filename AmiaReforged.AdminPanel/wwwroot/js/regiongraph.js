@@ -184,21 +184,21 @@ window.regionGraph = (function () {
                         'border-opacity': 0.4,
                         'border-style': 'dashed',
                         'label': 'data(label)',
-                        'font-size': '14px',
+                        'font-size': '10px',
                         'color': 'data(regionColor)',
                         'text-valign': 'top',
                         'text-halign': 'center',
-                        'text-margin-y': -8,
+                        'text-margin-y': -6,
                         'font-weight': 'bold',
                         'text-background-color': '#1a1a1a',
                         'text-background-opacity': 0.85,
                         'text-background-padding': '4px',
                         'text-background-shape': 'roundrectangle',
-                        'padding': '25px',
+                        'padding': '8px',
                         'shape': 'roundrectangle',
                         'compound-sizing-wrt-labels': 'include',
-                        'min-width': '120px',
-                        'min-height': '80px'
+                        'min-width': '60px',
+                        'min-height': '40px'
                     }
                 },
                 // ===== Area nodes =====
@@ -209,14 +209,14 @@ window.regionGraph = (function () {
                         'border-color': 'data(nodeBorder)',
                         'border-width': 2,
                         'label': 'data(label)',
-                        'font-size': '9px',
+                        'font-size': '7px',
                         'color': COLORS.nodeText,
                         'text-valign': 'center',
                         'text-halign': 'center',
                         'text-wrap': 'wrap',
-                        'text-max-width': '90px',
-                        'width': 35,
-                        'height': 35,
+                        'text-max-width': '60px',
+                        'width': 24,
+                        'height': 24,
                         'text-background-color': '#26241f',
                         'text-background-opacity': 0.85,
                         'text-background-padding': '2px',
@@ -228,8 +228,8 @@ window.regionGraph = (function () {
                     selector: 'node[isDisconnected = "yes"][isRegionParent != "yes"]',
                     style: {
                         'shape': 'diamond',
-                        'width': 28,
-                        'height': 28,
+                        'width': 20,
+                        'height': 20,
                         'font-size': '8px'
                     }
                 },
@@ -272,10 +272,10 @@ window.regionGraph = (function () {
                         'background-color': COLORS.highlightNode,
                         'border-color': '#ff9800',
                         'border-width': 4,
-                        'width': 50,
-                        'height': 50,
+                        'width': 36,
+                        'height': 36,
                         'z-index': 999,
-                        'font-size': '12px',
+                        'font-size': '10px',
                         'font-weight': 'bold'
                     }
                 },
@@ -283,10 +283,10 @@ window.regionGraph = (function () {
                     selector: 'node.region-highlight',
                     style: {
                         'border-width': 4,
-                        'width': 48,
-                        'height': 48,
+                        'width': 34,
+                        'height': 34,
                         'z-index': 998,
-                        'font-size': '11px',
+                        'font-size': '10px',
                         'font-weight': 'bold'
                     }
                 },
@@ -296,8 +296,8 @@ window.regionGraph = (function () {
                         'background-color': COLORS.selectedNode,
                         'border-color': '#e65100',
                         'border-width': 4,
-                        'width': 50,
-                        'height': 50,
+                        'width': 36,
+                        'height': 36,
                         'z-index': 999
                     }
                 },
@@ -335,18 +335,30 @@ window.regionGraph = (function () {
         cy.add(elements);
         cy.endBatch();
 
-        // Run layout
+        // Run layout — compact settings for large graphs with compound regions
+        var totalNodeCount = allNodes.length;
+        // Scale repulsion and edge length down for larger graphs
+        var repulsion = totalNodeCount > 200 ? 1200 : (totalNodeCount > 50 ? 1800 : 2500);
+        var edgeLen = totalNodeCount > 200 ? 25 : (totalNodeCount > 50 ? 35 : 50);
+        var grav = totalNodeCount > 200 ? 2.0 : (totalNodeCount > 50 ? 1.2 : 0.8);
+
         var layoutOpts = {
             name: 'cose',
             animate: 'end',
             animationDuration: 600,
-            nodeRepulsion: function () { return 8000; },
-            idealEdgeLength: function () { return 100; },
-            edgeElasticity: function () { return 100; },
-            gravity: 0.3,
-            numIter: 500,
-            padding: 30,
-            randomize: true
+            nodeRepulsion: function () { return repulsion; },
+            idealEdgeLength: function () { return edgeLen; },
+            edgeElasticity: function () { return 32; },
+            gravity: grav,
+            gravityCompound: grav * 1.5,
+            gravityRange: 1.5,
+            gravityRangeCompound: 2.0,
+            nestingFactor: 0.1,
+            numIter: 800,
+            padding: 15,
+            randomize: true,
+            nodeDimensionsIncludeLabels: false,
+            fit: true
         };
 
         cy.layout(layoutOpts).run();
