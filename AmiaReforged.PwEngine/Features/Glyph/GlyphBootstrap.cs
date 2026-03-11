@@ -99,6 +99,7 @@ public class GlyphBootstrap
         registry.Register(GetCreatureAbilityScoreExecutor.CreateDefinition());
         registry.Register(GetCreatureRaceExecutor.CreateDefinition());
         registry.Register(GetSpawnGroupInfoExecutor.CreateDefinition());
+        registry.Register(GetTriggeringPlayerExecutor.CreateDefinition());
 
         // Math / Logic
         registry.Register(CompareExecutor.CreateDefinition());
@@ -183,6 +184,7 @@ public class GlyphBootstrap
         new GetCreatureAbilityScoreExecutor(),
         new GetCreatureRaceExecutor(),
         new GetSpawnGroupInfoExecutor(),
+        new GetTriggeringPlayerExecutor(),
 
         // Math / Logic
         new CompareExecutor(),

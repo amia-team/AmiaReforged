@@ -283,6 +283,7 @@ public class GlyphEncounterHookService
             EncounterContext = encounterContext,
             Profile = profile,
             Group = group,
+            TriggeringPlayer = encounterContext.TriggeringPlayer,
             CancellationToken = CancellationToken.None,
             MaxExecutionSteps = 10_000,
             EnableTracing = false

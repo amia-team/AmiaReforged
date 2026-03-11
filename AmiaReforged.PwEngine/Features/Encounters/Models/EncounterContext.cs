@@ -59,4 +59,11 @@ public class EncounterContext
     /// near the player instead of at waypoints.
     /// </summary>
     public IntPtr PlayerLocation { get; init; }
+
+    /// <summary>
+    /// The NWN object ID of the player creature (LoginCreature) that triggered this encounter.
+    /// Stored as a raw <c>uint</c> for direct use with NWScript calls and Glyph execution contexts.
+    /// Defaults to <c>NWN.Core.NWScript.OBJECT_INVALID</c> if unavailable.
+    /// </summary>
+    public uint TriggeringPlayer { get; init; } = 0x7F000000;
 }

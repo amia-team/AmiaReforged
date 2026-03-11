@@ -28,7 +28,8 @@ public class OnBossSpawnEventExecutor : IGlyphNodeExecutor
             ["corruption"] = context.EncounterContext.Chaos.Corruption,
             ["density"] = context.EncounterContext.Chaos.Density,
             ["mutation"] = context.EncounterContext.Chaos.Mutation,
-            ["profile_name"] = context.Profile!.Name
+            ["profile_name"] = context.Profile!.Name,
+            ["triggering_player"] = context.TriggeringPlayer
         };
 
         return Task.FromResult(new GlyphNodeResult
@@ -64,7 +65,8 @@ public class OnBossSpawnEventExecutor : IGlyphNodeExecutor
             new GlyphPin { Id = "corruption", Name = "Chaos: Corruption", DataType = GlyphDataType.Int, Direction = GlyphPinDirection.Output },
             new GlyphPin { Id = "density", Name = "Chaos: Density", DataType = GlyphDataType.Int, Direction = GlyphPinDirection.Output },
             new GlyphPin { Id = "mutation", Name = "Chaos: Mutation", DataType = GlyphDataType.Int, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "profile_name", Name = "Profile Name", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output }
+            new GlyphPin { Id = "profile_name", Name = "Profile Name", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
+            new GlyphPin { Id = "triggering_player", Name = "Triggering Player", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Output }
         ]
     };
 }

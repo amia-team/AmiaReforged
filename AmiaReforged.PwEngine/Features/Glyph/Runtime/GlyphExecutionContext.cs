@@ -48,6 +48,13 @@ public class GlyphExecutionContext
     public List<uint> SpawnedCreatures { get; set; } = [];
 
     /// <summary>
+    /// NWN object ID of the player creature that triggered the encounter.
+    /// Available in all encounter event contexts (BeforeGroupSpawn, AfterGroupSpawn,
+    /// OnCreatureSpawn, OnCreatureDeath, OnBossSpawn). Defaults to OBJECT_INVALID.
+    /// </summary>
+    public uint TriggeringPlayer { get; set; }
+
+    /// <summary>
     /// Object ID of the creature that died (populated for OnCreatureDeath).
     /// </summary>
     public uint DeadCreature { get; set; }

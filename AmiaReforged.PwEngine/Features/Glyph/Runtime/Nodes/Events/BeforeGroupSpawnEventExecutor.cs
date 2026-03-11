@@ -31,7 +31,8 @@ public class BeforeGroupSpawnEventExecutor : IGlyphNodeExecutor
             ["profile_name"] = context.Profile!.Name,
             ["group_name"] = context.Group?.Name ?? string.Empty,
             ["is_in_region"] = context.EncounterContext!.IsInRegion,
-            ["region_tag"] = context.EncounterContext.RegionTag ?? string.Empty
+            ["region_tag"] = context.EncounterContext.RegionTag ?? string.Empty,
+            ["triggering_player"] = context.TriggeringPlayer
         };
 
         return Task.FromResult(new GlyphNodeResult
@@ -70,7 +71,8 @@ public class BeforeGroupSpawnEventExecutor : IGlyphNodeExecutor
             new GlyphPin { Id = "profile_name", Name = "Profile Name", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
             new GlyphPin { Id = "group_name", Name = "Group Name", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
             new GlyphPin { Id = "is_in_region", Name = "Is In Region", DataType = GlyphDataType.Bool, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "region_tag", Name = "Region Tag", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output }
+            new GlyphPin { Id = "region_tag", Name = "Region Tag", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
+            new GlyphPin { Id = "triggering_player", Name = "Triggering Player", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Output }
         ]
     };
 }

@@ -367,6 +367,11 @@ public class DynamicEncounterService
             ? NWScript.GetLocation(player.LoginCreature)
             : IntPtr.Zero;
 
+        // Capture the player creature's object ID for Glyph scripts (SendMessage, etc.)
+        uint triggeringPlayer = player.LoginCreature != null
+            ? player.LoginCreature
+            : NWScript.OBJECT_INVALID;
+
         return new EncounterContext
         {
             AreaResRef = area.ResRef,
@@ -377,7 +382,8 @@ public class DynamicEncounterService
             IsInRegion = isInRegion,
             Trigger = trigger,
             Area = area,
-            PlayerLocation = playerLocation
+            PlayerLocation = playerLocation,
+            TriggeringPlayer = triggeringPlayer
         };
     }
 
