@@ -154,7 +154,7 @@
                     </div>
                 }
 
-                <div id="region-cy" class="region-editor__graph" style="width:100%;height:calc(100vh - 160px);min-height:500px;">
+                <div id="region-cy" class="region-editor__graph">
                     @if (_graphData == null && !_isGraphLoading)
                     {
                         <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-secondary)">
@@ -823,7 +823,7 @@
         window.__regionEditorInit = true;
 
         function fixLayout() {
-            // Force all Blazor layout wrappers to fill height so the graph fits
+            // Force all Blazor layout wrappers to fill height so the editor can use 100vh
             var editor = document.querySelector('.region-editor');
             if (!editor) return;
 
@@ -838,13 +838,23 @@
                 el = el.parentElement;
             }
             document.documentElement.style.height = '100%';
+            document.documentElement.style.overflow = 'hidden';
             document.body.style.height = '100%';
             document.body.style.overflow = 'hidden';
+            document.body.style.margin = '0';
+        }
+
+        function onResize() {
+            // Trigger Cytoscape resize when viewport changes
+            if (window.regionGraph && typeof window.regionGraph.resize === 'function') {
+                window.regionGraph.resize();
+            }
         }
 
         function setup() {
             if (!document.querySelector('.region-editor')) return false;
             fixLayout();
+            window.addEventListener('resize', onResize);
             return true;
         }
 
