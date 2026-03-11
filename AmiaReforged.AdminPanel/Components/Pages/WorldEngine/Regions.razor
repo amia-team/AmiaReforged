@@ -617,6 +617,22 @@
             {
                 case "compact-grid":
                     <div class="form-group">
+                        <label>Node Order</label>
+                        <select class="form-control form-control-sm" @bind="_lcInnerSort">
+                            <option value="proximity">Proximity (BFS walk)</option>
+                            <option value="degree">By Connections</option>
+                            <option value="alpha">Alphabetical</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Region Order</label>
+                        <select class="form-control form-control-sm" @bind="_lcOuterSort">
+                            <option value="size">By Size (largest first)</option>
+                            <option value="connectivity">By Connectivity</option>
+                            <option value="alpha">Alphabetical</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label>Node Spacing (@_lcNodeSpacing px)</label>
                         <input type="range" class="form-range" min="12" max="80" @bind="_lcNodeSpacing" @bind:event="oninput" />
                     </div>
@@ -908,6 +924,8 @@
     private int _lcNodeSpacing = 32;
     private int _lcRegionGap = 24;
     private int _lcOrphanGroupGap = 12;
+    private string _lcInnerSort = "proximity";
+    private string _lcOuterSort = "size";
     // CoSE / fCoSE shared
     private int _lcNodeRepulsion = 2500;
     private int _lcIdealEdgeLength = 50;
@@ -1197,6 +1215,8 @@
                 cfg["nodeSpacing"] = _lcNodeSpacing;
                 cfg["regionGap"] = _lcRegionGap;
                 cfg["orphanGroupGap"] = _lcOrphanGroupGap;
+                cfg["innerSort"] = _lcInnerSort;
+                cfg["outerSort"] = _lcOuterSort;
                 break;
             case "cose":
             case "fcose":

@@ -1135,17 +1135,201 @@ window.regionGraph = (function () {
     }
 
     /**
+     * Sort a collection of nodes for placement in the grid.
+     * @param {cytoscape.Collection} children Nodes to sort
+     * @param {cytoscape.Core} cyRef Cytoscape instance (for edge queries)
+     * @param {string} mode 'alpha' | 'degree' | 'proximity'
+     * @returns {Array} Ordered array of node references
+     */
+    function _sortBlockChildren(children, cyRef, mode) {
+        var arr = [];
+        children.forEach(function (n) { arr.push(n); });
+
+        if (mode === 'degree') {
+            // Most-connected nodes first
+            arr.sort(function (a, b) {
+                var diff = b.degree() - a.degree();
+                if (diff !== 0) return diff;
+                return (a.data('label') || '').toLowerCase() < (b.data('label') || '').toLowerCase() ? -1 : 1;
+            });
+            return arr;
+        }
+
+        if (mode === 'proximity') {
+            // BFS walk within the block's internal subgraph
+            var idSet = {};
+            arr.forEach(function (n) { idSet[n.id()] = true; });
+
+            // Build adjacency list for edges where both endpoints are in this block
+            var adj = {};
+            arr.forEach(function (n) { adj[n.id()] = []; });
+            cyRef.edges().forEach(function (e) {
+                var s = e.source().id();
+                var t = e.target().id();
+                if (idSet[s] && idSet[t]) {
+                    adj[s].push(t);
+                    adj[t].push(s);
+                }
+            });
+
+            // Start BFS from highest-degree node in the block
+            arr.sort(function (a, b) { return b.degree() - a.degree(); });
+            var start = arr[0];
+            var visited = {};
+            var ordered = [];
+            var queue = [start.id()];
+            visited[start.id()] = true;
+
+            while (queue.length > 0) {
+                var cur = queue.shift();
+                ordered.push(cur);
+                // Sort neighbors by degree descending for stable traversal
+                var neighbors = (adj[cur] || []).slice();
+                neighbors.sort(function (a, b) {
+                    return cyRef.getElementById(b).degree() - cyRef.getElementById(a).degree();
+                });
+                neighbors.forEach(function (nb) {
+                    if (!visited[nb]) {
+                        visited[nb] = true;
+                        queue.push(nb);
+                    }
+                });
+            }
+
+            // Append any unreached nodes (disconnected within block) alphabetically
+            arr.forEach(function (n) {
+                if (!visited[n.id()]) {
+                    ordered.push(n.id());
+                }
+            });
+
+            return ordered.map(function (id) { return cyRef.getElementById(id); });
+        }
+
+        // Default: alphabetical
+        arr.sort(function (a, b) {
+            var la = (a.data('label') || '').toLowerCase();
+            var lb = (b.data('label') || '').toLowerCase();
+            return la < lb ? -1 : (la > lb ? 1 : 0);
+        });
+        return arr;
+    }
+
+    /**
+     * Sort region blocks for the outer grid placement.
+     * @param {Array} blocks Array of {parent, children, count, name, isOrphanGroup}
+     * @param {cytoscape.Core} cyRef Cytoscape instance
+     * @param {string} mode 'size' | 'alpha' | 'connectivity'
+     */
+    function _sortRegionBlocks(blocks, cyRef, mode) {
+        if (mode === 'alpha') {
+            blocks.sort(function (a, b) {
+                var na = (a.name || '').toLowerCase();
+                var nb = (b.name || '').toLowerCase();
+                return na < nb ? -1 : (na > nb ? 1 : 0);
+            });
+            return;
+        }
+
+        if (mode === 'connectivity') {
+            // Build block-index lookup: nodeId -> blockIndex
+            var nodeToBlock = {};
+            blocks.forEach(function (block, idx) {
+                block.children.forEach(function (n) {
+                    nodeToBlock[n.id()] = idx;
+                });
+            });
+
+            // Count cross-block edges between each pair of blocks
+            var crossEdges = {}; // 'i-j' -> count
+            cyRef.edges().forEach(function (e) {
+                var si = nodeToBlock[e.source().id()];
+                var ti = nodeToBlock[e.target().id()];
+                if (si != null && ti != null && si !== ti) {
+                    var key = Math.min(si, ti) + '-' + Math.max(si, ti);
+                    crossEdges[key] = (crossEdges[key] || 0) + 1;
+                }
+            });
+
+            // Greedy nearest-neighbor: start with the block with most total cross-edges
+            var blockScores = blocks.map(function (_, idx) {
+                var total = 0;
+                Object.keys(crossEdges).forEach(function (key) {
+                    var parts = key.split('-');
+                    if (parseInt(parts[0]) === idx || parseInt(parts[1]) === idx) {
+                        total += crossEdges[key];
+                    }
+                });
+                return total;
+            });
+
+            var placed = {};
+            var order = [];
+            // Start with highest cross-edge block
+            var startIdx = 0;
+            var maxScore = -1;
+            blockScores.forEach(function (s, i) {
+                if (s > maxScore) { maxScore = s; startIdx = i; }
+            });
+            order.push(startIdx);
+            placed[startIdx] = true;
+
+            while (order.length < blocks.length) {
+                // Find unplaced block with most edges to already-placed blocks
+                var bestIdx = -1;
+                var bestCount = -1;
+                blocks.forEach(function (_, ci) {
+                    if (placed[ci]) return;
+                    var count = 0;
+                    order.forEach(function (pi) {
+                        var key = Math.min(ci, pi) + '-' + Math.max(ci, pi);
+                        count += crossEdges[key] || 0;
+                    });
+                    if (count > bestCount || (count === bestCount && bestIdx === -1)) {
+                        bestCount = count;
+                        bestIdx = ci;
+                    }
+                });
+                if (bestIdx === -1) {
+                    // Pick first unplaced
+                    blocks.forEach(function (_, ci) {
+                        if (!placed[ci] && bestIdx === -1) bestIdx = ci;
+                    });
+                }
+                order.push(bestIdx);
+                placed[bestIdx] = true;
+            }
+
+            // Reorder blocks array in-place
+            var reordered = order.map(function (i) { return blocks[i]; });
+            for (var i = 0; i < blocks.length; i++) {
+                blocks[i] = reordered[i];
+            }
+            return;
+        }
+
+        // Default: by size (largest first)
+        blocks.sort(function (a, b) { return b.count - a.count; });
+    }
+
+    /**
      * Custom compact grid layout: places area nodes in tight grids within each
      * region group, then arranges those region blocks in an outer grid.
      * Unregioned (orphan) areas are grouped by name prefix so similarly-named
      * areas cluster together, with small gaps between prefix groups.
      * Compound parent bounding boxes are auto-computed by Cytoscape.
+     *
+     * Config options:
+     *   nodeSpacing (int), regionGap (int), orphanGroupGap (int),
+     *   innerSort ('alpha'|'degree'|'proximity'), outerSort ('size'|'alpha'|'connectivity')
      */
     function _runCompactGridLayout(cyRef, config) {
         var cfg = config || {};
         var nodeSpacing = cfg.nodeSpacing || 32;
         var regionGap = cfg.regionGap || 24;
         var orphanGroupGap = cfg.orphanGroupGap || 12;
+        var innerSort = cfg.innerSort || 'proximity';
+        var outerSort = cfg.outerSort || 'size';
 
         // Gather region parents and their children
         var regionParents = cyRef.nodes('[isRegionParent = "yes"]');
@@ -1162,9 +1346,6 @@ window.regionGraph = (function () {
             return n.parent().length === 0;
         });
 
-        // Sort regions: largest first for better packing
-        regionBlocks.sort(function (a, b) { return b.count - a.count; });
-
         // Group orphans by name prefix
         if (orphans.length > 0) {
             var prefixMap = {};
@@ -1176,18 +1357,10 @@ window.regionGraph = (function () {
                 prefixMap[prefix].push(n);
             });
 
-            // Sort prefix groups: alphabetically by prefix for predictability
             var prefixKeys = Object.keys(prefixMap).sort();
 
-            // Each prefix group becomes its own block
             prefixKeys.forEach(function (prefix) {
                 var nodes = prefixMap[prefix];
-                // Sort nodes within group by label for consistency
-                nodes.sort(function (a, b) {
-                    var la = (a.data('label') || '').toLowerCase();
-                    var lb = (b.data('label') || '').toLowerCase();
-                    return la < lb ? -1 : (la > lb ? 1 : 0);
-                });
                 regionBlocks.push({
                     parent: null,
                     children: cyRef.collection().merge(nodes),
@@ -1197,6 +1370,9 @@ window.regionGraph = (function () {
                 });
             });
         }
+
+        // Sort region blocks by outer sort mode
+        _sortRegionBlocks(regionBlocks, cyRef, outerSort);
 
         // Outer grid: number of columns
         var outerCols = Math.ceil(Math.sqrt(regionBlocks.length));
@@ -1208,12 +1384,15 @@ window.regionGraph = (function () {
         var rowMaxH = 0;
 
         regionBlocks.forEach(function (block) {
-            var n = block.count;
+            // Sort children within this block
+            var sortedChildren = _sortBlockChildren(block.children, cyRef, innerSort);
+
+            var n = sortedChildren.length;
             var innerCols = Math.ceil(Math.sqrt(n));
             var innerRows = Math.ceil(n / innerCols);
 
             // Position each child in a tight grid within this block
-            block.children.forEach(function (child, i) {
+            sortedChildren.forEach(function (child, i) {
                 var r = Math.floor(i / innerCols);
                 var c = i % innerCols;
                 child.position({
