@@ -1141,10 +1141,11 @@ window.regionGraph = (function () {
      * areas cluster together, with small gaps between prefix groups.
      * Compound parent bounding boxes are auto-computed by Cytoscape.
      */
-    function _runCompactGridLayout(cyRef) {
-        var nodeSpacing = 32;   // px between area nodes within a region/group
-        var regionGap = 24;     // px between region blocks
-        var orphanGroupGap = 12; // px between orphan prefix sub-groups (smaller than region gap)
+    function _runCompactGridLayout(cyRef, config) {
+        var cfg = config || {};
+        var nodeSpacing = cfg.nodeSpacing || 32;
+        var regionGap = cfg.regionGap || 24;
+        var orphanGroupGap = cfg.orphanGroupGap || 12;
 
         // Gather region parents and their children
         var regionParents = cyRef.nodes('[isRegionParent = "yes"]');
@@ -1280,43 +1281,51 @@ window.regionGraph = (function () {
      * Run a named layout algorithm on the current graph.
      * @param {string} name Layout name: compact-grid, cose, fcose, dagre, grid, circle, concentric, breadthfirst
      */
-    function runLayout(name) {
+    function runLayout(name, config) {
         if (!cy) return;
         _currentLayout = name || 'compact-grid';
+        var cfg = config || {};
 
         if (_currentLayout === 'compact-grid') {
-            _runCompactGridLayout(cy);
+            _runCompactGridLayout(cy, cfg);
             return;
         }
 
         var totalNodes = cy.nodes('[isRegionParent != "yes"]').length;
+        var pad = cfg.padding != null ? cfg.padding : 15;
         var opts;
 
         switch (_currentLayout) {
             case 'fcose': {
-                // Check if fcose is actually registered
                 var hasFcose = false;
                 try { hasFcose = !!cytoscape && cy.layout({ name: 'fcose' }); hasFcose = true; } catch (e) { hasFcose = false; }
                 if (!hasFcose) {
                     console.warn('[regionGraph] fcose not available, falling back to cose');
                     _currentLayout = 'cose';
-                    // fall through to cose
                 } else {
+                    var defRepF = totalNodes > 200 ? 2000 : 4500;
+                    var defEdgF = totalNodes > 200 ? 30 : 50;
+                    var defGravF = totalNodes > 200 ? 1.5 : 0.5;
+                    var repF = cfg.nodeRepulsion != null ? cfg.nodeRepulsion : defRepF;
+                    var edgF = cfg.idealEdgeLength != null ? cfg.idealEdgeLength : defEdgF;
+                    var gravF = cfg.gravity != null ? cfg.gravity : defGravF;
+                    var nestF = cfg.nestingFactor != null ? cfg.nestingFactor : 0.15;
+                    var iterF = cfg.numIter != null ? cfg.numIter : 2500;
                     opts = {
                         name: 'fcose',
                         quality: 'default',
                         randomize: true,
                         animate: 'end',
                         animationDuration: 500,
-                        nodeRepulsion: function () { return totalNodes > 200 ? 2000 : 4500; },
-                        idealEdgeLength: function () { return totalNodes > 200 ? 30 : 50; },
+                        nodeRepulsion: function () { return repF; },
+                        idealEdgeLength: function () { return edgF; },
                         edgeElasticity: function () { return 0.45; },
-                        nestingFactor: 0.15,
-                        gravity: totalNodes > 200 ? 1.5 : 0.5,
-                        gravityCompound: totalNodes > 200 ? 2.5 : 1.0,
-                        numIter: 2500,
+                        nestingFactor: nestF,
+                        gravity: gravF,
+                        gravityCompound: gravF * 2,
+                        numIter: iterF,
                         fit: true,
-                        padding: 15,
+                        padding: pad,
                         nodeDimensionsIncludeLabels: false
                     };
                     break;
@@ -1324,23 +1333,28 @@ window.regionGraph = (function () {
             }
             // falls through to cose if fcose unavailable
             case 'cose': {
-                var repulsion = totalNodes > 200 ? 1200 : (totalNodes > 50 ? 1800 : 2500);
-                var edgeLen = totalNodes > 200 ? 25 : (totalNodes > 50 ? 35 : 50);
-                var grav = totalNodes > 200 ? 2.0 : (totalNodes > 50 ? 1.2 : 0.8);
+                var defRep = totalNodes > 200 ? 1200 : (totalNodes > 50 ? 1800 : 2500);
+                var defEdg = totalNodes > 200 ? 25 : (totalNodes > 50 ? 35 : 50);
+                var defGrav = totalNodes > 200 ? 2.0 : (totalNodes > 50 ? 1.2 : 0.8);
+                var rep = cfg.nodeRepulsion != null ? cfg.nodeRepulsion : defRep;
+                var edg = cfg.idealEdgeLength != null ? cfg.idealEdgeLength : defEdg;
+                var grav = cfg.gravity != null ? cfg.gravity : defGrav;
+                var nest = cfg.nestingFactor != null ? cfg.nestingFactor : 0.1;
+                var iter = cfg.numIter != null ? cfg.numIter : 800;
                 opts = {
                     name: 'cose',
                     animate: 'end',
                     animationDuration: 500,
-                    nodeRepulsion: function () { return repulsion; },
-                    idealEdgeLength: function () { return edgeLen; },
+                    nodeRepulsion: function () { return rep; },
+                    idealEdgeLength: function () { return edg; },
                     edgeElasticity: function () { return 32; },
                     gravity: grav,
                     gravityCompound: grav * 1.5,
                     gravityRange: 1.5,
                     gravityRangeCompound: 2.0,
-                    nestingFactor: 0.1,
-                    numIter: 800,
-                    padding: 15,
+                    nestingFactor: nest,
+                    numIter: iter,
+                    padding: pad,
                     randomize: true,
                     nodeDimensionsIncludeLabels: false,
                     fit: true
@@ -1353,32 +1367,32 @@ window.regionGraph = (function () {
                 if (!hasDagre) {
                     console.warn('[regionGraph] dagre not available, falling back to breadthfirst');
                     _currentLayout = 'breadthfirst';
-                    // fall through
                 } else {
                     opts = {
                         name: 'dagre',
-                        rankDir: 'LR',
-                        nodeSep: 18,
-                        rankSep: 35,
-                        edgeSep: 10,
+                        rankDir: cfg.rankDir || 'LR',
+                        nodeSep: cfg.nodeSep != null ? cfg.nodeSep : 18,
+                        rankSep: cfg.rankSep != null ? cfg.rankSep : 35,
+                        edgeSep: cfg.edgeSep != null ? cfg.edgeSep : 10,
                         animate: true,
                         animationDuration: 500,
                         fit: true,
-                        padding: 15
+                        padding: pad
                     };
                     break;
                 }
             }
             // falls through to breadthfirst if dagre unavailable
             case 'breadthfirst': {
+                var defSpace = totalNodes > 200 ? 0.4 : (totalNodes > 50 ? 0.6 : 0.75);
                 opts = {
                     name: 'breadthfirst',
-                    directed: true,
-                    spacingFactor: totalNodes > 200 ? 0.4 : (totalNodes > 50 ? 0.6 : 0.75),
+                    directed: cfg.directed != null ? cfg.directed : true,
+                    spacingFactor: cfg.spacingFactor != null ? cfg.spacingFactor : defSpace,
                     animate: true,
                     animationDuration: 500,
                     fit: true,
-                    padding: 15,
+                    padding: pad,
                     avoidOverlap: true
                 };
                 break;
@@ -1389,10 +1403,10 @@ window.regionGraph = (function () {
                     animate: true,
                     animationDuration: 500,
                     fit: true,
-                    padding: 15,
+                    padding: pad,
                     avoidOverlap: true,
-                    condense: true,
-                    rows: undefined
+                    condense: cfg.condense != null ? cfg.condense : true,
+                    rows: cfg.rows != null && cfg.rows > 0 ? cfg.rows : undefined
                 };
                 break;
             }
@@ -1402,28 +1416,29 @@ window.regionGraph = (function () {
                     animate: true,
                     animationDuration: 500,
                     fit: true,
-                    padding: 15,
+                    padding: pad,
                     avoidOverlap: true
                 };
                 break;
             }
             case 'concentric': {
+                var defLW = cfg.levelWidth != null ? cfg.levelWidth : 2;
                 opts = {
                     name: 'concentric',
                     animate: true,
                     animationDuration: 500,
                     fit: true,
-                    padding: 15,
+                    padding: pad,
                     avoidOverlap: true,
                     concentric: function (node) { return node.degree(); },
-                    levelWidth: function () { return 2; },
-                    minNodeSpacing: 10
+                    levelWidth: function () { return defLW; },
+                    minNodeSpacing: cfg.minNodeSpacing != null ? cfg.minNodeSpacing : 10
                 };
                 break;
             }
             default: {
                 console.warn('[regionGraph] unknown layout:', _currentLayout, '— falling back to compact-grid');
-                _runCompactGridLayout(cy);
+                _runCompactGridLayout(cy, cfg);
                 return;
             }
         }

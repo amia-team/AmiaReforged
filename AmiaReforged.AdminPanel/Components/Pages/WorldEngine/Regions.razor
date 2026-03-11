@@ -80,6 +80,8 @@
                     <option value="breadthfirst">Breadthfirst</option>
                 </select>
                 <button class="btn btn-secondary btn-sm" @onclick="ApplyLayout" disabled="@(_graphData == null)">Re-Layout</button>
+                <button class="btn btn-secondary btn-sm" @onclick="() => _showLayoutConfigModal = true"
+                        disabled="@(_graphData == null)" title="Configure layout parameters">⚙</button>
             </div>
 
             <div class="toolbar-divider"></div>
@@ -597,6 +599,154 @@
         </div>
     }
 
+    @* ===== Layout Config Modal ===== *@
+    @if (_showLayoutConfigModal)
+    {
+        <div class="modal-backdrop" @onclick="() => _showLayoutConfigModal = false">
+        <div class="admin-modal" @onclick:stopPropagation="true"
+             style="max-width:500px;max-height:80vh;overflow-y:auto;margin:10vh auto;
+                    background:var(--bg-card);border-radius:12px;padding:30px;
+                    position:fixed;top:0;left:50%;transform:translateX(-50%);
+                    z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+            <h2 style="margin-top:0">Configure Layout</h2>
+            <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:16px">
+                Adjust parameters for <strong>@GetLayoutDisplayName(_selectedLayout)</strong>. Changes apply on Re-Layout.
+            </p>
+
+            @switch (_selectedLayout)
+            {
+                case "compact-grid":
+                    <div class="form-group">
+                        <label>Node Spacing (@_lcNodeSpacing px)</label>
+                        <input type="range" class="form-range" min="12" max="80" @bind="_lcNodeSpacing" @bind:event="oninput" />
+                    </div>
+                    <div class="form-group">
+                        <label>Region Gap (@_lcRegionGap px)</label>
+                        <input type="range" class="form-range" min="4" max="60" @bind="_lcRegionGap" @bind:event="oninput" />
+                    </div>
+                    <div class="form-group">
+                        <label>Orphan Group Gap (@_lcOrphanGroupGap px)</label>
+                        <input type="range" class="form-range" min="2" max="40" @bind="_lcOrphanGroupGap" @bind:event="oninput" />
+                    </div>
+                    break;
+
+                case "cose":
+                case "fcose":
+                    <div class="form-group">
+                        <label>Node Repulsion (@_lcNodeRepulsion)</label>
+                        <input type="range" class="form-range" min="200" max="10000" step="100" @bind="_lcNodeRepulsion" @bind:event="oninput" />
+                    </div>
+                    <div class="form-group">
+                        <label>Ideal Edge Length (@_lcIdealEdgeLength px)</label>
+                        <input type="range" class="form-range" min="10" max="200" @bind="_lcIdealEdgeLength" @bind:event="oninput" />
+                    </div>
+                    <div class="form-group">
+                        <label>Gravity (@_lcGravity.ToString("F1"))</label>
+                        <input type="range" class="form-range" min="0.1" max="5.0" step="0.1" @bind="_lcGravity" @bind:event="oninput" />
+                    </div>
+                    <div class="form-group">
+                        <label>Nesting Factor (@_lcNestingFactor.ToString("F2"))</label>
+                        <input type="range" class="form-range" min="0.01" max="1.0" step="0.01" @bind="_lcNestingFactor" @bind:event="oninput" />
+                    </div>
+                    <div class="form-group">
+                        <label>Iterations (@_lcNumIter)</label>
+                        <input type="range" class="form-range" min="100" max="5000" step="100" @bind="_lcNumIter" @bind:event="oninput" />
+                    </div>
+                    <div class="form-group">
+                        <label>Padding (@_lcPadding px)</label>
+                        <input type="range" class="form-range" min="5" max="50" @bind="_lcPadding" @bind:event="oninput" />
+                    </div>
+                    break;
+
+                case "dagre":
+                    <div class="form-group">
+                        <label>Direction</label>
+                        <select class="form-control form-control-sm" @bind="_lcRankDir">
+                            <option value="LR">Left → Right</option>
+                            <option value="TB">Top → Bottom</option>
+                            <option value="RL">Right → Left</option>
+                            <option value="BT">Bottom → Top</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Node Separation (@_lcNodeSep px)</label>
+                        <input type="range" class="form-range" min="5" max="100" @bind="_lcNodeSep" @bind:event="oninput" />
+                    </div>
+                    <div class="form-group">
+                        <label>Rank Separation (@_lcRankSep px)</label>
+                        <input type="range" class="form-range" min="10" max="150" @bind="_lcRankSep" @bind:event="oninput" />
+                    </div>
+                    <div class="form-group">
+                        <label>Edge Separation (@_lcEdgeSep px)</label>
+                        <input type="range" class="form-range" min="2" max="50" @bind="_lcEdgeSep" @bind:event="oninput" />
+                    </div>
+                    <div class="form-group">
+                        <label>Padding (@_lcPadding px)</label>
+                        <input type="range" class="form-range" min="5" max="50" @bind="_lcPadding" @bind:event="oninput" />
+                    </div>
+                    break;
+
+                case "breadthfirst":
+                    <div class="form-group">
+                        <label>Spacing Factor (@_lcSpacingFactor.ToString("F1"))</label>
+                        <input type="range" class="form-range" min="0.1" max="3.0" step="0.1" @bind="_lcSpacingFactor" @bind:event="oninput" />
+                    </div>
+                    <div class="form-group" style="display:flex;align-items:center;gap:8px">
+                        <input type="checkbox" @bind="_lcDirected" id="lcDirected" />
+                        <label for="lcDirected" style="margin:0">Directed</label>
+                    </div>
+                    <div class="form-group">
+                        <label>Padding (@_lcPadding px)</label>
+                        <input type="range" class="form-range" min="5" max="50" @bind="_lcPadding" @bind:event="oninput" />
+                    </div>
+                    break;
+
+                case "grid":
+                    <div class="form-group" style="display:flex;align-items:center;gap:8px">
+                        <input type="checkbox" @bind="_lcCondense" id="lcCondense" />
+                        <label for="lcCondense" style="margin:0">Condense</label>
+                    </div>
+                    <div class="form-group">
+                        <label>Rows (@(_lcGridRows == 0 ? "auto" : _lcGridRows.ToString()))</label>
+                        <input type="range" class="form-range" min="0" max="50" @bind="_lcGridRows" @bind:event="oninput" />
+                    </div>
+                    <div class="form-group">
+                        <label>Padding (@_lcPadding px)</label>
+                        <input type="range" class="form-range" min="5" max="50" @bind="_lcPadding" @bind:event="oninput" />
+                    </div>
+                    break;
+
+                case "circle":
+                    <div class="form-group">
+                        <label>Padding (@_lcPadding px)</label>
+                        <input type="range" class="form-range" min="5" max="50" @bind="_lcPadding" @bind:event="oninput" />
+                    </div>
+                    break;
+
+                case "concentric":
+                    <div class="form-group">
+                        <label>Min Node Spacing (@_lcMinNodeSpacing px)</label>
+                        <input type="range" class="form-range" min="1" max="50" @bind="_lcMinNodeSpacing" @bind:event="oninput" />
+                    </div>
+                    <div class="form-group">
+                        <label>Level Width (@_lcLevelWidth)</label>
+                        <input type="range" class="form-range" min="1" max="10" @bind="_lcLevelWidth" @bind:event="oninput" />
+                    </div>
+                    <div class="form-group">
+                        <label>Padding (@_lcPadding px)</label>
+                        <input type="range" class="form-range" min="5" max="50" @bind="_lcPadding" @bind:event="oninput" />
+                    </div>
+                    break;
+            }
+
+            <div class="form-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+                <button class="btn btn-secondary" @onclick="() => _showLayoutConfigModal = false">Close</button>
+                <button class="btn btn-primary" @onclick="ApplyLayoutFromConfig">Apply</button>
+            </div>
+        </div>
+        </div>
+    }
+
     @* ===== Import Modal ===== *@
     @if (_showImportModal)
     {
@@ -751,6 +901,35 @@
     private Dictionary<string, string> _regionColors = new();
     private string _graphSearchQuery = "";
     private string _selectedLayout = "compact-grid";
+    private bool _showLayoutConfigModal;
+
+    // ===== Layout Configuration Parameters =====
+    // Compact Grid
+    private int _lcNodeSpacing = 32;
+    private int _lcRegionGap = 24;
+    private int _lcOrphanGroupGap = 12;
+    // CoSE / fCoSE shared
+    private int _lcNodeRepulsion = 2500;
+    private int _lcIdealEdgeLength = 50;
+    private double _lcGravity = 1.0;
+    private double _lcNestingFactor = 0.1;
+    private int _lcNumIter = 800;
+    private int _lcPadding = 15;
+    // Dagre
+    private string _lcRankDir = "LR";
+    private int _lcNodeSep = 18;
+    private int _lcRankSep = 35;
+    private int _lcEdgeSep = 10;
+    // Breadthfirst
+    private double _lcSpacingFactor = 0.6;
+    private bool _lcDirected = true;
+    // Grid
+    private bool _lcCondense = true;
+    private int _lcGridRows; // 0 = auto
+    // Concentric
+    private int _lcMinNodeSpacing = 10;
+    private int _lcLevelWidth = 2;
+
     private DotNetObjectReference<Regions>? _dotNetRef;
 
     private static readonly JsonSerializerOptions CamelCase = new()
@@ -999,9 +1178,76 @@
 
     private async Task ApplyLayout()
     {
-        try { await JS.InvokeVoidAsync("regionGraph.runLayout", _selectedLayout); }
+        try { await JS.InvokeVoidAsync("regionGraph.runLayout", _selectedLayout, BuildLayoutConfig()); }
         catch (Exception ex) { Logger.LogError(ex, "Failed to apply layout: {Layout}", _selectedLayout); }
     }
+
+    private async Task ApplyLayoutFromConfig()
+    {
+        _showLayoutConfigModal = false;
+        await ApplyLayout();
+    }
+
+    private Dictionary<string, object> BuildLayoutConfig()
+    {
+        var cfg = new Dictionary<string, object>();
+        switch (_selectedLayout)
+        {
+            case "compact-grid":
+                cfg["nodeSpacing"] = _lcNodeSpacing;
+                cfg["regionGap"] = _lcRegionGap;
+                cfg["orphanGroupGap"] = _lcOrphanGroupGap;
+                break;
+            case "cose":
+            case "fcose":
+                cfg["nodeRepulsion"] = _lcNodeRepulsion;
+                cfg["idealEdgeLength"] = _lcIdealEdgeLength;
+                cfg["gravity"] = _lcGravity;
+                cfg["nestingFactor"] = _lcNestingFactor;
+                cfg["numIter"] = _lcNumIter;
+                cfg["padding"] = _lcPadding;
+                break;
+            case "dagre":
+                cfg["rankDir"] = _lcRankDir;
+                cfg["nodeSep"] = _lcNodeSep;
+                cfg["rankSep"] = _lcRankSep;
+                cfg["edgeSep"] = _lcEdgeSep;
+                cfg["padding"] = _lcPadding;
+                break;
+            case "breadthfirst":
+                cfg["spacingFactor"] = _lcSpacingFactor;
+                cfg["directed"] = _lcDirected;
+                cfg["padding"] = _lcPadding;
+                break;
+            case "grid":
+                cfg["condense"] = _lcCondense;
+                if (_lcGridRows > 0) cfg["rows"] = _lcGridRows;
+                cfg["padding"] = _lcPadding;
+                break;
+            case "circle":
+                cfg["padding"] = _lcPadding;
+                break;
+            case "concentric":
+                cfg["minNodeSpacing"] = _lcMinNodeSpacing;
+                cfg["levelWidth"] = _lcLevelWidth;
+                cfg["padding"] = _lcPadding;
+                break;
+        }
+        return cfg;
+    }
+
+    private static string GetLayoutDisplayName(string layout) => layout switch
+    {
+        "compact-grid" => "Compact Grid",
+        "cose" => "Force-Directed (CoSE)",
+        "fcose" => "Fast Force-Directed (fCoSE)",
+        "dagre" => "Hierarchical (Dagre)",
+        "grid" => "Grid",
+        "circle" => "Circle",
+        "concentric" => "Concentric",
+        "breadthfirst" => "Breadthfirst",
+        _ => layout
+    };
 
     private async Task SearchInGraph()
     {
