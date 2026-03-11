@@ -717,6 +717,35 @@ function getNodesBoundingBox() {
 }
 
 /**
+ * Checks whether node positions are excessively spread out relative to
+ * what a compact layout would require.  Returns true if auto-arrange
+ * should be triggered on load.
+ */
+function isGraphTooSpread() {
+    if (nodes.length < 2) return false;
+    const bb = getNodesBoundingBox();
+    if (!bb) return false;
+
+    // Total area that the nodes themselves occupy if tightly packed
+    let totalNodeArea = 0;
+    for (const n of nodes) {
+        totalNodeArea += (n.width + 40) * (n.height + 20); // add small gap per node
+    }
+
+    const bbArea = bb.width * bb.height;
+    // If bounding-box area is more than 6× the ideal packed area, it's too spread
+    if (bbArea > totalNodeArea * 6) return true;
+
+    // Also check if the bb is just absurdly wide/tall for the node count
+    const idealColumns = Math.ceil(Math.sqrt(nodes.length));
+    const idealWidth = idealColumns * (NODE_MIN_WIDTH + 60);
+    const idealHeight = idealColumns * (80 + 30);
+    if (bb.width > idealWidth * 4 || bb.height > idealHeight * 4) return true;
+
+    return false;
+}
+
+/**
  * Adjusts camera and zoom so that all nodes fit within the viewport with padding.
  */
 function fitToView() {
@@ -751,8 +780,8 @@ function fitToView() {
 function autoArrange() {
     if (nodes.length === 0) return;
 
-    const hGap = 60;
-    const vGap = 30;
+    const hGap = 40;
+    const vGap = 16;
 
     // Build adjacency: node id → set of downstream node ids
     const downstream = new Map();
@@ -803,13 +832,27 @@ function autoArrange() {
         layers.get(l).push(n);
     }
 
-    // Position each layer
+    // Position each layer, centered vertically around y=0
     let xOffset = 0;
     const sortedLayers = [...layers.keys()].sort((a, b) => a - b);
+
+    // First pass: compute total height per layer for centering
+    const layerHeights = new Map();
     for (const l of sortedLayers) {
         const layerNodes = layers.get(l);
+        let totalH = 0;
+        for (const n of layerNodes) {
+            totalH += n.height;
+        }
+        totalH += (layerNodes.length - 1) * vGap;
+        layerHeights.set(l, totalH);
+    }
+
+    for (const l of sortedLayers) {
+        const layerNodes = layers.get(l);
+        const totalH = layerHeights.get(l);
         let maxWidth = 0;
-        let yOffset = 0;
+        let yOffset = -totalH / 2; // center vertically
 
         for (const n of layerNodes) {
             n.x = xOffset;
@@ -869,9 +912,13 @@ export function initGlyphEditor(containerId, catalogJson, graphJson, dotNetRef) 
     // Load existing graph
     loadGraphJson(graphJson);
 
-    // Fit all nodes in view (handles spread-out graphs gracefully)
+    // If nodes are excessively spread out, auto-arrange to compact positions
     if (nodes.length > 0) {
-        fitToView();
+        if (isGraphTooSpread()) {
+            autoArrange(); // also calls fitToView internally
+        } else {
+            fitToView();
+        }
     }
 
     // Event listeners
