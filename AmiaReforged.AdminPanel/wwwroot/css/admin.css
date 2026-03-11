@@ -1027,6 +1027,8 @@ a:hover {
 .region-editor__graph {
     flex: 1;
     min-height: 0;
+    /* Fallback if flex chain fails — ensures graph never fully collapses */
+    height: calc(100vh - 200px);
 }
 
 /* ===== Resize Splitter ===== */

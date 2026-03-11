@@ -819,14 +819,11 @@
 
 <script suppress-error="BL9992">
     (function () {
-        if (window.__regionEditorInit) return;
-        window.__regionEditorInit = true;
-
         function fixLayout() {
-            // Force all Blazor layout wrappers to fill height so the editor can use 100vh
             var editor = document.querySelector('.region-editor');
             if (!editor) return;
 
+            // Force all Blazor layout wrappers to fill height
             var el = editor.parentElement;
             while (el && el !== document.body) {
                 el.style.height = '100%';
@@ -845,7 +842,6 @@
         }
 
         function onResize() {
-            // Trigger Cytoscape resize when viewport changes
             if (window.regionGraph && typeof window.regionGraph.resize === 'function') {
                 window.regionGraph.resize();
             }
@@ -854,17 +850,21 @@
         function setup() {
             if (!document.querySelector('.region-editor')) return false;
             fixLayout();
-            window.addEventListener('resize', onResize);
             return true;
         }
 
-        // Try immediately
+        // Always re-run fixLayout (handles Blazor re-navigation with new DOM elements)
         if (!setup()) {
-            // MutationObserver fallback
             var observer = new MutationObserver(function () {
                 if (setup()) observer.disconnect();
             });
             observer.observe(document.body, { childList: true, subtree: true });
+        }
+
+        // Attach resize listener once
+        if (!window.__regionEditorResizeAttached) {
+            window.__regionEditorResizeAttached = true;
+            window.addEventListener('resize', onResize);
         }
     })();
 </script>
