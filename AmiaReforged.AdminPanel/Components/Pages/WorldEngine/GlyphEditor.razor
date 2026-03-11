@@ -917,12 +917,12 @@
     {
         return category switch
         {
-            "Encounter" => ["BeforeGroupSpawn", "AfterGroupSpawn", "OnCreatureDeath"],
+            "Encounter" => ["BeforeGroupSpawn", "AfterGroupSpawn", "OnCreatureDeath", "OnCreatureSpawn", "OnBossSpawn"],
             "Trait" => ["OnTraitGranted", "OnTraitRemoved"],
             "Interaction" => ["OnInteractionAttempted", "OnInteractionStarted", "OnInteractionTick", "OnInteractionCompleted"],
-            "Environmental" => ["BeforeGroupSpawn", "AfterGroupSpawn", "OnCreatureDeath"],
-            "Narrative" => ["BeforeGroupSpawn", "AfterGroupSpawn", "OnCreatureDeath"],
-            _ => ["BeforeGroupSpawn", "AfterGroupSpawn", "OnCreatureDeath"]
+            "Environmental" => ["BeforeGroupSpawn", "AfterGroupSpawn", "OnCreatureDeath", "OnCreatureSpawn", "OnBossSpawn"],
+            "Narrative" => ["BeforeGroupSpawn", "AfterGroupSpawn", "OnCreatureDeath", "OnCreatureSpawn", "OnBossSpawn"],
+            _ => ["BeforeGroupSpawn", "AfterGroupSpawn", "OnCreatureDeath", "OnCreatureSpawn", "OnBossSpawn"]
         };
     }
 
