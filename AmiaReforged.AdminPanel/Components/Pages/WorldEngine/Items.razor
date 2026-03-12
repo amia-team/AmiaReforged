@@ -300,6 +300,46 @@
                 </div>
             </div>
 
+                @* ===== Local Variables Section ===== *@
+                <div style="border:1px solid var(--border-color);border-radius:8px;padding:15px;margin-top:10px">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <h4 style="margin:0">Local Variables</h4>
+                        <button class="btn btn-sm btn-outline-info" @onclick="AddLocalVariable">+ Add</button>
+                    </div>
+
+                    @if (_editItem.LocalVariables is { Count: > 0 })
+                    {
+                        <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
+                            @for (int idx = 0; idx < _editItem.LocalVariables.Count; idx++)
+                            {
+                                int i = idx;
+                                <div style="display:flex;gap:8px;align-items:center">
+                                    <div class="form-group" style="flex:2">
+                                        <input class="form-control form-control-sm" placeholder="Name"
+                                               @bind="_editItem.LocalVariables[i].Name" />
+                                    </div>
+                                    <div class="form-group" style="flex:1">
+                                        <select class="form-control form-control-sm" @bind="_editItem.LocalVariables[i].Type">
+                                            <option value="Int">Int</option>
+                                            <option value="String">String</option>
+                                            <option value="Json">Json</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="flex:2">
+                                        <input class="form-control form-control-sm" placeholder="Value"
+                                               @bind="_editItem.LocalVariables[i].Value" />
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveLocalVariable(i)">✕</button>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p style="color:var(--text-secondary);margin:10px 0 0">No local variables defined.</p>
+                    }
+                </div>
+
             <div class="form-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
                 <button class="btn btn-secondary" @onclick="CloseEditModal">Cancel</button>
                 <button class="btn btn-primary" @onclick="SaveItem" disabled="@_isSaving">
@@ -546,6 +586,12 @@
                     BottomPartColor = item.Appearance.Data.BottomPartColor,
                 } : null,
             } : null,
+            LocalVariables = item.LocalVariables?.Select(lv => new LocalVariableDto
+            {
+                Name = lv.Name,
+                Type = lv.Type,
+                Value = lv.Value,
+            }).ToList(),
         };
         _showEditModal = true;
     }
@@ -589,6 +635,20 @@
     private void RemoveAppearance() => _editItem.Appearance = null;
     private void AddWeaponParts() { if (_editItem.Appearance != null) _editItem.Appearance.Data = new WeaponPartDataDto(); }
     private void RemoveWeaponParts() { if (_editItem.Appearance != null) _editItem.Appearance.Data = null; }
+
+    // ===== Local Variable Helpers =====
+
+    private void AddLocalVariable()
+    {
+        _editItem.LocalVariables ??= new List<LocalVariableDto>();
+        _editItem.LocalVariables.Add(new LocalVariableDto());
+    }
+
+    private void RemoveLocalVariable(int index)
+    {
+        if (_editItem.LocalVariables != null && index >= 0 && index < _editItem.LocalVariables.Count)
+            _editItem.LocalVariables.RemoveAt(index);
+    }
 
     private void OnSimpleModelChanged(ChangeEventArgs e)
     {

@@ -363,7 +363,7 @@ public class ItemController
             JobSystemType: jobType,
             BaseItemType: dto.BaseItemType,
             Appearance: appearance,
-            LocalVariables: null, // Local variables handled via raw JSON in import
+            LocalVariables: MapLocalVariables(dto.LocalVariables),
             BaseValue: dto.BaseValue,
             WeightIncreaseConstant: dto.WeightIncreaseConstant)
         {
@@ -372,6 +372,18 @@ public class ItemController
     }
 
     // DTO classes for request/response
+
+    private static IReadOnlyList<JsonLocalVariableDefinition>? MapLocalVariables(List<LocalVariableDto>? dtos)
+    {
+        if (dtos == null || dtos.Count == 0) return null;
+
+        return dtos.Select(d =>
+        {
+            Enum.TryParse<JsonLocalVariableType>(d.Type, true, out var varType);
+            return new JsonLocalVariableDefinition(d.Name, varType, d.Value);
+        }).ToList();
+    }
+
     private record ItemBlueprintDto
     {
         public string ResRef { get; init; } = string.Empty;
@@ -382,9 +394,17 @@ public class ItemController
         public string? JobSystemType { get; init; }
         public int BaseItemType { get; init; }
         public AppearanceDto? Appearance { get; init; }
+        public List<LocalVariableDto>? LocalVariables { get; init; }
         public int BaseValue { get; init; } = 1;
         public int WeightIncreaseConstant { get; init; } = -1;
         public string? SourceFile { get; init; }
+    }
+
+    private record LocalVariableDto
+    {
+        public string Name { get; init; } = string.Empty;
+        public string Type { get; init; } = "String";
+        public JsonElement Value { get; init; }
     }
 
     private record AppearanceDto

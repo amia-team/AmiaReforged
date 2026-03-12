@@ -28,6 +28,9 @@ public class PersistedWorkstationDefinitionConfiguration : IEntityTypeConfigurat
             .HasColumnName("placeable_resref")
             .HasMaxLength(64);
 
+        builder.Property(e => e.AppearanceId)
+            .HasColumnName("appearance_id");
+
         builder.Property(e => e.SupportedIndustriesJson)
             .HasColumnName("supported_industries")
             .HasColumnType("jsonb")

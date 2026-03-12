@@ -31,6 +31,13 @@ public class Workstation
     public string? PlaceableResRef { get; init; }
 
     /// <summary>
+    /// Optional override for the spawned placeable's appearance.
+    /// Row index into <c>NwGameTables.PlaceableTable</c>.
+    /// When null, the blueprint's default appearance is used.
+    /// </summary>
+    public int? AppearanceId { get; init; }
+
+    /// <summary>
     /// Industries that can use this workstation (informational, not enforcement).
     /// Multiple industries can share the same workstation.
     /// </summary>

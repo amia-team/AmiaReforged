@@ -148,6 +148,13 @@ public class IndustryCommand : IChatCommand
         placeable.HP = 200;
         placeable.MaxHP = 200;
 
+        // Apply appearance override if configured
+        if (workstation.AppearanceId.HasValue)
+        {
+            var row = NwGameTables.PlaceableTable.GetRow(workstation.AppearanceId.Value);
+            placeable.Appearance = row;
+        }
+
         bool registered = _bootstrapService.RegisterPlaceable(placeable, workstation);
         if (!registered)
         {

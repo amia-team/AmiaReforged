@@ -12,9 +12,17 @@ public class ItemBlueprintDto
     public string? JobSystemType { get; set; }
     public int BaseItemType { get; set; }
     public AppearanceDataDto? Appearance { get; set; }
+    public List<LocalVariableDto>? LocalVariables { get; set; }
     public int BaseValue { get; set; } = 1;
     public int WeightIncreaseConstant { get; set; } = -1;
     public string? SourceFile { get; set; }
+}
+
+public class LocalVariableDto
+{
+    public string Name { get; set; } = string.Empty;
+    public string Type { get; set; } = "String";
+    public string Value { get; set; } = string.Empty;
 }
 
 public class AppearanceDataDto
@@ -332,6 +340,7 @@ public class WorkstationDefinitionDto
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? PlaceableResRef { get; set; }
+    public int? AppearanceId { get; set; }
     public List<string> SupportedIndustries { get; set; } = [];
 }
 

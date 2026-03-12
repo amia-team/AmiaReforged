@@ -28,6 +28,11 @@ public class PersistedWorkstationDefinition
     public string? PlaceableResRef { get; set; }
 
     /// <summary>
+    /// Optional override for the spawned placeable's appearance (row index into PlaceableTable).
+    /// </summary>
+    public int? AppearanceId { get; set; }
+
+    /// <summary>
     /// Industry tags that can use this workstation, stored as a JSONB array of strings.
     /// </summary>
     public string SupportedIndustriesJson { get; set; } = "[]";

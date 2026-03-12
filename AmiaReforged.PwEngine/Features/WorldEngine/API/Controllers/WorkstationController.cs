@@ -268,6 +268,7 @@ public class WorkstationController
             workstation.Name,
             workstation.Description,
             workstation.PlaceableResRef,
+            workstation.AppearanceId,
             SupportedIndustries = workstation.SupportedIndustries.Select(t => t.Value).ToArray()
         };
     }
@@ -280,6 +281,7 @@ public class WorkstationController
             Name = dto.Name,
             Description = dto.Description,
             PlaceableResRef = dto.PlaceableResRef,
+            AppearanceId = dto.AppearanceId,
             SupportedIndustries = dto.SupportedIndustries?
                 .Select(t => new IndustryTag(t)).ToList() ?? []
         };
@@ -293,6 +295,7 @@ public class WorkstationController
         public string Name { get; init; } = string.Empty;
         public string? Description { get; init; }
         public string? PlaceableResRef { get; init; }
+        public int? AppearanceId { get; init; }
         public List<string>? SupportedIndustries { get; init; }
     }
 }

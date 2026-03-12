@@ -24,6 +24,7 @@ public static class WorkstationMapper
             Name = workstation.Name,
             Description = workstation.Description,
             PlaceableResRef = workstation.PlaceableResRef,
+            AppearanceId = workstation.AppearanceId,
             SupportedIndustriesJson = JsonSerializer.Serialize(
                 workstation.SupportedIndustries.Select(t => t.Value).ToList(), JsonOptions),
             CreatedAt = DateTime.UtcNow,
@@ -42,6 +43,7 @@ public static class WorkstationMapper
             Name = entity.Name,
             Description = entity.Description,
             PlaceableResRef = entity.PlaceableResRef,
+            AppearanceId = entity.AppearanceId,
             SupportedIndustries = industryTags.Select(t => new IndustryTag(t)).ToList()
         };
     }
@@ -51,6 +53,7 @@ public static class WorkstationMapper
         entity.Name = workstation.Name;
         entity.Description = workstation.Description;
         entity.PlaceableResRef = workstation.PlaceableResRef;
+        entity.AppearanceId = workstation.AppearanceId;
         entity.SupportedIndustriesJson = JsonSerializer.Serialize(
             workstation.SupportedIndustries.Select(t => t.Value).ToList(), JsonOptions);
         entity.UpdatedAt = DateTime.UtcNow;

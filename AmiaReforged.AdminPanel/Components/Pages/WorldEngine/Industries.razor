@@ -362,6 +362,11 @@
                 <input class="form-control" @bind="_editWorkstation.PlaceableResRef" placeholder="e.g. plc_forge01" />
             </div>
             <div class="form-group">
+                <label>Appearance ID <small style="color:var(--text-secondary)">(placeable table row index, leave blank for default)</small></label>
+                <input class="form-control" type="number" value="@(_editWorkstation.AppearanceId)"
+                       @onchange="OnWorkstationAppearanceChanged" placeholder="e.g. 50" />
+            </div>
+            <div class="form-group">
                 <label>Supported Industries <small style="color:var(--text-secondary)">(comma-separated tags)</small></label>
                 <input class="form-control" @bind="_editWorkstationIndustriesText" placeholder="e.g. blacksmithing, jewelcrafting" />
             </div>
@@ -927,6 +932,7 @@
             Name = ws.Name,
             Description = ws.Description,
             PlaceableResRef = ws.PlaceableResRef,
+            AppearanceId = ws.AppearanceId,
             SupportedIndustries = new List<string>(ws.SupportedIndustries)
         };
         _editWorkstationIndustriesText = string.Join(", ", ws.SupportedIndustries);
@@ -970,6 +976,11 @@
             await RefreshWorkstations();
         };
         _showDeleteConfirm = true;
+    }
+
+    private void OnWorkstationAppearanceChanged(ChangeEventArgs e)
+    {
+        _editWorkstation.AppearanceId = int.TryParse(e.Value?.ToString(), out var v) ? v : null;
     }
 
     // ==================== Knowledge CRUD ====================
