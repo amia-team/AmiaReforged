@@ -1458,3 +1458,106 @@ a:hover {
     align-items: center;
     gap: 4px;
 }
+
+/* ========== Definition Tag Picker ========== */
+
+.def-tag-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+
+.def-tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 6px;
+    background: rgba(201,168,76,0.18);
+    border: 1px solid rgba(201,168,76,0.35);
+    border-radius: 4px;
+    font-size: 0.78rem;
+    color: #e8d9a0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.def-tag-chip-remove {
+    background: none;
+    border: none;
+    color: #c9a84c;
+    font-size: 0.9rem;
+    line-height: 1;
+    padding: 0 2px;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+}
+.def-tag-chip-remove:hover {
+    opacity: 1;
+    color: #ff6b6b;
+}
+
+.def-tag-picker {
+    position: relative;
+}
+
+.def-tag-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 220px;
+    overflow-y: auto;
+    background: #1c1b19;
+    border: 1px solid var(--border-subtle);
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    z-index: 600;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+}
+
+.def-tag-dropdown-item {
+    display: flex;
+    flex-direction: column;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: background 0.1s;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.def-tag-dropdown-item:last-child {
+    border-bottom: none;
+}
+.def-tag-dropdown-item:hover {
+    background: rgba(201,168,76,0.12);
+}
+
+.def-tag-dropdown-tag {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.def-tag-dropdown-info {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    margin-top: 1px;
+}
+
+.def-tag-dropdown-more {
+    padding: 6px 10px;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    text-align: center;
+    font-style: italic;
+}
+
+.def-tag-dropdown-empty {
+    padding: 8px 10px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    text-align: center;
+    font-style: italic;
+}

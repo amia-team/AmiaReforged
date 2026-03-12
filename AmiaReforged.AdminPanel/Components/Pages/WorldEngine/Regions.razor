@@ -8,6 +8,7 @@
 @attribute [Authorize]
 @inject RegionApiService Api
 @inject AreaGraphApiService GraphApi
+@inject ResourceNodeApiService ResourceNodeApi
 @inject IWorldEngineEndpointService EndpointService
 @inject ILogger<Regions> Logger
 @inject IJSRuntime JS
@@ -421,10 +422,59 @@
                                        @onchange="OnAreaLinkedSettlementChanged" min="1" />
                             </div>
                             <div class="form-group">
-                                <label>Definition Tags <small>(comma-separated)</small></label>
-                                <input class="form-control form-control-sm"
-                                       value="@string.Join(", ", _editArea.DefinitionTags)"
-                                       @onchange="OnAreaDefinitionTagsChanged" />
+                                <label>Resource Node Definitions</label>
+                                @if (_editArea!.DefinitionTags.Count > 0)
+                                {
+                                    <div class="def-tag-chips">
+                                        @foreach (var tag in _editArea.DefinitionTags)
+                                        {
+                                            var def = _allResourceDefs.FirstOrDefault(d => d.Tag == tag);
+                                            <span class="def-tag-chip" title="@(def != null ? $"{def.Name} ({def.Type})" : tag)">
+                                                @tag
+                                                <button type="button" class="def-tag-chip-remove" @onclick="() => RemoveDefinitionTag(tag)">×</button>
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                                <div class="def-tag-picker" @onfocusin="() => _defTagDropdownOpen = true" @onfocusout="OnDefTagBlur">
+                                    <input class="form-control form-control-sm" placeholder="Search definitions..."
+                                           @bind="_defTagSearch" @bind:event="oninput"
+                                           @onfocus="() => _defTagDropdownOpen = true" />
+                                    @if (_defTagDropdownOpen)
+                                    {
+                                        var filtered = GetFilteredResourceDefs();
+                                        @if (filtered.Count > 0)
+                                        {
+                                            <div class="def-tag-dropdown">
+                                                @foreach (var def in filtered.Take(30))
+                                                {
+                                                    <div class="def-tag-dropdown-item" @onmousedown="() => AddDefinitionTag(def.Tag)"
+                                                         @onmousedown:preventDefault>
+                                                        <span class="def-tag-dropdown-tag">@def.Tag</span>
+                                                        @if (!string.IsNullOrEmpty(def.Name) || !string.IsNullOrEmpty(def.Type))
+                                                        {
+                                                            <span class="def-tag-dropdown-info">
+                                                                @(def.Name ?? "") @(!string.IsNullOrEmpty(def.Type) ? $"· {def.Type}" : "")
+                                                            </span>
+                                                        }
+                                                    </div>
+                                                }
+                                                @if (filtered.Count > 30)
+                                                {
+                                                    <div class="def-tag-dropdown-more">
+                                                        @(filtered.Count - 30) more — refine search
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                        else if (!string.IsNullOrWhiteSpace(_defTagSearch))
+                                        {
+                                            <div class="def-tag-dropdown">
+                                                <div class="def-tag-dropdown-empty">No matching definitions</div>
+                                            </div>
+                                        }
+                                    }
+                                </div>
                             </div>
                         </div>
 
@@ -911,6 +961,11 @@
     private string? _editAreaOriginalRegionTag;
     private string? _editAreaName;
 
+    // ===== Resource Node Definitions (for tag picker) =====
+    private List<ResourceNodeDefinitionDto> _allResourceDefs = new();
+    private string _defTagSearch = "";
+    private bool _defTagDropdownOpen;
+
     // ===== Import =====
     private bool _showImportModal;
     private string _importJson = "";
@@ -998,22 +1053,26 @@
             _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
             Api.SelectEndpoint(id);
             GraphApi.SelectEndpoint(id);
+            ResourceNodeApi.SelectEndpoint(id);
             _page = 1;
             _graphData = null;
             _knownAreas.Clear();
             _regionColors.Clear();
             _panelMode = PanelMode.RegionList;
             await RefreshRegions();
+            await LoadResourceDefinitionsAsync();
         }
         else
         {
             _selectedEndpoint = null;
             Api.SelectEndpoint(null);
             GraphApi.SelectEndpoint(null);
+            ResourceNodeApi.SelectEndpoint(null);
             _regions.Clear();
             _graphData = null;
             _knownAreas.Clear();
             _regionColors.Clear();
+            _allResourceDefs.Clear();
         }
     }
 
@@ -1773,13 +1832,56 @@
         _editArea.LinkedSettlement = int.TryParse(e.Value?.ToString(), out var val) && val > 0 ? val : null;
     }
 
-    private void OnAreaDefinitionTagsChanged(ChangeEventArgs e)
+    // ===== Definition Tag Picker =====
+
+    private async Task LoadResourceDefinitionsAsync()
+    {
+        try
+        {
+            var result = await ResourceNodeApi.GetAllAsync(pageSize: 9999);
+            _allResourceDefs = result.Items;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load resource node definitions");
+            _allResourceDefs = new();
+        }
+    }
+
+    private List<ResourceNodeDefinitionDto> GetFilteredResourceDefs()
+    {
+        var selected = _editArea?.DefinitionTags ?? new List<string>();
+        var query = _defTagSearch?.Trim() ?? "";
+        return _allResourceDefs
+            .Where(d => !selected.Contains(d.Tag))
+            .Where(d => string.IsNullOrEmpty(query)
+                        || d.Tag.Contains(query, StringComparison.OrdinalIgnoreCase)
+                        || (d.Name?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)
+                        || (d.Type?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false))
+            .OrderBy(d => d.Tag)
+            .ToList();
+    }
+
+    private void AddDefinitionTag(string tag)
     {
         if (_editArea == null) return;
-        var raw = e.Value?.ToString() ?? "";
-        _editArea.DefinitionTags = string.IsNullOrWhiteSpace(raw)
-            ? new List<string>()
-            : raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        if (!_editArea.DefinitionTags.Contains(tag))
+            _editArea.DefinitionTags.Add(tag);
+        _defTagSearch = "";
+        _defTagDropdownOpen = false;
+    }
+
+    private void RemoveDefinitionTag(string tag)
+    {
+        _editArea?.DefinitionTags.Remove(tag);
+    }
+
+    private async Task OnDefTagBlur()
+    {
+        // Small delay so @onmousedown on dropdown items fires before we close
+        await Task.Delay(200);
+        _defTagDropdownOpen = false;
+        StateHasChanged();
     }
 
     private void AddEditAreaChaos() { if (_editArea != null) _editArea.Environment.Chaos = new ChaosStateDto(); }
