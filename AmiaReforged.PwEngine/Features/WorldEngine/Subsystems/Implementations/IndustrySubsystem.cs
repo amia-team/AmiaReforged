@@ -24,6 +24,7 @@ public sealed class IndustrySubsystem : IIndustrySubsystem
     private readonly ICommandHandler<AddRecipeToIndustryCommand> _addRecipeHandler;
     private readonly ICommandHandler<RemoveRecipeFromIndustryCommand> _removeRecipeHandler;
     private readonly IQueryHandler<GetAvailableRecipesQuery, List<Recipe>> _availableRecipesHandler;
+    private readonly IQueryHandler<GetWorkstationRecipesQuery, List<Recipe>> _workstationRecipesHandler;
 
     public IndustrySubsystem(
         IIndustryRepository industryRepository,
@@ -32,7 +33,8 @@ public sealed class IndustrySubsystem : IIndustrySubsystem
         ICommandHandler<CraftItemCommand> craftHandler,
         ICommandHandler<AddRecipeToIndustryCommand> addRecipeHandler,
         ICommandHandler<RemoveRecipeFromIndustryCommand> removeRecipeHandler,
-        IQueryHandler<GetAvailableRecipesQuery, List<Recipe>> availableRecipesHandler)
+        IQueryHandler<GetAvailableRecipesQuery, List<Recipe>> availableRecipesHandler,
+        IQueryHandler<GetWorkstationRecipesQuery, List<Recipe>> workstationRecipesHandler)
     {
         _industryRepository = industryRepository;
         _membershipRepository = membershipRepository;
@@ -41,6 +43,7 @@ public sealed class IndustrySubsystem : IIndustrySubsystem
         _addRecipeHandler = addRecipeHandler;
         _removeRecipeHandler = removeRecipeHandler;
         _availableRecipesHandler = availableRecipesHandler;
+        _workstationRecipesHandler = workstationRecipesHandler;
     }
 
     public Task<Industry?> GetIndustryAsync(IndustryTag industryTag, CancellationToken ct = default)
@@ -139,5 +142,16 @@ public sealed class IndustrySubsystem : IIndustrySubsystem
 
     public Task<CommandResult> RemoveRecipeFromIndustryAsync(RemoveRecipeFromIndustryCommand command, CancellationToken ct = default)
         => _removeRecipeHandler.HandleAsync(command, ct);
+
+    public Task<List<Recipe>> GetWorkstationRecipesAsync(
+        CharacterId characterId, WorkstationTag workstationTag, CancellationToken ct = default)
+    {
+        var query = new GetWorkstationRecipesQuery
+        {
+            CharacterId = characterId,
+            WorkstationTag = workstationTag
+        };
+        return _workstationRecipesHandler.HandleAsync(query, ct);
+    }
 }
 

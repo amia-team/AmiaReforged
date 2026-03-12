@@ -84,5 +84,15 @@ public interface IIndustrySubsystem
     /// </summary>
     Task<CommandResult> RemoveRecipeFromIndustryAsync(
         RemoveRecipeFromIndustryCommand command, CancellationToken ct = default);
+
+    // === Workstation Queries ===
+
+    /// <summary>
+    /// Gets all recipes a character can craft at a specific workstation.
+    /// Filters by the character's industry memberships, proficiency, and learned knowledge,
+    /// scoped to industries the workstation supports.
+    /// </summary>
+    Task<List<Recipe>> GetWorkstationRecipesAsync(
+        CharacterId characterId, WorkstationTag workstationTag, CancellationToken ct = default);
 }
 
