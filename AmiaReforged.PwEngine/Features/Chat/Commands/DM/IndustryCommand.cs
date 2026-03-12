@@ -143,6 +143,10 @@ public class IndustryCommand : IChatCommand
         placeable.Name = workstation.Name;
         placeable.Tag = workstation.Tag.Value;
         placeable.Description = workstation.Description ?? $"A {workstation.Name} workstation.";
+        placeable.Useable = true;
+        placeable.PlotFlag = false;
+        placeable.HP = 200;
+        placeable.MaxHP = 200;
 
         bool registered = _bootstrapService.RegisterPlaceable(placeable, workstation);
         if (!registered)
