@@ -6,7 +6,6 @@ using NWN.Core;
 
 namespace AmiaReforged.Classes.FelReaver;
 
-[ServiceBinding(typeof(CorruptionStance))]
 public class CorruptionStance
 {
     private const string CorruptionStanceEffectTag = "CORRUPTION_STANCE";
@@ -37,7 +36,7 @@ public class CorruptionStance
     private void NewCorruptionStance(OnCombatModeToggle obj)
     {
      // if (obj.NewMode != CombatMode.CorruptionStance) return;
-        if (obj.Creature.IsPlayerControlled(out NwPlayer? player))
+        if (!obj.Creature.IsPlayerControlled(out NwPlayer? player))
         {
             return;
         }
