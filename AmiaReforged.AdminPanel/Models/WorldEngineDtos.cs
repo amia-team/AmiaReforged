@@ -22,7 +22,7 @@ public class LocalVariableDto
 {
     public string Name { get; set; } = string.Empty;
     public string Type { get; set; } = "String";
-    public string Value { get; set; } = string.Empty;
+    public object? Value { get; set; }
 }
 
 public class AppearanceDataDto

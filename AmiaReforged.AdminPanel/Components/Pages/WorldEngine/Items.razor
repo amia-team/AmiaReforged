@@ -327,7 +327,8 @@
                                     </div>
                                     <div class="form-group" style="flex:2">
                                         <input class="form-control form-control-sm" placeholder="Value"
-                                               @bind="_editItem.LocalVariables[i].Value" />
+                                               value="@GetLocalVarDisplayValue(_editItem.LocalVariables[i])"
+                                               @onchange="e => SetLocalVarValue(_editItem.LocalVariables[i], e.Value?.ToString() ?? string.Empty)" />
                                     </div>
                                     <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveLocalVariable(i)">✕</button>
                                 </div>
@@ -637,6 +638,30 @@
     private void RemoveWeaponParts() { if (_editItem.Appearance != null) _editItem.Appearance.Data = null; }
 
     // ===== Local Variable Helpers =====
+
+    private string GetLocalVarDisplayValue(LocalVariableDto lv)
+    {
+        return lv.Value switch
+        {
+            System.Text.Json.JsonElement je => je.ValueKind == System.Text.Json.JsonValueKind.String
+                ? je.GetString() ?? ""
+                : je.GetRawText(),
+            _ => lv.Value?.ToString() ?? ""
+        };
+    }
+
+    private void SetLocalVarValue(LocalVariableDto lv, string text)
+    {
+        if (lv.Type == "Int" && int.TryParse(text, out var intVal))
+            lv.Value = intVal;
+        else if (lv.Type == "Json")
+        {
+            try { lv.Value = System.Text.Json.JsonDocument.Parse(text).RootElement.Clone(); }
+            catch { lv.Value = text; }
+        }
+        else
+            lv.Value = text;
+    }
 
     private void AddLocalVariable()
     {
