@@ -15,6 +15,7 @@ public class CorruptionStance
         NwModule.Instance.OnClientEnter += ClearCorruptionStance;
         NwModule.Instance.OnCombatModeToggle += NewCorruptionStance;
     }
+
     private void ClearCorruptionStance(ModuleEvents.OnClientEnter obj)
     {
         if (obj.Player.LoginCreature == null)
@@ -33,9 +34,10 @@ public class CorruptionStance
             obj.Player.LoginCreature.RemoveEffect(effect);
         }
     }
+
     private void NewCorruptionStance(OnCombatModeToggle obj)
     {
-     // if (obj.NewMode != CombatMode.CorruptionStance) return;
+        //TODO: Move to a spell for a feat since they are less fussy than combat modes.
         if (!obj.Creature.IsPlayerControlled(out NwPlayer? player))
         {
             return;
@@ -58,12 +60,12 @@ public class CorruptionStance
             return;
         }
 
-//Defining Damage over time based on CON score
-            character.OnCombatRoundEnd += SelfDoT;
-        }
+        character.OnCombatRoundEnd += SelfDoT;
+    }
 
     private void SelfDoT(CreatureEvents.OnCombatRoundEnd obj)
     {
+        //TODO: Teach Foggy about Switches :D
         // Define how much damage to apply depending on CON score
         int nDamage;
         int nConScore = obj.Creature.GetAbilityScore(Ability.Constitution, true);
