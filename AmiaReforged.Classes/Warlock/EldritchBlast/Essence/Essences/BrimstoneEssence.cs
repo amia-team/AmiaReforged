@@ -36,7 +36,7 @@ public class BrimstoneEssence(ScriptHandleFactory scriptHandleFactory) : IEssenc
 
         Effect brimstoneEffect = Effect.LinkEffects
         (
-            Effect.RunAction(onAppliedHandle: burn, onRemovedHandle: burn, onIntervalHandle: burn, interval: oneRound),
+            Effect.RunAction(onRemovedHandle: burn, onIntervalHandle: burn, interval: oneRound),
             Effect.VisualEffect(VfxType.DurInfernoChest)
         );
 

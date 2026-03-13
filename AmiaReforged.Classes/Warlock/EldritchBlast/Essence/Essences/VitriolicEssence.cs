@@ -37,7 +37,7 @@ public class VitriolicEssence(ScriptHandleFactory scriptHandleFactory) : IEssenc
 
         Effect vitriolicEffect = Effect.LinkEffects
         (
-            Effect.RunAction(onAppliedHandle: burn, onRemovedHandle: burn, onIntervalHandle: burn, interval: oneRound),
+            Effect.RunAction(onRemovedHandle: burn, onIntervalHandle: burn, interval: oneRound),
             Effect.VisualEffect(VfxType.DurAuraGreenDark)
         );
 
