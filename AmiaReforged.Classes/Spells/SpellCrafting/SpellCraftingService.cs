@@ -8,6 +8,7 @@ namespace AmiaReforged.Classes.Spells.SpellCrafting;
 [ServiceBinding(typeof(SpellCraftingService))]
 public class SpellCraftingService
 {
+    private const int ActivateItemSpellId = 386;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     public SpellCraftingService()
@@ -20,7 +21,8 @@ public class SpellCraftingService
         if (eventData.TargetObject is not NwItem targetItem
             || targetItem.BaseItem.ItemType is not
                 (BaseItemType.BlankScroll or BaseItemType.BlankWand or BaseItemType.BlankPotion)
-            || eventData.Spell is not { } spell) return;
+            || eventData.Spell is not { } spell
+            || spell.Id == ActivateItemSpellId) return;
 
         CraftSpell craftSpell = new(eventData, spell, targetItem);
         craftSpell.DoCraftSpell();
