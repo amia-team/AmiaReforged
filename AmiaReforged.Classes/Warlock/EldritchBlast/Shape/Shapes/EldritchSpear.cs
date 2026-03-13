@@ -1,4 +1,5 @@
-﻿using AmiaReforged.Classes.Spells;
+﻿using System.Numerics;
+using AmiaReforged.Classes.Spells;
 using AmiaReforged.Classes.Warlock.EldritchBlast.Essence;
 using Anvil.API;
 using Anvil.API.Events;
@@ -40,11 +41,11 @@ public class EldritchSpear : IShape
 
         Effect reflexVfx = Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse);
 
-        foreach (NwCreature creature in targetObject.Location.GetObjectsInShapeByType<NwCreature>
-                     (Anvil.API.Shape.SpellCylinder, size: LongDistance, true, warlock.Position))
+        List<NwCreature> targets = GetTargetsByDistance(targetObject.Location, warlock);
+
+        foreach (NwCreature creature in targets)
         {
-            if (creature.IsDead || creature == targetObject || !creature.IsValidInvocationTarget(warlock, hurtSelf: false))
-                continue;
+            if (creature == targetObject) return;
 
             CreatureEvents.OnSpellCastAt.Signal(warlock, creature, spell);
 
@@ -70,6 +71,19 @@ public class EldritchSpear : IShape
 
             creature.ApplyEldritchBlast(warlock, damage, invocationDc, essence);
         }
+    }
+
+    private static List<NwCreature> GetTargetsByDistance(Location targetLocation, NwCreature warlock)
+    {
+        // Fetch, filter, and sort directly from the caster outwards
+        return targetLocation.GetObjectsInShapeByType<NwCreature>(
+                shape: Anvil.API.Shape.SpellCylinder,
+                size: LongDistance,
+                losCheck: true,
+                origin: warlock.Position)
+            .Where(creature => !creature.IsDead && warlock.IsValidInvocationTarget(creature, hurtSelf: false))
+            .OrderBy(creature => Vector3.DistanceSquared(warlock.Position, creature.Position))
+            .ToList();
     }
 
     private static void ApplySpearVfx(NwGameObject targetObject, NwGameObject warlock, VfxType beamVfx,
