@@ -46,11 +46,11 @@ public class MonitoringConfigService : IMonitoringConfigService
 
             if (File.Exists(_configPath))
             {
-                var json = await File.ReadAllTextAsync(_configPath, ct);
-                var state = JsonSerializer.Deserialize<MonitoringState>(json, JsonOptions);
+                string json = await File.ReadAllTextAsync(_configPath, ct);
+                MonitoringState? state = JsonSerializer.Deserialize<MonitoringState>(json, JsonOptions);
                 if (state?.Containers != null)
                 {
-                    foreach (var container in state.Containers)
+                    foreach (MonitoredContainerConfig container in state.Containers)
                     {
                         _containers[container.ContainerId] = container;
                     }
@@ -79,18 +79,18 @@ public class MonitoringConfigService : IMonitoringConfigService
         await _lock.WaitAsync(ct);
         try
         {
-            var state = new MonitoringState
+            MonitoringState state = new MonitoringState
             {
                 Containers = _containers.Values.ToList()
             };
 
-            var dir = Path.GetDirectoryName(_configPath);
+            string? dir = Path.GetDirectoryName(_configPath);
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
             {
                 Directory.CreateDirectory(dir);
             }
 
-            var json = JsonSerializer.Serialize(state, JsonOptions);
+            string json = JsonSerializer.Serialize(state, JsonOptions);
             await File.WriteAllTextAsync(_configPath, json, ct);
             _logger.LogDebug("Saved monitoring config to {Path}", _configPath);
         }
@@ -113,13 +113,13 @@ public class MonitoringConfigService : IMonitoringConfigService
     public async Task<MonitoredContainerConfig?> GetMonitoredContainerAsync(string containerId, CancellationToken ct = default)
     {
         await EnsureLoadedAsync(ct);
-        return _containers.TryGetValue(containerId, out var container) ? container : null;
+        return _containers.TryGetValue(containerId, out MonitoredContainerConfig? container) ? container : null;
     }
 
     public async Task<MonitoredContainerConfig> EnableMonitoringAsync(string containerId, string displayName, CancellationToken ct = default)
     {
         await EnsureLoadedAsync(ct);
-        var config = _containers.GetOrAdd(containerId, _ => new MonitoredContainerConfig { ContainerId = containerId, DisplayName = displayName });
+        MonitoredContainerConfig config = _containers.GetOrAdd(containerId, _ => new MonitoredContainerConfig { ContainerId = containerId, DisplayName = displayName });
         config.IsMonitoringEnabled = true;
         config.DisplayName = displayName;
         await SaveAsync(ct);
@@ -130,7 +130,7 @@ public class MonitoringConfigService : IMonitoringConfigService
     public async Task DisableMonitoringAsync(string containerId, CancellationToken ct = default)
     {
         await EnsureLoadedAsync(ct);
-        if (_containers.TryGetValue(containerId, out var config))
+        if (_containers.TryGetValue(containerId, out MonitoredContainerConfig? config))
         {
             config.IsMonitoringEnabled = false;
             await SaveAsync(ct);
@@ -141,7 +141,7 @@ public class MonitoringConfigService : IMonitoringConfigService
     public async Task UpdateMonitoringSettingsAsync(string containerId, bool autoRestart, string watchPatterns, CancellationToken ct = default)
     {
         await EnsureLoadedAsync(ct);
-        if (_containers.TryGetValue(containerId, out var config))
+        if (_containers.TryGetValue(containerId, out MonitoredContainerConfig? config))
         {
             config.AutoRestartEnabled = autoRestart;
             config.WatchPatterns = watchPatterns;
@@ -152,6 +152,6 @@ public class MonitoringConfigService : IMonitoringConfigService
     public async Task<bool> IsMonitoredAsync(string containerId, CancellationToken ct = default)
     {
         await EnsureLoadedAsync(ct);
-        return _containers.TryGetValue(containerId, out var config) && config.IsMonitoringEnabled;
+        return _containers.TryGetValue(containerId, out MonitoredContainerConfig? config) && config.IsMonitoringEnabled;
     }
 }

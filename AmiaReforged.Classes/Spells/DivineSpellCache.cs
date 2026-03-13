@@ -133,7 +133,7 @@ public sealed class DivineSpellCache
     {
         Log.Info("Caching domain spells from domains.2da...");
 
-        var domainsTable = NwGameTables.GetTable("domains");
+        TwoDimArray? domainsTable = NwGameTables.GetTable("domains");
         if (domainsTable == null)
         {
             Log.Error("Could not load domains.2da table!");
@@ -180,7 +180,7 @@ public sealed class DivineSpellCache
         Log.Info($"Domain spell cache complete. Loaded {domainsLoaded} domains with {domainSpellsLoaded} total domain spells.");
 
         // Log details for debugging
-        foreach (var kvp in _domainSpells.Where(d => d.Value.Count > 0))
+        foreach (KeyValuePair<int, Dictionary<int, int>> kvp in _domainSpells.Where(d => d.Value.Count > 0))
         {
             string domainName = _domainNames.TryGetValue(kvp.Key, out string? name) ? name : $"Domain_{kvp.Key}";
             string spellLevels = string.Join(", ", kvp.Value.Select(s => $"L{s.Key}={s.Value}"));
@@ -195,8 +195,8 @@ public sealed class DivineSpellCache
     {
         EnsureInitialized();
 
-        if (_classSpells.TryGetValue(classType, out var levelDict) &&
-            levelDict.TryGetValue(spellLevel, out var spells))
+        if (_classSpells.TryGetValue(classType, out Dictionary<int, List<int>>? levelDict) &&
+            levelDict.TryGetValue(spellLevel, out List<int>? spells))
         {
             return spells;
         }
@@ -211,12 +211,12 @@ public sealed class DivineSpellCache
     {
         EnsureInitialized();
 
-        if (!_classSpells.TryGetValue(classType, out var levelDict))
+        if (!_classSpells.TryGetValue(classType, out Dictionary<int, List<int>>? levelDict))
             yield break;
 
         for (int level = 0; level <= maxSpellLevel; level++)
         {
-            if (levelDict.TryGetValue(level, out var spells))
+            if (levelDict.TryGetValue(level, out List<int>? spells))
             {
                 foreach (int spellId in spells)
                 {
@@ -234,7 +234,7 @@ public sealed class DivineSpellCache
     {
         EnsureInitialized();
 
-        if (_domainSpells.TryGetValue(domainId, out var levelDict) &&
+        if (_domainSpells.TryGetValue(domainId, out Dictionary<int, int>? levelDict) &&
             levelDict.TryGetValue(spellLevel, out int spellId))
         {
             return spellId;
@@ -250,7 +250,7 @@ public sealed class DivineSpellCache
     {
         EnsureInitialized();
 
-        if (!_domainSpells.TryGetValue(domainId, out var levelDict))
+        if (!_domainSpells.TryGetValue(domainId, out Dictionary<int, int>? levelDict))
             yield break;
 
         for (int level = 1; level <= maxSpellLevel; level++)

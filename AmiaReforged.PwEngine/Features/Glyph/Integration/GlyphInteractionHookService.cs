@@ -94,7 +94,7 @@ public class GlyphInteractionHookService
             GlyphGraph? graph = DeserializeGraph(binding.GlyphDefinition);
             if (graph == null) continue;
 
-            var key = (binding.InteractionTag, eventType);
+            (string InteractionTag, GlyphEventType eventType) key = (binding.InteractionTag, eventType);
             if (!newCache.TryGetValue(key, out List<CachedBinding>? list))
             {
                 list = [];
@@ -388,7 +388,7 @@ public class GlyphInteractionHookService
     /// </summary>
     private List<GlyphGraph> GetMatchingGraphs(string interactionTag, GlyphEventType eventType, string? areaResRef)
     {
-        var key = (interactionTag, eventType);
+        (string interactionTag, GlyphEventType eventType) key = (interactionTag, eventType);
         if (!_cache.TryGetValue(key, out List<CachedBinding>? bindings)) return [];
 
         List<GlyphGraph> result = [];

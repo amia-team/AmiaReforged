@@ -48,7 +48,7 @@ public class DockerMonitorService : IDockerMonitorService, IDisposable
 
     public async Task<IReadOnlyList<ContainerInfo>> GetContainersAsync(CancellationToken ct = default)
     {
-        var containers = await _docker.Containers.ListContainersAsync(
+        IList<ContainerListResponse>? containers = await _docker.Containers.ListContainersAsync(
             new ContainersListParameters { All = true }, ct);
 
         return containers.Select(c => new ContainerInfo(
@@ -66,8 +66,8 @@ public class DockerMonitorService : IDockerMonitorService, IDisposable
     {
         try
         {
-            var response = await _docker.Containers.InspectContainerAsync(containerId, ct);
-            var uptime = response.State.Running && response.State.StartedAt != default
+            ContainerInspectResponse? response = await _docker.Containers.InspectContainerAsync(containerId, ct);
+            TimeSpan uptime = response.State.Running && response.State.StartedAt != default
                 ? DateTime.UtcNow - DateTime.Parse(response.State.StartedAt)
                 : TimeSpan.Zero;
 
@@ -93,7 +93,7 @@ public class DockerMonitorService : IDockerMonitorService, IDisposable
         int tail = 100,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
-        var parameters = new ContainerLogsParameters
+        ContainerLogsParameters parameters = new ContainerLogsParameters
         {
             ShowStdout = true,
             ShowStderr = true,
@@ -106,7 +106,7 @@ public class DockerMonitorService : IDockerMonitorService, IDisposable
         bool useTty = false;
         try
         {
-            var inspect = await _docker.Containers.InspectContainerAsync(containerId, ct);
+            ContainerInspectResponse? inspect = await _docker.Containers.InspectContainerAsync(containerId, ct);
             useTty = inspect.Config.Tty;
         }
         catch
@@ -115,10 +115,10 @@ public class DockerMonitorService : IDockerMonitorService, IDisposable
         }
 
         // Use the tty parameter to tell Docker API how to handle the stream
-        using var stream = await _docker.Containers.GetContainerLogsAsync(containerId, useTty, parameters, ct);
+        using MultiplexedStream? stream = await _docker.Containers.GetContainerLogsAsync(containerId, useTty, parameters, ct);
 
-        var buffer = new byte[81920];
-        var errorOccurred = false;
+        byte[] buffer = new byte[81920];
+        bool errorOccurred = false;
         string? errorMessage = null;
 
         while (!ct.IsCancellationRequested && !errorOccurred)
@@ -148,12 +148,12 @@ public class DockerMonitorService : IDockerMonitorService, IDisposable
             if (result.EOF)
                 yield break;
 
-            var text = Encoding.UTF8.GetString(buffer, 0, result.Count);
-            var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            string text = Encoding.UTF8.GetString(buffer, 0, result.Count);
+            string[] lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
-            foreach (var line in lines)
+            foreach (string line in lines)
             {
-                var trimmed = line.TrimEnd('\r');
+                string trimmed = line.TrimEnd('\r');
                 if (!string.IsNullOrWhiteSpace(trimmed))
                 {
                     yield return trimmed;

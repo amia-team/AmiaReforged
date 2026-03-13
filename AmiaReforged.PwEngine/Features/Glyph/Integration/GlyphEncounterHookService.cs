@@ -66,7 +66,7 @@ public class GlyphEncounterHookService
             GlyphGraph? graph = DeserializeGraph(binding.GlyphDefinition);
             if (graph == null) continue;
 
-            var key = (binding.SpawnProfileId, eventType);
+            (Guid SpawnProfileId, GlyphEventType eventType) key = (binding.SpawnProfileId, eventType);
             if (!newCache.TryGetValue(key, out List<GlyphGraph>? list))
             {
                 list = [];
@@ -91,7 +91,7 @@ public class GlyphEncounterHookService
         EncounterContext encounterContext,
         ref int spawnCount)
     {
-        var key = (profile.Id, GlyphEventType.BeforeGroupSpawn);
+        (Guid Id, GlyphEventType BeforeGroupSpawn) key = (profile.Id, GlyphEventType.BeforeGroupSpawn);
         if (!_bindingCache.TryGetValue(key, out List<GlyphGraph>? graphs)) return true;
 
         foreach (GlyphGraph graph in graphs)
@@ -132,7 +132,7 @@ public class GlyphEncounterHookService
         EncounterContext encounterContext,
         List<uint> spawnedCreatures)
     {
-        var key = (profile.Id, GlyphEventType.AfterGroupSpawn);
+        (Guid Id, GlyphEventType AfterGroupSpawn) key = (profile.Id, GlyphEventType.AfterGroupSpawn);
         if (!_bindingCache.TryGetValue(key, out List<GlyphGraph>? graphs)) return;
 
         foreach (GlyphGraph graph in graphs)
@@ -160,7 +160,7 @@ public class GlyphEncounterHookService
         SpawnProfile profile,
         EncounterContext encounterContext)
     {
-        var key = (profile.Id, GlyphEventType.OnCreatureDeath);
+        (Guid Id, GlyphEventType OnCreatureDeath) key = (profile.Id, GlyphEventType.OnCreatureDeath);
         if (!_bindingCache.TryGetValue(key, out List<GlyphGraph>? graphs)) return;
 
         foreach (GlyphGraph graph in graphs)
@@ -199,7 +199,7 @@ public class GlyphEncounterHookService
         skipBonuses = false;
         skipMutations = false;
 
-        var key = (profile.Id, GlyphEventType.OnCreatureSpawn);
+        (Guid Id, GlyphEventType OnCreatureSpawn) key = (profile.Id, GlyphEventType.OnCreatureSpawn);
         if (!_bindingCache.TryGetValue(key, out List<GlyphGraph>? graphs)) return;
 
         foreach (GlyphGraph graph in graphs)
@@ -239,7 +239,7 @@ public class GlyphEncounterHookService
     {
         skipBonuses = false;
 
-        var key = (profile.Id, GlyphEventType.OnBossSpawn);
+        (Guid Id, GlyphEventType OnBossSpawn) key = (profile.Id, GlyphEventType.OnBossSpawn);
         if (!_bindingCache.TryGetValue(key, out List<GlyphGraph>? graphs)) return;
 
         foreach (GlyphGraph graph in graphs)

@@ -21,7 +21,7 @@
         <label class="form-label fw-bold">Server Endpoint</label>
         <select class="form-select" value="@_selectedEndpointId" @onchange="OnEndpointChanged">
             <option value="">— Select endpoint —</option>
-            @foreach (var ep in _endpoints)
+            @foreach (WorldEngineEndpoint ep in _endpoints)
             {
                 <option value="@ep.Id">@ep.Name</option>
             }
@@ -98,7 +98,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var industry in _industries)
+                @foreach (IndustryDefinitionDto industry in _industries)
                 {
                     <tr>
                         <td><code>@industry.Tag</code></td>
@@ -140,7 +140,7 @@
             <label class="form-label">Select Industry</label>
             <select class="form-select" value="@_selectedIndustryTag" @onchange="OnIndustrySelected">
                 <option value="">— Select —</option>
-                @foreach (var ind in _industries)
+                @foreach (IndustryDefinitionDto ind in _industries)
                 {
                     <option value="@ind.Tag">@ind.Name (@ind.Tag)</option>
                 }
@@ -157,11 +157,11 @@
     @if (_selectedIndustry != null)
     {
         @* Group by branch *@
-        var branches = _selectedIndustry.Knowledge
+        IOrderedEnumerable<IGrouping<string, IndustryKnowledgeDto>> branches = _selectedIndustry.Knowledge
             .GroupBy(k => k.Branch ?? "(No Branch)")
             .OrderBy(g => g.Key);
 
-        @foreach (var branch in branches)
+        @foreach (IGrouping<string, IndustryKnowledgeDto> branch in branches)
         {
             <h5 class="mt-3">@branch.Key</h5>
             <table class="table table-sm table-striped">
@@ -177,7 +177,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var k in branch.OrderBy(k => k.Level).ThenBy(k => k.Tag))
+                    @foreach (IndustryKnowledgeDto k in branch.OrderBy(k => k.Level).ThenBy(k => k.Tag))
                     {
                         <tr>
                             <td><code>@k.Tag</code></td>
@@ -206,7 +206,7 @@
             <label class="form-label">Select Industry</label>
             <select class="form-select" value="@_selectedIndustryTag" @onchange="OnIndustrySelected">
                 <option value="">— Select —</option>
-                @foreach (var ind in _industries)
+                @foreach (IndustryDefinitionDto ind in _industries)
                 {
                     <option value="@ind.Tag">@ind.Name (@ind.Tag)</option>
                 }
@@ -236,7 +236,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var r in _selectedIndustry.Recipes)
+                @foreach (IndustryRecipeDto r in _selectedIndustry.Recipes)
                 {
                     <tr>
                         <td><code>@r.RecipeId</code></td>
@@ -289,7 +289,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var ws in _workstations)
+                @foreach (WorkstationDefinitionDto ws in _workstations)
                 {
                     <tr>
                         <td><code>@ws.Tag</code></td>
@@ -544,7 +544,7 @@
                     <label>Required Workstation</label>
                     <select class="form-control" @bind="_editRecipe.RequiredWorkstation">
                         <option value="">None</option>
-                        @foreach (var ws in _workstations)
+                        @foreach (WorkstationDefinitionDto ws in _workstations)
                         {
                             <option value="@ws.Tag">@ws.Name (@ws.Tag)</option>
                         }
@@ -576,7 +576,7 @@
                 @for (int idx = 0; idx < _editRecipe.Ingredients.Count; idx++)
                 {
                     int i = idx;
-                    var ingredientKey = $"ingredient-{i}";
+                    string ingredientKey = $"ingredient-{i}";
                     <div style="display:flex;gap:8px;margin-top:4px;align-items:center">
                         <div class="item-picker-wrapper" style="flex:3">
                             <input class="form-control form-control-sm"
@@ -606,7 +606,7 @@
                                     }
                                     else
                                     {
-                                        @foreach (var item in _itemPickerResults)
+                                        @foreach (ItemBlueprintDto item in _itemPickerResults)
                                         {
                                             <div class="item-picker-item" @onmousedown="() => SelectItemForIngredient(i, item.ItemTag)" @onmousedown:preventDefault>
                                                 <div class="item-picker-name">@item.Name</div>
@@ -633,7 +633,7 @@
                 @for (int idx = 0; idx < _editRecipe.Products.Count; idx++)
                 {
                     int i = idx;
-                    var productKey = $"product-{i}";
+                    string productKey = $"product-{i}";
                     <div style="display:flex;gap:8px;margin-top:4px;align-items:center">
                         <div class="item-picker-wrapper" style="flex:3">
                             <input class="form-control form-control-sm"
@@ -663,7 +663,7 @@
                                     }
                                     else
                                     {
-                                        @foreach (var item in _itemPickerResults)
+                                        @foreach (ItemBlueprintDto item in _itemPickerResults)
                                         {
                                             <div class="item-picker-item" @onmousedown="() => SelectItemForProduct(i, item.ItemTag)" @onmousedown:preventDefault>
                                                 <div class="item-picker-name">@item.Name</div>
@@ -784,7 +784,7 @@
     private async Task OnEndpointChanged(ChangeEventArgs e)
     {
         _selectedEndpointId = e.Value?.ToString() ?? "";
-        if (Guid.TryParse(_selectedEndpointId, out var id))
+        if (Guid.TryParse(_selectedEndpointId, out Guid id))
         {
             IndustryApi.SelectEndpoint(id);
             WorkstationApi.SelectEndpoint(id);
@@ -813,7 +813,7 @@
         try
         {
             _isLoading = true;
-            var result = await IndustryApi.GetAllAsync(_industrySearch, _page, _pageSize);
+            PagedResult<IndustryDefinitionDto> result = await IndustryApi.GetAllAsync(_industrySearch, _page, _pageSize);
             _industries = result.Items?.ToList() ?? [];
             _industryTotalCount = result.TotalCount;
         }
@@ -901,7 +901,7 @@
         try
         {
             _isLoading = true;
-            var result = await WorkstationApi.GetAllAsync(_workstationSearch);
+            PagedResult<WorkstationDefinitionDto> result = await WorkstationApi.GetAllAsync(_workstationSearch);
             _workstations = result.Items?.ToList() ?? [];
         }
         catch (Exception ex)
@@ -980,7 +980,7 @@
 
     private void OnWorkstationAppearanceChanged(ChangeEventArgs e)
     {
-        _editWorkstation.AppearanceId = int.TryParse(e.Value?.ToString(), out var v) ? v : null;
+        _editWorkstation.AppearanceId = int.TryParse(e.Value?.ToString(), out int v) ? v : null;
     }
 
     // ==================== Knowledge CRUD ====================
@@ -1268,13 +1268,13 @@
         }
 
         _itemPickerLoading = true;
-        var searchText = _itemPickerSearch;
+        string searchText = _itemPickerSearch;
 
         _debounceTimer = new System.Threading.Timer(async _ =>
         {
             try
             {
-                var result = await ItemApi.GetAllAsync(searchText, 1, 15);
+                PagedResult<ItemBlueprintDto> result = await ItemApi.GetAllAsync(searchText, 1, 15);
                 await InvokeAsync(() =>
                 {
                     if (_activePickerKey == key && _itemPickerSearch == searchText)

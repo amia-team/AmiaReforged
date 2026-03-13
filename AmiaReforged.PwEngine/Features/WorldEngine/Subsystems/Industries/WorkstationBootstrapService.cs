@@ -27,6 +27,7 @@ public sealed class WorkstationBootstrapService
 
     private readonly IWorkstationRepository _workstationRepository;
     private readonly WindowDirector _windowDirector;
+    private readonly RecipeTemplateExpander _recipeTemplateExpander;
 
     /// <summary>
     /// Tracks which placeable object IDs have already been wired to prevent duplicate subscriptions.
@@ -40,10 +41,12 @@ public sealed class WorkstationBootstrapService
 
     public WorkstationBootstrapService(
         IWorkstationRepository workstationRepository,
-        WindowDirector windowDirector)
+        WindowDirector windowDirector,
+        RecipeTemplateExpander recipeTemplateExpander)
     {
         _workstationRepository = workstationRepository;
         _windowDirector = windowDirector;
+        _recipeTemplateExpander = recipeTemplateExpander;
 
         NwModule.Instance.OnModuleLoad += HandleModuleLoad;
     }
@@ -53,6 +56,8 @@ public sealed class WorkstationBootstrapService
         try
         {
             RegisterWorkstations();
+            _recipeTemplateExpander.ExpandAll();
+            Log.Info("Recipe templates expanded at module load.");
         }
         catch (Exception ex)
         {

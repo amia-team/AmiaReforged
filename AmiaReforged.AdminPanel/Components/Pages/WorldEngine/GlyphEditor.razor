@@ -25,7 +25,7 @@
                     <label class="instance-label">Server:</label>
                     <select class="form-control form-control-sm" value="@(_selectedEndpoint?.Id.ToString() ?? "")" @onchange="OnEndpointChanged">
                         <option value="">— Select —</option>
-                        @foreach (var ep in _endpoints)
+                        @foreach (WorldEngineEndpoint ep in _endpoints)
                         {
                             <option value="@ep.Id">@ep.Name</option>
                         }
@@ -101,12 +101,12 @@
                                    @bind="_nodeSearchFilter" @bind:event="oninput" />
                         </div>
                         <div class="card-body p-0" style="max-height:600px;overflow-y:auto">
-                            @foreach (var category in FilteredCatalog)
+                            @foreach (IGrouping<string, GlyphNodeCatalogEntryDto> category in FilteredCatalog)
                             {
                                 <div class="px-3 py-1" style="background:var(--surface-hover);color:var(--text-secondary);font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">
                                     @category.Key
                                 </div>
-                                @foreach (var node in category)
+                                @foreach (GlyphNodeCatalogEntryDto node in category)
                                 {
                                     <div class="px-3 py-2 glyph-node-entry" style="border-bottom:1px solid var(--border-color);cursor:pointer"
                                          @onclick="() => AddNodeToGraph(node)" title="@node.Description">
@@ -131,14 +131,14 @@
                                 <small class="d-block" style="color:var(--text-secondary)">@_selectedNodeInfo.DisplayName</small>
                             </div>
                             <div class="card-body p-2">
-                                @{ var editablePins = _selectedNodeInfo.InputPins?.Where(p => !p.IsConnected).ToList() ?? []; }
+                                @{ List<SelectedPinInfo> editablePins = _selectedNodeInfo.InputPins?.Where(p => !p.IsConnected).ToList() ?? []; }
                                 @if (editablePins.Count == 0)
                                 {
                                     <p class="mb-0" style="color:var(--text-secondary);font-size:0.85rem">No editable properties. Connect or add data input pins.</p>
                                 }
                                 else
                                 {
-                                    @foreach (var pin in editablePins)
+                                    @foreach (SelectedPinInfo pin in editablePins)
                                     {
                                         <div class="mb-2">
                                             <label class="form-label mb-0" style="font-size:0.8rem;color:var(--text-secondary)">@pin.Name <small>(@pin.DataType)</small></label>
@@ -189,7 +189,7 @@
                                     <label style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em">Spawn Profiles</label>
                                     @if (_definitionBindings?.SpawnProfileBindings.Count > 0)
                                     {
-                                        @foreach (var b in _definitionBindings.SpawnProfileBindings)
+                                        @foreach (GlyphBindingDto b in _definitionBindings.SpawnProfileBindings)
                                         {
                                             <div class="d-flex justify-content-between align-items-center py-1" style="border-bottom:1px solid var(--border-color)">
                                                 <div>
@@ -210,7 +210,7 @@
                                         <div style="margin-top:6px;padding:8px;background:var(--surface-hover);border-radius:6px">
                                             <select class="form-control form-control-sm mb-1" @bind="_newSpawnBindingProfileId">
                                                 <option value="">— Select Profile —</option>
-                                                @foreach (var p in _availableProfiles)
+                                                @foreach (SpawnProfileDto p in _availableProfiles)
                                                 {
                                                     <option value="@p.Id">@p.Name</option>
                                                 }
@@ -233,7 +233,7 @@
                                     <label style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em">Traits</label>
                                     @if (_definitionBindings?.TraitBindings.Count > 0)
                                     {
-                                        @foreach (var b in _definitionBindings.TraitBindings)
+                                        @foreach (TraitGlyphBindingDto b in _definitionBindings.TraitBindings)
                                         {
                                             <div class="d-flex justify-content-between align-items-center py-1" style="border-bottom:1px solid var(--border-color)">
                                                 <div>
@@ -271,7 +271,7 @@
                                     <label style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em">Interactions</label>
                                     @if (_definitionBindings?.InteractionBindings.Count > 0)
                                     {
-                                        @foreach (var b in _definitionBindings.InteractionBindings)
+                                        @foreach (InteractionGlyphBindingDto b in _definitionBindings.InteractionBindings)
                                         {
                                             <div class="d-flex justify-content-between align-items-center py-1" style="border-bottom:1px solid var(--border-color)">
                                                 <div>
@@ -351,7 +351,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    @foreach (var def in _definitions)
+                    @foreach (GlyphDefinitionDto def in _definitions)
                     {
                         <tr>
                             <td>@def.Name</td>
@@ -412,7 +412,7 @@
                             <label class="form-label">Event Type</label>
                             <select class="form-control" @bind="_createEventType">
                                 <option value="">— Select —</option>
-                                @foreach (var et in GetEventTypesForCategory(_createCategory))
+                                @foreach (string et in GetEventTypesForCategory(_createCategory))
                                 {
                                     <option value="@et">@et</option>
                                 }
@@ -571,7 +571,7 @@
     {
         try
         {
-            var all = await EndpointService.GetEnabledEndpointsAsync();
+            IReadOnlyList<WorldEngineEndpoint> all = await EndpointService.GetEnabledEndpointsAsync();
             _endpoints = all.ToList();
         }
         catch (Exception ex)
@@ -664,7 +664,7 @@
         _isSaving = true;
         try
         {
-            var request = new CreateGlyphRequest(
+            CreateGlyphRequest request = new CreateGlyphRequest(
                 _createName.Trim(),
                 _createEventType,
                 _createCategory,
@@ -673,7 +673,7 @@
                 false
             );
 
-            var created = await Api.CreateDefinitionAsync(request);
+            GlyphDefinitionDto? created = await Api.CreateDefinitionAsync(request);
             if (created != null)
             {
                 _definitions.Add(created);
@@ -697,8 +697,8 @@
     {
         try
         {
-            var request = new UpdateGlyphRequest(IsActive: !def.IsActive);
-            var updated = await Api.UpdateDefinitionAsync(def.Id, request);
+            UpdateGlyphRequest request = new UpdateGlyphRequest(IsActive: !def.IsActive);
+            GlyphDefinitionDto? updated = await Api.UpdateDefinitionAsync(def.Id, request);
             if (updated != null)
             {
                 int idx = _definitions.FindIndex(d => d.Id == def.Id);
@@ -746,7 +746,7 @@
         // Re-fetch to get the full GraphJson
         try
         {
-            var full = await Api.GetDefinitionAsync(def.Id);
+            GlyphDefinitionDto? full = await Api.GetDefinitionAsync(def.Id);
             if (full == null)
             {
                 _error = "Failed to load definition details.";
@@ -792,8 +792,8 @@
             _dotNetRef = DotNetObjectReference.Create(this);
 
             // Pass the node catalog and current graph JSON to the JS editor
-            var catalogJson = System.Text.Json.JsonSerializer.Serialize(_nodeCatalog);
-            var graphJson = _editingDefinition?.GraphJson ?? "{}";
+            string catalogJson = System.Text.Json.JsonSerializer.Serialize(_nodeCatalog);
+            string graphJson = _editingDefinition?.GraphJson ?? "{}";
 
             await _editorModule.InvokeVoidAsync("initGlyphEditor", "glyph-rete-canvas", catalogJson, graphJson, _dotNetRef);
         }
@@ -814,8 +814,8 @@
             // Get the current graph state from the JS editor
             string graphJson = await _editorModule.InvokeAsync<string>("getGraphJson");
 
-            var request = new UpdateGlyphRequest(GraphJson: graphJson);
-            var updated = await Api.UpdateDefinitionAsync(_editingDefinition.Id, request);
+            UpdateGlyphRequest request = new UpdateGlyphRequest(GraphJson: graphJson);
+            GlyphDefinitionDto? updated = await Api.UpdateDefinitionAsync(_editingDefinition.Id, request);
 
             if (updated != null)
             {
@@ -842,7 +842,7 @@
 
         try
         {
-            var nodeJson = System.Text.Json.JsonSerializer.Serialize(node);
+            string nodeJson = System.Text.Json.JsonSerializer.Serialize(node);
             await _editorModule.InvokeVoidAsync("addNode", nodeJson);
         }
         catch (Exception ex)

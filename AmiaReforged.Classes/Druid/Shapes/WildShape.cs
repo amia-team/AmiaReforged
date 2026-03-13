@@ -18,7 +18,7 @@ public class WildShape : ISpell
 
         int casterLevel = creature.CasterLevel;
 
-        var polymorphMapping
+        Dictionary<int, int> polymorphMapping
             = casterLevel >= PolymorphMapping.WildShape.EpicLevelRequirement ? PolymorphMapping.WildShape.Epic :
             casterLevel >= PolymorphMapping.WildShape.ImprovedLevelRequirement ? PolymorphMapping.WildShape.Elder :
             PolymorphMapping.WildShape.Base;

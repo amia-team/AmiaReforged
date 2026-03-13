@@ -94,7 +94,7 @@ public class OrganizationApiService
         if (_selectedEndpointId == null)
             throw new InvalidOperationException("No WorldEngine endpoint selected.");
 
-        var ep = await _endpointService.GetEndpointAsync(_selectedEndpointId.Value);
+        WorldEngineEndpoint? ep = await _endpointService.GetEndpointAsync(_selectedEndpointId.Value);
         if (ep == null)
             throw new InvalidOperationException("The selected WorldEngine endpoint no longer exists.");
 
@@ -106,32 +106,32 @@ public class OrganizationApiService
 
     private static HttpRequestMessage CreateRequest(HttpMethod method, Uri baseUri, string relativeUrl, string apiKey)
     {
-        var request = new HttpRequestMessage(method, new Uri(baseUri, relativeUrl));
+        HttpRequestMessage request = new HttpRequestMessage(method, new Uri(baseUri, relativeUrl));
         request.Headers.Add("X-API-Key", apiKey);
         return request;
     }
 
     private async Task<T?> GetAsync<T>(string url) where T : class
     {
-        var (baseUri, apiKey) = await ResolveEndpointAsync();
-        var http = _httpClientFactory.CreateClient("WorldEngine");
-        using var request = CreateRequest(HttpMethod.Get, baseUri, url, apiKey);
-        var response = await http.SendAsync(request);
+        (Uri baseUri, string apiKey) = await ResolveEndpointAsync();
+        HttpClient http = _httpClientFactory.CreateClient("WorldEngine");
+        using HttpRequestMessage request = CreateRequest(HttpMethod.Get, baseUri, url, apiKey);
+        HttpResponseMessage response = await http.SendAsync(request);
         await EnsureSuccessOrThrow(response);
         return await response.Content.ReadFromJsonAsync<T>(JsonOptions);
     }
 
     private async Task<T?> PostAsync<T>(string url, object? body) where T : class
     {
-        var (baseUri, apiKey) = await ResolveEndpointAsync();
-        var http = _httpClientFactory.CreateClient("WorldEngine");
-        using var request = CreateRequest(HttpMethod.Post, baseUri, url, apiKey);
+        (Uri baseUri, string apiKey) = await ResolveEndpointAsync();
+        HttpClient http = _httpClientFactory.CreateClient("WorldEngine");
+        using HttpRequestMessage request = CreateRequest(HttpMethod.Post, baseUri, url, apiKey);
         if (body != null)
         {
             request.Content = new StringContent(
                 JsonSerializer.Serialize(body, JsonOptions), Encoding.UTF8, "application/json");
         }
-        var response = await http.SendAsync(request);
+        HttpResponseMessage response = await http.SendAsync(request);
         await EnsureSuccessOrThrow(response);
 
         string content = await response.Content.ReadAsStringAsync();
@@ -141,22 +141,22 @@ public class OrganizationApiService
 
     private async Task<T?> PutAsync<T>(string url, object body) where T : class
     {
-        var (baseUri, apiKey) = await ResolveEndpointAsync();
-        var http = _httpClientFactory.CreateClient("WorldEngine");
-        using var request = CreateRequest(HttpMethod.Put, baseUri, url, apiKey);
+        (Uri baseUri, string apiKey) = await ResolveEndpointAsync();
+        HttpClient http = _httpClientFactory.CreateClient("WorldEngine");
+        using HttpRequestMessage request = CreateRequest(HttpMethod.Put, baseUri, url, apiKey);
         request.Content = new StringContent(
             JsonSerializer.Serialize(body, JsonOptions), Encoding.UTF8, "application/json");
-        var response = await http.SendAsync(request);
+        HttpResponseMessage response = await http.SendAsync(request);
         await EnsureSuccessOrThrow(response);
         return await response.Content.ReadFromJsonAsync<T>(JsonOptions);
     }
 
     private async Task DeleteRequestAsync(string url)
     {
-        var (baseUri, apiKey) = await ResolveEndpointAsync();
-        var http = _httpClientFactory.CreateClient("WorldEngine");
-        using var request = CreateRequest(HttpMethod.Delete, baseUri, url, apiKey);
-        var response = await http.SendAsync(request);
+        (Uri baseUri, string apiKey) = await ResolveEndpointAsync();
+        HttpClient http = _httpClientFactory.CreateClient("WorldEngine");
+        using HttpRequestMessage request = CreateRequest(HttpMethod.Delete, baseUri, url, apiKey);
+        HttpResponseMessage response = await http.SendAsync(request);
         await EnsureSuccessOrThrow(response);
     }
 
@@ -167,7 +167,7 @@ public class OrganizationApiService
         string body = await response.Content.ReadAsStringAsync();
         try
         {
-            var error = JsonSerializer.Deserialize<ApiErrorResponse>(body, JsonOptions);
+            ApiErrorResponse? error = JsonSerializer.Deserialize<ApiErrorResponse>(body, JsonOptions);
             if (error != null)
                 throw new WorldEngineApiException((int)response.StatusCode, error.Error, error.Detail);
         }

@@ -83,7 +83,7 @@ public class CasterLevelOverrideService
     private void DoCasterLevelOverride(NwCreature casterCreature)
     {
         // Use the shared calculator to get all effective caster levels
-        var effectiveLevels = EffectiveCasterLevelCalculator.CalculateAllEffectiveCasterLevels(casterCreature);
+        Dictionary<ClassType, int> effectiveLevels = EffectiveCasterLevelCalculator.CalculateAllEffectiveCasterLevels(casterCreature);
 
         // Build a map of actual class levels for comparison
         Dictionary<ClassType, int> actualLevels = new();

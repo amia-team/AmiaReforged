@@ -19,6 +19,7 @@ public record GetWorkstationRecipesQuery : IQuery<List<Recipe>>
 
 /// <summary>
 /// Handles retrieving available recipes for a character at a given workstation.
+/// Includes both manually-defined recipes and template-expanded recipes.
 /// </summary>
 [ServiceBinding(typeof(IQueryHandler<GetWorkstationRecipesQuery, List<Recipe>>))]
 public class GetWorkstationRecipesHandler : IQueryHandler<GetWorkstationRecipesQuery, List<Recipe>>
@@ -27,17 +28,20 @@ public class GetWorkstationRecipesHandler : IQueryHandler<GetWorkstationRecipesQ
     private readonly IIndustryRepository _industryRepository;
     private readonly IIndustryMembershipRepository _membershipRepository;
     private readonly ICharacterKnowledgeRepository _knowledgeRepository;
+    private readonly RecipeTemplateExpander _templateExpander;
 
     public GetWorkstationRecipesHandler(
         IWorkstationRepository workstationRepository,
         IIndustryRepository industryRepository,
         IIndustryMembershipRepository membershipRepository,
-        ICharacterKnowledgeRepository knowledgeRepository)
+        ICharacterKnowledgeRepository knowledgeRepository,
+        RecipeTemplateExpander templateExpander)
     {
         _workstationRepository = workstationRepository;
         _industryRepository = industryRepository;
         _membershipRepository = membershipRepository;
         _knowledgeRepository = knowledgeRepository;
+        _templateExpander = templateExpander;
     }
 
     public Task<List<Recipe>> HandleAsync(GetWorkstationRecipesQuery query, CancellationToken cancellationToken = default)
@@ -84,8 +88,23 @@ public class GetWorkstationRecipesHandler : IQueryHandler<GetWorkstationRecipesQ
                 recipe.RequiredKnowledge.All(req => knownTags.Contains(req)));
 
             availableRecipes.AddRange(matching);
+
+            // 5b. Also include template-expanded recipes for this industry + workstation
+            IEnumerable<Recipe> templateRecipes = _templateExpander
+                .GetExpandedRecipesForWorkstation(membership.IndustryTag, query.WorkstationTag)
+                .Where(recipe =>
+                    membership.Level >= recipe.RequiredProficiency &&
+                    recipe.RequiredKnowledge.All(req => knownTags.Contains(req)));
+
+            availableRecipes.AddRange(templateRecipes);
         }
 
-        return Task.FromResult(availableRecipes);
+        // Deduplicate by RecipeId (manual recipes take precedence over template-expanded)
+        List<Recipe> deduplicated = availableRecipes
+            .GroupBy(r => r.RecipeId.Value)
+            .Select(g => g.First())
+            .ToList();
+
+        return Task.FromResult(deduplicated);
     }
 }

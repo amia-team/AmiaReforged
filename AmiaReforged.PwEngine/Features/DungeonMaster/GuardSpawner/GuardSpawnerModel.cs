@@ -99,7 +99,7 @@ public sealed class GuardSpawnerModel
             return false;
         }
 
-        var creatures = GuardSpawnerData.GetCreaturesForSettlement(SelectedSettlement.DisplayName);
+        List<GuardSpawnerData.GuardCreature> creatures = GuardSpawnerData.GetCreaturesForSettlement(SelectedSettlement.DisplayName);
         if (index < 0 || index >= creatures.Count)
         {
             return false;
@@ -252,7 +252,7 @@ public sealed class GuardSpawnerModel
     /// </summary>
     public async Task<bool> BuildWidget()
     {
-        var (isValid, errorMessage) = Validate();
+        (bool isValid, string errorMessage) = Validate();
         if (!isValid)
         {
             _player.SendServerMessage(errorMessage, ColorConstants.Orange);
@@ -301,7 +301,7 @@ public sealed class GuardSpawnerModel
         int guardIndex = 1;
         string firstGuardName = string.Empty;
 
-        foreach (var creatureData in ChosenCreatures)
+        foreach (GuardSpawnerData.GuardCreature creatureData in ChosenCreatures)
         {
             // Skip placeholder entries from loaded widgets that haven't been replaced
             if (creatureData.ResRef == "unknown")
@@ -380,7 +380,7 @@ public sealed class GuardSpawnerModel
         int guardIndex = 1;
         string firstGuardName = string.Empty;
 
-        foreach (var creatureData in ChosenCreatures)
+        foreach (GuardSpawnerData.GuardCreature creatureData in ChosenCreatures)
         {
             // Skip placeholder entries from loaded widgets
             if (creatureData.ResRef == "unknown")
@@ -463,8 +463,8 @@ public sealed class GuardSpawnerModel
         creature.VisualTransform.Scale = scale;
 
         // Apply AI scripts using NWScript
-        var scripts = GuardSpawnerData.GetAiScriptsForCreature(resRef);
-        foreach (var (eventType, scriptName) in scripts)
+        Dictionary<EventScriptType, string> scripts = GuardSpawnerData.GetAiScriptsForCreature(resRef);
+        foreach ((EventScriptType eventType, string scriptName) in scripts)
         {
             int nwScriptEvent = EventScriptTypeToNwScript(eventType);
             if (nwScriptEvent >= 0)
@@ -561,7 +561,7 @@ public sealed class GuardSpawnerModel
             return new List<NuiComboEntry> { new("(Select a settlement first)", 0) };
         }
 
-        var creatures = GuardSpawnerData.GetCreaturesForSettlement(SelectedSettlement.DisplayName);
+        List<GuardSpawnerData.GuardCreature> creatures = GuardSpawnerData.GetCreaturesForSettlement(SelectedSettlement.DisplayName);
         List<NuiComboEntry> entries = new();
         for (int i = 0; i < creatures.Count; i++)
         {

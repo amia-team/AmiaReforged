@@ -155,7 +155,7 @@ public class HarvestViaInteractionFrameworkTests
 
         // Then a ResourceHarvestedEvent should be published
         _publishedEvents.OfType<ResourceHarvestedEvent>().Should().HaveCount(1);
-        var harvestEvent = _publishedEvents.OfType<ResourceHarvestedEvent>().First();
+        ResourceHarvestedEvent harvestEvent = _publishedEvents.OfType<ResourceHarvestedEvent>().First();
         harvestEvent.ResourceTag.Should().Be(CopperOreTag);
         harvestEvent.Items.Should().HaveCountGreaterThan(0);
     }
@@ -208,7 +208,7 @@ public class HarvestViaInteractionFrameworkTests
             await _commandHandler.HandleAsync(command);
 
         // Then the yield should be 1 (base) + 2 (bonus) = 3
-        var harvestEvent = _publishedEvents.OfType<ResourceHarvestedEvent>().First();
+        ResourceHarvestedEvent harvestEvent = _publishedEvents.OfType<ResourceHarvestedEvent>().First();
         harvestEvent.Items.First().Quantity.Should().Be(3);
     }
 

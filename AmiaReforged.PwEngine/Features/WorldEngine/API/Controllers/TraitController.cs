@@ -36,10 +36,10 @@ public class TraitController
         string? category = ctx.GetQueryParam("category");
         string? deathBehavior = ctx.GetQueryParam("deathBehavior");
         string? dmOnly = ctx.GetQueryParam("dmOnly");
-        int page = int.TryParse(ctx.GetQueryParam("page"), out var p) ? Math.Max(1, p) : 1;
-        int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out var ps) ? Math.Clamp(ps, 1, 200) : 50;
+        int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
+        int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
 
-        using var context = ResolveContext();
+        using PwEngineContext context = ResolveContext();
 
         IQueryable<PersistedTraitDefinition> query = context.TraitDefinitions;
 
@@ -54,19 +54,19 @@ public class TraitController
 
         if (!string.IsNullOrWhiteSpace(category))
         {
-            if (Enum.TryParse<TraitCategory>(category.Trim(), true, out var cat))
+            if (Enum.TryParse<TraitCategory>(category.Trim(), true, out TraitCategory cat))
                 query = query.Where(d => d.Category == cat);
         }
 
         if (!string.IsNullOrWhiteSpace(deathBehavior))
         {
-            if (Enum.TryParse<TraitDeathBehavior>(deathBehavior.Trim(), true, out var db))
+            if (Enum.TryParse<TraitDeathBehavior>(deathBehavior.Trim(), true, out TraitDeathBehavior db))
                 query = query.Where(d => d.DeathBehavior == db);
         }
 
         if (!string.IsNullOrWhiteSpace(dmOnly))
         {
-            if (bool.TryParse(dmOnly.Trim(), out var dm))
+            if (bool.TryParse(dmOnly.Trim(), out bool dm))
                 query = query.Where(d => d.DmOnly == dm);
         }
 
@@ -97,8 +97,8 @@ public class TraitController
     {
         string tag = ctx.GetRouteValue("tag");
 
-        using var context = ResolveContext();
-        var definition = await context.TraitDefinitions.FindAsync(tag);
+        using PwEngineContext context = ResolveContext();
+        PersistedTraitDefinition? definition = await context.TraitDefinitions.FindAsync(tag);
 
         if (definition == null)
         {
@@ -116,7 +116,7 @@ public class TraitController
     [HttpPost(BasePath)]
     public static async Task<ApiResult> Create(RouteContext ctx)
     {
-        var dto = await ctx.ReadJsonBodyAsync<TraitDefinitionDto>();
+        TraitDefinitionDto? dto = await ctx.ReadJsonBodyAsync<TraitDefinitionDto>();
         if (dto == null)
         {
             return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required"));
@@ -128,7 +128,7 @@ public class TraitController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        using var context = ResolveContext();
+        using PwEngineContext context = ResolveContext();
 
         bool exists = await context.TraitDefinitions.AnyAsync(d => d.Tag == dto.Tag);
         if (exists)
@@ -137,7 +137,7 @@ public class TraitController
                 "Conflict", $"A trait definition with tag '{dto.Tag}' already exists"));
         }
 
-        var definition = FromDto(dto);
+        PersistedTraitDefinition definition = FromDto(dto);
         definition.CreatedUtc = DateTime.UtcNow;
         definition.UpdatedUtc = DateTime.UtcNow;
 
@@ -159,8 +159,8 @@ public class TraitController
     {
         string tag = ctx.GetRouteValue("tag");
 
-        using var context = ResolveContext();
-        var existing = await context.TraitDefinitions.FindAsync(tag);
+        using PwEngineContext context = ResolveContext();
+        PersistedTraitDefinition? existing = await context.TraitDefinitions.FindAsync(tag);
 
         if (existing == null)
         {
@@ -168,7 +168,7 @@ public class TraitController
                 "Not found", $"No trait definition with tag '{tag}'"));
         }
 
-        var dto = await ctx.ReadJsonBodyAsync<TraitDefinitionDto>();
+        TraitDefinitionDto? dto = await ctx.ReadJsonBodyAsync<TraitDefinitionDto>();
         if (dto == null)
         {
             return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required"));
@@ -184,9 +184,9 @@ public class TraitController
         existing.Name = dto.Name;
         existing.Description = dto.Description;
         existing.PointCost = dto.PointCost;
-        existing.Category = Enum.TryParse<TraitCategory>(dto.Category, true, out var cat)
+        existing.Category = Enum.TryParse<TraitCategory>(dto.Category, true, out TraitCategory cat)
             ? cat : TraitCategory.Background;
-        existing.DeathBehavior = Enum.TryParse<TraitDeathBehavior>(dto.DeathBehavior, true, out var db)
+        existing.DeathBehavior = Enum.TryParse<TraitDeathBehavior>(dto.DeathBehavior, true, out TraitDeathBehavior db)
             ? db : TraitDeathBehavior.Persist;
         existing.RequiresUnlock = dto.RequiresUnlock;
         existing.DmOnly = dto.DmOnly;
@@ -216,8 +216,8 @@ public class TraitController
     {
         string tag = ctx.GetRouteValue("tag");
 
-        using var context = ResolveContext();
-        var existing = await context.TraitDefinitions.FindAsync(tag);
+        using PwEngineContext context = ResolveContext();
+        PersistedTraitDefinition? existing = await context.TraitDefinitions.FindAsync(tag);
 
         if (existing == null)
         {
@@ -226,7 +226,7 @@ public class TraitController
         }
 
         // Remove any character trait selections referencing this definition
-        var characterTraits = await context.CharacterTraits
+        List<PersistentCharacterTrait> characterTraits = await context.CharacterTraits
             .Where(ct => ct.TraitTag == tag)
             .ToListAsync();
 
@@ -295,8 +295,8 @@ public class TraitController
 
     private static PwEngineContext ResolveContext()
     {
-        var factory = AnvilCore.GetService<PwContextFactory>()
-                      ?? throw new InvalidOperationException("PwContextFactory service not available");
+        PwContextFactory factory = AnvilCore.GetService<PwContextFactory>()
+                                   ?? throw new InvalidOperationException("PwContextFactory service not available");
         return factory.CreateDbContext();
     }
 
@@ -304,8 +304,8 @@ public class TraitController
     {
         try
         {
-            var mapper = AnvilCore.GetService<TraitDefinitionMapper>();
-            var repository = AnvilCore.GetService<ITraitRepository>();
+            TraitDefinitionMapper? mapper = AnvilCore.GetService<TraitDefinitionMapper>();
+            ITraitRepository? repository = AnvilCore.GetService<ITraitRepository>();
 
             if (mapper != null && repository != null)
             {
@@ -323,7 +323,7 @@ public class TraitController
     {
         try
         {
-            var repository = AnvilCore.GetService<ITraitRepository>();
+            ITraitRepository? repository = AnvilCore.GetService<ITraitRepository>();
             repository?.Remove(traitTag);
         }
         catch
@@ -350,7 +350,7 @@ public class TraitController
 
         if (dto.Effects != null)
         {
-            foreach (var effect in dto.Effects)
+            foreach (TraitEffectApiDto effect in dto.Effects)
             {
                 if (!Enum.IsDefined(typeof(TraitEffectType), effect.EffectType))
                     return $"Invalid effect type '{effect.EffectType}'";
@@ -392,9 +392,9 @@ public class TraitController
             Name = dto.Name.Trim(),
             Description = dto.Description,
             PointCost = dto.PointCost,
-            Category = Enum.TryParse<TraitCategory>(dto.Category, true, out var cat)
+            Category = Enum.TryParse<TraitCategory>(dto.Category, true, out TraitCategory cat)
                 ? cat : TraitCategory.Background,
-            DeathBehavior = Enum.TryParse<TraitDeathBehavior>(dto.DeathBehavior, true, out var db)
+            DeathBehavior = Enum.TryParse<TraitDeathBehavior>(dto.DeathBehavior, true, out TraitDeathBehavior db)
                 ? db : TraitDeathBehavior.Persist,
             RequiresUnlock = dto.RequiresUnlock,
             DmOnly = dto.DmOnly,

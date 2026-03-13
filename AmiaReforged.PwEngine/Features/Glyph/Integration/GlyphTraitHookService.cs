@@ -77,7 +77,7 @@ public class GlyphTraitHookService
             GlyphGraph? graph = DeserializeGraph(binding.GlyphDefinition);
             if (graph == null) continue;
 
-            var key = (binding.TraitTag, eventType);
+            (string TraitTag, GlyphEventType eventType) key = (binding.TraitTag, eventType);
             if (!newCache.TryGetValue(key, out List<GlyphGraph>? list))
             {
                 list = [];
@@ -123,14 +123,14 @@ public class GlyphTraitHookService
         GlyphEventType eventType,
         CancellationToken ct)
     {
-        var key = (traitTag.Value, eventType);
+        (string Value, GlyphEventType eventType) key = (traitTag.Value, eventType);
         if (!_traitBindingCache.TryGetValue(key, out List<GlyphGraph>? graphs)) return;
 
         // Collect the character's current traits for the context
         List<string> characterTraits = [];
         try
         {
-            var traits = await _traitSubsystem.GetCharacterTraitsAsync(characterId, ct);
+            List<CharacterTrait> traits = await _traitSubsystem.GetCharacterTraitsAsync(characterId, ct);
             characterTraits = traits.Select(t => t.TraitTag.Value).ToList();
         }
         catch (Exception ex)

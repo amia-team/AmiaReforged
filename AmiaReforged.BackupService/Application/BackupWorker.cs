@@ -108,7 +108,7 @@ public class BackupWorker : BackgroundService
         }
 
         // Create a linked token that cancels if either the application stops OR the server goes down
-        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
+        using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
             cancellationToken,
             _healthMonitor.ServerAvailableToken);
         CancellationToken linkedToken = linkedCts.Token;

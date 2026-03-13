@@ -16,9 +16,9 @@ public class InteractionNodeExecutorTests
     public async Task Block_executor_sets_context_flags_and_message()
     {
         // Given
-        var executor = new BlockInteractionExecutor();
-        var node = new GlyphNodeInstance { TypeId = BlockInteractionExecutor.NodeTypeId };
-        var context = CreateContext(GlyphEventType.OnInteractionAttempted);
+        BlockInteractionExecutor executor = new BlockInteractionExecutor();
+        GlyphNodeInstance node = new GlyphNodeInstance { TypeId = BlockInteractionExecutor.NodeTypeId };
+        GlyphExecutionContext context = CreateContext(GlyphEventType.OnInteractionAttempted);
 
         // When
         GlyphNodeResult result = await executor.ExecuteAsync(node, context,
@@ -33,9 +33,9 @@ public class InteractionNodeExecutorTests
     [Test]
     public async Task Block_executor_uses_default_message_when_input_is_null()
     {
-        var executor = new BlockInteractionExecutor();
-        var node = new GlyphNodeInstance { TypeId = BlockInteractionExecutor.NodeTypeId };
-        var context = CreateContext(GlyphEventType.OnInteractionAttempted);
+        BlockInteractionExecutor executor = new BlockInteractionExecutor();
+        GlyphNodeInstance node = new GlyphNodeInstance { TypeId = BlockInteractionExecutor.NodeTypeId };
+        GlyphExecutionContext context = CreateContext(GlyphEventType.OnInteractionAttempted);
 
         GlyphNodeResult result = await executor.ExecuteAsync(node, context,
             _ => Task.FromResult<object?>(null));
@@ -50,9 +50,9 @@ public class InteractionNodeExecutorTests
     [Test]
     public async Task Cancel_executor_sets_context_flags_and_message()
     {
-        var executor = new CancelInteractionExecutor();
-        var node = new GlyphNodeInstance { TypeId = CancelInteractionExecutor.NodeTypeId };
-        var context = CreateContext(GlyphEventType.OnInteractionTick);
+        CancelInteractionExecutor executor = new CancelInteractionExecutor();
+        GlyphNodeInstance node = new GlyphNodeInstance { TypeId = CancelInteractionExecutor.NodeTypeId };
+        GlyphExecutionContext context = CreateContext(GlyphEventType.OnInteractionTick);
 
         GlyphNodeResult result = await executor.ExecuteAsync(node, context,
             pin => Task.FromResult<object?>(pin == "message" ? "Script says stop" : null));
@@ -65,9 +65,9 @@ public class InteractionNodeExecutorTests
     [Test]
     public async Task Cancel_executor_uses_default_message_when_input_is_null()
     {
-        var executor = new CancelInteractionExecutor();
-        var node = new GlyphNodeInstance { TypeId = CancelInteractionExecutor.NodeTypeId };
-        var context = CreateContext(GlyphEventType.OnInteractionTick);
+        CancelInteractionExecutor executor = new CancelInteractionExecutor();
+        GlyphNodeInstance node = new GlyphNodeInstance { TypeId = CancelInteractionExecutor.NodeTypeId };
+        GlyphExecutionContext context = CreateContext(GlyphEventType.OnInteractionTick);
 
         await executor.ExecuteAsync(node, context, _ => Task.FromResult<object?>(null));
 
@@ -80,11 +80,11 @@ public class InteractionNodeExecutorTests
     [Test]
     public async Task GetInfo_executor_reads_context_values()
     {
-        var executor = new GetInteractionInfoExecutor();
-        var node = new GlyphNodeInstance { TypeId = GetInteractionInfoExecutor.NodeTypeId };
+        GetInteractionInfoExecutor executor = new GetInteractionInfoExecutor();
+        GlyphNodeInstance node = new GlyphNodeInstance { TypeId = GetInteractionInfoExecutor.NodeTypeId };
 
         Guid targetId = Guid.NewGuid();
-        var context = CreateContext(GlyphEventType.OnInteractionTick);
+        GlyphExecutionContext context = CreateContext(GlyphEventType.OnInteractionTick);
         context.InteractionTag = "mining";
         context.InteractionTargetId = targetId;
         context.InteractionTargetMode = "Placeable";
@@ -111,11 +111,11 @@ public class InteractionNodeExecutorTests
     [Test]
     public async Task Attempted_entry_executor_outputs_context_values()
     {
-        var executor = new OnInteractionAttemptedEventExecutor();
-        var node = new GlyphNodeInstance { TypeId = OnInteractionAttemptedEventExecutor.NodeTypeId };
+        OnInteractionAttemptedEventExecutor executor = new OnInteractionAttemptedEventExecutor();
+        GlyphNodeInstance node = new GlyphNodeInstance { TypeId = OnInteractionAttemptedEventExecutor.NodeTypeId };
 
         Guid targetId = Guid.NewGuid();
-        var context = CreateContext(GlyphEventType.OnInteractionAttempted);
+        GlyphExecutionContext context = CreateContext(GlyphEventType.OnInteractionAttempted);
         context.CharacterId = "char-123";
         context.InteractionTag = "prospecting";
         context.InteractionTargetId = targetId;
@@ -138,11 +138,11 @@ public class InteractionNodeExecutorTests
     [Test]
     public async Task Started_entry_executor_includes_session_and_rounds()
     {
-        var executor = new OnInteractionStartedEventExecutor();
-        var node = new GlyphNodeInstance { TypeId = OnInteractionStartedEventExecutor.NodeTypeId };
+        OnInteractionStartedEventExecutor executor = new OnInteractionStartedEventExecutor();
+        GlyphNodeInstance node = new GlyphNodeInstance { TypeId = OnInteractionStartedEventExecutor.NodeTypeId };
 
         Guid sessionId = Guid.NewGuid();
-        var context = CreateContext(GlyphEventType.OnInteractionStarted);
+        GlyphExecutionContext context = CreateContext(GlyphEventType.OnInteractionStarted);
         context.CharacterId = "char-456";
         context.InteractionTag = "mining";
         context.InteractionSessionId = sessionId;
@@ -158,10 +158,10 @@ public class InteractionNodeExecutorTests
     [Test]
     public async Task Tick_entry_executor_includes_progress()
     {
-        var executor = new OnInteractionTickEventExecutor();
-        var node = new GlyphNodeInstance { TypeId = OnInteractionTickEventExecutor.NodeTypeId };
+        OnInteractionTickEventExecutor executor = new OnInteractionTickEventExecutor();
+        GlyphNodeInstance node = new GlyphNodeInstance { TypeId = OnInteractionTickEventExecutor.NodeTypeId };
 
-        var context = CreateContext(GlyphEventType.OnInteractionTick);
+        GlyphExecutionContext context = CreateContext(GlyphEventType.OnInteractionTick);
         context.InteractionProgress = 3;
 
         GlyphNodeResult result = await executor.ExecuteAsync(node, context,
@@ -173,10 +173,10 @@ public class InteractionNodeExecutorTests
     [Test]
     public async Task Completed_entry_executor_includes_response_tag()
     {
-        var executor = new OnInteractionCompletedEventExecutor();
-        var node = new GlyphNodeInstance { TypeId = OnInteractionCompletedEventExecutor.NodeTypeId };
+        OnInteractionCompletedEventExecutor executor = new OnInteractionCompletedEventExecutor();
+        GlyphNodeInstance node = new GlyphNodeInstance { TypeId = OnInteractionCompletedEventExecutor.NodeTypeId };
 
-        var context = CreateContext(GlyphEventType.OnInteractionCompleted);
+        GlyphExecutionContext context = CreateContext(GlyphEventType.OnInteractionCompleted);
         context.InteractionResponseTag = "success_rare_gem";
 
         GlyphNodeResult result = await executor.ExecuteAsync(node, context,

@@ -2,6 +2,8 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.Tests;
@@ -36,7 +38,10 @@ public class WorkstationRecipeQueryTests
             _workstationRepository,
             _industryRepository,
             _membershipRepository,
-            _knowledgeRepository);
+            _knowledgeRepository,
+            new RecipeTemplateExpander(
+                new EmptyRecipeTemplateRepository(),
+                new EmptyItemDefinitionRepository()));
 
         _testCharacterId = new CharacterId(Guid.NewGuid());
 
@@ -139,7 +144,7 @@ public class WorkstationRecipeQueryTests
     [Test]
     public async Task WorkstationNotFound_ReturnsEmpty()
     {
-        var query = new GetWorkstationRecipesQuery
+        GetWorkstationRecipesQuery query = new GetWorkstationRecipesQuery
         {
             CharacterId = _testCharacterId,
             WorkstationTag = new WorkstationTag("nonexistent")
@@ -154,7 +159,7 @@ public class WorkstationRecipeQueryTests
     public async Task CharacterNotEnrolled_ReturnsEmpty()
     {
         // No memberships added
-        var query = new GetWorkstationRecipesQuery
+        GetWorkstationRecipesQuery query = new GetWorkstationRecipesQuery
         {
             CharacterId = _testCharacterId,
             WorkstationTag = new WorkstationTag("forge")
@@ -179,7 +184,7 @@ public class WorkstationRecipeQueryTests
         });
         _knowledgeRepository.AddKnowledge(_testCharacterId.Value, _basicForging);
 
-        var query = new GetWorkstationRecipesQuery
+        GetWorkstationRecipesQuery query = new GetWorkstationRecipesQuery
         {
             CharacterId = _testCharacterId,
             WorkstationTag = new WorkstationTag("forge")
@@ -205,7 +210,7 @@ public class WorkstationRecipeQueryTests
         _knowledgeRepository.AddKnowledge(_testCharacterId.Value, _basicForging);
         _knowledgeRepository.AddKnowledge(_testCharacterId.Value, _advancedForging);
 
-        var query = new GetWorkstationRecipesQuery
+        GetWorkstationRecipesQuery query = new GetWorkstationRecipesQuery
         {
             CharacterId = _testCharacterId,
             WorkstationTag = new WorkstationTag("forge")
@@ -233,7 +238,7 @@ public class WorkstationRecipeQueryTests
         _knowledgeRepository.AddKnowledge(_testCharacterId.Value, _basicForging);
         _knowledgeRepository.AddKnowledge(_testCharacterId.Value, _advancedForging);
 
-        var query = new GetWorkstationRecipesQuery
+        GetWorkstationRecipesQuery query = new GetWorkstationRecipesQuery
         {
             CharacterId = _testCharacterId,
             WorkstationTag = new WorkstationTag("forge")
@@ -259,7 +264,7 @@ public class WorkstationRecipeQueryTests
         });
         _knowledgeRepository.AddKnowledge(_testCharacterId.Value, _basicAlchemy);
 
-        var query = new GetWorkstationRecipesQuery
+        GetWorkstationRecipesQuery query = new GetWorkstationRecipesQuery
         {
             CharacterId = _testCharacterId,
             WorkstationTag = new WorkstationTag("forge")
@@ -284,7 +289,7 @@ public class WorkstationRecipeQueryTests
         });
         _knowledgeRepository.AddKnowledge(_testCharacterId.Value, _basicAlchemy);
 
-        var query = new GetWorkstationRecipesQuery
+        GetWorkstationRecipesQuery query = new GetWorkstationRecipesQuery
         {
             CharacterId = _testCharacterId,
             WorkstationTag = new WorkstationTag("alchemy_table")
@@ -311,7 +316,7 @@ public class WorkstationRecipeQueryTests
         _knowledgeRepository.AddKnowledge(_testCharacterId.Value, _basicForging);
         // NOT adding advanced_forging
 
-        var query = new GetWorkstationRecipesQuery
+        GetWorkstationRecipesQuery query = new GetWorkstationRecipesQuery
         {
             CharacterId = _testCharacterId,
             WorkstationTag = new WorkstationTag("forge")
@@ -363,4 +368,34 @@ internal class TestWorkstationRepository : IWorkstationRepository
         totalCount = list.Count;
         return list.Skip(page * pageSize).Take(pageSize).ToList();
     }
+}
+
+/// <summary>
+/// Empty test double for IRecipeTemplateRepository — no templates exist.
+/// </summary>
+internal class EmptyRecipeTemplateRepository : IRecipeTemplateRepository
+{
+    public void Add(RecipeTemplate template) { }
+    public RecipeTemplate? GetByTag(string tag) => null;
+    public List<RecipeTemplate> GetByIndustry(IndustryTag industryTag) => [];
+    public List<RecipeTemplate> All() => [];
+    public void Update(RecipeTemplate template) { }
+    public bool Delete(string tag) => false;
+    public List<RecipeTemplate> Search(string? searchTerm, int page, int pageSize, out int totalCount)
+    {
+        totalCount = 0;
+        return [];
+    }
+}
+
+/// <summary>
+/// Empty test double for IItemDefinitionRepository — no items exist.
+/// </summary>
+internal class EmptyItemDefinitionRepository : IItemDefinitionRepository
+{
+    public void AddItemDefinition(ItemBlueprint definition) { }
+    public ItemBlueprint? GetByTag(string harvestOutputItemDefinitionTag) => null;
+    public ItemBlueprint? GetByResRef(string resRef) => null;
+    public List<ItemBlueprint> AllItems() => [];
+    public List<string> FindSimilarTags(string tag, int maxResults = 3) => [];
 }

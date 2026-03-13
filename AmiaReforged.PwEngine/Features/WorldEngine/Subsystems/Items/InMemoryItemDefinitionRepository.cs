@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items;
@@ -30,7 +31,7 @@ public class InMemoryItemDefinitionRepository : IItemDefinitionRepository
     public ItemData.ItemBlueprint? GetByTag(string harvestOutputItemDefinitionTag)
     {
         // First try exact tag match
-        if (_itemDefinitions.TryGetValue(harvestOutputItemDefinitionTag, out var blueprint))
+        if (_itemDefinitions.TryGetValue(harvestOutputItemDefinitionTag, out ItemBlueprint? blueprint))
         {
             return blueprint;
         }
@@ -60,7 +61,7 @@ public class InMemoryItemDefinitionRepository : IItemDefinitionRepository
         if (string.IsNullOrWhiteSpace(tag)) return new List<string>();
         
         // Search both ItemTags and SourceFile names for suggestions
-        var allKeys = _itemDefinitions.Keys
+        IEnumerable<string> allKeys = _itemDefinitions.Keys
             .Concat(_bySourceFile.Keys)
             .Distinct(StringComparer.OrdinalIgnoreCase);
 

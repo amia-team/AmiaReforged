@@ -1,3 +1,4 @@
+using AmiaReforged.Core.Models;
 using AmiaReforged.Core.Services;
 using Anvil.API;
 using Anvil.Services;
@@ -94,12 +95,12 @@ public sealed class DcPlaytimeService
             .Select(p => (player: p, cdKey: p.CDKey, playerName: p.PlayerName))
             .ToList();
 
-        foreach (var (player, cdKey, playerName) in playerData)
+        foreach ((NwPlayer player, string cdKey, string playerName) in playerData)
         {
             try
             {
                 // Add playtime to persistent storage and get updated record
-                var record = await _playtimeService.AddPlaytimeMinutes(cdKey, TickIntervalMinutes);
+                PlayerPlaytimeRecord record = await _playtimeService.AddPlaytimeMinutes(cdKey, TickIntervalMinutes);
                 await NwTask.SwitchToMainThread();
 
                 // Update cache

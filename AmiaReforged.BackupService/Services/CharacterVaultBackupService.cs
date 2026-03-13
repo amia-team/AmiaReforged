@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using AmiaReforged.BackupService.Configuration;
 
@@ -93,7 +94,7 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
             // Use rsync - it handles everything: Unicode filenames, recursive copy, preserves structure
             // --archive = recursive, preserves permissions, timestamps, etc.
             // --delete = remove files in dest that don't exist in source
-            var process = new System.Diagnostics.Process
+            Process process = new System.Diagnostics.Process
             {
                 StartInfo = new System.Diagnostics.ProcessStartInfo
                 {
@@ -121,7 +122,7 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
             int fileCount = 0;
             int dirCount = 0;
 
-            var countProcess = new System.Diagnostics.Process
+            Process countProcess = new System.Diagnostics.Process
             {
                 StartInfo = new System.Diagnostics.ProcessStartInfo
                 {
@@ -138,7 +139,7 @@ public class CharacterVaultBackupService : ICharacterVaultBackupService
             await countProcess.WaitForExitAsync(cancellationToken);
             fileCount = countOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length;
 
-            var dirCountProcess = new System.Diagnostics.Process
+            Process dirCountProcess = new System.Diagnostics.Process
             {
                 StartInfo = new System.Diagnostics.ProcessStartInfo
                 {

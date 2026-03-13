@@ -66,7 +66,7 @@ public class InMemoryIndustryRepository : IIndustryRepository
                 i.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
         }
 
-        var filtered = query.OrderBy(i => i.Name).ToList();
+        List<Industry> filtered = query.OrderBy(i => i.Name).ToList();
         totalCount = filtered.Count;
         return filtered.Skip((page - 1) * pageSize).Take(pageSize).ToList();
     }

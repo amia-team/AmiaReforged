@@ -486,7 +486,7 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
         List<NuiComboEntry> options = [new NuiComboEntry("All Types", -1)];
 
         // Collect unique base item types present in the current products
-        var uniqueTypes = products
+        IOrderedEnumerable<(int Type, string Name)> uniqueTypes = products
             .Where(p => p.BaseItemType.HasValue)
             .Select(p => (Type: p.BaseItemType!.Value,
                 Name: p.ItemTypeName ??

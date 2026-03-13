@@ -170,7 +170,7 @@ public class CharacterArchiveService
                 };
 
                 // Try to read character info (name and portrait) from BIC file
-                var (actualName, portraitResRef) = ReadCharacterInfoFromBic(file);
+                (string? actualName, string? portraitResRef) = ReadCharacterInfoFromBic(file);
                 if (!string.IsNullOrEmpty(actualName))
                 {
                     charInfo.CharacterName = actualName;
@@ -213,7 +213,7 @@ public class CharacterArchiveService
             }
 
             // Parse GFF structure
-            var gff = new GffParser(data);
+            GffParser gff = new GffParser(data);
 
             string? firstName = gff.GetCExoLocString("FirstName");
             string? lastName = gff.GetCExoLocString("LastName");

@@ -134,6 +134,7 @@ public class PwEngineContext : DbContext
     public DbSet<PersistedIndustryDefinition> IndustryDefinitions { get; set; } = null!;
     public DbSet<PersistedWorkstationDefinition> WorkstationDefinitions { get; set; } = null!;
     public DbSet<PersistedInteractionDefinition> InteractionDefinitions { get; set; } = null!;
+    public DbSet<PersistedRecipeTemplate> RecipeTemplateDefinitions { get; set; } = null!;
 
     // === Glyph Visual Scripting ===
 
@@ -243,6 +244,7 @@ public class PwEngineContext : DbContext
         modelBuilder.ApplyConfiguration(new PersistedIndustryDefinitionConfiguration());
         modelBuilder.ApplyConfiguration(new PersistedWorkstationDefinitionConfiguration());
         modelBuilder.ApplyConfiguration(new PersistedInteractionDefinitionConfiguration());
+        modelBuilder.ApplyConfiguration(new PersistedRecipeTemplateConfiguration());
 
         // Glyph Visual Scripting
         modelBuilder.ApplyConfiguration(new GlyphDefinitionConfiguration());

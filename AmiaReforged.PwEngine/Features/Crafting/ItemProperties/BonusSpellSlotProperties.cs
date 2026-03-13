@@ -44,7 +44,7 @@ public static class BonusSpellSlotProperties
         int startLevel,
         int maxLevel)
     {
-        var properties = new List<CraftingProperty>();
+        List<CraftingProperty> properties = new List<CraftingProperty>();
 
         for (int level = startLevel; level <= maxLevel; level++)
         {

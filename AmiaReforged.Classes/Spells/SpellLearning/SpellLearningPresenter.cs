@@ -118,7 +118,7 @@ public sealed class SpellLearningPresenter : ScryPresenter<SpellLearningView>
         int totalAllowed = _totalSpellsAllowedPerLevel.GetValueOrDefault(spellLevel, 0);
 
         // Calculate current count: known spells (minus those marked for removal) + selected new spells
-        int knownCount = _allSpells.TryGetValue(spellLevel, out var spellsAtLevel)
+        int knownCount = _allSpells.TryGetValue(spellLevel, out List<SpellListRow>? spellsAtLevel)
             ? spellsAtLevel.Count(s => s.AlreadyKnown && !_spellsMarkedForRemoval.Contains(s.SpellId))
             : 0;
         int selectedCount = _selectedCountPerLevel.GetValueOrDefault(spellLevel, 0);
@@ -485,7 +485,7 @@ public sealed class SpellLearningPresenter : ScryPresenter<SpellLearningView>
         _totalSpellsAllowedPerLevel.Clear();
 
         // First, add levels where the player gains new spells
-        foreach (var kvp in _spellsNeeded)
+        foreach (KeyValuePair<int, int> kvp in _spellsNeeded)
         {
             _spellsToLearnPerLevel[kvp.Key] = kvp.Value;
             _selectedCountPerLevel[kvp.Key] = 0;

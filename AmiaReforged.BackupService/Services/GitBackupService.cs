@@ -60,7 +60,7 @@ public class GitBackupService : IGitBackupService
             }
 
             // Check if there are any changes to commit using native git
-            var (success, output) = await RunGitCommandWithOutputAsync(repoPath, "status --porcelain", cancellationToken);
+            (bool success, string output) = await RunGitCommandWithOutputAsync(repoPath, "status --porcelain", cancellationToken);
             if (!success)
             {
                 _logger.LogError("Failed to check git status");
@@ -207,7 +207,7 @@ public class GitBackupService : IGitBackupService
 
     private async Task<bool> RunGitCommandAsync(string workingDir, string arguments, CancellationToken cancellationToken)
     {
-        var (success, _) = await RunGitCommandWithOutputAsync(workingDir, arguments, cancellationToken);
+        (bool success, _) = await RunGitCommandWithOutputAsync(workingDir, arguments, cancellationToken);
         return success;
     }
 
@@ -215,7 +215,7 @@ public class GitBackupService : IGitBackupService
     {
         try
         {
-            var process = new Process
+            Process process = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {

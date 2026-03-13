@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.Persistence;
@@ -35,11 +36,11 @@ public static class IndustryMapper
 
     public static Industry ToDomain(PersistedIndustryDefinition entity)
     {
-        var knowledgeDtos = JsonSerializer.Deserialize<List<KnowledgeJsonDto>>(entity.KnowledgeJson, JsonOptions)
-                            ?? new List<KnowledgeJsonDto>();
+        List<KnowledgeJsonDto> knowledgeDtos = JsonSerializer.Deserialize<List<KnowledgeJsonDto>>(entity.KnowledgeJson, JsonOptions)
+                                               ?? new List<KnowledgeJsonDto>();
 
-        var recipeDtos = JsonSerializer.Deserialize<List<RecipeJsonDto>>(entity.RecipesJson, JsonOptions)
-                         ?? new List<RecipeJsonDto>();
+        List<RecipeJsonDto> recipeDtos = JsonSerializer.Deserialize<List<RecipeJsonDto>>(entity.RecipesJson, JsonOptions)
+                                         ?? new List<RecipeJsonDto>();
 
         return new Industry
         {
@@ -88,7 +89,7 @@ public static class IndustryMapper
 
     private static Knowledge FromKnowledgeDto(KnowledgeJsonDto dto)
     {
-        Enum.TryParse<ProficiencyLevel>(dto.Level, true, out var level);
+        Enum.TryParse<ProficiencyLevel>(dto.Level, true, out ProficiencyLevel level);
 
         return new Knowledge
         {
@@ -99,15 +100,15 @@ public static class IndustryMapper
             PointCost = dto.PointCost,
             HarvestEffects = dto.HarvestEffects?.Select(e =>
             {
-                Enum.TryParse<Harvesting.HarvestStep>(e.StepModified, true, out var step);
-                Enum.TryParse<KnowledgeSubsystem.EffectOperation>(e.Operation, true, out var op);
+                Enum.TryParse<Harvesting.HarvestStep>(e.StepModified, true, out HarvestStep step);
+                Enum.TryParse<KnowledgeSubsystem.EffectOperation>(e.Operation, true, out EffectOperation op);
                 return new KnowledgeHarvestEffect(e.NodeTag, step, e.Value, op);
             }).ToList() ?? [],
             Prerequisites = dto.Prerequisites ?? [],
             Branch = dto.Branch,
             Effects = dto.Effects?.Select(e =>
             {
-                Enum.TryParse<KnowledgeEffectType>(e.EffectType, true, out var effectType);
+                Enum.TryParse<KnowledgeEffectType>(e.EffectType, true, out KnowledgeEffectType effectType);
                 return new KnowledgeEffect
                 {
                     EffectType = effectType,
@@ -151,7 +152,7 @@ public static class IndustryMapper
 
     private static Recipe FromRecipeDto(RecipeJsonDto dto)
     {
-        Enum.TryParse<ProficiencyLevel>(dto.RequiredProficiency, true, out var proficiency);
+        Enum.TryParse<ProficiencyLevel>(dto.RequiredProficiency, true, out ProficiencyLevel proficiency);
 
         return new Recipe
         {

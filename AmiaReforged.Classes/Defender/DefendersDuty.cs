@@ -185,7 +185,7 @@ public class DefendersDuty
     /// </summary>
     private void PruneInvalidProtectedCreatures()
     {
-        var invalidCreatures = _protectedCreatures.Where(c => !c.IsValid).ToList();
+        List<NwCreature> invalidCreatures = _protectedCreatures.Where(c => !c.IsValid).ToList();
 
         if (invalidCreatures.Count == 0) return;
 

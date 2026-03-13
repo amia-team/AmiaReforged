@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.Encounters.Models;
 using Anvil;
 using Anvil.API;
 using Anvil.Services;
@@ -26,18 +27,18 @@ public class AreaGraphBuilder
         // All NWN API calls (Areas, Objects, TransitionTarget) must run on the main thread
         await NwTask.SwitchToMainThread();
 
-        var allAreas = NwModule.Instance.Areas.ToList();
+        List<NwArea> allAreas = NwModule.Instance.Areas.ToList();
         Log.Info("Found {Count} areas in module", allAreas.Count);
 
         // Load spawn profile lookup (area resref -> profile name)
         Dictionary<string, string> spawnProfileNames = new(StringComparer.OrdinalIgnoreCase);
         try
         {
-            var profileRepo = AnvilCore.GetService<ISpawnProfileRepository>();
+            ISpawnProfileRepository? profileRepo = AnvilCore.GetService<ISpawnProfileRepository>();
             if (profileRepo != null)
             {
-                var profiles = await profileRepo.GetAllAsync();
-                foreach (var profile in profiles)
+                List<SpawnProfile> profiles = await profileRepo.GetAllAsync();
+                foreach (SpawnProfile profile in profiles)
                 {
                     if (!string.IsNullOrWhiteSpace(profile.AreaResRef))
                     {
@@ -62,13 +63,13 @@ public class AreaGraphBuilder
         Dictionary<string, string> areaToRegionName = new(StringComparer.OrdinalIgnoreCase);
         try
         {
-            var regionRepo = AnvilCore.GetService<IRegionRepository>();
+            IRegionRepository? regionRepo = AnvilCore.GetService<IRegionRepository>();
             if (regionRepo != null)
             {
-                var allRegions = regionRepo.All();
-                foreach (var region in allRegions)
+                List<RegionDefinition> allRegions = regionRepo.All();
+                foreach (RegionDefinition region in allRegions)
                 {
-                    foreach (var area in region.Areas)
+                    foreach (AreaDefinition area in region.Areas)
                     {
                         if (!string.IsNullOrWhiteSpace(area.ResRef.Value))
                         {
@@ -94,7 +95,7 @@ public class AreaGraphBuilder
 
             bool hasProfile = spawnProfileNames.ContainsKey(resRef);
             string? profileName = hasProfile ? spawnProfileNames[resRef] : null;
-            string? regionName = areaToRegionName.TryGetValue(resRef, out var rn) ? rn : null;
+            string? regionName = areaToRegionName.TryGetValue(resRef, out string? rn) ? rn : null;
 
             // If duplicate resrefs exist, keep the first one
             nodesByResRef.TryAdd(resRef, new AreaNode(resRef, area.Name,
@@ -145,7 +146,7 @@ public class AreaGraphBuilder
         List<AreaNode> connectedNodes = [];
         List<AreaNode> disconnectedNodes = [];
 
-        foreach (var node in nodesByResRef.Values)
+        foreach (AreaNode node in nodesByResRef.Values)
         {
             if (connectedResRefs.Contains(node.ResRef))
             {
@@ -166,7 +167,7 @@ public class AreaGraphBuilder
             return cmp != 0 ? cmp : string.Compare(a.TargetResRef, b.TargetResRef, StringComparison.OrdinalIgnoreCase);
         });
 
-        var graph = new AreaGraphData
+        AreaGraphData graph = new AreaGraphData
         {
             Nodes = connectedNodes,
             Edges = edges,

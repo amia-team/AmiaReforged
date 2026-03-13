@@ -62,7 +62,7 @@ public sealed class RebuildToolModel
     {
         try
         {
-            var rebuild = _repository.GetById(rebuildId);
+            CharacterRebuild? rebuild = _repository.GetById(rebuildId);
             if (rebuild == null)
             {
                 _player.SendServerMessage($"Rebuild ID {rebuildId} not found!", ColorConstants.Red);
@@ -538,7 +538,7 @@ public sealed class RebuildToolModel
             };
 
             int unequippedCount = 0;
-            foreach (var slot in equipmentSlots)
+            foreach (InventorySlot slot in equipmentSlots)
             {
                 NwItem? equippedItem = SelectedCharacter.GetItemInSlot(slot);
                 if (equippedItem != null)
@@ -554,7 +554,7 @@ public sealed class RebuildToolModel
             }
 
             // Create rebuild record
-            var rebuild = new CharacterRebuild
+            CharacterRebuild rebuild = new CharacterRebuild
             {
                 PlayerCdKey = targetPlayer.CDKey,
                 CharacterId = SelectedCharacter.UUID,
@@ -588,7 +588,7 @@ public sealed class RebuildToolModel
                 if (item.Possessor == SelectedCharacter)
                 {
                     byte[] itemData = SerializeItem(item);
-                    var itemRecord = new RebuildItemRecord
+                    RebuildItemRecord itemRecord = new RebuildItemRecord
                     {
                         CharacterRebuildId = rebuild.Id,
                         ItemData = itemData
@@ -653,7 +653,7 @@ public sealed class RebuildToolModel
 
         try
         {
-            var rebuild = _repository.GetById(rebuildId);
+            CharacterRebuild? rebuild = _repository.GetById(rebuildId);
             if (rebuild == null)
             {
                 _player.SendServerMessage($"Rebuild ID {rebuildId} not found!", ColorConstants.Red);
@@ -687,7 +687,7 @@ public sealed class RebuildToolModel
             };
 
             int unequippedCount = 0;
-            foreach (var slot in equipmentSlots)
+            foreach (InventorySlot slot in equipmentSlots)
             {
                 NwItem? equippedItem = SelectedCharacter.GetItemInSlot(slot);
                 if (equippedItem != null)
@@ -767,10 +767,10 @@ public sealed class RebuildToolModel
             }
 
             // Restore all other items
-            var itemRecords = _repository.GetItemRecords(rebuildId);
+            IEnumerable<RebuildItemRecord> itemRecords = _repository.GetItemRecords(rebuildId);
             int restoredCount = 0;
 
-            foreach (var itemRecord in itemRecords)
+            foreach (RebuildItemRecord itemRecord in itemRecords)
             {
                 NwItem? item = DeserializeItem(itemRecord.ItemData, SelectedCharacter);
                 if (item != null)
@@ -828,7 +828,7 @@ public sealed class RebuildToolModel
 
         try
         {
-            var rebuild = _repository.GetById(rebuildId);
+            CharacterRebuild? rebuild = _repository.GetById(rebuildId);
             if (rebuild == null)
             {
                 _player.SendServerMessage($"Rebuild ID {rebuildId} not found!", ColorConstants.Red);
@@ -904,7 +904,7 @@ public sealed class RebuildToolModel
     {
         try
         {
-            var rebuild = _repository.GetById(rebuildId);
+            CharacterRebuild? rebuild = _repository.GetById(rebuildId);
             if (rebuild == null)
             {
                 _player.SendServerMessage($"Rebuild ID {rebuildId} not found!", ColorConstants.Red);
@@ -951,7 +951,7 @@ public sealed class RebuildToolModel
     {
         try
         {
-            var rebuild = _repository.GetById(rebuildId);
+            CharacterRebuild? rebuild = _repository.GetById(rebuildId);
             if (rebuild == null)
             {
                 _player.SendServerMessage($"Rebuild ID {rebuildId} not found!", ColorConstants.Red);

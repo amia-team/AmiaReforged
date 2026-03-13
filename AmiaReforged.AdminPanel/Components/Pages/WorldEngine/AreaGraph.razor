@@ -24,7 +24,7 @@
                     <label class="instance-label">Server:</label>
                     <select class="form-control form-control-sm" value="@(_selectedEndpoint?.Id.ToString() ?? "")" @onchange="OnEndpointChanged">
                         <option value="">— Select —</option>
-                        @foreach (var ep in _endpoints)
+                        @foreach (WorldEngineEndpoint ep in _endpoints)
                         {
                             <option value="@ep.Id">@ep.Name</option>
                         }
@@ -169,7 +169,7 @@
                         <div class="detail-connections">
                             <label>Connections (@_selectedNode.Connections.Count)</label>
                             <ul class="connection-list">
-                                @foreach (var c in _selectedNode.Connections)
+                                @foreach (ConnectionInfo c in _selectedNode.Connections)
                                 {
                                     <li class="connection-item">
                                         <span class="conn-direction @(c.Direction == "outgoing" ? "conn-out" : "conn-in")">
@@ -207,7 +207,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var area in _graph.DisconnectedAreas)
+                        @foreach (AreaNodeDto area in _graph.DisconnectedAreas)
                         {
                             <tr>
                                 <td><code>@area.ResRef</code></td>
@@ -254,7 +254,7 @@
     {
         try
         {
-            var all = await EndpointService.GetAllEndpointsAsync();
+            IReadOnlyList<WorldEngineEndpoint> all = await EndpointService.GetAllEndpointsAsync();
             _endpoints = all.ToList();
         }
         catch (Exception ex)
@@ -270,7 +270,7 @@
         _error = null;
         _success = null;
 
-        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        if (Guid.TryParse(e.Value?.ToString(), out Guid id))
         {
             _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
             Api.SelectEndpoint(id);

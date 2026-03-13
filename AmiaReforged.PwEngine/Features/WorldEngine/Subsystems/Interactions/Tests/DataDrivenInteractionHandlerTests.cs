@@ -68,7 +68,7 @@ public class DataDrivenInteractionHandlerTests
         ICharacterKnowledgeRepository? knowledgeRepo = null,
         IIndustryMembershipService? membershipService = null)
     {
-        var character = new TestCharacter(
+        TestCharacter character = new TestCharacter(
             new Dictionary<EquipmentSlots, ItemSnapshot>(),
             [],
             _characterId,
@@ -336,7 +336,7 @@ public class DataDrivenInteractionHandlerTests
     public async Task Completing_data_driven_interaction_publishes_response_selected_event()
     {
         // Given a single-round definition with effects
-        var effects = new List<InteractionResponseEffect>
+        List<InteractionResponseEffect> effects = new List<InteractionResponseEffect>
         {
             new()
             {
@@ -351,7 +351,7 @@ public class DataDrivenInteractionHandlerTests
             }
         };
 
-        var responses = new List<InteractionResponse>
+        List<InteractionResponse> responses = new List<InteractionResponse>
         {
             new()
             {
@@ -371,7 +371,7 @@ public class DataDrivenInteractionHandlerTests
             new PerformInteractionCommand(_characterId, InteractionTag, Guid.NewGuid()));
 
         // Then an InteractionResponseSelectedEvent should be published
-        var responseEvents = _publishedEvents.OfType<InteractionResponseSelectedEvent>().ToList();
+        List<InteractionResponseSelectedEvent> responseEvents = _publishedEvents.OfType<InteractionResponseSelectedEvent>().ToList();
         responseEvents.Should().HaveCount(1);
 
         InteractionResponseSelectedEvent selected = responseEvents.First();
@@ -395,7 +395,7 @@ public class DataDrivenInteractionHandlerTests
 
         // Then an InteractionCompletedEvent should also be published
         _publishedEvents.OfType<InteractionCompletedEvent>().Should().HaveCount(1);
-        var completed = _publishedEvents.OfType<InteractionCompletedEvent>().First();
+        InteractionCompletedEvent completed = _publishedEvents.OfType<InteractionCompletedEvent>().First();
         completed.Success.Should().BeTrue();
         completed.InteractionTag.Should().Be(InteractionTag);
     }
@@ -404,7 +404,7 @@ public class DataDrivenInteractionHandlerTests
     public async Task Outcome_includes_response_tag_and_effect_count()
     {
         // Given a definition with effects on the response
-        var responses = new List<InteractionResponse>
+        List<InteractionResponse> responses = new List<InteractionResponse>
         {
             new()
             {
@@ -445,7 +445,7 @@ public class DataDrivenInteractionHandlerTests
     public async Task No_eligible_responses_returns_failure()
     {
         // Given a definition whose only response requires Expert proficiency
-        var responses = new List<InteractionResponse>
+        List<InteractionResponse> responses = new List<InteractionResponse>
         {
             new()
             {

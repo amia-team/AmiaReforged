@@ -77,7 +77,7 @@ public class SpellLearningService
         Log.Info($"{creature.Name} leveled up in {leveledClass}, checking for spell learning eligibility...");
 
         // Determine which base class to boost
-        var eligibleBaseClass = GetEligibleBaseClass(creature, leveledClass);
+        ClassType? eligibleBaseClass = GetEligibleBaseClass(creature, leveledClass);
 
         if (eligibleBaseClass == null)
         {

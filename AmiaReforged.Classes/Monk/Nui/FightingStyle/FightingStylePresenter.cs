@@ -125,7 +125,7 @@ public sealed class FightingStylePresenter(FightingStyleView view, NwPlayer play
 
         if (monkLevelSixInfo == null) return false;
 
-        foreach (var style in FightingStyleFeats)
+        foreach (KeyValuePair<string, NwFeat[]> style in FightingStyleFeats)
         {
             if (style.Value.All(styleFeat => monkLevelSixInfo.Feats.Any(f => f.Id == styleFeat.Id)))
             {

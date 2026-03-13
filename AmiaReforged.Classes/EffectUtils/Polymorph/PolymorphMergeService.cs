@@ -206,11 +206,11 @@ public class PolymorphMergeService
     {
         List<string> categoryStrings = [];
 
-        var groups = properties.GroupBy(ip => ip.Property).ToArray();
+        IGrouping<ItemPropertyTableEntry, ItemProperty>[] groups = properties.GroupBy(ip => ip.Property).ToArray();
 
         for (int i = 0; i < groups.Length; i++)
         {
-            var group = groups[i];
+            IGrouping<ItemPropertyTableEntry, ItemProperty> group = groups[i];
             string categoryName = group.Key.GameStrRef.ToString() ?? string.Empty;
             string details;
 

@@ -17,7 +17,7 @@ public class AfterGroupSpawnEventExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        var outputs = new Dictionary<string, object?>
+        Dictionary<string, object?> outputs = new Dictionary<string, object?>
         {
             ["spawned_creatures"] = context.SpawnedCreatures.ToList(),
             ["spawn_count"] = context.SpawnedCreatures.Count,

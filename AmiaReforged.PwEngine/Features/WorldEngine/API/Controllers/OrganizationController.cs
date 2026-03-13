@@ -29,14 +29,14 @@ public class OrganizationController
     [HttpGet("/api/worldengine/organizations")]
     public static async Task<ApiResult> GetAll(RouteContext ctx)
     {
-        var repo = ResolveOrganizationRepository();
+        IOrganizationRepository repo = ResolveOrganizationRepository();
         string? search = ctx.GetQueryParam("search");
         string? typeFilter = ctx.GetQueryParam("type");
-        int page = int.TryParse(ctx.GetQueryParam("page"), out var p) ? Math.Max(1, p) : 1;
-        int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out var ps) ? Math.Clamp(ps, 1, 200) : 50;
+        int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
+        int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
 
         List<IOrganization> orgs;
-        if (!string.IsNullOrWhiteSpace(typeFilter) && Enum.TryParse<OrganizationType>(typeFilter, true, out var orgType))
+        if (!string.IsNullOrWhiteSpace(typeFilter) && Enum.TryParse<OrganizationType>(typeFilter, true, out OrganizationType orgType))
         {
             orgs = repo.GetByType(orgType);
         }
@@ -53,7 +53,7 @@ public class OrganizationController
         }
 
         int totalCount = orgs.Count;
-        var paged = orgs
+        List<IOrganization> paged = orgs
             .OrderBy(o => o.Name, StringComparer.OrdinalIgnoreCase)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -82,7 +82,7 @@ public class OrganizationController
                 "Bad request", "Invalid organization ID format")));
         }
 
-        var repo = ResolveOrganizationRepository();
+        IOrganizationRepository repo = ResolveOrganizationRepository();
         IOrganization? org = repo.GetById(OrganizationId.From(id));
         if (org == null)
         {
@@ -100,7 +100,7 @@ public class OrganizationController
     [HttpPost("/api/worldengine/organizations")]
     public static async Task<ApiResult> Create(RouteContext ctx)
     {
-        var dto = await ctx.ReadJsonBodyAsync<CreateOrganizationDto>();
+        CreateOrganizationDto? dto = await ctx.ReadJsonBodyAsync<CreateOrganizationDto>();
         if (dto == null)
         {
             return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required"));
@@ -111,13 +111,13 @@ public class OrganizationController
             return new ApiResult(400, new ErrorResponse("Validation failed", "Name is required"));
         }
 
-        if (!Enum.TryParse<OrganizationType>(dto.Type, true, out var orgType))
+        if (!Enum.TryParse<OrganizationType>(dto.Type, true, out OrganizationType orgType))
         {
             return new ApiResult(400, new ErrorResponse("Validation failed",
                 $"Invalid organization type '{dto.Type}'. Valid types: {string.Join(", ", Enum.GetNames<OrganizationType>())}"));
         }
 
-        var repo = ResolveOrganizationRepository();
+        IOrganizationRepository repo = ResolveOrganizationRepository();
 
         // Check for duplicate name
         bool nameInUse = repo.GetAll()
@@ -158,7 +158,7 @@ public class OrganizationController
                 "Bad request", "Invalid organization ID format")));
         }
 
-        var repo = ResolveOrganizationRepository();
+        IOrganizationRepository repo = ResolveOrganizationRepository();
         IOrganization? org = repo.GetById(OrganizationId.From(id));
         if (org == null)
         {
@@ -166,7 +166,7 @@ public class OrganizationController
                 "Not found", $"No organization with id '{id}'")));
         }
 
-        var dto = await ctx.ReadJsonBodyAsync<UpdateOrganizationDto>();
+        UpdateOrganizationDto? dto = await ctx.ReadJsonBodyAsync<UpdateOrganizationDto>();
         if (dto == null)
         {
             return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required"));
@@ -195,8 +195,8 @@ public class OrganizationController
                 "Bad request", "Invalid organization ID format")));
         }
 
-        var repo = ResolveOrganizationRepository();
-        var orgId = OrganizationId.From(id);
+        IOrganizationRepository repo = ResolveOrganizationRepository();
+        OrganizationId orgId = OrganizationId.From(id);
 
         IOrganization? org = repo.GetById(orgId);
         if (org == null)
@@ -206,9 +206,9 @@ public class OrganizationController
         }
 
         // Remove all members first
-        var memberRepo = ResolveMemberRepository();
-        var members = memberRepo.GetByOrganization(orgId);
-        foreach (var member in members)
+        IOrganizationMemberRepository memberRepo = ResolveMemberRepository();
+        List<OrganizationMember> members = memberRepo.GetByOrganization(orgId);
+        foreach (OrganizationMember member in members)
         {
             memberRepo.Remove(member);
         }
@@ -240,11 +240,11 @@ public class OrganizationController
                 "Bad request", "Invalid organization ID format")));
         }
 
-        bool activeOnly = !bool.TryParse(ctx.GetQueryParam("activeOnly"), out var ao) || ao;
+        bool activeOnly = !bool.TryParse(ctx.GetQueryParam("activeOnly"), out bool ao) || ao;
 
-        var memberRepo = ResolveMemberRepository();
-        var orgId = OrganizationId.From(id);
-        var members = memberRepo.GetByOrganization(orgId);
+        IOrganizationMemberRepository memberRepo = ResolveMemberRepository();
+        OrganizationId orgId = OrganizationId.From(id);
+        List<OrganizationMember> members = memberRepo.GetByOrganization(orgId);
 
         if (activeOnly)
         {
@@ -268,26 +268,26 @@ public class OrganizationController
                 "Bad request", "Invalid organization ID format")));
         }
 
-        var dto = await ctx.ReadJsonBodyAsync<AddMemberDto>();
+        AddMemberDto? dto = await ctx.ReadJsonBodyAsync<AddMemberDto>();
         if (dto == null)
         {
             return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required"));
         }
 
-        var orgId = OrganizationId.From(id);
-        var characterId = new CharacterId(dto.CharacterId);
+        OrganizationId orgId = OrganizationId.From(id);
+        CharacterId characterId = new CharacterId(dto.CharacterId);
 
         // Check if already a member
-        var memberRepo = ResolveMemberRepository();
-        var existing = memberRepo.GetByCharacterAndOrganization(characterId, orgId);
+        IOrganizationMemberRepository memberRepo = ResolveMemberRepository();
+        OrganizationMember? existing = memberRepo.GetByCharacterAndOrganization(characterId, orgId);
         if (existing is { Status: MembershipStatus.Active })
         {
             return new ApiResult(409, new ErrorResponse("Conflict", "Character is already an active member"));
         }
 
-        Enum.TryParse<OrganizationRank>(dto.Rank, true, out var rank);
+        Enum.TryParse<OrganizationRank>(dto.Rank, true, out OrganizationRank rank);
 
-        var member = new OrganizationMember
+        OrganizationMember member = new OrganizationMember
         {
             Id = Guid.NewGuid(),
             CharacterId = characterId,
@@ -319,11 +319,11 @@ public class OrganizationController
                 "Bad request", "Invalid ID format")));
         }
 
-        var orgId = OrganizationId.From(id);
-        var characterId = new CharacterId(charId);
+        OrganizationId orgId = OrganizationId.From(id);
+        CharacterId characterId = new CharacterId(charId);
 
-        var memberRepo = ResolveMemberRepository();
-        var member = memberRepo.GetByCharacterAndOrganization(characterId, orgId);
+        IOrganizationMemberRepository memberRepo = ResolveMemberRepository();
+        OrganizationMember? member = memberRepo.GetByCharacterAndOrganization(characterId, orgId);
 
         if (member == null)
         {

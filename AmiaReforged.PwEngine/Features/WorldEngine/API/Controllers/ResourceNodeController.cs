@@ -30,15 +30,15 @@ public class ResourceNodeController
     [HttpGet("/api/worldengine/resource-nodes")]
     public static async Task<ApiResult> GetAll(RouteContext ctx)
     {
-        var repo = ResolveRepository();
+        IResourceNodeDefinitionRepository repo = ResolveRepository();
         if (repo is DbResourceNodeDefinitionRepository dbRepo)
         {
             string? search = ctx.GetQueryParam("search");
             string? type = ctx.GetQueryParam("type");
-            int page = int.TryParse(ctx.GetQueryParam("page"), out var p) ? Math.Max(1, p) : 1;
-            int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out var ps) ? Math.Clamp(ps, 1, 200) : 50;
+            int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
+            int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
 
-            var nodes = dbRepo.Search(search, type, page, pageSize, out int totalCount);
+            List<ResourceNodeDefinition> nodes = dbRepo.Search(search, type, page, pageSize, out int totalCount);
 
             return await Task.FromResult(new ApiResult(200, new
             {
@@ -50,7 +50,7 @@ public class ResourceNodeController
         }
 
         // Fallback for non-DB repos
-        var allNodes = repo.All();
+        List<ResourceNodeDefinition> allNodes = repo.All();
         return await Task.FromResult(new ApiResult(200, new
         {
             items = allNodes.Select(ToDto),
@@ -68,9 +68,9 @@ public class ResourceNodeController
     public static async Task<ApiResult> GetByTag(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        var repo = ResolveRepository();
+        IResourceNodeDefinitionRepository repo = ResolveRepository();
 
-        var node = repo.Get(tag);
+        ResourceNodeDefinition? node = repo.Get(tag);
         if (node == null)
         {
             return await Task.FromResult(new ApiResult(404, new ErrorResponse(
@@ -87,7 +87,7 @@ public class ResourceNodeController
     [HttpPost("/api/worldengine/resource-nodes")]
     public static async Task<ApiResult> Create(RouteContext ctx)
     {
-        var dto = await ctx.ReadJsonBodyAsync<ResourceNodeDto>();
+        ResourceNodeDto? dto = await ctx.ReadJsonBodyAsync<ResourceNodeDto>();
         if (dto == null)
         {
             return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required"));
@@ -99,8 +99,8 @@ public class ResourceNodeController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        var repo = ResolveRepository();
-        var definition = FromDto(dto);
+        IResourceNodeDefinitionRepository repo = ResolveRepository();
+        ResourceNodeDefinition definition = FromDto(dto);
         repo.Create(definition);
 
         return new ApiResult(201, ToDto(definition));
@@ -114,16 +114,16 @@ public class ResourceNodeController
     public static async Task<ApiResult> Update(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        var repo = ResolveRepository();
+        IResourceNodeDefinitionRepository repo = ResolveRepository();
 
-        var existing = repo.Get(tag);
+        ResourceNodeDefinition? existing = repo.Get(tag);
         if (existing == null)
         {
             return await Task.FromResult(new ApiResult(404, new ErrorResponse(
                 "Not found", $"No resource node with tag '{tag}'")));
         }
 
-        var dto = await ctx.ReadJsonBodyAsync<ResourceNodeDto>();
+        ResourceNodeDto? dto = await ctx.ReadJsonBodyAsync<ResourceNodeDto>();
         if (dto == null)
         {
             return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required"));
@@ -135,7 +135,7 @@ public class ResourceNodeController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        var definition = FromDto(dto);
+        ResourceNodeDefinition definition = FromDto(dto);
         repo.Update(definition);
 
         return new ApiResult(200, ToDto(definition));
@@ -149,7 +149,7 @@ public class ResourceNodeController
     public static async Task<ApiResult> Delete(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        var repo = ResolveRepository();
+        IResourceNodeDefinitionRepository repo = ResolveRepository();
 
         bool deleted = repo.Delete(tag);
         if (!deleted)
@@ -169,12 +169,12 @@ public class ResourceNodeController
     [HttpPost("/api/worldengine/resource-nodes/import")]
     public static async Task<ApiResult> Import(RouteContext ctx)
     {
-        var repo = ResolveRepository();
+        IResourceNodeDefinitionRepository repo = ResolveRepository();
 
         string? body = null;
         if (ctx.Request != null)
         {
-            using var reader = new StreamReader(ctx.Request.InputStream);
+            using StreamReader reader = new StreamReader(ctx.Request.InputStream);
             body = await reader.ReadToEndAsync();
         }
 
@@ -193,7 +193,7 @@ public class ResourceNodeController
         {
             try
             {
-                var single = JsonSerializer.Deserialize<ResourceNodeDefinition>(body, ImportOptions);
+                ResourceNodeDefinition? single = JsonSerializer.Deserialize<ResourceNodeDefinition>(body, ImportOptions);
                 nodes = single != null ? new List<ResourceNodeDefinition> { single } : null;
             }
             catch (JsonException ex)
@@ -212,7 +212,7 @@ public class ResourceNodeController
         int failed = 0;
         List<string> errors = new();
 
-        foreach (var node in nodes)
+        foreach (ResourceNodeDefinition node in nodes)
         {
             try
             {
@@ -298,22 +298,22 @@ public class ResourceNodeController
 
     private static ResourceNodeDefinition FromDto(ResourceNodeDto dto)
     {
-        Enum.TryParse<ResourceType>(dto.Type, true, out var resourceType);
+        Enum.TryParse<ResourceType>(dto.Type, true, out ResourceType resourceType);
 
-        Enum.TryParse<JobSystemItemType>(dto.Requirement?.RequiredItemType, true, out var reqItemType);
-        Enum.TryParse<MaterialEnum>(dto.Requirement?.RequiredItemMaterial, true, out var reqMaterial);
+        Enum.TryParse<JobSystemItemType>(dto.Requirement?.RequiredItemType, true, out JobSystemItemType reqItemType);
+        Enum.TryParse<MaterialEnum>(dto.Requirement?.RequiredItemMaterial, true, out MaterialEnum reqMaterial);
 
-        var requirement = new HarvestContext(reqItemType, reqMaterial);
+        HarvestContext requirement = new HarvestContext(reqItemType, reqMaterial);
 
-        var outputs = (dto.Outputs ?? Array.Empty<HarvestOutputDto>())
+        HarvestOutput[] outputs = (dto.Outputs ?? Array.Empty<HarvestOutputDto>())
             .Select(o => new HarvestOutput(o.ItemDefinitionTag, o.Quantity, o.Chance))
             .ToArray();
 
         FloraProperties? floraProps = null;
         if (dto.FloraProperties != null)
         {
-            Enum.TryParse<Climate>(dto.FloraProperties.PreferredClimate, true, out var climate);
-            Enum.TryParse<EconomyQuality>(dto.FloraProperties.RequiredSoilQuality, true, out var soilQuality);
+            Enum.TryParse<Climate>(dto.FloraProperties.PreferredClimate, true, out Climate climate);
+            Enum.TryParse<EconomyQuality>(dto.FloraProperties.RequiredSoilQuality, true, out EconomyQuality soilQuality);
             floraProps = new FloraProperties(climate, soilQuality);
         }
 

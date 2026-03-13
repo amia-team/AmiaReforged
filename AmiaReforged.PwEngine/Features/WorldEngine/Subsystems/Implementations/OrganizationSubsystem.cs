@@ -84,10 +84,10 @@ public sealed class OrganizationSubsystem : IOrganizationSubsystem
 
     public Task<CommandResult> AddMemberAsync(OrganizationId organizationId, CharacterId characterId, string rank, CancellationToken ct = default)
     {
-        if (!Enum.TryParse<OrganizationRank>(rank, ignoreCase: true, out var parsedRank))
+        if (!Enum.TryParse<OrganizationRank>(rank, ignoreCase: true, out OrganizationRank parsedRank))
             return Task.FromResult(CommandResult.Fail($"Invalid rank: {rank}"));
 
-        var command = new AddMemberCommand
+        AddMemberCommand command = new AddMemberCommand
         {
             OrganizationId = organizationId,
             CharacterId = characterId,
@@ -99,7 +99,7 @@ public sealed class OrganizationSubsystem : IOrganizationSubsystem
     public Task<CommandResult> RemoveMemberAsync(OrganizationId organizationId, CharacterId characterId, CancellationToken ct = default)
     {
         // API-driven removal uses the character themselves as the remover (self-removal semantics)
-        var command = new RemoveMemberCommand
+        RemoveMemberCommand command = new RemoveMemberCommand
         {
             OrganizationId = organizationId,
             CharacterId = characterId,
@@ -110,13 +110,13 @@ public sealed class OrganizationSubsystem : IOrganizationSubsystem
 
     public Task<CommandResult> UpdateMemberRankAsync(OrganizationId organizationId, CharacterId characterId, string newRank, CancellationToken ct = default)
     {
-        if (!Enum.TryParse<OrganizationRank>(newRank, ignoreCase: true, out var parsedRank))
+        if (!Enum.TryParse<OrganizationRank>(newRank, ignoreCase: true, out OrganizationRank parsedRank))
             return Task.FromResult(CommandResult.Fail($"Invalid rank: {newRank}"));
 
         // API-driven rank change uses the character as the changer
         // In practice, this will fail authorization checks unless they have sufficient rank.
         // For admin API usage, consider adding a system-level bypass in ChangeRankHandler.
-        var command = new ChangeRankCommand
+        ChangeRankCommand command = new ChangeRankCommand
         {
             OrganizationId = organizationId,
             CharacterId = characterId,

@@ -20,7 +20,7 @@
                     <label class="instance-label">Server:</label>
                     <select class="form-control form-control-sm" value="@(_selectedEndpoint?.Id.ToString() ?? "")" @onchange="OnEndpointChanged">
                         <option value="">— Select —</option>
-                        @foreach (var ep in _endpoints)
+                        @foreach (WorldEngineEndpoint ep in _endpoints)
                         {
                             <option value="@ep.Id">@ep.Name</option>
                         }
@@ -120,7 +120,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var item in _items)
+                        @foreach (LoreDefinitionDto item in _items)
                         {
                             <tr>
                                 <td style="font-family:monospace;font-size:0.9rem">@item.LoreId</td>
@@ -316,7 +316,7 @@
 
     private async Task RefreshEndpoints()
     {
-        var all = await EndpointService.GetAllEndpointsAsync();
+        IReadOnlyList<WorldEngineEndpoint> all = await EndpointService.GetAllEndpointsAsync();
         _endpoints = all.Where(e => e.IsEnabled).ToList();
 
         if (_selectedEndpoint != null && !_endpoints.Any(e => e.Id == _selectedEndpoint.Id))
@@ -327,7 +327,7 @@
 
     private async Task OnEndpointChanged(ChangeEventArgs e)
     {
-        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        if (Guid.TryParse(e.Value?.ToString(), out Guid id))
         {
             _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
             Api.SelectEndpoint(id);
@@ -353,7 +353,7 @@
 
         try
         {
-            var result = await Api.GetAllAsync(_searchTerm, _categoryFilter, _page, _pageSize);
+            PagedResult<LoreDefinitionDto> result = await Api.GetAllAsync(_searchTerm, _categoryFilter, _page, _pageSize);
             _items = result.Items;
             _totalCount = result.TotalCount;
         }

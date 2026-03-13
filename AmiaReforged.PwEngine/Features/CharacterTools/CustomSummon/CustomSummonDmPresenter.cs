@@ -205,7 +205,7 @@ public sealed class CustomSummonDmPresenter(CustomSummonDmView view, NwPlayer pl
     private void AddWidgetItemProperty(NwItem widget)
     {
         // Remove any existing cast spell properties
-        foreach (var prop in widget.ItemProperties.ToList())
+        foreach (ItemProperty prop in widget.ItemProperties.ToList())
         {
             if (prop.Property.PropertyType == ItemPropertyType.CastSpell)
             {

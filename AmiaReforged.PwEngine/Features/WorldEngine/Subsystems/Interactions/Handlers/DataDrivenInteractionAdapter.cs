@@ -114,7 +114,7 @@ internal sealed class DataDrivenInteractionAdapter : IInteractionHandler
             response.Effects,
             DateTime.UtcNow), ct);
 
-        var data = new Dictionary<string, object>
+        Dictionary<string, object> data = new Dictionary<string, object>
         {
             ["responseTag"] = response.ResponseTag,
             ["effectCount"] = response.Effects.Count

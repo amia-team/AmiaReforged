@@ -23,9 +23,9 @@ public class DbRegionRepository : IRegionRepository
 
     public void Add(RegionDefinition definition)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
-        var existing = ctx.RegionDefinitions
+        PersistedRegionDefinition? existing = ctx.RegionDefinitions
             .FirstOrDefault(e => e.Tag == definition.Tag.Value);
 
         if (existing != null)
@@ -42,9 +42,9 @@ public class DbRegionRepository : IRegionRepository
 
     public void Update(RegionDefinition definition)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
-        var existing = ctx.RegionDefinitions
+        PersistedRegionDefinition? existing = ctx.RegionDefinitions
             .FirstOrDefault(e => e.Tag == definition.Tag.Value);
 
         if (existing == null)
@@ -61,13 +61,13 @@ public class DbRegionRepository : IRegionRepository
 
     public bool Exists(RegionTag tag)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
         return ctx.RegionDefinitions.Any(e => e.Tag == tag.Value);
     }
 
     public List<RegionDefinition> All()
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
         return ctx.RegionDefinitions
             .AsNoTracking()
@@ -78,9 +78,9 @@ public class DbRegionRepository : IRegionRepository
 
     public bool Delete(RegionTag tag)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
-        var entity = ctx.RegionDefinitions
+        PersistedRegionDefinition? entity = ctx.RegionDefinitions
             .FirstOrDefault(e => e.Tag == tag.Value);
 
         if (entity == null) return false;
@@ -92,7 +92,7 @@ public class DbRegionRepository : IRegionRepository
 
     public void Clear()
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
         ctx.RegionDefinitions.RemoveRange(ctx.RegionDefinitions);
         ctx.SaveChanges();
     }
@@ -104,9 +104,9 @@ public class DbRegionRepository : IRegionRepository
     public bool TryGetRegionBySettlement(SettlementId settlementId, out RegionDefinition? region)
     {
         region = null;
-        var all = All();
+        List<RegionDefinition> all = All();
 
-        foreach (var r in all)
+        foreach (RegionDefinition r in all)
         {
             if (r.Areas.Any(a => a.LinkedSettlement?.Value == settlementId.Value))
             {
@@ -120,14 +120,14 @@ public class DbRegionRepository : IRegionRepository
 
     public IReadOnlyCollection<SettlementId> GetSettlements(RegionTag regionTag)
     {
-        using var ctx = _contextFactory.CreateDbContext();
-        var entity = ctx.RegionDefinitions
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
+        PersistedRegionDefinition? entity = ctx.RegionDefinitions
             .AsNoTracking()
             .FirstOrDefault(e => e.Tag == regionTag.Value);
 
         if (entity == null) return Array.Empty<SettlementId>();
 
-        var definition = RegionMapper.ToDomain(entity);
+        RegionDefinition definition = RegionMapper.ToDomain(entity);
         return definition.Areas
             .Where(a => a.LinkedSettlement != null)
             .Select(a => a.LinkedSettlement!.Value)
@@ -138,11 +138,11 @@ public class DbRegionRepository : IRegionRepository
     public bool TryGetSettlementForArea(AreaTag areaTag, out SettlementId settlementId)
     {
         settlementId = default;
-        var all = All();
+        List<RegionDefinition> all = All();
 
-        foreach (var region in all)
+        foreach (RegionDefinition region in all)
         {
-            var area = region.Areas.FirstOrDefault(a =>
+            AreaDefinition? area = region.Areas.FirstOrDefault(a =>
                 string.Equals(a.ResRef.Value, areaTag.Value, StringComparison.OrdinalIgnoreCase));
 
             if (area?.LinkedSettlement != null)
@@ -157,7 +157,7 @@ public class DbRegionRepository : IRegionRepository
 
     public IReadOnlyList<AreaDefinition> GetAreasForSettlement(SettlementId settlementId)
     {
-        var all = All();
+        List<RegionDefinition> all = All();
 
         return all
             .SelectMany(r => r.Areas)
@@ -167,7 +167,7 @@ public class DbRegionRepository : IRegionRepository
 
     public IReadOnlyList<PlaceOfInterest> GetPointsOfInterest(SettlementId settlementId)
     {
-        var all = All();
+        List<RegionDefinition> all = All();
 
         return all
             .SelectMany(r => r.Areas)
@@ -180,11 +180,11 @@ public class DbRegionRepository : IRegionRepository
     public bool TryGetSettlementForPointOfInterest(string poiResRef, out SettlementId settlementId)
     {
         settlementId = default;
-        var all = All();
+        List<RegionDefinition> all = All();
 
-        foreach (var region in all)
+        foreach (RegionDefinition region in all)
         {
-            foreach (var area in region.Areas)
+            foreach (AreaDefinition area in region.Areas)
             {
                 if (area.PlacesOfInterest == null) continue;
                 if (area.PlacesOfInterest.Any(p =>
@@ -205,14 +205,14 @@ public class DbRegionRepository : IRegionRepository
     public bool TryGetPointOfInterestByResRef(string poiResRef, out PlaceOfInterest poi)
     {
         poi = default;
-        var all = All();
+        List<RegionDefinition> all = All();
 
-        foreach (var region in all)
+        foreach (RegionDefinition region in all)
         {
-            foreach (var area in region.Areas)
+            foreach (AreaDefinition area in region.Areas)
             {
                 if (area.PlacesOfInterest == null) continue;
-                var found = area.PlacesOfInterest.FirstOrDefault(p =>
+                PlaceOfInterest? found = area.PlacesOfInterest.FirstOrDefault(p =>
                     string.Equals(p.ResRef, poiResRef, StringComparison.OrdinalIgnoreCase));
 
                 if (found != default)
@@ -228,7 +228,7 @@ public class DbRegionRepository : IRegionRepository
 
     public IReadOnlyList<PlaceOfInterest> GetPointsOfInterestByTag(string tag)
     {
-        var all = All();
+        List<RegionDefinition> all = All();
 
         return all
             .SelectMany(r => r.Areas)
@@ -242,7 +242,7 @@ public class DbRegionRepository : IRegionRepository
     {
         if (type == PoiType.Undefined) return Array.Empty<PlaceOfInterest>();
 
-        var all = All();
+        List<RegionDefinition> all = All();
 
         return all
             .SelectMany(r => r.Areas)
@@ -254,7 +254,7 @@ public class DbRegionRepository : IRegionRepository
 
     public IReadOnlyList<PlaceOfInterest> GetPointsOfInterestForArea(AreaTag areaTag)
     {
-        var all = All();
+        List<RegionDefinition> all = All();
 
         return all
             .SelectMany(r => r.Areas)
@@ -266,15 +266,15 @@ public class DbRegionRepository : IRegionRepository
 
     public PoiLocationInfo? GetPoiLocationInfo(string poiResRef)
     {
-        var all = All();
+        List<RegionDefinition> all = All();
 
-        foreach (var region in all)
+        foreach (RegionDefinition region in all)
         {
-            foreach (var area in region.Areas)
+            foreach (AreaDefinition area in region.Areas)
             {
                 if (area.PlacesOfInterest == null) continue;
 
-                var poi = area.PlacesOfInterest.FirstOrDefault(p =>
+                PlaceOfInterest? poi = area.PlacesOfInterest.FirstOrDefault(p =>
                     string.Equals(p.ResRef, poiResRef, StringComparison.OrdinalIgnoreCase));
 
                 if (poi != default)
@@ -289,7 +289,7 @@ public class DbRegionRepository : IRegionRepository
 
     public bool IsAreaRegistered(string areaResRef)
     {
-        var all = All();
+        List<RegionDefinition> all = All();
 
         return all.Any(r =>
             r.Areas.Any(a =>
@@ -299,9 +299,9 @@ public class DbRegionRepository : IRegionRepository
     public bool TryGetRegionForArea(string areaResRef, out RegionDefinition? region)
     {
         region = null;
-        var all = All();
+        List<RegionDefinition> all = All();
 
-        foreach (var r in all)
+        foreach (RegionDefinition r in all)
         {
             if (r.Areas.Any(a =>
                     string.Equals(a.ResRef.Value, areaResRef, StringComparison.OrdinalIgnoreCase)))
@@ -319,7 +319,7 @@ public class DbRegionRepository : IRegionRepository
     /// </summary>
     public List<RegionDefinition> Search(string? searchTerm, int page, int pageSize, out int totalCount)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
         IQueryable<PersistedRegionDefinition> query = ctx.RegionDefinitions.AsNoTracking();
 

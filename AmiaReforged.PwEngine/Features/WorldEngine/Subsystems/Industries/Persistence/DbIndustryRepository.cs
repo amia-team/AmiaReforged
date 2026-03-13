@@ -20,15 +20,15 @@ public class DbIndustryRepository : IIndustryRepository
 
     public bool IndustryExists(string industryTag)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
         return ctx.IndustryDefinitions.Any(e => e.Tag == industryTag);
     }
 
     public void Add(Industry industry)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
-        var existing = ctx.IndustryDefinitions
+        PersistedIndustryDefinition? existing = ctx.IndustryDefinitions
             .FirstOrDefault(e => e.Tag == industry.Tag);
 
         if (existing != null)
@@ -45,9 +45,9 @@ public class DbIndustryRepository : IIndustryRepository
 
     public Industry? Get(string membershipIndustryTag)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
-        var entity = ctx.IndustryDefinitions
+        PersistedIndustryDefinition? entity = ctx.IndustryDefinitions
             .FirstOrDefault(e => e.Tag == membershipIndustryTag);
 
         return entity != null ? IndustryMapper.ToDomain(entity) : null;
@@ -60,7 +60,7 @@ public class DbIndustryRepository : IIndustryRepository
 
     public List<Industry> All()
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
         return ctx.IndustryDefinitions
             .AsEnumerable()
@@ -70,9 +70,9 @@ public class DbIndustryRepository : IIndustryRepository
 
     public void Update(Industry industry)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
-        var existing = ctx.IndustryDefinitions
+        PersistedIndustryDefinition? existing = ctx.IndustryDefinitions
             .FirstOrDefault(e => e.Tag == industry.Tag);
 
         if (existing == null)
@@ -84,9 +84,9 @@ public class DbIndustryRepository : IIndustryRepository
 
     public bool Delete(string tag)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
-        var existing = ctx.IndustryDefinitions
+        PersistedIndustryDefinition? existing = ctx.IndustryDefinitions
             .FirstOrDefault(e => e.Tag == tag);
 
         if (existing == null) return false;
@@ -98,7 +98,7 @@ public class DbIndustryRepository : IIndustryRepository
 
     public List<Industry> Search(string? searchTerm, int page, int pageSize, out int totalCount)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
         IQueryable<PersistedIndustryDefinition> query = ctx.IndustryDefinitions;
 

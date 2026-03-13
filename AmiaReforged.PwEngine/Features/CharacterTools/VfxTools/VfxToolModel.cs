@@ -69,7 +69,7 @@ public sealed class VfxToolModel
         if (_player.ControlledCreature == null) return;
 
         // Find nearest creature with tag "vfx_doll"
-        var dollsNearby = _player.ControlledCreature.Area?.Objects
+        NwGameObject? dollsNearby = _player.ControlledCreature.Area?.Objects
             .Where(o => o is NwCreature && o.Tag == "vfx_doll")
             .OrderBy(o => _player.ControlledCreature.Distance(o))
             .FirstOrDefault();

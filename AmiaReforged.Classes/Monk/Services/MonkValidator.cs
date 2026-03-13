@@ -130,7 +130,7 @@ public class MonkValidator
                 continue;
             }
 
-            var requirement = MonkFeatsByLevel.FirstOrDefault(kvp => kvp.Value == feat);
+            KeyValuePair<int, NwFeat?> requirement = MonkFeatsByLevel.FirstOrDefault(kvp => kvp.Value == feat);
 
             if (requirement.Value != null && requirement.Key > totalMonkLevel)
             {

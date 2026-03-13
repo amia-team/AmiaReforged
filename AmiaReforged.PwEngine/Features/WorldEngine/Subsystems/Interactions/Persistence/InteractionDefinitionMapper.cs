@@ -53,7 +53,7 @@ public static class InteractionDefinitionMapper
     /// <summary>Converts a persistence entity to a domain object.</summary>
     public static InteractionDefinition ToDomain(PersistedInteractionDefinition entity)
     {
-        Enum.TryParse<InteractionTargetMode>(entity.TargetMode, true, out var targetMode);
+        Enum.TryParse<InteractionTargetMode>(entity.TargetMode, true, out InteractionTargetMode targetMode);
 
         List<ResponseJsonDto> responseDtos =
             JsonSerializer.Deserialize<List<ResponseJsonDto>>(entity.ResponsesJson, JsonOptions) ?? [];
@@ -63,7 +63,7 @@ public static class InteractionDefinitionMapper
             ProficiencyLevel? minProf = null;
             if (!string.IsNullOrEmpty(r.MinProficiency))
             {
-                Enum.TryParse<ProficiencyLevel>(r.MinProficiency, true, out var parsed);
+                Enum.TryParse<ProficiencyLevel>(r.MinProficiency, true, out ProficiencyLevel parsed);
                 minProf = parsed;
             }
 
@@ -75,7 +75,7 @@ public static class InteractionDefinitionMapper
                 Message = r.Message,
                 Effects = r.Effects?.Select(e =>
                 {
-                    Enum.TryParse<InteractionResponseEffectType>(e.EffectType, true, out var effectType);
+                    Enum.TryParse<InteractionResponseEffectType>(e.EffectType, true, out InteractionResponseEffectType effectType);
                     return new InteractionResponseEffect
                     {
                         EffectType = effectType,

@@ -118,8 +118,8 @@ public class GlyphController
         {
             try
             {
-                using var doc = JsonDocument.Parse(definition.GraphJson);
-                var root = doc.RootElement;
+                using JsonDocument doc = JsonDocument.Parse(definition.GraphJson);
+                JsonElement root = doc.RootElement;
 
                 // Only re-write if EventType is missing or different
                 string existingEventType = root.TryGetProperty("EventType", out JsonElement et)
@@ -128,7 +128,7 @@ public class GlyphController
 
                 if (existingEventType != definition.EventType)
                 {
-                    var dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(definition.GraphJson);
+                    Dictionary<string, JsonElement>? dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(definition.GraphJson);
                     if (dict != null)
                     {
                         dict["EventType"] = JsonSerializer.SerializeToElement(definition.EventType);
@@ -184,7 +184,7 @@ public class GlyphController
         if (NodeRegistry == null) return Task.FromResult(ServiceUnavailable());
 
         IReadOnlyList<GlyphNodeDefinition> definitions = NodeRegistry.GetAll();
-        var catalog = definitions.Select(NodeDefinitionToDto).ToList();
+        List<GlyphNodeCatalogEntryDto> catalog = definitions.Select(NodeDefinitionToDto).ToList();
         return Task.FromResult(new ApiResult(200, catalog));
     }
 

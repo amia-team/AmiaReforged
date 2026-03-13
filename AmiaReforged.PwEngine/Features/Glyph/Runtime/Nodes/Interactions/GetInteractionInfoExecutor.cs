@@ -17,7 +17,7 @@ public class GetInteractionInfoExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        var outputs = new Dictionary<string, object?>
+        Dictionary<string, object?> outputs = new Dictionary<string, object?>
         {
             ["tag"] = context.InteractionTag ?? string.Empty,
             ["target_id"] = context.InteractionTargetId.ToString(),

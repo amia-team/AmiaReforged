@@ -2,7 +2,9 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.Persistence;
 using Anvil;
 
@@ -27,10 +29,10 @@ public class IndustryController
     [HttpGet("/api/worldengine/industries")]
     public static async Task<ApiResult> GetAll(RouteContext ctx)
     {
-        var repo = ResolveRepository();
+        IIndustryRepository repo = ResolveRepository();
         string? search = ctx.GetQueryParam("search");
-        int page = int.TryParse(ctx.GetQueryParam("page"), out var p) ? Math.Max(1, p) : 1;
-        int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out var ps) ? Math.Clamp(ps, 1, 200) : 50;
+        int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
+        int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
 
         List<Industry> paged = repo.Search(search, page, pageSize, out int totalCount);
 
@@ -51,7 +53,7 @@ public class IndustryController
     public static async Task<ApiResult> GetByTag(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        var repo = ResolveRepository();
+        IIndustryRepository repo = ResolveRepository();
 
         Industry? industry = repo.Get(tag);
         if (industry == null)
@@ -70,7 +72,7 @@ public class IndustryController
     [HttpPost("/api/worldengine/industries")]
     public static async Task<ApiResult> Create(RouteContext ctx)
     {
-        var dto = await ctx.ReadJsonBodyAsync<IndustryDto>();
+        IndustryDto? dto = await ctx.ReadJsonBodyAsync<IndustryDto>();
         if (dto == null)
         {
             return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required"));
@@ -82,7 +84,7 @@ public class IndustryController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        var repo = ResolveRepository();
+        IIndustryRepository repo = ResolveRepository();
 
         if (repo.IndustryExists(dto.Tag))
         {
@@ -90,7 +92,7 @@ public class IndustryController
                 $"Industry with tag '{dto.Tag}' already exists"));
         }
 
-        var industry = FromDto(dto);
+        Industry industry = FromDto(dto);
         repo.Add(industry);
 
         return new ApiResult(201, ToDto(industry));
@@ -104,7 +106,7 @@ public class IndustryController
     public static async Task<ApiResult> Update(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        var repo = ResolveRepository();
+        IIndustryRepository repo = ResolveRepository();
 
         Industry? existing = repo.Get(tag);
         if (existing == null)
@@ -113,7 +115,7 @@ public class IndustryController
                 "Not found", $"No industry with tag '{tag}'")));
         }
 
-        var dto = await ctx.ReadJsonBodyAsync<IndustryDto>();
+        IndustryDto? dto = await ctx.ReadJsonBodyAsync<IndustryDto>();
         if (dto == null)
         {
             return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required"));
@@ -127,7 +129,7 @@ public class IndustryController
 
         // Ensure the tag in the body matches the route
         dto = dto with { Tag = tag };
-        var industry = FromDto(dto);
+        Industry industry = FromDto(dto);
         repo.Update(industry);
 
         return new ApiResult(200, ToDto(industry));
@@ -141,7 +143,7 @@ public class IndustryController
     public static async Task<ApiResult> Delete(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        var repo = ResolveRepository();
+        IIndustryRepository repo = ResolveRepository();
 
         bool deleted = repo.Delete(tag);
         if (!deleted)
@@ -160,10 +162,10 @@ public class IndustryController
     [HttpGet("/api/worldengine/industries/export")]
     public static async Task<ApiResult> Export(RouteContext ctx)
     {
-        var repo = ResolveRepository();
+        IIndustryRepository repo = ResolveRepository();
         string? search = ctx.GetQueryParam("search");
 
-        var industries = repo.All();
+        List<Industry> industries = repo.All();
         if (!string.IsNullOrWhiteSpace(search))
         {
             industries = industries.Where(i =>
@@ -183,12 +185,12 @@ public class IndustryController
     [HttpPost("/api/worldengine/industries/import")]
     public static async Task<ApiResult> Import(RouteContext ctx)
     {
-        var repo = ResolveRepository();
+        IIndustryRepository repo = ResolveRepository();
 
         string? body = null;
         if (ctx.Request != null)
         {
-            using var reader = new StreamReader(ctx.Request.InputStream);
+            using StreamReader reader = new StreamReader(ctx.Request.InputStream);
             body = await reader.ReadToEndAsync();
         }
 
@@ -207,7 +209,7 @@ public class IndustryController
         {
             try
             {
-                var single = JsonSerializer.Deserialize<IndustryDto>(body, ImportOptions);
+                IndustryDto? single = JsonSerializer.Deserialize<IndustryDto>(body, ImportOptions);
                 dtos = single != null ? new List<IndustryDto> { single } : null;
             }
             catch (JsonException ex)
@@ -226,7 +228,7 @@ public class IndustryController
         int failed = 0;
         List<string> errors = new();
 
-        foreach (var dto in dtos)
+        foreach (IndustryDto dto in dtos)
         {
             try
             {
@@ -238,7 +240,7 @@ public class IndustryController
                     continue;
                 }
 
-                var industry = FromDto(dto);
+                Industry industry = FromDto(dto);
                 repo.Add(industry); // Acts as upsert
                 succeeded++;
             }
@@ -338,7 +340,7 @@ public class IndustryController
             Name = dto.Name,
             Knowledge = dto.Knowledge?.Select(k =>
             {
-                Enum.TryParse<ProficiencyLevel>(k.Level, true, out var level);
+                Enum.TryParse<ProficiencyLevel>(k.Level, true, out ProficiencyLevel level);
                 return new Subsystems.Industries.KnowledgeSubsystem.Knowledge
                 {
                     Tag = k.Tag ?? string.Empty,
@@ -348,9 +350,9 @@ public class IndustryController
                     PointCost = k.PointCost,
                     HarvestEffects = k.HarvestEffects?.Select(e =>
                     {
-                        Enum.TryParse<Subsystems.Harvesting.HarvestStep>(e.StepModified, true, out var step);
+                        Enum.TryParse<Subsystems.Harvesting.HarvestStep>(e.StepModified, true, out HarvestStep step);
                         Enum.TryParse<Subsystems.Industries.KnowledgeSubsystem.EffectOperation>(e.Operation, true,
-                            out var op);
+                            out EffectOperation op);
                         return new Subsystems.Industries.KnowledgeSubsystem.KnowledgeHarvestEffect(
                             e.NodeTag ?? string.Empty, step, e.Value, op);
                     }).ToList() ?? [],
@@ -359,7 +361,7 @@ public class IndustryController
                     Effects = k.Effects?.Select(e =>
                     {
                         Enum.TryParse<Subsystems.Industries.KnowledgeSubsystem.KnowledgeEffectType>(
-                            e.EffectType, true, out var effectType);
+                            e.EffectType, true, out KnowledgeEffectType effectType);
                         return new Subsystems.Industries.KnowledgeSubsystem.KnowledgeEffect
                         {
                             EffectType = effectType,
@@ -371,7 +373,7 @@ public class IndustryController
             }).ToList() ?? [],
             Recipes = dto.Recipes?.Select(r =>
             {
-                Enum.TryParse<ProficiencyLevel>(r.RequiredProficiency, true, out var proficiency);
+                Enum.TryParse<ProficiencyLevel>(r.RequiredProficiency, true, out ProficiencyLevel proficiency);
                 return new Recipe
                 {
                     RecipeId = new RecipeId(r.RecipeId ?? string.Empty),

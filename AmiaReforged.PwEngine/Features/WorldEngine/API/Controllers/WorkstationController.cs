@@ -25,10 +25,10 @@ public class WorkstationController
     [HttpGet("/api/worldengine/workstations")]
     public static async Task<ApiResult> GetAll(RouteContext ctx)
     {
-        var repo = ResolveRepository();
+        IWorkstationRepository repo = ResolveRepository();
         string? search = ctx.GetQueryParam("search");
-        int page = int.TryParse(ctx.GetQueryParam("page"), out var p) ? Math.Max(1, p) : 1;
-        int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out var ps) ? Math.Clamp(ps, 1, 200) : 50;
+        int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
+        int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
 
         List<Workstation> paged = repo.Search(search, page, pageSize, out int totalCount);
 
@@ -49,7 +49,7 @@ public class WorkstationController
     public static async Task<ApiResult> GetByTag(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        var repo = ResolveRepository();
+        IWorkstationRepository repo = ResolveRepository();
 
         Workstation? workstation = repo.GetByTag(new WorkstationTag(tag));
         if (workstation == null)
@@ -68,7 +68,7 @@ public class WorkstationController
     [HttpPost("/api/worldengine/workstations")]
     public static async Task<ApiResult> Create(RouteContext ctx)
     {
-        var dto = await ctx.ReadJsonBodyAsync<WorkstationDto>();
+        WorkstationDto? dto = await ctx.ReadJsonBodyAsync<WorkstationDto>();
         if (dto == null)
         {
             return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required"));
@@ -80,7 +80,7 @@ public class WorkstationController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        var repo = ResolveRepository();
+        IWorkstationRepository repo = ResolveRepository();
 
         if (repo.WorkstationExists(dto.Tag))
         {
@@ -88,7 +88,7 @@ public class WorkstationController
                 $"Workstation with tag '{dto.Tag}' already exists"));
         }
 
-        var workstation = FromDto(dto);
+        Workstation workstation = FromDto(dto);
         repo.Add(workstation);
 
         return new ApiResult(201, ToDto(workstation));
@@ -102,7 +102,7 @@ public class WorkstationController
     public static async Task<ApiResult> Update(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        var repo = ResolveRepository();
+        IWorkstationRepository repo = ResolveRepository();
 
         Workstation? existing = repo.GetByTag(new WorkstationTag(tag));
         if (existing == null)
@@ -111,7 +111,7 @@ public class WorkstationController
                 "Not found", $"No workstation with tag '{tag}'")));
         }
 
-        var dto = await ctx.ReadJsonBodyAsync<WorkstationDto>();
+        WorkstationDto? dto = await ctx.ReadJsonBodyAsync<WorkstationDto>();
         if (dto == null)
         {
             return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required"));
@@ -124,7 +124,7 @@ public class WorkstationController
         }
 
         dto = dto with { Tag = tag };
-        var workstation = FromDto(dto);
+        Workstation workstation = FromDto(dto);
         repo.Update(workstation);
 
         return new ApiResult(200, ToDto(workstation));
@@ -138,7 +138,7 @@ public class WorkstationController
     public static async Task<ApiResult> Delete(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        var repo = ResolveRepository();
+        IWorkstationRepository repo = ResolveRepository();
 
         bool deleted = repo.Delete(tag);
         if (!deleted)
@@ -157,9 +157,9 @@ public class WorkstationController
     [HttpGet("/api/worldengine/workstations/export")]
     public static async Task<ApiResult> Export(RouteContext ctx)
     {
-        var repo = ResolveRepository();
+        IWorkstationRepository repo = ResolveRepository();
 
-        var workstations = repo.All();
+        List<Workstation> workstations = repo.All();
 
         return await Task.FromResult(new ApiResult(200,
             workstations.OrderBy(w => w.Name).Select(ToDto).ToArray()));
@@ -172,12 +172,12 @@ public class WorkstationController
     [HttpPost("/api/worldengine/workstations/import")]
     public static async Task<ApiResult> Import(RouteContext ctx)
     {
-        var repo = ResolveRepository();
+        IWorkstationRepository repo = ResolveRepository();
 
         string? body = null;
         if (ctx.Request != null)
         {
-            using var reader = new StreamReader(ctx.Request.InputStream);
+            using StreamReader reader = new StreamReader(ctx.Request.InputStream);
             body = await reader.ReadToEndAsync();
         }
 
@@ -196,7 +196,7 @@ public class WorkstationController
         {
             try
             {
-                var single = JsonSerializer.Deserialize<WorkstationDto>(body, ImportOptions);
+                WorkstationDto? single = JsonSerializer.Deserialize<WorkstationDto>(body, ImportOptions);
                 dtos = single != null ? new List<WorkstationDto> { single } : null;
             }
             catch (JsonException ex)
@@ -215,7 +215,7 @@ public class WorkstationController
         int failed = 0;
         List<string> errors = new();
 
-        foreach (var dto in dtos)
+        foreach (WorkstationDto dto in dtos)
         {
             try
             {
@@ -227,7 +227,7 @@ public class WorkstationController
                     continue;
                 }
 
-                var workstation = FromDto(dto);
+                Workstation workstation = FromDto(dto);
                 repo.Add(workstation); // Acts as upsert
                 succeeded++;
             }

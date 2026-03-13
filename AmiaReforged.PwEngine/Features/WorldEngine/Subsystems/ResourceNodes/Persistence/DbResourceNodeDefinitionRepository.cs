@@ -21,9 +21,9 @@ public class DbResourceNodeDefinitionRepository : IResourceNodeDefinitionReposit
 
     public void Create(ResourceNodeDefinition definition)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
-        var existing = ctx.ResourceNodeDefinitions
+        PersistedResourceNodeDefinition? existing = ctx.ResourceNodeDefinitions
             .FirstOrDefault(e => e.Tag == definition.Tag);
 
         if (existing != null)
@@ -40,9 +40,9 @@ public class DbResourceNodeDefinitionRepository : IResourceNodeDefinitionReposit
 
     public ResourceNodeDefinition? Get(string tag)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
-        var entity = ctx.ResourceNodeDefinitions
+        PersistedResourceNodeDefinition? entity = ctx.ResourceNodeDefinitions
             .AsNoTracking()
             .FirstOrDefault(e => e.Tag == tag);
 
@@ -51,9 +51,9 @@ public class DbResourceNodeDefinitionRepository : IResourceNodeDefinitionReposit
 
     public void Update(ResourceNodeDefinition definition)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
-        var existing = ctx.ResourceNodeDefinitions
+        PersistedResourceNodeDefinition? existing = ctx.ResourceNodeDefinitions
             .FirstOrDefault(e => e.Tag == definition.Tag);
 
         if (existing == null)
@@ -70,9 +70,9 @@ public class DbResourceNodeDefinitionRepository : IResourceNodeDefinitionReposit
 
     public bool Delete(string tag)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
-        var entity = ctx.ResourceNodeDefinitions
+        PersistedResourceNodeDefinition? entity = ctx.ResourceNodeDefinitions
             .FirstOrDefault(e => e.Tag == tag);
 
         if (entity == null) return false;
@@ -84,13 +84,13 @@ public class DbResourceNodeDefinitionRepository : IResourceNodeDefinitionReposit
 
     public bool Exists(string tag)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
         return ctx.ResourceNodeDefinitions.Any(e => e.Tag == tag);
     }
 
     public List<ResourceNodeDefinition> All()
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
         return ctx.ResourceNodeDefinitions
             .AsNoTracking()
@@ -105,7 +105,7 @@ public class DbResourceNodeDefinitionRepository : IResourceNodeDefinitionReposit
     public List<ResourceNodeDefinition> Search(string? searchTerm, string? type, int page, int pageSize,
         out int totalCount)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
         IQueryable<PersistedResourceNodeDefinition> query = ctx.ResourceNodeDefinitions.AsNoTracking();
 

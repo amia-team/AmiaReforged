@@ -151,7 +151,7 @@ public class IndustryCommand : IChatCommand
         // Apply appearance override if configured
         if (workstation.AppearanceId.HasValue)
         {
-            var row = NwGameTables.PlaceableTable.GetRow(workstation.AppearanceId.Value);
+            PlaceableTableEntry row = NwGameTables.PlaceableTable.GetRow(workstation.AppearanceId.Value);
             placeable.Appearance = row;
         }
 

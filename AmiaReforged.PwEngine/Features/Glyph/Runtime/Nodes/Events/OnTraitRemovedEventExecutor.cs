@@ -17,7 +17,7 @@ public class OnTraitRemovedEventExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        var outputs = new Dictionary<string, object?>
+        Dictionary<string, object?> outputs = new Dictionary<string, object?>
         {
             ["character_id"] = context.CharacterId ?? string.Empty,
             ["trait_tag"] = context.TraitTag ?? string.Empty,

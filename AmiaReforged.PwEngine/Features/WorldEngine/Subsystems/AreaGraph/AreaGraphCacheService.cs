@@ -49,7 +49,7 @@ public class AreaGraphCacheService
         if (!forceRefresh && _cached == null)
         {
             // Try loading from disk
-            var loaded = LoadFromDisk();
+            AreaGraphData? loaded = LoadFromDisk();
             if (loaded != null)
             {
                 _cached = loaded;
@@ -96,7 +96,7 @@ public class AreaGraphCacheService
             }
 
             string json = File.ReadAllText(_cacheFilePath);
-            var data = JsonSerializer.Deserialize<AreaGraphData>(json, SerializerOptions);
+            AreaGraphData? data = JsonSerializer.Deserialize<AreaGraphData>(json, SerializerOptions);
             if (data != null)
             {
                 Log.Info("Loaded area graph from disk ({Nodes} nodes, {Edges} edges)",

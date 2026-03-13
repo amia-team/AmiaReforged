@@ -454,7 +454,7 @@ public sealed class JobResourceManagerPresenter : ScryPresenter<JobResourceManag
         }
 
         // Retrieve all valid resources
-        var result = _model.RetrieveResourcesFromPlc(targetPlc);
+        JobResourceManagerModel.RetrieveFromPlcResult result = _model.RetrieveResourcesFromPlc(targetPlc);
 
         if (result.TotalItemsRetrieved == 0)
         {

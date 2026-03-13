@@ -28,10 +28,10 @@ public class RegionController
     [HttpGet("/api/worldengine/regions")]
     public static async Task<ApiResult> GetAll(RouteContext ctx)
     {
-        var repo = ResolveRepository();
+        IRegionRepository repo = ResolveRepository();
         string? search = ctx.GetQueryParam("search");
-        int page = int.TryParse(ctx.GetQueryParam("page"), out var p) ? Math.Max(1, p) : 1;
-        int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out var ps) ? Math.Clamp(ps, 1, 200) : 50;
+        int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
+        int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
 
         List<RegionDefinition> paged;
         int totalCount;
@@ -42,7 +42,7 @@ public class RegionController
         }
         else
         {
-            var allRegions = repo.All();
+            List<RegionDefinition> allRegions = repo.All();
             if (!string.IsNullOrWhiteSpace(search))
             {
                 allRegions = allRegions.Where(r =>
@@ -75,9 +75,9 @@ public class RegionController
     public static async Task<ApiResult> GetByTag(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        var repo = ResolveRepository();
+        IRegionRepository repo = ResolveRepository();
 
-        var region = repo.All().FirstOrDefault(r =>
+        RegionDefinition? region = repo.All().FirstOrDefault(r =>
             r.Tag.Value.Equals(tag, StringComparison.OrdinalIgnoreCase));
         if (region == null)
         {
@@ -95,7 +95,7 @@ public class RegionController
     [HttpPost("/api/worldengine/regions")]
     public static async Task<ApiResult> Create(RouteContext ctx)
     {
-        var dto = await ctx.ReadJsonBodyAsync<RegionDto>();
+        RegionDto? dto = await ctx.ReadJsonBodyAsync<RegionDto>();
         if (dto == null)
         {
             return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required"));
@@ -107,8 +107,8 @@ public class RegionController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        var repo = ResolveRepository();
-        var definition = FromDto(dto);
+        IRegionRepository repo = ResolveRepository();
+        RegionDefinition definition = FromDto(dto);
         repo.Add(definition);
 
         return new ApiResult(201, ToDto(definition));
@@ -122,9 +122,9 @@ public class RegionController
     public static async Task<ApiResult> Update(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        var repo = ResolveRepository();
+        IRegionRepository repo = ResolveRepository();
 
-        var existing = repo.All().FirstOrDefault(r =>
+        RegionDefinition? existing = repo.All().FirstOrDefault(r =>
             r.Tag.Value.Equals(tag, StringComparison.OrdinalIgnoreCase));
         if (existing == null)
         {
@@ -132,7 +132,7 @@ public class RegionController
                 "Not found", $"No region with tag '{tag}'")));
         }
 
-        var dto = await ctx.ReadJsonBodyAsync<RegionDto>();
+        RegionDto? dto = await ctx.ReadJsonBodyAsync<RegionDto>();
         if (dto == null)
         {
             return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required"));
@@ -144,7 +144,7 @@ public class RegionController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        var definition = FromDto(dto);
+        RegionDefinition definition = FromDto(dto);
         repo.Update(definition);
 
         return new ApiResult(200, ToDto(definition));
@@ -158,7 +158,7 @@ public class RegionController
     public static async Task<ApiResult> Delete(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        var repo = ResolveRepository();
+        IRegionRepository repo = ResolveRepository();
 
         bool deleted = repo.Delete(new RegionTag(tag));
         if (!deleted)
@@ -177,10 +177,10 @@ public class RegionController
     [HttpGet("/api/worldengine/regions/export")]
     public static async Task<ApiResult> Export(RouteContext ctx)
     {
-        var repo = ResolveRepository();
+        IRegionRepository repo = ResolveRepository();
         string? search = ctx.GetQueryParam("search");
 
-        var regions = repo.All();
+        List<RegionDefinition> regions = repo.All();
         if (!string.IsNullOrWhiteSpace(search))
         {
             regions = regions.Where(r =>
@@ -200,12 +200,12 @@ public class RegionController
     [HttpPost("/api/worldengine/regions/import")]
     public static async Task<ApiResult> Import(RouteContext ctx)
     {
-        var repo = ResolveRepository();
+        IRegionRepository repo = ResolveRepository();
 
         string? body = null;
         if (ctx.Request != null)
         {
-            using var reader = new StreamReader(ctx.Request.InputStream);
+            using StreamReader reader = new StreamReader(ctx.Request.InputStream);
             body = await reader.ReadToEndAsync();
         }
 
@@ -224,7 +224,7 @@ public class RegionController
         {
             try
             {
-                var single = JsonSerializer.Deserialize<RegionDto>(body, ImportOptions);
+                RegionDto? single = JsonSerializer.Deserialize<RegionDto>(body, ImportOptions);
                 dtos = single != null ? new List<RegionDto> { single } : null;
             }
             catch (JsonException ex)
@@ -243,7 +243,7 @@ public class RegionController
         int failed = 0;
         List<string> errors = new();
 
-        foreach (var dto in dtos)
+        foreach (RegionDto dto in dtos)
         {
             try
             {
@@ -255,7 +255,7 @@ public class RegionController
                     continue;
                 }
 
-                var definition = FromDto(dto);
+                RegionDefinition definition = FromDto(dto);
                 repo.Add(definition); // Acts as upsert — replaces by tag key
                 succeeded++;
             }
@@ -290,7 +290,7 @@ public class RegionController
         {
             for (int i = 0; i < dto.Areas.Length; i++)
             {
-                var area = dto.Areas[i];
+                AreaDto area = dto.Areas[i];
                 if (string.IsNullOrWhiteSpace(area.ResRef))
                     return $"Area [{i}]: ResRef is required";
                 if (area.ResRef.Length > 16)
@@ -354,13 +354,13 @@ public class RegionController
             };
         }
 
-        var areas = (dto.Areas ?? Array.Empty<AreaDto>()).Select(a =>
+        List<AreaDefinition> areas = (dto.Areas ?? Array.Empty<AreaDto>()).Select(a =>
         {
-            Enum.TryParse<Climate>(a.Environment?.Climate, true, out var climate);
-            Enum.TryParse<EconomyQuality>(a.Environment?.SoilQuality, true, out var soilQuality);
+            Enum.TryParse<Climate>(a.Environment?.Climate, true, out Climate climate);
+            Enum.TryParse<EconomyQuality>(a.Environment?.SoilQuality, true, out EconomyQuality soilQuality);
 
-            Enum.TryParse<EconomyQuality>(a.Environment?.MineralQualityRange?.Min, true, out var minQuality);
-            Enum.TryParse<EconomyQuality>(a.Environment?.MineralQualityRange?.Max, true, out var maxQuality);
+            Enum.TryParse<EconomyQuality>(a.Environment?.MineralQualityRange?.Min, true, out EconomyQuality minQuality);
+            Enum.TryParse<EconomyQuality>(a.Environment?.MineralQualityRange?.Max, true, out EconomyQuality maxQuality);
             if (minQuality == default) minQuality = EconomyQuality.Average;
             if (maxQuality == default) maxQuality = EconomyQuality.Average;
 
@@ -376,12 +376,12 @@ public class RegionController
                 };
             }
 
-            var env = new EnvironmentData(climate, soilQuality,
+            EnvironmentData env = new EnvironmentData(climate, soilQuality,
                 new QualityRange(minQuality, maxQuality), areaChaos);
 
             List<PlaceOfInterest>? pois = a.PlacesOfInterest?.Select(p =>
             {
-                Enum.TryParse<PoiType>(p.Type, true, out var poiType);
+                Enum.TryParse<PoiType>(p.Type, true, out PoiType poiType);
                 return new PlaceOfInterest(p.ResRef, p.Tag, p.Name, poiType, p.Description);
             }).ToList();
 

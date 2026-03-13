@@ -49,7 +49,7 @@ public class ContainerHealthMonitor : BackgroundService
         }
 
         // Cancel all active monitors on shutdown
-        foreach (var cts in _activeMonitors.Values)
+        foreach (CancellationTokenSource cts in _activeMonitors.Values)
         {
             cts.Cancel();
         }
@@ -57,15 +57,15 @@ public class ContainerHealthMonitor : BackgroundService
 
     private async Task SyncMonitoredContainersAsync(CancellationToken ct)
     {
-        var monitored = await _monitoringConfig.GetMonitoredContainersAsync(ct);
-        var monitoredIds = monitored.Select(m => m.ContainerId).ToHashSet();
+        IReadOnlyList<MonitoredContainerConfig> monitored = await _monitoringConfig.GetMonitoredContainersAsync(ct);
+        HashSet<string> monitoredIds = monitored.Select(m => m.ContainerId).ToHashSet();
 
         // Stop monitoring containers that are no longer in the list
-        foreach (var containerId in _activeMonitors.Keys.ToList())
+        foreach (string containerId in _activeMonitors.Keys.ToList())
         {
             if (!monitoredIds.Contains(containerId))
             {
-                if (_activeMonitors.TryRemove(containerId, out var cts))
+                if (_activeMonitors.TryRemove(containerId, out CancellationTokenSource? cts))
                 {
                     _logger.LogInformation("Stopping log monitor for container {ContainerId}", containerId);
                     cts.Cancel();
@@ -74,11 +74,11 @@ public class ContainerHealthMonitor : BackgroundService
         }
 
         // Start monitoring new containers
-        foreach (var container in monitored)
+        foreach (MonitoredContainerConfig container in monitored)
         {
             if (!_activeMonitors.ContainsKey(container.ContainerId))
             {
-                var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 if (_activeMonitors.TryAdd(container.ContainerId, cts))
                 {
                     _logger.LogInformation("Starting log monitor for container {ContainerId} ({DisplayName})",
@@ -93,14 +93,14 @@ public class ContainerHealthMonitor : BackgroundService
     {
         try
         {
-            var patterns = container.WatchPatterns
+            List<Regex> patterns = container.WatchPatterns
                 .Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Select(p => new Regex(p, RegexOptions.IgnoreCase | RegexOptions.Compiled))
                 .ToList();
 
-            await foreach (var line in _docker.StreamLogsAsync(container.ContainerId, follow: true, tail: 0, ct: ct))
+            await foreach (string line in _docker.StreamLogsAsync(container.ContainerId, follow: true, tail: 0, ct: ct))
             {
-                foreach (var pattern in patterns)
+                foreach (Regex pattern in patterns)
                 {
                     if (pattern.IsMatch(line))
                     {
@@ -136,9 +136,9 @@ public class ContainerHealthMonitor : BackgroundService
 
     private bool ShouldAutoRestart(string containerId)
     {
-        if (_lastRestartTimes.TryGetValue(containerId, out var lastRestart))
+        if (_lastRestartTimes.TryGetValue(containerId, out DateTime lastRestart))
         {
-            var elapsed = DateTime.UtcNow - lastRestart;
+            TimeSpan elapsed = DateTime.UtcNow - lastRestart;
             if (elapsed.TotalSeconds < _config.AutoRestartCooldownSeconds)
             {
                 _logger.LogInformation("Skipping auto-restart for {ContainerId}: cooldown active ({Remaining}s remaining)",

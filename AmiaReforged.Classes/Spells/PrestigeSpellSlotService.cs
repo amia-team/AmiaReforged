@@ -233,7 +233,7 @@ public class PrestigeSpellSlotService
             ClassType? selectedBaseForThisPrc = null;
             int highestLevelForThisPrc = 0;
 
-            foreach (var kvp in allBaseClasses)
+            foreach (KeyValuePair<ClassType, int> kvp in allBaseClasses)
             {
                 if (validBaseClasses.Contains(kvp.Key))
                 {
@@ -260,7 +260,7 @@ public class PrestigeSpellSlotService
             if (baseClassBonuses.ContainsKey(selectedBaseForThisPrc.Value))
             {
                 // If this base class already has bonuses, add to them
-                var existing = baseClassBonuses[selectedBaseForThisPrc.Value];
+                (int actualLevel, int modifier) existing = baseClassBonuses[selectedBaseForThisPrc.Value];
                 baseClassBonuses[selectedBaseForThisPrc.Value] = (existing.actualLevel, existing.modifier + modifier);
                 Log.Info($"  - {prcType} Level {prcLevel} adds +{modifier} to {selectedBaseForThisPrc} (now +{existing.modifier + modifier} total)");
             }
@@ -284,7 +284,7 @@ public class PrestigeSpellSlotService
         // Apply bonuses for each base class
         Log.Info($"STEP 4: Applying bonuses to {baseClassBonuses.Count} base class(es)...");
 
-        foreach (var kvp in baseClassBonuses)
+        foreach (KeyValuePair<ClassType, (int actualLevel, int modifier)> kvp in baseClassBonuses)
         {
             ClassType baseClass = kvp.Key;
             int actualLevel = kvp.Value.actualLevel;

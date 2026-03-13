@@ -95,7 +95,7 @@ public class LanguageCheckerPresenter : ScryPresenter<LanguageCheckerView>
         {
             if (click.ArrayIndex >= 0)
             {
-                var availableLanguages = Model.GetAvailableLanguages();
+                List<string> availableLanguages = Model.GetAvailableLanguages();
                 if (click.ArrayIndex < availableLanguages.Count)
                 {
                     string language = availableLanguages[click.ArrayIndex];
@@ -136,7 +136,7 @@ public class LanguageCheckerPresenter : ScryPresenter<LanguageCheckerView>
         Token().SetBindValue(View.ChosenLanguagesCount, allChosenLanguages.Count);
 
         // Update available languages list
-        var availableLanguages = Model.GetAvailableLanguages();
+        List<string> availableLanguages = Model.GetAvailableLanguages();
         Token().SetBindValues(View.AvailableLanguageLabels, availableLanguages);
         Token().SetBindValue(View.AvailableLanguagesCount, availableLanguages.Count);
     }

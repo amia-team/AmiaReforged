@@ -50,7 +50,7 @@ public class WorldEngineEndpointService : IWorldEngineEndpointService
         _logger = logger;
 
         // Store alongside the monitoring config in the same data directory
-        var dir = Path.GetDirectoryName(config.ConfigPath) ?? "/data";
+        string dir = Path.GetDirectoryName(config.ConfigPath) ?? "/data";
         _configPath = Path.Combine(dir, "worldengine-endpoints.json");
     }
 
@@ -71,14 +71,14 @@ public class WorldEngineEndpointService : IWorldEngineEndpointService
     public async Task<WorldEngineEndpoint?> GetEndpointAsync(Guid id, CancellationToken ct = default)
     {
         await EnsureLoadedAsync(ct);
-        return _endpoints.TryGetValue(id, out var ep) ? ep : null;
+        return _endpoints.TryGetValue(id, out WorldEngineEndpoint? ep) ? ep : null;
     }
 
     public async Task<WorldEngineEndpoint> AddEndpointAsync(string name, string baseUrl, string? apiKey = null, CancellationToken ct = default)
     {
         await EnsureLoadedAsync(ct);
 
-        var endpoint = new WorldEngineEndpoint
+        WorldEngineEndpoint endpoint = new WorldEngineEndpoint
         {
             Id = Guid.NewGuid(),
             Name = name.Trim(),
@@ -98,7 +98,7 @@ public class WorldEngineEndpointService : IWorldEngineEndpointService
     {
         await EnsureLoadedAsync(ct);
 
-        if (!_endpoints.TryGetValue(id, out var ep)) return null;
+        if (!_endpoints.TryGetValue(id, out WorldEngineEndpoint? ep)) return null;
 
         if (name != null) ep.Name = name.Trim();
         if (baseUrl != null) ep.BaseUrl = baseUrl.TrimEnd('/');
@@ -115,7 +115,7 @@ public class WorldEngineEndpointService : IWorldEngineEndpointService
     {
         await EnsureLoadedAsync(ct);
 
-        if (!_endpoints.TryRemove(id, out var removed)) return false;
+        if (!_endpoints.TryRemove(id, out WorldEngineEndpoint? removed)) return false;
 
         await SaveAsync(ct);
         _logger.LogInformation("Removed WorldEngine endpoint '{Name}' ({Id})", removed.Name, removed.Id);
@@ -135,11 +135,11 @@ public class WorldEngineEndpointService : IWorldEngineEndpointService
 
             if (File.Exists(_configPath))
             {
-                var json = await File.ReadAllTextAsync(_configPath, ct);
-                var state = JsonSerializer.Deserialize<WorldEngineEndpointState>(json, JsonOptions);
+                string json = await File.ReadAllTextAsync(_configPath, ct);
+                WorldEngineEndpointState? state = JsonSerializer.Deserialize<WorldEngineEndpointState>(json, JsonOptions);
                 if (state?.Endpoints != null)
                 {
-                    foreach (var ep in state.Endpoints)
+                    foreach (WorldEngineEndpoint ep in state.Endpoints)
                     {
                         _endpoints[ep.Id] = ep;
                     }
@@ -169,18 +169,18 @@ public class WorldEngineEndpointService : IWorldEngineEndpointService
         await _lock.WaitAsync(ct);
         try
         {
-            var state = new WorldEngineEndpointState
+            WorldEngineEndpointState state = new WorldEngineEndpointState
             {
                 Endpoints = _endpoints.Values.OrderBy(e => e.Name).ToList()
             };
 
-            var dir = Path.GetDirectoryName(_configPath);
+            string? dir = Path.GetDirectoryName(_configPath);
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
             {
                 Directory.CreateDirectory(dir);
             }
 
-            var json = JsonSerializer.Serialize(state, JsonOptions);
+            string json = JsonSerializer.Serialize(state, JsonOptions);
             await File.WriteAllTextAsync(_configPath, json, ct);
             _logger.LogDebug("Saved WorldEngine endpoints to {Path}", _configPath);
         }

@@ -317,7 +317,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             int index = eventData.ArrayIndex;
             if (index >= 0 && index < _consolidatedProperties.Count)
             {
-                var item = _consolidatedProperties[index];
+                (string label, int powerCost, Color color, bool removable, bool isChange, int? changeIndex, int? visiblePropertyIndex) item = _consolidatedProperties[index];
 
                 if (item.isChange)
                 {
@@ -1002,7 +1002,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         // Add current properties (white or red if being removed)
         for (int visIndex = 0; visIndex < visibleProperties.Count; visIndex++)
         {
-            var prop = visibleProperties[visIndex];
+            MythalCategoryModel.MythalProperty prop = visibleProperties[visIndex];
             // Check if this property is marked for removal in the changelist
             int? changeIndex = null;
             bool isBeingRemoved = false;

@@ -391,3 +391,52 @@ public class InteractionResponseEffectDto
     public string Value { get; set; } = string.Empty;
     public Dictionary<string, object>? Metadata { get; set; }
 }
+
+// ==================== Recipe Template DTOs ====================
+
+public class RecipeTemplateDefinitionDto
+{
+    public string Tag { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string IndustryTag { get; set; } = string.Empty;
+    public List<string> RequiredKnowledge { get; set; } = [];
+    public string? RequiredProficiency { get; set; }
+    public List<TemplateIngredientDto> Ingredients { get; set; } = [];
+    public List<TemplateProductDto> Products { get; set; } = [];
+    public int? CraftingTimeSeconds { get; set; }
+    public int KnowledgePointsAwarded { get; set; }
+    public string? RequiredWorkstation { get; set; }
+    public string? ProcessId { get; set; }
+}
+
+public class TemplateIngredientDto
+{
+    public string RequiredCategory { get; set; } = string.Empty;
+    public string RequiredForm { get; set; } = string.Empty;
+    public int Quantity { get; set; }
+    public int? MinQuality { get; set; }
+    public bool IsConsumed { get; set; } = true;
+    public int SlotIndex { get; set; }
+}
+
+public class TemplateProductDto
+{
+    public string OutputForm { get; set; } = string.Empty;
+    public int MaterialSourceSlot { get; set; }
+    public int Quantity { get; set; }
+    public int? Quality { get; set; }
+    public float? SuccessChance { get; set; }
+}
+
+public class RecipeTemplateEnumsDto
+{
+    public List<EnumOptionDto> MaterialCategories { get; set; } = [];
+    public List<EnumOptionDto> ItemForms { get; set; } = [];
+}
+
+public class EnumOptionDto
+{
+    public string Value { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
+}

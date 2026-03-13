@@ -51,9 +51,9 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var container in _containers)
+                        @foreach (ContainerInfo container in _containers)
                         {
-                            var isMonitored = _monitoredIds.Contains(container.Id);
+                            bool isMonitored = _monitoredIds.Contains(container.Id);
                             <tr class="@(container.State == "running" ? "running" : "stopped")">
                                 <td>@container.Name</td>
                                 <td class="image-cell">@TruncateImage(container.Image)</td>
@@ -111,7 +111,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var mc in _monitoredContainers)
+                            @foreach (MonitoredContainerConfig mc in _monitoredContainers)
                             {
                                 <tr>
                                     <td>@mc.DisplayName</td>
@@ -145,7 +145,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        AuthenticationState authState = await AuthStateProvider.GetAuthenticationStateAsync();
         _isAdmin = authState.User.IsInRole("Admin");
         await RefreshContainers();
     }
@@ -158,8 +158,8 @@
 
         try
         {
-            var containersTask = DockerService.GetContainersAsync();
-            var monitoredTask = MonitoringService.GetMonitoredContainersAsync();
+            Task<IReadOnlyList<ContainerInfo>> containersTask = DockerService.GetContainersAsync();
+            Task<IReadOnlyList<MonitoredContainerConfig>> monitoredTask = MonitoringService.GetMonitoredContainersAsync();
 
             await Task.WhenAll(containersTask, monitoredTask);
 

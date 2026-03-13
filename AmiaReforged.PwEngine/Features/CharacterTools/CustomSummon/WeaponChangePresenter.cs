@@ -159,7 +159,7 @@ public sealed class WeaponChangePresenter(
 
             // Copy properties from old weapon to new weapon
             int propertiesCopied = 0;
-            foreach (var prop in _currentWeapon.ItemProperties)
+            foreach (ItemProperty prop in _currentWeapon.ItemProperties)
             {
                 // Clone the item property by recreating it
                 newWeapon.AddItemProperty(prop, EffectDuration.Permanent);

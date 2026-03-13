@@ -33,10 +33,10 @@ public class InteractionController
     public static async Task<ApiResult> GetAll(RouteContext ctx)
     {
         string? search = ctx.GetQueryParam("search");
-        int page = int.TryParse(ctx.GetQueryParam("page"), out var p) ? Math.Max(1, p) : 1;
-        int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out var ps) ? Math.Clamp(ps, 1, 200) : 50;
+        int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
+        int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
 
-        using var context = ResolveContext();
+        using PwEngineContext context = ResolveContext();
 
         IQueryable<PersistedInteractionDefinition> query = context.InteractionDefinitions;
 
@@ -74,8 +74,8 @@ public class InteractionController
     {
         string tag = ctx.GetRouteValue("tag");
 
-        using var context = ResolveContext();
-        var definition = await context.InteractionDefinitions.FindAsync(tag);
+        using PwEngineContext context = ResolveContext();
+        PersistedInteractionDefinition? definition = await context.InteractionDefinitions.FindAsync(tag);
 
         if (definition == null)
         {
@@ -93,7 +93,7 @@ public class InteractionController
     [HttpPost(BasePath)]
     public static async Task<ApiResult> Create(RouteContext ctx)
     {
-        var dto = await ctx.ReadJsonBodyAsync<InteractionDefinitionDto>();
+        InteractionDefinitionDto? dto = await ctx.ReadJsonBodyAsync<InteractionDefinitionDto>();
         if (dto == null)
         {
             return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required"));
@@ -105,7 +105,7 @@ public class InteractionController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        using var context = ResolveContext();
+        using PwEngineContext context = ResolveContext();
 
         bool exists = await context.InteractionDefinitions.AnyAsync(d => d.Tag == dto.Tag);
         if (exists)
@@ -114,7 +114,7 @@ public class InteractionController
                 "Conflict", $"An interaction definition with tag '{dto.Tag}' already exists"));
         }
 
-        var entity = FromDto(dto);
+        PersistedInteractionDefinition entity = FromDto(dto);
         entity.CreatedAt = DateTime.UtcNow;
         entity.UpdatedAt = DateTime.UtcNow;
 
@@ -133,8 +133,8 @@ public class InteractionController
     {
         string tag = ctx.GetRouteValue("tag");
 
-        using var context = ResolveContext();
-        var existing = await context.InteractionDefinitions.FindAsync(tag);
+        using PwEngineContext context = ResolveContext();
+        PersistedInteractionDefinition? existing = await context.InteractionDefinitions.FindAsync(tag);
 
         if (existing == null)
         {
@@ -142,7 +142,7 @@ public class InteractionController
                 "Not found", $"No interaction definition with tag '{tag}'"));
         }
 
-        var dto = await ctx.ReadJsonBodyAsync<InteractionDefinitionDto>();
+        InteractionDefinitionDto? dto = await ctx.ReadJsonBodyAsync<InteractionDefinitionDto>();
         if (dto == null)
         {
             return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required"));
@@ -179,8 +179,8 @@ public class InteractionController
     {
         string tag = ctx.GetRouteValue("tag");
 
-        using var context = ResolveContext();
-        var existing = await context.InteractionDefinitions.FindAsync(tag);
+        using PwEngineContext context = ResolveContext();
+        PersistedInteractionDefinition? existing = await context.InteractionDefinitions.FindAsync(tag);
 
         if (existing == null)
         {
@@ -206,7 +206,7 @@ public class InteractionController
         string? body = null;
         if (ctx.Request != null)
         {
-            using var reader = new StreamReader(ctx.Request.InputStream);
+            using StreamReader reader = new StreamReader(ctx.Request.InputStream);
             body = await reader.ReadToEndAsync();
         }
 
@@ -225,7 +225,7 @@ public class InteractionController
         {
             try
             {
-                var single = JsonSerializer.Deserialize<InteractionDefinitionDto>(body, JsonOptions);
+                InteractionDefinitionDto? single = JsonSerializer.Deserialize<InteractionDefinitionDto>(body, JsonOptions);
                 dtos = single != null ? [single] : null;
             }
             catch (JsonException ex)
@@ -240,12 +240,12 @@ public class InteractionController
                 "No valid interaction definitions found in request body"));
         }
 
-        using var context = ResolveContext();
+        using PwEngineContext context = ResolveContext();
         int succeeded = 0;
         int failed = 0;
         List<string> errors = [];
 
-        foreach (var dto in dtos)
+        foreach (InteractionDefinitionDto dto in dtos)
         {
             try
             {
@@ -257,7 +257,7 @@ public class InteractionController
                     continue;
                 }
 
-                var existing = await context.InteractionDefinitions.FindAsync(dto.Tag);
+                PersistedInteractionDefinition? existing = await context.InteractionDefinitions.FindAsync(dto.Tag);
                 if (existing != null)
                 {
                     existing.Name = dto.Name?.Trim() ?? existing.Name;
@@ -272,7 +272,7 @@ public class InteractionController
                 }
                 else
                 {
-                    var entity = FromDto(dto);
+                    PersistedInteractionDefinition entity = FromDto(dto);
                     entity.CreatedAt = DateTime.UtcNow;
                     entity.UpdatedAt = DateTime.UtcNow;
                     context.InteractionDefinitions.Add(entity);
@@ -304,8 +304,8 @@ public class InteractionController
 
     private static PwEngineContext ResolveContext()
     {
-        var factory = AnvilCore.GetService<PwContextFactory>()
-                      ?? throw new InvalidOperationException("PwContextFactory service not available");
+        PwContextFactory factory = AnvilCore.GetService<PwContextFactory>()
+                                   ?? throw new InvalidOperationException("PwContextFactory service not available");
         return factory.CreateDbContext();
     }
 
@@ -329,7 +329,7 @@ public class InteractionController
         {
             for (int i = 0; i < dto.Responses.Count; i++)
             {
-                var r = dto.Responses[i];
+                ResponseDto r = dto.Responses[i];
                 if (string.IsNullOrWhiteSpace(r.ResponseTag))
                     return $"Response[{i}].ResponseTag is required";
                 if (r.Weight < 1)
@@ -400,7 +400,7 @@ public class InteractionController
     {
         if (responses == null || responses.Count == 0) return "[]";
 
-        var jsonDtos = responses.Select(r => new ResponseJsonDto
+        List<ResponseJsonDto> jsonDtos = responses.Select(r => new ResponseJsonDto
         {
             ResponseTag = r.ResponseTag,
             Weight = r.Weight,

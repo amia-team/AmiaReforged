@@ -194,7 +194,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
             if (levelInfo.Feats.Any())
             {
                 sb.AppendLine("Feats:");
-                foreach (var feat in levelInfo.Feats)
+                foreach (NwFeat feat in levelInfo.Feats)
                 {
                     sb.AppendLine($"  - {feat.Name} (ID: {feat.Id})");
                 }
@@ -222,7 +222,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         {
             CreatureLevelInfo levelInfo = _model.SelectedCharacter.GetLevelStats(level);
 
-            foreach (var feat in levelInfo.Feats)
+            foreach (NwFeat feat in levelInfo.Feats)
             {
                 if (!featsWithLevels.ContainsKey(feat))
                 {
@@ -234,7 +234,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
 
         // Check for unassigned feats (feats the character has but weren't gained at any level)
         List<NwFeat> unassignedFeats = new();
-        foreach (var feat in _model.SelectedCharacter.Feats)
+        foreach (NwFeat feat in _model.SelectedCharacter.Feats)
         {
             if (!featsWithLevels.ContainsKey(feat))
             {
@@ -243,8 +243,8 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         }
 
         // Sort feats alphabetically by name
-        var sortedFeats = featsWithLevels.OrderBy(kvp => kvp.Key.Name.ToString());
-        var sortedUnassignedFeats = unassignedFeats.OrderBy(f => f.Name.ToString());
+        IOrderedEnumerable<KeyValuePair<NwFeat, List<int>>> sortedFeats = featsWithLevels.OrderBy(kvp => kvp.Key.Name.ToString());
+        IOrderedEnumerable<NwFeat> sortedUnassignedFeats = unassignedFeats.OrderBy(f => f.Name.ToString());
 
         int totalFeatCount = featsWithLevels.Count + unassignedFeats.Count;
         sb.AppendLine($"Total Feats: {totalFeatCount}");
@@ -255,7 +255,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         sb.AppendLine();
 
         // Display feats with assigned levels
-        foreach (var kvp in sortedFeats)
+        foreach (KeyValuePair<NwFeat, List<int>> kvp in sortedFeats)
         {
             NwFeat feat = kvp.Key;
             List<int> levels = kvp.Value;
@@ -272,7 +272,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         if (unassignedFeats.Count > 0)
         {
             sb.AppendLine("\n--- UNASSIGNED FEATS ---");
-            foreach (var feat in sortedUnassignedFeats)
+            foreach (NwFeat feat in sortedUnassignedFeats)
             {
                 sb.AppendLine($"- {feat.Name} (ID: {feat.Id}) - (UNASSIGNED)");
             }
@@ -871,7 +871,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         if (_findRebuildModalToken.HasValue)
             return;
 
-        var pendingRebuilds = _model.GetPendingRebuilds().ToList();
+        List<(int rebuildId, string firstName, string lastName)> pendingRebuilds = _model.GetPendingRebuilds().ToList();
 
         if (!pendingRebuilds.Any())
         {
@@ -918,7 +918,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         int selectedIndex = _findRebuildModalToken.Value.GetBindValue(View.SelectedPendingRebuild);
 
         // Get the pending rebuilds list again
-        var pendingRebuilds = _model.GetPendingRebuilds().ToList();
+        List<(int rebuildId, string firstName, string lastName)> pendingRebuilds = _model.GetPendingRebuilds().ToList();
 
         // Validate the selected index
         if (selectedIndex < 0 || selectedIndex >= pendingRebuilds.Count)
@@ -928,7 +928,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         }
 
         // Get the rebuild ID from the selected entry
-        var selectedRebuild = pendingRebuilds[selectedIndex];
+        (int rebuildId, string firstName, string lastName) selectedRebuild = pendingRebuilds[selectedIndex];
         _currentRebuildId = selectedRebuild.rebuildId;
 
         // Load the rebuild (recreates PC Key in DM inventory)

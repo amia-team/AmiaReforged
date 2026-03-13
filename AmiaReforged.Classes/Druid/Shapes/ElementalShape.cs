@@ -18,7 +18,7 @@ public class ElementalShape : ISpell
 
         int casterLevel = creature.CasterLevel;
 
-        var polymorphMapping
+        Dictionary<int, int> polymorphMapping
             = casterLevel >= PolymorphMapping.ElementalShape.EpicLevelRequirement ? PolymorphMapping.ElementalShape.Elder :
             casterLevel >= PolymorphMapping.ElementalShape.ImprovedLevelRequirement ? PolymorphMapping.ElementalShape.Huge :
             PolymorphMapping.ElementalShape.Large;

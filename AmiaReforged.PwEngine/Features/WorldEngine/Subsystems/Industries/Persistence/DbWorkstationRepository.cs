@@ -20,15 +20,15 @@ public class DbWorkstationRepository : IWorkstationRepository
 
     public bool WorkstationExists(string tag)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
         return ctx.WorkstationDefinitions.Any(e => e.Tag == tag);
     }
 
     public Workstation? GetByTag(WorkstationTag tag)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
-        var entity = ctx.WorkstationDefinitions
+        PersistedWorkstationDefinition? entity = ctx.WorkstationDefinitions
             .FirstOrDefault(e => e.Tag == tag.Value);
 
         return entity != null ? WorkstationMapper.ToDomain(entity) : null;
@@ -36,7 +36,7 @@ public class DbWorkstationRepository : IWorkstationRepository
 
     public List<Workstation> All()
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
         return ctx.WorkstationDefinitions
             .AsEnumerable()
@@ -46,9 +46,9 @@ public class DbWorkstationRepository : IWorkstationRepository
 
     public void Add(Workstation workstation)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
-        var existing = ctx.WorkstationDefinitions
+        PersistedWorkstationDefinition? existing = ctx.WorkstationDefinitions
             .FirstOrDefault(e => e.Tag == workstation.Tag.Value);
 
         if (existing != null)
@@ -65,9 +65,9 @@ public class DbWorkstationRepository : IWorkstationRepository
 
     public void Update(Workstation workstation)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
-        var existing = ctx.WorkstationDefinitions
+        PersistedWorkstationDefinition? existing = ctx.WorkstationDefinitions
             .FirstOrDefault(e => e.Tag == workstation.Tag.Value);
 
         if (existing == null)
@@ -79,9 +79,9 @@ public class DbWorkstationRepository : IWorkstationRepository
 
     public bool Delete(string tag)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
-        var existing = ctx.WorkstationDefinitions
+        PersistedWorkstationDefinition? existing = ctx.WorkstationDefinitions
             .FirstOrDefault(e => e.Tag == tag);
 
         if (existing == null) return false;
@@ -93,7 +93,7 @@ public class DbWorkstationRepository : IWorkstationRepository
 
     public List<Workstation> Search(string? searchTerm, int page, int pageSize, out int totalCount)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
         IQueryable<PersistedWorkstationDefinition> query = ctx.WorkstationDefinitions;
 

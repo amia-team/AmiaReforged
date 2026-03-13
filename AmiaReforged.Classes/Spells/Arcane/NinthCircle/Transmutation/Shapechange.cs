@@ -15,7 +15,7 @@ public class Shapechange : ISpell
     {
         if (eventData.Caster is not NwCreature creature) return;
 
-        var polymorphMapping = creature.KnowsFeat(Feat.EpicSpellFocusTransmutation!)
+        Dictionary<int, int> polymorphMapping = creature.KnowsFeat(Feat.EpicSpellFocusTransmutation!)
             ? PolymorphMapping.Shapechange.Epic
             : PolymorphMapping.Shapechange.Standard;
 

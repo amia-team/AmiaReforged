@@ -42,8 +42,8 @@ public static class RegionMapper
             defaultChaos = JsonSerializer.Deserialize<ChaosState>(entity.DefaultChaosJson, JsonOptions);
         }
 
-        var areaDtos = JsonSerializer.Deserialize<List<AreaJsonDto>>(entity.AreasJson, JsonOptions)
-                       ?? new List<AreaJsonDto>();
+        List<AreaJsonDto> areaDtos = JsonSerializer.Deserialize<List<AreaJsonDto>>(entity.AreasJson, JsonOptions)
+                                     ?? new List<AreaJsonDto>();
 
         return new RegionDefinition
         {
@@ -98,20 +98,20 @@ public static class RegionMapper
 
     private static AreaDefinition FromAreaDto(AreaJsonDto dto)
     {
-        Enum.TryParse<Climate>(dto.Environment?.Climate, true, out var climate);
-        Enum.TryParse<EconomyQuality>(dto.Environment?.SoilQuality, true, out var soilQuality);
+        Enum.TryParse<Climate>(dto.Environment?.Climate, true, out Climate climate);
+        Enum.TryParse<EconomyQuality>(dto.Environment?.SoilQuality, true, out EconomyQuality soilQuality);
 
-        Enum.TryParse<EconomyQuality>(dto.Environment?.MineralQualityRange?.Min, true, out var minQuality);
-        Enum.TryParse<EconomyQuality>(dto.Environment?.MineralQualityRange?.Max, true, out var maxQuality);
+        Enum.TryParse<EconomyQuality>(dto.Environment?.MineralQualityRange?.Min, true, out EconomyQuality minQuality);
+        Enum.TryParse<EconomyQuality>(dto.Environment?.MineralQualityRange?.Max, true, out EconomyQuality maxQuality);
         if (minQuality == default) minQuality = EconomyQuality.Average;
         if (maxQuality == default) maxQuality = EconomyQuality.Average;
 
-        var env = new EnvironmentData(climate, soilQuality,
+        EnvironmentData env = new EnvironmentData(climate, soilQuality,
             new QualityRange(minQuality, maxQuality), dto.Environment?.Chaos);
 
         List<PlaceOfInterest>? pois = dto.PlacesOfInterest?.Select(p =>
         {
-            Enum.TryParse<PoiType>(p.Type, true, out var poiType);
+            Enum.TryParse<PoiType>(p.Type, true, out PoiType poiType);
             return new PlaceOfInterest(p.ResRef, p.Tag, p.Name, poiType, p.Description);
         }).ToList();
 

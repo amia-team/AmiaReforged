@@ -159,7 +159,7 @@ public sealed class BuildCheckerPresenter : ScryPresenter<BuildCheckerView>
             if (levelInfo.Feats.Any())
             {
                 sb.AppendLine("Feats:");
-                foreach (var feat in levelInfo.Feats)
+                foreach (NwFeat feat in levelInfo.Feats)
                 {
                     sb.AppendLine($"  - {feat.Name} (ID: {feat.Id})");
                 }

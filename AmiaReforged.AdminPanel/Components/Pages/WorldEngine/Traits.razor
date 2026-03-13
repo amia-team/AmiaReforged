@@ -21,7 +21,7 @@
                     <label class="instance-label">Server:</label>
                     <select class="form-control form-control-sm" value="@(_selectedEndpoint?.Id.ToString() ?? "")" @onchange="OnEndpointChanged">
                         <option value="">— Select —</option>
-                        @foreach (var ep in _endpoints)
+                        @foreach (WorldEngineEndpoint ep in _endpoints)
                         {
                             <option value="@ep.Id">@ep.Name</option>
                         }
@@ -77,7 +77,7 @@
                     <label>Category</label>
                     <select class="form-control" @bind="_categoryFilter">
                         <option value="">All</option>
-                        @foreach (var cat in _categories)
+                        @foreach (EnumValueDto cat in _categories)
                         {
                             <option value="@cat.Name">@cat.Name</option>
                         }
@@ -87,7 +87,7 @@
                     <label>Death Behavior</label>
                     <select class="form-control" @bind="_deathBehaviorFilter">
                         <option value="">All</option>
-                        @foreach (var db in _deathBehaviors)
+                        @foreach (EnumValueDto db in _deathBehaviors)
                         {
                             <option value="@db.Name">@db.Name</option>
                         }
@@ -133,7 +133,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var item in _items)
+                        @foreach (TraitDefinitionDto item in _items)
                         {
                             <tr>
                                 <td style="font-family:monospace;font-size:0.9rem">@item.Tag</td>
@@ -206,7 +206,7 @@
                     <div class="form-group" style="flex:1">
                         <label>Category</label>
                         <select class="form-control" @bind="_editItem.Category">
-                            @foreach (var cat in _categories)
+                            @foreach (EnumValueDto cat in _categories)
                             {
                                 <option value="@cat.Name">@cat.Name</option>
                             }
@@ -215,7 +215,7 @@
                     <div class="form-group" style="flex:1">
                         <label>Death Behavior</label>
                         <select class="form-control" @bind="_editItem.DeathBehavior">
-                            @foreach (var db in _deathBehaviors)
+                            @foreach (EnumValueDto db in _deathBehaviors)
                             {
                                 <option value="@db.Name">@db.Name</option>
                             }
@@ -261,12 +261,12 @@
                         @for (int i = 0; i < _editItem.Effects.Count; i++)
                         {
                             int idx = i;
-                            var effect = _editItem.Effects[idx];
+                            TraitEffectDto effect = _editItem.Effects[idx];
                             <div style="display:flex;gap:8px;align-items:end;margin-bottom:8px;padding:8px;background:var(--bg-darker,rgba(0,0,0,0.1));border-radius:6px">
                                 <div class="form-group" style="width:160px;margin:0">
                                     <label style="font-size:0.8rem">Type</label>
                                     <select class="form-control form-control-sm" @bind="_editItem.Effects[idx].EffectType">
-                                        @foreach (var et in _effectTypes)
+                                        @foreach (EnumValueDto et in _effectTypes)
                                         {
                                             <option value="@et.Id">@et.Name</option>
                                         }
@@ -357,7 +357,7 @@
                                 <label style="font-size:0.8rem">Script</label>
                                 <select class="form-control form-control-sm" @bind="_newTraitGlyphDefinitionId">
                                     <option value="">— Select Script —</option>
-                                    @foreach (var def in _glyphDefinitions.Where(d => d.IsActive))
+                                    @foreach (GlyphDefinitionDto def in _glyphDefinitions.Where(d => d.IsActive))
                                     {
                                         <option value="@def.Id">@def.Name (@def.EventType)</option>
                                     }
@@ -377,7 +377,7 @@
                     }
                     else
                     {
-                        @foreach (var binding in _traitGlyphBindings)
+                        @foreach (TraitGlyphBindingDto binding in _traitGlyphBindings)
                         {
                             <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;padding:6px 8px;background:var(--bg-darker,rgba(0,0,0,0.1));border-radius:6px">
                                 <span style="flex:1;color:var(--text-primary);font-size:0.9rem">@binding.GlyphName</span>
@@ -492,7 +492,7 @@
 
     private async Task RefreshEndpoints()
     {
-        var all = await EndpointService.GetAllEndpointsAsync();
+        IReadOnlyList<WorldEngineEndpoint> all = await EndpointService.GetAllEndpointsAsync();
         _endpoints = all.Where(e => e.IsEnabled).ToList();
 
         if (_selectedEndpoint != null && !_endpoints.Any(e => e.Id == _selectedEndpoint.Id))
@@ -503,7 +503,7 @@
 
     private async Task OnEndpointChanged(ChangeEventArgs e)
     {
-        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        if (Guid.TryParse(e.Value?.ToString(), out Guid id))
         {
             _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
             Api.SelectEndpoint(id);
@@ -593,7 +593,7 @@
                 _ => null
             };
 
-            var result = await Api.GetAllAsync(_searchTerm, _categoryFilter, _deathBehaviorFilter, dmOnly, _page, _pageSize);
+            PagedResult<TraitDefinitionDto> result = await Api.GetAllAsync(_searchTerm, _categoryFilter, _deathBehaviorFilter, dmOnly, _page, _pageSize);
             _items = result.Items;
             _totalCount = result.TotalCount;
         }

@@ -2148,7 +2148,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         // First, recover all existing placeables in the area
         Token().SetBindValue(View.StatusMessage, "Recovering existing placeables before loading layout...");
 
-        var (recovered, skippedNoFit, skippedNoData, failed) = await RecoverAllPlaceablesInAreaAsync(area);
+        (int recovered, int skippedNoFit, int skippedNoData, int failed) = await RecoverAllPlaceablesInAreaAsync(area);
 
         await NwTask.SwitchToMainThread();
 

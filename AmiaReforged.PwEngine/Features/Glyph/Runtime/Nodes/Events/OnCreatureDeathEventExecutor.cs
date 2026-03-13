@@ -17,7 +17,7 @@ public class OnCreatureDeathEventExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        var outputs = new Dictionary<string, object?>
+        Dictionary<string, object?> outputs = new Dictionary<string, object?>
         {
             ["dead_creature"] = context.DeadCreature,
             ["killer"] = context.Killer,

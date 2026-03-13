@@ -89,7 +89,7 @@ public class DefendersDutyFactory
     /// </summary>
     public static void ReleaseAllProtectedBy(NwCreature defender)
     {
-        var targetsToRelease = ProtectedTargets
+        List<NwCreature> targetsToRelease = ProtectedTargets
             .Where(kvp => kvp.Value == defender)
             .Select(kvp => kvp.Key)
             .ToList();

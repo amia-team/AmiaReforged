@@ -31,7 +31,7 @@
     }
 
     <div class="log-container">
-        <pre class="log-content">@foreach (var line in _logLines)
+        <pre class="log-content">@foreach (string line in _logLines)
 {<span class="log-line @GetLogClass(line)">@line</span>
 }</pre>
     </div>
@@ -56,7 +56,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var container = await DockerService.GetContainerAsync(ContainerId);
+        ContainerInfo? container = await DockerService.GetContainerAsync(ContainerId);
         if (container == null)
         {
             _error = "Container not found";
@@ -76,7 +76,7 @@
 
         try
         {
-            await foreach (var line in DockerService.StreamLogsAsync(
+            await foreach (string line in DockerService.StreamLogsAsync(
                 ContainerId, follow: true, tail: 100, ct: _streamCts.Token))
             {
                 _logLines.Add(line);
@@ -124,7 +124,7 @@
 
     private string GetLogClass(string line)
     {
-        var lower = line.ToLowerInvariant();
+        string lower = line.ToLowerInvariant();
         if (lower.Contains("error") || lower.Contains("fail") || lower.Contains("exception"))
             return "log-error";
         if (lower.Contains("warn"))

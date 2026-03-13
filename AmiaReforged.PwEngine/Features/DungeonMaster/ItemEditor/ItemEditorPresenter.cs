@@ -429,7 +429,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
             }
 
             // Update the variable in our list (keep the same key)
-            var (key, _) = _vars[_editingVariableIndex];
+            (string key, _) = _vars[_editingVariableIndex];
             _vars[_editingVariableIndex] = (key, newData);
 
             _player.SendServerMessage($"Variable '{key}' updated.", ColorConstants.Green);
@@ -505,7 +505,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         List<string> values = new List<string>();
 
         // Filter variables based on current search term
-        var filteredVars = string.IsNullOrEmpty(_variableFilterTerm)
+        List<(string Key, LocalVariableData Data)> filteredVars = string.IsNullOrEmpty(_variableFilterTerm)
             ? _vars
             : _vars.Where(v => v.Key.Contains(_variableFilterTerm, StringComparison.OrdinalIgnoreCase)).ToList();
 
@@ -703,7 +703,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
             return;
 
         // Get the variable to edit
-        var (key, data) = _vars[index];
+        (string key, LocalVariableData data) = _vars[index];
         _editingVariableIndex = index;
 
         // Open the edit modal
@@ -923,7 +923,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
             return;
         }
 
-        var (newType, newResRef) = _compatibleItemTypes[selection];
+        (BaseItemType newType, string newResRef) = _compatibleItemTypes[selection];
         string currentName = _model.SelectedItem.Name;
         string currentDesc = _model.SelectedItem.Description;
         string currentTag = _model.SelectedItem.Tag;
@@ -999,7 +999,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
             return;
         }
 
-        var (newType, newResRef) = _compatibleItemTypes[_selectedItemTypeIndex];
+        (BaseItemType newType, string newResRef) = _compatibleItemTypes[_selectedItemTypeIndex];
         string currentName = _model.SelectedItem.Name;
         string currentDesc = _model.SelectedItem.Description;
         string currentTag = _model.SelectedItem.Tag;
@@ -1060,7 +1060,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
 
         // Copy all item properties from the old item
         int propertiesCopied = 0;
-        foreach (var prop in _model.SelectedItem.ItemProperties)
+        foreach (ItemProperty prop in _model.SelectedItem.ItemProperties)
         {
             newItem.AddItemProperty(prop, EffectDuration.Permanent);
             propertiesCopied++;
@@ -1120,7 +1120,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
 
     private List<(BaseItemType Type, string ResRef)> GetBaseItemTypeMapping(BaseItemType currentType)
     {
-        var result = new List<(BaseItemType, string)>();
+        List<(BaseItemType, string)> result = new List<(BaseItemType, string)>();
 
         // Check if it's armor - special case with AC dropdown
         if (currentType == BaseItemType.Armor)
@@ -1129,7 +1129,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         }
 
         // 1-Handed Weapons category (including custom items)
-        var oneHandedWeapons = new List<(BaseItemType, string)>
+        List<(BaseItemType, string)> oneHandedWeapons = new List<(BaseItemType, string)>
         {
             (BaseItemType.Shortsword, "js_bla_wess"),
             (BaseItemType.Longsword, "js_bla_wels"),
@@ -1178,7 +1178,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         };
 
         // 2-Handed Weapons category (including custom items)
-        var twoHandedWeapons = new List<(BaseItemType, string)>
+        List<(BaseItemType, string)> twoHandedWeapons = new List<(BaseItemType, string)>
         {
             (BaseItemType.Greatsword, "js_bla_wegs"),
             (BaseItemType.Greataxe, "js_bla_wega"),
@@ -1196,7 +1196,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         };
 
         // Ranged Weapons category
-        var rangedWeapons = new List<(BaseItemType, string)>
+        List<(BaseItemType, string)> rangedWeapons = new List<(BaseItemType, string)>
         {
             (BaseItemType.Longbow, "js_arch_bow"),
             (BaseItemType.Shortbow, "js_arch_sbow"),
@@ -1206,7 +1206,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         };
 
         // Thrown Weapons category
-        var thrownWeapons = new List<(BaseItemType, string)>
+        List<(BaseItemType, string)> thrownWeapons = new List<(BaseItemType, string)>
         {
             (BaseItemType.Dart, "js_arch_dart"),
             (BaseItemType.Shuriken, "js_arch_shrk"),
@@ -1214,7 +1214,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         };
 
         // Ammunition category
-        var ammunition = new List<(BaseItemType, string)>
+        List<(BaseItemType, string)> ammunition = new List<(BaseItemType, string)>
         {
             (BaseItemType.Arrow, "js_arch_star"),
             (BaseItemType.Bolt, "js_arch_stbt"),
@@ -1222,7 +1222,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         };
 
         // Shields category
-        var shields = new List<(BaseItemType, string)>
+        List<(BaseItemType, string)> shields = new List<(BaseItemType, string)>
         {
             (BaseItemType.SmallShield, "js_bla_shsm"),
             (BaseItemType.LargeShield, "js_bla_shlg"),
@@ -1230,7 +1230,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         };
 
         // Accessories category
-        var accessories = new List<(BaseItemType, string)>
+        List<(BaseItemType, string)> accessories = new List<(BaseItemType, string)>
         {
             (BaseItemType.Helmet, "js_bla_helm"),
             (BaseItemType.Amulet, "js_jew_amul"),
@@ -1243,7 +1243,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         };
 
         // Miscellaneous category
-        var miscellaneous = new List<(BaseItemType, string)>
+        List<(BaseItemType, string)> miscellaneous = new List<(BaseItemType, string)>
         {
             ((BaseItemType)24, "dc_cus_temp_s"),     // Misc Small 1
             ((BaseItemType)119, "dc_cus_temp_s2"),   // Misc Small 2
@@ -1355,7 +1355,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         // If it does, we assume they might be weapon-specific and block the change to be safe
         // This is a conservative approach that prevents data loss
         int propertyCount = 0;
-        foreach (var itemProp in item.ItemProperties)
+        foreach (ItemProperty itemProp in item.ItemProperties)
         {
             propertyCount++;
             // If there are any item properties, assume they're weapon-specific

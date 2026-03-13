@@ -207,7 +207,7 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
             if (existingDefIds.Contains(def.LoreId))
             {
                 // Preserve admin-managed IsAlwaysAvailable flag
-                if (existingDefs.TryGetValue(def.LoreId, out var existing))
+                if (existingDefs.TryGetValue(def.LoreId, out PersistedLoreDefinition? existing))
                     def.IsAlwaysAvailable = existing.IsAlwaysAvailable;
                 context.CodexLoreDefinitions.Update(def);
             }

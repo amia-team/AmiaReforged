@@ -63,7 +63,7 @@ public class DispelService
         bool isPvP = IsPvPDispel(caster, target);
 
         // Bonus system setup
-        var bonusConfig = GetBonusConfiguration(dispelType, isPvP);
+        BonusConfiguration bonusConfig = GetBonusConfiguration(dispelType, isPvP);
         int bonusCounter = bonusConfig.BonusCounter;
         bool canGetBonus = !bonusConfig.IsDisqualified && CheckDispelCooldown(target);
 
@@ -216,7 +216,7 @@ public class DispelService
     /// </summary>
     private static BonusConfiguration GetBonusConfiguration(DispelType dispelType, bool isPvP)
     {
-        var config = dispelType switch
+        BonusConfiguration config = dispelType switch
         {
             DispelType.LesserDispel => new BonusConfiguration(25, 1, false),
             DispelType.DispelMagic => new BonusConfiguration(50, 2, false),

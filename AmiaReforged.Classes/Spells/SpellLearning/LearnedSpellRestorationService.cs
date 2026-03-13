@@ -91,7 +91,7 @@ public class LearnedSpellRestorationService
             // Format: PRESTIGE_SPELL_{classType}_{spellLevel}_{spellId}
             string classPrefix = $"{PrestigeSpellPrefix}{classType}_";
 
-            foreach (var localVar in pcKey.LocalVariables)
+            foreach (ObjectVariable localVar in pcKey.LocalVariables)
             {
                 if (!localVar.Name.StartsWith(classPrefix))
                     continue;
@@ -124,7 +124,7 @@ public class LearnedSpellRestorationService
             }
 
             // Now restore the spells for this class
-            foreach (var kvp in spellsToRestore)
+            foreach (KeyValuePair<int, HashSet<int>> kvp in spellsToRestore)
             {
                 int spellLevel = kvp.Key;
                 HashSet<int> spellIds = kvp.Value;

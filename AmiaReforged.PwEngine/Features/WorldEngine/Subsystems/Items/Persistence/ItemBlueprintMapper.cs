@@ -49,7 +49,7 @@ public static class ItemBlueprintMapper
             if (materialStrings != null)
             {
                 materials = materialStrings
-                    .Select(s => Enum.TryParse<MaterialEnum>(s, true, out var m) ? m : MaterialEnum.None)
+                    .Select(s => Enum.TryParse<MaterialEnum>(s, true, out MaterialEnum m) ? m : MaterialEnum.None)
                     .ToArray();
             }
         }
@@ -64,7 +64,7 @@ public static class ItemBlueprintMapper
                 entity.LocalVariablesJson, JsonOptions);
         }
 
-        Enum.TryParse<JobSystemItemType>(entity.JobSystemType, true, out var jobType);
+        Enum.TryParse<JobSystemItemType>(entity.JobSystemType, true, out JobSystemItemType jobType);
 
         return new ItemBlueprint(
             ResRef: entity.ResRef,

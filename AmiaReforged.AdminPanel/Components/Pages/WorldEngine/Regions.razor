@@ -29,7 +29,7 @@
                 <select class="form-control form-control-sm" style="width:auto;min-width:140px"
                         value="@(_selectedEndpoint?.Id.ToString() ?? "")" @onchange="OnEndpointChanged">
                     <option value="">— Select —</option>
-                    @foreach (var ep in _endpoints)
+                    @foreach (WorldEngineEndpoint ep in _endpoints)
                     {
                         <option value="@ep.Id">@ep.Name</option>
                     }
@@ -177,7 +177,7 @@
                 @if (_regionColors.Count > 0)
                 {
                     <div class="region-editor__legend">
-                        @foreach (var kv in _regionColors)
+                        @foreach (KeyValuePair<string, string> kv in _regionColors)
                         {
                             <span class="region-editor__legend-item" @onclick="() => HighlightRegionOnGraph(kv.Key)">
                                 <span class="region-editor__legend-swatch" style="background:@kv.Value"></span>
@@ -238,9 +238,9 @@
                                        placeholder="Filter regions..." />
                             </div>
 
-                            @foreach (var region in FilteredRegions())
+                            @foreach (RegionDefinitionDto region in FilteredRegions())
                             {
-                                var color = _regionColors.GetValueOrDefault(region.Name, _regionColors.GetValueOrDefault(region.Tag, "#6b6b6b"));
+                                string color = _regionColors.GetValueOrDefault(region.Name, _regionColors.GetValueOrDefault(region.Tag, "#6b6b6b"));
                                 <div class="region-list-item @(IsRegionSelected(region) ? "region-list-item--active" : "")"
                                      @onclick="() => SelectRegionForEdit(region)"
                                      @oncontextmenu="() => SelectRegionForEdit(region)" @oncontextmenu:preventDefault>
@@ -332,13 +332,13 @@
 
                             @for (int idx = 0; idx < _editRegion.Areas.Count; idx++)
                             {
-                                var i = idx;
-                                var area = _editRegion.Areas[i];
+                                int i = idx;
+                                AreaDefinitionDto area = _editRegion.Areas[i];
                                 <div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--border-subtle)">
                                     <code style="flex:1;font-size:0.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
                                           title="@area.ResRef">
                                         @(string.IsNullOrWhiteSpace(area.ResRef) ? "(new)" : area.ResRef)
-                                        @{ var n = GetAreaNameByResRef(area.ResRef); }
+                                        @{ string? n = GetAreaNameByResRef(area.ResRef); }
                                         @if (!string.IsNullOrEmpty(n))
                                         {
                                             <small style="color:var(--text-secondary)"> — @n</small>
@@ -360,7 +360,7 @@
                                         <input class="form-control form-control-sm" list="add-area-list" @bind="_newAreaResRef" placeholder="ResRef..."
                                                style="flex:1" maxlength="16" />
                                         <datalist id="add-area-list">
-                                            @foreach (var ka in GetAvailableAreas(""))
+                                            @foreach (AreaNodeDto ka in GetAvailableAreas(""))
                                             {
                                                 <option value="@ka.ResRef">@ka.ResRef — @ka.Name</option>
                                             }
@@ -409,7 +409,7 @@
                                 <select class="form-control form-control-sm" value="@_editAreaRegionTag"
                                         @onchange="OnAreaRegionChanged">
                                     <option value="">— Unassigned —</option>
-                                    @foreach (var r in _regions)
+                                    @foreach (RegionDefinitionDto r in _regions)
                                     {
                                         <option value="@r.Tag">@r.Name (@r.Tag)</option>
                                     }
@@ -426,9 +426,9 @@
                                 @if (_editArea!.DefinitionTags.Count > 0)
                                 {
                                     <div class="def-tag-chips">
-                                        @foreach (var tag in _editArea.DefinitionTags)
+                                        @foreach (string tag in _editArea.DefinitionTags)
                                         {
-                                            var def = _allResourceDefs.FirstOrDefault(d => d.Tag == tag);
+                                            ResourceNodeDefinitionDto? def = _allResourceDefs.FirstOrDefault(d => d.Tag == tag);
                                             <span class="def-tag-chip" title="@(def != null ? $"{def.Name} ({def.Type})" : tag)">
                                                 @tag
                                                 <button type="button" class="def-tag-chip-remove" @onclick="() => RemoveDefinitionTag(tag)">×</button>
@@ -442,11 +442,11 @@
                                            @onfocus="() => _defTagDropdownOpen = true" />
                                     @if (_defTagDropdownOpen)
                                     {
-                                        var filtered = GetFilteredResourceDefs();
+                                        List<ResourceNodeDefinitionDto> filtered = GetFilteredResourceDefs();
                                         @if (filtered.Count > 0)
                                         {
                                             <div class="def-tag-dropdown">
-                                                @foreach (var def in filtered.Take(30))
+                                                @foreach (ResourceNodeDefinitionDto def in filtered.Take(30))
                                                 {
                                                     <div class="def-tag-dropdown-item" @onmousedown="() => AddDefinitionTag(def.Tag)"
                                                          @onmousedown:preventDefault>
@@ -485,7 +485,7 @@
                                 <label>Climate</label>
                                 <select class="form-control form-control-sm" @bind="_editArea.Environment.Climate">
                                     <option value="">— Select —</option>
-                                    @foreach (var c in _climateOptions)
+                                    @foreach (string c in _climateOptions)
                                     {
                                         <option value="@c">@c</option>
                                     }
@@ -495,7 +495,7 @@
                                 <label>Soil Quality</label>
                                 <select class="form-control form-control-sm" @bind="_editArea.Environment.SoilQuality">
                                     <option value="">— Select —</option>
-                                    @foreach (var q in _qualityOptions)
+                                    @foreach (string q in _qualityOptions)
                                     {
                                         <option value="@q">@q</option>
                                     }
@@ -506,7 +506,7 @@
                                     <label>Mineral Min</label>
                                     <select class="form-control form-control-sm" @bind="_editArea.Environment.MineralQualityRange.Min">
                                         <option value="">—</option>
-                                        @foreach (var q in _qualityOptions)
+                                        @foreach (string q in _qualityOptions)
                                         {
                                             <option value="@q">@q</option>
                                         }
@@ -516,7 +516,7 @@
                                     <label>Mineral Max</label>
                                     <select class="form-control form-control-sm" @bind="_editArea.Environment.MineralQualityRange.Max">
                                         <option value="">—</option>
-                                        @foreach (var q in _qualityOptions)
+                                        @foreach (string q in _qualityOptions)
                                         {
                                             <option value="@q">@q</option>
                                         }
@@ -572,8 +572,8 @@
                             {
                                 @for (int pidx = 0; pidx < _editArea.PlacesOfInterest.Count; pidx++)
                                 {
-                                    var pi = pidx;
-                                    var poi = _editArea.PlacesOfInterest[pi];
+                                    int pi = pidx;
+                                    PlaceOfInterestDto poi = _editArea.PlacesOfInterest[pi];
                                     <div class="poi-card">
                                         <div class="poi-card__header">
                                             <small><strong>@(string.IsNullOrWhiteSpace(poi.Name) ? $"POI {pi + 1}" : poi.Name)</strong></small>
@@ -587,7 +587,7 @@
                                                     <input class="form-control form-control-sm" list="@($"poi-area-{pi}")"
                                                            @bind="poi.ResRef" maxlength="16" placeholder="Area..." />
                                                     <datalist id="@($"poi-area-{pi}")">
-                                                        @foreach (var ka in _knownAreas)
+                                                        @foreach (AreaNodeDto ka in _knownAreas)
                                                         {
                                                             <option value="@ka.ResRef">@ka.ResRef — @ka.Name</option>
                                                         }
@@ -600,7 +600,7 @@
                                             </div>
                                             <div class="form-group">
                                                 <label>Tag</label>
-                                                @{ var tagDup = IsPoiTagDuplicate(poi.Tag, pi); }
+                                                @{ bool tagDup = IsPoiTagDuplicate(poi.Tag, pi); }
                                                 <input class="form-control form-control-sm @(tagDup ? "is-invalid" : "")" @bind="poi.Tag" />
                                                 @if (tagDup)
                                                 {
@@ -615,7 +615,7 @@
                                                 <label>Type</label>
                                                 <select class="form-control form-control-sm" @bind="poi.Type">
                                                     <option value="">—</option>
-                                                    @foreach (var t in _poiTypeOptions)
+                                                    @foreach (string t in _poiTypeOptions)
                                                     {
                                                         <option value="@t">@t</option>
                                                     }
@@ -839,7 +839,7 @@
                     @if (_importResult.Errors.Count > 0)
                     {
                         <ul style="margin-top:8px;margin-bottom:0">
-                            @foreach (var err in _importResult.Errors.Take(10))
+                            @foreach (string err in _importResult.Errors.Take(10))
                             {
                                 <li style="font-size:0.85rem">@err</li>
                             }
@@ -1039,7 +1039,7 @@
 
     private async Task RefreshEndpoints()
     {
-        var all = await EndpointService.GetAllEndpointsAsync();
+        IReadOnlyList<WorldEngineEndpoint> all = await EndpointService.GetAllEndpointsAsync();
         _endpoints = all.Where(e => e.IsEnabled).ToList();
         if (_selectedEndpoint != null && !_endpoints.Any(e => e.Id == _selectedEndpoint.Id))
             _selectedEndpoint = null;
@@ -1048,7 +1048,7 @@
 
     private async Task OnEndpointChanged(ChangeEventArgs e)
     {
-        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        if (Guid.TryParse(e.Value?.ToString(), out Guid id))
         {
             _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
             Api.SelectEndpoint(id);
@@ -1087,7 +1087,7 @@
 
         try
         {
-            var result = await Api.GetAllAsync(_searchTerm, _page, _pageSize);
+            PagedResult<RegionDefinitionDto> result = await Api.GetAllAsync(_searchTerm, _page, _pageSize);
             _regions = result.Items;
             _totalCount = result.TotalCount;
         }
@@ -1116,7 +1116,7 @@
     private IEnumerable<RegionDefinitionDto> FilteredRegions()
     {
         if (string.IsNullOrWhiteSpace(_regionListFilter)) return _regions;
-        var f = _regionListFilter.Trim();
+        string f = _regionListFilter.Trim();
         return _regions.Where(r =>
             r.Name.Contains(f, StringComparison.OrdinalIgnoreCase) ||
             r.Tag.Contains(f, StringComparison.OrdinalIgnoreCase));
@@ -1170,7 +1170,7 @@
     private void BuildKnownAreas()
     {
         if (_graphData == null) { _knownAreas.Clear(); return; }
-        var all = new List<AreaNodeDto>(_graphData.Nodes.Count + _graphData.DisconnectedAreas.Count);
+        List<AreaNodeDto> all = new List<AreaNodeDto>(_graphData.Nodes.Count + _graphData.DisconnectedAreas.Count);
         all.AddRange(_graphData.Nodes);
         all.AddRange(_graphData.DisconnectedAreas);
         all.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
@@ -1180,7 +1180,7 @@
     private void BuildRegionColors()
     {
         _regionColors.Clear();
-        var palette = new[]
+        string[] palette = new[]
         {
             "#e6194b", "#3cb44b", "#4363d8", "#f58231",
             "#911eb4", "#42d4f4", "#f032e6", "#bfef45",
@@ -1277,7 +1277,7 @@
 
     private Dictionary<string, object> BuildLayoutConfig()
     {
-        var cfg = new Dictionary<string, object>();
+        Dictionary<string, object> cfg = new Dictionary<string, object>();
         switch (_selectedLayout)
         {
             case "compact-grid":
@@ -1366,14 +1366,14 @@
             BuildRegionColors();
 
             // Update in-memory graph node regions
-            var assignments = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var region in _regions)
-                foreach (var area in region.Areas)
+            Dictionary<string, string> assignments = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (RegionDefinitionDto region in _regions)
+                foreach (AreaDefinitionDto area in region.Areas)
                     if (!string.IsNullOrWhiteSpace(area.ResRef))
                         assignments[area.ResRef] = region.Tag;
 
-            foreach (var node in _graphData.Nodes.Concat(_graphData.DisconnectedAreas))
-                node.Region = assignments.TryGetValue(node.ResRef, out var tag) ? tag : null;
+            foreach (AreaNodeDto node in _graphData.Nodes.Concat(_graphData.DisconnectedAreas))
+                node.Region = assignments.TryGetValue(node.ResRef, out string? tag) ? tag : null;
 
             BuildRegionColors();
             string regionsJson = BuildRegionsGraphJson();
@@ -1393,7 +1393,7 @@
     {
         try
         {
-            var info = JsonSerializer.Deserialize<GraphNodeInfo>(json, CamelCase);
+            GraphNodeInfo? info = JsonSerializer.Deserialize<GraphNodeInfo>(json, CamelCase);
             if (info != null)
             {
                 OpenAreaEditor(info.ResRef, info.Region, info.Name);
@@ -1421,7 +1421,7 @@
     [JSInvokable]
     public Task OnRegionParentSelected(string regionTag)
     {
-        var region = _regions.FirstOrDefault(r =>
+        RegionDefinitionDto? region = _regions.FirstOrDefault(r =>
             string.Equals(r.Tag, regionTag, StringComparison.OrdinalIgnoreCase));
         if (region != null)
         {
@@ -1435,12 +1435,12 @@
     public async Task OnNodeAssignedToRegion(string resRef, string regionTag)
     {
         // Add the area to the target region via API
-        var targetRegion = _regions.FirstOrDefault(r =>
+        RegionDefinitionDto? targetRegion = _regions.FirstOrDefault(r =>
             string.Equals(r.Tag, regionTag, StringComparison.OrdinalIgnoreCase));
         if (targetRegion == null) return;
 
         // Remove from old region if present
-        foreach (var r in _regions)
+        foreach (RegionDefinitionDto r in _regions)
         {
             r.Areas.RemoveAll(a => string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
         }
@@ -1454,7 +1454,7 @@
         try
         {
             // Save all affected regions
-            foreach (var r in _regions)
+            foreach (RegionDefinitionDto r in _regions)
             {
                 await Api.UpdateAsync(r.Tag, r);
             }
@@ -1476,7 +1476,7 @@
     {
         // Remove from all regions
         bool changed = false;
-        foreach (var r in _regions)
+        foreach (RegionDefinitionDto r in _regions)
         {
             int removed = r.Areas.RemoveAll(a => string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
             if (removed > 0)
@@ -1505,7 +1505,7 @@
                 ShowCreateRegion();
                 break;
             case "deleteRegion":
-                var region = _regions.FirstOrDefault(r =>
+                RegionDefinitionDto? region = _regions.FirstOrDefault(r =>
                     string.Equals(r.Tag, targetId, StringComparison.OrdinalIgnoreCase));
                 if (region != null)
                 {
@@ -1554,7 +1554,7 @@
         AreaDefinitionDto? found = null;
         if (!string.IsNullOrEmpty(regionTag))
         {
-            var region = _regions.FirstOrDefault(r =>
+            RegionDefinitionDto? region = _regions.FirstOrDefault(r =>
                 string.Equals(r.Tag, regionTag, StringComparison.OrdinalIgnoreCase));
             if (region != null)
             {
@@ -1566,7 +1566,7 @@
         // If not found in any region, search all regions
         if (found == null)
         {
-            foreach (var r in _regions)
+            foreach (RegionDefinitionDto r in _regions)
             {
                 found = r.Areas.FirstOrDefault(a =>
                     string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
@@ -1588,7 +1588,7 @@
 
     private void EditAreaInRegion(int areaIndex)
     {
-        var area = _editRegion.Areas[areaIndex];
+        AreaDefinitionDto area = _editRegion.Areas[areaIndex];
         _editAreaRegionTag = _editRegion.Tag;
         _editAreaOriginalRegionTag = _editRegion.Tag;
         _editAreaName = GetAreaNameByResRef(area.ResRef);
@@ -1642,12 +1642,12 @@
         try
         {
             // Validate PoI tag uniqueness across all areas
-            var allPoiTags = _editRegion.Areas
+            List<string> allPoiTags = _editRegion.Areas
                 .SelectMany(a => a.PlacesOfInterest ?? new())
                 .Where(p => !string.IsNullOrWhiteSpace(p.Tag))
                 .Select(p => p.Tag)
                 .ToList();
-            var duplicates = allPoiTags
+            List<string> duplicates = allPoiTags
                 .GroupBy(t => t, StringComparer.OrdinalIgnoreCase)
                 .Where(g => g.Count() > 1)
                 .Select(g => g.Key)
@@ -1688,9 +1688,9 @@
 
         try
         {
-            var resRef = _editArea.ResRef;
-            var newRegionTag = _editAreaRegionTag;
-            var oldRegionTag = _editAreaOriginalRegionTag;
+            string resRef = _editArea.ResRef;
+            string? newRegionTag = _editAreaRegionTag;
+            string? oldRegionTag = _editAreaOriginalRegionTag;
 
             // If region changed, remove from old and add to new
             if (!string.Equals(oldRegionTag, newRegionTag, StringComparison.OrdinalIgnoreCase))
@@ -1698,7 +1698,7 @@
                 // Remove from old region
                 if (!string.IsNullOrEmpty(oldRegionTag))
                 {
-                    var oldRegion = _regions.FirstOrDefault(r => string.Equals(r.Tag, oldRegionTag, StringComparison.OrdinalIgnoreCase));
+                    RegionDefinitionDto? oldRegion = _regions.FirstOrDefault(r => string.Equals(r.Tag, oldRegionTag, StringComparison.OrdinalIgnoreCase));
                     if (oldRegion != null)
                     {
                         oldRegion.Areas.RemoveAll(a => string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
@@ -1709,7 +1709,7 @@
                 // Add to new region
                 if (!string.IsNullOrEmpty(newRegionTag))
                 {
-                    var newRegion = _regions.FirstOrDefault(r => string.Equals(r.Tag, newRegionTag, StringComparison.OrdinalIgnoreCase));
+                    RegionDefinitionDto? newRegion = _regions.FirstOrDefault(r => string.Equals(r.Tag, newRegionTag, StringComparison.OrdinalIgnoreCase));
                     if (newRegion != null)
                     {
                         newRegion.Areas.RemoveAll(a => string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
@@ -1721,10 +1721,10 @@
             else if (!string.IsNullOrEmpty(newRegionTag))
             {
                 // Same region — just update the area data in place
-                var targetRegion = _regions.FirstOrDefault(r => string.Equals(r.Tag, newRegionTag, StringComparison.OrdinalIgnoreCase));
+                RegionDefinitionDto? targetRegion = _regions.FirstOrDefault(r => string.Equals(r.Tag, newRegionTag, StringComparison.OrdinalIgnoreCase));
                 if (targetRegion != null)
                 {
-                    var idx = targetRegion.Areas.FindIndex(a => string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
+                    int idx = targetRegion.Areas.FindIndex(a => string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
                     if (idx >= 0)
                         targetRegion.Areas[idx] = CloneAreaDefinition(_editArea);
                     else
@@ -1809,8 +1809,8 @@
 
     private List<AreaNodeDto> GetAvailableAreas(string? currentResRef)
     {
-        var usedResRefs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var a in _editRegion.Areas)
+        HashSet<string> usedResRefs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (AreaDefinitionDto a in _editRegion.Areas)
         {
             if (!string.IsNullOrWhiteSpace(a.ResRef) &&
                 !string.Equals(a.ResRef, currentResRef, StringComparison.OrdinalIgnoreCase))
@@ -1829,7 +1829,7 @@
     private void OnAreaLinkedSettlementChanged(ChangeEventArgs e)
     {
         if (_editArea == null) return;
-        _editArea.LinkedSettlement = int.TryParse(e.Value?.ToString(), out var val) && val > 0 ? val : null;
+        _editArea.LinkedSettlement = int.TryParse(e.Value?.ToString(), out int val) && val > 0 ? val : null;
     }
 
     // ===== Definition Tag Picker =====
@@ -1838,7 +1838,7 @@
     {
         try
         {
-            var result = await ResourceNodeApi.GetAllAsync(pageSize: 9999);
+            PagedResult<ResourceNodeDefinitionDto> result = await ResourceNodeApi.GetAllAsync(pageSize: 9999);
             _allResourceDefs = result.Items;
         }
         catch (Exception ex)
@@ -1850,8 +1850,8 @@
 
     private List<ResourceNodeDefinitionDto> GetFilteredResourceDefs()
     {
-        var selected = _editArea?.DefinitionTags ?? new List<string>();
-        var query = _defTagSearch?.Trim() ?? "";
+        List<string> selected = _editArea?.DefinitionTags ?? new List<string>();
+        string query = _defTagSearch?.Trim() ?? "";
         return _allResourceDefs
             .Where(d => !selected.Contains(d.Tag))
             .Where(d => string.IsNullOrEmpty(query)
@@ -1970,7 +1970,7 @@
     {
         try
         {
-            foreach (var file in e.GetMultipleFiles(100))
+            foreach (IBrowserFile file in e.GetMultipleFiles(100))
             {
                 if (file.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
                     await ProcessZipRegions(file);
@@ -1987,31 +1987,31 @@
 
     private async Task ProcessJsonFileRegions(IBrowserFile file)
     {
-        using var reader = new StreamReader(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
+        using StreamReader reader = new StreamReader(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
         ParseJsonRegions(await reader.ReadToEndAsync());
     }
 
     private async Task ProcessZipRegions(IBrowserFile file)
     {
-        using var ms = new MemoryStream();
+        using MemoryStream ms = new MemoryStream();
         await file.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024).CopyToAsync(ms);
         ms.Position = 0;
-        using var archive = new ZipArchive(ms, ZipArchiveMode.Read);
-        foreach (var entry in archive.Entries)
+        using ZipArchive archive = new ZipArchive(ms, ZipArchiveMode.Read);
+        foreach (ZipArchiveEntry entry in archive.Entries)
         {
             if (!entry.FullName.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) continue;
-            using var entryStream = entry.Open();
-            using var reader = new StreamReader(entryStream);
+            using Stream entryStream = entry.Open();
+            using StreamReader reader = new StreamReader(entryStream);
             ParseJsonRegions(await reader.ReadToEndAsync());
         }
     }
 
     private void ParseJsonRegions(string content)
     {
-        using var doc = JsonDocument.Parse(content);
+        using JsonDocument doc = JsonDocument.Parse(content);
         if (doc.RootElement.ValueKind == JsonValueKind.Array)
         {
-            foreach (var item in doc.RootElement.EnumerateArray())
+            foreach (JsonElement item in doc.RootElement.EnumerateArray())
                 _importedRegions.Add(item.Clone());
         }
         else if (doc.RootElement.ValueKind == JsonValueKind.Object)
@@ -2065,8 +2065,8 @@
 
     private async Task DownloadFileAsync(string fileName, string content)
     {
-        var bytes = System.Text.Encoding.UTF8.GetBytes(content);
-        var base64 = Convert.ToBase64String(bytes);
+        byte[] bytes = System.Text.Encoding.UTF8.GetBytes(content);
+        string base64 = Convert.ToBase64String(bytes);
         await JS.InvokeVoidAsync("adminPanelDownloadFile", fileName, base64);
     }
 

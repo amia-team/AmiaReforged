@@ -24,7 +24,7 @@
                     <label class="instance-label">Server:</label>
                     <select class="form-control form-control-sm" value="@(_selectedEndpoint?.Id.ToString() ?? "")" @onchange="OnEndpointChanged">
                         <option value="">— Select —</option>
-                        @foreach (var ep in _endpoints)
+                        @foreach (WorldEngineEndpoint ep in _endpoints)
                         {
                             <option value="@ep.Id">@ep.Name</option>
                         }
@@ -107,7 +107,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var ep in _allEndpoints)
+                        @foreach (WorldEngineEndpoint ep in _allEndpoints)
                         {
                             <tr>
                                 <td>@ep.Name</td>
@@ -242,7 +242,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var p in FilteredProfiles)
+                        @foreach (SpawnProfileDto p in FilteredProfiles)
                         {
                             <tr class="clickable-row" @onclick="() => SelectProfile(p)">
                                 <td @onclick:stopPropagation="true">
@@ -342,7 +342,7 @@
                                     <div class="form-group" style="flex:2">
                                         <label>Distribution</label>
                                         <select class="form-control" @bind="_newGroupDistribution">
-                                            @foreach (var method in Enum.GetValues<DistributionMethod>())
+                                            @foreach (DistributionMethod method in Enum.GetValues<DistributionMethod>())
                                             {
                                                 <option value="@method">@GetDistributionLabel(method)</option>
                                             }
@@ -357,7 +357,7 @@
                             </div>
                         }
 
-                        @foreach (var group in _selectedProfile.SpawnGroups)
+                        @foreach (SpawnGroupDto group in _selectedProfile.SpawnGroups)
                         {
                             bool expanded = _expandedGroups.Contains(group.Id);
                             <div class="group-card @(expanded ? "expanded" : "")">
@@ -386,7 +386,7 @@
                                                 <div class="form-group" style="flex:2">
                                                     <label>Distribution Method</label>
                                                     <select class="form-control" value="@group.DistributionMethod" @onchange="e => UpdateGroupDistribution(group, e)">
-                                                        @foreach (var method in Enum.GetValues<DistributionMethod>())
+                                                        @foreach (DistributionMethod method in Enum.GetValues<DistributionMethod>())
                                                         {
                                                             <option value="@method" selected="@(method == group.DistributionMethod)">@GetDistributionLabel(method)</option>
                                                         }
@@ -443,7 +443,7 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    @foreach (var entry in group.Entries)
+                                                    @foreach (SpawnEntryDto entry in group.Entries)
                                                     {
                                                         <tr>
                                                             <td>
@@ -498,7 +498,7 @@
                                                     <div class="form-group">
                                                         <label>Operator</label>
                                                         <select class="form-control form-control-sm" @bind="_newConditionOp">
-                                                            @foreach (var op in GetOperatorsForType(_newConditionType))
+                                                            @foreach (string op in GetOperatorsForType(_newConditionType))
                                                             {
                                                                 <option value="@op">@op</option>
                                                             }
@@ -533,7 +533,7 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    @foreach (var cond in group.Conditions)
+                                                    @foreach (SpawnConditionDto cond in group.Conditions)
                                                     {
                                                         <tr>
                                                             <td>
@@ -548,7 +548,7 @@
                                                             <td>
                                                                 <select class="form-control form-control-sm" value="@cond.Operator"
                                                                         @onchange="e => UpdateConditionField(cond, nameof(cond.Operator), e)">
-                                                                    @foreach (var op in GetOperatorsForType(cond.Type))
+                                                                    @foreach (string op in GetOperatorsForType(cond.Type))
                                                                     {
                                                                         <option value="@op" selected="@(op == cond.Operator)">@op</option>
                                                                     }
@@ -599,7 +599,7 @@
                                                             <label>Mutation</label>
                                                             <select class="form-control form-control-sm" @bind="_newOverrideMutationId">
                                                                 <option value="">— Select mutation —</option>
-                                                                @foreach (var mut in GetAvailableMutationsForGroup(group))
+                                                                @foreach (MutationTemplateDto mut in GetAvailableMutationsForGroup(group))
                                                                 {
                                                                     <option value="@mut.Id">@mut.Prefix @(mut.IsActive ? "" : "(inactive)")</option>
                                                                 }
@@ -628,7 +628,7 @@
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        @foreach (var ovr in group.MutationOverrides)
+                                                        @foreach (GroupMutationOverrideDto ovr in group.MutationOverrides)
                                                         {
                                                             <tr>
                                                                 <td><strong>@ovr.MutationPrefix</strong></td>
@@ -729,7 +729,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var bonus in _selectedProfile.Bonuses)
+                                    @foreach (SpawnBonusDto bonus in _selectedProfile.Bonuses)
                                     {
                                         <tr>
                                             <td>
@@ -821,7 +821,7 @@
                                         <td>
                                             <input type="number" class="form-control form-control-sm" min="0" max="100"
                                                    value="@_selectedProfile.MiniBoss.SpawnChancePercent"
-                                                   @onchange="e => UpdateMiniBossField(null, int.TryParse(e.Value?.ToString(), out var v) ? v : null)" />
+                                                   @onchange="e => UpdateMiniBossField(null, int.TryParse(e.Value?.ToString(), out int v) ? v : null)" />
                                         </td>
                                     </tr>
                                 </tbody>
@@ -843,7 +843,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach (var b in _selectedProfile.MiniBoss.Bonuses)
+                                        @foreach (SpawnBonusDto b in _selectedProfile.MiniBoss.Bonuses)
                                         {
                                             <tr>
                                                 <td><input class="form-control form-control-sm" value="@b.Name"
@@ -851,7 +851,7 @@
                                                 <td>
                                                     <select class="form-select form-select-sm" value="@b.Type"
                                                             @onchange="e => UpdateMiniBossBonusField(b, nameof(SpawnBonusDto.Type), e)">
-                                                        @foreach (var t in Enum.GetValues<SpawnBonusType>())
+                                                        @foreach (SpawnBonusType t in Enum.GetValues<SpawnBonusType>())
                                                         {
                                                             <option value="@t" selected="@(t == b.Type)">@t</option>
                                                         }
@@ -882,7 +882,7 @@
                                 </div>
                                 <div class="col-2">
                                     <select class="form-select form-select-sm" @bind="_newMbBonusType">
-                                        @foreach (var t in Enum.GetValues<SpawnBonusType>())
+                                        @foreach (SpawnBonusType t in Enum.GetValues<SpawnBonusType>())
                                         {
                                             <option value="@t">@t</option>
                                         }
@@ -938,9 +938,9 @@
                         }
                         else
                         {
-                            @foreach (var boss in _selectedProfile.BossConfigs)
+                            @foreach (BossConfigDto boss in _selectedProfile.BossConfigs)
                             {
-                                var bossExpanded = _expandedBosses.Contains(boss.Id);
+                                bool bossExpanded = _expandedBosses.Contains(boss.Id);
                                 <div class="group-card">
                                     <div class="group-card-header" @onclick="() => ToggleBossExpanded(boss.Id)">
                                         <span class="expand-icon">@(bossExpanded ? "▼" : "▶")</span>
@@ -1006,7 +1006,7 @@
                                                         <div class="form-group">
                                                             <label>Operator</label>
                                                             <select class="form-control form-control-sm" @bind="_newBossConditionOp">
-                                                                @foreach (var op in GetOperatorsForType(_newBossConditionType))
+                                                                @foreach (string op in GetOperatorsForType(_newBossConditionType))
                                                                 {
                                                                     <option value="@op">@op</option>
                                                                 }
@@ -1041,7 +1041,7 @@
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        @foreach (var cond in boss.Conditions)
+                                                        @foreach (SpawnConditionDto cond in boss.Conditions)
                                                         {
                                                             <tr>
                                                                 <td>
@@ -1056,7 +1056,7 @@
                                                                 <td>
                                                                     <select class="form-control form-control-sm" value="@cond.Operator"
                                                                             @onchange="e => UpdateBossConditionField(cond, nameof(cond.Operator), e)">
-                                                                        @foreach (var op in GetOperatorsForType(cond.Type))
+                                                                        @foreach (string op in GetOperatorsForType(cond.Type))
                                                                         {
                                                                             <option value="@op" selected="@(op == cond.Operator)">@op</option>
                                                                         }
@@ -1093,7 +1093,7 @@
                                                         <div class="form-group">
                                                             <label>Type</label>
                                                             <select class="form-select form-select-sm" @bind="_newBossBonusType">
-                                                                @foreach (var t in Enum.GetValues<SpawnBonusType>())
+                                                                @foreach (SpawnBonusType t in Enum.GetValues<SpawnBonusType>())
                                                                 {
                                                                     <option value="@t">@t</option>
                                                                 }
@@ -1129,7 +1129,7 @@
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        @foreach (var b in boss.Bonuses)
+                                                        @foreach (SpawnBonusDto b in boss.Bonuses)
                                                         {
                                                             <tr>
                                                                 <td><input class="form-control form-control-sm" value="@b.Name"
@@ -1137,7 +1137,7 @@
                                                                 <td>
                                                                     <select class="form-select form-select-sm" value="@b.Type"
                                                                             @onchange="e => UpdateBossBonusField(b, nameof(SpawnBonusDto.Type), e)">
-                                                                        @foreach (var t in Enum.GetValues<SpawnBonusType>())
+                                                                        @foreach (SpawnBonusType t in Enum.GetValues<SpawnBonusType>())
                                                                         {
                                                                             <option value="@t" selected="@(t == b.Type)">@t</option>
                                                                         }
@@ -1196,7 +1196,7 @@
                                             <label>Glyph Script</label>
                                             <select class="form-control form-control-sm" @bind="_newGlyphBindingDefinitionId">
                                                 <option value="">— Select Script —</option>
-                                                @foreach (var def in _glyphDefinitions.Where(d => d.IsActive))
+                                                @foreach (GlyphDefinitionDto def in _glyphDefinitions.Where(d => d.IsActive))
                                                 {
                                                     <option value="@def.Id">@def.Name (@def.EventType)</option>
                                                 }
@@ -1227,7 +1227,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach (var binding in _profileGlyphBindings)
+                                        @foreach (GlyphBindingDto binding in _profileGlyphBindings)
                                         {
                                             <tr>
                                                 <td>@binding.GlyphName</td>
@@ -1246,10 +1246,10 @@
                             {
                                 @* Event Type Tabs *@
                                 <div style="display:flex;gap:4px;margin-top:12px;border-bottom:2px solid var(--border-color);padding-bottom:0">
-                                    @foreach (var evt in EncounterEventTypes)
+                                    @foreach (string evt in EncounterEventTypes)
                                     {
                                         bool isActive = evt == _activeScriptTab;
-                                        bool hasScript = _eventGraphJsons.TryGetValue(evt, out var json) && GraphHasNodes(json);
+                                        bool hasScript = _eventGraphJsons.TryGetValue(evt, out string? json) && GraphHasNodes(json);
                                         <button class="btn btn-sm @(isActive ? "btn-primary" : "btn-outline-secondary")"
                                                 style="border-radius:6px 6px 0 0;border-bottom:none;position:relative;@(isActive ? "" : "opacity:0.8")"
                                                 @onclick="() => SwitchScriptTab(evt)">
@@ -1274,12 +1274,12 @@
                                                        style="font-size:0.8rem" />
                                             </div>
                                             <div style="max-height:450px;overflow-y:auto">
-                                                @foreach (var category in ScriptFilteredCatalog)
+                                                @foreach (IGrouping<string, GlyphNodeCatalogEntryDto> category in ScriptFilteredCatalog)
                                                 {
                                                     <div style="padding:4px 12px;background:var(--surface-hover);color:var(--text-secondary);font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">
                                                         @category.Key
                                                     </div>
-                                                    @foreach (var node in category)
+                                                    @foreach (GlyphNodeCatalogEntryDto node in category)
                                                     {
                                                         <div style="padding:5px 12px;border-bottom:1px solid var(--border-color);cursor:pointer;font-size:0.85rem"
                                                              class="glyph-node-entry"
@@ -1305,14 +1305,14 @@
                                                     <small class="d-block" style="color:var(--text-secondary);font-size:0.75rem">@_scriptSelectedNodeInfo.DisplayName</small>
                                                 </div>
                                                 <div style="padding:8px">
-                                                    @{ var editablePins = _scriptSelectedNodeInfo.InputPins?.Where(p => !p.IsConnected).ToList() ?? []; }
+                                                    @{ List<SelectedPinInfo> editablePins = _scriptSelectedNodeInfo.InputPins?.Where(p => !p.IsConnected).ToList() ?? []; }
                                                     @if (editablePins.Count == 0)
                                                     {
                                                         <p style="color:var(--text-secondary);font-size:0.8rem;margin:0">No editable properties.</p>
                                                     }
                                                     else
                                                     {
-                                                        @foreach (var pin in editablePins)
+                                                        @foreach (SelectedPinInfo pin in editablePins)
                                                         {
                                                             <div style="margin-bottom:6px">
                                                                 <label style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:2px;display:block">@pin.Name <small>(@pin.DataType)</small></label>
@@ -1440,7 +1440,7 @@
                         <button class="btn btn-sm btn-secondary" @onclick="() => _selectedMutationIds.Clear()">Clear Selection</button>
                     </div>
                 }
-                @foreach (var mut in _mutations)
+                @foreach (MutationTemplateDto mut in _mutations)
                 {
                     <div class="card mb-3" style="background:var(--bg-surface); border-color:var(--border-color);">
                         <div class="card-header d-flex justify-content-between align-items-center"
@@ -1502,13 +1502,13 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach (var fx in mut.Effects)
+                                            @foreach (MutationEffectDto fx in mut.Effects)
                                             {
                                                 <tr>
                                                     <td>
                                                         <select class="form-select form-select-sm" value="@fx.Type"
                                                                 @onchange='e => UpdateEffectField(fx, "Type", e)'>
-                                                            @foreach (var t in Enum.GetValues<MutationEffectType>())
+                                                            @foreach (MutationEffectType t in Enum.GetValues<MutationEffectType>())
                                                             {
                                                                 <option value="@t" selected="@(t == fx.Type)">@t</option>
                                                             }
@@ -1523,7 +1523,7 @@
                                                                 value="@(fx.AbilityType?.ToString() ?? "")"
                                                                 @onchange='e => UpdateEffectField(fx, "AbilityType", e)'>
                                                             <option value="">—</option>
-                                                            @foreach (var a in Enum.GetValues<NwnAbilityType>())
+                                                            @foreach (NwnAbilityType a in Enum.GetValues<NwnAbilityType>())
                                                             {
                                                                 <option value="@a" selected="@(a == fx.AbilityType)">@a</option>
                                                             }
@@ -1534,7 +1534,7 @@
                                                                 value="@(fx.DamageType?.ToString() ?? "")"
                                                                 @onchange='e => UpdateEffectField(fx, "DamageType", e)'>
                                                             <option value="">—</option>
-                                                            @foreach (var d in Enum.GetValues<NwnDamageType>())
+                                                            @foreach (NwnDamageType d in Enum.GetValues<NwnDamageType>())
                                                             {
                                                                 <option value="@d" selected="@(d == fx.DamageType)">@d</option>
                                                             }
@@ -1565,7 +1565,7 @@
                                 <div class="row g-2 align-items-end mt-1">
                                     <div class="col-2">
                                         <select class="form-select form-select-sm" @bind="_newFxType">
-                                            @foreach (var t in Enum.GetValues<MutationEffectType>())
+                                            @foreach (MutationEffectType t in Enum.GetValues<MutationEffectType>())
                                             {
                                                 <option value="@t">@t</option>
                                             }
@@ -1577,7 +1577,7 @@
                                     <div class="col-2">
                                         <select class="form-select form-select-sm" @bind="_newFxAbility">
                                             <option value="">— Ability —</option>
-                                            @foreach (var a in Enum.GetValues<NwnAbilityType>())
+                                            @foreach (NwnAbilityType a in Enum.GetValues<NwnAbilityType>())
                                             {
                                                 <option value="@a">@a</option>
                                             }
@@ -1586,7 +1586,7 @@
                                     <div class="col-2">
                                         <select class="form-select form-select-sm" @bind="_newFxDamageType">
                                             <option value="">— Dmg Type —</option>
-                                            @foreach (var d in Enum.GetValues<NwnDamageType>())
+                                            @foreach (NwnDamageType d in Enum.GetValues<NwnDamageType>())
                                             {
                                                 <option value="@d">@d</option>
                                             }
@@ -1745,15 +1745,15 @@
     private SelectedNodeInfo? _scriptSelectedNodeInfo;
 
     private bool HasCurrentScript =>
-        _eventGraphJsons.TryGetValue(_activeScriptTab, out var json) && GraphHasNodes(json);
+        _eventGraphJsons.TryGetValue(_activeScriptTab, out string? json) && GraphHasNodes(json);
 
     private static bool GraphHasNodes(string? graphJson)
     {
         if (string.IsNullOrEmpty(graphJson) || graphJson == "{}") return false;
         try
         {
-            using var doc = JsonDocument.Parse(graphJson);
-            return doc.RootElement.TryGetProperty("Nodes", out var nodesEl)
+            using JsonDocument doc = JsonDocument.Parse(graphJson);
+            return doc.RootElement.TryGetProperty("Nodes", out JsonElement nodesEl)
                 && nodesEl.ValueKind == JsonValueKind.Array
                 && nodesEl.GetArrayLength() > 0;
         }
@@ -1836,7 +1836,7 @@
 
     private async Task OnEndpointChanged(ChangeEventArgs e)
     {
-        var idStr = e.Value?.ToString();
+        string? idStr = e.Value?.ToString();
         if (string.IsNullOrEmpty(idStr))
         {
             _selectedEndpoint = null;
@@ -1847,7 +1847,7 @@
             return;
         }
 
-        if (!Guid.TryParse(idStr, out var id)) return;
+        if (!Guid.TryParse(idStr, out Guid id)) return;
 
         _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
         if (_selectedEndpoint == null) return;
@@ -2162,7 +2162,7 @@
 
     private async Task UpdateGroupDistribution(SpawnGroupDto group, ChangeEventArgs e)
     {
-        if (!Enum.TryParse<DistributionMethod>(e.Value?.ToString(), out var method) || method == group.DistributionMethod) return;
+        if (!Enum.TryParse<DistributionMethod>(e.Value?.ToString(), out DistributionMethod method) || method == group.DistributionMethod) return;
         try
         {
             await Api.UpdateGroupAsync(group.Id, new UpdateGroupRequest(DistributionMethod: method));
@@ -2231,7 +2231,7 @@
 
     private IEnumerable<MutationTemplateDto> GetAvailableMutationsForGroup(SpawnGroupDto group)
     {
-        var alreadyOverridden = group.MutationOverrides.Select(o => o.MutationTemplateId).ToHashSet();
+        HashSet<Guid> alreadyOverridden = group.MutationOverrides.Select(o => o.MutationTemplateId).ToHashSet();
         return _mutations.Where(m => !alreadyOverridden.Contains(m.Id));
     }
 
@@ -2408,10 +2408,10 @@
     /// </summary>
     private void OnNewConditionTypeChanged(ChangeEventArgs e)
     {
-        if (Enum.TryParse<SpawnConditionType>(e.Value?.ToString(), out var t))
+        if (Enum.TryParse<SpawnConditionType>(e.Value?.ToString(), out SpawnConditionType t))
         {
             _newConditionType = t;
-            var ops = GetOperatorsForType(t);
+            string[] ops = GetOperatorsForType(t);
             if (ops.Length > 0 && !ops.Contains(_newConditionOp))
                 _newConditionOp = ops[0];
         }
@@ -2453,7 +2453,7 @@
         {
             UpdateConditionRequest req = field switch
             {
-                nameof(SpawnConditionDto.Type) when Enum.TryParse<SpawnConditionType>(val, out var t) => new UpdateConditionRequest(Type: t),
+                nameof(SpawnConditionDto.Type) when Enum.TryParse<SpawnConditionType>(val, out SpawnConditionType t) => new UpdateConditionRequest(Type: t),
                 nameof(SpawnConditionDto.Operator) => new UpdateConditionRequest(Operator: val),
                 nameof(SpawnConditionDto.Value) => new UpdateConditionRequest(Value: val),
                 _ => throw new ArgumentException($"Unknown field: {field}")
@@ -2581,7 +2581,7 @@
             UpdateBonusRequest req = field switch
             {
                 nameof(SpawnBonusDto.Name) => new UpdateBonusRequest(Name: val),
-                nameof(SpawnBonusDto.Type) when Enum.TryParse<SpawnBonusType>(val, out var t) => new UpdateBonusRequest(Type: t),
+                nameof(SpawnBonusDto.Type) when Enum.TryParse<SpawnBonusType>(val, out SpawnBonusType t) => new UpdateBonusRequest(Type: t),
                 nameof(SpawnBonusDto.Value) when int.TryParse(val, out int v) => new UpdateBonusRequest(Value: v),
                 nameof(SpawnBonusDto.DurationSeconds) when int.TryParse(val, out int d) => new UpdateBonusRequest(DurationSeconds: d),
                 _ => throw new ArgumentException($"Unknown field: {field}")
@@ -2702,10 +2702,10 @@
 
     private void OnNewBossConditionTypeChanged(ChangeEventArgs e)
     {
-        if (Enum.TryParse<SpawnConditionType>(e.Value?.ToString(), out var t))
+        if (Enum.TryParse<SpawnConditionType>(e.Value?.ToString(), out SpawnConditionType t))
         {
             _newBossConditionType = t;
-            var ops = GetOperatorsForType(t);
+            string[] ops = GetOperatorsForType(t);
             if (ops.Length > 0 && !ops.Contains(_newBossConditionOp))
                 _newBossConditionOp = ops[0];
         }
@@ -2735,7 +2735,7 @@
         {
             UpdateConditionRequest req = field switch
             {
-                nameof(SpawnConditionDto.Type) when Enum.TryParse<SpawnConditionType>(val, out var t) =>
+                nameof(SpawnConditionDto.Type) when Enum.TryParse<SpawnConditionType>(val, out SpawnConditionType t) =>
                     new UpdateConditionRequest(Type: t),
                 nameof(SpawnConditionDto.Operator) => new UpdateConditionRequest(Operator: val),
                 nameof(SpawnConditionDto.Value) => new UpdateConditionRequest(Value: val),
@@ -2801,7 +2801,7 @@
             UpdateBonusRequest req = field switch
             {
                 nameof(SpawnBonusDto.Name) => new UpdateBonusRequest(Name: val),
-                nameof(SpawnBonusDto.Type) when Enum.TryParse<SpawnBonusType>(val, out var t) => new UpdateBonusRequest(Type: t),
+                nameof(SpawnBonusDto.Type) when Enum.TryParse<SpawnBonusType>(val, out SpawnBonusType t) => new UpdateBonusRequest(Type: t),
                 nameof(SpawnBonusDto.Value) when int.TryParse(val, out int v) => new UpdateBonusRequest(Value: v),
                 nameof(SpawnBonusDto.DurationSeconds) when int.TryParse(val, out int d) => new UpdateBonusRequest(DurationSeconds: d),
                 _ => throw new ArgumentException($"Unknown field: {field}")
@@ -2886,7 +2886,7 @@
 
     private async Task UpdateMutationField(MutationTemplateDto mut, string field, ChangeEventArgs e)
     {
-        var val = e.Value?.ToString() ?? "";
+        string val = e.Value?.ToString() ?? "";
         string prefix = mut.Prefix;
         string? description = mut.Description;
         int chance = mut.SpawnChancePercent;
@@ -2896,7 +2896,7 @@
         {
             case "Prefix": prefix = val; break;
             case "Description": description = string.IsNullOrWhiteSpace(val) ? null : val; break;
-            case "SpawnChancePercent": chance = int.TryParse(val, out var c) ? c : chance; break;
+            case "SpawnChancePercent": chance = int.TryParse(val, out int c) ? c : chance; break;
         }
 
         _isSaving = true;
@@ -2949,8 +2949,8 @@
         _isSaving = true;
         try
         {
-            NwnAbilityType? abilityType = !string.IsNullOrEmpty(_newFxAbility) && Enum.TryParse<NwnAbilityType>(_newFxAbility, out var a) ? a : null;
-            NwnDamageType? damageType = !string.IsNullOrEmpty(_newFxDamageType) && Enum.TryParse<NwnDamageType>(_newFxDamageType, out var d) ? d : null;
+            NwnAbilityType? abilityType = !string.IsNullOrEmpty(_newFxAbility) && Enum.TryParse<NwnAbilityType>(_newFxAbility, out NwnAbilityType a) ? a : null;
+            NwnDamageType? damageType = !string.IsNullOrEmpty(_newFxDamageType) && Enum.TryParse<NwnDamageType>(_newFxDamageType, out NwnDamageType d) ? d : null;
 
             await Api.AddMutationEffectAsync(templateId, new CreateMutationEffectRequest(
                 _newFxType, _newFxValue, abilityType, damageType, _newFxDuration
@@ -2969,8 +2969,8 @@
 
     private async Task UpdateEffectField(MutationEffectDto fx, string field, ChangeEventArgs e)
     {
-        var val = e.Value?.ToString() ?? "";
-        var type = fx.Type;
+        string val = e.Value?.ToString() ?? "";
+        MutationEffectType type = fx.Type;
         int value = fx.Value;
         NwnAbilityType? abilityType = fx.AbilityType;
         NwnDamageType? damageType = fx.DamageType;
@@ -2980,19 +2980,19 @@
         switch (field)
         {
             case "Type":
-                type = Enum.TryParse<MutationEffectType>(val, out var t) ? t : type;
+                type = Enum.TryParse<MutationEffectType>(val, out MutationEffectType t) ? t : type;
                 break;
             case "Value":
-                value = int.TryParse(val, out var v) ? v : value;
+                value = int.TryParse(val, out int v) ? v : value;
                 break;
             case "AbilityType":
-                abilityType = !string.IsNullOrEmpty(val) && Enum.TryParse<NwnAbilityType>(val, out var ab) ? ab : null;
+                abilityType = !string.IsNullOrEmpty(val) && Enum.TryParse<NwnAbilityType>(val, out NwnAbilityType ab) ? ab : null;
                 break;
             case "DamageType":
-                damageType = !string.IsNullOrEmpty(val) && Enum.TryParse<NwnDamageType>(val, out var dt) ? dt : null;
+                damageType = !string.IsNullOrEmpty(val) && Enum.TryParse<NwnDamageType>(val, out NwnDamageType dt) ? dt : null;
                 break;
             case "DurationSeconds":
-                duration = int.TryParse(val, out var dur) ? dur : duration;
+                duration = int.TryParse(val, out int dur) ? dur : duration;
                 break;
         }
 
@@ -3232,7 +3232,7 @@
         _scriptEditorReady = false;
         _scriptSelectedNodeInfo = null;
 
-        foreach (var evt in EncounterEventTypes)
+        foreach (string evt in EncounterEventTypes)
         {
             _eventGraphJsons[evt] = "{}";
             _eventScripts[evt] = null;
@@ -3249,10 +3249,10 @@
             }
 
             // Load bindings for this profile and fetch the definition for each
-            var bindings = await GlyphApi.GetBindingsForProfileAsync(profileId);
-            foreach (var binding in bindings)
+            List<GlyphBindingDto> bindings = await GlyphApi.GetBindingsForProfileAsync(profileId);
+            foreach (GlyphBindingDto binding in bindings)
             {
-                var def = await GlyphApi.GetDefinitionAsync(binding.GlyphDefinitionId);
+                GlyphDefinitionDto? def = await GlyphApi.GetDefinitionAsync(binding.GlyphDefinitionId);
                 if (def == null) continue;
 
                 string eventType = def.EventType;
@@ -3335,8 +3335,8 @@
             _scriptEditorModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js");
             _dotNetRef ??= DotNetObjectReference.Create(this);
 
-            var catalogJson = JsonSerializer.Serialize(_nodeCatalog);
-            var graphJson = _eventGraphJsons.GetValueOrDefault(_activeScriptTab, "{}");
+            string catalogJson = JsonSerializer.Serialize(_nodeCatalog);
+            string graphJson = _eventGraphJsons.GetValueOrDefault(_activeScriptTab, "{}");
 
             if (string.IsNullOrEmpty(graphJson) || graphJson == "{}")
             {
@@ -3407,7 +3407,7 @@
         _isSaving = true;
         try
         {
-            foreach (var eventType in EncounterEventTypes)
+            foreach (string eventType in EncounterEventTypes)
             {
                 string graphJson = _eventGraphJsons.GetValueOrDefault(eventType, "{}");
                 bool hasGraph = GraphHasNodes(graphJson);
@@ -3417,16 +3417,16 @@
                 {
                     if (existingDef != null)
                     {
-                        var updated = await GlyphApi.UpdateDefinitionAsync(existingDef.Id,
+                        GlyphDefinitionDto? updated = await GlyphApi.UpdateDefinitionAsync(existingDef.Id,
                             new UpdateGlyphRequest(GraphJson: graphJson, IsActive: true));
                         if (updated != null) _eventScripts[eventType] = updated;
                     }
                     else
                     {
                         // Check for existing binding with this event type to avoid duplicates
-                        var existingBindings = await GlyphApi.GetBindingsForProfileAsync(_selectedProfile.Id);
+                        List<GlyphBindingDto> existingBindings = await GlyphApi.GetBindingsForProfileAsync(_selectedProfile.Id);
                         GlyphBindingDto? matchingBinding = null;
-                        foreach (var b in existingBindings)
+                        foreach (GlyphBindingDto b in existingBindings)
                         {
                             if (b.EventType.Equals(eventType, StringComparison.OrdinalIgnoreCase))
                             {
@@ -3437,7 +3437,7 @@
 
                         if (matchingBinding != null)
                         {
-                            var updated = await GlyphApi.UpdateDefinitionAsync(
+                            GlyphDefinitionDto? updated = await GlyphApi.UpdateDefinitionAsync(
                                 matchingBinding.GlyphDefinitionId,
                                 new UpdateGlyphRequest(GraphJson: graphJson, IsActive: true));
                             if (updated != null) _eventScripts[eventType] = updated;
@@ -3445,7 +3445,7 @@
                         else
                         {
                             string name = $"{_selectedProfile.Name}/{eventType}";
-                            var created = await GlyphApi.CreateDefinitionAsync(new CreateGlyphRequest(
+                            GlyphDefinitionDto? created = await GlyphApi.CreateDefinitionAsync(new CreateGlyphRequest(
                                 Name: name,
                                 EventType: eventType,
                                 Category: "Encounter",
@@ -3490,7 +3490,7 @@
 
         try
         {
-            var nodeJson = JsonSerializer.Serialize(node);
+            string nodeJson = JsonSerializer.Serialize(node);
             await _scriptEditorModule.InvokeVoidAsync("addNode", nodeJson);
         }
         catch (Exception ex)

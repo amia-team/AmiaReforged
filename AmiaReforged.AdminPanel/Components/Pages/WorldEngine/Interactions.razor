@@ -25,7 +25,7 @@
                     <label class="instance-label">Server:</label>
                     <select class="form-control form-control-sm" value="@(_selectedEndpoint?.Id.ToString() ?? "")" @onchange="OnEndpointChanged">
                         <option value="">— Select —</option>
-                        @foreach (var ep in _endpoints)
+                        @foreach (WorldEngineEndpoint ep in _endpoints)
                         {
                             <option value="@ep.Id">@ep.Name</option>
                         }
@@ -111,7 +111,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var item in _interactions)
+                        @foreach (InteractionDefinitionDto item in _interactions)
                         {
                             <tr>
                                 <td style="font-family:monospace;font-size:0.9rem">@item.Tag</td>
@@ -218,8 +218,8 @@
 
                     @for (int ri = 0; ri < _editItem.Responses.Count; ri++)
                     {
-                        var rIdx = ri;
-                        var response = _editItem.Responses[rIdx];
+                        int rIdx = ri;
+                        InteractionResponseDto response = _editItem.Responses[rIdx];
                         <div style="border:1px solid var(--border-color);border-radius:6px;padding:12px;margin-top:10px;background:rgba(255,255,255,0.02)">
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                                 <strong style="font-size:0.9rem">Response #@(rIdx + 1)</strong>
@@ -269,8 +269,8 @@
 
                                 @for (int ei = 0; ei < response.Effects.Count; ei++)
                                 {
-                                    var eIdx = ei;
-                                    var effect = response.Effects[eIdx];
+                                    int eIdx = ei;
+                                    InteractionResponseEffectDto effect = response.Effects[eIdx];
                                     <div style="display:flex;gap:8px;align-items:end;margin-top:6px">
                                         <div class="form-group" style="flex:1">
                                             @if (eIdx == 0)
@@ -320,10 +320,10 @@
                 {
                     @* Event Type Tabs *@
                     <div style="display:flex;gap:4px;margin-top:12px;border-bottom:2px solid var(--border-color);padding-bottom:0">
-                        @foreach (var evt in InteractionEventTypes)
+                        @foreach (string evt in InteractionEventTypes)
                         {
                             bool isActive = evt == _activeScriptTab;
-                            bool hasScript = _eventGraphJsons.TryGetValue(evt, out var json) && !string.IsNullOrEmpty(json) && json != "{}";
+                            bool hasScript = _eventGraphJsons.TryGetValue(evt, out string? json) && !string.IsNullOrEmpty(json) && json != "{}";
                             <button class="btn btn-sm @(isActive ? "btn-primary" : "btn-outline-secondary")"
                                     style="border-radius:6px 6px 0 0;border-bottom:none;position:relative;@(isActive ? "" : "opacity:0.8")"
                                     @onclick="() => SwitchScriptTab(evt)">
@@ -348,12 +348,12 @@
                                            style="font-size:0.8rem" />
                                 </div>
                                 <div style="max-height:450px;overflow-y:auto">
-                                    @foreach (var category in ScriptFilteredCatalog)
+                                    @foreach (IGrouping<string, GlyphNodeCatalogEntryDto> category in ScriptFilteredCatalog)
                                     {
                                         <div style="padding:4px 12px;background:var(--surface-hover);color:var(--text-secondary);font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">
                                             @category.Key
                                         </div>
-                                        @foreach (var node in category)
+                                        @foreach (GlyphNodeCatalogEntryDto node in category)
                                         {
                                             <div style="padding:5px 12px;border-bottom:1px solid var(--border-color);cursor:pointer;font-size:0.85rem"
                                                  class="glyph-node-entry"
@@ -379,14 +379,14 @@
                                         <small class="d-block" style="color:var(--text-secondary);font-size:0.75rem">@_scriptSelectedNodeInfo.DisplayName</small>
                                     </div>
                                     <div style="padding:8px">
-                                        @{ var editablePins = _scriptSelectedNodeInfo.InputPins?.Where(p => !p.IsConnected).ToList() ?? []; }
+                                        @{ List<SelectedPinInfo> editablePins = _scriptSelectedNodeInfo.InputPins?.Where(p => !p.IsConnected).ToList() ?? []; }
                                         @if (editablePins.Count == 0)
                                         {
                                             <p style="color:var(--text-secondary);font-size:0.8rem;margin:0">No editable properties.</p>
                                         }
                                         else
                                         {
-                                            @foreach (var pin in editablePins)
+                                            @foreach (SelectedPinInfo pin in editablePins)
                                             {
                                                 <div style="margin-bottom:6px">
                                                     <label style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:2px;display:block">@pin.Name <small>(@pin.DataType)</small></label>
@@ -484,7 +484,7 @@
                     @if (_importResult.Errors.Count > 0)
                     {
                         <ul style="margin-top:8px;margin-bottom:0">
-                            @foreach (var err in _importResult.Errors.Take(10))
+                            @foreach (string err in _importResult.Errors.Take(10))
                             {
                                 <li style="font-size:0.85rem">@err</li>
                             }
@@ -586,7 +586,7 @@
     private SelectedNodeInfo? _scriptSelectedNodeInfo;
 
     private bool HasCurrentScript =>
-        _eventGraphJsons.TryGetValue(_activeScriptTab, out var json) && GraphHasNodes(json);
+        _eventGraphJsons.TryGetValue(_activeScriptTab, out string? json) && GraphHasNodes(json);
 
     /// <summary>
     /// Checks whether a graph JSON string contains at least one node.
@@ -598,8 +598,8 @@
         if (string.IsNullOrEmpty(graphJson) || graphJson == "{}") return false;
         try
         {
-            using var doc = System.Text.Json.JsonDocument.Parse(graphJson);
-            return doc.RootElement.TryGetProperty("Nodes", out var nodesEl)
+            using JsonDocument doc = System.Text.Json.JsonDocument.Parse(graphJson);
+            return doc.RootElement.TryGetProperty("Nodes", out JsonElement nodesEl)
                 && nodesEl.ValueKind == System.Text.Json.JsonValueKind.Array
                 && nodesEl.GetArrayLength() > 0;
         }
@@ -650,7 +650,7 @@
 
     private async Task RefreshEndpoints()
     {
-        var all = await EndpointService.GetAllEndpointsAsync();
+        IReadOnlyList<WorldEngineEndpoint> all = await EndpointService.GetAllEndpointsAsync();
         _endpoints = all.Where(e => e.IsEnabled).ToList();
 
         if (_selectedEndpoint != null && !_endpoints.Any(e => e.Id == _selectedEndpoint.Id))
@@ -661,7 +661,7 @@
 
     private async Task OnEndpointChanged(ChangeEventArgs e)
     {
-        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        if (Guid.TryParse(e.Value?.ToString(), out Guid id))
         {
             _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
             Api.SelectEndpoint(id);
@@ -689,7 +689,7 @@
 
         try
         {
-            var result = await Api.GetAllAsync(_searchTerm, _page, _pageSize);
+            PagedResult<InteractionDefinitionDto> result = await Api.GetAllAsync(_searchTerm, _page, _pageSize);
             _interactions = result.Items;
             _totalCount = result.TotalCount;
         }
@@ -827,7 +827,7 @@
     {
         if (responseIndex >= 0 && responseIndex < _editItem.Responses.Count)
         {
-            var effects = _editItem.Responses[responseIndex].Effects;
+            List<InteractionResponseEffectDto> effects = _editItem.Responses[responseIndex].Effects;
             if (effectIndex >= 0 && effectIndex < effects.Count)
                 effects.RemoveAt(effectIndex);
         }
@@ -839,7 +839,7 @@
     {
         try
         {
-            foreach (var file in e.GetMultipleFiles(100))
+            foreach (IBrowserFile file in e.GetMultipleFiles(100))
             {
                 if (file.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
                 {
@@ -864,22 +864,22 @@
 
     private async Task ProcessJsonFileImport(IBrowserFile file)
     {
-        using var reader = new StreamReader(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
+        using StreamReader reader = new StreamReader(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
         string content = await reader.ReadToEndAsync();
         ParseJsonItems(content);
     }
 
     private async Task ProcessZipImport(IBrowserFile file)
     {
-        using var ms = new MemoryStream();
+        using MemoryStream ms = new MemoryStream();
         await file.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024).CopyToAsync(ms);
         ms.Position = 0;
-        using var archive = new ZipArchive(ms, ZipArchiveMode.Read);
-        foreach (var entry in archive.Entries)
+        using ZipArchive archive = new ZipArchive(ms, ZipArchiveMode.Read);
+        foreach (ZipArchiveEntry entry in archive.Entries)
         {
             if (!entry.FullName.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) continue;
-            using var entryStream = entry.Open();
-            using var reader = new StreamReader(entryStream);
+            using Stream entryStream = entry.Open();
+            using StreamReader reader = new StreamReader(entryStream);
             string content = await reader.ReadToEndAsync();
             ParseJsonItems(content);
         }
@@ -887,10 +887,10 @@
 
     private void ParseJsonItems(string content)
     {
-        using var doc = JsonDocument.Parse(content);
+        using JsonDocument doc = JsonDocument.Parse(content);
         if (doc.RootElement.ValueKind == JsonValueKind.Array)
         {
-            foreach (var item in doc.RootElement.EnumerateArray())
+            foreach (JsonElement item in doc.RootElement.EnumerateArray())
                 _importedItems.Add(item.Clone());
         }
         else if (doc.RootElement.ValueKind == JsonValueKind.Object)
@@ -937,9 +937,9 @@
     {
         try
         {
-            var json = JsonSerializer.Serialize(_interactions, new JsonSerializerOptions { WriteIndented = true });
-            var bytes = System.Text.Encoding.UTF8.GetBytes(json);
-            var base64 = Convert.ToBase64String(bytes);
+            string json = JsonSerializer.Serialize(_interactions, new JsonSerializerOptions { WriteIndented = true });
+            byte[] bytes = System.Text.Encoding.UTF8.GetBytes(json);
+            string base64 = Convert.ToBase64String(bytes);
             await JS.InvokeVoidAsync("eval",
                 $"var a=document.createElement('a');a.href='data:application/json;base64,{base64}';a.download='interactions-export.json';document.body.appendChild(a);a.click();document.body.removeChild(a);");
         }
@@ -1045,7 +1045,7 @@
         _scriptEditorReady = false;
         _scriptSelectedNodeInfo = null;
 
-        foreach (var evt in InteractionEventTypes)
+        foreach (string evt in InteractionEventTypes)
         {
             _eventGraphJsons[evt] = "{}";
             _eventScripts[evt] = null;
@@ -1063,12 +1063,12 @@
             }
 
             // Fetch all interaction glyph bindings for this tag
-            var bindings = await GlyphApi.GetInteractionBindingsAsync(interactionTag);
+            List<InteractionGlyphBindingDto> bindings = await GlyphApi.GetInteractionBindingsAsync(interactionTag);
 
-            foreach (var binding in bindings)
+            foreach (InteractionGlyphBindingDto binding in bindings)
             {
                 // Fetch the full glyph definition (with GraphJson)
-                var def = await GlyphApi.GetDefinitionAsync(binding.GlyphDefinitionId);
+                GlyphDefinitionDto? def = await GlyphApi.GetDefinitionAsync(binding.GlyphDefinitionId);
                 if (def == null) continue;
 
                 // Map by event type
@@ -1155,8 +1155,8 @@
             _scriptEditorModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js");
             _dotNetRef ??= DotNetObjectReference.Create(this);
 
-            var catalogJson = JsonSerializer.Serialize(_nodeCatalog);
-            var graphJson = _eventGraphJsons.GetValueOrDefault(_activeScriptTab, "{}");
+            string catalogJson = JsonSerializer.Serialize(_nodeCatalog);
+            string graphJson = _eventGraphJsons.GetValueOrDefault(_activeScriptTab, "{}");
 
             // Ensure EventType is set in the graph JSON even for new/empty graphs
             if (string.IsNullOrEmpty(graphJson) || graphJson == "{}")
@@ -1221,7 +1221,7 @@
 
     private async Task SaveEventScripts(string interactionTag)
     {
-        foreach (var eventType in InteractionEventTypes)
+        foreach (string eventType in InteractionEventTypes)
         {
             string graphJson = _eventGraphJsons.GetValueOrDefault(eventType, "{}");
             bool hasGraph = GraphHasNodes(graphJson);
@@ -1232,7 +1232,7 @@
                 if (existingDef != null)
                 {
                     // Update existing definition
-                    var updated = await GlyphApi.UpdateDefinitionAsync(existingDef.Id,
+                    GlyphDefinitionDto? updated = await GlyphApi.UpdateDefinitionAsync(existingDef.Id,
                         new UpdateGlyphRequest(GraphJson: graphJson, IsActive: true));
                     if (updated != null) _eventScripts[eventType] = updated;
                 }
@@ -1241,14 +1241,14 @@
                     // Deduplication safeguard: check if a binding already exists
                     // for this tag + event type (e.g., from a prior failed save or
                     // an orphaned definition). If so, update it instead of creating.
-                    var existingBindings = await GlyphApi.GetInteractionBindingsAsync(interactionTag);
-                    var matchingBinding = existingBindings.FirstOrDefault(b =>
+                    List<InteractionGlyphBindingDto> existingBindings = await GlyphApi.GetInteractionBindingsAsync(interactionTag);
+                    InteractionGlyphBindingDto? matchingBinding = existingBindings.FirstOrDefault(b =>
                         b.EventType.Equals(eventType, StringComparison.OrdinalIgnoreCase));
 
                     if (matchingBinding != null)
                     {
                         // Reuse the existing definition — update it and reactivate
-                        var updated = await GlyphApi.UpdateDefinitionAsync(
+                        GlyphDefinitionDto? updated = await GlyphApi.UpdateDefinitionAsync(
                             matchingBinding.GlyphDefinitionId,
                             new UpdateGlyphRequest(GraphJson: graphJson, IsActive: true));
                         if (updated != null) _eventScripts[eventType] = updated;
@@ -1257,7 +1257,7 @@
                     {
                         // Create new definition + binding
                         string name = $"{interactionTag}/{eventType}";
-                        var created = await GlyphApi.CreateDefinitionAsync(new CreateGlyphRequest(
+                        GlyphDefinitionDto? created = await GlyphApi.CreateDefinitionAsync(new CreateGlyphRequest(
                             Name: name,
                             EventType: eventType,
                             Category: "Interaction",
@@ -1296,7 +1296,7 @@
 
         try
         {
-            var nodeJson = JsonSerializer.Serialize(node);
+            string nodeJson = JsonSerializer.Serialize(node);
             await _scriptEditorModule.InvokeVoidAsync("addNode", nodeJson);
         }
         catch (Exception ex)

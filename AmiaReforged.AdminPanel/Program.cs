@@ -32,12 +32,12 @@ public class Program
 
         try
         {
-            var builder = WebApplication.CreateBuilder(args);
+            WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
             builder.Host.UseSerilog();
 
             // Bind configuration
-            var adminConfig = new AdminPanelConfig();
+            AdminPanelConfig adminConfig = new AdminPanelConfig();
             builder.Configuration.GetSection("AdminPanel").Bind(adminConfig);
 
             // Override from environment variables
@@ -69,6 +69,7 @@ public class Program
             builder.Services.AddScoped<OrganizationApiService>();
             builder.Services.AddScoped<CoinhouseApiService>();
             builder.Services.AddScoped<InteractionApiService>();
+            builder.Services.AddScoped<RecipeTemplateApiService>();
 
             // Cookie Authentication
             builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -97,7 +98,7 @@ public class Program
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
 
-            var app = builder.Build();
+            WebApplication app = builder.Build();
 
             if (!app.Environment.IsDevelopment())
             {
@@ -120,11 +121,11 @@ public class Program
             // Login endpoint - handles form POST for cookie authentication
             app.MapPost("/api/auth/login", async (HttpContext context, AdminPanelConfig config) =>
             {
-                var form = await context.Request.ReadFormAsync();
-                var username = form["username"].ToString();
-                var password = form["password"].ToString();
-                var rememberMe = form["rememberMe"] == "true";
-                var returnUrl = form["returnUrl"].ToString();
+                IFormCollection form = await context.Request.ReadFormAsync();
+                string username = form["username"].ToString();
+                string password = form["password"].ToString();
+                bool rememberMe = form["rememberMe"] == "true";
+                string? returnUrl = form["returnUrl"].ToString();
 
                 string? role = null;
 
@@ -141,16 +142,16 @@ public class Program
 
                 if (role != null)
                 {
-                    var claims = new List<Claim>
+                    List<Claim> claims = new List<Claim>
                     {
                         new(ClaimTypes.Name, username),
                         new(ClaimTypes.Role, role)
                     };
 
-                    var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-                    var principal = new ClaimsPrincipal(identity);
+                    ClaimsIdentity identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                    ClaimsPrincipal principal = new ClaimsPrincipal(identity);
 
-                    var authProperties = new AuthenticationProperties
+                    AuthenticationProperties authProperties = new AuthenticationProperties
                     {
                         IsPersistent = rememberMe,
                         ExpiresUtc = DateTimeOffset.UtcNow.AddHours(24)

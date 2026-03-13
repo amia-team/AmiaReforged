@@ -22,10 +22,10 @@ public class CoinhouseController
     public static async Task<ApiResult> GetAll(RouteContext ctx)
     {
         string? search = ctx.GetQueryParam("search");
-        int page = int.TryParse(ctx.GetQueryParam("page"), out var p) ? Math.Max(1, p) : 1;
-        int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out var ps) ? Math.Clamp(ps, 1, 200) : 50;
+        int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
+        int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
 
-        using var context = ResolveContext();
+        using PwEngineContext context = ResolveContext();
 
         IQueryable<CoinHouse> query = context.CoinHouses;
 
@@ -62,8 +62,8 @@ public class CoinhouseController
     {
         string tag = ctx.GetRouteValue("tag");
 
-        using var context = ResolveContext();
-        var coinhouse = await context.CoinHouses
+        using PwEngineContext context = ResolveContext();
+        CoinHouse? coinhouse = await context.CoinHouses
             .Include(c => c.Accounts)
             .FirstOrDefaultAsync(c => c.Tag == tag);
 
@@ -83,7 +83,7 @@ public class CoinhouseController
     [HttpPost(BasePath)]
     public static async Task<ApiResult> Create(RouteContext ctx)
     {
-        var dto = await ctx.ReadJsonBodyAsync<CoinhouseApiDto>();
+        CoinhouseApiDto? dto = await ctx.ReadJsonBodyAsync<CoinhouseApiDto>();
         if (dto == null)
         {
             return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required"));
@@ -95,7 +95,7 @@ public class CoinhouseController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        using var context = ResolveContext();
+        using PwEngineContext context = ResolveContext();
 
         bool exists = await context.CoinHouses.AnyAsync(c => c.Tag == dto.Tag);
         if (exists)
@@ -104,7 +104,7 @@ public class CoinhouseController
                 "Conflict", $"A coinhouse with tag '{dto.Tag}' already exists"));
         }
 
-        var coinhouse = FromDto(dto);
+        CoinHouse coinhouse = FromDto(dto);
         context.CoinHouses.Add(coinhouse);
         await context.SaveChangesAsync();
 
@@ -120,8 +120,8 @@ public class CoinhouseController
     {
         string tag = ctx.GetRouteValue("tag");
 
-        using var context = ResolveContext();
-        var existing = await context.CoinHouses
+        using PwEngineContext context = ResolveContext();
+        CoinHouse? existing = await context.CoinHouses
             .Include(c => c.Accounts)
             .FirstOrDefaultAsync(c => c.Tag == tag);
 
@@ -131,7 +131,7 @@ public class CoinhouseController
                 "Not found", $"No coinhouse with tag '{tag}'"));
         }
 
-        var dto = await ctx.ReadJsonBodyAsync<CoinhouseApiDto>();
+        CoinhouseApiDto? dto = await ctx.ReadJsonBodyAsync<CoinhouseApiDto>();
         if (dto == null)
         {
             return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required"));
@@ -163,8 +163,8 @@ public class CoinhouseController
     {
         string tag = ctx.GetRouteValue("tag");
 
-        using var context = ResolveContext();
-        var existing = await context.CoinHouses
+        using PwEngineContext context = ResolveContext();
+        CoinHouse? existing = await context.CoinHouses
             .Include(c => c.Accounts)
             .FirstOrDefaultAsync(c => c.Tag == tag);
 
@@ -177,14 +177,14 @@ public class CoinhouseController
         // Remove associated accounts, holders, and transactions
         if (existing.Accounts is { Count: > 0 })
         {
-            foreach (var account in existing.Accounts)
+            foreach (CoinHouseAccount account in existing.Accounts)
             {
-                var holders = await context.CoinHouseAccountHolders
+                List<CoinHouseAccountHolder> holders = await context.CoinHouseAccountHolders
                     .Where(h => h.AccountId == account.Id)
                     .ToListAsync();
                 context.CoinHouseAccountHolders.RemoveRange(holders);
 
-                var transactions = await context.CoinHouseTransactions
+                List<CoinHouseTransaction> transactions = await context.CoinHouseTransactions
                     .Where(t => t.CoinHouseAccountId == account.Id)
                     .ToListAsync();
                 context.CoinHouseTransactions.RemoveRange(transactions);
@@ -205,8 +205,8 @@ public class CoinhouseController
 
     private static PwEngineContext ResolveContext()
     {
-        var factory = AnvilCore.GetService<PwContextFactory>()
-                      ?? throw new InvalidOperationException("PwContextFactory service not available");
+        PwContextFactory factory = AnvilCore.GetService<PwContextFactory>()
+                                   ?? throw new InvalidOperationException("PwContextFactory service not available");
         return factory.CreateDbContext();
     }
 

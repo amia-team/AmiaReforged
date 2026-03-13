@@ -129,7 +129,7 @@ public class CustomSummonListener
     private void AddWidgetItemProperty(NwItem widget)
     {
         // Remove any existing cast spell properties
-        foreach (var prop in widget.ItemProperties.ToList())
+        foreach (ItemProperty prop in widget.ItemProperties.ToList())
         {
             if (prop.Property.PropertyType == ItemPropertyType.CastSpell)
             {
@@ -284,7 +284,7 @@ public class CustomSummonListener
         {
             try
             {
-                var result = System.Text.Json.JsonSerializer.Deserialize<List<string>>(namesJson) ?? new List<string>();
+                List<string> result = System.Text.Json.JsonSerializer.Deserialize<List<string>>(namesJson) ?? new List<string>();
                 Log.Debug($"  - Deserialized {result.Count} names from new format");
                 return result;
             }
@@ -320,7 +320,7 @@ public class CustomSummonListener
         {
             try
             {
-                var result = System.Text.Json.JsonSerializer.Deserialize<List<string>>(jsonsJson) ?? new List<string>();
+                List<string> result = System.Text.Json.JsonSerializer.Deserialize<List<string>>(jsonsJson) ?? new List<string>();
                 Log.Debug($"  - Deserialized {result.Count} jsons from new format");
                 return result;
             }
@@ -354,7 +354,7 @@ public class CustomSummonListener
 
         // Old NWScript used SetLocalJson which stores json data
         // We need to use JsonDump to convert the json type to a string
-        var json1Obj = NWScript.GetLocalJson(widget, "summon_critter");
+        IntPtr json1Obj = NWScript.GetLocalJson(widget, "summon_critter");
         string json1Str = NWScript.JsonDump(json1Obj);
         string? json1 = string.IsNullOrEmpty(json1Str) || json1Str == "{}" || json1Str == "null" ? null : json1Str;
 
@@ -385,7 +385,7 @@ public class CustomSummonListener
 
         // Migrate summon 2 (check if it exists)
         string? name2 = widget.GetObjectVariable<LocalVariableString>("summonName2").Value;
-        var json2Obj = NWScript.GetLocalJson(widget, "summon_critter2");
+        IntPtr json2Obj = NWScript.GetLocalJson(widget, "summon_critter2");
         string json2Str = NWScript.JsonDump(json2Obj);
         string? json2 = string.IsNullOrEmpty(json2Str) || json2Str == "{}" || json2Str == "null" ? null : json2Str;
         if (!string.IsNullOrEmpty(name2) && !string.IsNullOrEmpty(json2))
@@ -396,7 +396,7 @@ public class CustomSummonListener
 
         // Migrate summon 3 (check if it exists)
         string? name3 = widget.GetObjectVariable<LocalVariableString>("summonName3").Value;
-        var json3Obj = NWScript.GetLocalJson(widget, "summon_critter3");
+        IntPtr json3Obj = NWScript.GetLocalJson(widget, "summon_critter3");
         string json3Str = NWScript.JsonDump(json3Obj);
         string? json3 = string.IsNullOrEmpty(json3Str) || json3Str == "{}" || json3Str == "null" ? null : json3Str;
         if (!string.IsNullOrEmpty(name3) && !string.IsNullOrEmpty(json3))
@@ -472,7 +472,7 @@ public class CustomSummonListener
     private void RestoreWidgetUse(NwItem widget)
     {
         // Remove all existing cast spell properties
-        foreach (var prop in widget.ItemProperties.ToList())
+        foreach (ItemProperty prop in widget.ItemProperties.ToList())
         {
             if (prop.Property.PropertyType == ItemPropertyType.CastSpell)
             {

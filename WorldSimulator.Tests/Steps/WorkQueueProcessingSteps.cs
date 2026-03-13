@@ -147,8 +147,8 @@ public class WorkQueueProcessingSteps
         foreach (SimulationWorkItem item in orderedItems)
         {
             // Convert WorkType to simplified name matching feature file expectations
-            var typeName = item.WorkType.GetType().Name;
-            var simplifiedName = typeName switch
+            string typeName = item.WorkType.GetType().Name;
+            string simplifiedName = typeName switch
             {
                 "CivicStatsAggregation" => "CivicStats",
                 _ => typeName
@@ -248,11 +248,11 @@ public class WorkQueueProcessingSteps
     [When(@"the simulation worker polls for work")]
     public async Task WhenTheSimulationWorkerPollsForWork()
     {
-        var workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
+        SimulationWorkItem? workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
         _scenarioContext["InitialStatus"] = workItem.Status;
 
         // Check if circuit breaker is open
-        var circuitBreakerMock = _scenarioContext.ContainsKey("CircuitBreaker")
+        Mock<CircuitBreakerService>? circuitBreakerMock = _scenarioContext.ContainsKey("CircuitBreaker")
             ? _scenarioContext.Get<Mock<CircuitBreakerService>>("CircuitBreaker")
             : null;
 
@@ -274,8 +274,8 @@ public class WorkQueueProcessingSteps
     [Then(@"the work item status should transition to ""(.*)""")]
     public void ThenTheWorkItemStatusShouldTransitionTo(string expectedStatus)
     {
-        var workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
-        var status = Enum.Parse<WorkItemStatus>(expectedStatus);
+        SimulationWorkItem? workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
+        WorkItemStatus status = Enum.Parse<WorkItemStatus>(expectedStatus);
 
         // If expecting Completed but currently Processing, complete it and publish event
         if (status == WorkItemStatus.Completed && workItem.Status == WorkItemStatus.Processing)
@@ -455,10 +455,10 @@ public class WorkQueueProcessingSteps
     [Then(@"the exception should contain ""(.*)""")]
     public void ThenTheExceptionShouldContain(string expectedMessage)
     {
-        var exception = _scenarioContext.Get<Exception>("Exception");
+        Exception? exception = _scenarioContext.Get<Exception>("Exception");
         // The message might be about GovernmentId or DominionId, both are valid for this test
-        var actualMessage = exception.Message.ToLower();
-        var searchMessage = expectedMessage.ToLower().Replace("dominionid", "governmentid");
+        string actualMessage = exception.Message.ToLower();
+        string searchMessage = expectedMessage.ToLower().Replace("dominionid", "governmentid");
         actualMessage.Should().Contain(searchMessage,
             because: "the validation error should mention the empty ID");
     }
@@ -506,29 +506,29 @@ public class WorkQueueProcessingSteps
     [Then(@"the retry count should be incremented")]
     public void ThenTheRetryCountShouldBeIncremented()
     {
-        var workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
+        SimulationWorkItem? workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
         workItem.RetryCount.Should().BeGreaterThan(0);
     }
 
     [Then(@"the retry count should be (.*)")]
     public void ThenTheRetryCountShouldBe(int expectedCount)
     {
-        var workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
+        SimulationWorkItem? workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
         workItem.RetryCount.Should().Be(expectedCount);
     }
 
     [Then(@"the work item should remain in ""(.*)"" status")]
     public void ThenTheWorkItemShouldRemainInStatus(string expectedStatus)
     {
-        var workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
-        var status = Enum.Parse<WorkItemStatus>(expectedStatus);
+        SimulationWorkItem? workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
+        WorkItemStatus status = Enum.Parse<WorkItemStatus>(expectedStatus);
         workItem.Status.Should().Be(status);
     }
 
     [Then(@"the work items should be processed in creation order:")]
     public void ThenTheWorkItemsShouldBeProcessedInCreationOrder(Table table)
     {
-        var processedOrder = _scenarioContext.Get<List<string>>("ProcessedOrder");
+        List<string>? processedOrder = _scenarioContext.Get<List<string>>("ProcessedOrder");
         List<string> expectedOrder = table.Rows.Select(r => r["WorkType"]).ToList();
 
         // The processed order contains type names like "DominionTurn", table has "DominionTurn"
@@ -546,8 +546,8 @@ public class WorkQueueProcessingSteps
     [Given(@"a work item is queued")]
     public void GivenAWorkItemIsQueued()
     {
-        var workType = new SimulationWorkType.DominionTurn(GovernmentId.New(), TurnDate.Now());
-        var workItem = SimulationWorkItem.Create(workType);
+        SimulationWorkType.DominionTurn workType = new SimulationWorkType.DominionTurn(GovernmentId.New(), TurnDate.Now());
+        SimulationWorkItem workItem = SimulationWorkItem.Create(workType);
 
         _dbContext!.WorkItems.Add(workItem);
         _dbContext.SaveChanges();
@@ -558,13 +558,13 @@ public class WorkQueueProcessingSteps
     [When(@"both workers attempt to claim the same work item")]
     public void WhenBothWorkersAttemptToClaimTheSameWorkItem()
     {
-        var workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
+        SimulationWorkItem? workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
 
         // Simulate two workers trying to claim the same work item concurrently
-        var exception1 = default(Exception);
-        var exception2 = default(Exception);
-        var success1 = false;
-        var success2 = false;
+        Exception? exception1 = default(Exception);
+        Exception? exception2 = default(Exception);
+        bool success1 = false;
+        bool success2 = false;
 
         try
         {
@@ -582,7 +582,7 @@ public class WorkQueueProcessingSteps
         {
             // Worker 2 tries to claim the same work item (should fail with concurrency exception)
             // Reload the work item to simulate a second worker's context
-            var workItem2 = _dbContext!.WorkItems.Find(workItem.Id);
+            SimulationWorkItem? workItem2 = _dbContext!.WorkItems.Find(workItem.Id);
             workItem2!.Start();
             _dbContext.SaveChanges();
             success2 = true;
@@ -606,8 +606,8 @@ public class WorkQueueProcessingSteps
     [Then(@"only one worker should successfully start processing")]
     public void ThenOnlyOneWorkerShouldSuccessfullyStartProcessing()
     {
-        var success1 = _scenarioContext.Get<bool>("Worker1Success");
-        var success2 = _scenarioContext.Get<bool>("Worker2Success");
+        bool success1 = _scenarioContext.Get<bool>("Worker1Success");
+        bool success2 = _scenarioContext.Get<bool>("Worker2Success");
 
         // Exactly one worker should succeed
         (success1 ^ success2).Should().BeTrue("only one worker should successfully claim the work item");
@@ -616,8 +616,8 @@ public class WorkQueueProcessingSteps
     [Then(@"the other worker should receive a concurrency exception")]
     public void ThenTheOtherWorkerShouldReceiveAConcurrencyException()
     {
-        var exception1 = _scenarioContext.Get<Exception>("Worker1Exception");
-        var exception2 = _scenarioContext.Get<Exception>("Worker2Exception");
+        Exception? exception1 = _scenarioContext.Get<Exception>("Worker1Exception");
+        Exception? exception2 = _scenarioContext.Get<Exception>("Worker2Exception");
 
         // At least one worker should have an exception
         (exception1 != null || exception2 != null).Should().BeTrue(
@@ -627,7 +627,7 @@ public class WorkQueueProcessingSteps
     [Then(@"the work item version should be incremented only once")]
     public void ThenTheWorkItemVersionShouldBeIncrementedOnlyOnce()
     {
-        var workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
+        SimulationWorkItem? workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
 
         // Reload from database to get current state
         _dbContext!.Entry(workItem).Reload();
@@ -642,19 +642,19 @@ public class WorkQueueProcessingSteps
     public void GivenAMarketPricingWorkItemWithPayload(Table table)
     {
         // Parse Field/Value format table
-        var dataDict = table.Rows.ToDictionary(r => r["Field"], r => r["Value"]);
+        Dictionary<string, string> dataDict = table.Rows.ToDictionary(r => r["Field"], r => r["Value"]);
 
-        var marketId = MarketId.Parse(dataDict["MarketId"]);
-        var marketName = dataDict["MarketName"];
-        var recalculateAll = bool.Parse(dataDict["RecalculateAllItems"]);
-        var effectiveDate = DateTimeOffset.Parse(dataDict["EffectiveDate"]);
+        MarketId marketId = MarketId.Parse(dataDict["MarketId"]);
+        string marketName = dataDict["MarketName"];
+        bool recalculateAll = bool.Parse(dataDict["RecalculateAllItems"]);
+        DateTimeOffset effectiveDate = DateTimeOffset.Parse(dataDict["EffectiveDate"]);
 
-        var workType = new SimulationWorkType.MarketPricing(
+        SimulationWorkType.MarketPricing workType = new SimulationWorkType.MarketPricing(
             marketId,
             new ItemId("test_item"),
             new DemandSignal(1.0m));
 
-        var workItem = SimulationWorkItem.Create(workType);
+        SimulationWorkItem workItem = SimulationWorkItem.Create(workType);
 
         _dbContext!.WorkItems.Add(workItem);
         _dbContext.SaveChanges();
@@ -668,7 +668,7 @@ public class WorkQueueProcessingSteps
     [When(@"the payload is deserialized to MarketPricingPayload")]
     public void WhenThePayloadIsDeserializedToMarketPricingPayload()
     {
-        var workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
+        SimulationWorkItem? workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
 
         // The work type is already strongly typed - no deserialization needed!
         workItem.WorkType.Should().BeOfType<SimulationWorkType.MarketPricing>();
@@ -679,7 +679,7 @@ public class WorkQueueProcessingSteps
     [Then(@"the MarketId should be ""(.*)""")]
     public void ThenTheMarketIdShouldBe(string expectedMarketId)
     {
-        var payload = (SimulationWorkType.MarketPricing)_scenarioContext.Get<SimulationWorkType>("DeserializedPayload");
+        SimulationWorkType.MarketPricing? payload = (SimulationWorkType.MarketPricing)_scenarioContext.Get<SimulationWorkType>("DeserializedPayload");
         payload.MarketId.Value.ToString().Should().Be(expectedMarketId);
     }
 
@@ -687,21 +687,21 @@ public class WorkQueueProcessingSteps
     public void ThenTheMarketNameShouldBe(string expectedMarketName)
     {
         // Market name is stored in scenario context since MarketPricing doesn't have it
-        var storedName = _scenarioContext.Get<string>("ExpectedMarketName");
+        string? storedName = _scenarioContext.Get<string>("ExpectedMarketName");
         storedName.Should().Be(expectedMarketName);
     }
 
     [Then(@"RecalculateAllItems should be true")]
     public void ThenRecalculateAllItemsShouldBeTrue()
     {
-        var recalculateAll = _scenarioContext.Get<bool>("ExpectedRecalculateAll");
+        bool recalculateAll = _scenarioContext.Get<bool>("ExpectedRecalculateAll");
         recalculateAll.Should().BeTrue();
     }
 
     [Then(@"the EffectiveDate should be ""(.*)""")]
     public void ThenTheEffectiveDateShouldBe(string expectedDate)
     {
-        var effectiveDate = _scenarioContext.Get<DateTimeOffset>("ExpectedEffectiveDate");
+        DateTimeOffset effectiveDate = _scenarioContext.Get<DateTimeOffset>("ExpectedEffectiveDate");
         effectiveDate.ToString("yyyy-MM-ddTHH:mm:ssZ").Should().Be(expectedDate);
     }
 
@@ -710,10 +710,10 @@ public class WorkQueueProcessingSteps
     [Given(@"a civic stats work item is queued")]
     public void GivenACivicStatsWorkItemIsQueued()
     {
-        var workType = new SimulationWorkType.CivicStatsAggregation(
+        SimulationWorkType.CivicStatsAggregation workType = new SimulationWorkType.CivicStatsAggregation(
             SettlementId.New(),
             DateTimeOffset.UtcNow.AddDays(-30));
-        var workItem = SimulationWorkItem.Create(workType);
+        SimulationWorkItem workItem = SimulationWorkItem.Create(workType);
 
         _dbContext!.WorkItems.Add(workItem);
         _dbContext.SaveChanges();
@@ -731,11 +731,11 @@ public class WorkQueueProcessingSteps
     [Given(@"a persona action work item is queued")]
     public void GivenAPersonaActionWorkItemIsQueued()
     {
-        var workType = new SimulationWorkType.PersonaAction(
+        SimulationWorkType.PersonaAction workType = new SimulationWorkType.PersonaAction(
             PersonaId.New(),
             PersonaActionType.Intrigue,
             new InfluenceAmount(100));
-        var workItem = SimulationWorkItem.Create(workType);
+        SimulationWorkItem workItem = SimulationWorkItem.Create(workType);
 
         _dbContext!.WorkItems.Add(workItem);
         _dbContext.SaveChanges();
@@ -752,7 +752,7 @@ public class WorkQueueProcessingSteps
     [When(@"the work item fails (.*) times")]
     public void WhenTheWorkItemFailsTimes(int failureCount)
     {
-        var workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
+        SimulationWorkItem? workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
 
         for (int i = 0; i < failureCount; i++)
         {
@@ -768,7 +768,7 @@ public class WorkQueueProcessingSteps
     [When(@"the work item is requeued")]
     public void WhenTheWorkItemIsRequeued()
     {
-        var workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
+        SimulationWorkItem? workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
 
         // Requeue means we'll attempt to process it again
         // In real implementation, this would reset status to Pending
@@ -779,7 +779,7 @@ public class WorkQueueProcessingSteps
     [When(@"the simulation worker polls for work again")]
     public async Task WhenTheSimulationWorkerPollsForWorkAgain()
     {
-        var workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
+        SimulationWorkItem? workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
 
         // Simulate second attempt - just start it, don't complete yet
         // The scenario will check status transitions step by step
@@ -793,21 +793,21 @@ public class WorkQueueProcessingSteps
     [Then(@"the work item should be eligible for retry")]
     public void ThenTheWorkItemShouldBeEligibleForRetry()
     {
-        var workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
+        SimulationWorkItem? workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
         workItem.CanRetry().Should().BeTrue();
     }
 
     [Then(@"the work item should not be eligible for retry")]
     public void ThenTheWorkItemShouldNotBeEligibleForRetry()
     {
-        var workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
+        SimulationWorkItem? workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
         workItem.CanRetry().Should().BeFalse("retry limit should be exhausted");
     }
 
     [Then(@"the work item should complete successfully on retry")]
     public void ThenTheWorkItemShouldCompleteSuccessfullyOnRetry()
     {
-        var workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
+        SimulationWorkItem? workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
 
         // Complete it if it's in Processing state
         if (workItem.Status == WorkItemStatus.Processing)
@@ -822,7 +822,7 @@ public class WorkQueueProcessingSteps
     [Then(@"the work item processing should fail")]
     public void ThenTheWorkItemProcessingShouldFail()
     {
-        var workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
+        SimulationWorkItem? workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
 
         // Simulate processing failure
         if (workItem.Status == WorkItemStatus.Pending)
@@ -836,7 +836,7 @@ public class WorkQueueProcessingSteps
     [Then(@"a WorkItemFailed event should be published with retry exhausted flag")]
     public void ThenAWorkItemFailedEventShouldBePublishedWithRetryExhaustedFlag()
     {
-        var workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
+        SimulationWorkItem? workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
 
         // Verify the work item cannot be retried (max retries exhausted)
         workItem.CanRetry().Should().BeFalse("retry limit should be exhausted");
@@ -853,8 +853,8 @@ public class WorkQueueProcessingSteps
     [Given(@"a dominion turn work item is queued")]
     public void GivenADominionTurnWorkItemIsQueued()
     {
-        var workType = new SimulationWorkType.DominionTurn(GovernmentId.New(), TurnDate.Now());
-        var workItem = SimulationWorkItem.Create(workType);
+        SimulationWorkType.DominionTurn workType = new SimulationWorkType.DominionTurn(GovernmentId.New(), TurnDate.Now());
+        SimulationWorkItem workItem = SimulationWorkItem.Create(workType);
 
         _dbContext!.WorkItems.Add(workItem);
         _dbContext.SaveChanges();

@@ -392,7 +392,7 @@ public class PlayerDashboardService
     private void CloseAllDashboardSubMenus(NwPlayer player)
     {
         // Close all sub-menu windows that may be open
-        var subMenuTypes = new[]
+        Type[] subMenuTypes = new[]
         {
             typeof(Hide.HideEquipmentPresenter),
             typeof(Emotes.EmotesPresenter),
@@ -409,7 +409,7 @@ public class PlayerDashboardService
             typeof(PlayerTools.Nui.PlayerToolsWindowPresenter)
         };
 
-        foreach (var type in subMenuTypes)
+        foreach (Type type in subMenuTypes)
         {
             if (_director.IsWindowOpen(player, type))
             {
@@ -566,7 +566,7 @@ public class PlayerDashboardService
         }
 
         // Check proximity to spawn point
-        var allWaypoints = area.FindObjectsOfTypeInArea<NwWaypoint>().ToList();
+        List<NwWaypoint> allWaypoints = area.FindObjectsOfTypeInArea<NwWaypoint>().ToList();
 
         NwWaypoint? spawnPoint = area.FindObjectsOfTypeInArea<NwWaypoint>()
             .FirstOrDefault(wp => wp.Tag == SPAWNPOINT_TAG && creature.Distance(wp) <= 15.0f);

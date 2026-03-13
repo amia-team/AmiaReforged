@@ -50,13 +50,13 @@ public class ServerHealthService : IServerHealthService
 
         try
         {
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            using CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             cts.CancelAfter(TimeSpan.FromSeconds(_config.HealthCheckTimeoutSeconds));
 
             _logger.LogDebug("Checking server health at {Endpoint}", endpoint);
 
             // Create request with API key header if configured
-            using var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
+            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, endpoint);
 
             string? apiKey = _config.GetServerApiKey();
             if (!string.IsNullOrEmpty(apiKey))

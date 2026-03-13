@@ -63,7 +63,7 @@ public sealed class IndustrySubsystem : IIndustrySubsystem
 
     public Task<List<Recipe>> GetAvailableRecipesAsync(CharacterId characterId, IndustryTag industryTag, CancellationToken ct = default)
     {
-        var query = new GetAvailableRecipesQuery
+        GetAvailableRecipesQuery query = new GetAvailableRecipesQuery
         {
             CharacterId = characterId,
             IndustryTag = industryTag
@@ -88,7 +88,7 @@ public sealed class IndustrySubsystem : IIndustrySubsystem
         if (existing.Any(m => m.IndustryTag.Value == industryTag.Value))
             return Task.FromResult(CommandResult.Fail($"Already enrolled in '{industryTag.Value}'"));
 
-        var membership = new IndustryMembership
+        IndustryMembership membership = new IndustryMembership
         {
             CharacterId = characterId,
             IndustryTag = industryTag,
@@ -146,7 +146,7 @@ public sealed class IndustrySubsystem : IIndustrySubsystem
     public Task<List<Recipe>> GetWorkstationRecipesAsync(
         CharacterId characterId, WorkstationTag workstationTag, CancellationToken ct = default)
     {
-        var query = new GetWorkstationRecipesQuery
+        GetWorkstationRecipesQuery query = new GetWorkstationRecipesQuery
         {
             CharacterId = characterId,
             WorkstationTag = workstationTag

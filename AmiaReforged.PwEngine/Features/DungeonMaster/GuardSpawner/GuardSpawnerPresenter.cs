@@ -217,14 +217,14 @@ public sealed class GuardSpawnerPresenter : ScryPresenter<GuardSpawnerView>
 
     private void RefreshCreatureDropdown()
     {
-        var options = _model.GetCreatureOptions();
+        List<NuiComboEntry> options = _model.GetCreatureOptions();
         Token().SetBindValue(View.CreatureEntries, options);
         Token().SetBindValue(View.SelectedCreatureIndex, 0);
     }
 
     private void RefreshGuardList()
     {
-        var guardNames = _model.ChosenCreatures.Select(c => c.DisplayName).ToList();
+        List<string> guardNames = _model.ChosenCreatures.Select(c => c.DisplayName).ToList();
         Token().SetBindValues(View.GuardNames, guardNames);
         Token().SetBindValue(View.GuardCount, guardNames.Count);
     }

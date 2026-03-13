@@ -17,10 +17,10 @@ public class AreaGraphController
     [HttpGet("/api/worldengine/areas/graph")]
     public static async Task<ApiResult> GetGraph(RouteContext ctx)
     {
-        var cache = ResolveCacheService();
+        AreaGraphCacheService cache = ResolveCacheService();
 
         bool refresh = string.Equals(ctx.GetQueryParam("refresh"), "true", StringComparison.OrdinalIgnoreCase);
-        var graph = await cache.GetOrBuildAsync(forceRefresh: refresh);
+        AreaGraphData graph = await cache.GetOrBuildAsync(forceRefresh: refresh);
 
         return new ApiResult(200, graph);
     }
@@ -32,8 +32,8 @@ public class AreaGraphController
     [HttpPost("/api/worldengine/areas/graph/refresh")]
     public static async Task<ApiResult> RefreshGraph(RouteContext ctx)
     {
-        var cache = ResolveCacheService();
-        var graph = await cache.RefreshAsync();
+        AreaGraphCacheService cache = ResolveCacheService();
+        AreaGraphData graph = await cache.RefreshAsync();
 
         return new ApiResult(200, graph);
     }
@@ -43,7 +43,7 @@ public class AreaGraphController
         if (_cacheService != null) return _cacheService;
 
         // Lazy-initialize: the builder doesn't need Anvil DI since it uses NwModule.Instance directly
-        var builder = new AreaGraphBuilder();
+        AreaGraphBuilder builder = new AreaGraphBuilder();
         _cacheService = new AreaGraphCacheService(builder);
         return _cacheService;
     }

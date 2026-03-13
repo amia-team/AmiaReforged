@@ -28,14 +28,14 @@ public class ItemController
     [HttpGet("/api/worldengine/items")]
     public static async Task<ApiResult> GetAll(RouteContext ctx)
     {
-        var repo = ResolveRepository();
+        IItemDefinitionRepository repo = ResolveRepository();
         if (repo is DbItemDefinitionRepository dbRepo)
         {
             string? search = ctx.GetQueryParam("search");
-            int page = int.TryParse(ctx.GetQueryParam("page"), out var p) ? Math.Max(1, p) : 1;
-            int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out var ps) ? Math.Clamp(ps, 1, 200) : 50;
+            int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
+            int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
 
-            var items = dbRepo.Search(search, page, pageSize, out int totalCount);
+            List<ItemBlueprint> items = dbRepo.Search(search, page, pageSize, out int totalCount);
 
             return await Task.FromResult(new ApiResult(200, new
             {
@@ -47,7 +47,7 @@ public class ItemController
         }
 
         // Fallback for non-DB repos
-        var allItems = repo.AllItems();
+        List<ItemBlueprint> allItems = repo.AllItems();
         return await Task.FromResult(new ApiResult(200, new
         {
             items = allItems.Select(ToDto),
@@ -65,9 +65,9 @@ public class ItemController
     public static async Task<ApiResult> GetByTag(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        var repo = ResolveRepository();
+        IItemDefinitionRepository repo = ResolveRepository();
 
-        var item = repo.GetByTag(tag);
+        ItemBlueprint? item = repo.GetByTag(tag);
         if (item == null)
         {
             return await Task.FromResult(new ApiResult(404, new ErrorResponse(
@@ -84,7 +84,7 @@ public class ItemController
     [HttpPost("/api/worldengine/items")]
     public static async Task<ApiResult> Create(RouteContext ctx)
     {
-        var dto = await ctx.ReadJsonBodyAsync<ItemBlueprintDto>();
+        ItemBlueprintDto? dto = await ctx.ReadJsonBodyAsync<ItemBlueprintDto>();
         if (dto == null)
         {
             return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required"));
@@ -96,8 +96,8 @@ public class ItemController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        var repo = ResolveRepository();
-        var blueprint = FromDto(dto);
+        IItemDefinitionRepository repo = ResolveRepository();
+        ItemBlueprint blueprint = FromDto(dto);
         repo.AddItemDefinition(blueprint);
 
         return new ApiResult(201, ToDto(blueprint));
@@ -111,16 +111,16 @@ public class ItemController
     public static async Task<ApiResult> Update(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        var repo = ResolveRepository();
+        IItemDefinitionRepository repo = ResolveRepository();
 
-        var existing = repo.GetByTag(tag);
+        ItemBlueprint? existing = repo.GetByTag(tag);
         if (existing == null)
         {
             return await Task.FromResult(new ApiResult(404, new ErrorResponse(
                 "Not found", $"No item with tag '{tag}'")));
         }
 
-        var dto = await ctx.ReadJsonBodyAsync<ItemBlueprintDto>();
+        ItemBlueprintDto? dto = await ctx.ReadJsonBodyAsync<ItemBlueprintDto>();
         if (dto == null)
         {
             return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required"));
@@ -132,7 +132,7 @@ public class ItemController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        var blueprint = FromDto(dto);
+        ItemBlueprint blueprint = FromDto(dto);
         repo.AddItemDefinition(blueprint);
 
         return new ApiResult(200, ToDto(blueprint));
@@ -146,7 +146,7 @@ public class ItemController
     public static async Task<ApiResult> Delete(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        var repo = ResolveRepository();
+        IItemDefinitionRepository repo = ResolveRepository();
 
         if (repo is DbItemDefinitionRepository dbRepo)
         {
@@ -173,7 +173,7 @@ public class ItemController
     [HttpGet("/api/worldengine/items/export")]
     public static async Task<ApiResult> Export(RouteContext ctx)
     {
-        var repo = ResolveRepository();
+        IItemDefinitionRepository repo = ResolveRepository();
         string? search = ctx.GetQueryParam("search");
 
         List<ItemBlueprint> items;
@@ -197,12 +197,12 @@ public class ItemController
     [HttpPost("/api/worldengine/items/import")]
     public static async Task<ApiResult> Import(RouteContext ctx)
     {
-        var repo = ResolveRepository();
+        IItemDefinitionRepository repo = ResolveRepository();
 
         string? body = null;
         if (ctx.Request != null)
         {
-            using var reader = new StreamReader(ctx.Request.InputStream);
+            using StreamReader reader = new StreamReader(ctx.Request.InputStream);
             body = await reader.ReadToEndAsync();
         }
 
@@ -222,7 +222,7 @@ public class ItemController
             // Try single item
             try
             {
-                var single = JsonSerializer.Deserialize<ItemBlueprint>(body, ImportOptions);
+                ItemBlueprint? single = JsonSerializer.Deserialize<ItemBlueprint>(body, ImportOptions);
                 items = single != null ? new List<ItemBlueprint> { single } : null;
             }
             catch (JsonException ex)
@@ -240,7 +240,7 @@ public class ItemController
         int failed = 0;
         List<string> errors = new();
 
-        foreach (var item in items)
+        foreach (ItemBlueprint item in items)
         {
             try
             {
@@ -332,10 +332,10 @@ public class ItemController
     private static ItemBlueprint FromDto(ItemBlueprintDto dto)
     {
         MaterialEnum[] materials = (dto.Materials ?? Array.Empty<string>())
-            .Select(s => Enum.TryParse<MaterialEnum>(s, true, out var m) ? m : MaterialEnum.None)
+            .Select(s => Enum.TryParse<MaterialEnum>(s, true, out MaterialEnum m) ? m : MaterialEnum.None)
             .ToArray();
 
-        Enum.TryParse<JobSystemItemType>(dto.JobSystemType, true, out var jobType);
+        Enum.TryParse<JobSystemItemType>(dto.JobSystemType, true, out JobSystemItemType jobType);
 
         WeaponPartData? weaponData = null;
         if (dto.Appearance?.Data != null)
@@ -349,7 +349,7 @@ public class ItemController
                 dto.Appearance.Data.BottomPartColor);
         }
 
-        var appearance = new AppearanceData(
+        AppearanceData appearance = new AppearanceData(
             dto.Appearance?.ModelType ?? 0,
             dto.Appearance?.SimpleModelNumber,
             weaponData);
@@ -379,7 +379,7 @@ public class ItemController
 
         return dtos.Select(d =>
         {
-            Enum.TryParse<JsonLocalVariableType>(d.Type, true, out var varType);
+            Enum.TryParse<JsonLocalVariableType>(d.Type, true, out JsonLocalVariableType varType);
             return new JsonLocalVariableDefinition(d.Name, varType, d.Value);
         }).ToList();
     }

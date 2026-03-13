@@ -85,7 +85,7 @@ public class DivineCasterSpellAccessService
         Log.Info($"Processing divine spell access for {creature.Name} (isLogin={isLogin})");
 
         // Get effective caster levels for all classes
-        var effectiveLevels = EffectiveCasterLevelCalculator.CalculateAllEffectiveCasterLevels(creature);
+        Dictionary<ClassType, int> effectiveLevels = EffectiveCasterLevelCalculator.CalculateAllEffectiveCasterLevels(creature);
 
         // Process each divine caster class the creature has
         foreach (ClassType classType in DivineCasterClasses)
@@ -136,7 +136,7 @@ public class DivineCasterSpellAccessService
 
         for (int spellLevel = fromCircle; spellLevel <= toCircle; spellLevel++)
         {
-            var spells = _spellCache.GetSpellsForClass(classType, spellLevel);
+            IReadOnlyList<int> spells = _spellCache.GetSpellsForClass(classType, spellLevel);
 
             foreach (int spellId in spells)
             {
@@ -267,7 +267,7 @@ public class DivineCasterSpellAccessService
             // Scan pcKey local variables for prestige spells
             string classPrefix = $"{PrestigeSpellPrefix}{classType}_";
 
-            foreach (var localVar in pcKey.LocalVariables)
+            foreach (ObjectVariable localVar in pcKey.LocalVariables)
             {
                 if (!localVar.Name.StartsWith(classPrefix))
                     continue;
@@ -310,7 +310,7 @@ public class DivineCasterSpellAccessService
         {
             int clericClassId = clericInfo.Class.Id;
 
-            foreach (var localVar in pcKey.LocalVariables)
+            foreach (ObjectVariable localVar in pcKey.LocalVariables)
             {
                 if (!localVar.Name.StartsWith(domainPrefix))
                     continue;

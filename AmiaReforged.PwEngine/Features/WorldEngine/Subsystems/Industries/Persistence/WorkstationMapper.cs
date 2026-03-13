@@ -34,8 +34,8 @@ public static class WorkstationMapper
 
     public static Workstation ToDomain(PersistedWorkstationDefinition entity)
     {
-        var industryTags = JsonSerializer.Deserialize<List<string>>(entity.SupportedIndustriesJson, JsonOptions)
-                           ?? [];
+        List<string> industryTags = JsonSerializer.Deserialize<List<string>>(entity.SupportedIndustriesJson, JsonOptions)
+                                    ?? [];
 
         return new Workstation
         {

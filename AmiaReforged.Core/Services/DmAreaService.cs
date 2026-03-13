@@ -54,7 +54,7 @@ public class DmAreaService(DatabaseContextFactory factory)
 
         try
         {
-            var now = DateTime.UtcNow;
+            DateTime now = DateTime.UtcNow;
             newInstance.CreatedAt = now;
             newInstance.UpdatedAt = now;
             ctx.DmAreas.Add(newInstance);

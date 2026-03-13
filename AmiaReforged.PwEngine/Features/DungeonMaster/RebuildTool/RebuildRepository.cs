@@ -71,7 +71,7 @@ public class RebuildRepository(PwContextFactory factory) : IRebuildRepository
 
     public void Delete(int id)
     {
-        var rebuild = _ctx.CharacterRebuilds.Find(id);
+        CharacterRebuild? rebuild = _ctx.CharacterRebuilds.Find(id);
         if (rebuild != null)
         {
             _ctx.CharacterRebuilds.Remove(rebuild);
@@ -80,7 +80,7 @@ public class RebuildRepository(PwContextFactory factory) : IRebuildRepository
 
     public void CompleteRebuild(int id)
     {
-        var rebuild = _ctx.CharacterRebuilds.Find(id);
+        CharacterRebuild? rebuild = _ctx.CharacterRebuilds.Find(id);
         if (rebuild != null)
         {
             rebuild.CompletedUtc = DateTime.UtcNow;
@@ -107,7 +107,7 @@ public class RebuildRepository(PwContextFactory factory) : IRebuildRepository
 
     public void DeleteItemRecord(long id)
     {
-        var itemRecord = _ctx.RebuildItemRecords.Find(id);
+        RebuildItemRecord? itemRecord = _ctx.RebuildItemRecords.Find(id);
         if (itemRecord != null)
         {
             _ctx.RebuildItemRecords.Remove(itemRecord);
@@ -116,7 +116,7 @@ public class RebuildRepository(PwContextFactory factory) : IRebuildRepository
 
     public void DeleteItemRecordsByRebuildId(int rebuildId)
     {
-        var items = _ctx.RebuildItemRecords
+        List<RebuildItemRecord> items = _ctx.RebuildItemRecords
             .Where(r => r.CharacterRebuildId == rebuildId)
             .ToList();
         _ctx.RebuildItemRecords.RemoveRange(items);

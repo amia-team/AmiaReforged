@@ -18,7 +18,7 @@ public class OnBossSpawnEventExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        var outputs = new Dictionary<string, object?>
+        Dictionary<string, object?> outputs = new Dictionary<string, object?>
         {
             ["creature"] = context.SpawnedCreature,
             ["creature_resref"] = context.CreatureResRef ?? string.Empty,

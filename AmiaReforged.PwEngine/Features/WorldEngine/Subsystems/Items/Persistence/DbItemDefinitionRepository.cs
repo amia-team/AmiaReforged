@@ -21,9 +21,9 @@ public class DbItemDefinitionRepository : IItemDefinitionRepository
 
     public void AddItemDefinition(ItemBlueprint definition)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
-        var existing = ctx.ItemBlueprints
+        PersistedItemBlueprint? existing = ctx.ItemBlueprints
             .FirstOrDefault(e => e.ItemTag == definition.ItemTag);
 
         if (existing != null)
@@ -42,9 +42,9 @@ public class DbItemDefinitionRepository : IItemDefinitionRepository
     {
         if (string.IsNullOrWhiteSpace(tag)) return null;
 
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
-        var entity = ctx.ItemBlueprints
+        PersistedItemBlueprint? entity = ctx.ItemBlueprints
             .FirstOrDefault(e => EF.Functions.ILike(e.ItemTag, tag));
 
         if (entity == null)
@@ -61,9 +61,9 @@ public class DbItemDefinitionRepository : IItemDefinitionRepository
     {
         if (string.IsNullOrWhiteSpace(resRef)) return null;
 
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
-        var entity = ctx.ItemBlueprints
+        PersistedItemBlueprint? entity = ctx.ItemBlueprints
             .FirstOrDefault(e => EF.Functions.ILike(e.ResRef, resRef));
 
         return entity != null ? ItemBlueprintMapper.ToDomain(entity) : null;
@@ -71,7 +71,7 @@ public class DbItemDefinitionRepository : IItemDefinitionRepository
 
     public List<ItemBlueprint> AllItems()
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
         return ctx.ItemBlueprints
             .AsNoTracking()
@@ -83,11 +83,11 @@ public class DbItemDefinitionRepository : IItemDefinitionRepository
     {
         if (string.IsNullOrWhiteSpace(tag)) return new List<string>();
 
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
         // Load all tags into memory for Levenshtein comparison
         // (pg_trgm extension would be more performant at scale, but this matches existing behavior)
-        var allTags = ctx.ItemBlueprints
+        List<string> allTags = ctx.ItemBlueprints
             .AsNoTracking()
             .Select(e => e.ItemTag)
             .ToList();
@@ -108,7 +108,7 @@ public class DbItemDefinitionRepository : IItemDefinitionRepository
     /// </summary>
     public List<ItemBlueprint> Search(string? searchTerm, int page, int pageSize, out int totalCount)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
         IQueryable<PersistedItemBlueprint> query = ctx.ItemBlueprints.AsNoTracking();
 
@@ -137,9 +137,9 @@ public class DbItemDefinitionRepository : IItemDefinitionRepository
     /// </summary>
     public bool DeleteByTag(string tag)
     {
-        using var ctx = _contextFactory.CreateDbContext();
+        using PwEngineContext ctx = _contextFactory.CreateDbContext();
 
-        var entity = ctx.ItemBlueprints
+        PersistedItemBlueprint? entity = ctx.ItemBlueprints
             .FirstOrDefault(e => EF.Functions.ILike(e.ItemTag, tag));
 
         if (entity == null) return false;

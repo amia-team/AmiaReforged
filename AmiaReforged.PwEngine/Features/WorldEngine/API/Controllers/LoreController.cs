@@ -23,10 +23,10 @@ public class LoreController
     {
         string? search = ctx.GetQueryParam("search");
         string? category = ctx.GetQueryParam("category");
-        int page = int.TryParse(ctx.GetQueryParam("page"), out var p) ? Math.Max(1, p) : 1;
-        int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out var ps) ? Math.Clamp(ps, 1, 200) : 50;
+        int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
+        int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
 
-        using var context = ResolveContext();
+        using PwEngineContext context = ResolveContext();
 
         IQueryable<PersistedLoreDefinition> query = context.CodexLoreDefinitions;
 
@@ -72,8 +72,8 @@ public class LoreController
     {
         string loreId = ctx.GetRouteValue("loreId");
 
-        using var context = ResolveContext();
-        var definition = await context.CodexLoreDefinitions.FindAsync(loreId);
+        using PwEngineContext context = ResolveContext();
+        PersistedLoreDefinition? definition = await context.CodexLoreDefinitions.FindAsync(loreId);
 
         if (definition == null)
         {
@@ -91,7 +91,7 @@ public class LoreController
     [HttpPost(BasePath)]
     public static async Task<ApiResult> Create(RouteContext ctx)
     {
-        var dto = await ctx.ReadJsonBodyAsync<LoreDefinitionDto>();
+        LoreDefinitionDto? dto = await ctx.ReadJsonBodyAsync<LoreDefinitionDto>();
         if (dto == null)
         {
             return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required"));
@@ -103,7 +103,7 @@ public class LoreController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        using var context = ResolveContext();
+        using PwEngineContext context = ResolveContext();
 
         // Check for duplicate ID
         bool exists = await context.CodexLoreDefinitions.AnyAsync(d => d.LoreId == dto.LoreId);
@@ -113,7 +113,7 @@ public class LoreController
                 "Conflict", $"A lore definition with ID '{dto.LoreId}' already exists"));
         }
 
-        var definition = FromDto(dto);
+        PersistedLoreDefinition definition = FromDto(dto);
         definition.CreatedUtc = DateTime.UtcNow;
 
         context.CodexLoreDefinitions.Add(definition);
@@ -131,8 +131,8 @@ public class LoreController
     {
         string loreId = ctx.GetRouteValue("loreId");
 
-        using var context = ResolveContext();
-        var existing = await context.CodexLoreDefinitions.FindAsync(loreId);
+        using PwEngineContext context = ResolveContext();
+        PersistedLoreDefinition? existing = await context.CodexLoreDefinitions.FindAsync(loreId);
 
         if (existing == null)
         {
@@ -140,7 +140,7 @@ public class LoreController
                 "Not found", $"No lore definition with ID '{loreId}'"));
         }
 
-        var dto = await ctx.ReadJsonBodyAsync<LoreDefinitionDto>();
+        LoreDefinitionDto? dto = await ctx.ReadJsonBodyAsync<LoreDefinitionDto>();
         if (dto == null)
         {
             return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required"));
@@ -174,8 +174,8 @@ public class LoreController
     {
         string loreId = ctx.GetRouteValue("loreId");
 
-        using var context = ResolveContext();
-        var existing = await context.CodexLoreDefinitions.FindAsync(loreId);
+        using PwEngineContext context = ResolveContext();
+        PersistedLoreDefinition? existing = await context.CodexLoreDefinitions.FindAsync(loreId);
 
         if (existing == null)
         {
@@ -215,8 +215,8 @@ public class LoreController
 
     private static PwEngineContext ResolveContext()
     {
-        var factory = AnvilCore.GetService<PwContextFactory>()
-                      ?? throw new InvalidOperationException("PwContextFactory service not available");
+        PwContextFactory factory = AnvilCore.GetService<PwContextFactory>()
+                                   ?? throw new InvalidOperationException("PwContextFactory service not available");
         return factory.CreateDbContext();
     }
 

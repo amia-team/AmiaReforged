@@ -92,7 +92,7 @@ public class TraitDefinitionMapper
 
     private static string SerializeEffects(List<TraitEffect> effects)
     {
-        var dtos = effects.Select(e => new TraitEffectDto
+        List<TraitEffectDto> dtos = effects.Select(e => new TraitEffectDto
         {
             EffectType = (int)e.EffectType,
             Target = e.Target,
@@ -108,7 +108,7 @@ public class TraitDefinitionMapper
         if (string.IsNullOrWhiteSpace(json)) return [];
         try
         {
-            var dtos = JsonSerializer.Deserialize<List<TraitEffectDto>>(json, JsonOptions) ?? [];
+            List<TraitEffectDto> dtos = JsonSerializer.Deserialize<List<TraitEffectDto>>(json, JsonOptions) ?? [];
             return dtos.Select(d => new TraitEffect
             {
                 EffectType = Enum.IsDefined(typeof(TraitEffectType), d.EffectType) 

@@ -101,7 +101,7 @@ public class GlyphInterpreter
             {
                 // No outgoing edge — this branch terminates.
                 // Check if there's a frame on the stack to resume.
-                var resume = await TryResumeFromStack(stack, context);
+                (Guid nodeId, string pinId)? resume = await TryResumeFromStack(stack, context);
                 if (resume == null) return; // Stack empty — execution complete
                 (currentNodeId, currentPinId) = resume.Value;
                 continue;
@@ -112,7 +112,7 @@ public class GlyphInterpreter
             if (targetNode == null)
             {
                 Log.Warn("Glyph edge targets non-existent node {NodeId}.", edge.TargetNodeId);
-                var resume = await TryResumeFromStack(stack, context);
+                (Guid nodeId, string pinId)? resume = await TryResumeFromStack(stack, context);
                 if (resume == null) return;
                 (currentNodeId, currentPinId) = resume.Value;
                 continue;
@@ -124,7 +124,7 @@ public class GlyphInterpreter
             if (result.NextExecPinId == null)
             {
                 // Node terminates this branch — check stack
-                var resume = await TryResumeFromStack(stack, context);
+                (Guid nodeId, string pinId)? resume = await TryResumeFromStack(stack, context);
                 if (resume == null) return;
                 (currentNodeId, currentPinId) = resume.Value;
                 continue;

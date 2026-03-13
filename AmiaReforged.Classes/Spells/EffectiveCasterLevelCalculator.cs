@@ -90,7 +90,7 @@ public static class EffectiveCasterLevelCalculator
         // If no prestige classes, just return base class levels for caster classes
         if (prestigeClasses.Count == 0)
         {
-            foreach (var kvp in classLevels)
+            foreach (KeyValuePair<ClassType, int> kvp in classLevels)
             {
                 if (TrueBaseCasterClasses.Contains(kvp.Key))
                 {
@@ -147,7 +147,7 @@ public static class EffectiveCasterLevelCalculator
             }
             else
             {
-                var existing = targetClassData[targetClass.Value];
+                (int baseLevel, int totalPrcLevels) existing = targetClassData[targetClass.Value];
                 targetClassData[targetClass.Value] = (existing.baseLevel, existing.totalPrcLevels + prcLevel);
             }
         }
@@ -162,7 +162,7 @@ public static class EffectiveCasterLevelCalculator
         }
 
         // Also include base caster classes without prestige bonuses (at their actual level)
-        foreach (var kvp in classLevels)
+        foreach (KeyValuePair<ClassType, int> kvp in classLevels)
         {
             if (TrueBaseCasterClasses.Contains(kvp.Key) && !result.ContainsKey(kvp.Key))
             {
@@ -178,7 +178,7 @@ public static class EffectiveCasterLevelCalculator
     /// </summary>
     public static int GetHighestEffectiveCasterLevel(NwCreature creature)
     {
-        var allLevels = CalculateAllEffectiveCasterLevels(creature);
+        Dictionary<ClassType, int> allLevels = CalculateAllEffectiveCasterLevels(creature);
         return allLevels.Count > 0 ? allLevels.Values.Max() : 0;
     }
 
@@ -188,7 +188,7 @@ public static class EffectiveCasterLevelCalculator
     /// </summary>
     public static int GetEffectiveCasterLevelForClass(NwCreature creature, ClassType classType)
     {
-        var allLevels = CalculateAllEffectiveCasterLevels(creature);
+        Dictionary<ClassType, int> allLevels = CalculateAllEffectiveCasterLevels(creature);
         return allLevels.TryGetValue(classType, out int level) ? level : 0;
     }
 
@@ -208,7 +208,7 @@ public static class EffectiveCasterLevelCalculator
     /// Gets the set of valid base classes for a prestige class.
     /// </summary>
     public static HashSet<ClassType>? GetValidBaseClassesForPrestige(ClassType prestigeClass) =>
-        PrestigeToBaseCasterMap.TryGetValue(prestigeClass, out var result) ? result : null;
+        PrestigeToBaseCasterMap.TryGetValue(prestigeClass, out HashSet<ClassType>? result) ? result : null;
 
     /// <summary>
     /// Gets all prestige classes that contribute to CL stacking.

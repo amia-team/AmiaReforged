@@ -250,7 +250,7 @@ public class LanguageCheckerModel
             // Get Bard class level - iterate through classes to find Bard
             int bardLevel = 0;
 
-            foreach (var classInfo in _selectedCharacter.Classes)
+            foreach (CreatureClassInfo classInfo in _selectedCharacter.Classes)
             {
                 string className = classInfo.Class.Name.ToString();
 
@@ -282,7 +282,7 @@ public class LanguageCheckerModel
             // Dragon Disciple: Draconic is automatic if 10+ levels
             int dragonDiscipleLevel = 0;
 
-            foreach (var classInfo in _selectedCharacter.Classes)
+            foreach (CreatureClassInfo classInfo in _selectedCharacter.Classes)
             {
                 string className = classInfo.Class.Name.ToString();
 

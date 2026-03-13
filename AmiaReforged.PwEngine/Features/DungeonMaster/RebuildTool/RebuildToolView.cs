@@ -961,7 +961,7 @@ public sealed class RebuildToolView : ScryView<RebuildToolPresenter>, IDmWindow
         // Build rows for each feat
         List<NuiElement> featRows = new();
 
-        foreach (var feat in feats)
+        foreach ((int id, string name) feat in feats)
         {
             featRows.Add(new NuiRow
             {

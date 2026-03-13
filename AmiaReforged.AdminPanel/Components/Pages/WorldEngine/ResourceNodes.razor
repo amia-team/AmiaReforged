@@ -3,6 +3,7 @@
 @using AmiaReforged.AdminPanel.Models
 @using AmiaReforged.AdminPanel.Services
 @using System.IO.Compression
+@using System.Text.Json
 @attribute [Authorize]
 @inject ResourceNodeApiService Api
 @inject IWorldEngineEndpointService EndpointService
@@ -21,7 +22,7 @@
                     <label class="instance-label">Server:</label>
                     <select class="form-control form-control-sm" value="@(_selectedEndpoint?.Id.ToString() ?? "")" @onchange="OnEndpointChanged">
                         <option value="">— Select —</option>
-                        @foreach (var ep in _endpoints)
+                        @foreach (WorldEngineEndpoint ep in _endpoints)
                         {
                             <option value="@ep.Id">@ep.Name</option>
                         }
@@ -117,7 +118,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var node in _nodes)
+                        @foreach (ResourceNodeDefinitionDto node in _nodes)
                         {
                             <tr>
                                 <td style="font-family:monospace;font-size:0.9rem">@node.Tag</td>
@@ -256,7 +257,7 @@
                             <tbody>
                                 @for (int i = 0; i < _editOutputs.Count; i++)
                                 {
-                                    var idx = i;
+                                    int idx = i;
                                     <tr>
                                         <td><input class="form-control form-control-sm" @bind="_editOutputs[idx].ItemDefinitionTag" /></td>
                                         <td><input class="form-control form-control-sm" type="number" @bind="_editOutputs[idx].Quantity" /></td>
@@ -346,7 +347,7 @@
                     @if (_importResult.Errors.Count > 0)
                     {
                         <ul style="margin-top:8px;margin-bottom:0">
-                            @foreach (var err in _importResult.Errors.Take(10))
+                            @foreach (string err in _importResult.Errors.Take(10))
                             {
                                 <li style="font-size:0.85rem">@err</li>
                             }
@@ -442,7 +443,7 @@
 
     private async Task RefreshEndpoints()
     {
-        var all = await EndpointService.GetAllEndpointsAsync();
+        IReadOnlyList<WorldEngineEndpoint> all = await EndpointService.GetAllEndpointsAsync();
         _endpoints = all.Where(e => e.IsEnabled).ToList();
 
         if (_selectedEndpoint != null && !_endpoints.Any(e => e.Id == _selectedEndpoint.Id))
@@ -453,7 +454,7 @@
 
     private async Task OnEndpointChanged(ChangeEventArgs e)
     {
-        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        if (Guid.TryParse(e.Value?.ToString(), out Guid id))
         {
             _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
             Api.SelectEndpoint(id);
@@ -479,7 +480,7 @@
 
         try
         {
-            var result = await Api.GetAllAsync(
+            PagedResult<ResourceNodeDefinitionDto> result = await Api.GetAllAsync(
                 _searchTerm,
                 string.IsNullOrEmpty(_typeFilter) ? null : _typeFilter,
                 _page,
@@ -623,7 +624,7 @@
     {
         try
         {
-            foreach (var file in e.GetMultipleFiles(100))
+            foreach (IBrowserFile file in e.GetMultipleFiles(100))
             {
                 if (file.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
                 {
@@ -648,22 +649,22 @@
 
     private async Task ProcessJsonFileNodes(IBrowserFile file)
     {
-        using var reader = new StreamReader(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
+        using StreamReader reader = new StreamReader(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
         string content = await reader.ReadToEndAsync();
         ParseJsonNodes(content);
     }
 
     private async Task ProcessZipNodes(IBrowserFile file)
     {
-        using var ms = new MemoryStream();
+        using MemoryStream ms = new MemoryStream();
         await file.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024).CopyToAsync(ms);
         ms.Position = 0;
-        using var archive = new ZipArchive(ms, ZipArchiveMode.Read);
-        foreach (var entry in archive.Entries)
+        using ZipArchive archive = new ZipArchive(ms, ZipArchiveMode.Read);
+        foreach (ZipArchiveEntry entry in archive.Entries)
         {
             if (!entry.FullName.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) continue;
-            using var entryStream = entry.Open();
-            using var reader = new StreamReader(entryStream);
+            using Stream entryStream = entry.Open();
+            using StreamReader reader = new StreamReader(entryStream);
             string content = await reader.ReadToEndAsync();
             ParseJsonNodes(content);
         }
@@ -671,10 +672,10 @@
 
     private void ParseJsonNodes(string content)
     {
-        using var doc = System.Text.Json.JsonDocument.Parse(content);
+        using JsonDocument doc = System.Text.Json.JsonDocument.Parse(content);
         if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
         {
-            foreach (var node in doc.RootElement.EnumerateArray())
+            foreach (JsonElement node in doc.RootElement.EnumerateArray())
             {
                 _importedNodes.Add(node.Clone());
             }

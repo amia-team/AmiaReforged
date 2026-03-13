@@ -97,7 +97,7 @@ public class DiscordNotificationService : IDiscordNotificationService
             };
 
             string json = JsonSerializer.Serialize(payload);
-            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+            using StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
 
             HttpResponseMessage response = await _httpClient.PostAsync(webhookUrl, content, cancellationToken);
 

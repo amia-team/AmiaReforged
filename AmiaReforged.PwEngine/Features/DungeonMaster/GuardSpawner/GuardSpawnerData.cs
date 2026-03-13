@@ -331,7 +331,7 @@ public static class GuardSpawnerData
     /// </summary>
     public static List<GuardCreature> GetCreaturesForSettlement(string settlementName)
     {
-        return CreaturesBySettlement.TryGetValue(settlementName, out var creatures)
+        return CreaturesBySettlement.TryGetValue(settlementName, out List<GuardCreature>? creatures)
             ? creatures
             : [];
     }

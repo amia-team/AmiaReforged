@@ -18,7 +18,7 @@ public class BeforeGroupSpawnEventExecutor : IGlyphNodeExecutor
         Func<string, Task<object?>> resolveInput)
     {
         // Expose encounter data as output values for downstream nodes to consume
-        var outputs = new Dictionary<string, object?>
+        Dictionary<string, object?> outputs = new Dictionary<string, object?>
         {
             ["party_size"] = context.EncounterContext!.PartySize,
             ["area_resref"] = context.EncounterContext.AreaResRef,

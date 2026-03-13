@@ -31,7 +31,7 @@ public class GlyphInteractionHookServiceTests
         _repository = new InMemoryGlyphRepository();
 
         // GlyphBootstrap registers all node definitions & creates the interpreter
-        var registry = new GlyphNodeDefinitionRegistry();
+        GlyphNodeDefinitionRegistry registry = new GlyphNodeDefinitionRegistry();
         _bootstrap = new GlyphBootstrap(registry);
     }
 
@@ -46,7 +46,7 @@ public class GlyphInteractionHookServiceTests
         CreateHookService();
 
         // When
-        var (shouldBlock, message) = _hookService.RunOnInteractionAttempted(
+        (bool shouldBlock, string? message) = _hookService.RunOnInteractionAttempted(
             interactionTag: "prospecting",
             characterId: Guid.NewGuid().ToString(),
             targetId: Guid.NewGuid(),
@@ -69,7 +69,7 @@ public class GlyphInteractionHookServiceTests
         CreateHookService();
 
         // When
-        var (shouldBlock, message) = _hookService.RunOnInteractionAttempted(
+        (bool shouldBlock, string? message) = _hookService.RunOnInteractionAttempted(
             interactionTag: "prospecting",
             characterId: Guid.NewGuid().ToString(),
             targetId: Guid.NewGuid(),
@@ -92,7 +92,7 @@ public class GlyphInteractionHookServiceTests
         CreateHookService();
 
         // When
-        var (shouldBlock, _) = _hookService.RunOnInteractionAttempted(
+        (bool shouldBlock, _) = _hookService.RunOnInteractionAttempted(
             interactionTag: "prospecting",
             characterId: Guid.NewGuid().ToString(),
             targetId: Guid.NewGuid(),
@@ -116,7 +116,7 @@ public class GlyphInteractionHookServiceTests
         CreateHookService();
 
         // When
-        var (shouldCancel, message) = _hookService.RunOnInteractionTick(
+        (bool shouldCancel, string? message) = _hookService.RunOnInteractionTick(
             interactionTag: "prospecting",
             characterId: Guid.NewGuid().ToString(),
             targetId: Guid.NewGuid(),
@@ -139,7 +139,7 @@ public class GlyphInteractionHookServiceTests
         CreateHookService();
 
         // When
-        var (shouldCancel, _) = _hookService.RunOnInteractionTick(
+        (bool shouldCancel, _) = _hookService.RunOnInteractionTick(
             interactionTag: "prospecting",
             characterId: Guid.NewGuid().ToString(),
             targetId: Guid.NewGuid(),
@@ -165,7 +165,7 @@ public class GlyphInteractionHookServiceTests
         CreateHookService();
 
         // When: attempting from a specific area
-        var (shouldBlock, message) = _hookService.RunOnInteractionAttempted(
+        (bool shouldBlock, string? message) = _hookService.RunOnInteractionAttempted(
             interactionTag: "prospecting",
             characterId: Guid.NewGuid().ToString(),
             targetId: Guid.NewGuid(),
@@ -188,7 +188,7 @@ public class GlyphInteractionHookServiceTests
         CreateHookService();
 
         // When: attempting from the correct area
-        var (shouldBlock, _) = _hookService.RunOnInteractionAttempted(
+        (bool shouldBlock, _) = _hookService.RunOnInteractionAttempted(
             interactionTag: "prospecting",
             characterId: Guid.NewGuid().ToString(),
             targetId: Guid.NewGuid(),
@@ -210,7 +210,7 @@ public class GlyphInteractionHookServiceTests
         CreateHookService();
 
         // When: attempting from a different area
-        var (shouldBlock, _) = _hookService.RunOnInteractionAttempted(
+        (bool shouldBlock, _) = _hookService.RunOnInteractionAttempted(
             interactionTag: "prospecting",
             characterId: Guid.NewGuid().ToString(),
             targetId: Guid.NewGuid(),
@@ -301,7 +301,7 @@ public class GlyphInteractionHookServiceTests
         // Given: initially empty
         CreateHookService();
 
-        var (shouldBlock, _) = _hookService.RunOnInteractionAttempted(
+        (bool shouldBlock, _) = _hookService.RunOnInteractionAttempted(
             "prospecting", Guid.NewGuid().ToString(), Guid.NewGuid(),
             "Node", null, null, null);
         shouldBlock.Should().BeFalse("no bindings initially");
@@ -312,7 +312,7 @@ public class GlyphInteractionHookServiceTests
         await _hookService.RefreshCacheAsync();
 
         // Then
-        var (shouldBlockNow, message) = _hookService.RunOnInteractionAttempted(
+        (bool shouldBlockNow, string? message) = _hookService.RunOnInteractionAttempted(
             "prospecting", Guid.NewGuid().ToString(), Guid.NewGuid(),
             "Node", null, null, null);
         shouldBlockNow.Should().BeTrue();
@@ -328,7 +328,7 @@ public class GlyphInteractionHookServiceTests
         CreateHookService();
 
         // When
-        var (shouldBlock, _) = _hookService.RunOnInteractionAttempted(
+        (bool shouldBlock, _) = _hookService.RunOnInteractionAttempted(
             "prospecting", Guid.NewGuid().ToString(), Guid.NewGuid(),
             "Node", null, null, null);
 

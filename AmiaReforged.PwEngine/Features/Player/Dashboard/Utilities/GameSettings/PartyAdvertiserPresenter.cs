@@ -310,9 +310,9 @@ public sealed class PartyAdvertiserPresenter : ScryPresenter<PartyAdvertiserView
         List<string> classShorts = new();
 
         // Get the classes 2da table
-        var classesTable = NwGameTables.GetTable("classes");
+        TwoDimArray? classesTable = NwGameTables.GetTable("classes");
 
-        foreach (var classInfo in creature.Classes)
+        foreach (CreatureClassInfo classInfo in creature.Classes)
         {
             if (classInfo.Level > 0)
             {

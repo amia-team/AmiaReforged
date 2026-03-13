@@ -40,7 +40,7 @@ public static class ResourceNodeMapper
 
     public static ResourceNodeDefinition ToDomain(PersistedResourceNodeDefinition entity)
     {
-        Enum.TryParse<ResourceType>(entity.Type, true, out var resourceType);
+        Enum.TryParse<ResourceType>(entity.Type, true, out ResourceType resourceType);
 
         HarvestContext requirement = JsonSerializer.Deserialize<HarvestContext>(entity.RequirementJson, JsonOptions)
                                      ?? new HarvestContext(JobSystemItemType.None);

@@ -18,12 +18,12 @@ public class ContainerLogHub : Hub
 
     public async IAsyncEnumerable<string> StreamLogs(string containerId, int tail = 100)
     {
-        var connectionId = Context.ConnectionId;
+        string connectionId = Context.ConnectionId;
         _logger.LogInformation("Client {ConnectionId} started streaming logs for {ContainerId}", connectionId, containerId);
 
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(Context.ConnectionAborted);
+        CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(Context.ConnectionAborted);
 
-        await foreach (var line in _docker.StreamLogsAsync(containerId, follow: true, tail: tail, ct: cts.Token))
+        await foreach (string line in _docker.StreamLogsAsync(containerId, follow: true, tail: tail, ct: cts.Token))
         {
             yield return line;
         }

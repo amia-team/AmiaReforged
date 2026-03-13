@@ -985,7 +985,7 @@ internal sealed class JobResourceManagerModel
             itemsByResref[item.ResRef].Add(item);
         }
 
-        foreach (var kvp in itemsByResref)
+        foreach (KeyValuePair<string, List<NwItem>> kvp in itemsByResref)
         {
             string resref = kvp.Key;
             List<NwItem> items = kvp.Value;

@@ -1,0 +1,627 @@
+@page "/worldengine/recipe-templates"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using AmiaReforged.AdminPanel.Models
+@using AmiaReforged.AdminPanel.Services
+@inject RecipeTemplateApiService TemplateApi
+@inject IndustryApiService IndustryApi
+@inject IWorldEngineEndpointService EndpointService
+@inject ILogger<RecipeTemplates> Logger
+
+<PageTitle>Recipe Templates</PageTitle>
+<h3>Recipe Templates</h3>
+
+@* ==================== Endpoint Selector ==================== *@
+<div class="mb-3">
+    <label class="form-label fw-bold">WorldEngine Endpoint</label>
+    <select class="form-select" value="@_selectedEndpointId" @onchange="OnEndpointChanged">
+        <option value="">— select endpoint —</option>
+        @foreach (WorldEngineEndpoint ep in _endpoints)
+        {
+            <option value="@ep.Id">@ep.Name (@ep.BaseUrl)</option>
+        }
+    </select>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger alert-dismissible">
+        @_error
+        <button type="button" class="btn-close" @onclick="() => _error = null"></button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(_success))
+{
+    <div class="alert alert-success alert-dismissible">
+        @_success
+        <button type="button" class="btn-close" @onclick="() => _success = null"></button>
+    </div>
+}
+
+@if (_selectedEndpointId == null)
+{
+    <div class="text-muted">Select an endpoint to manage recipe templates.</div>
+}
+else
+{
+    @* ==================== Search + Actions ==================== *@
+    <div class="row mb-3 align-items-end">
+        <div class="col-md-6">
+            <input class="form-control" placeholder="Search templates..." @bind="_searchText" @bind:event="oninput"
+                   @onkeyup="OnSearchKeyUp" />
+        </div>
+        <div class="col-md-6 text-end">
+            <button class="btn btn-primary me-2" @onclick="StartCreate">
+                <span class="bi bi-plus-circle"></span> New Template
+            </button>
+            <button class="btn btn-outline-secondary" @onclick="InvalidateCache">
+                <span class="bi bi-arrow-clockwise"></span> Invalidate Cache
+            </button>
+        </div>
+    </div>
+
+    @* ==================== Template List ==================== *@
+    @if (_loading)
+    {
+        <div class="text-center py-4"><div class="spinner-border"></div></div>
+    }
+    else if (_templates.Items.Count == 0)
+    {
+        <div class="text-muted">No recipe templates found.</div>
+    }
+    else
+    {
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Tag</th>
+                    <th>Name</th>
+                    <th>Industry</th>
+                    <th>Ingredients</th>
+                    <th>Products</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (RecipeTemplateDefinitionDto t in _templates.Items)
+                {
+                    <tr>
+                        <td><code>@t.Tag</code></td>
+                        <td>@t.Name</td>
+                        <td>@t.IndustryTag</td>
+                        <td>@t.Ingredients.Count</td>
+                        <td>@t.Products.Count</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => StartEdit(t.Tag)">
+                                <span class="bi bi-pencil"></span>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(t)">
+                                <span class="bi bi-trash"></span>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @* Pagination *@
+        @if (TotalPages > 1)
+        {
+            <nav>
+                <ul class="pagination justify-content-center">
+                    @for (int i = 1; i <= TotalPages; i++)
+                    {
+                        int pageNum = i;
+                        <li class="page-item @(pageNum == _templates.Page ? "active" : "")">
+                            <button class="page-link" @onclick="() => LoadPage(pageNum)">@(pageNum)</button>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
+    }
+}
+
+@* ==================== Create / Edit Modal ==================== *@
+@if (_showEditor)
+{
+    <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5)">
+        <div class="modal-dialog modal-xl" @onclick:stopPropagation="true">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_isCreating ? "Create Recipe Template" : $"Edit: {_editModel.Tag}")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseEditor"></button>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(_editorError))
+                    {
+                        <div class="alert alert-danger">@_editorError</div>
+                    }
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Tag</label>
+                            <input class="form-control" @bind="_editModel.Tag" disabled="@(!_isCreating)" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Name</label>
+                            <input class="form-control" @bind="_editModel.Name" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Industry Tag</label>
+                            <input class="form-control" @bind="_editModel.IndustryTag" />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" rows="2" @bind="_editModel.Description"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Required Proficiency</label>
+                            <input class="form-control" @bind="_editModel.RequiredProficiency" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Crafting Time (s)</label>
+                            <input type="number" class="form-control" @bind="_editModel.CraftingTimeSeconds" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Knowledge Points</label>
+                            <input type="number" class="form-control" @bind="_editModel.KnowledgePointsAwarded" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Required Workstation</label>
+                            <input class="form-control" @bind="_editModel.RequiredWorkstation" />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Process ID</label>
+                            <input class="form-control" @bind="_editModel.ProcessId" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Required Knowledge (comma-separated)</label>
+                            <input class="form-control" @bind="_requiredKnowledgeText" />
+                        </div>
+                    </div>
+
+                    @* ========== Ingredients ========== *@
+                    <h6 class="mt-4">
+                        Ingredients
+                        <button class="btn btn-sm btn-outline-success ms-2" @onclick="AddIngredient">
+                            <span class="bi bi-plus"></span>
+                        </button>
+                    </h6>
+                    @for (int i = 0; i < _editModel.Ingredients.Count; i++)
+                    {
+                        int idx = i;
+                        TemplateIngredientDto ing = _editModel.Ingredients[idx];
+                        <div class="card mb-2">
+                            <div class="card-body py-2">
+                                <div class="row align-items-end">
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Category</label>
+                                        <select class="form-select form-select-sm" @bind="ing.RequiredCategory">
+                                            @foreach (EnumOptionDto cat in _materialCategories)
+                                            {
+                                                <option value="@cat.Value">@cat.Label</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Form</label>
+                                        <select class="form-select form-select-sm" @bind="ing.RequiredForm">
+                                            @foreach (EnumOptionDto form in _itemForms)
+                                            {
+                                                <option value="@form.Value">@form.Label</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-1">
+                                        <label class="form-label small">Qty</label>
+                                        <input type="number" class="form-control form-control-sm" @bind="ing.Quantity" />
+                                    </div>
+                                    <div class="col-md-1">
+                                        <label class="form-label small">MinQ</label>
+                                        <input type="number" class="form-control form-control-sm" @bind="ing.MinQuality" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Slot</label>
+                                        <input type="number" class="form-control form-control-sm" @bind="ing.SlotIndex" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="form-check mt-4">
+                                            <input type="checkbox" class="form-check-input" @bind="ing.IsConsumed" />
+                                            <label class="form-check-label small">Consumed</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2 text-end">
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveIngredient(idx)">
+                                            <span class="bi bi-x"></span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @* ========== Products ========== *@
+                    <h6 class="mt-4">
+                        Products
+                        <button class="btn btn-sm btn-outline-success ms-2" @onclick="AddProduct">
+                            <span class="bi bi-plus"></span>
+                        </button>
+                    </h6>
+                    @for (int i = 0; i < _editModel.Products.Count; i++)
+                    {
+                        int idx = i;
+                        TemplateProductDto prod = _editModel.Products[idx];
+                        <div class="card mb-2">
+                            <div class="card-body py-2">
+                                <div class="row align-items-end">
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Output Form</label>
+                                        <select class="form-select form-select-sm" @bind="prod.OutputForm">
+                                            @foreach (EnumOptionDto form in _itemForms)
+                                            {
+                                                <option value="@form.Value">@form.Label</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Material Source Slot</label>
+                                        <input type="number" class="form-control form-control-sm" @bind="prod.MaterialSourceSlot" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Qty</label>
+                                        <input type="number" class="form-control form-control-sm" @bind="prod.Quantity" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Quality</label>
+                                        <input type="number" class="form-control form-control-sm" @bind="prod.Quality" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Success %</label>
+                                        <input type="number" step="0.01" class="form-control form-control-sm" @bind="prod.SuccessChance" />
+                                    </div>
+                                    <div class="col-md-2 text-end">
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveProduct(idx)">
+                                            <span class="bi bi-x"></span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseEditor">Cancel</button>
+                    <button class="btn btn-primary" @onclick="SaveTemplate" disabled="@_saving">
+                        @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        @(_isCreating ? "Create" : "Save Changes")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ==================== Delete Confirmation Modal ==================== *@
+@if (_showDeleteConfirm)
+{
+    <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5)">
+        <div class="modal-dialog" @onclick:stopPropagation="true">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Delete</h5>
+                    <button type="button" class="btn-close" @onclick="() => _showDeleteConfirm = false"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete template <strong>@_deleteTarget?.Tag</strong>?
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => _showDeleteConfirm = false">Cancel</button>
+                    <button class="btn btn-danger" @onclick="ExecuteDelete">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    // ==================== State ====================
+    private IReadOnlyList<WorldEngineEndpoint> _endpoints = [];
+    private Guid? _selectedEndpointId;
+
+    private PagedResult<RecipeTemplateDefinitionDto> _templates = new();
+    private string? _searchText;
+    private bool _loading;
+    private string? _error;
+    private string? _success;
+
+    private int TotalPages => _templates.PageSize > 0
+        ? (int)Math.Ceiling((double)_templates.TotalCount / _templates.PageSize)
+        : 1;
+
+    // Editor state
+    private bool _showEditor;
+    private bool _isCreating;
+    private bool _saving;
+    private string? _editorError;
+    private RecipeTemplateDefinitionDto _editModel = new();
+    private string _requiredKnowledgeText = string.Empty;
+    private string? _originalTag;
+
+    // Delete state
+    private bool _showDeleteConfirm;
+    private RecipeTemplateDefinitionDto? _deleteTarget;
+
+    // Enum options loaded from API
+    private List<EnumOptionDto> _materialCategories = [];
+    private List<EnumOptionDto> _itemForms = [];
+
+    // ==================== Lifecycle ====================
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _endpoints = await EndpointService.GetAllEndpointsAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load endpoints");
+            _error = "Failed to load endpoints.";
+        }
+    }
+
+    // ==================== Endpoint Selection ====================
+
+    private async Task OnEndpointChanged(ChangeEventArgs e)
+    {
+        _error = null;
+        _success = null;
+
+        if (Guid.TryParse(e.Value?.ToString(), out Guid id))
+        {
+            _selectedEndpointId = id;
+            TemplateApi.SelectEndpoint(id);
+            IndustryApi.SelectEndpoint(id);
+            await LoadEnums();
+            await LoadTemplates();
+        }
+        else
+        {
+            _selectedEndpointId = null;
+            _templates = new();
+        }
+    }
+
+    // ==================== Data Loading ====================
+
+    private async Task LoadEnums()
+    {
+        try
+        {
+            RecipeTemplateEnumsDto? enums = await TemplateApi.GetEnumsAsync();
+            if (enums != null)
+            {
+                _materialCategories = enums.MaterialCategories;
+                _itemForms = enums.ItemForms;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load enums");
+        }
+    }
+
+    private async Task LoadTemplates()
+    {
+        _loading = true;
+        StateHasChanged();
+
+        try
+        {
+            _templates = await TemplateApi.GetAllAsync(_searchText);
+        }
+        catch (WorldEngineApiException ex)
+        {
+            _error = $"API error ({ex.StatusCode}): {ex.Detail ?? ex.Message}";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load templates");
+            _error = "Failed to load recipe templates.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadPage(int page)
+    {
+        _loading = true;
+        StateHasChanged();
+
+        try
+        {
+            _templates = await TemplateApi.GetAllAsync(_searchText, page);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load page: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OnSearchKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await LoadTemplates();
+        }
+    }
+
+    // ==================== CRUD ====================
+
+    private void StartCreate()
+    {
+        _editModel = new RecipeTemplateDefinitionDto();
+        _requiredKnowledgeText = string.Empty;
+        _originalTag = null;
+        _isCreating = true;
+        _editorError = null;
+        _showEditor = true;
+    }
+
+    private async Task StartEdit(string tag)
+    {
+        _editorError = null;
+        try
+        {
+            RecipeTemplateDefinitionDto? template = await TemplateApi.GetByTagAsync(tag);
+            if (template == null)
+            {
+                _error = $"Template '{tag}' not found.";
+                return;
+            }
+
+            _editModel = template;
+            _requiredKnowledgeText = string.Join(", ", template.RequiredKnowledge);
+            _originalTag = tag;
+            _isCreating = false;
+            _showEditor = true;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load template: {ex.Message}";
+        }
+    }
+
+    private async Task SaveTemplate()
+    {
+        _saving = true;
+        _editorError = null;
+        StateHasChanged();
+
+        try
+        {
+            // Parse required knowledge from comma-separated text
+            _editModel.RequiredKnowledge = _requiredKnowledgeText
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+
+            if (_isCreating)
+            {
+                await TemplateApi.CreateAsync(_editModel);
+                _success = $"Template '{_editModel.Tag}' created.";
+            }
+            else
+            {
+                await TemplateApi.UpdateAsync(_originalTag!, _editModel);
+                _success = $"Template '{_editModel.Tag}' updated.";
+            }
+
+            _showEditor = false;
+            await LoadTemplates();
+        }
+        catch (WorldEngineApiException ex)
+        {
+            _editorError = $"API error ({ex.StatusCode}): {ex.Detail ?? ex.Message}";
+        }
+        catch (Exception ex)
+        {
+            _editorError = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void ConfirmDelete(RecipeTemplateDefinitionDto template)
+    {
+        _deleteTarget = template;
+        _showDeleteConfirm = true;
+    }
+
+    private async Task ExecuteDelete()
+    {
+        _showDeleteConfirm = false;
+
+        try
+        {
+            await TemplateApi.DeleteAsync(_deleteTarget!.Tag);
+            _success = $"Template '{_deleteTarget.Tag}' deleted.";
+            await LoadTemplates();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Delete failed: {ex.Message}";
+        }
+    }
+
+    private async Task InvalidateCache()
+    {
+        try
+        {
+            await TemplateApi.InvalidateCacheAsync();
+            _success = "Recipe template expansion cache invalidated.";
+        }
+        catch (Exception ex)
+        {
+            _error = $"Cache invalidation failed: {ex.Message}";
+        }
+    }
+
+    // ==================== Ingredient / Product Management ====================
+
+    private void AddIngredient()
+    {
+        _editModel.Ingredients.Add(new TemplateIngredientDto
+        {
+            SlotIndex = _editModel.Ingredients.Count,
+            Quantity = 1,
+            IsConsumed = true
+        });
+    }
+
+    private void RemoveIngredient(int index)
+    {
+        if (index >= 0 && index < _editModel.Ingredients.Count)
+            _editModel.Ingredients.RemoveAt(index);
+    }
+
+    private void AddProduct()
+    {
+        _editModel.Products.Add(new TemplateProductDto
+        {
+            Quantity = 1,
+            MaterialSourceSlot = 0
+        });
+    }
+
+    private void RemoveProduct(int index)
+    {
+        if (index >= 0 && index < _editModel.Products.Count)
+            _editModel.Products.RemoveAt(index);
+    }
+
+    private void CloseEditor()
+    {
+        _showEditor = false;
+        _editorError = null;
+    }
+}

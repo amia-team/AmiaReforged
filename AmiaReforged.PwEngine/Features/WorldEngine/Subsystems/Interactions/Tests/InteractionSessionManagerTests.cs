@@ -151,7 +151,7 @@ public class InteractionSessionManagerTests
     public void StartSession_threads_metadata_and_area_to_session()
     {
         // Given metadata
-        var metadata = new Dictionary<string, object> { ["allowedTypes"] = "Ore" };
+        Dictionary<string, object> metadata = new Dictionary<string, object> { ["allowedTypes"] = "Ore" };
 
         // When a session is started with metadata
         InteractionSession session = _manager.StartSession(

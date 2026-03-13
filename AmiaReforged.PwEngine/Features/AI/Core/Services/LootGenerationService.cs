@@ -234,7 +234,7 @@ public class LootGenerationService : ILootGenerator
 
     private NwPlaceable? ProcessCreatureInventory(NwCreature creature, NwPlaceable? lootBag)
     {
-        foreach (var item in creature.Inventory.Items.ToList())
+        foreach (NwItem item in creature.Inventory.Items.ToList())
         {
             bool shouldDrop = item.Droppable || item.BaseItem.ItemType == BaseItemType.Book;
 

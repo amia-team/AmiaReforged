@@ -50,7 +50,7 @@ public sealed class TraitSubsystem : ITraitSubsystem
         if (existing.Any(ct2 => ct2.TraitTag == traitTag))
             return Task.FromResult(CommandResult.Fail($"Character already has trait '{trait.Name}'."));
 
-        var characterTrait = new DomainCharacterTrait
+        DomainCharacterTrait characterTrait = new DomainCharacterTrait
         {
             Id = Guid.NewGuid(),
             CharacterId = characterId,

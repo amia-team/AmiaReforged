@@ -20,7 +20,7 @@
                     <label class="instance-label">Server:</label>
                     <select class="form-control form-control-sm" value="@(_selectedEndpoint?.Id.ToString() ?? "")" @onchange="OnEndpointChanged">
                         <option value="">— Select —</option>
-                        @foreach (var ep in _endpoints)
+                        @foreach (WorldEngineEndpoint ep in _endpoints)
                         {
                             <option value="@ep.Id">@ep.Name</option>
                         }
@@ -103,7 +103,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var ch in _coinhouses)
+                        @foreach (CoinhouseDto ch in _coinhouses)
                         {
                             <tr>
                                 <td><strong style="color:var(--accent)">@ch.Tag</strong></td>
@@ -267,7 +267,7 @@
     private async Task OnEndpointChanged(ChangeEventArgs e)
     {
         string val = e.Value?.ToString() ?? "";
-        if (Guid.TryParse(val, out var id))
+        if (Guid.TryParse(val, out Guid id))
         {
             _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
             Api.SelectEndpoint(id);
@@ -287,7 +287,7 @@
         {
             _isLoading = true;
             _error = null;
-            var result = await Api.GetAllAsync(_searchTerm, _page, _pageSize);
+            PagedResult<CoinhouseDto> result = await Api.GetAllAsync(_searchTerm, _page, _pageSize);
             _coinhouses = result.Items;
             _totalCount = result.TotalCount;
         }
@@ -351,7 +351,7 @@
             // Parse EngineId
             if (!string.IsNullOrWhiteSpace(_editEngineIdText))
             {
-                if (Guid.TryParse(_editEngineIdText, out var engineId))
+                if (Guid.TryParse(_editEngineIdText, out Guid engineId))
                     _editCoinhouse.EngineId = engineId;
                 else
                 {

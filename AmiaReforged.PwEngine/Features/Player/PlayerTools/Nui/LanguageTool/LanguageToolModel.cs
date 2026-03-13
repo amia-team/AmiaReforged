@@ -263,7 +263,7 @@ public class LanguageToolModel
         {
             // Get Bard class level by iterating through classes
             int bardLevel = 0;
-            foreach (var classInfo in _character.Classes)
+            foreach (CreatureClassInfo classInfo in _character.Classes)
             {
                 string className = classInfo.Class.Name.ToString();
 

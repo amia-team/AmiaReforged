@@ -51,7 +51,7 @@ public class InteractionFrameworkTests
 
         // Create a test character
         _characterId = CharacterId.New();
-        var character = new TestCharacter(
+        TestCharacter character = new TestCharacter(
             new Dictionary<EquipmentSlots, ItemSnapshot>(),
             [],
             _characterId,
@@ -77,7 +77,7 @@ public class InteractionFrameworkTests
 
         // And an InteractionStartedEvent should be published
         _publishedEvents.OfType<InteractionStartedEvent>().Should().HaveCount(1);
-        var started = _publishedEvents.OfType<InteractionStartedEvent>().First();
+        InteractionStartedEvent started = _publishedEvents.OfType<InteractionStartedEvent>().First();
         started.CharacterId.Should().Be(_characterId.Value);
         started.InteractionTag.Should().Be("test_interaction");
         started.TargetId.Should().Be(targetId);
@@ -162,7 +162,7 @@ public class InteractionFrameworkTests
 
         // Then an InteractionCompletedEvent should be published
         _publishedEvents.OfType<InteractionCompletedEvent>().Should().HaveCount(1);
-        var completed = _publishedEvents.OfType<InteractionCompletedEvent>().First();
+        InteractionCompletedEvent completed = _publishedEvents.OfType<InteractionCompletedEvent>().First();
         completed.Success.Should().BeTrue();
         completed.InteractionTag.Should().Be("test_interaction");
     }
@@ -231,7 +231,7 @@ public class InteractionFrameworkTests
     {
         // Given a command with metadata
         _stubHandler.RequiredRoundsOverride = 3;
-        var metadata = new Dictionary<string, object> { ["allowedTypes"] = "Ore,Geode" };
+        Dictionary<string, object> metadata = new Dictionary<string, object> { ["allowedTypes"] = "Ore,Geode" };
         PerformInteractionCommand command = new(
             _characterId, "test_interaction", Guid.NewGuid(), "test_area", metadata);
 

@@ -79,7 +79,7 @@ public sealed class MonkPathPresenter(MonkPathView pathView, NwPlayer player) : 
 
     private void UpdateConfirmPath(PathType path)
     {
-        var pathData = Model.Get(path);
+        MonkPathModel.MonkPathData? pathData = Model.Get(path);
         if (pathData == null)
         {
             player.SendServerMessage("Could not find path data!");
@@ -101,7 +101,7 @@ public sealed class MonkPathPresenter(MonkPathView pathView, NwPlayer player) : 
             return;
         }
 
-        var pathData = Model.Get(selectedPath.Value);
+        MonkPathModel.MonkPathData? pathData = Model.Get(selectedPath.Value);
         if (pathData == null)
         {
             player.SendServerMessage("Could not find path data!");
@@ -134,7 +134,7 @@ public sealed class MonkPathPresenter(MonkPathView pathView, NwPlayer player) : 
             return;
         }
 
-        foreach (var path in Model.Paths)
+        foreach (MonkPathModel.MonkPathData path in Model.Paths)
         {
             NwFeat? feat = NwFeat.FromFeatId(path.FeatId);
             if (feat == null || !monkCharacter.KnowsFeat(feat)) continue;
