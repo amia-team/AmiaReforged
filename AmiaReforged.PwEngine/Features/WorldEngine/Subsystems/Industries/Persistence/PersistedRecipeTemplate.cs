@@ -33,11 +33,6 @@ public class PersistedRecipeTemplate
     public string RequiredKnowledgeJson { get; set; } = "[]";
 
     /// <summary>
-    /// Required proficiency level as a string enum name.
-    /// </summary>
-    public string RequiredProficiency { get; set; } = "Novice";
-
-    /// <summary>
     /// Template ingredient definitions, stored as JSONB.
     /// </summary>
     public string IngredientsJson { get; set; } = "[]";

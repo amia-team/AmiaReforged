@@ -34,10 +34,6 @@ public class PersistedRecipeTemplateConfiguration : IEntityTypeConfiguration<Per
             .HasColumnType("jsonb")
             .HasDefaultValue("[]");
 
-        builder.Property(e => e.RequiredProficiency)
-            .HasColumnName("required_proficiency")
-            .HasMaxLength(50);
-
         builder.Property(e => e.IngredientsJson)
             .HasColumnName("ingredients")
             .HasColumnType("jsonb")

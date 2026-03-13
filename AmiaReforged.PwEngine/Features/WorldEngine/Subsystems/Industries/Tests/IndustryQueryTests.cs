@@ -63,7 +63,6 @@ public class IndustryQueryTests
             Name = "Iron Sword",
             IndustryTag = new IndustryTag("blacksmithing"),
             RequiredKnowledge = ["basic_forging"],
-            RequiredProficiency = ProficiencyLevel.Novice,
             Ingredients =
             [
                 new Ingredient
@@ -91,7 +90,6 @@ public class IndustryQueryTests
             Name = "Steel Sword",
             IndustryTag = new IndustryTag("blacksmithing"),
             RequiredKnowledge = ["basic_forging", "advanced_forging"],
-            RequiredProficiency = ProficiencyLevel.Apprentice,
             Ingredients =
             [
                 new Ingredient

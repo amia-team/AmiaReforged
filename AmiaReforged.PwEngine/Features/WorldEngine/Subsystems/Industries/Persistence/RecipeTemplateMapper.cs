@@ -28,7 +28,6 @@ public static class RecipeTemplateMapper
             Description = template.Description,
             IndustryTag = template.IndustryTag.Value,
             RequiredKnowledgeJson = JsonSerializer.Serialize(template.RequiredKnowledge, JsonOptions),
-            RequiredProficiency = template.RequiredProficiency.ToString(),
             IngredientsJson = JsonSerializer.Serialize(
                 template.Ingredients.Select(ToIngredientDto).ToList(), JsonOptions),
             ProductsJson = JsonSerializer.Serialize(
@@ -50,8 +49,6 @@ public static class RecipeTemplateMapper
         List<TemplateProductJsonDto> productDtos = JsonSerializer.Deserialize<List<TemplateProductJsonDto>>(entity.ProductsJson, JsonOptions) ?? [];
         Dictionary<string, object> metadata = JsonSerializer.Deserialize<Dictionary<string, object>>(entity.MetadataJson, JsonOptions) ?? new();
 
-        Enum.TryParse<ProficiencyLevel>(entity.RequiredProficiency, true, out ProficiencyLevel proficiency);
-
         return new RecipeTemplate
         {
             Tag = entity.Tag,
@@ -59,7 +56,6 @@ public static class RecipeTemplateMapper
             Description = entity.Description,
             IndustryTag = new IndustryTag(entity.IndustryTag),
             RequiredKnowledge = knowledge,
-            RequiredProficiency = proficiency,
             Ingredients = ingredientDtos.Select(FromIngredientDto).ToList(),
             Products = productDtos.Select(FromProductDto).ToList(),
             CraftingTimeSeconds = entity.CraftingTimeSeconds,
@@ -78,7 +74,6 @@ public static class RecipeTemplateMapper
         entity.Description = template.Description;
         entity.IndustryTag = template.IndustryTag.Value;
         entity.RequiredKnowledgeJson = JsonSerializer.Serialize(template.RequiredKnowledge, JsonOptions);
-        entity.RequiredProficiency = template.RequiredProficiency.ToString();
         entity.IngredientsJson = JsonSerializer.Serialize(
             template.Ingredients.Select(ToIngredientDto).ToList(), JsonOptions);
         entity.ProductsJson = JsonSerializer.Serialize(

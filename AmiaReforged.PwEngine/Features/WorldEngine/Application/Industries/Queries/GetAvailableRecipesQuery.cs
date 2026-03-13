@@ -7,7 +7,7 @@ using Anvil.Services;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Queries;
 
 /// <summary>
-/// Query to get recipes a character can craft (has knowledge + proficiency)
+/// Query to get recipes a character can craft (has required knowledge)
 /// </summary>
 public record GetAvailableRecipesQuery : IQuery<List<Recipe>>
 {
@@ -55,8 +55,6 @@ public class GetAvailableRecipesHandler : IQueryHandler<GetAvailableRecipesQuery
 
         List<Recipe> availableRecipes = industry.Recipes
             .Where(recipe =>
-                // Character has sufficient proficiency
-                membership.Level >= recipe.RequiredProficiency &&
                 // Character has all required knowledge
                 recipe.RequiredKnowledge.All(req => knownTags.Contains(req)))
             .ToList();

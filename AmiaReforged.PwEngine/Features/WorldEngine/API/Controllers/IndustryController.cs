@@ -309,7 +309,6 @@ public class IndustryController
                 r.Description,
                 IndustryTag = r.IndustryTag.Value,
                 r.RequiredKnowledge,
-                RequiredProficiency = r.RequiredProficiency.ToString(),
                 Ingredients = r.Ingredients.Select(i => new
                 {
                     i.ItemTag,
@@ -373,7 +372,6 @@ public class IndustryController
             }).ToList() ?? [],
             Recipes = dto.Recipes?.Select(r =>
             {
-                Enum.TryParse<ProficiencyLevel>(r.RequiredProficiency, true, out ProficiencyLevel proficiency);
                 return new Recipe
                 {
                     RecipeId = new RecipeId(r.RecipeId ?? string.Empty),
@@ -381,7 +379,6 @@ public class IndustryController
                     Description = r.Description,
                     IndustryTag = new SharedKernel.IndustryTag(r.IndustryTag ?? dto.Tag),
                     RequiredKnowledge = r.RequiredKnowledge ?? [],
-                    RequiredProficiency = proficiency,
                     Ingredients = r.Ingredients?.Select(i => new Ingredient
                     {
                         ItemTag = i.ItemTag ?? string.Empty,
@@ -453,7 +450,6 @@ public class IndustryController
         public string? Description { get; init; }
         public string? IndustryTag { get; init; }
         public List<string>? RequiredKnowledge { get; init; }
-        public string? RequiredProficiency { get; init; }
         public IngredientDto[]? Ingredients { get; init; }
         public ProductDto[]? Products { get; init; }
         public int? CraftingTimeSeconds { get; init; }

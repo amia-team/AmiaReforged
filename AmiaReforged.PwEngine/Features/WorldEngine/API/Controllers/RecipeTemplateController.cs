@@ -297,7 +297,6 @@ public class RecipeTemplateController
             t.Description,
             IndustryTag = t.IndustryTag.Value,
             t.RequiredKnowledge,
-            RequiredProficiency = t.RequiredProficiency.ToString(),
             Ingredients = t.Ingredients.Select(i => new
             {
                 RequiredCategory = i.RequiredCategory.ToString(),
@@ -324,8 +323,6 @@ public class RecipeTemplateController
 
     private static RecipeTemplate FromDto(RecipeTemplateDto dto)
     {
-        Enum.TryParse<ProficiencyLevel>(dto.RequiredProficiency, true, out ProficiencyLevel proficiency);
-
         return new RecipeTemplate
         {
             Tag = dto.Tag,
@@ -333,7 +330,6 @@ public class RecipeTemplateController
             Description = dto.Description,
             IndustryTag = new IndustryTag(dto.IndustryTag),
             RequiredKnowledge = dto.RequiredKnowledge?.ToList() ?? [],
-            RequiredProficiency = proficiency,
             Ingredients = dto.Ingredients?.Select(i =>
             {
                 Enum.TryParse<MaterialCategory>(i.RequiredCategory, true, out MaterialCategory category);
@@ -379,7 +375,6 @@ public class RecipeTemplateController
         public string? Description { get; init; }
         public string IndustryTag { get; init; } = string.Empty;
         public List<string>? RequiredKnowledge { get; init; }
-        public string? RequiredProficiency { get; init; }
         public TemplateIngredientDto[]? Ingredients { get; init; }
         public TemplateProductDto[]? Products { get; init; }
         public int? CraftingTimeSeconds { get; init; }

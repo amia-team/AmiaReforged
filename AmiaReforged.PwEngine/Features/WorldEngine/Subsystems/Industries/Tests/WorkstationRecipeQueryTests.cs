@@ -71,7 +71,6 @@ public class WorkstationRecipeQueryTests
             RecipeId = new RecipeId("iron_sword"), Name = "Iron Sword",
             IndustryTag = new IndustryTag("blacksmithing"),
             RequiredKnowledge = ["basic_forging"],
-            RequiredProficiency = ProficiencyLevel.Novice,
             RequiredWorkstation = new WorkstationTag("forge"),
             Ingredients = [new Ingredient { ItemTag = "iron_ingot", Quantity = Quantity.Parse(3) }],
             Products = [new Product { ItemTag = "iron_sword", Quantity = Quantity.Parse(1) }]
@@ -82,7 +81,6 @@ public class WorkstationRecipeQueryTests
             RecipeId = new RecipeId("steel_sword"), Name = "Steel Sword",
             IndustryTag = new IndustryTag("blacksmithing"),
             RequiredKnowledge = ["basic_forging", "advanced_forging"],
-            RequiredProficiency = ProficiencyLevel.Apprentice,
             RequiredWorkstation = new WorkstationTag("forge"),
             Ingredients = [new Ingredient { ItemTag = "steel_ingot", Quantity = Quantity.Parse(3) }],
             Products = [new Product { ItemTag = "steel_sword", Quantity = Quantity.Parse(1) }]
@@ -93,7 +91,6 @@ public class WorkstationRecipeQueryTests
             RecipeId = new RecipeId("bandage"), Name = "Bandage",
             IndustryTag = new IndustryTag("blacksmithing"),
             RequiredKnowledge = [],
-            RequiredProficiency = ProficiencyLevel.Layman,
             RequiredWorkstation = null, // portable — no workstation
             Ingredients = [new Ingredient { ItemTag = "cloth", Quantity = Quantity.Parse(1) }],
             Products = [new Product { ItemTag = "bandage", Quantity = Quantity.Parse(1) }]
@@ -104,7 +101,6 @@ public class WorkstationRecipeQueryTests
             RecipeId = new RecipeId("health_potion"), Name = "Health Potion",
             IndustryTag = new IndustryTag("alchemy"),
             RequiredKnowledge = ["basic_alchemy"],
-            RequiredProficiency = ProficiencyLevel.Novice,
             RequiredWorkstation = new WorkstationTag("alchemy_table"),
             Ingredients = [new Ingredient { ItemTag = "herb", Quantity = Quantity.Parse(2) }],
             Products = [new Product { ItemTag = "health_potion", Quantity = Quantity.Parse(1) }]

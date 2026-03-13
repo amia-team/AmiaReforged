@@ -269,7 +269,6 @@ public class IndustryRecipeDto
     public string? Description { get; set; }
     public string IndustryTag { get; set; } = string.Empty;
     public List<string> RequiredKnowledge { get; set; } = [];
-    public string? RequiredProficiency { get; set; }
     public List<IndustryIngredientDto> Ingredients { get; set; } = [];
     public List<IndustryProductDto> Products { get; set; } = [];
     public int? CraftingTimeSeconds { get; set; }
@@ -401,7 +400,6 @@ public class RecipeTemplateDefinitionDto
     public string? Description { get; set; }
     public string IndustryTag { get; set; } = string.Empty;
     public List<string> RequiredKnowledge { get; set; } = [];
-    public string? RequiredProficiency { get; set; }
     public List<TemplateIngredientDto> Ingredients { get; set; } = [];
     public List<TemplateProductDto> Products { get; set; } = [];
     public int? CraftingTimeSeconds { get; set; }

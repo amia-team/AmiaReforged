@@ -201,9 +201,11 @@ public sealed class WorkstationCraftingPresenter : ScryPresenter<WorkstationCraf
 
     private static string FormatSubtitle(Recipe recipe)
     {
-        string proficiency = recipe.RequiredProficiency.ToString();
         int ingredientCount = recipe.Ingredients.Count;
-        return $"{proficiency} | {ingredientCount} ingredient{(ingredientCount != 1 ? "s" : "")}";
+        string knowledge = recipe.RequiredKnowledge.Count > 0
+            ? string.Join(", ", recipe.RequiredKnowledge)
+            : "none";
+        return $"Knowledge: {knowledge} | {ingredientCount} ingredient{(ingredientCount != 1 ? "s" : "")}";
     }
 
     // --- Selection & Detail ---
@@ -228,9 +230,10 @@ public sealed class WorkstationCraftingPresenter : ScryPresenter<WorkstationCraf
         if (!string.IsNullOrWhiteSpace(recipe.Description))
             sections.Add(recipe.Description);
 
-        // Industry & Proficiency
+        // Industry & Knowledge
         sections.Add($"Industry: {recipe.IndustryTag.Value}");
-        sections.Add($"Required Rank: {recipe.RequiredProficiency}");
+        if (recipe.RequiredKnowledge.Count > 0)
+            sections.Add($"Required Knowledge: {string.Join(", ", recipe.RequiredKnowledge)}");
 
         // Ingredients
         if (recipe.Ingredients.Count > 0)

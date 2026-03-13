@@ -83,13 +83,6 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
             return CommandResult.Fail($"Character is not a member of industry '{industry.Name}'");
         }
 
-        // Check proficiency level
-        if (membership.Level < recipe.RequiredProficiency)
-        {
-            return CommandResult.Fail(
-                $"Insufficient proficiency. Required: {recipe.RequiredProficiency}, Current: {membership.Level}");
-        }
-
         // Check required knowledge
         List<Knowledge> characterKnowledge = _knowledgeRepository.GetAllKnowledge(command.CharacterId.Value);
         List<string> missingKnowledge = recipe.RequiredKnowledge

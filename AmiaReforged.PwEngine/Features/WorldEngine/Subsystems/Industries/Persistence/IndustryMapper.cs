@@ -128,7 +128,6 @@ public static class IndustryMapper
         Description = r.Description,
         IndustryTag = r.IndustryTag.Value,
         RequiredKnowledge = r.RequiredKnowledge,
-        RequiredProficiency = r.RequiredProficiency.ToString(),
         Ingredients = r.Ingredients.Select(i => new IngredientJsonDto
         {
             ItemTag = i.ItemTag,
@@ -152,8 +151,6 @@ public static class IndustryMapper
 
     private static Recipe FromRecipeDto(RecipeJsonDto dto)
     {
-        Enum.TryParse<ProficiencyLevel>(dto.RequiredProficiency, true, out ProficiencyLevel proficiency);
-
         return new Recipe
         {
             RecipeId = new RecipeId(dto.RecipeId),
@@ -161,7 +158,6 @@ public static class IndustryMapper
             Description = dto.Description,
             IndustryTag = new IndustryTag(dto.IndustryTag),
             RequiredKnowledge = dto.RequiredKnowledge ?? [],
-            RequiredProficiency = proficiency,
             Ingredients = dto.Ingredients?.Select(i => new Ingredient
             {
                 ItemTag = i.ItemTag,
@@ -223,7 +219,6 @@ public static class IndustryMapper
         public string? Description { get; set; }
         public string IndustryTag { get; set; } = string.Empty;
         public List<string>? RequiredKnowledge { get; set; }
-        public string? RequiredProficiency { get; set; }
         public List<IngredientJsonDto>? Ingredients { get; set; }
         public List<ProductJsonDto>? Products { get; set; }
         public int? CraftingTimeSeconds { get; set; }

@@ -295,7 +295,6 @@ public class RecipeTemplateExpander
             Description = template.Description,
             IndustryTag = template.IndustryTag,
             RequiredKnowledge = template.RequiredKnowledge,
-            RequiredProficiency = template.RequiredProficiency,
             Ingredients = concreteIngredients,
             Products = concreteProducts,
             CraftingTimeSeconds = template.CraftingTimeSeconds,

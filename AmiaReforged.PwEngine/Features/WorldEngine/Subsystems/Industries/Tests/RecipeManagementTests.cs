@@ -28,7 +28,6 @@ public class RecipeManagementTests
             Description = "A basic iron sword",
             IndustryTag = new IndustryTag("blacksmithing"),
             RequiredKnowledge = ["basic_forging"],
-            RequiredProficiency = ProficiencyLevel.Novice,
             Ingredients =
             [
                 new Ingredient
@@ -107,7 +106,6 @@ public class RecipeManagementTests
     public void Recipe_HasCorrectRequirements()
     {
         // Assert
-        Assert.That(_testRecipe.RequiredProficiency, Is.EqualTo(ProficiencyLevel.Novice));
         Assert.That(_testRecipe.RequiredKnowledge, Contains.Item("basic_forging"));
         Assert.That(_testRecipe.IndustryTag.Value, Is.EqualTo("blacksmithing"));
     }

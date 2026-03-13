@@ -37,7 +37,6 @@ public class IndustryCommandTests
             Description = "A basic iron sword",
             IndustryTag = new IndustryTag("blacksmithing"),
             RequiredKnowledge = ["basic_forging"],
-            RequiredProficiency = ProficiencyLevel.Novice,
             Ingredients =
             [
                 new Ingredient
@@ -130,7 +129,6 @@ public class IndustryCommandTests
             Name = "Healing Potion",
             IndustryTag = new IndustryTag("alchemy"), // Different industry!
             RequiredKnowledge = [],
-            RequiredProficiency = ProficiencyLevel.Novice,
             Ingredients = [],
             Products = [],
             KnowledgePointsAwarded = 0

@@ -42,11 +42,6 @@ public class RecipeTemplate
     public List<string> RequiredKnowledge { get; init; } = [];
 
     /// <summary>
-    /// Minimum proficiency level required for recipes generated from this template.
-    /// </summary>
-    public required ProficiencyLevel RequiredProficiency { get; init; }
-
-    /// <summary>
     /// Template ingredient slots. Each slot matches items by material category and form.
     /// </summary>
     public required List<TemplateIngredient> Ingredients { get; init; }

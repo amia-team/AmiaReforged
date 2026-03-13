@@ -9,7 +9,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Quer
 /// <summary>
 /// Query to get all recipes a character can craft at a specific workstation.
 /// Resolves the workstation's supported industries, intersects with the character's
-/// industry memberships, and filters recipes by proficiency and knowledge requirements.
+/// industry memberships, and filters recipes by knowledge requirements.
 /// </summary>
 public record GetWorkstationRecipesQuery : IQuery<List<Recipe>>
 {
@@ -82,8 +82,6 @@ public class GetWorkstationRecipesHandler : IQueryHandler<GetWorkstationRecipesQ
                 // Recipe must require THIS workstation
                 recipe.RequiredWorkstation != null &&
                 recipe.RequiredWorkstation.Value.Value == query.WorkstationTag.Value &&
-                // Character has sufficient proficiency
-                membership.Level >= recipe.RequiredProficiency &&
                 // Character has all required knowledge
                 recipe.RequiredKnowledge.All(req => knownTags.Contains(req)));
 
@@ -93,7 +91,6 @@ public class GetWorkstationRecipesHandler : IQueryHandler<GetWorkstationRecipesQ
             IEnumerable<Recipe> templateRecipes = _templateExpander
                 .GetExpandedRecipesForWorkstation(membership.IndustryTag, query.WorkstationTag)
                 .Where(recipe =>
-                    membership.Level >= recipe.RequiredProficiency &&
                     recipe.RequiredKnowledge.All(req => knownTags.Contains(req)));
 
             availableRecipes.AddRange(templateRecipes);

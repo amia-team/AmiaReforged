@@ -34,11 +34,6 @@ public class Recipe
     public List<string> RequiredKnowledge { get; init; } = [];
 
     /// <summary>
-    /// Minimum proficiency level required
-    /// </summary>
-    public required ProficiencyLevel RequiredProficiency { get; init; }
-
-    /// <summary>
     /// Items/resources needed to craft this recipe
     /// </summary>
     public required List<Ingredient> Ingredients { get; init; }

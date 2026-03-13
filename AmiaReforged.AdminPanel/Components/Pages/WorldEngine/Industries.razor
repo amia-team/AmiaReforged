@@ -231,7 +231,6 @@
                 <tr>
                     <th>Recipe ID</th>
                     <th>Name</th>
-                    <th>Proficiency</th>
                     <th>Workstation</th>
                     <th>Tools</th>
                     <th>Ingredients</th>
@@ -245,7 +244,6 @@
                     <tr>
                         <td><code>@r.RecipeId</code></td>
                         <td>@r.Name</td>
-                        <td>@r.RequiredProficiency</td>
                         <td>@(r.RequiredWorkstation ?? "—")</td>
                         <td>@(r.RequiredTools.Count > 0 ? string.Join(", ", r.RequiredTools) : "—")</td>
                         <td>@r.Ingredients.Count</td>
@@ -609,18 +607,6 @@
             </div>
             <div class="form-row" style="display:flex;gap:10px">
                 <div class="form-group" style="flex:1">
-                    <label>Required Proficiency</label>
-                    <select class="form-control" @bind="_editRecipe.RequiredProficiency">
-                                <option value="Layman">Layman</option>
-                                <option value="Novice">Novice</option>
-                                <option value="Apprentice">Apprentice</option>
-                                <option value="Journeyman">Journeyman</option>
-                                <option value="Expert">Expert</option>
-                                <option value="Master">Master</option>
-                                <option value="Grandmaster">Grandmaster</option>
-                    </select>
-                </div>
-                <div class="form-group" style="flex:1">
                     <label>Required Workstation</label>
                     <select class="form-control" @bind="_editRecipe.RequiredWorkstation">
                         <option value="">None</option>
@@ -799,19 +785,6 @@
                 <textarea class="form-control" rows="2" @bind="_editTemplate.Description" placeholder="What this template produces..."></textarea>
             </div>
             <div class="form-row" style="display:flex;gap:10px">
-                <div class="form-group" style="flex:1">
-                    <label>Required Proficiency</label>
-                    <select class="form-control" @bind="_editTemplate.RequiredProficiency">
-                        <option value="">None</option>
-                        <option value="Layman">Layman</option>
-                        <option value="Novice">Novice</option>
-                        <option value="Apprentice">Apprentice</option>
-                        <option value="Journeyman">Journeyman</option>
-                        <option value="Expert">Expert</option>
-                        <option value="Master">Master</option>
-                        <option value="Grandmaster">Grandmaster</option>
-                    </select>
-                </div>
                 <div class="form-group" style="flex:1">
                     <label>Required Workstation</label>
                     <select class="form-control" @bind="_editTemplate.RequiredWorkstation">
@@ -1378,8 +1351,7 @@
         _isCreating = true;
         _editRecipe = new IndustryRecipeDto
         {
-            IndustryTag = _selectedIndustryTag,
-            RequiredProficiency = "Novice"
+            IndustryTag = _selectedIndustryTag
         };
         _editRecipeKnowledgeText = "";
         _editRecipeToolsText = "";
@@ -1396,7 +1368,6 @@
             Description = r.Description,
             IndustryTag = r.IndustryTag,
             RequiredKnowledge = new List<string>(r.RequiredKnowledge),
-            RequiredProficiency = r.RequiredProficiency,
             Ingredients = r.Ingredients.Select(i => new IndustryIngredientDto
             {
                 ItemTag = i.ItemTag,
