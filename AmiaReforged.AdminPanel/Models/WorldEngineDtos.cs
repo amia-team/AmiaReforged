@@ -275,7 +275,7 @@ public class IndustryRecipeDto
     public int? CraftingTimeSeconds { get; set; }
     public int KnowledgePointsAwarded { get; set; }
     public string? RequiredWorkstation { get; set; }
-    public string? ProcessId { get; set; }
+    public List<string> RequiredTools { get; set; } = [];
 }
 
 public class IndustryIngredientDto
@@ -407,7 +407,7 @@ public class RecipeTemplateDefinitionDto
     public int? CraftingTimeSeconds { get; set; }
     public int KnowledgePointsAwarded { get; set; }
     public string? RequiredWorkstation { get; set; }
-    public string? ProcessId { get; set; }
+    public List<string> RequiredTools { get; set; } = [];
 }
 
 public class TemplateIngredientDto

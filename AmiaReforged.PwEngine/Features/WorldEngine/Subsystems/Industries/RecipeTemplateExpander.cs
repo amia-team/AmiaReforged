@@ -305,7 +305,7 @@ public class RecipeTemplateExpander
                 ["_sourceTemplate"] = template.Tag
             },
             RequiredWorkstation = template.RequiredWorkstation,
-            ProcessId = template.ProcessId
+            RequiredTools = template.RequiredTools
         };
     }
 

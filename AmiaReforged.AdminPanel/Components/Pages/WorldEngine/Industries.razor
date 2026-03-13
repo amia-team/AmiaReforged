@@ -233,7 +233,7 @@
                     <th>Name</th>
                     <th>Proficiency</th>
                     <th>Workstation</th>
-                    <th>Process</th>
+                    <th>Tools</th>
                     <th>Ingredients</th>
                     <th>Products</th>
                     <th>Actions</th>
@@ -247,7 +247,7 @@
                         <td>@r.Name</td>
                         <td>@r.RequiredProficiency</td>
                         <td>@(r.RequiredWorkstation ?? "—")</td>
-                        <td>@(r.ProcessId ?? "instant")</td>
+                        <td>@(r.RequiredTools.Count > 0 ? string.Join(", ", r.RequiredTools) : "—")</td>
                         <td>@r.Ingredients.Count</td>
                         <td>@r.Products.Count</td>
                         <td>
@@ -631,8 +631,8 @@
                     </select>
                 </div>
                 <div class="form-group" style="flex:1">
-                    <label>Process ID</label>
-                    <input class="form-control" @bind="_editRecipe.ProcessId" placeholder="e.g. forge_blade" />
+                    <label>Required Tools <small style="color:var(--text-secondary)">(comma-separated item tags)</small></label>
+                    <input class="form-control" @bind="_editRecipeToolsText" placeholder="e.g. smiths_hammer, tongs" />
                 </div>
             </div>
             <div class="form-row" style="display:flex;gap:10px">
@@ -823,8 +823,8 @@
                     </select>
                 </div>
                 <div class="form-group" style="flex:1">
-                    <label>Process ID</label>
-                    <input class="form-control" @bind="_editTemplate.ProcessId" placeholder="e.g. saw_plank" />
+                    <label>Required Tools <small style="color:var(--text-secondary)">(comma-separated item tags)</small></label>
+                    <input class="form-control" @bind="_editTemplateToolsText" placeholder="e.g. smiths_hammer, tongs" />
                 </div>
             </div>
             <div class="form-row" style="display:flex;gap:10px">
@@ -1010,6 +1010,7 @@
     private string _editWorkstationIndustriesText = "";
     private string _editKnowledgePrereqText = "";
     private string _editRecipeKnowledgeText = "";
+    private string _editRecipeToolsText = "";
 
     // Delete
     private string _deleteTargetName = "";
@@ -1022,6 +1023,7 @@
     private int _templateTotalCount;
     private RecipeTemplateDefinitionDto _editTemplate = new();
     private string _editTemplateKnowledgeText = "";
+    private string _editTemplateToolsText = "";
     private string? _originalTemplateTag;
     private List<EnumOptionDto> _templateMaterialCategories = [];
     private List<EnumOptionDto> _templateItemForms = [];
@@ -1380,6 +1382,7 @@
             RequiredProficiency = "Novice"
         };
         _editRecipeKnowledgeText = "";
+        _editRecipeToolsText = "";
         _showRecipeModal = true;
     }
 
@@ -1411,9 +1414,10 @@
             CraftingTimeSeconds = r.CraftingTimeSeconds,
             KnowledgePointsAwarded = r.KnowledgePointsAwarded,
             RequiredWorkstation = r.RequiredWorkstation,
-            ProcessId = r.ProcessId
+            RequiredTools = r.RequiredTools.ToList()
         };
         _editRecipeKnowledgeText = string.Join(", ", r.RequiredKnowledge);
+        _editRecipeToolsText = string.Join(", ", r.RequiredTools);
         _showRecipeModal = true;
     }
 
@@ -1425,6 +1429,9 @@
         {
             _isSaving = true;
             _editRecipe.RequiredKnowledge = _editRecipeKnowledgeText
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+            _editRecipe.RequiredTools = _editRecipeToolsText
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .ToList();
             _editRecipe.IndustryTag = _selectedIndustryTag;
@@ -1527,6 +1534,7 @@
         _isCreating = true;
         _editTemplate = new RecipeTemplateDefinitionDto();
         _editTemplateKnowledgeText = "";
+        _editTemplateToolsText = "";
         _originalTemplateTag = null;
         _showTemplateModal = true;
     }
@@ -1545,6 +1553,7 @@
             _isCreating = false;
             _editTemplate = template;
             _editTemplateKnowledgeText = string.Join(", ", template.RequiredKnowledge);
+            _editTemplateToolsText = string.Join(", ", template.RequiredTools);
             _originalTemplateTag = tag;
             _showTemplateModal = true;
         }
@@ -1560,6 +1569,9 @@
         {
             _isSaving = true;
             _editTemplate.RequiredKnowledge = _editTemplateKnowledgeText
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+            _editTemplate.RequiredTools = _editTemplateToolsText
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .ToList();
 

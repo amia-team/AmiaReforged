@@ -36,7 +36,7 @@ public static class RecipeTemplateMapper
             CraftingTimeSeconds = template.CraftingTimeSeconds,
             KnowledgePointsAwarded = template.KnowledgePointsAwarded,
             RequiredWorkstation = template.RequiredWorkstation?.Value,
-            ProcessId = template.ProcessId,
+            RequiredToolsJson = JsonSerializer.Serialize(template.RequiredTools, JsonOptions),
             MetadataJson = JsonSerializer.Serialize(template.Metadata, JsonOptions),
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -67,7 +67,7 @@ public static class RecipeTemplateMapper
             RequiredWorkstation = !string.IsNullOrEmpty(entity.RequiredWorkstation)
                 ? new WorkstationTag(entity.RequiredWorkstation)
                 : null,
-            ProcessId = entity.ProcessId,
+            RequiredTools = JsonSerializer.Deserialize<List<string>>(entity.RequiredToolsJson, JsonOptions) ?? [],
             Metadata = metadata
         };
     }
@@ -86,7 +86,7 @@ public static class RecipeTemplateMapper
         entity.CraftingTimeSeconds = template.CraftingTimeSeconds;
         entity.KnowledgePointsAwarded = template.KnowledgePointsAwarded;
         entity.RequiredWorkstation = template.RequiredWorkstation?.Value;
-        entity.ProcessId = template.ProcessId;
+        entity.RequiredToolsJson = JsonSerializer.Serialize(template.RequiredTools, JsonOptions);
         entity.MetadataJson = JsonSerializer.Serialize(template.Metadata, JsonOptions);
         entity.UpdatedAt = DateTime.UtcNow;
     }

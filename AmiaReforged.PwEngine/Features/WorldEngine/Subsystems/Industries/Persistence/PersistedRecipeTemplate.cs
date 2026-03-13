@@ -63,9 +63,9 @@ public class PersistedRecipeTemplate
     public string? RequiredWorkstation { get; set; }
 
     /// <summary>
-    /// Optional process graph link.
+    /// Required tool item tags, stored as a JSONB array of strings.
     /// </summary>
-    public string? ProcessId { get; set; }
+    public string RequiredToolsJson { get; set; } = "[]";
 
     /// <summary>
     /// Additional metadata, stored as JSONB.

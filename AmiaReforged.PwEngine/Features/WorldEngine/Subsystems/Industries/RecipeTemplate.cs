@@ -74,10 +74,10 @@ public class RecipeTemplate
     public WorkstationTag? RequiredWorkstation { get; init; }
 
     /// <summary>
-    /// Links to a process graph definition for the crafting minigame (inherited by expanded recipes).
-    /// Null means instant craft.
+    /// Item tags for tools the player must possess (but are not consumed) to craft.
+    /// Inherited by expanded recipes.
     /// </summary>
-    public string? ProcessId { get; init; }
+    public List<string> RequiredTools { get; init; } = [];
 
     /// <summary>
     /// Optional additional metadata (inherited by expanded recipes).

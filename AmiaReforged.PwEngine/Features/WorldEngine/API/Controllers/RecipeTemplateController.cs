@@ -318,7 +318,7 @@ public class RecipeTemplateController
             t.CraftingTimeSeconds,
             t.KnowledgePointsAwarded,
             RequiredWorkstation = t.RequiredWorkstation?.Value,
-            t.ProcessId
+            t.RequiredTools
         };
     }
 
@@ -365,7 +365,7 @@ public class RecipeTemplateController
             RequiredWorkstation = !string.IsNullOrEmpty(dto.RequiredWorkstation)
                 ? new WorkstationTag(dto.RequiredWorkstation)
                 : null,
-            ProcessId = dto.ProcessId,
+            RequiredTools = dto.RequiredTools ?? [],
             Metadata = new Dictionary<string, object>()
         };
     }
@@ -385,7 +385,7 @@ public class RecipeTemplateController
         public int? CraftingTimeSeconds { get; init; }
         public int KnowledgePointsAwarded { get; init; }
         public string? RequiredWorkstation { get; init; }
-        public string? ProcessId { get; init; }
+        public List<string>? RequiredTools { get; init; }
     }
 
     private record TemplateIngredientDto

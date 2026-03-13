@@ -147,7 +147,7 @@ public static class IndustryMapper
         KnowledgePointsAwarded = r.KnowledgePointsAwarded,
         Metadata = r.Metadata,
         RequiredWorkstation = r.RequiredWorkstation?.Value,
-        ProcessId = r.ProcessId
+        RequiredTools = r.RequiredTools
     };
 
     private static Recipe FromRecipeDto(RecipeJsonDto dto)
@@ -182,7 +182,7 @@ public static class IndustryMapper
             RequiredWorkstation = !string.IsNullOrEmpty(dto.RequiredWorkstation)
                 ? new WorkstationTag(dto.RequiredWorkstation)
                 : null,
-            ProcessId = dto.ProcessId
+            RequiredTools = dto.RequiredTools ?? []
         };
     }
 
@@ -230,7 +230,7 @@ public static class IndustryMapper
         public int KnowledgePointsAwarded { get; set; }
         public Dictionary<string, object>? Metadata { get; set; }
         public string? RequiredWorkstation { get; set; }
-        public string? ProcessId { get; set; }
+        public List<string>? RequiredTools { get; set; }
     }
 
     private class IngredientJsonDto

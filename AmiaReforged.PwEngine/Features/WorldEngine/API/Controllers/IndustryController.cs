@@ -327,7 +327,7 @@ public class IndustryController
                 r.CraftingTimeSeconds,
                 r.KnowledgePointsAwarded,
                 RequiredWorkstation = r.RequiredWorkstation?.Value,
-                r.ProcessId
+                r.RequiredTools
             }).ToArray()
         };
     }
@@ -402,7 +402,7 @@ public class IndustryController
                     RequiredWorkstation = !string.IsNullOrEmpty(r.RequiredWorkstation)
                         ? new SharedKernel.WorkstationTag(r.RequiredWorkstation)
                         : null,
-                    ProcessId = r.ProcessId
+                    RequiredTools = r.RequiredTools ?? []
                 };
             }).ToList() ?? []
         };
@@ -459,7 +459,7 @@ public class IndustryController
         public int? CraftingTimeSeconds { get; init; }
         public int KnowledgePointsAwarded { get; init; }
         public string? RequiredWorkstation { get; init; }
-        public string? ProcessId { get; init; }
+        public List<string>? RequiredTools { get; init; }
     }
 
     private record IngredientDto

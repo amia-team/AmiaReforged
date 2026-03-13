@@ -58,9 +58,10 @@ public class PersistedRecipeTemplateConfiguration : IEntityTypeConfiguration<Per
             .HasColumnName("required_workstation")
             .HasMaxLength(128);
 
-        builder.Property(e => e.ProcessId)
-            .HasColumnName("process_id")
-            .HasMaxLength(128);
+        builder.Property(e => e.RequiredToolsJson)
+            .HasColumnName("required_tools")
+            .HasColumnType("jsonb")
+            .HasDefaultValue("[]");
 
         builder.Property(e => e.MetadataJson)
             .HasColumnName("metadata")

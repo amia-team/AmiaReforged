@@ -71,9 +71,9 @@ public class Recipe
     public WorkstationTag? RequiredWorkstation { get; init; }
 
     /// <summary>
-    /// Links this recipe to a process graph definition from the crafting system.
-    /// Null means instant craft via <c>DefaultCraftingProcessor</c> (no progress bar).
+    /// Item tags for tools the player must possess (but are not consumed) to craft this recipe.
+    /// Example: ["smiths_hammer", "tongs"]
     /// </summary>
-    public string? ProcessId { get; init; }
+    public List<string> RequiredTools { get; init; } = [];
 }
 
