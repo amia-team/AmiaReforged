@@ -9,7 +9,7 @@ public class HellrimeEssence : IEssence
 {
     public EssenceType Essence => EssenceType.Hellrime;
 
-    public EssenceData GetEssenceData(int warlockLevel) => new
+    public EssenceData GetEssenceData(int warlockLevel, NwCreature warlock) => new
     (
         Type: Essence,
         DamageType: DamageType.Cold,

@@ -9,7 +9,7 @@ public class DrainingEssence : IEssence
 {
     public EssenceType Essence => EssenceType.Draining;
 
-    public EssenceData GetEssenceData(int warlockLevel) => new
+    public EssenceData GetEssenceData(int warlockLevel, NwCreature warlock) => new
     (
         Type: Essence,
         DamageType: DamageType.Magical,

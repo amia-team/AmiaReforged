@@ -9,7 +9,7 @@ public class BindingEssence : IEssence
 {
     public EssenceType Essence => EssenceType.Binding;
 
-    public EssenceData GetEssenceData(int warlockLevel) => new
+    public EssenceData GetEssenceData(int warlockLevel, NwCreature warlock) => new
     (
         Type: Essence,
         DamageType: DamageType.Magical,

@@ -9,7 +9,7 @@ public class UtterdarkEssence : IEssence
 {
     public EssenceType Essence => EssenceType.Utterdark;
 
-    public EssenceData GetEssenceData(int warlockLevel) => new
+    public EssenceData GetEssenceData(int warlockLevel, NwCreature warlock) => new
     (
         Type: Essence,
         DamageType: DamageType.Negative,

@@ -9,7 +9,7 @@ public class BeshadowedEssence : IEssence
 {
     public EssenceType Essence => EssenceType.Beshadowed;
 
-    public EssenceData GetEssenceData(int warlockLevel) => new
+    public EssenceData GetEssenceData(int warlockLevel, NwCreature warlock) => new
     (
         Type: Essence,
         DamageType: DamageType.Magical,

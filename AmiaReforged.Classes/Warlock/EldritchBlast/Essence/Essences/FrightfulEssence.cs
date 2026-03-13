@@ -9,7 +9,7 @@ public class FrightfulEssence : IEssence
 {
     public EssenceType Essence => EssenceType.Frightful;
 
-    public EssenceData GetEssenceData(int warlockLevel) => new
+    public EssenceData GetEssenceData(int warlockLevel, NwCreature warlock) => new
     (
         Type: Essence,
         DamageType: DamageType.Magical,

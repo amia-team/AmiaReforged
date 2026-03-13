@@ -9,7 +9,7 @@ public class BrimstoneEssence(ScriptHandleFactory scriptHandleFactory) : IEssenc
 {
     public EssenceType Essence => EssenceType.Brimstone;
 
-    public EssenceData GetEssenceData(int warlockLevel) => new
+    public EssenceData GetEssenceData(int warlockLevel, NwCreature warlock) => new
     (
         Type: Essence,
         DamageType: DamageType.Fire,
@@ -19,7 +19,7 @@ public class BrimstoneEssence(ScriptHandleFactory scriptHandleFactory) : IEssenc
         BeamVfx: VfxType.BeamFire,
         DoomVfx: WarlockVfx.FnfDoomFire,
         PulseVfx: WarlockVfx.ImpPulseFire,
-        Effect: BrimstoneEffect(),
+        Effect: BrimstoneEffect(warlock),
         Duration: EssenceDuration(warlockLevel)
     );
 
@@ -29,9 +29,9 @@ public class BrimstoneEssence(ScriptHandleFactory scriptHandleFactory) : IEssenc
         return NwTimeSpan.FromRounds(rounds);
     }
 
-    private Effect BrimstoneEffect()
+    private Effect BrimstoneEffect(NwCreature warlock)
     {
-        ScriptCallbackHandle burn = scriptHandleFactory.CreateUniqueHandler(Burn);
+        ScriptCallbackHandle burn = scriptHandleFactory.CreateUniqueHandler(info => Burn(info, warlock));
         TimeSpan oneRound = NwTimeSpan.FromRounds(1);
 
         Effect brimstoneEffect = Effect.LinkEffects
@@ -43,16 +43,22 @@ public class BrimstoneEssence(ScriptHandleFactory scriptHandleFactory) : IEssenc
         return brimstoneEffect;
     }
 
-    private static ScriptHandleResult Burn(CallInfo info)
+    private static ScriptHandleResult Burn(CallInfo info, NwCreature warlock)
     {
         if (info.ObjectSelf is not NwCreature targetCreature || targetCreature.IsDead)
             return ScriptHandleResult.Handled;
 
+        _ = ApplyBurn(targetCreature, warlock);
+        return ScriptHandleResult.Handled;
+    }
+
+    private static async Task ApplyBurn(NwCreature targetCreature, NwCreature warlock)
+    {
+        await warlock.WaitForObjectContext();
+
         int damageRoll = Random.Shared.Roll(6, 2);
         Effect burnEffect = Effect.Damage(damageRoll, DamageType.Fire);
-
         targetCreature.ApplyEffect(EffectDuration.Instant, burnEffect);
         targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpFlameS));
-        return ScriptHandleResult.Handled;
     }
 }

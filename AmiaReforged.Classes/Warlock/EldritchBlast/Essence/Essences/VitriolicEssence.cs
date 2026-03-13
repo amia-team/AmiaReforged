@@ -9,7 +9,7 @@ public class VitriolicEssence(ScriptHandleFactory scriptHandleFactory) : IEssenc
 {
     public EssenceType Essence => EssenceType.Vitriolic;
 
-    public EssenceData GetEssenceData(int warlockLevel) => new
+    public EssenceData GetEssenceData(int warlockLevel, NwCreature warlock) => new
     (
         Type: Essence,
         DamageType: DamageType.Acid,
@@ -19,7 +19,7 @@ public class VitriolicEssence(ScriptHandleFactory scriptHandleFactory) : IEssenc
         BeamVfx: VfxType.BeamDisintegrate,
         DoomVfx: WarlockVfx.FnfDoomAcid,
         PulseVfx: WarlockVfx.ImpPulseNature,
-        Effect: VitriolicEffect(),
+        Effect: VitriolicEffect(warlock),
         AllowStacking: true,
         Duration: EssenceDuration(warlockLevel)
     );
@@ -30,9 +30,9 @@ public class VitriolicEssence(ScriptHandleFactory scriptHandleFactory) : IEssenc
         return NwTimeSpan.FromRounds(rounds);
     }
 
-    private Effect VitriolicEffect()
+    private Effect VitriolicEffect(NwCreature warlock)
     {
-        ScriptCallbackHandle burn = scriptHandleFactory.CreateUniqueHandler(Corrode);
+        ScriptCallbackHandle burn = scriptHandleFactory.CreateUniqueHandler(info => Corrode(info, warlock));
         TimeSpan oneRound = NwTimeSpan.FromRounds(1);
 
         Effect vitriolicEffect = Effect.LinkEffects
@@ -44,16 +44,22 @@ public class VitriolicEssence(ScriptHandleFactory scriptHandleFactory) : IEssenc
         return vitriolicEffect;
     }
 
-    private static ScriptHandleResult Corrode(CallInfo info)
+    private static ScriptHandleResult Corrode(CallInfo info, NwCreature warlock)
     {
         if (info.ObjectSelf is not NwCreature targetCreature || targetCreature.IsDead)
             return ScriptHandleResult.Handled;
 
+        _ = ApplyCorrode(targetCreature, warlock);
+        return ScriptHandleResult.Handled;
+    }
+
+    private static async Task ApplyCorrode(NwCreature targetCreature, NwCreature warlock)
+    {
+        await warlock.WaitForObjectContext();
+
         int damageRoll = Random.Shared.Roll(6, 2);
         Effect corrodeEffect = Effect.Damage(damageRoll, DamageType.Acid);
-
         targetCreature.ApplyEffect(EffectDuration.Instant, corrodeEffect);
         targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpAcidS));
-        return ScriptHandleResult.Handled;
     }
 }

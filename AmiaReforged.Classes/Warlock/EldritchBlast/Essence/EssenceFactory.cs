@@ -18,7 +18,7 @@ public class EssenceFactory
         EssenceType activeEssence = GetActivateEssence(warlock);
 
         return _essences.TryGetValue(activeEssence, out IEssence? essence)
-            ? essence.GetEssenceData(warlockLevel)
+            ? essence.GetEssenceData(warlockLevel, warlock)
             : DefaultEssence;
     }
 
