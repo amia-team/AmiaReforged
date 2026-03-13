@@ -20,6 +20,7 @@ public class FlameWeapon(WeaponBuffService weaponBuffService) : ISpell
     private const string LegendaryVenomGlandResRef = "js_lvenomgland";
     private const string WyvernVenomGlandResRef = "js_wyverngland";
     private const string FrostspearsTreasureResRef = "wdragonbossrewar";
+    private const string ColdWeaponRune = "itm_coldweapon";
 
     private static readonly Dictionary<string, (IPDamageType DamageType, int CasterLevel)> ItemResRefMap = new()
     {
@@ -31,7 +32,8 @@ public class FlameWeapon(WeaponBuffService weaponBuffService) : ISpell
         { HighQualityVenomGlandResRef, (IPDamageType.Acid, 10) },
         { LegendaryVenomGlandResRef, (IPDamageType.Acid, 15) },
         { WyvernVenomGlandResRef, (IPDamageType.Acid, 20) },
-        { FrostspearsTreasureResRef, (IPDamageType.Sonic, 17) }
+        { FrostspearsTreasureResRef, (IPDamageType.Sonic, 17) },
+        { ColdWeaponRune, (IPDamageType.Cold, 17) }
     };
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
