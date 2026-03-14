@@ -21,7 +21,6 @@ public class CraftingResult
 public enum CraftingFailureReason
 {
     InsufficientKnowledge,
-    InsufficientProficiency,
     MissingIngredients,
     InsufficientQuality,
     ProcessFailed, // Industry-specific failure

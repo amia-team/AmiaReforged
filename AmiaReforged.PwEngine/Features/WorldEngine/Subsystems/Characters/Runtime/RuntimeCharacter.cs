@@ -22,6 +22,7 @@ public class RuntimeCharacter(
     ICharacterStatService statService) : ICharacter
 {
     private readonly Dictionary<string, List<KnowledgeHarvestEffect>> _nodeEffectCache = new();
+    private readonly Dictionary<string, List<CraftingModifier>> _craftingModifierCache = new();
     private HashSet<string>? _unlockedInteractionCache;
 
     public int GetKnowledgePoints()
@@ -77,6 +78,7 @@ public class RuntimeCharacter(
     public void InvalidateEffectCache()
     {
         _nodeEffectCache.Clear();
+        _craftingModifierCache.Clear();
         _unlockedInteractionCache = null;
     }
 
@@ -90,6 +92,22 @@ public class RuntimeCharacter(
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         return _unlockedInteractionCache.Contains(interactionTag);
+    }
+
+    /// <inheritdoc />
+    public List<CraftingModifier> CraftingModifiersForRecipe(string recipeId, string industryTag)
+    {
+        string cacheKey = $"{recipeId}|{industryTag}";
+        if (_craftingModifierCache.TryGetValue(cacheKey, out List<CraftingModifier>? cached))
+            return cached;
+
+        List<CraftingModifier> modifiers = AllKnowledge()
+            .SelectMany(k => k.CraftingModifiers)
+            .Where(m => m.Matches(recipeId, industryTag))
+            .ToList();
+
+        _craftingModifierCache.TryAdd(cacheKey, modifiers);
+        return modifiers;
     }
 
     public void AddItem(ItemDto item)

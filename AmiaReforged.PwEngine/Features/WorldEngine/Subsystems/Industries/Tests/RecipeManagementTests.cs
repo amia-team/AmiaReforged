@@ -52,7 +52,7 @@ public class RecipeManagementTests
                     Quality = 2
                 }
             ],
-            CraftingTimeSeconds = 300,
+            CraftingTimeRounds = 300,
             KnowledgePointsAwarded = 5
         };
     }

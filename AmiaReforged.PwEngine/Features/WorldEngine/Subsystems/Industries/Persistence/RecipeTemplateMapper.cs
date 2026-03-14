@@ -32,7 +32,7 @@ public static class RecipeTemplateMapper
                 template.Ingredients.Select(ToIngredientDto).ToList(), JsonOptions),
             ProductsJson = JsonSerializer.Serialize(
                 template.Products.Select(ToProductDto).ToList(), JsonOptions),
-            CraftingTimeSeconds = template.CraftingTimeSeconds,
+            CraftingTimeRounds = template.CraftingTimeRounds,
             KnowledgePointsAwarded = template.KnowledgePointsAwarded,
             RequiredWorkstation = template.RequiredWorkstation?.Value,
             RequiredToolsJson = JsonSerializer.Serialize(template.RequiredTools, JsonOptions),
@@ -58,7 +58,7 @@ public static class RecipeTemplateMapper
             RequiredKnowledge = knowledge,
             Ingredients = ingredientDtos.Select(FromIngredientDto).ToList(),
             Products = productDtos.Select(FromProductDto).ToList(),
-            CraftingTimeSeconds = entity.CraftingTimeSeconds,
+            CraftingTimeRounds = entity.CraftingTimeRounds,
             KnowledgePointsAwarded = entity.KnowledgePointsAwarded,
             RequiredWorkstation = !string.IsNullOrEmpty(entity.RequiredWorkstation)
                 ? new WorkstationTag(entity.RequiredWorkstation)
@@ -78,7 +78,7 @@ public static class RecipeTemplateMapper
             template.Ingredients.Select(ToIngredientDto).ToList(), JsonOptions);
         entity.ProductsJson = JsonSerializer.Serialize(
             template.Products.Select(ToProductDto).ToList(), JsonOptions);
-        entity.CraftingTimeSeconds = template.CraftingTimeSeconds;
+        entity.CraftingTimeRounds = template.CraftingTimeRounds;
         entity.KnowledgePointsAwarded = template.KnowledgePointsAwarded;
         entity.RequiredWorkstation = template.RequiredWorkstation?.Value;
         entity.RequiredToolsJson = JsonSerializer.Serialize(template.RequiredTools, JsonOptions);

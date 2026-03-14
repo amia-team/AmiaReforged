@@ -1,7 +1,9 @@
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -28,6 +30,7 @@ public sealed class WorkstationCraftingPresenter : ScryPresenter<WorkstationCraf
 
     [Inject] private Lazy<IIndustrySubsystem>? IndustrySubsystem { get; init; }
     [Inject] private Lazy<RuntimeCharacterService>? CharacterService { get; init; }
+    [Inject] private Lazy<ICharacterRepository>? CharacterRepository { get; init; }
 
     public WorkstationCraftingPresenter(
         WorkstationCraftingView view,
@@ -217,12 +220,27 @@ public sealed class WorkstationCraftingPresenter : ScryPresenter<WorkstationCraf
         if (recipe == null) return;
 
         _model.SelectedIndex = absoluteIndex;
-        string body = FormatRecipeDetail(recipe);
+
+        // Resolve character context for knowledge modifiers
+        AggregatedCraftingModifiers modifiers = AggregatedCraftingModifiers.None;
+        CharacterId? characterId = ResolveCharacterId();
+        if (characterId != null && CharacterRepository?.Value != null)
+        {
+            ICharacter? character = CharacterRepository.Value.GetById(characterId.Value.Value);
+            if (character != null)
+            {
+                List<CraftingModifier> rawModifiers = character.CraftingModifiersForRecipe(
+                    recipe.RecipeId.Value, recipe.IndustryTag.Value);
+                modifiers = AggregatedCraftingModifiers.Aggregate(rawModifiers);
+            }
+        }
+
+        string body = FormatRecipeDetail(recipe, modifiers);
         SetDetailContent(recipe.Name, body);
         _token.SetBindValue(View.ShowCraftButton, true);
     }
 
-    private static string FormatRecipeDetail(Recipe recipe)
+    private static string FormatRecipeDetail(Recipe recipe, AggregatedCraftingModifiers modifiers)
     {
         List<string> sections = [];
 
@@ -259,9 +277,28 @@ public sealed class WorkstationCraftingPresenter : ScryPresenter<WorkstationCraf
             }
         }
 
-        // Crafting time
-        if (recipe.CraftingTimeSeconds.HasValue)
-            sections.Add($"\nCrafting Time: {recipe.CraftingTimeSeconds}s");
+        // Crafting time (with modifier adjustment)
+        if (recipe.CraftingTimeRounds.HasValue)
+        {
+            int baseRounds = recipe.CraftingTimeRounds.Value;
+            int effectiveRounds = Math.Max(1, baseRounds - modifiers.TimeReductionRounds);
+            string timeText = modifiers.TimeReductionRounds > 0
+                ? $"\nCrafting Time: {effectiveRounds} rounds (base {baseRounds}, -{modifiers.TimeReductionRounds} from knowledge)"
+                : $"\nCrafting Time: {effectiveRounds} rounds";
+            sections.Add(timeText);
+        }
+
+        // Knowledge modifier summary
+        if (!modifiers.IsEmpty)
+        {
+            sections.Add("\n--- Knowledge Bonuses ---");
+            if (modifiers.QualityBonus != 0)
+                sections.Add($"  Quality: {(modifiers.QualityBonus > 0 ? "+" : "")}{modifiers.QualityBonus} tiers");
+            if (Math.Abs(modifiers.QuantityMultiplier - 1.0f) > 0.001f)
+                sections.Add($"  Quantity: x{modifiers.QuantityMultiplier:F2}");
+            if (modifiers.SuccessChanceBonus != 0)
+                sections.Add($"  Success Chance: {(modifiers.SuccessChanceBonus > 0 ? "+" : "")}{modifiers.SuccessChanceBonus:P0}");
+        }
 
         // Knowledge points
         if (recipe.KnowledgePointsAwarded > 0)

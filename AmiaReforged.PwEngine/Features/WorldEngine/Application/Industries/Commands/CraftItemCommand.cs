@@ -94,9 +94,16 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
             return CommandResult.Fail($"Missing required knowledge: {string.Join(", ", missingKnowledge)}");
         }
 
+        // Aggregate crafting modifiers from character knowledge
+        List<CraftingModifier> rawModifiers = characterKnowledge
+            .SelectMany(k => k.CraftingModifiers)
+            .Where(m => m.Matches(recipe.RecipeId.Value, command.IndustryTag.Value))
+            .ToList();
+        AggregatedCraftingModifiers modifiers = AggregatedCraftingModifiers.Aggregate(rawModifiers);
+
         // Execute crafting process (industry-specific logic via processor)
         CraftingResult craftingResult =
-            await _craftingProcessor.ProcessCraftingAsync(command.CharacterId, recipe, command.Context);
+            await _craftingProcessor.ProcessCraftingAsync(command.CharacterId, recipe, modifiers, command.Context);
 
         if (!craftingResult.Success)
         {
@@ -120,32 +127,55 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
 }
 
 /// <summary>
-/// Interface for industry-specific crafting logic
-/// Different industries can implement their own processors
+/// Interface for industry-specific crafting logic.
+/// Different industries can implement their own processors.
 /// </summary>
 public interface ICraftingProcessor
 {
     Task<CraftingResult> ProcessCraftingAsync(CharacterId characterId, Recipe recipe,
-        Dictionary<string, object> context);
+        AggregatedCraftingModifiers modifiers, Dictionary<string, object> context);
 }
 
 /// <summary>
-/// Default crafting processor for generic crafting
+/// Default crafting processor for generic crafting.
+/// Applies <see cref="AggregatedCraftingModifiers"/> to the recipe's products.
 /// </summary>
 [ServiceBinding(typeof(ICraftingProcessor))]
 public class DefaultCraftingProcessor : ICraftingProcessor
 {
     public Task<CraftingResult> ProcessCraftingAsync(CharacterId characterId, Recipe recipe,
-        Dictionary<string, object> context)
+        AggregatedCraftingModifiers modifiers, Dictionary<string, object> context)
     {
-        // Default implementation - assumes ingredients are available and consumes them
-        // Real implementation would check inventory, consume ingredients, create products, etc.
+        // Apply modifiers to products
+        List<Product> modifiedProducts = recipe.Products.Select(p =>
+        {
+            // Quality: apply bonus, clamp to NWN range [0, 9]
+            int? quality = p.Quality.HasValue
+                ? Math.Clamp(p.Quality.Value + modifiers.QualityBonus, 0, 9)
+                : (modifiers.QualityBonus != 0 ? (int?)Math.Clamp(modifiers.QualityBonus, 0, 9) : null);
+
+            // Quantity: multiply and floor, minimum 1
+            int quantity = Math.Max(1, (int)Math.Floor(p.Quantity.Value * modifiers.QuantityMultiplier));
+
+            // Success chance: add bonus, clamp to [0.0, 1.0]
+            float? successChance = p.SuccessChance.HasValue
+                ? Math.Clamp(p.SuccessChance.Value + modifiers.SuccessChanceBonus, 0f, 1f)
+                : null;
+
+            return new Product
+            {
+                ItemTag = p.ItemTag,
+                Quantity = Quantity.Parse(quantity),
+                Quality = quality,
+                SuccessChance = successChance
+            };
+        }).ToList();
 
         CraftingResult result = new CraftingResult
         {
             Success = true,
             Message = "Crafting completed successfully",
-            ProductsCreated = recipe.Products.ToList(),
+            ProductsCreated = modifiedProducts,
             IngredientsConsumed = recipe.Ingredients.ToList(),
             KnowledgePointsAwarded = recipe.KnowledgePointsAwarded
         };

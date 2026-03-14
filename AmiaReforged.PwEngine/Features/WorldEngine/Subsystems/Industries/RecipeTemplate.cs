@@ -53,9 +53,10 @@ public class RecipeTemplate
     public required List<TemplateProduct> Products { get; init; }
 
     /// <summary>
-    /// Time in seconds to complete crafting (inherited by expanded recipes).
+    /// Time in rounds to complete crafting (inherited by expanded recipes).
+    /// Progress iterates in rounds, not real-time seconds.
     /// </summary>
-    public int? CraftingTimeSeconds { get; init; }
+    public int? CraftingTimeRounds { get; init; }
 
     /// <summary>
     /// Knowledge points awarded on successful crafting (inherited by expanded recipes).

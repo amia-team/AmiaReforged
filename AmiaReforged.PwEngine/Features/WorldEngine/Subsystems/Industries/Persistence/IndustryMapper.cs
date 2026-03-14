@@ -84,6 +84,14 @@ public static class IndustryMapper
             EffectType = e.EffectType.ToString(),
             TargetTag = e.TargetTag,
             Metadata = e.Metadata
+        }).ToList(),
+        CraftingModifiers = k.CraftingModifiers.Select(m => new CraftingModifierJsonDto
+        {
+            TargetTag = m.TargetTag,
+            Scope = m.Scope.ToString(),
+            StepModified = m.StepModified.ToString(),
+            Value = m.Value,
+            Operation = m.Operation.ToString()
         }).ToList()
     };
 
@@ -115,6 +123,13 @@ public static class IndustryMapper
                     TargetTag = e.TargetTag,
                     Metadata = e.Metadata ?? new Dictionary<string, object>()
                 };
+            }).ToList() ?? [],
+            CraftingModifiers = dto.CraftingModifiers?.Select(m =>
+            {
+                Enum.TryParse<CraftingModifierScope>(m.Scope, true, out CraftingModifierScope scope);
+                Enum.TryParse<CraftingStep>(m.StepModified, true, out CraftingStep step);
+                Enum.TryParse<EffectOperation>(m.Operation, true, out EffectOperation op);
+                return new CraftingModifier(m.TargetTag, scope, step, m.Value, op);
             }).ToList() ?? []
         };
     }
@@ -142,7 +157,7 @@ public static class IndustryMapper
             Quality = p.Quality,
             SuccessChance = p.SuccessChance
         }).ToList(),
-        CraftingTimeSeconds = r.CraftingTimeSeconds,
+        CraftingTimeRounds = r.CraftingTimeRounds,
         KnowledgePointsAwarded = r.KnowledgePointsAwarded,
         Metadata = r.Metadata,
         RequiredWorkstation = r.RequiredWorkstation?.Value,
@@ -172,7 +187,7 @@ public static class IndustryMapper
                 Quality = p.Quality,
                 SuccessChance = p.SuccessChance
             }).ToList() ?? [],
-            CraftingTimeSeconds = dto.CraftingTimeSeconds,
+            CraftingTimeRounds = dto.CraftingTimeRounds,
             KnowledgePointsAwarded = dto.KnowledgePointsAwarded,
             Metadata = dto.Metadata ?? new Dictionary<string, object>(),
             RequiredWorkstation = !string.IsNullOrEmpty(dto.RequiredWorkstation)
@@ -195,6 +210,7 @@ public static class IndustryMapper
         public List<string>? Prerequisites { get; set; }
         public string? Branch { get; set; }
         public List<KnowledgeEffectJsonDto>? Effects { get; set; }
+        public List<CraftingModifierJsonDto>? CraftingModifiers { get; set; }
     }
 
     private class KnowledgeEffectJsonDto
@@ -212,6 +228,15 @@ public static class IndustryMapper
         public string Operation { get; set; } = string.Empty;
     }
 
+    private class CraftingModifierJsonDto
+    {
+        public string TargetTag { get; set; } = string.Empty;
+        public string Scope { get; set; } = string.Empty;
+        public string StepModified { get; set; } = string.Empty;
+        public float Value { get; set; }
+        public string Operation { get; set; } = string.Empty;
+    }
+
     private class RecipeJsonDto
     {
         public string RecipeId { get; set; } = string.Empty;
@@ -221,7 +246,7 @@ public static class IndustryMapper
         public List<string>? RequiredKnowledge { get; set; }
         public List<IngredientJsonDto>? Ingredients { get; set; }
         public List<ProductJsonDto>? Products { get; set; }
-        public int? CraftingTimeSeconds { get; set; }
+        public int? CraftingTimeRounds { get; set; }
         public int KnowledgePointsAwarded { get; set; }
         public Dictionary<string, object>? Metadata { get; set; }
         public string? RequiredWorkstation { get; set; }

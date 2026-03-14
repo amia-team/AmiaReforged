@@ -245,6 +245,7 @@ public class IndustryKnowledgeDto
     public List<string> Prerequisites { get; set; } = [];
     public string? Branch { get; set; }
     public List<IndustryKnowledgeEffectDto> Effects { get; set; } = [];
+    public List<IndustryCraftingModifierDto> CraftingModifiers { get; set; } = [];
 }
 
 public class IndustryKnowledgeEffectDto
@@ -262,6 +263,15 @@ public class IndustryHarvestEffectDto
     public string? Operation { get; set; }
 }
 
+public class IndustryCraftingModifierDto
+{
+    public string TargetTag { get; set; } = string.Empty;
+    public string Scope { get; set; } = string.Empty;
+    public string StepModified { get; set; } = string.Empty;
+    public float Value { get; set; }
+    public string Operation { get; set; } = string.Empty;
+}
+
 public class IndustryRecipeDto
 {
     public string RecipeId { get; set; } = string.Empty;
@@ -271,7 +281,7 @@ public class IndustryRecipeDto
     public List<string> RequiredKnowledge { get; set; } = [];
     public List<IndustryIngredientDto> Ingredients { get; set; } = [];
     public List<IndustryProductDto> Products { get; set; } = [];
-    public int? CraftingTimeSeconds { get; set; }
+    public int? CraftingTimeRounds { get; set; }
     public int KnowledgePointsAwarded { get; set; }
     public string? RequiredWorkstation { get; set; }
     public List<string> RequiredTools { get; set; } = [];
@@ -402,7 +412,7 @@ public class RecipeTemplateDefinitionDto
     public List<string> RequiredKnowledge { get; set; } = [];
     public List<TemplateIngredientDto> Ingredients { get; set; } = [];
     public List<TemplateProductDto> Products { get; set; } = [];
-    public int? CraftingTimeSeconds { get; set; }
+    public int? CraftingTimeRounds { get; set; }
     public int KnowledgePointsAwarded { get; set; }
     public string? RequiredWorkstation { get; set; }
     public List<string> RequiredTools { get; set; } = [];

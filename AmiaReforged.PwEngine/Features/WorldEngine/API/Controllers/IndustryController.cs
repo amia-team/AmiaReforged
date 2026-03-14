@@ -300,6 +300,14 @@ public class IndustryController
                     EffectType = e.EffectType.ToString(),
                     e.TargetTag,
                     e.Metadata
+                }).ToArray(),
+                CraftingModifiers = k.CraftingModifiers.Select(m => new
+                {
+                    m.TargetTag,
+                    Scope = m.Scope.ToString(),
+                    StepModified = m.StepModified.ToString(),
+                    m.Value,
+                    Operation = m.Operation.ToString()
                 }).ToArray()
             }).ToArray(),
             Recipes = industry.Recipes.Select(r => new
@@ -323,7 +331,7 @@ public class IndustryController
                     p.Quality,
                     p.SuccessChance
                 }).ToArray(),
-                r.CraftingTimeSeconds,
+                r.CraftingTimeRounds,
                 r.KnowledgePointsAwarded,
                 RequiredWorkstation = r.RequiredWorkstation?.Value,
                 r.RequiredTools
@@ -367,6 +375,17 @@ public class IndustryController
                             TargetTag = e.TargetTag ?? string.Empty,
                             Metadata = e.Metadata ?? new Dictionary<string, object>()
                         };
+                    }).ToList() ?? [],
+                    CraftingModifiers = k.CraftingModifiers?.Select(m =>
+                    {
+                        Enum.TryParse<Subsystems.Industries.KnowledgeSubsystem.CraftingModifierScope>(
+                            m.Scope, true, out CraftingModifierScope scope);
+                        Enum.TryParse<Subsystems.Industries.KnowledgeSubsystem.CraftingStep>(
+                            m.StepModified, true, out CraftingStep step);
+                        Enum.TryParse<Subsystems.Industries.KnowledgeSubsystem.EffectOperation>(
+                            m.Operation, true, out EffectOperation op);
+                        return new Subsystems.Industries.KnowledgeSubsystem.CraftingModifier(
+                            m.TargetTag ?? string.Empty, scope, step, m.Value, op);
                     }).ToList() ?? []
                 };
             }).ToList() ?? [],
@@ -393,7 +412,7 @@ public class IndustryController
                         Quality = p.Quality,
                         SuccessChance = p.SuccessChance
                     }).ToList() ?? [],
-                    CraftingTimeSeconds = r.CraftingTimeSeconds,
+                    CraftingTimeRounds = r.CraftingTimeRounds,
                     KnowledgePointsAwarded = r.KnowledgePointsAwarded,
                     Metadata = new Dictionary<string, object>(),
                     RequiredWorkstation = !string.IsNullOrEmpty(r.RequiredWorkstation)
@@ -426,6 +445,7 @@ public class IndustryController
         public List<string>? Prerequisites { get; init; }
         public string? Branch { get; init; }
         public KnowledgeEffectDto[]? Effects { get; init; }
+        public CraftingModifierDto[]? CraftingModifiers { get; init; }
     }
 
     private record KnowledgeEffectDto
@@ -443,6 +463,15 @@ public class IndustryController
         public string? Operation { get; init; }
     }
 
+    private record CraftingModifierDto
+    {
+        public string? TargetTag { get; init; }
+        public string? Scope { get; init; }
+        public string? StepModified { get; init; }
+        public float Value { get; init; }
+        public string? Operation { get; init; }
+    }
+
     private record RecipeDto
     {
         public string? RecipeId { get; init; }
@@ -452,7 +481,7 @@ public class IndustryController
         public List<string>? RequiredKnowledge { get; init; }
         public IngredientDto[]? Ingredients { get; init; }
         public ProductDto[]? Products { get; init; }
-        public int? CraftingTimeSeconds { get; init; }
+        public int? CraftingTimeRounds { get; init; }
         public int KnowledgePointsAwarded { get; init; }
         public string? RequiredWorkstation { get; init; }
         public List<string>? RequiredTools { get; init; }

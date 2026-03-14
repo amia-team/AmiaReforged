@@ -49,4 +49,10 @@ public class Knowledge
     /// (unlock recipes, grant codex entries, modify harvest, etc.).
     /// </summary>
     public List<KnowledgeEffect> Effects { get; init; } = [];
+
+    /// <summary>
+    /// Modifiers applied to crafting recipes when the character possesses this knowledge.
+    /// Analogous to <see cref="HarvestEffects"/> for harvesting.
+    /// </summary>
+    public List<CraftingModifier> CraftingModifiers { get; set; } = [];
 }

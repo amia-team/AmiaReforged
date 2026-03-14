@@ -43,9 +43,9 @@ public class PersistedRecipeTemplate
     public string ProductsJson { get; set; } = "[]";
 
     /// <summary>
-    /// Optional crafting time in seconds.
+    /// Optional crafting time in rounds.
     /// </summary>
-    public int? CraftingTimeSeconds { get; set; }
+    public int? CraftingTimeRounds { get; set; }
 
     /// <summary>
     /// Knowledge points awarded on successful crafting.

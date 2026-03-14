@@ -56,6 +56,15 @@ public class TestCharacter(
                       && string.Equals(e.TargetTag, interactionTag, StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <inheritdoc />
+    public List<CraftingModifier> CraftingModifiersForRecipe(string recipeId, string industryTag)
+    {
+        return AllKnowledge()
+            .SelectMany(k => k.CraftingModifiers)
+            .Where(m => m.Matches(recipeId, industryTag))
+            .ToList();
+    }
+
     public int GetKnowledgePoints()
     {
         return _knowledgePoints;

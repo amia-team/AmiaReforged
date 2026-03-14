@@ -44,9 +44,10 @@ public class Recipe
     public required List<Product> Products { get; init; }
 
     /// <summary>
-    /// Time in seconds to complete crafting (optional, may vary by implementation)
+    /// Time in rounds to complete crafting (optional, may vary by implementation).
+    /// Progress iterates in rounds, not real-time seconds.
     /// </summary>
-    public int? CraftingTimeSeconds { get; init; }
+    public int? CraftingTimeRounds { get; init; }
 
     /// <summary>
     /// Knowledge points awarded on successful crafting

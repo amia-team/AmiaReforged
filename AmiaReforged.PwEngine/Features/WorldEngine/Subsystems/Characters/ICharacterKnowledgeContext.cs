@@ -21,6 +21,12 @@ public interface ICharacterKnowledgeContext
     void InvalidateEffectCache();
 
     /// <summary>
+    /// Returns all <see cref="CraftingModifier"/>s from the character's learned knowledge
+    /// that match the given recipe/industry combination.
+    /// </summary>
+    List<CraftingModifier> CraftingModifiersForRecipe(string recipeId, string industryTag);
+
+    /// <summary>
     /// Returns <c>true</c> if the character has learned knowledge whose effects include
     /// <see cref="KnowledgeEffectType.UnlockInteraction"/> targeting <paramref name="interactionTag"/>.
     /// </summary>

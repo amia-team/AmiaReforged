@@ -571,6 +571,51 @@
                 }
                 <button class="btn btn-sm btn-outline-secondary" style="margin-top:6px" @onclick="AddKnowledgeEffect">+ Knowledge Effect</button>
             </div>
+
+            @* Crafting Modifiers *@
+            <div style="margin-top:12px">
+                <label style="font-weight:600">Crafting Modifiers</label>
+                <small style="color:var(--text-secondary);display:block;margin-bottom:6px">Modify crafting recipe outcomes when this knowledge is possessed</small>
+                @for (int idx = 0; idx < _editKnowledge.CraftingModifiers.Count; idx++)
+                {
+                    int i = idx;
+                    <div style="display:flex;gap:8px;margin-top:4px;align-items:center">
+                        <div class="form-group" style="flex:2">
+                            <select class="form-control form-control-sm" @bind="_editKnowledge.CraftingModifiers[i].Scope">
+                                <option value="">-- Scope --</option>
+                                <option value="Recipe">Recipe</option>
+                                <option value="Industry">Industry</option>
+                                <option value="Global">Global</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex:2">
+                            <input class="form-control form-control-sm" placeholder="@GetCraftingModifierPlaceholder(_editKnowledge.CraftingModifiers[i].Scope)" @bind="_editKnowledge.CraftingModifiers[i].TargetTag" />
+                        </div>
+                        <div class="form-group" style="flex:2">
+                            <select class="form-control form-control-sm" @bind="_editKnowledge.CraftingModifiers[i].StepModified">
+                                <option value="">-- Step --</option>
+                                <option value="Quality">Quality</option>
+                                <option value="Quantity">Quantity</option>
+                                <option value="SuccessChance">Success Chance</option>
+                                <option value="CraftingTime">Crafting Time</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex:1">
+                            <input type="number" step="any" class="form-control form-control-sm" placeholder="Value" @bind="_editKnowledge.CraftingModifiers[i].Value" />
+                        </div>
+                        <div class="form-group" style="flex:2">
+                            <select class="form-control form-control-sm" @bind="_editKnowledge.CraftingModifiers[i].Operation">
+                                <option value="">-- Op --</option>
+                                <option value="Additive">Additive</option>
+                                <option value="PercentMult">Percent Mult</option>
+                                <option value="Subtractive">Subtractive</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => _editKnowledge.CraftingModifiers.RemoveAt(i)">X</button>
+                    </div>
+                }
+                <button class="btn btn-sm btn-outline-secondary" style="margin-top:6px" @onclick="AddCraftingModifier">+ Crafting Modifier</button>
+            </div>
         </div>
 
         <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
@@ -623,8 +668,8 @@
             </div>
             <div class="form-row" style="display:flex;gap:10px">
                 <div class="form-group" style="flex:1">
-                    <label>Crafting Time (seconds)</label>
-                    <input type="number" class="form-control" @bind="_editRecipe.CraftingTimeSeconds" />
+                    <label>Crafting Time (rounds)</label>
+                    <input type="number" class="form-control" @bind="_editRecipe.CraftingTimeRounds" />
                 </div>
                 <div class="form-group" style="flex:1">
                     <label>Knowledge Points Awarded</label>
@@ -802,8 +847,8 @@
             </div>
             <div class="form-row" style="display:flex;gap:10px">
                 <div class="form-group" style="flex:1">
-                    <label>Crafting Time (seconds)</label>
-                    <input type="number" class="form-control" @bind="_editTemplate.CraftingTimeSeconds" />
+                    <label>Crafting Time (rounds)</label>
+                    <input type="number" class="form-control" @bind="_editTemplate.CraftingTimeRounds" />
                 </div>
                 <div class="form-group" style="flex:1">
                     <label>Knowledge Points Awarded</label>
@@ -1264,7 +1309,8 @@
             Branch = k.Branch,
             Prerequisites = new List<string>(k.Prerequisites),
             HarvestEffects = new List<IndustryHarvestEffectDto>(k.HarvestEffects),
-            Effects = new List<IndustryKnowledgeEffectDto>(k.Effects)
+            Effects = new List<IndustryKnowledgeEffectDto>(k.Effects),
+            CraftingModifiers = new List<IndustryCraftingModifierDto>(k.CraftingModifiers)
         };
         _editKnowledgePrereqText = string.Join(", ", k.Prerequisites);
         _showKnowledgeModal = true;
@@ -1334,6 +1380,11 @@
         _editKnowledge.Effects.Add(new IndustryKnowledgeEffectDto());
     }
 
+    private void AddCraftingModifier()
+    {
+        _editKnowledge.CraftingModifiers.Add(new IndustryCraftingModifierDto());
+    }
+
     private static string GetKnowledgeEffectPlaceholder(string effectType) => effectType switch
     {
         "UnlockRecipe" => "Recipe ID",
@@ -1342,6 +1393,14 @@
         "UnlockInteraction" => "Interaction tag (e.g. prospect_minerals)",
         "Custom" => "Handler key",
         _ => "Target Tag"
+    };
+
+    private static string GetCraftingModifierPlaceholder(string scope) => scope switch
+    {
+        "Recipe" => "Recipe ID",
+        "Industry" => "Industry tag",
+        "Global" => "* (applies globally)",
+        _ => "Target tag"
     };
 
     // ==================== Recipe CRUD ====================
@@ -1382,7 +1441,7 @@
                 Quality = p.Quality,
                 SuccessChance = p.SuccessChance
             }).ToList(),
-            CraftingTimeSeconds = r.CraftingTimeSeconds,
+            CraftingTimeRounds = r.CraftingTimeRounds,
             KnowledgePointsAwarded = r.KnowledgePointsAwarded,
             RequiredWorkstation = r.RequiredWorkstation,
             RequiredTools = r.RequiredTools.ToList()
