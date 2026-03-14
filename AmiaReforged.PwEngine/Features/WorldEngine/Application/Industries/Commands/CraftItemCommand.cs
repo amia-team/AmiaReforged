@@ -32,6 +32,13 @@ public record CraftItemCommand : ICommand
     /// Optional: Additional context for industry-specific crafting logic
     /// </summary>
     public Dictionary<string, object> Context { get; init; } = new();
+
+    /// <summary>
+    /// Qualities of the input items selected by the player, one per ingredient slot.
+    /// Null entries indicate ingredients with no quality.
+    /// Used to compute the base quality of crafted products.
+    /// </summary>
+    public List<int?> InputQualities { get; init; } = [];
 }
 
 /// <summary>
@@ -101,9 +108,12 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
             .ToList();
         AggregatedCraftingModifiers modifiers = AggregatedCraftingModifiers.Aggregate(rawModifiers);
 
+        // Compute base quality from input ingredient qualities
+        int baseQuality = CraftingQuality.ComputeBaseQuality(command.InputQualities);
+
         // Execute crafting process (industry-specific logic via processor)
         CraftingResult craftingResult =
-            await _craftingProcessor.ProcessCraftingAsync(command.CharacterId, recipe, modifiers, command.Context);
+            await _craftingProcessor.ProcessCraftingAsync(command.CharacterId, recipe, baseQuality, modifiers, command.Context);
 
         if (!craftingResult.Success)
         {
@@ -133,7 +143,7 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
 public interface ICraftingProcessor
 {
     Task<CraftingResult> ProcessCraftingAsync(CharacterId characterId, Recipe recipe,
-        AggregatedCraftingModifiers modifiers, Dictionary<string, object> context);
+        int baseQuality, AggregatedCraftingModifiers modifiers, Dictionary<string, object> context);
 }
 
 /// <summary>
@@ -144,16 +154,14 @@ public interface ICraftingProcessor
 public class DefaultCraftingProcessor : ICraftingProcessor
 {
     public Task<CraftingResult> ProcessCraftingAsync(CharacterId characterId, Recipe recipe,
-        AggregatedCraftingModifiers modifiers, Dictionary<string, object> context)
+        int baseQuality, AggregatedCraftingModifiers modifiers, Dictionary<string, object> context)
     {
+        // Compute output quality: base (from inputs) + knowledge bonus, clamped to craftable range
+        int outputQuality = CraftingQuality.Clamp(baseQuality + modifiers.QualityBonus);
+
         // Apply modifiers to products
         List<Product> modifiedProducts = recipe.Products.Select(p =>
         {
-            // Quality: apply bonus, clamp to NWN range [0, 9]
-            int? quality = p.Quality.HasValue
-                ? Math.Clamp(p.Quality.Value + modifiers.QualityBonus, 0, 9)
-                : (modifiers.QualityBonus != 0 ? (int?)Math.Clamp(modifiers.QualityBonus, 0, 9) : null);
-
             // Quantity: multiply and floor, minimum 1
             int quantity = Math.Max(1, (int)Math.Floor(p.Quantity.Value * modifiers.QuantityMultiplier));
 
@@ -166,7 +174,7 @@ public class DefaultCraftingProcessor : ICraftingProcessor
             {
                 ItemTag = p.ItemTag,
                 Quantity = Quantity.Parse(quantity),
-                Quality = quality,
+                Quality = outputQuality,
                 SuccessChance = successChance
             };
         }).ToList();

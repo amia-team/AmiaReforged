@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
@@ -152,8 +153,8 @@ public class HarvestResourceCommandHandler(
                 }
             }
 
-            totalQuality = Math.Max((int)IPQuality.VeryPoor,
-                Math.Min((int)IPQuality.Masterwork, totalQuality));
+            totalQuality = Math.Max(CraftingQuality.MinCraftable,
+                Math.Min(CraftingQuality.MaxCraftable, totalQuality));
 
             // Calculate quantity
             int totalQuantity = harvestOutput.Quantity;

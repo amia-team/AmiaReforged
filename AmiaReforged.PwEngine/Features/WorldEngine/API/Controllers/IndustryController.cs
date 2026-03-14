@@ -328,7 +328,6 @@ public class IndustryController
                 {
                     p.ItemTag,
                     Quantity = p.Quantity.Value,
-                    p.Quality,
                     p.SuccessChance
                 }).ToArray(),
                 r.CraftingTimeRounds,
@@ -409,7 +408,6 @@ public class IndustryController
                     {
                         ItemTag = p.ItemTag ?? string.Empty,
                         Quantity = SharedKernel.ValueObjects.Quantity.Parse(p.Quantity),
-                        Quality = p.Quality,
                         SuccessChance = p.SuccessChance
                     }).ToList() ?? [],
                     CraftingTimeRounds = r.CraftingTimeRounds,
@@ -499,7 +497,6 @@ public class IndustryController
     {
         public string? ItemTag { get; init; }
         public int Quantity { get; init; }
-        public int? Quality { get; init; }
         public float? SuccessChance { get; init; }
     }
 }

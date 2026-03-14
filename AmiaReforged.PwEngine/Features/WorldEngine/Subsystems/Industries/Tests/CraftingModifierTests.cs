@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
 using NUnit.Framework;
 
@@ -216,48 +217,98 @@ public class CraftingModifierTests
         Assert.That(result.IsEmpty, Is.False);
     }
 
+    // ==================== CraftingQuality.ComputeBaseQuality ====================
+
+    [Test]
+    public void ComputeBaseQuality_AveragesNonNullQualities()
+    {
+        int result = CraftingQuality.ComputeBaseQuality([3, 7, 5]);
+        Assert.That(result, Is.EqualTo(5)); // (3+7+5)/3 = 5
+    }
+
+    [Test]
+    public void ComputeBaseQuality_AllNull_ReturnsDefault()
+    {
+        int result = CraftingQuality.ComputeBaseQuality([null, null]);
+        Assert.That(result, Is.EqualTo(CraftingQuality.DefaultBaseQuality)); // 6
+    }
+
+    [Test]
+    public void ComputeBaseQuality_EmptyList_ReturnsDefault()
+    {
+        int result = CraftingQuality.ComputeBaseQuality([]);
+        Assert.That(result, Is.EqualTo(CraftingQuality.DefaultBaseQuality)); // 6
+    }
+
+    [Test]
+    public void ComputeBaseQuality_MixedNullAndValues()
+    {
+        int result = CraftingQuality.ComputeBaseQuality([null, 8, null, 4]);
+        Assert.That(result, Is.EqualTo(6)); // (8+4)/2 = 6
+    }
+
+    [Test]
+    public void ComputeBaseQuality_FloorsAverage()
+    {
+        int result = CraftingQuality.ComputeBaseQuality([3, 4]); // 3.5 → 3
+        Assert.That(result, Is.EqualTo(3));
+    }
+
     // ==================== DefaultCraftingProcessor integration ====================
 
     [Test]
-    public async Task DefaultProcessor_NoModifiers_PassesProductsUnchanged()
+    public async Task DefaultProcessor_UsesBaseQualityFromInput()
     {
         var processor = new DefaultCraftingProcessor();
-        var recipe = CreateTestRecipe(quality: 3, quantity: 2, successChance: 0.8f);
+        var recipe = CreateTestRecipe(quantity: 2, successChance: 0.8f);
 
         CraftingResult result = await processor.ProcessCraftingAsync(
-            CharacterId(), recipe, AggregatedCraftingModifiers.None, new Dictionary<string, object>());
+            CharacterId(), recipe, 5, AggregatedCraftingModifiers.None, new Dictionary<string, object>());
 
         Assert.That(result.Success, Is.True);
         Assert.That(result.ProductsCreated, Has.Count.EqualTo(1));
-        Assert.That(result.ProductsCreated[0].Quality, Is.EqualTo(3));
+        Assert.That(result.ProductsCreated[0].Quality, Is.EqualTo(5));
         Assert.That(result.ProductsCreated[0].Quantity.Value, Is.EqualTo(2));
         Assert.That(result.ProductsCreated[0].SuccessChance, Is.EqualTo(0.8f));
     }
 
     [Test]
-    public async Task DefaultProcessor_QualityBonusApplied()
+    public async Task DefaultProcessor_BaseQualityPlusBonus()
     {
         var processor = new DefaultCraftingProcessor();
-        var recipe = CreateTestRecipe(quality: 3);
-        var modifiers = new AggregatedCraftingModifiers { QualityBonus = 2 };
+        var recipe = CreateTestRecipe();
+        var modifiers = new AggregatedCraftingModifiers { QualityBonus = 3 };
 
         CraftingResult result = await processor.ProcessCraftingAsync(
-            CharacterId(), recipe, modifiers, new Dictionary<string, object>());
+            CharacterId(), recipe, 5, modifiers, new Dictionary<string, object>());
 
-        Assert.That(result.ProductsCreated[0].Quality, Is.EqualTo(5)); // 3 + 2
+        Assert.That(result.ProductsCreated[0].Quality, Is.EqualTo(8)); // 5 + 3
     }
 
     [Test]
-    public async Task DefaultProcessor_QualityBonusClampsTo9()
+    public async Task DefaultProcessor_QualityClampsToMasterwork()
     {
         var processor = new DefaultCraftingProcessor();
-        var recipe = CreateTestRecipe(quality: 8);
+        var recipe = CreateTestRecipe();
         var modifiers = new AggregatedCraftingModifiers { QualityBonus = 5 };
 
         CraftingResult result = await processor.ProcessCraftingAsync(
-            CharacterId(), recipe, modifiers, new Dictionary<string, object>());
+            CharacterId(), recipe, 10, modifiers, new Dictionary<string, object>());
 
-        Assert.That(result.ProductsCreated[0].Quality, Is.EqualTo(9)); // clamped
+        Assert.That(result.ProductsCreated[0].Quality, Is.EqualTo(CraftingQuality.MaxCraftable)); // 11
+    }
+
+    [Test]
+    public async Task DefaultProcessor_QualityClampsDownToMinCraftable()
+    {
+        var processor = new DefaultCraftingProcessor();
+        var recipe = CreateTestRecipe();
+        var modifiers = new AggregatedCraftingModifiers { QualityBonus = -5 };
+
+        CraftingResult result = await processor.ProcessCraftingAsync(
+            CharacterId(), recipe, 2, modifiers, new Dictionary<string, object>());
+
+        Assert.That(result.ProductsCreated[0].Quality, Is.EqualTo(CraftingQuality.MinCraftable)); // 1
     }
 
     [Test]
@@ -268,7 +319,7 @@ public class CraftingModifierTests
         var modifiers = new AggregatedCraftingModifiers { QuantityMultiplier = 2.0f };
 
         CraftingResult result = await processor.ProcessCraftingAsync(
-            CharacterId(), recipe, modifiers, new Dictionary<string, object>());
+            CharacterId(), recipe, 6, modifiers, new Dictionary<string, object>());
 
         Assert.That(result.ProductsCreated[0].Quantity.Value, Is.EqualTo(6)); // 3 * 2
     }
@@ -281,7 +332,7 @@ public class CraftingModifierTests
         var modifiers = new AggregatedCraftingModifiers { QuantityMultiplier = 0.1f };
 
         CraftingResult result = await processor.ProcessCraftingAsync(
-            CharacterId(), recipe, modifiers, new Dictionary<string, object>());
+            CharacterId(), recipe, 6, modifiers, new Dictionary<string, object>());
 
         Assert.That(result.ProductsCreated[0].Quantity.Value, Is.EqualTo(1)); // min 1
     }
@@ -294,7 +345,7 @@ public class CraftingModifierTests
         var modifiers = new AggregatedCraftingModifiers { SuccessChanceBonus = 0.2f };
 
         CraftingResult result = await processor.ProcessCraftingAsync(
-            CharacterId(), recipe, modifiers, new Dictionary<string, object>());
+            CharacterId(), recipe, 6, modifiers, new Dictionary<string, object>());
 
         Assert.That(result.ProductsCreated[0].SuccessChance, Is.EqualTo(0.9f).Within(0.001f));
     }
@@ -307,34 +358,22 @@ public class CraftingModifierTests
         var modifiers = new AggregatedCraftingModifiers { SuccessChanceBonus = 0.5f };
 
         CraftingResult result = await processor.ProcessCraftingAsync(
-            CharacterId(), recipe, modifiers, new Dictionary<string, object>());
+            CharacterId(), recipe, 6, modifiers, new Dictionary<string, object>());
 
         Assert.That(result.ProductsCreated[0].SuccessChance, Is.EqualTo(1.0f));
     }
 
     [Test]
-    public async Task DefaultProcessor_NullQualityWithBonus_SetsQuality()
+    public async Task DefaultProcessor_DefaultBaseQuality_WhenNoInputs()
     {
         var processor = new DefaultCraftingProcessor();
-        var recipe = CreateTestRecipe(quality: null);
-        var modifiers = new AggregatedCraftingModifiers { QualityBonus = 2 };
+        var recipe = CreateTestRecipe();
+        int baseQuality = CraftingQuality.ComputeBaseQuality([]);
 
         CraftingResult result = await processor.ProcessCraftingAsync(
-            CharacterId(), recipe, modifiers, new Dictionary<string, object>());
+            CharacterId(), recipe, baseQuality, AggregatedCraftingModifiers.None, new Dictionary<string, object>());
 
-        Assert.That(result.ProductsCreated[0].Quality, Is.EqualTo(2));
-    }
-
-    [Test]
-    public async Task DefaultProcessor_NullQualityNoBonus_StaysNull()
-    {
-        var processor = new DefaultCraftingProcessor();
-        var recipe = CreateTestRecipe(quality: null);
-
-        CraftingResult result = await processor.ProcessCraftingAsync(
-            CharacterId(), recipe, AggregatedCraftingModifiers.None, new Dictionary<string, object>());
-
-        Assert.That(result.ProductsCreated[0].Quality, Is.Null);
+        Assert.That(result.ProductsCreated[0].Quality, Is.EqualTo(CraftingQuality.DefaultBaseQuality)); // 6
     }
 
     // ==================== Helpers ====================
@@ -342,7 +381,7 @@ public class CraftingModifierTests
     private static SharedKernel.CharacterId CharacterId() =>
         SharedKernel.CharacterId.From(Guid.NewGuid());
 
-    private static Recipe CreateTestRecipe(int? quality = 2, int quantity = 1, float? successChance = null)
+    private static Recipe CreateTestRecipe(int quantity = 1, float? successChance = null)
     {
         return new Recipe
         {
@@ -363,7 +402,6 @@ public class CraftingModifierTests
                 {
                     ItemTag = "test_output",
                     Quantity = SharedKernel.ValueObjects.Quantity.Parse(quantity),
-                    Quality = quality,
                     SuccessChance = successChance
                 }
             ]

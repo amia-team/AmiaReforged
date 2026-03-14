@@ -299,7 +299,6 @@ public class IndustryProductDto
 {
     public string ItemTag { get; set; } = string.Empty;
     public int Quantity { get; set; }
-    public int? Quality { get; set; }
     public float? SuccessChance { get; set; }
 }
 
@@ -433,7 +432,6 @@ public class TemplateProductDto
     public string OutputForm { get; set; } = string.Empty;
     public int MaterialSourceSlot { get; set; }
     public int Quantity { get; set; }
-    public int? Quality { get; set; }
     public float? SuccessChance { get; set; }
 }
 

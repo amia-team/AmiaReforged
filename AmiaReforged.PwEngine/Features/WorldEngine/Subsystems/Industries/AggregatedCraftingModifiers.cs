@@ -14,8 +14,8 @@ public record AggregatedCraftingModifiers
 {
     /// <summary>
     /// Net additive bonus to output item quality tiers.
-    /// Applied after base quality is determined from input items.
-    /// Clamped to NWN quality range (0–9) at application time.
+    /// Applied after base quality is computed from input ingredient qualities.
+    /// Clamped to craftable range [<see cref="CraftingQuality.MinCraftable"/>, <see cref="CraftingQuality.MaxCraftable"/>] at application time.
     /// </summary>
     public int QualityBonus { get; init; }
 

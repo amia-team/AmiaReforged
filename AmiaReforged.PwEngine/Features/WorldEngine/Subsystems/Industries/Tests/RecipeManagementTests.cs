@@ -48,8 +48,7 @@ public class RecipeManagementTests
                 new Product
                 {
                     ItemTag = "iron_sword",
-                    Quantity = Quantity.Parse(1),
-                    Quality = 2
+                    Quantity = Quantity.Parse(1)
                 }
             ],
             CraftingTimeRounds = 300,
@@ -99,7 +98,6 @@ public class RecipeManagementTests
         Product sword = _testRecipe.Products[0];
         Assert.That(sword.ItemTag, Is.EqualTo("iron_sword"));
         Assert.That(sword.Quantity.Value, Is.EqualTo(1));
-        Assert.That(sword.Quality, Is.EqualTo(2));
     }
 
     [Test]

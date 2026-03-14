@@ -28,11 +28,6 @@ public record TemplateProduct
     public required Quantity Quantity { get; init; }
 
     /// <summary>
-    /// Optional fixed quality for the output item.
-    /// </summary>
-    public int? Quality { get; init; }
-
-    /// <summary>
     /// Optional: Chance this product is created (for random outputs, 0.0–1.0).
     /// </summary>
     public float? SuccessChance { get; init; }

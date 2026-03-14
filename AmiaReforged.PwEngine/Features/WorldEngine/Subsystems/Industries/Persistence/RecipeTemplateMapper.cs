@@ -121,7 +121,6 @@ public static class RecipeTemplateMapper
         OutputForm = p.OutputForm.ToString(),
         MaterialSourceSlot = p.MaterialSourceSlot,
         Quantity = p.Quantity.Value,
-        Quality = p.Quality,
         SuccessChance = p.SuccessChance
     };
 
@@ -134,7 +133,6 @@ public static class RecipeTemplateMapper
             OutputForm = form,
             MaterialSourceSlot = dto.MaterialSourceSlot,
             Quantity = Quantity.Parse(dto.Quantity),
-            Quality = dto.Quality,
             SuccessChance = dto.SuccessChance
         };
     }
@@ -156,7 +154,6 @@ public static class RecipeTemplateMapper
         public string OutputForm { get; set; } = string.Empty;
         public int MaterialSourceSlot { get; set; }
         public int Quantity { get; set; }
-        public int? Quality { get; set; }
         public float? SuccessChance { get; set; }
     }
 }

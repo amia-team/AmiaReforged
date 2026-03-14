@@ -272,7 +272,6 @@ public class RecipeTemplateExpander
             {
                 ItemTag = outputBlueprint.ItemTag,
                 Quantity = templateProduct.Quantity,
-                Quality = templateProduct.Quality,
                 SuccessChance = templateProduct.SuccessChance
             });
         }

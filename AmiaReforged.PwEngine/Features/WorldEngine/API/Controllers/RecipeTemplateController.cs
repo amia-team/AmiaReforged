@@ -115,7 +115,6 @@ public class RecipeTemplateController
                 {
                     p.ItemTag,
                     Quantity = p.Quantity.Value,
-                    p.Quality,
                     p.SuccessChance
                 })
             }),
@@ -311,7 +310,6 @@ public class RecipeTemplateController
                 OutputForm = p.OutputForm.ToString(),
                 p.MaterialSourceSlot,
                 Quantity = p.Quantity.Value,
-                p.Quality,
                 p.SuccessChance
             }).ToArray(),
             t.CraftingTimeRounds,
@@ -352,7 +350,6 @@ public class RecipeTemplateController
                     OutputForm = form,
                     MaterialSourceSlot = p.MaterialSourceSlot,
                     Quantity = Quantity.Parse(p.Quantity),
-                    Quality = p.Quality,
                     SuccessChance = p.SuccessChance
                 };
             }).ToList() ?? [],
@@ -398,7 +395,6 @@ public class RecipeTemplateController
         public string? OutputForm { get; init; }
         public int MaterialSourceSlot { get; init; }
         public int Quantity { get; init; }
-        public int? Quality { get; init; }
         public float? SuccessChance { get; init; }
     }
 }

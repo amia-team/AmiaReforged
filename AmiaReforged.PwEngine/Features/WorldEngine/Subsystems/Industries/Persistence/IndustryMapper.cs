@@ -154,7 +154,6 @@ public static class IndustryMapper
         {
             ItemTag = p.ItemTag,
             Quantity = p.Quantity.Value,
-            Quality = p.Quality,
             SuccessChance = p.SuccessChance
         }).ToList(),
         CraftingTimeRounds = r.CraftingTimeRounds,
@@ -184,7 +183,6 @@ public static class IndustryMapper
             {
                 ItemTag = p.ItemTag,
                 Quantity = Quantity.Parse(p.Quantity),
-                Quality = p.Quality,
                 SuccessChance = p.SuccessChance
             }).ToList() ?? [],
             CraftingTimeRounds = dto.CraftingTimeRounds,
@@ -265,7 +263,6 @@ public static class IndustryMapper
     {
         public string ItemTag { get; set; } = string.Empty;
         public int Quantity { get; set; }
-        public int? Quality { get; set; }
         public float? SuccessChance { get; set; }
     }
 }

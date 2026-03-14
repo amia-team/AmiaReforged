@@ -271,10 +271,11 @@ public sealed class WorkstationCraftingPresenter : ScryPresenter<WorkstationCraf
             sections.Add("\n--- Products ---");
             foreach (Product product in recipe.Products)
             {
-                string quality = product.Quality.HasValue ? $" [quality: {product.Quality}]" : "";
                 string chance = product.SuccessChance.HasValue ? $" ({product.SuccessChance:P0} chance)" : "";
-                sections.Add($"  {product.Quantity.Value}x {product.ItemTag}{quality}{chance}");
+                sections.Add($"  {product.Quantity.Value}x {product.ItemTag}{chance}");
             }
+
+            sections.Add("  Quality: determined by input quality + knowledge");
         }
 
         // Crafting time (with modifier adjustment)
