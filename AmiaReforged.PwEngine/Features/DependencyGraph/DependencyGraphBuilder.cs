@@ -44,7 +44,7 @@ public class DependencyGraphBuilder
             .ToList();
 
         List<TypeEdgeDto> filteredEdges = full.Edges
-            .Where(e => matchingTypeIds.Contains(e.Source) || matchingTypeIds.Contains(e.Target))
+            .Where(e => matchingTypeIds.Contains(e.Source) && matchingTypeIds.Contains(e.Target))
             .ToList();
 
         HashSet<string> usedNamespaces = filteredTypes.Select(t => t.NamespaceId).ToHashSet();
@@ -235,7 +235,10 @@ public class DependencyGraphBuilder
         }
 
         // Deduplicate edges (same source+target+relationship)
+        // Also filter out any edges referencing types not in the graph
+        HashSet<string> typeIdSet = typeNodes.Select(t => t.Id).ToHashSet();
         edges = edges
+            .Where(e => typeIdSet.Contains(e.Source) && typeIdSet.Contains(e.Target))
             .GroupBy(e => (e.Source, e.Target, e.Relationship))
             .Select(g => g.First())
             .ToList();

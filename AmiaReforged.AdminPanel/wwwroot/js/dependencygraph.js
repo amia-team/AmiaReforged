@@ -203,8 +203,15 @@ window.depGraph = (function () {
             typeElements.push(nodeElem);
         });
 
-        // Edges
+        // Edges — skip any where source or target is missing from the graph
+        var typeIdSet = {};
+        types.forEach(function (t) { typeIdSet[t.id] = true; });
+
         edges.forEach(function (e, idx) {
+            if (!typeIdSet[e.source] || !typeIdSet[e.target]) {
+                console.warn('[depGraph] skipping edge e' + idx + ': missing node', e.source, '->', e.target);
+                return;
+            }
             edgeElements.push({
                 group: 'edges',
                 data: {
