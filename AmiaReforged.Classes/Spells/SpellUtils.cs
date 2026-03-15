@@ -167,4 +167,21 @@ public static class SpellUtils
         return TimeSpan.FromSeconds(delay);
     }
 
+    /// <summary>
+    /// Removes overlapping AoE spells from the location for a given spell from the same caster.
+    /// </summary>
+    /// <param name="location">Location to check</param>
+    /// <param name="caster">Caster casting the new AoE</param>
+    /// <param name="spell">Spell being cast</param>
+    /// <param name="radiusSize">The radius to search for the overlapping AoE</param>
+    public static void RemoveAoeSpell(this Location location, NwGameObject caster, NwSpell spell, float radiusSize)
+    {
+        foreach (NwAreaOfEffect areaOfEffect in
+                 location.GetObjectsInShapeByType<NwAreaOfEffect>(Shape.Sphere, radiusSize, false))
+        {
+            if (areaOfEffect.Spell != spell || areaOfEffect.Creator != caster) continue;
+
+            areaOfEffect.Destroy();
+        }
+    }
 }
