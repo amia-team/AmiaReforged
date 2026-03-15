@@ -11,7 +11,6 @@ namespace AmiaReforged.Classes.Warlock.EldritchBlast;
 [ServiceBinding(typeof(BlastHandler))]
 public class BlastHandler
 {
-    private const string EldritchBlastSpellScript = "wlk_el_blst";
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly EssenceFactory _essenceFactory;
     private readonly ShapeFactory _shapeFactory;
@@ -21,7 +20,7 @@ public class BlastHandler
         _essenceFactory = essenceFactory;
         _shapeFactory = shapeFactory;
 
-        scriptHandleFactory.RegisterScriptHandler(EldritchBlastSpellScript, HandleEldritchBlast);
+        scriptHandleFactory.RegisterScriptHandler(WarlockExtensions.EldritchBlastImpactScript, HandleEldritchBlast);
 
         Log.Info("Eldritch Blast Handler initialized and script handler registered.");
     }
