@@ -988,7 +988,7 @@
     private List<AreaNodeDto> _knownAreas = new();
     private Dictionary<string, string> _regionColors = new();
     private string _graphSearchQuery = "";
-    private string _selectedLayout = "compact-grid";
+    private string _selectedLayout = "cose";
     private bool _showLayoutConfigModal;
 
     // ===== Layout Configuration Parameters =====
@@ -999,10 +999,10 @@
     private string _lcInnerSort = "proximity";
     private string _lcOuterSort = "size";
     // CoSE / fCoSE shared
-    private int _lcNodeRepulsion = 2500;
-    private int _lcIdealEdgeLength = 50;
-    private double _lcGravity = 1.0;
-    private double _lcNestingFactor = 0.1;
+    private int _lcNodeRepulsion = 1200;
+    private int _lcIdealEdgeLength = 25;
+    private double _lcGravity = 2.0;
+    private double _lcNestingFactor = 0.15;
     private int _lcNumIter = 800;
     private int _lcPadding = 15;
     // Dagre

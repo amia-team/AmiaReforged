@@ -30,7 +30,7 @@ window.regionGraph = (function () {
     let dotNetRef = null;
 
     /** Currently active layout algorithm name */
-    let _currentLayout = 'compact-grid';
+    let _currentLayout = 'cose';
 
     // 12 distinct colors for region groups
     const REGION_PALETTE = [
@@ -240,7 +240,8 @@ window.regionGraph = (function () {
 
             areaNodeElements.push({
                 group: 'nodes',
-                data: data
+                data: data,
+                position: { x: Math.random() * 800 - 400, y: Math.random() * 800 - 400 }
             });
         });
 
@@ -1676,13 +1677,13 @@ window.regionGraph = (function () {
             }
             // falls through to cose if fcose unavailable
             case 'cose': {
-                var defRep = totalNodes > 200 ? 1200 : (totalNodes > 50 ? 1800 : 2500);
-                var defEdg = totalNodes > 200 ? 25 : (totalNodes > 50 ? 35 : 50);
-                var defGrav = totalNodes > 200 ? 2.0 : (totalNodes > 50 ? 1.2 : 0.8);
+                var defRep = totalNodes > 200 ? 800 : (totalNodes > 50 ? 1200 : 1800);
+                var defEdg = totalNodes > 200 ? 18 : (totalNodes > 50 ? 25 : 35);
+                var defGrav = totalNodes > 200 ? 3.0 : (totalNodes > 50 ? 2.0 : 1.5);
                 var rep = cfg.nodeRepulsion != null ? cfg.nodeRepulsion : defRep;
                 var edg = cfg.idealEdgeLength != null ? cfg.idealEdgeLength : defEdg;
                 var grav = cfg.gravity != null ? cfg.gravity : defGrav;
-                var nest = cfg.nestingFactor != null ? cfg.nestingFactor : 0.1;
+                var nest = cfg.nestingFactor != null ? cfg.nestingFactor : 0.15;
                 var defIter = isLargeGraph ? 400 : 800;
                 var iter = cfg.numIter != null ? cfg.numIter : defIter;
                 opts = {
