@@ -245,10 +245,10 @@ window.depGraph = (function () {
                         'text-valign': 'top',
                         'text-halign': 'center',
                         'text-margin-y': -8,
-                        'padding': '30px',
+                        'padding': '50px',
                         'shape': 'round-rectangle',
-                        'min-width': '100px',
-                        'min-height': '60px'
+                        'min-width': '140px',
+                        'min-height': '80px'
                     }
                 },
                 // Type nodes (children)
@@ -407,24 +407,68 @@ window.depGraph = (function () {
                 cy.fit(undefined, 40);
             } else {
                 _reportProgress(80, 'Running layout...');
-                var layoutName = 'cose';
+
+                // Prefer fcose — it has proper compound node support with
+                // no-overlap constraints so namespace groups don't collide.
+                var hasFcose = typeof cy.layout({ name: 'fcose' }).options !== 'undefined';
                 try {
-                    cy.layout({
-                        name: layoutName,
-                        animate: false,
-                        nodeDimensionsIncludeLabels: true,
-                        idealEdgeLength: 120,
-                        nodeRepulsion: 8000,
-                        numIter: 300,
-                        gravity: 0.3,
-                        nestingFactor: 1.2,
-                        randomize: false
-                    }).run();
+                    // Quick test if fcose is actually registered
+                    cy.layout({ name: 'fcose' });
+                    hasFcose = true;
+                } catch (_) {
+                    hasFcose = false;
+                }
+
+                try {
+                    if (hasFcose) {
+                        cy.layout({
+                            name: 'fcose',
+                            animate: false,
+                            quality: 'proof',                 // highest quality placement
+                            nodeDimensionsIncludeLabels: true,
+                            packComponents: true,             // pack disconnected components
+                            // -- Spacing --
+                            idealEdgeLength: 180,             // spread edges out
+                            nodeRepulsion: function () { return 25000; },
+                            edgeElasticity: function () { return 0.1; },
+                            // -- Compound / Nesting --
+                            nestingFactor: 0.15,              // tighten children inside parents
+                            gravity: 0.2,                     // gentle pull to center
+                            gravityRange: 1.5,
+                            gravityCompound: 0.5,             // keep children near parent center
+                            gravityRangeCompound: 2.0,
+                            // -- Iterations --
+                            numIter: 5000,                    // plenty of iterations for convergence
+                            // -- Overlap removal --
+                            tile: true,                       // tile disconnected components
+                            tilingPaddingVertical: 40,
+                            tilingPaddingHorizontal: 40,
+                            nodeSeparation: 100,              // min gap between sibling nodes
+                            piTol: 0.0000001,
+                            // -- Compound padding --
+                            componentSpacing: 120,            // spacing between disconnected components
+                            randomize: true                   // random start for better results
+                        }).run();
+                    } else {
+                        // Fallback to cose with generous spacing
+                        cy.layout({
+                            name: 'cose',
+                            animate: false,
+                            nodeDimensionsIncludeLabels: true,
+                            idealEdgeLength: 200,
+                            nodeRepulsion: 50000,
+                            numIter: 500,
+                            gravity: 0.15,
+                            nestingFactor: 5,
+                            nodeOverlap: 40,
+                            randomize: true
+                        }).run();
+                    }
                 } catch (e) {
                     console.warn('[depGraph] layout error, falling back to grid:', e);
                     cy.layout({ name: 'grid', animate: false }).run();
                 }
-                cy.fit(undefined, 40);
+                cy.fit(undefined, 60);
             }
 
             _reportProgress(95, 'Setting up interactions...');
