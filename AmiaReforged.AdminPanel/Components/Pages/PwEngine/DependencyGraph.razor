@@ -51,6 +51,7 @@
                 Load Graph
             </button>
             <button class="btn btn-sm btn-outline-secondary" @onclick="FitView" disabled="@(_graphData == null)">Fit</button>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="CollapseAll" disabled="@(_graphData == null)">Collapse All</button>
             <button class="btn btn-sm btn-outline-secondary" @onclick="ClearGraph" disabled="@(_graphData == null)">Clear</button>
         </div>
 
@@ -249,6 +250,9 @@
                 <div class="detail-header">
                     <h5>@_selectedNamespace.Label</h5>
                     <span class="badge bg-primary">namespace</span>
+                    <button class="btn btn-sm btn-outline-primary ms-2" @onclick="() => ExpandNamespace(_selectedNamespace.Id)" title="Expand this namespace">
+                        Expand
+                    </button>
                     <button class="btn btn-sm btn-outline-secondary ms-auto" @onclick="CloseDetailPanel">✕</button>
                 </div>
                 <div class="detail-body">
@@ -430,6 +434,13 @@
         InvokeAsync(StateHasChanged);
     }
 
+    [JSInvokable]
+    public void OnNamespaceExpandChanged(string nsId)
+    {
+        // Track which namespace is expanded (empty = all collapsed)
+        InvokeAsync(StateHasChanged);
+    }
+
     // ===== Search =====
 
     private void OnSearchChanged()
@@ -485,6 +496,16 @@
     private async Task FitView()
     {
         await JS.InvokeVoidAsync("depGraph.fitView");
+    }
+
+    private async Task CollapseAll()
+    {
+        await JS.InvokeVoidAsync("depGraph.collapseAll");
+    }
+
+    private async Task ExpandNamespace(string nsId)
+    {
+        await JS.InvokeVoidAsync("depGraph.expandNamespace", nsId);
     }
 
     private async Task ClearGraph()

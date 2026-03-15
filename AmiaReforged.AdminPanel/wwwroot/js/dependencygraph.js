@@ -64,6 +64,8 @@ window.depGraph = (function () {
     };
 
     let nsColorMap = {};
+    let _expandedNamespace = null;
+    let _visibleRelationships = ['Inherits', 'Implements', 'ConstructorDep', 'FieldDep'];
 
     function _yieldFrame() {
         return new Promise(function (resolve) { requestAnimationFrame(resolve); });
@@ -249,6 +251,29 @@ window.depGraph = (function () {
                         'shape': 'round-rectangle',
                         'min-width': '140px',
                         'min-height': '80px'
+                    }
+                },
+                // Collapsed namespace (dashed border, compact)
+                {
+                    selector: 'node.ns-collapsed',
+                    style: {
+                        'border-style': 'dashed',
+                        'background-opacity': 0.12,
+                        'min-width': '200px',
+                        'min-height': '45px',
+                        'padding': '10px',
+                        'text-valign': 'center',
+                        'text-margin-y': 0,
+                        'font-size': '13px'
+                    }
+                },
+                // Expanded namespace
+                {
+                    selector: 'node.ns-expanded',
+                    style: {
+                        'border-style': 'solid',
+                        'border-width': 3,
+                        'background-opacity': 0.08
                     }
                 },
                 // Type nodes (children)
@@ -471,8 +496,12 @@ window.depGraph = (function () {
                 cy.fit(undefined, 60);
             }
 
-            _reportProgress(95, 'Setting up interactions...');
+            _reportProgress(90, 'Setting up interactions...');
             _setupInteractions();
+
+            _reportProgress(95, 'Collapsing namespaces...');
+            _collapseAll();
+
             _reportProgress(100, 'Complete');
             console.log('[depGraph] init complete —', types.length, 'types,', edges.length, 'edges');
         })();
@@ -480,6 +509,87 @@ window.depGraph = (function () {
         } catch (e) {
             console.error('[depGraph] init error:', e);
         }
+    }
+
+    // ===== Collapse / Expand namespaces =====
+
+    function _collapseAll() {
+        if (!cy) return;
+        _expandedNamespace = null;
+        cy.startBatch();
+        // Hide all type nodes
+        cy.nodes('[!isNamespace]').style('display', 'none');
+        // Hide all edges
+        cy.edges().style('display', 'none');
+        // Mark all namespaces as collapsed with ▶ indicator
+        cy.nodes('[isNamespace = "yes"]').forEach(function (ns) {
+            var base = (ns.data('baseLabel') || ns.data('label')).replace(/^[▶▼] /, '');
+            ns.data('baseLabel', base);
+            ns.data('label', '▶ ' + base);
+            ns.removeClass('ns-expanded');
+            ns.addClass('ns-collapsed');
+        });
+        cy.endBatch();
+        cy.fit(undefined, 40);
+    }
+
+    function _expandNamespace(nsId) {
+        if (!cy) return;
+        cy.startBatch();
+
+        // Collapse previously expanded namespace
+        if (_expandedNamespace && _expandedNamespace !== nsId) {
+            var prevNs = cy.getElementById(_expandedNamespace);
+            if (prevNs && prevNs.length > 0) {
+                prevNs.children().style('display', 'none');
+                prevNs.children().connectedEdges().style('display', 'none');
+                var prevBase = (prevNs.data('baseLabel') || prevNs.data('label')).replace(/^[▶▼] /, '');
+                prevNs.data('baseLabel', prevBase);
+                prevNs.data('label', '▶ ' + prevBase);
+                prevNs.removeClass('ns-expanded');
+                prevNs.addClass('ns-collapsed');
+            }
+        }
+
+        _expandedNamespace = nsId;
+        var nsNode = cy.getElementById(nsId);
+        if (!nsNode || nsNode.length === 0) {
+            cy.endBatch();
+            return;
+        }
+
+        // Show children of this namespace
+        nsNode.children().style('display', 'element');
+
+        // Show edges where BOTH endpoints are visible AND relationship passes filter
+        cy.edges().forEach(function (edge) {
+            var src = cy.getElementById(edge.data('source'));
+            var tgt = cy.getElementById(edge.data('target'));
+            var srcVisible = src.style('display') !== 'none';
+            var tgtVisible = tgt.style('display') !== 'none';
+            var relOk = _visibleRelationships.indexOf(edge.data('relationship')) >= 0;
+            if (srcVisible && tgtVisible && relOk) {
+                edge.style('display', 'element');
+            } else {
+                edge.style('display', 'none');
+            }
+        });
+
+        // Update label to expanded indicator
+        var base = (nsNode.data('baseLabel') || nsNode.data('label')).replace(/^[▶▼] /, '');
+        nsNode.data('baseLabel', base);
+        nsNode.data('label', '▼ ' + base);
+        nsNode.removeClass('ns-collapsed');
+        nsNode.addClass('ns-expanded');
+
+        cy.endBatch();
+
+        // Animate to focus on the expanded namespace
+        cy.animate({
+            fit: { eles: nsNode, padding: 80 },
+            duration: 400,
+            easing: 'ease-out'
+        });
     }
 
     function _setupInteractions() {
@@ -565,6 +675,22 @@ window.depGraph = (function () {
                 }
             }
         });
+
+        // Double-click on namespace → toggle expand/collapse
+        cy.on('dbltap', 'node[isNamespace = "yes"]', function (evt) {
+            var nsId = evt.target.data('id');
+            if (_expandedNamespace === nsId) {
+                _collapseAll();
+            } else {
+                _expandNamespace(nsId);
+            }
+            // Notify Blazor
+            if (dotNetRef) {
+                try {
+                    dotNetRef.invokeMethodAsync('OnNamespaceExpandChanged', _expandedNamespace || '');
+                } catch (e) { }
+            }
+        });
     }
 
     function _clearHighlights() {
@@ -580,6 +706,13 @@ window.depGraph = (function () {
         _clearHighlights();
         var node = cy.getElementById(nodeId);
         if (node && node.length > 0) {
+            // If node is hidden (in collapsed namespace), expand its parent first
+            if (node.style('display') === 'none') {
+                var parentId = node.data('parent');
+                if (parentId) {
+                    _expandNamespace(parentId);
+                }
+            }
             var neighborhood = node.neighborhood();
             cy.elements().not(node).not(neighborhood).addClass('dimmed');
             node.addClass('highlighted');
@@ -642,9 +775,15 @@ window.depGraph = (function () {
      */
     function filterEdges(relationships) {
         if (!cy) return;
+        _visibleRelationships = relationships;
         cy.edges().forEach(function (edge) {
             var rel = edge.data('relationship');
-            if (relationships.indexOf(rel) >= 0) {
+            var relOk = relationships.indexOf(rel) >= 0;
+            // Respect collapse state: only show if both endpoints are visible
+            var src = cy.getElementById(edge.data('source'));
+            var tgt = cy.getElementById(edge.data('target'));
+            var endpointsVisible = src.style('display') !== 'none' && tgt.style('display') !== 'none';
+            if (relOk && endpointsVisible) {
                 edge.style('display', 'element');
             } else {
                 edge.style('display', 'none');
@@ -657,7 +796,17 @@ window.depGraph = (function () {
      */
     function showAllEdges() {
         if (!cy) return;
-        cy.edges().style('display', 'element');
+        _visibleRelationships = ['Inherits', 'Implements', 'ConstructorDep', 'FieldDep'];
+        // Respect collapse state: only show edges where both endpoints are visible
+        cy.edges().forEach(function (edge) {
+            var src = cy.getElementById(edge.data('source'));
+            var tgt = cy.getElementById(edge.data('target'));
+            if (src.style('display') !== 'none' && tgt.style('display') !== 'none') {
+                edge.style('display', 'element');
+            } else {
+                edge.style('display', 'none');
+            }
+        });
     }
 
     /**
@@ -677,6 +826,7 @@ window.depGraph = (function () {
         }
         dotNetRef = null;
         nsColorMap = {};
+        _expandedNamespace = null;
     }
 
     return {
@@ -689,6 +839,8 @@ window.depGraph = (function () {
         filterEdges: filterEdges,
         showAllEdges: showAllEdges,
         getNodeCount: getNodeCount,
+        collapseAll: function () { _collapseAll(); },
+        expandNamespace: function (nsId) { _expandNamespace(nsId); },
         destroy: destroy
     };
 })();
