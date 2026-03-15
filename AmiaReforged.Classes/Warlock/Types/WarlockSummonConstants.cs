@@ -16,7 +16,7 @@ public static class WarlockSummonConstants
     ///     immune to sneak attacks, critical hits, mind-affecting spells, paralysis, poison, and disease, death magic, level
     ///     drain, and ability drain
     /// </summary>
-    public static readonly Effect UndeadImmunities = Effect.LinkEffects(Effect.Immunity(ImmunityType.SneakAttack),
+    private static readonly Effect UndeadImmunities = Effect.LinkEffects(Effect.Immunity(ImmunityType.SneakAttack),
         Effect.Immunity(ImmunityType.CriticalHit),
         Effect.Immunity(ImmunityType.MindSpells), Effect.Immunity(ImmunityType.Paralysis),
         Effect.Immunity(ImmunityType.Poison), Effect.Immunity(ImmunityType.Disease),
