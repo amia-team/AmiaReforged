@@ -84,7 +84,7 @@ public class InvocationHandler
     private static bool IsInvocation(NwCreature warlock, int classIndex, NwSpell? spell)
     {
         // You cannot always guarantee that the object casting a spell actually has any classes.
-        if (classIndex < 0) return false;
+        if (classIndex < 0 || classIndex >= warlock.Classes.Count) return false;
 
         return spell?.ImpactScript == EldritchBlastSpellScript
                || warlock.Classes[classIndex].Class.Id == WarlockExtensions.WarlockId;
