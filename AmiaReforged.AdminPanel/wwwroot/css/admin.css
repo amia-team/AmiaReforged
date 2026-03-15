@@ -1629,6 +1629,14 @@ a:hover {
     flex-wrap: wrap;
 }
 
+.dep-graph-editor__graph {
+    flex: 1;
+    min-height: 0;
+    /* Fallback if flex chain fails */
+    height: calc(100vh - 200px);
+    background: #1a1a2e;
+}
+
 .dep-graph-editor__loading-overlay {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -1650,6 +1658,7 @@ a:hover {
     font-size: 0.72rem;
     color: var(--text-secondary);
     z-index: 10;
+    pointer-events: none;
 }
 
 .dep-graph-editor__legend .legend-title {
