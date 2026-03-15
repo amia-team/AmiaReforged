@@ -28,7 +28,6 @@ public class InvocationHandler
             || eventData.Spell is not { } spell
             || !IsInvocation(warlock, eventData.ClassIndex, eventData.Spell)) return;
 
-
         ResetWarlockInvocations(warlock);
 
         if (!InvocationFailCheck(warlock)) return;
@@ -84,5 +83,5 @@ public class InvocationHandler
 
     private static bool IsInvocation(NwCreature warlock, int classIndex, NwSpell? spell) =>
         spell?.ImpactScript == EldritchBlastSpellScript
-        || warlock.Classes.Any(c => c.Class.Id == 57);
+        || warlock.Classes[classIndex].Class.Id == WarlockExtensions.WarlockId;
 }
