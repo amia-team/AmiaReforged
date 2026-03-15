@@ -8,7 +8,6 @@ using Microsoft.Msagl.Core.Geometry.Curves;
 using Microsoft.Msagl.Core.Layout;
 using Microsoft.Msagl.Layout.Layered;
 using Microsoft.Msagl.Layout.MDS;
-using Microsoft.Msagl.Miscellaneous;
 
 namespace AmiaReforged.AdminPanel.Services;
 
@@ -185,11 +184,15 @@ public class GraphLayoutService
 
         try
         {
-            LayoutHelpers.CalculateLayout(graph, settings, null);
+            // Run only node positioning (MdsGraphLayout), NOT edge routing.
+            // LayoutHelpers.CalculateLayout runs SplineRouter which crashes on
+            // overlapping nodes (Point.Normalize() with zero-length vector).
+            var mds = new MdsGraphLayout(settings, graph);
+            mds.Run();
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "MDS layout failed, falling back to manual spread");
+            _logger.LogWarning(ex, "MDS layout failed, falling back to compact grid");
             return ComputeCompactGridLayout(graphData, regions, config, progress);
         }
 
@@ -242,7 +245,11 @@ public class GraphLayoutService
 
         try
         {
-            LayoutHelpers.CalculateLayout(graph, settings, null);
+            // Run only node positioning (LayeredLayout), NOT edge routing.
+            // LayoutHelpers.CalculateLayout runs SplineRouter which can crash on
+            // overlapping nodes (Point.Normalize() with zero-length vector).
+            var layered = new LayeredLayout(graph, settings);
+            layered.Run();
         }
         catch (Exception ex)
         {
@@ -532,11 +539,16 @@ public class GraphLayoutService
             }
         }
 
-        // Create MSAGL nodes for all areas
+        // Create MSAGL nodes for all areas with small random offsets
+        // to prevent degenerate cases (Point.Normalize() fails on zero-length vectors
+        // when nodes start at the exact same position)
+        var rng = new Random(42); // deterministic seed for cache consistency
         List<AreaNodeDto> allNodes = graphData.Nodes.Concat(graphData.DisconnectedAreas).ToList();
         foreach (AreaNodeDto nodeDto in allNodes)
         {
-            ICurve curve = CurveFactory.CreateRectangle(NodeWidth, NodeHeight, new Point(0, 0));
+            double offsetX = rng.NextDouble() * 2 - 1; // -1 to +1
+            double offsetY = rng.NextDouble() * 2 - 1;
+            ICurve curve = CurveFactory.CreateRectangle(NodeWidth, NodeHeight, new Point(offsetX, offsetY));
             var node = new Node(curve, nodeDto.ResRef);
             graph.Nodes.Add(node);
             nodeMap[nodeDto.ResRef] = node;
