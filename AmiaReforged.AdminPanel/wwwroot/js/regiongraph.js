@@ -61,8 +61,72 @@ window.regionGraph = (function () {
     let _docContextHandler = null;
     let _wrapperEl = null;
 
+    /** Monotonic counter to detect stale progressive-render runs */
+    let _initGeneration = 0;
+
+    /** Batch size constants for progressive rendering */
+    const BATCH_SIZE_NODES = 80;
+    const BATCH_SIZE_EDGES = 200;
+
+    /**
+     * Yield control back to the browser so the UI thread can paint.
+     * @returns {Promise<void>}
+     */
+    function _yieldFrame() {
+        return new Promise(function (resolve) { requestAnimationFrame(resolve); });
+    }
+
+    /**
+     * Report loading progress back to Blazor.
+     * @param {number} percent 0-100
+     * @param {string} phase description of current phase
+     */
+    function _reportProgress(percent, phase) {
+        if (dotNetRef) {
+            try {
+                dotNetRef.invokeMethodAsync('OnGraphLoadProgress', Math.round(percent), phase);
+            } catch (e) {
+                // Blazor circuit may be disposed — ignore
+            }
+        }
+    }
+
+    /**
+     * Add an array of elements to the Cytoscape instance in chunks, yielding
+     * between each chunk so the browser stays responsive.
+     * @param {Array} elements Cytoscape element descriptors
+     * @param {number} batchSize Number of elements per chunk
+     * @param {number} basePercent Progress percentage at start of this phase
+     * @param {number} phaseWeight How much of the 0-100 range this phase occupies
+     * @param {string} phaseLabel Human-readable label for progress reporting
+     * @param {number} generation Init generation to check for cancellation
+     * @returns {Promise<boolean>} false if cancelled (stale generation)
+     */
+    async function _addElementsProgressively(elements, batchSize, basePercent, phaseWeight, phaseLabel, generation) {
+        var total = elements.length;
+        if (total === 0) return true;
+
+        for (var i = 0; i < total; i += batchSize) {
+            // Check for cancellation (a newer init() was called)
+            if (_initGeneration !== generation) return false;
+
+            var chunk = elements.slice(i, Math.min(i + batchSize, total));
+            cy.startBatch();
+            cy.add(chunk);
+            cy.endBatch();
+
+            var pct = basePercent + ((i + chunk.length) / total) * phaseWeight;
+            _reportProgress(pct, phaseLabel);
+
+            // Yield to the browser between chunks
+            await _yieldFrame();
+        }
+        return true;
+    }
+
     /**
      * Initialize the region graph visual editor.
+     * Uses progressive (chunked) rendering to keep the browser responsive.
      * @param {string} containerId DOM id of the container div
      * @param {string} nodesJson JSON array of AreaNodeDto (connected)
      * @param {string} edgesJson JSON array of AreaEdgeDto
@@ -71,9 +135,12 @@ window.regionGraph = (function () {
      * @param {DotNet.DotNetObject} blazorRef .NET object ref for callbacks
      */
     function init(containerId, nodesJson, edgesJson, disconnectedJson, regionsJson, blazorRef) {
-        console.log('[regionGraph] init v8 called');
+        console.log('[regionGraph] init v9 (progressive) called');
         destroy();
         dotNetRef = blazorRef || null;
+
+        // Increment generation so any in-flight progressive render from a previous call stops
+        var generation = ++_initGeneration;
 
         var container = document.getElementById(containerId);
         if (!container) {
@@ -84,6 +151,8 @@ window.regionGraph = (function () {
         _wrapperEl = container.closest('.region-editor__graph-wrapper') || container.parentElement;
 
         try {
+
+        _reportProgress(0, 'Parsing data...');
 
         var nodes = JSON.parse(nodesJson);
         var edges = JSON.parse(edgesJson);
@@ -114,14 +183,18 @@ window.regionGraph = (function () {
             });
         });
 
-        var elements = [];
+        // ===== Prepare elements (pure data transform, fast) =====
 
-        // Add region parent (compound) nodes
+        var regionParentElements = [];
+        var areaNodeElements = [];
+        var edgeElements = [];
+
+        // Region parent (compound) nodes
         regions.forEach(function (r) {
             var tag = String(r.tag || '');
             var name = String(r.name || '') || tag;
             var color = regionColorMap[tag.toLowerCase()] || COLORS.unassigned;
-            elements.push({
+            regionParentElements.push({
                 group: 'nodes',
                 data: {
                     id: 'region_' + tag,
@@ -165,14 +238,14 @@ window.regionGraph = (function () {
                 data.parent = 'region_' + parentRegionTag;
             }
 
-            elements.push({
+            areaNodeElements.push({
                 group: 'nodes',
                 data: data
             });
         });
 
         edges.forEach(function (e, idx) {
-            elements.push({
+            edgeElements.push({
                 group: 'edges',
                 data: {
                     id: 'e' + idx,
@@ -184,6 +257,8 @@ window.regionGraph = (function () {
             });
         });
 
+        // ===== Create Cytoscape instance (empty, fast) =====
+
         cy = cytoscape({
             container: container,
             elements: [],
@@ -193,6 +268,8 @@ window.regionGraph = (function () {
             textureOnViewport: true,
             hideEdgesOnViewport: true,
             boxSelectionEnabled: true,
+            // Reduce GPU work during progressive loading
+            pixelRatio: 1,
             style: [
                 // ===== Region parent (compound) nodes =====
                 {
@@ -352,12 +429,88 @@ window.regionGraph = (function () {
             layout: { name: 'preset' }
         });
 
-        cy.startBatch();
-        cy.add(elements);
-        cy.endBatch();
+        // ===== Register event handlers immediately (before progressive add) =====
+        _registerEventHandlers(container);
 
-        // Run the active layout (defaults to compact-grid)
-        runLayout(_currentLayout);
+        // ===== Progressive element addition =====
+        // Phase 1: Region parents (5%), Phase 2: Area nodes (60%), Phase 3: Edges (25%), Phase 4: Layout (10%)
+        _renderProgressively(regionParentElements, areaNodeElements, edgeElements, generation);
+
+        } catch (err) {
+            console.error('[regionGraph] init() failed:', err);
+            _reportProgress(100, 'Error');
+        }
+    }
+
+    /**
+     * Progressively add elements to the Cytoscape instance in chunks,
+     * yielding to the browser between each chunk for responsiveness.
+     */
+    async function _renderProgressively(regionParentElements, areaNodeElements, edgeElements, generation) {
+        try {
+            // Phase 1: Add region parent nodes (few, add all at once)
+            _reportProgress(2, 'Adding regions...');
+            if (regionParentElements.length > 0) {
+                cy.startBatch();
+                cy.add(regionParentElements);
+                cy.endBatch();
+            }
+            _reportProgress(5, 'Adding regions...');
+            await _yieldFrame();
+
+            if (_initGeneration !== generation) return; // cancelled
+
+            // Phase 2: Add area nodes progressively
+            var ok = await _addElementsProgressively(
+                areaNodeElements, BATCH_SIZE_NODES,
+                5,   // basePercent
+                60,  // phaseWeight (5% -> 65%)
+                'Adding areas...',
+                generation
+            );
+            if (!ok) return; // cancelled
+
+            // Phase 3: Add edges progressively
+            ok = await _addElementsProgressively(
+                edgeElements, BATCH_SIZE_EDGES,
+                65,  // basePercent
+                25,  // phaseWeight (65% -> 90%)
+                'Adding edges...',
+                generation
+            );
+            if (!ok) return; // cancelled
+
+            // Phase 4: Run layout
+            _reportProgress(90, 'Running layout...');
+            await _yieldFrame();
+
+            if (_initGeneration !== generation) return; // cancelled
+
+            runLayout(_currentLayout);
+
+            // Restore pixel ratio after loading is complete
+            if (cy) {
+                cy.renderer().pixelRatio = window.devicePixelRatio || 1;
+                cy.resize();
+            }
+
+            _reportProgress(100, 'Complete');
+            console.log('[regionGraph] progressive init complete — ' +
+                regionParentElements.length + ' regions, ' +
+                areaNodeElements.length + ' areas, ' +
+                edgeElements.length + ' edges');
+        } catch (err) {
+            console.error('[regionGraph] progressive render failed:', err);
+            _reportProgress(100, 'Error');
+        }
+    }
+
+    /**
+     * Register all Cytoscape event handlers on the current cy instance.
+     * Separated from init() so it can be called before progressive rendering starts.
+     */
+    function _registerEventHandlers(container) {
+        if (!cy) return;
 
         // ===== Node click — select =====
         cy.on('tap', 'node[isRegionParent != "yes"]', function (evt) {
@@ -556,11 +709,7 @@ window.regionGraph = (function () {
         document.addEventListener('click', _docClickHandler);
         document.addEventListener('contextmenu', _docContextHandler);
 
-        console.log('[regionGraph] init v8 complete — all event handlers registered');
-
-        } catch (err) {
-            console.error('[regionGraph] init() failed:', err);
-        }
+        console.log('[regionGraph] event handlers registered');
     }
 
     // ========== Context Menu Functions ==========

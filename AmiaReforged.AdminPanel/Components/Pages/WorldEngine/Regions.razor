@@ -167,8 +167,22 @@
                     }
                     @if (_isGraphLoading)
                     {
-                        <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-secondary)">
-                            <em>Loading area graph...</em>
+                        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-secondary);gap:12px">
+                            @if (_graphLoadPercent > 0 && _graphLoadPercent < 100)
+                            {
+                                <div style="width:280px">
+                                    <div style="background:rgba(255,255,255,0.08);border-radius:6px;height:12px;overflow:hidden">
+                                        <div style="background:var(--accent-color, #c9a84c);height:100%;border-radius:6px;transition:width 0.15s ease;width:@(_graphLoadPercent)%"></div>
+                                    </div>
+                                    <div style="text-align:center;margin-top:6px;font-size:0.85rem">
+                                        @_graphLoadPhase (@_graphLoadPercent%)
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <em>Loading area graph...</em>
+                            }
                         </div>
                     }
                 </div>
@@ -977,6 +991,8 @@
 
     // ===== Area Graph =====
     private bool _isGraphLoading;
+    private int _graphLoadPercent;
+    private string _graphLoadPhase = "";
     private AreaGraphDto? _graphData;
     private List<AreaNodeDto> _knownAreas = new();
     private Dictionary<string, string> _regionColors = new();
@@ -1137,6 +1153,8 @@
     private async Task FetchGraph(bool refresh)
     {
         _isGraphLoading = true;
+        _graphLoadPercent = 0;
+        _graphLoadPhase = "";
         _error = null;
         StateHasChanged();
 
@@ -1153,16 +1171,21 @@
                 StateHasChanged();
                 await Task.Delay(50);
                 await RenderRegionGraph();
+                // _isGraphLoading will be cleared by OnGraphLoadProgress(100, ...) from JS
+            }
+            else
+            {
+                _isGraphLoading = false;
             }
         }
         catch (Exception ex)
         {
             _error = $"Failed to load area graph: {ex.Message}";
             Logger.LogError(ex, "Failed to load area graph");
+            _isGraphLoading = false;
         }
         finally
         {
-            _isGraphLoading = false;
             StateHasChanged();
         }
     }
@@ -1387,6 +1410,19 @@
     }
 
     // ===== JS Callbacks =====
+
+    [JSInvokable]
+    public Task OnGraphLoadProgress(int percent, string phase)
+    {
+        _graphLoadPercent = percent;
+        _graphLoadPhase = phase;
+        if (percent >= 100)
+        {
+            _isGraphLoading = false;
+        }
+        InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
+    }
 
     [JSInvokable]
     public Task OnGraphNodeSelected(string json)
