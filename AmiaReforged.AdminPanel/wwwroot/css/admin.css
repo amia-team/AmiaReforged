@@ -1561,3 +1561,211 @@ a:hover {
     text-align: center;
     font-style: italic;
 }
+
+/* ========== PwEngine Dependency Graph ========== */
+
+.dep-graph-editor {
+    padding: 8px 12px 0 12px;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.dep-graph-editor__toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px 8px 0 0;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.dep-graph-editor__toolbar h1 {
+    font-size: 1.05rem;
+    margin: 0;
+    margin-right: 6px;
+    white-space: nowrap;
+}
+
+.dep-graph-editor__toolbar .toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dep-graph-editor__main {
+    display: flex;
+    border: 1px solid var(--border-subtle);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
+}
+
+.dep-graph-editor__graph-wrapper {
+    flex: 1;
+    min-width: 300px;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background: #1a1a2e;
+}
+
+.dep-graph-editor__stats-bar {
+    display: flex;
+    gap: 12px;
+    padding: 4px 12px;
+    background: rgba(0,0,0,0.4);
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.dep-graph-editor__loading-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+}
+
+.dep-graph-editor__legend {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    background: rgba(0,0,0,0.75);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    z-index: 10;
+}
+
+.dep-graph-editor__legend .legend-title {
+    font-weight: bold;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.dep-graph-editor__legend .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 2px;
+}
+
+.dep-graph-editor__legend .legend-shape {
+    display: inline-block;
+    width: 14px;
+    text-align: center;
+    font-size: 0.68rem;
+}
+
+.dep-graph-editor__legend .legend-line {
+    display: inline-block;
+    width: 20px;
+    height: 0;
+    border-top: 2px solid;
+}
+
+.dep-graph-editor__detail-panel {
+    width: 360px;
+    min-width: 280px;
+    background: var(--bg-card);
+    border-left: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
+.dep-graph-editor__detail-panel .detail-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-subtle);
+    flex-wrap: wrap;
+}
+
+.dep-graph-editor__detail-panel .detail-header h5 {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.dep-graph-editor__detail-panel .detail-body {
+    padding: 10px 12px;
+}
+
+.dep-graph-editor__detail-panel .detail-field {
+    margin-bottom: 10px;
+}
+
+.dep-graph-editor__detail-panel .detail-field label {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dep-graph-editor__detail-panel .detail-value {
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+
+.dep-graph-editor__detail-panel .detail-edge-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.dep-graph-editor__detail-panel .detail-edge-list li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 0;
+    font-size: 0.8rem;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.dep-graph-editor__detail-panel .edge-type {
+    font-size: 0.68rem;
+    padding: 1px 5px;
+    border-radius: 3px;
+    white-space: nowrap;
+}
+
+.edge-type--inherits { background: rgba(91,164,181,0.2); color: #5ba4b5; }
+.edge-type--implements { background: rgba(78,204,163,0.2); color: #4ecca3; }
+.edge-type--constructordep { background: rgba(245,130,49,0.2); color: #f58231; }
+.edge-type--fielddep { background: rgba(136,136,136,0.2); color: #999; }
+
+.dep-graph-editor__detail-panel .edge-target {
+    cursor: pointer;
+    color: var(--accent);
+}
+
+.dep-graph-editor__detail-panel .edge-target:hover {
+    text-decoration: underline;
+}
+
+.dep-graph-editor__detail-panel .edge-label {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    font-style: italic;
+}

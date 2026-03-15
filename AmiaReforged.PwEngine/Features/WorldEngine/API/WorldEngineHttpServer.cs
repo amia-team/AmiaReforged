@@ -34,7 +34,7 @@ public class WorldEngineHttpServer : IDisposable
         _cts = new CancellationTokenSource();
 
         _listener = new HttpListener();
-        _listener.Prefixes.Add($"http://+:{port}/api/worldengine/");
+        _listener.Prefixes.Add($"http://+:{port}/api/");
 
         _logger.Info("WorldEngineHttpServer initialized on port {Port}", port);
     }

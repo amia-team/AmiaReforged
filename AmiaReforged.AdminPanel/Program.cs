@@ -70,6 +70,7 @@ public class Program
             builder.Services.AddScoped<CoinhouseApiService>();
             builder.Services.AddScoped<InteractionApiService>();
             builder.Services.AddScoped<RecipeTemplateApiService>();
+            builder.Services.AddScoped<DependencyGraphApiService>();
 
             // Graph layout computation (singleton for shared cache)
             builder.Services.AddSingleton<GraphLayoutService>();

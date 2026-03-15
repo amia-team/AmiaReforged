@@ -89,15 +89,37 @@
                 </NavLink>
             </div>
         }
+
+        <div class="nav-item px-3">
+            <a class="nav-link" href="javascript:void(0)" @onclick="TogglePwEngine" @onclick:preventDefault>
+                <span class="bi bi-cpu" aria-hidden="true"></span> PwEngine
+                <span class="float-end">@(_pwEngineExpanded ? "▾" : "▸")</span>
+            </a>
+        </div>
+
+        @if (_pwEngineExpanded)
+        {
+            <div class="nav-item px-3 ps-5">
+                <NavLink class="nav-link" href="pwengine/dependency-graph">
+                    <span class="bi bi-diagram-3" aria-hidden="true"></span> Dependency Graph
+                </NavLink>
+            </div>
+        }
     </nav>
 </div>
 
 @code {
     private bool _worldEngineExpanded = false;
+    private bool _pwEngineExpanded = false;
 
     private void ToggleWorldEngine()
     {
         _worldEngineExpanded = !_worldEngineExpanded;
+    }
+
+    private void TogglePwEngine()
+    {
+        _pwEngineExpanded = !_pwEngineExpanded;
     }
 }
 

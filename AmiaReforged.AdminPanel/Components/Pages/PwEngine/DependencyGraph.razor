@@ -1,0 +1,546 @@
+@page "/pwengine/dependency-graph"
+@using Microsoft.AspNetCore.Authorization
+@using AmiaReforged.AdminPanel.Models
+@using AmiaReforged.AdminPanel.Services
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@attribute [Authorize]
+@inject DependencyGraphApiService Api
+@inject IWorldEngineEndpointService EndpointService
+@inject ILogger<DependencyGraph> Logger
+@inject IJSRuntime JS
+@inject GraphLayoutService LayoutService
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+
+<PageTitle>PwEngine — Dependency Graph</PageTitle>
+
+<div class="dep-graph-editor">
+    @* ===== Toolbar ===== *@
+    <div class="dep-graph-editor__toolbar">
+        <h1>PwEngine Dependencies</h1>
+
+        @if (_endpoints.Count > 0)
+        {
+            <div class="toolbar-group">
+                <label style="font-size:0.82rem;color:var(--text-secondary);white-space:nowrap">Server:</label>
+                <select class="form-control form-control-sm" style="width:auto;min-width:140px"
+                        value="@_selectedEndpointId" @onchange="OnEndpointChanged">
+                    <option value="">— select —</option>
+                    @foreach (var ep in _endpoints)
+                    {
+                        <option value="@ep.Id">@ep.Name</option>
+                    }
+                </select>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(_selectedEndpointId))
+        {
+            <div class="toolbar-group">
+                <label style="font-size:0.82rem;color:var(--text-secondary);white-space:nowrap">Filter:</label>
+                <input type="text" class="form-control form-control-sm" style="width:200px"
+                       placeholder="Namespace prefix..."
+                       @bind="_namespaceFilter" @bind:event="oninput" />
+            </div>
+
+            <div class="toolbar-group">
+                <button class="btn btn-sm btn-primary" @onclick="LoadGraph" disabled="@_loading">
+                    @if (_loading)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1"></span>
+                    }
+                    Load Graph
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="FitView">Fit</button>
+            </div>
+
+            @* Search *@
+            <div class="toolbar-group ms-auto">
+                <input type="text" class="form-control form-control-sm" style="width:180px"
+                       placeholder="Search types..."
+                       @bind="_searchQuery" @bind:event="oninput" @bind:after="OnSearchChanged" />
+                @if (_searchResults.Count > 0)
+                {
+                    <select class="form-control form-control-sm" style="width:200px"
+                            @onchange="OnSearchResultSelected">
+                        <option value="">@(_searchResults.Count) results</option>
+                        @foreach (var r in _searchResults)
+                        {
+                            <option value="@r.Id">@r.Label (@r.Kind)</option>
+                        }
+                    </select>
+                }
+            </div>
+
+            @* Edge filter toggles *@
+            <div class="toolbar-group">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="chkInherits" checked="@_showInherits"
+                           @onchange="@(e => ToggleEdgeFilter("Inherits", e))" />
+                    <label class="form-check-label" for="chkInherits" style="color:#5ba4b5;font-size:0.8rem">Inherits</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="chkImplements" checked="@_showImplements"
+                           @onchange="@(e => ToggleEdgeFilter("Implements", e))" />
+                    <label class="form-check-label" for="chkImplements" style="color:#4ecca3;font-size:0.8rem">Implements</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="chkCtor" checked="@_showCtorDeps"
+                           @onchange="@(e => ToggleEdgeFilter("ConstructorDep", e))" />
+                    <label class="form-check-label" for="chkCtor" style="color:#f58231;font-size:0.8rem">Constructor</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="chkField" checked="@_showFieldDeps"
+                           @onchange="@(e => ToggleEdgeFilter("FieldDep", e))" />
+                    <label class="form-check-label" for="chkField" style="color:#888;font-size:0.8rem">Field/Prop</label>
+                </div>
+            </div>
+        }
+    </div>
+
+    @* ===== Error/Success alerts ===== *@
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger alert-dismissible fade show m-2" role="alert">
+            @_error
+            <button type="button" class="btn-close" @onclick="@(() => _error = null)"></button>
+        </div>
+    }
+
+    @* ===== Main content ===== *@
+    <div class="dep-graph-editor__main">
+        @* Graph area *@
+        <div class="dep-graph-editor__graph-wrapper">
+            @* Stats bar *@
+            @if (_graphData != null)
+            {
+                <div class="dep-graph-editor__stats-bar">
+                    <span>Types: <strong>@_graphData.Stats.TotalTypes</strong></span>
+                    <span>Namespaces: <strong>@_graphData.Stats.TotalNamespaces</strong></span>
+                    <span>Edges: <strong>@_graphData.Stats.TotalEdges</strong></span>
+                    <span class="ms-2" style="color:#5ba4b5">Inherits: @_graphData.Stats.InheritsEdges</span>
+                    <span style="color:#4ecca3">Implements: @_graphData.Stats.ImplementsEdges</span>
+                    <span style="color:#f58231">Ctor: @_graphData.Stats.ConstructorDepEdges</span>
+                    <span style="color:#888">Field: @_graphData.Stats.FieldDepEdges</span>
+                </div>
+            }
+
+            @* Loading progress *@
+            @if (_loading)
+            {
+                <div class="dep-graph-editor__loading-overlay">
+                    <div class="text-center">
+                        <div class="spinner-border text-light mb-2" role="status"></div>
+                        <div class="text-light">@_loadingPhase</div>
+                        <div class="progress mt-2" style="width:200px">
+                            <div class="progress-bar" style="width:@(_loadingPercent)%"></div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @* Cytoscape container *@
+            <div id="dep-cy" style="width:100%;height:100%;background:#1a1a2e"></div>
+
+            @* Legend *@
+            <div class="dep-graph-editor__legend">
+                <div class="legend-title">Node Shapes</div>
+                <div class="legend-item"><span class="legend-shape" style="border-radius:4px">▪</span> Class</div>
+                <div class="legend-item"><span class="legend-shape" style="transform:rotate(45deg)">◆</span> Interface</div>
+                <div class="legend-item"><span class="legend-shape">⬡</span> Struct</div>
+                <div class="legend-item"><span class="legend-shape">▲</span> Enum</div>
+                <div class="legend-title mt-2">Edge Types</div>
+                <div class="legend-item"><span class="legend-line" style="border-color:#5ba4b5;border-style:solid"></span> Inherits</div>
+                <div class="legend-item"><span class="legend-line" style="border-color:#4ecca3;border-style:dashed"></span> Implements</div>
+                <div class="legend-item"><span class="legend-line" style="border-color:#f58231;border-style:solid"></span> Constructor</div>
+                <div class="legend-item"><span class="legend-line" style="border-color:#888;border-style:dotted"></span> Field/Prop</div>
+            </div>
+        </div>
+
+        @* Detail panel *@
+        @if (_selectedNode != null)
+        {
+            <div class="dep-graph-editor__detail-panel">
+                <div class="detail-header">
+                    <h5>@_selectedNode.Label</h5>
+                    <span class="badge bg-info">@_selectedNode.Kind</span>
+                    @if (_selectedNode.IsAbstract)
+                    {
+                        <span class="badge bg-warning">abstract</span>
+                    }
+                    @if (_selectedNode.IsStatic)
+                    {
+                        <span class="badge bg-secondary">static</span>
+                    }
+                    <button class="btn btn-sm btn-outline-secondary ms-auto" @onclick="CloseDetailPanel">✕</button>
+                </div>
+                <div class="detail-body">
+                    <div class="detail-field">
+                        <label>Full Name</label>
+                        <div class="detail-value" style="word-break:break-all">@_selectedNode.FullName</div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(_selectedNode.BaseClass))
+                    {
+                        <div class="detail-field">
+                            <label>Base Class</label>
+                            <div class="detail-value">@_selectedNode.BaseClass</div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(_selectedNode.Interfaces))
+                    {
+                        <div class="detail-field">
+                            <label>Interfaces</label>
+                            <div class="detail-value">@_selectedNode.Interfaces</div>
+                        </div>
+                    }
+
+                    <div class="detail-field">
+                        <label>Dependencies</label>
+                        <div class="detail-value">In: @_selectedNode.InboundCount | Out: @_selectedNode.OutboundCount</div>
+                    </div>
+
+                    @if (_selectedNode.OutboundEdges.Count > 0)
+                    {
+                        <div class="detail-field">
+                            <label>Depends On (@_selectedNode.OutboundEdges.Count)</label>
+                            <ul class="detail-edge-list">
+                                @foreach (var edge in _selectedNode.OutboundEdges)
+                                {
+                                    <li>
+                                        <span class="edge-type edge-type--@edge.Relationship.ToLower()">@edge.Relationship</span>
+                                        <span class="edge-target" @onclick="() => HighlightNode(edge.Target)">@GetShortName(edge.Target)</span>
+                                        @if (!string.IsNullOrEmpty(edge.Label))
+                                        {
+                                            <span class="edge-label">(@edge.Label)</span>
+                                        }
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    }
+
+                    @if (_selectedNode.InboundEdges.Count > 0)
+                    {
+                        <div class="detail-field">
+                            <label>Depended On By (@_selectedNode.InboundEdges.Count)</label>
+                            <ul class="detail-edge-list">
+                                @foreach (var edge in _selectedNode.InboundEdges)
+                                {
+                                    <li>
+                                        <span class="edge-type edge-type--@edge.Relationship.ToLower()">@edge.Relationship</span>
+                                        <span class="edge-target" @onclick="() => HighlightNode(edge.Source)">@GetShortName(edge.Source)</span>
+                                        @if (!string.IsNullOrEmpty(edge.Label))
+                                        {
+                                            <span class="edge-label">(@edge.Label)</span>
+                                        }
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        else if (_selectedNamespace != null)
+        {
+            <div class="dep-graph-editor__detail-panel">
+                <div class="detail-header">
+                    <h5>@_selectedNamespace.Label</h5>
+                    <span class="badge bg-primary">namespace</span>
+                    <button class="btn btn-sm btn-outline-secondary ms-auto" @onclick="CloseDetailPanel">✕</button>
+                </div>
+                <div class="detail-body">
+                    <div class="detail-field">
+                        <label>Full Name</label>
+                        <div class="detail-value" style="word-break:break-all">@_selectedNamespace.FullName</div>
+                    </div>
+                    <div class="detail-field">
+                        <label>Types</label>
+                        <div class="detail-value">@_selectedNamespace.TypeCount</div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    // ===== State =====
+    private List<WorldEngineEndpoint> _endpoints = new();
+    private string _selectedEndpointId = "";
+    private string _namespaceFilter = "";
+    private string _searchQuery = "";
+    private List<TypeNodeDto> _searchResults = new();
+    private DependencyGraphDto? _graphData;
+    private SelectedNodeInfo? _selectedNode;
+    private SelectedNamespaceInfo? _selectedNamespace;
+    private string? _error;
+    private bool _loading;
+    private int _loadingPercent;
+    private string _loadingPhase = "";
+
+    // Edge filter toggles
+    private bool _showInherits = true;
+    private bool _showImplements = true;
+    private bool _showCtorDeps = true;
+    private bool _showFieldDeps = true;
+
+    private DotNetObjectReference<DependencyGraph>? _dotNetRef;
+
+    // ===== Lifecycle =====
+
+    protected override async Task OnInitializedAsync()
+    {
+        _endpoints = (await EndpointService.GetAllEndpointsAsync()).Where(e => e.IsEnabled).ToList();
+    }
+
+    // ===== Endpoint selection =====
+
+    private async Task OnEndpointChanged(ChangeEventArgs e)
+    {
+        _selectedEndpointId = e.Value?.ToString() ?? "";
+        if (Guid.TryParse(_selectedEndpointId, out Guid id))
+        {
+            Api.SelectEndpoint(id);
+        }
+        else
+        {
+            Api.SelectEndpoint(null);
+        }
+
+        _graphData = null;
+        _selectedNode = null;
+        _selectedNamespace = null;
+        await Task.CompletedTask;
+    }
+
+    // ===== Load graph =====
+
+    private async Task LoadGraph()
+    {
+        _error = null;
+        _loading = true;
+        _loadingPercent = 0;
+        _loadingPhase = "Fetching dependency data...";
+        _selectedNode = null;
+        _selectedNamespace = null;
+        StateHasChanged();
+
+        try
+        {
+            string? filter = string.IsNullOrWhiteSpace(_namespaceFilter) ? null : _namespaceFilter.Trim();
+            _graphData = await Api.GetGraphAsync(filter);
+
+            if (_graphData == null || _graphData.Types.Count == 0)
+            {
+                _error = "No dependency data returned. Is PwEngine running?";
+                _loading = false;
+                return;
+            }
+
+            _loadingPhase = "Rendering graph...";
+            StateHasChanged();
+
+            _dotNetRef?.Dispose();
+            _dotNetRef = DotNetObjectReference.Create(this);
+
+            string graphJson = JsonSerializer.Serialize(_graphData, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
+
+            await JS.InvokeVoidAsync("depGraph.init", "dep-cy", graphJson, _dotNetRef, null);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load dependency graph");
+            _error = $"Failed to load: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    // ===== JS Callbacks =====
+
+    [JSInvokable]
+    public void OnNodeSelected(string json)
+    {
+        try
+        {
+            _selectedNode = JsonSerializer.Deserialize<SelectedNodeInfo>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            _selectedNamespace = null;
+            InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to parse node selection");
+        }
+    }
+
+    [JSInvokable]
+    public void OnNamespaceSelected(string json)
+    {
+        try
+        {
+            _selectedNamespace = JsonSerializer.Deserialize<SelectedNamespaceInfo>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            _selectedNode = null;
+            InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to parse namespace selection");
+        }
+    }
+
+    [JSInvokable]
+    public void OnNodeDeselected()
+    {
+        _selectedNode = null;
+        _selectedNamespace = null;
+        InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public void OnGraphLoadProgress(int percent, string phase)
+    {
+        _loadingPercent = percent;
+        _loadingPhase = phase;
+        if (percent >= 100) _loading = false;
+        InvokeAsync(StateHasChanged);
+    }
+
+    // ===== Search =====
+
+    private void OnSearchChanged()
+    {
+        if (_graphData == null || string.IsNullOrWhiteSpace(_searchQuery))
+        {
+            _searchResults.Clear();
+            _ = JS.InvokeVoidAsync("depGraph.clearHighlight");
+            return;
+        }
+
+        _searchResults = _graphData.Types
+            .Where(t => t.Label.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase)
+                        || t.FullName.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(t => t.Label)
+            .Take(20)
+            .ToList();
+    }
+
+    private async Task OnSearchResultSelected(ChangeEventArgs e)
+    {
+        string? id = e.Value?.ToString();
+        if (!string.IsNullOrEmpty(id))
+        {
+            await JS.InvokeVoidAsync("depGraph.highlightNode", id);
+        }
+    }
+
+    // ===== Edge filtering =====
+
+    private async Task ToggleEdgeFilter(string relationship, ChangeEventArgs e)
+    {
+        bool isChecked = (bool)(e.Value ?? true);
+        switch (relationship)
+        {
+            case "Inherits": _showInherits = isChecked; break;
+            case "Implements": _showImplements = isChecked; break;
+            case "ConstructorDep": _showCtorDeps = isChecked; break;
+            case "FieldDep": _showFieldDeps = isChecked; break;
+        }
+
+        var visible = new List<string>();
+        if (_showInherits) visible.Add("Inherits");
+        if (_showImplements) visible.Add("Implements");
+        if (_showCtorDeps) visible.Add("ConstructorDep");
+        if (_showFieldDeps) visible.Add("FieldDep");
+
+        await JS.InvokeVoidAsync("depGraph.filterEdges", visible.ToArray());
+    }
+
+    // ===== Actions =====
+
+    private async Task FitView()
+    {
+        await JS.InvokeVoidAsync("depGraph.fitView");
+    }
+
+    private async Task HighlightNode(string nodeId)
+    {
+        await JS.InvokeVoidAsync("depGraph.highlightNode", nodeId);
+    }
+
+    private void CloseDetailPanel()
+    {
+        _selectedNode = null;
+        _selectedNamespace = null;
+        _ = JS.InvokeVoidAsync("depGraph.clearHighlight");
+    }
+
+    // ===== Helpers =====
+
+    private static string GetShortName(string fullName)
+    {
+        int lastDot = fullName.LastIndexOf('.');
+        return lastDot >= 0 ? fullName[(lastDot + 1)..] : fullName;
+    }
+
+    // ===== Disposal =====
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("depGraph.destroy");
+        }
+        catch { }
+        _dotNetRef?.Dispose();
+    }
+
+    // ===== Nested DTOs for JS callbacks =====
+
+    private class SelectedNodeInfo
+    {
+        public string Id { get; set; } = "";
+        public string Label { get; set; } = "";
+        public string FullName { get; set; } = "";
+        public string Kind { get; set; } = "";
+        public bool IsAbstract { get; set; }
+        public bool IsStatic { get; set; }
+        public string? BaseClass { get; set; }
+        public string Interfaces { get; set; } = "";
+        public int InboundCount { get; set; }
+        public int OutboundCount { get; set; }
+        public List<EdgeInfo> InboundEdges { get; set; } = new();
+        public List<EdgeInfo> OutboundEdges { get; set; } = new();
+    }
+
+    private class SelectedNamespaceInfo
+    {
+        public string Id { get; set; } = "";
+        public string FullName { get; set; } = "";
+        public string Label { get; set; } = "";
+        public int TypeCount { get; set; }
+    }
+
+    private class EdgeInfo
+    {
+        public string Source { get; set; } = "";
+        public string Target { get; set; } = "";
+        public string Relationship { get; set; } = "";
+        public string? Label { get; set; }
+    }
+}
