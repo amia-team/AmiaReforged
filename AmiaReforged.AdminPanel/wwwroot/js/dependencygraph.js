@@ -125,6 +125,8 @@ window.depGraph = (function () {
 
         _reportProgress(0, 'Parsing data...');
 
+        try {
+
         var graph = JSON.parse(graphJson);
         var serverPositions = hasServerPositions ? JSON.parse(positionsJson) : null;
         var namespaces = graph.namespaces || [];
