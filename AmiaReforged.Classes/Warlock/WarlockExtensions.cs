@@ -8,6 +8,10 @@ public static class WarlockExtensions
 {
     public const int WarlockId = 57;
 
+    public static readonly NwClass? WarlockClass = NwClass.FromClassId(WarlockId);
+
+    public const string EldritchBlastImpactScript = "wlk_el_blst";
+
     public static int WarlockLevel(this NwCreature warlock) => NWScript.GetLevelByClass(WarlockId, warlock);
 
     public static int InvocationDc(this NwCreature warlock, int warlockLevel) =>
@@ -43,7 +47,8 @@ public static class WarlockExtensions
     /// A custom spell resistance check for warlock invocations; should always be used in place of other checks.
     /// </summary>
     /// <returns>True if the target successfully resisted the spell, otherwise false.</returns>
-    public static bool InvocationResistCheck(this NwCreature warlock, NwGameObject target, int warlockLevel, bool isEldritchBlast)
+    public static bool InvocationResistCheck(this NwCreature warlock, NwGameObject target, int warlockLevel,
+        bool isEldritchBlast = false)
     {
         if (isEldritchBlast)
         {
