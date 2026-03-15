@@ -71,6 +71,9 @@ public class Program
             builder.Services.AddScoped<InteractionApiService>();
             builder.Services.AddScoped<RecipeTemplateApiService>();
 
+            // Graph layout computation (singleton for shared cache)
+            builder.Services.AddSingleton<GraphLayoutService>();
+
             // Cookie Authentication
             builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                 .AddCookie(options =>

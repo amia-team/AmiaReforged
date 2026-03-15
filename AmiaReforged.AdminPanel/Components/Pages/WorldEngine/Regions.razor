@@ -12,6 +12,7 @@
 @inject IWorldEngineEndpointService EndpointService
 @inject ILogger<Regions> Logger
 @inject IJSRuntime JS
+@inject GraphLayoutService LayoutService
 @rendermode InteractiveServer
 @implements IAsyncDisposable
 
@@ -1145,12 +1146,17 @@
     {
         _isGraphLoading = true;
         _graphLoadPercent = 0;
-        _graphLoadPhase = "";
+        _graphLoadPhase = "Fetching data...";
         _error = null;
         StateHasChanged();
 
         try
         {
+            if (refresh)
+            {
+                LayoutService.InvalidateCache();
+            }
+
             _graphData = refresh
                 ? await GraphApi.RefreshGraphAsync()
                 : await GraphApi.GetGraphAsync();
@@ -1159,9 +1165,20 @@
             {
                 BuildKnownAreas();
                 BuildRegionColors();
+
+                _graphLoadPercent = 15;
+                _graphLoadPhase = "Computing layout...";
+                StateHasChanged();
+
+                // Compute layout server-side
+                GraphLayoutResult layoutResult = await ComputeLayoutServerSide();
+
+                _graphLoadPercent = 85;
+                _graphLoadPhase = "Rendering...";
                 StateHasChanged();
                 await Task.Delay(50);
-                await RenderRegionGraph();
+
+                await RenderRegionGraph(layoutResult);
                 // _isGraphLoading will be cleared by OnGraphLoadProgress(100, ...) from JS
             }
             else
@@ -1228,7 +1245,7 @@
         return JsonSerializer.Serialize(data, CamelCase);
     }
 
-    private async Task RenderRegionGraph()
+    private async Task RenderRegionGraph(GraphLayoutResult? layoutResult = null)
     {
         if (_graphData == null) return;
 
@@ -1241,14 +1258,41 @@
             string edgesJson = JsonSerializer.Serialize(_graphData.Edges, CamelCase);
             string disconnectedJson = JsonSerializer.Serialize(_graphData.DisconnectedAreas, CamelCase);
             string regionsJson = BuildRegionsGraphJson();
+            string positionsJson = layoutResult != null
+                ? JsonSerializer.Serialize(layoutResult.Positions, CamelCase)
+                : "null";
 
-            await JS.InvokeVoidAsync("regionGraph.init", "region-cy", nodesJson, edgesJson, disconnectedJson, regionsJson, _dotNetRef);
+            await JS.InvokeVoidAsync("regionGraph.init", "region-cy", nodesJson, edgesJson, disconnectedJson, regionsJson, _dotNetRef, positionsJson);
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to render region graph");
             _error = "Failed to render graph visualization.";
         }
+    }
+
+    private async Task<GraphLayoutResult> ComputeLayoutServerSide()
+    {
+        List<RegionInfo> regionInfos = _regions.Select(r => new RegionInfo
+        {
+            Tag = r.Tag,
+            Name = r.Name,
+            AreaResRefs = r.Areas
+                .Where(a => !string.IsNullOrWhiteSpace(a.ResRef))
+                .Select(a => a.ResRef)
+                .ToList()
+        }).ToList();
+
+        var progress = new Progress<(int Percent, string Phase)>(p =>
+        {
+            // Map server-side progress (0-100) into the 15-85 range of overall progress
+            _graphLoadPercent = 15 + (int)(p.Percent * 0.7);
+            _graphLoadPhase = p.Phase;
+            InvokeAsync(StateHasChanged);
+        });
+
+        return await LayoutService.ComputeLayoutAsync(
+            _graphData!, regionInfos, _selectedLayout, BuildLayoutConfig(), progress);
     }
 
     // ===== Graph Interaction =====
@@ -1279,8 +1323,38 @@
 
     private async Task ApplyLayout()
     {
-        try { await JS.InvokeVoidAsync("regionGraph.runLayout", _selectedLayout, BuildLayoutConfig()); }
-        catch (Exception ex) { Logger.LogError(ex, "Failed to apply layout: {Layout}", _selectedLayout); }
+        if (_graphData == null) return;
+
+        _isGraphLoading = true;
+        _graphLoadPercent = 10;
+        _graphLoadPhase = "Computing layout...";
+        StateHasChanged();
+
+        try
+        {
+            GraphLayoutResult layoutResult = await ComputeLayoutServerSide();
+
+            _graphLoadPercent = 90;
+            _graphLoadPhase = "Applying positions...";
+            StateHasChanged();
+
+            string positionsJson = JsonSerializer.Serialize(layoutResult.Positions, CamelCase);
+            await JS.InvokeVoidAsync("regionGraph.applyPositions", positionsJson);
+
+            _graphLoadPercent = 100;
+            _graphLoadPhase = "Complete";
+            _isGraphLoading = false;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to apply layout: {Layout}", _selectedLayout);
+            _error = "Failed to compute layout.";
+            _isGraphLoading = false;
+        }
+        finally
+        {
+            StateHasChanged();
+        }
     }
 
     private async Task ApplyLayoutFromConfig()

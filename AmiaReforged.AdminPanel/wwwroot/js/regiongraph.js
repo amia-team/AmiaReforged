@@ -126,16 +126,19 @@ window.regionGraph = (function () {
 
     /**
      * Initialize the region graph visual editor.
-     * Uses progressive (chunked) rendering to keep the browser responsive.
+     * When positionsJson is provided, nodes are placed at server-computed positions (instant, no physics).
+     * Otherwise, falls back to progressive rendering with client-side layout.
      * @param {string} containerId DOM id of the container div
      * @param {string} nodesJson JSON array of AreaNodeDto (connected)
      * @param {string} edgesJson JSON array of AreaEdgeDto
      * @param {string} disconnectedJson JSON array of AreaNodeDto (disconnected)
      * @param {string} regionsJson JSON array of { tag, name, areaResRefs: string[], poiCounts: {resRef: count} }
      * @param {DotNet.DotNetObject} blazorRef .NET object ref for callbacks
+     * @param {string|null} positionsJson JSON object mapping node IDs to {x, y} positions (server-computed)
      */
-    function init(containerId, nodesJson, edgesJson, disconnectedJson, regionsJson, blazorRef) {
-        console.log('[regionGraph] init v9 (progressive) called');
+    function init(containerId, nodesJson, edgesJson, disconnectedJson, regionsJson, blazorRef, positionsJson) {
+        var hasServerPositions = positionsJson && positionsJson !== 'null' && positionsJson !== '';
+        console.log('[regionGraph] init v10 called, server positions:', !!hasServerPositions);
         destroy();
         dotNetRef = blazorRef || null;
 
@@ -158,6 +161,7 @@ window.regionGraph = (function () {
         var edges = JSON.parse(edgesJson);
         var disconnected = JSON.parse(disconnectedJson);
         var regions = JSON.parse(regionsJson);
+        var serverPositions = hasServerPositions ? JSON.parse(positionsJson) : null;
 
         // Build region -> color map
         regionColorMap = {};
@@ -194,7 +198,7 @@ window.regionGraph = (function () {
             var tag = String(r.tag || '');
             var name = String(r.name || '') || tag;
             var color = regionColorMap[tag.toLowerCase()] || COLORS.unassigned;
-            regionParentElements.push({
+            var elem = {
                 group: 'nodes',
                 data: {
                     id: 'region_' + tag,
@@ -203,7 +207,13 @@ window.regionGraph = (function () {
                     isRegionParent: 'yes',
                     regionColor: color
                 }
-            });
+            };
+            // Apply server-computed position if available
+            if (serverPositions) {
+                var pos = serverPositions['region_' + tag];
+                if (pos) elem.position = { x: pos.x, y: pos.y };
+            }
+            regionParentElements.push(elem);
         });
 
         // Merge connected + disconnected into one node set
@@ -238,11 +248,20 @@ window.regionGraph = (function () {
                 data.parent = 'region_' + parentRegionTag;
             }
 
-            areaNodeElements.push({
+            var nodeElem = {
                 group: 'nodes',
-                data: data,
-                position: { x: Math.random() * 800 - 400, y: Math.random() * 800 - 400 }
-            });
+                data: data
+            };
+
+            // Use server-computed position if available, otherwise random scatter
+            if (serverPositions) {
+                var pos = serverPositions[n.resRef];
+                if (pos) nodeElem.position = { x: pos.x, y: pos.y };
+            } else {
+                nodeElem.position = { x: Math.random() * 800 - 400, y: Math.random() * 800 - 400 };
+            }
+
+            areaNodeElements.push(nodeElem);
         });
 
         edges.forEach(function (e, idx) {
@@ -433,9 +452,33 @@ window.regionGraph = (function () {
         // ===== Register event handlers immediately (before progressive add) =====
         _registerEventHandlers(container);
 
-        // ===== Progressive element addition =====
-        // Phase 1: Region parents (5%), Phase 2: Area nodes (60%), Phase 3: Edges (25%), Phase 4: Layout (10%)
-        _renderProgressively(regionParentElements, areaNodeElements, edgeElements, generation);
+        if (serverPositions) {
+            // ===== Server-computed layout: add all elements at once, no physics needed =====
+            _reportProgress(90, 'Rendering graph...');
+
+            cy.startBatch();
+            cy.add(regionParentElements);
+            cy.add(areaNodeElements);
+            cy.add(edgeElements);
+            cy.endBatch();
+
+            // Use preset layout (nodes already have positions from server)
+            cy.layout({ name: 'preset', fit: true, padding: 20 }).run();
+
+            // Restore pixel ratio
+            cy.renderer().pixelRatio = window.devicePixelRatio || 1;
+            cy.resize();
+
+            _reportProgress(100, 'Complete');
+            console.log('[regionGraph] server-side layout render complete — ' +
+                regionParentElements.length + ' regions, ' +
+                areaNodeElements.length + ' areas, ' +
+                edgeElements.length + ' edges');
+        } else {
+            // ===== Fallback: Progressive element addition with client-side layout =====
+            // Phase 1: Region parents (5%), Phase 2: Area nodes (60%), Phase 3: Edges (25%), Phase 4: Layout (10%)
+            _renderProgressively(regionParentElements, areaNodeElements, edgeElements, generation);
+        }
 
         } catch (err) {
             console.error('[regionGraph] init() failed:', err);
@@ -1572,6 +1615,74 @@ window.regionGraph = (function () {
         cyRef.fit(undefined, 20);
     }
 
+    /**
+     * Apply server-computed positions to existing graph nodes with smooth animation.
+     * Called when the user switches layouts via Re-Layout (server computes new positions).
+     * @param {string} positionsJson JSON object mapping node IDs to {x, y} positions
+     */
+    function applyPositions(positionsJson) {
+        if (!cy) {
+            console.warn('[regionGraph] applyPositions: no cy instance');
+            return;
+        }
+
+        var positions;
+        try {
+            positions = typeof positionsJson === 'string' ? JSON.parse(positionsJson) : positionsJson;
+        } catch (e) {
+            console.error('[regionGraph] applyPositions: failed to parse positions:', e);
+            return;
+        }
+
+        if (!positions || typeof positions !== 'object') {
+            console.warn('[regionGraph] applyPositions: invalid positions data');
+            return;
+        }
+
+        // Stop any running layout
+        if (cy._runningLayout) {
+            try { cy._runningLayout.stop(); } catch (e) { }
+            cy._runningLayout = null;
+        }
+
+        _reportProgress(92, 'Animating positions...');
+
+        var animationDuration = 500;
+        var animCount = 0;
+        var totalAnims = 0;
+
+        // Count how many nodes will animate
+        cy.nodes().forEach(function (node) {
+            var pos = positions[node.id()];
+            if (pos) totalAnims++;
+        });
+
+        if (totalAnims === 0) {
+            _reportProgress(100, 'Complete');
+            return;
+        }
+
+        // Animate each node to its new position
+        cy.nodes().forEach(function (node) {
+            var pos = positions[node.id()];
+            if (pos) {
+                node.animate({
+                    position: { x: pos.x, y: pos.y },
+                    duration: animationDuration,
+                    easing: 'ease-in-out-cubic',
+                    complete: function () {
+                        animCount++;
+                        if (animCount >= totalAnims) {
+                            // All animations complete — fit to viewport
+                            cy.fit(undefined, 20);
+                            _reportProgress(100, 'Complete');
+                        }
+                    }
+                });
+            }
+        });
+    }
+
     function destroy() {
         closeContextMenu();
         if (_docClickHandler) {
@@ -1803,6 +1914,7 @@ window.regionGraph = (function () {
 
     return {
         init: init,
+        applyPositions: applyPositions,
         highlightRegion: highlightRegion,
         highlightOrphans: highlightOrphans,
         highlightNode: highlightNode,
