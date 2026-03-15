@@ -84,5 +84,5 @@ public class InvocationHandler
 
     private static bool IsInvocation(NwCreature warlock, int classIndex, NwSpell? spell) =>
         spell?.ImpactScript == EldritchBlastSpellScript
-        || warlock.Classes.Any(c => c.Class.Id == 57);
+        && warlock.Classes.Any(c => c.Class.Id == 57);
 }
