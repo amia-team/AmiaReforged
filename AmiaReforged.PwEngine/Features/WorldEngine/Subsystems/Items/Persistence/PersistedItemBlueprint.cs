@@ -33,9 +33,9 @@ public class PersistedItemBlueprint
     public int WeightIncreaseConstant { get; set; } = -1;
 
     /// <summary>
-    /// Job system item type, stored as a string enum value.
+    /// Item form, stored as a string enum value.
     /// </summary>
-    public string JobSystemType { get; set; } = "None";
+    public string ItemForm { get; set; } = "None";
 
     /// <summary>
     /// Material enum values, stored as JSONB array of strings.

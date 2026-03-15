@@ -5,7 +5,7 @@
   "Description": "Rare silvery ore that refines into mithral, stronger and lighter than steel.",
   "Materials": ["Mithral"],
   "BaseValue": 400,
-  "JobSystemType": "ResourceOre",
+  "ItemForm": "ResourceOre",
   "BaseItemType": 120,
   "WeightIncreaseConstant": 0,
   "Appearance": {

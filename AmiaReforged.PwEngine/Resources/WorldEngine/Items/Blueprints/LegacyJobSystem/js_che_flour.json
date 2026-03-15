@@ -5,7 +5,7 @@
   "Description": "",
   "Materials": [],
   "BaseValue": 150,
-  "JobSystemType": "None",
+  "ItemForm": "None",
   "BaseItemType": 24,
   "Appearance": {
     "ModelType": 0,

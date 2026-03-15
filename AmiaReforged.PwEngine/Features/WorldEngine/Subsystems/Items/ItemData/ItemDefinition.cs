@@ -8,7 +8,7 @@ public record ItemBlueprint(
     string Name,
     string Description,
     MaterialEnum[] Materials,
-    JobSystemItemType JobSystemType,
+    ItemForm ItemForm,
     int BaseItemType,
     AppearanceData Appearance,
     IReadOnlyList<JsonLocalVariableDefinition>? LocalVariables = null,

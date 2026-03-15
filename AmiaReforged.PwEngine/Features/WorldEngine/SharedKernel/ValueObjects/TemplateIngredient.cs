@@ -17,9 +17,9 @@ public record TemplateIngredient
 
     /// <summary>
     /// The item form required (e.g., <c>ResourceLog</c>, <c>ResourceIngot</c>).
-    /// Matches against <see cref="ItemBlueprint.JobSystemType"/>.
+    /// Matches against <see cref="ItemBlueprint.ItemForm"/>.
     /// </summary>
-    public required JobSystemItemType RequiredForm { get; init; }
+    public required ItemForm RequiredForm { get; init; }
 
     /// <summary>
     /// How many of this item are needed.

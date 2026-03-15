@@ -7,7 +7,7 @@
     "GemCrystalMundane"
   ],
   "BaseValue": 50,
-  "JobSystemType": "ResourceGem",
+  "ItemForm": "ResourceGem",
   "BaseItemType": 120,
   "WeightIncreaseConstant": -1,
   "Appearance": {

@@ -5,7 +5,7 @@
   "Description": "Yellow-brown earthy iron ore, often found in bogs.",
   "Materials": ["Iron"],
   "BaseValue": 120,
-  "JobSystemType": "ResourceOre",
+  "ItemForm": "ResourceOre",
   "BaseItemType": 120,
   "WeightIncreaseConstant": 0,
   "Appearance": {

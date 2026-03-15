@@ -37,7 +37,7 @@ public sealed class HarvestInteractionHandler(
         }
 
         // Tool check — mirrors original HarvestResourceCommandHandler behavior
-        if (node.Definition.Requirement.RequiredItemType != JobSystemItemType.None)
+        if (node.Definition.Requirement.RequiredItemType != ItemForm.None)
         {
             character.GetEquipment().TryGetValue(EquipmentSlots.RightHand, out ItemSnapshot? tool);
             if (tool?.Type != node.Definition.Requirement.RequiredItemType)

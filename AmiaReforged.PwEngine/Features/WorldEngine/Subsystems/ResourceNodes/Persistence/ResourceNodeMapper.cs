@@ -43,7 +43,7 @@ public static class ResourceNodeMapper
         Enum.TryParse<ResourceType>(entity.Type, true, out ResourceType resourceType);
 
         HarvestContext requirement = JsonSerializer.Deserialize<HarvestContext>(entity.RequirementJson, JsonOptions)
-                                     ?? new HarvestContext(JobSystemItemType.None);
+                                     ?? new HarvestContext(ItemForm.None);
 
         HarvestOutput[] outputs = JsonSerializer.Deserialize<HarvestOutput[]>(entity.OutputsJson, JsonOptions)
                                   ?? Array.Empty<HarvestOutput>();

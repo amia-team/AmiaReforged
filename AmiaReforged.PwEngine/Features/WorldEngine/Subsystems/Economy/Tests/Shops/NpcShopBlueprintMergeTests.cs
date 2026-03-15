@@ -21,7 +21,7 @@ public class NpcShopBlueprintMergeTests
             Name: "Blueprint Item",
             Description: "Desc",
             Materials: new[] { MaterialEnum.Gem },
-            JobSystemType: JobSystemItemType.ResourceGem,
+            ItemForm: ItemForm.ResourceGem,
             BaseItemType: 74,
             Appearance: new AppearanceData(0, 12, null),
             LocalVariables: new[]
@@ -60,7 +60,7 @@ public class NpcShopBlueprintMergeTests
             Name: "Blueprint Item",
             Description: "Desc",
             Materials: new[] { MaterialEnum.Gem },
-            JobSystemType: JobSystemItemType.ResourceGem,
+            ItemForm: ItemForm.ResourceGem,
             BaseItemType: 74,
             Appearance: new AppearanceData(0, 12, null),
             LocalVariables: new[]

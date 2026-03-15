@@ -22,7 +22,7 @@ public class RuntimeInventoryPort(NwCreature creature) : IInventoryPort
 
         if (gameItem is null) return;
 
-        string qualityLabel = QualityLabel.QualityLabelForItem(item.BaseDefinition.JobSystemType, item.Quality);
+        string qualityLabel = QualityLabel.QualityLabelForItem(item.BaseDefinition.ItemForm, item.Quality);
         gameItem.Name = qualityLabel.IsNullOrEmpty()
             ? $"{item.BaseDefinition.Name}"
             : $"{item.BaseDefinition.Name} ({qualityLabel})";
@@ -101,7 +101,7 @@ public class RuntimeInventoryPort(NwCreature creature) : IInventoryPort
             equipped.Description,
             quality,
             [],
-            (JobSystemItemType)storedToolType,
+            (ItemForm)storedToolType,
             NWScript.GetBaseItemType(equipped),
             equipped.Serialize());
     }

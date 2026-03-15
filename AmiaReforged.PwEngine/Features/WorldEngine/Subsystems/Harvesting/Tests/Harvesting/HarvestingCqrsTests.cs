@@ -69,7 +69,7 @@ public class HarvestingCqrsTests
             1,
             ResourceType.Ore,
             TestResourceTag,
-            new HarvestContext(JobSystemItemType.ToolPick),
+            new HarvestContext(ItemForm.ToolPick),
             [new HarvestOutput(TestItemTag, 1)],
             1); // baseHarvestRounds as 6th positional parameter
 
@@ -217,7 +217,7 @@ public class HarvestingCqrsTests
         Guid nodeInstanceId = (Guid)registerResult.Data!["nodeInstanceId"];
 
         // And a character with the right tool
-        ICharacter character = CreateCharacterWithTool(JobSystemItemType.ToolPick);
+        ICharacter character = CreateCharacterWithTool(ItemForm.ToolPick);
         _characterRepository.Add(character);
 
         _publishedEvents.Clear(); // Clear registration event
@@ -253,7 +253,7 @@ public class HarvestingCqrsTests
         Guid nodeInstanceId = (Guid)registerResult.Data!["nodeInstanceId"];
 
         // And a character with the wrong tool
-        ICharacter character = CreateCharacterWithTool(JobSystemItemType.ToolHammer);
+        ICharacter character = CreateCharacterWithTool(ItemForm.ToolHammer);
         _characterRepository.Add(character);
 
         _publishedEvents.Clear();
@@ -278,7 +278,7 @@ public class HarvestingCqrsTests
             2,
             ResourceType.Ore,
             "slow_ore",
-            new HarvestContext(JobSystemItemType.ToolPick),
+            new HarvestContext(ItemForm.ToolPick),
             [new HarvestOutput(TestItemTag, 1)],
             Uses: 10,              // 6th parameter
             BaseHarvestRounds: 3); // 7th parameter
@@ -289,7 +289,7 @@ public class HarvestingCqrsTests
             CancellationToken.None);
         Guid nodeInstanceId = (Guid)registerResult.Data!["nodeInstanceId"];
 
-        ICharacter character = CreateCharacterWithTool(JobSystemItemType.ToolPick);
+        ICharacter character = CreateCharacterWithTool(ItemForm.ToolPick);
         _characterRepository.Add(character);
 
         _publishedEvents.Clear();
@@ -328,7 +328,7 @@ public class HarvestingCqrsTests
             CancellationToken.None);
         Guid nodeInstanceId = (Guid)registerResult.Data!["nodeInstanceId"];
 
-        ICharacter character = CreateCharacterWithTool(JobSystemItemType.ToolPick);
+        ICharacter character = CreateCharacterWithTool(ItemForm.ToolPick);
         _characterRepository.Add(character);
 
         _publishedEvents.Clear();
@@ -443,7 +443,7 @@ public class HarvestingCqrsTests
 
     #region Helper Methods
 
-    private ICharacter CreateCharacterWithTool(JobSystemItemType toolType)
+    private ICharacter CreateCharacterWithTool(ItemForm toolType)
     {
         CharacterId characterId = CharacterId.From(Guid.NewGuid());
         TestCharacter character = new TestCharacter(

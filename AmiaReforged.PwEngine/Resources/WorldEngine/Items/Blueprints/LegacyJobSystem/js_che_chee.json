@@ -5,7 +5,7 @@
   "Description": "Cheese is a popular diary product sourced from any number of milk-producing animals. Several varieties exist, ranging from soft to hard, and from mild to pungent.",
   "Materials": [],
   "BaseValue": 1,
-  "JobSystemType": "None",
+  "ItemForm": "None",
   "BaseItemType": 24,
   "Appearance": {
     "ModelType": 0,

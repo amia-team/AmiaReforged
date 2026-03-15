@@ -65,19 +65,19 @@ public class WildcardHarvestEffectTests
         // --- Resource definitions ---
         ((InMemoryResourceNodeDefinitionRepository)_definitionRepository).Create(
             new ResourceNodeDefinition(1, ResourceType.Ore, CopperOreTag,
-                new HarvestContext(JobSystemItemType.ToolPick),
+                new HarvestContext(ItemForm.ToolPick),
                 [new HarvestOutput(CopperItemTag, 1)],
                 Uses: 50, BaseHarvestRounds: 0));
 
         ((InMemoryResourceNodeDefinitionRepository)_definitionRepository).Create(
             new ResourceNodeDefinition(2, ResourceType.Ore, HematiteOreTag,
-                new HarvestContext(JobSystemItemType.ToolPick),
+                new HarvestContext(ItemForm.ToolPick),
                 [new HarvestOutput(HematiteItemTag, 1)],
                 Uses: 50, BaseHarvestRounds: 0));
 
         ((InMemoryResourceNodeDefinitionRepository)_definitionRepository).Create(
             new ResourceNodeDefinition(3, ResourceType.Tree, TreeOakTag,
-                new HarvestContext(JobSystemItemType.ToolAxe),
+                new HarvestContext(ItemForm.ToolAxe),
                 [new HarvestOutput(TreeItemTag, 1)],
                 Uses: 50, BaseHarvestRounds: 0));
     }
@@ -91,7 +91,7 @@ public class WildcardHarvestEffectTests
         Knowledge oreKnowledge = CreateKnowledge("exact_copper",
             new KnowledgeHarvestEffect(CopperOreTag, HarvestStep.ItemYield, 2, EffectOperation.Additive));
 
-        TestCharacter character = CreateCharacterWithKnowledge(JobSystemItemType.ToolPick, oreKnowledge);
+        TestCharacter character = CreateCharacterWithKnowledge(ItemForm.ToolPick, oreKnowledge);
         _characterRepository.Add(character);
 
         // When harvesting copper ore
@@ -120,7 +120,7 @@ public class WildcardHarvestEffectTests
         Knowledge oreKnowledge = CreateKnowledge("all_ore_veins",
             new KnowledgeHarvestEffect("ore_vein_*", HarvestStep.ItemYield, 1, EffectOperation.Additive));
 
-        TestCharacter character = CreateCharacterWithKnowledge(JobSystemItemType.ToolPick, oreKnowledge);
+        TestCharacter character = CreateCharacterWithKnowledge(ItemForm.ToolPick, oreKnowledge);
         _characterRepository.Add(character);
 
         // When harvesting copper ore
@@ -144,7 +144,7 @@ public class WildcardHarvestEffectTests
             new KnowledgeHarvestEffect("ore_vein_*", HarvestStep.ItemYield, 5, EffectOperation.Additive));
 
         // Character needs an axe for trees
-        TestCharacter character = CreateCharacterWithKnowledge(JobSystemItemType.ToolAxe, oreKnowledge);
+        TestCharacter character = CreateCharacterWithKnowledge(ItemForm.ToolAxe, oreKnowledge);
         _characterRepository.Add(character);
 
         // When harvesting a tree
@@ -161,7 +161,7 @@ public class WildcardHarvestEffectTests
         Knowledge oreKnowledge = CreateKnowledge("copper_variants",
             new KnowledgeHarvestEffect("ore_*_copper_*", HarvestStep.ItemYield, 3, EffectOperation.Additive));
 
-        TestCharacter character = CreateCharacterWithKnowledge(JobSystemItemType.ToolPick, oreKnowledge);
+        TestCharacter character = CreateCharacterWithKnowledge(ItemForm.ToolPick, oreKnowledge);
         _characterRepository.Add(character);
 
         // When harvesting copper ore (tag: ore_vein_copper_native — matches ore_*_copper_*)
@@ -188,7 +188,7 @@ public class WildcardHarvestEffectTests
         Knowledge oreKnowledge = CreateKnowledge("all_ores_type",
             new KnowledgeHarvestEffect("type:ore", HarvestStep.ItemYield, 1, EffectOperation.Additive));
 
-        TestCharacter character = CreateCharacterWithKnowledge(JobSystemItemType.ToolPick, oreKnowledge);
+        TestCharacter character = CreateCharacterWithKnowledge(ItemForm.ToolPick, oreKnowledge);
         _characterRepository.Add(character);
 
         // When harvesting copper ore
@@ -211,7 +211,7 @@ public class WildcardHarvestEffectTests
         Knowledge oreKnowledge = CreateKnowledge("ore_type_only",
             new KnowledgeHarvestEffect("type:ore", HarvestStep.ItemYield, 5, EffectOperation.Additive));
 
-        TestCharacter character = CreateCharacterWithKnowledge(JobSystemItemType.ToolAxe, oreKnowledge);
+        TestCharacter character = CreateCharacterWithKnowledge(ItemForm.ToolAxe, oreKnowledge);
         _characterRepository.Add(character);
 
         // When harvesting a tree
@@ -235,7 +235,7 @@ public class WildcardHarvestEffectTests
         Knowledge specificKnowledge = CreateKnowledge("specific_copper",
             new KnowledgeHarvestEffect("ore_vein_copper_*", HarvestStep.ItemYield, 2, EffectOperation.Additive));
 
-        TestCharacter character = CreateCharacterWithKnowledge(JobSystemItemType.ToolPick, broadKnowledge, specificKnowledge);
+        TestCharacter character = CreateCharacterWithKnowledge(ItemForm.ToolPick, broadKnowledge, specificKnowledge);
         _characterRepository.Add(character);
 
         // When harvesting copper (matches both patterns)
@@ -264,7 +264,7 @@ public class WildcardHarvestEffectTests
 
         ((InMemoryResourceNodeDefinitionRepository)_definitionRepository).Create(
             new ResourceNodeDefinition(10, ResourceType.Ore, slowOreTag,
-                new HarvestContext(JobSystemItemType.ToolPick),
+                new HarvestContext(ItemForm.ToolPick),
                 [new HarvestOutput(slowOreItemTag, 1)],
                 Uses: 50, BaseHarvestRounds: 3));
 
@@ -272,7 +272,7 @@ public class WildcardHarvestEffectTests
         Knowledge speedKnowledge = CreateKnowledge("fast_miner",
             new KnowledgeHarvestEffect("ore_vein_*", HarvestStep.HarvestStepRate, 2, EffectOperation.Additive));
 
-        TestCharacter character = CreateCharacterWithKnowledge(JobSystemItemType.ToolPick, speedKnowledge);
+        TestCharacter character = CreateCharacterWithKnowledge(ItemForm.ToolPick, speedKnowledge);
         _characterRepository.Add(character);
 
         // Register the slow ore node
@@ -309,7 +309,7 @@ public class WildcardHarvestEffectTests
         };
     }
 
-    private TestCharacter CreateCharacterWithKnowledge(JobSystemItemType toolType, params Knowledge[] knowledgeArticles)
+    private TestCharacter CreateCharacterWithKnowledge(ItemForm toolType, params Knowledge[] knowledgeArticles)
     {
         CharacterId characterId = CharacterId.From(Guid.NewGuid());
 

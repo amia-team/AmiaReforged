@@ -240,9 +240,14 @@ public class RecipeTemplateController
             .Where(c => c != MaterialCategory.None)
             .Select(c => new { value = c.ToString(), label = c.ToString() });
 
-        var itemForms = Enum.GetValues<JobSystemItemType>()
-            .Where(t => t != JobSystemItemType.None)
-            .Select(t => new { value = t.ToString(), label = t.ToString() });
+        var itemForms = Enum.GetValues<ItemForm>()
+            .Where(t => t != ItemForm.None)
+            .Select(t => new
+            {
+                value = t.ToString(),
+                label = t.DisplayName(),
+                group = t.GetGroup().ToString()
+            });
 
         return await Task.FromResult(new ApiResult(200, new
         {
@@ -331,7 +336,7 @@ public class RecipeTemplateController
             Ingredients = dto.Ingredients?.Select(i =>
             {
                 Enum.TryParse<MaterialCategory>(i.RequiredCategory, true, out MaterialCategory category);
-                Enum.TryParse<JobSystemItemType>(i.RequiredForm, true, out JobSystemItemType form);
+                Enum.TryParse<ItemForm>(i.RequiredForm, true, out ItemForm form);
                 return new TemplateIngredient
                 {
                     RequiredCategory = category,
@@ -344,7 +349,7 @@ public class RecipeTemplateController
             }).ToList() ?? [],
             Products = dto.Products?.Select(p =>
             {
-                Enum.TryParse<JobSystemItemType>(p.OutputForm, true, out JobSystemItemType form);
+                Enum.TryParse<ItemForm>(p.OutputForm, true, out ItemForm form);
                 return new TemplateProduct
                 {
                     OutputForm = form,

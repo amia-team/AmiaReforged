@@ -5,7 +5,7 @@
   "Description": "Pale-gray iron ore known for its potency against supernatural beings.",
   "Materials": ["ColdIron"],
   "BaseValue": 150,
-  "JobSystemType": "ResourceOre",
+  "ItemForm": "ResourceOre",
   "BaseItemType": 120,
   "WeightIncreaseConstant": 0,
   "Appearance": {

@@ -300,7 +300,7 @@ public class ResourceNodeController
     {
         Enum.TryParse<ResourceType>(dto.Type, true, out ResourceType resourceType);
 
-        Enum.TryParse<JobSystemItemType>(dto.Requirement?.RequiredItemType, true, out JobSystemItemType reqItemType);
+        Enum.TryParse<ItemForm>(dto.Requirement?.RequiredItemType, true, out ItemForm reqItemType);
         Enum.TryParse<MaterialEnum>(dto.Requirement?.RequiredItemMaterial, true, out MaterialEnum reqMaterial);
 
         HarvestContext requirement = new HarvestContext(reqItemType, reqMaterial);

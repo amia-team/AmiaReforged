@@ -304,7 +304,7 @@ public class ItemController
             bp.Name,
             bp.Description,
             Materials = bp.Materials.Select(m => m.ToString()).ToArray(),
-            JobSystemType = bp.JobSystemType.ToString(),
+            ItemForm = bp.ItemForm.ToString(),
             bp.BaseItemType,
             Appearance = new
             {
@@ -335,7 +335,7 @@ public class ItemController
             .Select(s => Enum.TryParse<MaterialEnum>(s, true, out MaterialEnum m) ? m : MaterialEnum.None)
             .ToArray();
 
-        Enum.TryParse<JobSystemItemType>(dto.JobSystemType, true, out JobSystemItemType jobType);
+        Enum.TryParse<ItemForm>(dto.ItemForm, true, out ItemForm jobType);
 
         WeaponPartData? weaponData = null;
         if (dto.Appearance?.Data != null)
@@ -360,7 +360,7 @@ public class ItemController
             Name: dto.Name,
             Description: dto.Description ?? string.Empty,
             Materials: materials,
-            JobSystemType: jobType,
+            ItemForm: jobType,
             BaseItemType: dto.BaseItemType,
             Appearance: appearance,
             LocalVariables: MapLocalVariables(dto.LocalVariables),
@@ -391,7 +391,7 @@ public class ItemController
         public string Name { get; init; } = string.Empty;
         public string? Description { get; init; }
         public string[]? Materials { get; init; }
-        public string? JobSystemType { get; init; }
+        public string? ItemForm { get; init; }
         public int BaseItemType { get; init; }
         public AppearanceDto? Appearance { get; init; }
         public List<LocalVariableDto>? LocalVariables { get; init; }

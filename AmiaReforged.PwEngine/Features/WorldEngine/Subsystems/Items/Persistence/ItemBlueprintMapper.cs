@@ -27,7 +27,7 @@ public static class ItemBlueprintMapper
             BaseItemType = blueprint.BaseItemType,
             BaseValue = blueprint.BaseValue,
             WeightIncreaseConstant = blueprint.WeightIncreaseConstant,
-            JobSystemType = blueprint.JobSystemType.ToString(),
+            ItemForm = blueprint.ItemForm.ToString(),
             MaterialsJson = JsonSerializer.Serialize(
                 blueprint.Materials.Select(m => m.ToString()).ToArray(), JsonOptions),
             AppearanceJson = JsonSerializer.Serialize(blueprint.Appearance, JsonOptions),
@@ -64,7 +64,7 @@ public static class ItemBlueprintMapper
                 entity.LocalVariablesJson, JsonOptions);
         }
 
-        Enum.TryParse<JobSystemItemType>(entity.JobSystemType, true, out JobSystemItemType jobType);
+        Enum.TryParse<ItemForm>(entity.ItemForm, true, out ItemForm jobType);
 
         return new ItemBlueprint(
             ResRef: entity.ResRef,
@@ -72,7 +72,7 @@ public static class ItemBlueprintMapper
             Name: entity.Name,
             Description: entity.Description,
             Materials: materials,
-            JobSystemType: jobType,
+            ItemForm: jobType,
             BaseItemType: entity.BaseItemType,
             Appearance: appearance,
             LocalVariables: localVars,
@@ -94,7 +94,7 @@ public static class ItemBlueprintMapper
         entity.BaseItemType = blueprint.BaseItemType;
         entity.BaseValue = blueprint.BaseValue;
         entity.WeightIncreaseConstant = blueprint.WeightIncreaseConstant;
-        entity.JobSystemType = blueprint.JobSystemType.ToString();
+        entity.ItemForm = blueprint.ItemForm.ToString();
         entity.MaterialsJson = JsonSerializer.Serialize(
             blueprint.Materials.Select(m => m.ToString()).ToArray(), JsonOptions);
         entity.AppearanceJson = JsonSerializer.Serialize(blueprint.Appearance, JsonOptions);

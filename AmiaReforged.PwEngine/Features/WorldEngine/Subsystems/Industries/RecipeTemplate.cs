@@ -5,7 +5,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
 
 /// <summary>
 /// A recipe template defines a pattern for crafting that matches items by material category
-/// and form (JobSystemItemType) rather than by specific item tags. When expanded, a single
+/// and form (ItemForm) rather than by specific item tags. When expanded, a single
 /// template can generate many concrete <see cref="Recipe"/> instances — one per valid
 /// material/item combination found in the item blueprint registry.
 /// <para>

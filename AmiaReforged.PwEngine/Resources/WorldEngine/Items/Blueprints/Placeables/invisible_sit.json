@@ -5,7 +5,7 @@
   "Description": "Have a seat.",
   "Materials": [],
   "BaseValue": 0,
-  "JobSystemType": "Furniture",
+  "ItemForm": "Furniture",
   "BaseItemType": 29,
   "Appearance": {
     "ModelType": 0,

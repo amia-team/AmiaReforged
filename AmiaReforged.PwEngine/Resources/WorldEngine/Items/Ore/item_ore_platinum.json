@@ -5,7 +5,7 @@
   "Description": "Silvery-white precious ore of platinum, valued for rarity and resilience.",
   "Materials": ["Platinum"],
   "BaseValue": 300,
-  "JobSystemType": "ResourceOre",
+  "ItemForm": "ResourceOre",
   "BaseItemType": 120,
   "WeightIncreaseConstant": 0,
   "Appearance": {

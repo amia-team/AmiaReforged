@@ -7,7 +7,7 @@
     "GemRogueStone"
   ],
   "BaseValue": 220,
-  "JobSystemType": "ResourceGem",
+  "ItemForm": "ResourceGem",
   "BaseItemType": 120,
   "WeightIncreaseConstant": -1,
   "Appearance": {

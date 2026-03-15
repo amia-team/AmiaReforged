@@ -7,7 +7,7 @@
     "Adamant"
   ],
   "BaseValue": 500,
-  "JobSystemType": "ResourceOre",
+  "ItemForm": "ResourceOre",
   "BaseItemType": 120,
   "WeightIncreaseConstant": 0,
   "Appearance": {

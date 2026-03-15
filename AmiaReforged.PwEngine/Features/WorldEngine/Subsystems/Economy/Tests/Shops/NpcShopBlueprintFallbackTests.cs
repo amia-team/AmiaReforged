@@ -19,7 +19,7 @@ public class NpcShopBlueprintFallbackTests
             Name: "Packed Table",
             Description: "A nice little table",
             Materials: new[] { MaterialEnum.Gem },
-            JobSystemType: Harvesting.JobSystemItemType.ResourceGem,
+            ItemForm: Harvesting.ItemForm.ResourceGem,
             BaseItemType: 74,
             Appearance: new AppearanceData(0, 12, null),
             LocalVariables: new[]

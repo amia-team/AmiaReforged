@@ -60,7 +60,7 @@ public class HarvestViaInteractionFrameworkTests
         // Register resource definitions
         ((InMemoryResourceNodeDefinitionRepository)_definitionRepository).Create(
             new ResourceNodeDefinition(1, ResourceType.Ore, CopperOreTag,
-                new HarvestContext(JobSystemItemType.ToolPick),
+                new HarvestContext(ItemForm.ToolPick),
                 [new HarvestOutput(CopperItemTag, 1)],
                 Uses: 50, BaseHarvestRounds: 3));
 
@@ -84,7 +84,7 @@ public class HarvestViaInteractionFrameworkTests
     {
         // Given a node requiring a pick and a character with no tool
         Guid nodeId = await RegisterNode(CopperOreTag);
-        TestCharacter character = CreateCharacter(JobSystemItemType.None); // Wrong tool
+        TestCharacter character = CreateCharacter(ItemForm.None); // Wrong tool
         _characterRepository.Add(character);
 
         // When attempting to harvest
@@ -101,7 +101,7 @@ public class HarvestViaInteractionFrameworkTests
     {
         // Given a node and a character with the correct tool
         Guid nodeId = await RegisterNode(CopperOreTag);
-        TestCharacter character = CreateCharacter(JobSystemItemType.ToolPick);
+        TestCharacter character = CreateCharacter(ItemForm.ToolPick);
         _characterRepository.Add(character);
 
         // When starting the harvest
@@ -122,7 +122,7 @@ public class HarvestViaInteractionFrameworkTests
     {
         // Given a node requiring 3 rounds and a character with a pick
         Guid nodeId = await RegisterNode(CopperOreTag);
-        TestCharacter character = CreateCharacter(JobSystemItemType.ToolPick);
+        TestCharacter character = CreateCharacter(ItemForm.ToolPick);
         _characterRepository.Add(character);
         PerformInteractionCommand command = new(character.GetId(), "harvesting", nodeId);
 
@@ -144,7 +144,7 @@ public class HarvestViaInteractionFrameworkTests
     {
         // Given a node we'll harvest to completion
         Guid nodeId = await RegisterNode(CopperOreTag);
-        TestCharacter character = CreateCharacter(JobSystemItemType.ToolPick);
+        TestCharacter character = CreateCharacter(ItemForm.ToolPick);
         _characterRepository.Add(character);
         PerformInteractionCommand command = new(character.GetId(), "harvesting", nodeId);
 
@@ -172,7 +172,7 @@ public class HarvestViaInteractionFrameworkTests
         Knowledge rateKnowledge = CreateKnowledge("fast_mining",
             new KnowledgeHarvestEffect(CopperOreTag, HarvestStep.HarvestStepRate, 1, EffectOperation.Additive));
         TestCharacter character = CreateCharacterWithKnowledge(
-            JobSystemItemType.ToolPick, rateKnowledge);
+            ItemForm.ToolPick, rateKnowledge);
         _characterRepository.Add(character);
 
         PerformInteractionCommand command = new(character.GetId(), "harvesting", nodeId);
@@ -197,7 +197,7 @@ public class HarvestViaInteractionFrameworkTests
         Knowledge yieldKnowledge = CreateKnowledge("abundant_mining",
             new KnowledgeHarvestEffect(CopperOreTag, HarvestStep.ItemYield, 2, EffectOperation.Additive));
         TestCharacter character = CreateCharacterWithKnowledge(
-            JobSystemItemType.ToolPick, yieldKnowledge);
+            ItemForm.ToolPick, yieldKnowledge);
         _characterRepository.Add(character);
 
         PerformInteractionCommand command = new(character.GetId(), "harvesting", nodeId);
@@ -221,7 +221,7 @@ public class HarvestViaInteractionFrameworkTests
     {
         // Given a completed harvest
         Guid nodeId = await RegisterNode(CopperOreTag);
-        TestCharacter character = CreateCharacter(JobSystemItemType.ToolPick);
+        TestCharacter character = CreateCharacter(ItemForm.ToolPick);
         _characterRepository.Add(character);
 
         for (int i = 0; i < 3; i++)
@@ -238,11 +238,11 @@ public class HarvestViaInteractionFrameworkTests
         // Given a single-round harvest (BaseHarvestRounds = 0)
         ((InMemoryResourceNodeDefinitionRepository)_definitionRepository).Create(
             new ResourceNodeDefinition(2, ResourceType.Ore, "quick_ore",
-                new HarvestContext(JobSystemItemType.ToolPick),
+                new HarvestContext(ItemForm.ToolPick),
                 [new HarvestOutput("quick_item", 1)],
                 Uses: 50, BaseHarvestRounds: 0));
         Guid nodeId = await RegisterNode("quick_ore");
-        TestCharacter character = CreateCharacter(JobSystemItemType.ToolPick);
+        TestCharacter character = CreateCharacter(ItemForm.ToolPick);
         _characterRepository.Add(character);
 
         _publishedEvents.Clear();
@@ -268,10 +268,10 @@ public class HarvestViaInteractionFrameworkTests
         return (Guid)result.Data!["nodeInstanceId"];
     }
 
-    private TestCharacter CreateCharacter(JobSystemItemType toolType)
+    private TestCharacter CreateCharacter(ItemForm toolType)
     {
         CharacterId id = CharacterId.New();
-        Dictionary<EquipmentSlots, ItemSnapshot> equipment = toolType == JobSystemItemType.None
+        Dictionary<EquipmentSlots, ItemSnapshot> equipment = toolType == ItemForm.None
             ? []
             : new Dictionary<EquipmentSlots, ItemSnapshot>
             {
@@ -285,7 +285,7 @@ public class HarvestViaInteractionFrameworkTests
     }
 
     private TestCharacter CreateCharacterWithKnowledge(
-        JobSystemItemType toolType, params Knowledge[] knowledgeArticles)
+        ItemForm toolType, params Knowledge[] knowledgeArticles)
     {
         CharacterId id = CharacterId.New();
 

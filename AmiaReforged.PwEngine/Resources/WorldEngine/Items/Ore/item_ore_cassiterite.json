@@ -5,7 +5,7 @@
   "Description": "Dark crystalline ore, the primary source of tin.",
   "Materials": ["Tin"],
   "BaseValue": 70,
-  "JobSystemType": "ResourceOre",
+  "ItemForm": "ResourceOre",
   "BaseItemType": 120,
   "WeightIncreaseConstant": 0,
   "Appearance": {

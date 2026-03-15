@@ -9,7 +9,7 @@ public class ItemBlueprintDto
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string[]? Materials { get; set; }
-    public string? JobSystemType { get; set; }
+    public string? ItemForm { get; set; }
     public int BaseItemType { get; set; }
     public AppearanceDataDto? Appearance { get; set; }
     public List<LocalVariableDto>? LocalVariables { get; set; }
@@ -445,4 +445,5 @@ public class EnumOptionDto
 {
     public string Value { get; set; } = string.Empty;
     public string Label { get; set; } = string.Empty;
+    public string? Group { get; set; }
 }

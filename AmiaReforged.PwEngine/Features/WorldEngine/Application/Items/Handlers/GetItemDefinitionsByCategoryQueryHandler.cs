@@ -23,21 +23,15 @@ public sealed class GetItemDefinitionsByCategoryQueryHandler : IQueryHandler<Get
     public Task<List<ItemBlueprint>> HandleAsync(GetItemDefinitionsByCategoryQuery query, CancellationToken cancellationToken = default)
     {
         List<ItemBlueprint> results = _repository.AllItems()
-            .Where(d => MapCategory(d.JobSystemType) == query.Category)
+            .Where(d => MapCategory(d.ItemForm) == query.Category)
             .ToList();
         return Task.FromResult(results);
     }
 
-    private static ItemCategory MapCategory(JobSystemItemType jobType) => jobType switch
+    private static ItemCategory MapCategory(ItemForm form) => form.GetGroup() switch
     {
-        JobSystemItemType.ResourceOre => ItemCategory.Resource,
-        JobSystemItemType.ResourceStone => ItemCategory.Resource,
-        JobSystemItemType.ResourceLog => ItemCategory.Resource,
-        JobSystemItemType.ResourcePlank => ItemCategory.Resource,
-        JobSystemItemType.ResourceBrick => ItemCategory.Resource,
-        JobSystemItemType.ResourceIngot => ItemCategory.Resource,
-        JobSystemItemType.ResourceGem => ItemCategory.Resource,
-        JobSystemItemType.ResourcePlant => ItemCategory.Resource,
+        ItemFormGroup.Resource => ItemCategory.Resource,
+        ItemFormGroup.IntermediateProduct => ItemCategory.Resource,
         _ => ItemCategory.Miscellaneous
     };
 }

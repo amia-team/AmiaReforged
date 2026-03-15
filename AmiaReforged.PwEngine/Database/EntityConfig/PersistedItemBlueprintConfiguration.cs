@@ -42,7 +42,7 @@ public class PersistedItemBlueprintConfiguration : IEntityTypeConfiguration<Pers
             .HasColumnName("weight_increase_constant")
             .HasDefaultValue(-1);
 
-        builder.Property(e => e.JobSystemType)
+        builder.Property(e => e.ItemForm)
             .HasColumnName("job_system_type")
             .HasMaxLength(64)
             .HasDefaultValue("None");
@@ -77,7 +77,7 @@ public class PersistedItemBlueprintConfiguration : IEntityTypeConfiguration<Pers
         builder.HasIndex(e => e.Name)
             .HasDatabaseName("IX_ItemBlueprints_Name");
 
-        builder.HasIndex(e => e.JobSystemType)
+        builder.HasIndex(e => e.ItemForm)
             .HasDatabaseName("IX_ItemBlueprints_JobSystemType");
     }
 }

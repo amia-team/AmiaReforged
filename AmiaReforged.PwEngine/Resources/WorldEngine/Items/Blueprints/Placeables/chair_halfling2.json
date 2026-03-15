@@ -6,7 +6,7 @@
   "Materials": [
     "WoodOak"
   ],
-  "JobSystemType": "Furniture",
+  "ItemForm": "Furniture",
   "BaseItemType": 74,
   "Appearance": {
     "ModelType": 0,

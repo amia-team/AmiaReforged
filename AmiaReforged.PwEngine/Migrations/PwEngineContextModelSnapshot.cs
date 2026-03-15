@@ -3071,7 +3071,7 @@ namespace AmiaReforged.PwEngine.Migrations
                         .HasColumnType("text")
                         .HasColumnName("description");
 
-                    b.Property<string>("JobSystemType")
+                    b.Property<string>("ItemForm")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(64)
@@ -3119,7 +3119,7 @@ namespace AmiaReforged.PwEngine.Migrations
 
                     b.HasKey("ItemTag");
 
-                    b.HasIndex("JobSystemType")
+                    b.HasIndex("ItemForm")
                         .HasDatabaseName("IX_ItemBlueprints_JobSystemType");
 
                     b.HasIndex("Name")

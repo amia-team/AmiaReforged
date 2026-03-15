@@ -193,8 +193,8 @@ public class RecipeTemplateExpander
 
         foreach (ItemBlueprint bp in blueprints)
         {
-            // Must match the required form (JobSystemItemType)
-            if (bp.JobSystemType != ingredient.RequiredForm) continue;
+            // Must match the required form (ItemForm)
+            if (bp.ItemForm != ingredient.RequiredForm) continue;
 
             // Must have at least one material in the required category
             MaterialEnum matchingMaterial = bp.Materials
@@ -259,7 +259,7 @@ public class RecipeTemplateExpander
 
             // Find a blueprint matching the output form + the resolved material
             ItemBlueprint? outputBlueprint = allBlueprints.FirstOrDefault(bp =>
-                bp.JobSystemType == templateProduct.OutputForm &&
+                bp.ItemForm == templateProduct.OutputForm &&
                 bp.Materials.Contains(sourceMatch.ResolvedMaterial));
 
             if (outputBlueprint == null)

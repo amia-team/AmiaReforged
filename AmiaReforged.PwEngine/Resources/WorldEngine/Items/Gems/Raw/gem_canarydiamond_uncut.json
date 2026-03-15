@@ -7,7 +7,7 @@
     "GemCanaryDiamond"
   ],
   "BaseValue": 450,
-  "JobSystemType": "ResourceGem",
+  "ItemForm": "ResourceGem",
   "BaseItemType": 120,
   "WeightIncreaseConstant": -1,
   "Appearance": {

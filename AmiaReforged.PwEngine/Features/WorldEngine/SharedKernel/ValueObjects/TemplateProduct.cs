@@ -11,9 +11,9 @@ public record TemplateProduct
 {
     /// <summary>
     /// The item form for the output (e.g., <c>ResourcePlank</c>, <c>ResourceIngot</c>).
-    /// Matches against <see cref="Items.ItemData.ItemBlueprint.JobSystemType"/>.
+    /// Matches against <see cref="Items.ItemData.ItemBlueprint.ItemForm"/>.
     /// </summary>
-    public required JobSystemItemType OutputForm { get; init; }
+    public required ItemForm OutputForm { get; init; }
 
     /// <summary>
     /// The index of the <see cref="TemplateIngredient"/> whose resolved material

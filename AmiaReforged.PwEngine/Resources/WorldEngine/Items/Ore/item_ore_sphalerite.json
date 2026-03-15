@@ -5,7 +5,7 @@
   "Description": "Dark brown to black ore, the chief source of zinc.",
   "Materials": ["Zinc"],
   "BaseValue": 60,
-  "JobSystemType": "ResourceOre",
+  "ItemForm": "ResourceOre",
   "BaseItemType": 120,
   "WeightIncreaseConstant": 0,
   "Appearance": {

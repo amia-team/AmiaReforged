@@ -5,7 +5,7 @@
   "Description": "Green nickel-bearing ore, commonly found in lateritic deposits.",
   "Materials": ["Nickel"],
   "BaseValue": 90,
-  "JobSystemType": "ResourceOre",
+  "ItemForm": "ResourceOre",
   "BaseItemType": 120,
   "WeightIncreaseConstant": 0,
   "Appearance": {

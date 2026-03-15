@@ -7,7 +7,7 @@
     "WoodOak"
   ],
   "BaseValue": 400,
-  "JobSystemType": "Furniture",
+  "ItemForm": "Furniture",
   "BaseItemType": 29,
   "Appearance": {
     "ModelType": 0,

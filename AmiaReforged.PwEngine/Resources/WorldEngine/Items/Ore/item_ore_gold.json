@@ -5,7 +5,7 @@
   "Description": "Raw, unrefined gold ore with a brilliant yellow gleam.",
   "Materials": ["Gold"],
   "BaseValue": 200,
-  "JobSystemType": "ResourceOre",
+  "ItemForm": "ResourceOre",
   "BaseItemType": 120,
   "WeightIncreaseConstant": 0,
   "Appearance": {

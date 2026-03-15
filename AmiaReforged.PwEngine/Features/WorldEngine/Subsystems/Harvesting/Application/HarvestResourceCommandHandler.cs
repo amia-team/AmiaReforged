@@ -48,7 +48,7 @@ public class HarvestResourceCommandHandler(
 
         // Check if character has the required tool
         ItemSnapshot? tool = character.GetEquipment()[EquipmentSlots.RightHand];
-        if (node.Definition.Requirement.RequiredItemType != JobSystemItemType.None &&
+        if (node.Definition.Requirement.RequiredItemType != ItemForm.None &&
             tool?.Type != node.Definition.Requirement.RequiredItemType)
         {
             return CommandResult.Fail("Required tool not equipped");

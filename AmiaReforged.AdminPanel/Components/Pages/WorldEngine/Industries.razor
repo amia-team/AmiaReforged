@@ -880,9 +880,14 @@
                         <div style="flex:2">
                             <small style="color:var(--text-secondary)">Form</small>
                             <select class="form-control form-control-sm" @bind="ing.RequiredForm">
-                                @foreach (EnumOptionDto form in _templateItemForms)
+                                @foreach (var grp in _templateItemForms.GroupBy(f => f.Group ?? "Other"))
                                 {
-                                    <option value="@form.Value">@form.Label</option>
+                                    <optgroup label="@grp.Key">
+                                        @foreach (EnumOptionDto form in grp)
+                                        {
+                                            <option value="@form.Value">@form.Label</option>
+                                        }
+                                    </optgroup>
                                 }
                             </select>
                         </div>
@@ -918,9 +923,14 @@
                         <div style="flex:2">
                             <small style="color:var(--text-secondary)">Output Form</small>
                             <select class="form-control form-control-sm" @bind="prod.OutputForm">
-                                @foreach (EnumOptionDto form in _templateItemForms)
+                                @foreach (var grp in _templateItemForms.GroupBy(f => f.Group ?? "Other"))
                                 {
-                                    <option value="@form.Value">@form.Label</option>
+                                    <optgroup label="@grp.Key">
+                                        @foreach (EnumOptionDto form in grp)
+                                        {
+                                            <option value="@form.Value">@form.Label</option>
+                                        }
+                                    </optgroup>
                                 }
                             </select>
                         </div>

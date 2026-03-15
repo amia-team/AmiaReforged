@@ -7,7 +7,7 @@
     "GemCrystalDeep"
   ],
   "BaseValue": 250,
-  "JobSystemType": "ResourceGem",
+  "ItemForm": "ResourceGem",
   "BaseItemType": 120,
   "WeightIncreaseConstant": -1,
   "Appearance": {

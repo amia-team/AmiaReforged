@@ -101,7 +101,7 @@ public static class RecipeTemplateMapper
     private static TemplateIngredient FromIngredientDto(TemplateIngredientJsonDto dto)
     {
         Enum.TryParse<MaterialCategory>(dto.RequiredCategory, true, out MaterialCategory category);
-        Enum.TryParse<JobSystemItemType>(dto.RequiredForm, true, out JobSystemItemType form);
+        Enum.TryParse<ItemForm>(dto.RequiredForm, true, out ItemForm form);
 
         return new TemplateIngredient
         {
@@ -126,7 +126,7 @@ public static class RecipeTemplateMapper
 
     private static TemplateProduct FromProductDto(TemplateProductJsonDto dto)
     {
-        Enum.TryParse<JobSystemItemType>(dto.OutputForm, true, out JobSystemItemType form);
+        Enum.TryParse<ItemForm>(dto.OutputForm, true, out ItemForm form);
 
         return new TemplateProduct
         {

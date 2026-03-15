@@ -8,7 +8,7 @@
   ],
   "BaseValue": 100,
   "WeightIncreaseConstant": 3,
-  "JobSystemType": "ResourceLog",
+  "ItemForm": "ResourceLog",
   "BaseItemType": 120,
   "Appearance": {
     "ModelType": 0,

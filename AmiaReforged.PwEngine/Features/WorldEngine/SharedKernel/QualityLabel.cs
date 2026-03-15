@@ -34,33 +34,33 @@ public static class QualityLabel
 
         return label;
     }
-    public static string QualityLabelForItem(JobSystemItemType itemType, IPQuality quality)
+    public static string QualityLabelForItem(ItemForm itemType, IPQuality quality)
     {
         string label = ToItemQualityLabel((int)quality);
         switch (itemType)
         {
-            case JobSystemItemType.ResourceOre:
+            case ItemForm.ResourceOre:
                 label = ToOreQualityLabel((int)quality);
                 break;
-            case JobSystemItemType.ResourceStone:
+            case ItemForm.ResourceStone:
                 label = ToStoneQualityLabel((int)quality);
                 break;
-            case JobSystemItemType.ResourceLog:
+            case ItemForm.ResourceLog:
                 label = ToLogQualityLabel((int)quality);
                 break;
-            case JobSystemItemType.ResourcePlank:
+            case ItemForm.ResourcePlank:
                 label = ToLogQualityLabel((int)quality);
                 break;
-            case JobSystemItemType.ResourceBrick:
+            case ItemForm.ResourceBrick:
                 label = ToBrickQualityLabel((int)quality);
                 break;
-            case JobSystemItemType.ResourceIngot:
+            case ItemForm.ResourceIngot:
                 label = ToOreQualityLabel((int)quality);
                 break;
-            case JobSystemItemType.ResourceGem:
+            case ItemForm.ResourceGem:
                 label = ToGemQualityLabel((int)quality);
                 break;
-            case JobSystemItemType.ResourcePlant:
+            case ItemForm.ResourcePlant:
                 label = ToFloraQualityLabel((int)quality);
                 break;
         }
