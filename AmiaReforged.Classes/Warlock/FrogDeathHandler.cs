@@ -2,7 +2,6 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
-using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Warlock;
 
@@ -15,54 +14,53 @@ public class FrogDeathHandler
     {
         Log.Info(message: "Frog Death Handler initialized.");
     }
-    
+
     [ScriptHandler(scriptName: "wlk_frog_ondeath")]
-    public async void OnFrogDeathRussianDoll(CallInfo callInfo)
+    public void OnFrogDeathRussianDoll(CallInfo callInfo)
     {
-        try
-        {
-        if (callInfo.TryGetEvent(out CreatureEvents.OnDeath obj))
-        {
-            if (obj.KilledCreature.AssociateType != AssociateType.Summoned) return;
-            bool isRussianDoll = obj.KilledCreature.ResRef == "wlkslaadblue" ||
-                                 obj.KilledCreature.ResRef == "wlkslaadgreen" ||
-                                 obj.KilledCreature.ResRef == "wlkslaadgray";
-            if (!isRussianDoll) return;
+        if (!callInfo.TryGetEvent(out CreatureEvents.OnDeath? obj)
+            || obj.KilledCreature.AssociateType != AssociateType.Summoned
+            || IsRussianDoll(obj.KilledCreature.ResRef)
+            || obj.KilledCreature.Master is not { } warlock
+            || obj.KilledCreature.Location is not { } newSummonLocation) return;
 
-            NwCreature summon = obj.KilledCreature;
-            NwCreature warlock = summon.Master;
+        NwCreature frogSummonKilledInAction = obj.KilledCreature;
 
-            string slaadTier = summon.ResRef;
+        string slaadTier = frogSummonKilledInAction.ResRef;
 
-            // Get the summon duration from warlock's active effects
-            foreach (Effect effect in warlock.ActiveEffects)
-            {
-                if (effect.Tag == "frogduration")
-                {
-                    float remainingSummonDuration = effect.DurationRemaining;
+        double? remainingFrogSeconds =
+            warlock.ActiveEffects.FirstOrDefault(e => e.Tag == "frogduration")?.DurationRemaining;
 
-                    slaadTier = slaadTier switch
-                    {
-                        "wlkslaadblue" => "wlkslaadred",
-                        "wlkslaadgreen" => "wlkslaadblue",
-                        "wlkslaadgray" => "wlkslaadgreen",
-                        _ => "wlkslaadred"
-                    };
+        if (remainingFrogSeconds == null) return;
+        TimeSpan remainingFrogDuration = TimeSpan.FromSeconds(remainingFrogSeconds.Value);
 
-                    await NwTask.Delay(TimeSpan.FromSeconds(2));
-                    await warlock.WaitForObjectContext();
-                    Effect spawnedSlaad = Effect.SummonCreature(slaadTier, VfxType.ImpPolymorph);
-                    summon.Location?.ApplyEffect(EffectDuration.Temporary, spawnedSlaad,
-                        TimeSpan.FromSeconds(remainingSummonDuration));
-                    return;
-                }
-            }
-        }
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error in OnFrogDeathRussianDoll");
-        }
+        string? nextFrogToSummon = GetNextFrogToSummon(slaadTier);
+        if (nextFrogToSummon == null) return;
+
+        _ = SummonNextFrog(warlock, nextFrogToSummon, remainingFrogDuration, newSummonLocation);
     }
-    
+
+    private async Task SummonNextFrog(NwCreature warlock, string nextFrogToSummon, TimeSpan remainingFrogDuration,
+        Location summonLocation)
+    {
+        await warlock.WaitForObjectContext();
+
+        Effect slaadSummon =
+            Effect.SummonCreature(nextFrogToSummon, VfxType.ImpPolymorph!, delay: TimeSpan.FromSeconds(2));
+
+        summonLocation.ApplyEffect(EffectDuration.Temporary, slaadSummon, remainingFrogDuration);
+    }
+
+    private static bool IsRussianDoll(string creatureResRef)
+        => creatureResRef is "wlkslaadblue" or "wlkslaadgreen" or "wlkslaadgray";
+
+    private static string? GetNextFrogToSummon(string summonResRef)
+        => summonResRef switch
+            {
+                "wlkslaadblue" => "wlkslaadred",
+                "wlkslaadgreen" => "wlkslaadblue",
+                "wlkslaadgray" => "wlkslaadgreen",
+                _ => null
+            };
+
 }
