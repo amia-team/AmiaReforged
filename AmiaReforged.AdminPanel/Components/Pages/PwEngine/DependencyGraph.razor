@@ -35,68 +35,67 @@
             </div>
         }
 
-        @if (!string.IsNullOrEmpty(_selectedEndpointId))
-        {
-            <div class="toolbar-group">
-                <label style="font-size:0.82rem;color:var(--text-secondary);white-space:nowrap">Filter:</label>
-                <input type="text" class="form-control form-control-sm" style="width:200px"
-                       placeholder="Namespace prefix..."
-                       @bind="_namespaceFilter" @bind:event="oninput" />
-            </div>
+        <div class="toolbar-group">
+            <label style="font-size:0.82rem;color:var(--text-secondary);white-space:nowrap">Filter:</label>
+            <input type="text" class="form-control form-control-sm" style="width:200px"
+                   placeholder="Namespace prefix..."
+                   @bind="_namespaceFilter" @bind:event="oninput" />
+        </div>
 
-            <div class="toolbar-group">
-                <button class="btn btn-sm btn-primary" @onclick="LoadGraph" disabled="@_loading">
-                    @if (_loading)
-                    {
-                        <span class="spinner-border spinner-border-sm me-1"></span>
-                    }
-                    Load Graph
-                </button>
-                <button class="btn btn-sm btn-outline-secondary" @onclick="FitView">Fit</button>
-            </div>
-
-            @* Search *@
-            <div class="toolbar-group ms-auto">
-                <input type="text" class="form-control form-control-sm" style="width:180px"
-                       placeholder="Search types..."
-                       @bind="_searchQuery" @bind:event="oninput" @bind:after="OnSearchChanged" />
-                @if (_searchResults.Count > 0)
+        <div class="toolbar-group">
+            <button class="btn btn-sm btn-primary" @onclick="LoadGraph" disabled="@(_loading || !_hasEndpoint)">
+                @if (_loading)
                 {
-                    <select class="form-control form-control-sm" style="width:200px"
-                            @onchange="OnSearchResultSelected">
-                        <option value="">@(_searchResults.Count) results</option>
-                        @foreach (var r in _searchResults)
-                        {
-                            <option value="@r.Id">@r.Label (@r.Kind)</option>
-                        }
-                    </select>
+                    <span class="spinner-border spinner-border-sm me-1"></span>
                 }
-            </div>
+                Load Graph
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="FitView" disabled="@(_graphData == null)">Fit</button>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="ClearGraph" disabled="@(_graphData == null)">Clear</button>
+        </div>
 
-            @* Edge filter toggles *@
-            <div class="toolbar-group">
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="checkbox" id="chkInherits" checked="@_showInherits"
-                           @onchange="@(e => ToggleEdgeFilter("Inherits", e))" />
-                    <label class="form-check-label" for="chkInherits" style="color:#5ba4b5;font-size:0.8rem">Inherits</label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="checkbox" id="chkImplements" checked="@_showImplements"
-                           @onchange="@(e => ToggleEdgeFilter("Implements", e))" />
-                    <label class="form-check-label" for="chkImplements" style="color:#4ecca3;font-size:0.8rem">Implements</label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="checkbox" id="chkCtor" checked="@_showCtorDeps"
-                           @onchange="@(e => ToggleEdgeFilter("ConstructorDep", e))" />
-                    <label class="form-check-label" for="chkCtor" style="color:#f58231;font-size:0.8rem">Constructor</label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="checkbox" id="chkField" checked="@_showFieldDeps"
-                           @onchange="@(e => ToggleEdgeFilter("FieldDep", e))" />
-                    <label class="form-check-label" for="chkField" style="color:#888;font-size:0.8rem">Field/Prop</label>
-                </div>
+        @* Search *@
+        <div class="toolbar-group ms-auto">
+            <input type="text" class="form-control form-control-sm" style="width:180px"
+                   placeholder="Search types..."
+                   @bind="_searchQuery" @bind:event="oninput" @bind:after="OnSearchChanged"
+                   disabled="@(_graphData == null)" />
+            @if (_searchResults.Count > 0)
+            {
+                <select class="form-control form-control-sm" style="width:200px"
+                        @onchange="OnSearchResultSelected">
+                    <option value="">@(_searchResults.Count) results</option>
+                    @foreach (var r in _searchResults)
+                    {
+                        <option value="@r.Id">@r.Label (@r.Kind)</option>
+                    }
+                </select>
+            }
+        </div>
+
+        @* Edge filter toggles *@
+        <div class="toolbar-group">
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="chkInherits" checked="@_showInherits"
+                       @onchange="@(e => ToggleEdgeFilter("Inherits", e))" disabled="@(_graphData == null)" />
+                <label class="form-check-label" for="chkInherits" style="color:#5ba4b5;font-size:0.8rem">Inherits</label>
             </div>
-        }
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="chkImplements" checked="@_showImplements"
+                       @onchange="@(e => ToggleEdgeFilter("Implements", e))" disabled="@(_graphData == null)" />
+                <label class="form-check-label" for="chkImplements" style="color:#4ecca3;font-size:0.8rem">Implements</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="chkCtor" checked="@_showCtorDeps"
+                       @onchange="@(e => ToggleEdgeFilter("ConstructorDep", e))" disabled="@(_graphData == null)" />
+                <label class="form-check-label" for="chkCtor" style="color:#f58231;font-size:0.8rem">Constructor</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="chkField" checked="@_showFieldDeps"
+                       @onchange="@(e => ToggleEdgeFilter("FieldDep", e))" disabled="@(_graphData == null)" />
+                <label class="form-check-label" for="chkField" style="color:#888;font-size:0.8rem">Field/Prop</label>
+            </div>
+        </div>
     </div>
 
     @* ===== Error/Success alerts ===== *@
@@ -288,6 +287,8 @@
     private bool _showCtorDeps = true;
     private bool _showFieldDeps = true;
 
+    private bool _hasEndpoint => !string.IsNullOrEmpty(_selectedEndpointId);
+
     private DotNetObjectReference<DependencyGraph>? _dotNetRef;
 
     // ===== Lifecycle =====
@@ -295,6 +296,14 @@
     protected override async Task OnInitializedAsync()
     {
         _endpoints = (await EndpointService.GetAllEndpointsAsync()).Where(e => e.IsEnabled).ToList();
+
+        // Auto-select the first endpoint so user can immediately click Load Graph
+        if (_endpoints.Count > 0)
+        {
+            var first = _endpoints[0];
+            _selectedEndpointId = first.Id.ToString();
+            Api.SelectEndpoint(first.Id);
+        }
     }
 
     // ===== Endpoint selection =====
@@ -476,6 +485,16 @@
     private async Task FitView()
     {
         await JS.InvokeVoidAsync("depGraph.fitView");
+    }
+
+    private async Task ClearGraph()
+    {
+        await JS.InvokeVoidAsync("depGraph.destroy");
+        _graphData = null;
+        _selectedNode = null;
+        _selectedNamespace = null;
+        _searchQuery = "";
+        _searchResults.Clear();
     }
 
     private async Task HighlightNode(string nodeId)
