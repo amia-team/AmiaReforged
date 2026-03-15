@@ -1,15 +1,17 @@
-﻿using static NWN.Core.NWScript;
+﻿using AmiaReforged.Classes.Warlock;
+using Anvil.API;
+using Anvil.API.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Lesser;
 
-public class WalkUnseen
+[ServiceBinding(typeof(IInvocation))]
+public class WalkUnseen : IInvocation
 {
-    public int CastWalkUnseen(uint nwnObjectId)
+    public string ImpactScript => "wlk_walkunseen";
+    public void CastInvocation(NwCreature warlock, int warlockLevel, SpellEvents.OnSpellCast castData)
     {
-        float duration = TurnsToSeconds(GetCasterLevel(nwnObjectId));
-
-        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectInvisibility(INVISIBILITY_TYPE_NORMAL), nwnObjectId,
-            duration);
-        return 0;
+        TimeSpan duration = NwTimeSpan.FromRounds(warlockLevel);
+        warlock.ApplyEffect(EffectDuration.Temporary, Effect.Invisibility(InvisibilityType.Normal), duration);
     }
 }

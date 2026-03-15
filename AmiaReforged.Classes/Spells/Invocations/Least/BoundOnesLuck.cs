@@ -1,35 +1,35 @@
-﻿using AmiaReforged.Classes.EffectUtils;
-using AmiaReforged.Classes.Warlock;
-using NWN.Core;
-using static NWN.Core.NWScript;
+﻿using AmiaReforged.Classes.Warlock;
+using Anvil.API;
+using Anvil.API.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Least;
 
-public class BoundOnesLuck
+[ServiceBinding(typeof(IInvocation))]
+public class BoundOnesLuck : IInvocation
 {
-    public void CastBoundOnesLuck(uint nwnObjectId)
+    public string ImpactScript => "wlk_boundluck";
+    public void CastInvocation(NwCreature warlock, int warlockLevel, SpellEvents.OnSpellCast castData)
     {
-        if (GetHasFeat(FEAT_PRESTIGE_DARK_BLESSING, nwnObjectId) == TRUE)
+        if (warlock.KnowsFeat(Feat.PrestigeDarkBlessing!))
         {
-            SendMessageToPC(nwnObjectId, WarlockUtils.String(message: "You already have Dark Blessing."));
+            warlock.ControllingPlayer?.FloatingTextString("You already have Dark Blessing.", false);
             return;
         }
 
-        int warlockLevels = GetLevelByClass(57, nwnObjectId);
-        int savesCap = warlockLevels / 7;
-
-        if (warlockLevels == 30)
+        int savesCap = warlockLevel / 7;
+        if (warlockLevel == 30)
             savesCap += 6;
 
-        int save = Math.Min(savesCap, GetAbilityModifier(ABILITY_CHARISMA, nwnObjectId));
+        int uniSavesBonus = Math.Min(savesCap, warlock.GetAbilityModifier(Ability.Charisma));
 
-        IntPtr luck = NwEffects.LinkEffectList(new List<IntPtr>
-        {
-            EffectSavingThrowIncrease(SAVING_THROW_ALL, save),
-            EffectVisualEffect(VFX_DUR_CESSATE_POSITIVE)
-        });
+        Effect boundOnesLuck = Effect.LinkEffects(Effect.SavingThrowIncrease(SavingThrow.All, uniSavesBonus),
+            Effect.VisualEffect(VfxType.DurCessatePositive));
+        boundOnesLuck.SubType = EffectSubType.Magical;
 
-        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, luck, nwnObjectId, HoursToSeconds(warlockLevels));
-        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_HEAD_ODD), nwnObjectId);
+        TimeSpan duration = NwTimeSpan.FromHours(warlockLevel);
+
+        warlock.ApplyEffect(EffectDuration.Temporary, boundOnesLuck, duration);
+        warlock.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpHeadOdd));
     }
 }

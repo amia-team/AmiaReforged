@@ -1,26 +1,30 @@
 ﻿using AmiaReforged.Classes.EffectUtils;
+using AmiaReforged.Classes.Warlock;
+using Anvil.API;
+using Anvil.API.Events;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Least;
 
-public class RepelTheHail
+public class RepelTheHail : IInvocation
 {
-    public int CastRepelTheHail(uint nwnObjectId)
+    private const VfxType DurDeathWardMid = (VfxType)2543;
+    public string ImpactScript => "wlk_repelhail";
+    public void CastInvocation(NwCreature warlock, int warlockLevel, SpellEvents.OnSpellCast castData)
     {
-        int warlockLevels = GetLevelByClass(57, nwnObjectId);
-        int chaModBonus = GetAbilityModifier(ABILITY_CHARISMA, nwnObjectId) / 2;
-        int concealment = 25 + warlockLevels + chaModBonus;
+        int rangedConcealment = 25 + warlockLevel + warlock.GetAbilityModifier(Ability.Charisma) / 2;
 
-        IntPtr repelHailEffect = NwEffects.LinkEffectList(new List<IntPtr>
-        {
-            EffectSkillIncrease(SKILL_MOVE_SILENTLY, 4),
-            EffectSkillIncrease(SKILL_HIDE, 4),
-            EffectVisualEffect(VFX_DUR_GLOBE_MINOR),
-            EffectConcealment(concealment, MISS_CHANCE_TYPE_VS_RANGED)
-        });
+        Effect repelHail = Effect.LinkEffects
+        (
+            Effect.Concealment(rangedConcealment, MissChanceType.VsRanged),
+            Effect.VisualEffect(DurDeathWardMid),
+            Effect.SkillIncrease(Skill.Hide!, 4),
+            Effect.SkillIncrease(Skill.MoveSilently!, 4)
+        );
+        repelHail.SubType = EffectSubType.Magical;
 
-        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, repelHailEffect, nwnObjectId, TurnsToSeconds(warlockLevels));
+        TimeSpan duration = NwTimeSpan.FromTurns(warlockLevel);
 
-        return 0;
+        warlock.ApplyEffect(EffectDuration.Temporary, repelHail, duration);
     }
 }

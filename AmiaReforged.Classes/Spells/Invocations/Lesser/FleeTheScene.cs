@@ -1,30 +1,27 @@
 ﻿using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Warlock;
+using Anvil.API;
+using Anvil.API.Events;
+using Anvil.Services;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Lesser;
 
-public class FleeTheScene
+[ServiceBinding(typeof(IInvocation))]
+public class FleeTheScene : IInvocation
 {
-    public void CastFleeTheScene(uint nwnObjectId)
+    public string ImpactScript => "wlk_fleethescene";
+    public void CastInvocation(NwCreature warlock, int warlockLevel, SpellEvents.OnSpellCast castData)
     {
-        int warlockLevels = GetLevelByClass(57, nwnObjectId);
-        float duration = RoundsToSeconds(warlockLevels);
+        Effect haste = Effect.LinkEffects(Effect.Haste(), Effect.VisualEffect(VfxType.DurCessatePositive));
+        haste.SubType = EffectSubType.Magical;
 
-        IntPtr haste = NwEffects.LinkEffectList(new List<IntPtr>
-        {
-            EffectVisualEffect(VFX_DUR_CESSATE_POSITIVE),
-            EffectHaste()
-        });
-        IntPtr sanctuary = NwEffects.LinkEffectList(new List<IntPtr>
-        {
-            EffectSanctuary(WarlockUtils.CalculateDc(nwnObjectId)),
-            EffectVisualEffect(VFX_DUR_SANCTUARY)
-        });
+        TimeSpan duration = NwTimeSpan.FromRounds(warlockLevel);
+        warlock.ApplyEffect(EffectDuration.Temporary, haste, duration);
 
-        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, haste, nwnObjectId, duration);
+        if (!warlock.IsInCombat) return;
 
-        if (GetIsInCombat(nwnObjectId) == TRUE)
-            ApplyEffectToObject(DURATION_TYPE_TEMPORARY, sanctuary, nwnObjectId, 3f);
+        int invocationDc = warlock.InvocationDc(warlockLevel);
+        warlock.ApplyEffect(EffectDuration.Temporary, Effect.Sanctuary(invocationDc), TimeSpan.FromSeconds(3f));
     }
 }

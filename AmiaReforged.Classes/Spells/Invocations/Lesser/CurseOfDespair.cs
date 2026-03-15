@@ -1,61 +1,60 @@
-﻿using AmiaReforged.Classes.EffectUtils;
-using AmiaReforged.Classes.Warlock;
-using static NWN.Core.NWScript;
+﻿using AmiaReforged.Classes.Warlock;
+using Anvil.API;
+using Anvil.API.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Lesser;
 
-public class CurseOfDespair
+[ServiceBinding(typeof(IInvocation))]
+public class CurseOfDespair : IInvocation
 {
-    public void CastCurseOfDespair(uint nwnObjectId)
+    public string ImpactScript => "wlk_curse";
+    public void CastInvocation(NwCreature warlock, int warlockLevel, SpellEvents.OnSpellCast castData)
     {
-        uint target = GetSpellTargetObject();
-        uint caster = nwnObjectId;
-        int warlockLevels = GetLevelByClass(57, nwnObjectId);
-        float duration = RoundsToSeconds(warlockLevels);
-        IntPtr curse = SupernaturalEffect(EffectCurse(3, 3, 3, 3, 3, 3));
-        IntPtr attackDecrease = SupernaturalEffect(EffectAttackDecrease(1));
-        attackDecrease = TagEffect(attackDecrease, sNewTag: "curse_wlk_ab_decrease");
-        IntPtr location = GetLocation(target);
+        if (castData.TargetLocation is not { } location) return;
 
-        ApplyEffectAtLocation(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_PULSE_NEGATIVE), location);
-        uint currentTarget = GetFirstObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_LARGE, location);
-        while (GetIsObjectValid(currentTarget) == TRUE)
+        Effect curse = Effect.LinkEffects
+        (
+            Effect.Curse(3, 3, 3, 3, 3, 3),
+            Effect.VisualEffect(VfxType.DurCessateNegative)
+        );
+        curse.SubType = EffectSubType.Supernatural;
+
+        Effect abDecrease = Effect.LinkEffects
+        (
+            Effect.AttackDecrease(1),
+            Effect.VisualEffect(VfxType.DurCessateNegative)
+        );
+        abDecrease.SubType = EffectSubType.Supernatural;
+
+        Effect curseImpVfx = Effect.VisualEffect(VfxType.ImpReduceAbilityScore);
+        Effect abDecreaseImpVfx = Effect.VisualEffect(VfxType.ImpHeadEvil);
+
+        int invocationDc = warlock.InvocationDc(warlockLevel);
+        TimeSpan duration = NwTimeSpan.FromRounds(warlockLevel);
+
+        location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpPulseNegative));
+
+        foreach (NwCreature creature in
+                 location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Large, true))
         {
-            if (NwEffects.IsValidSpellTarget(currentTarget, 3, caster))
+            if (!creature.IsValidInvocationTarget(warlock, false)) continue;
+
+            CreatureEvents.OnSpellCastAt.Signal(warlock, creature, castData.Spell);
+
+            SavingThrowResult willSave =
+                creature.RollSavingThrow(SavingThrow.Will, invocationDc, SavingThrowType.None, warlock);
+
+            if (willSave == SavingThrowResult.Success)
             {
-                SignalEvent(currentTarget, EventSpellCastAt(nwnObjectId, 1000));
-
-                if (NwEffects.ResistSpell(nwnObjectId, currentTarget))
-                {
-                    currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_LARGE, location);
-                    continue;
-                }
-
-                bool passedWillSave = WillSave(currentTarget, WarlockUtils.CalculateDc(caster), 0, caster) == TRUE;
-
-                if (passedWillSave || NwEffects.GetHasEffectType(EFFECT_TYPE_CURSE, currentTarget) == TRUE ||
-                    GetIsImmune(currentTarget, IMMUNITY_TYPE_ABILITY_DECREASE | IMMUNITY_TYPE_CURSED) == TRUE)
-                {
-                    NwEffects.RemoveEffectByTag(tag: "curse_wlk_ab_decrease", currentTarget);
-                    ApplyEffectToObject(DURATION_TYPE_TEMPORARY, attackDecrease, currentTarget, 60f);
-                    ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectVisualEffect(VFX_DUR_CESSATE_NEGATIVE),
-                        currentTarget, 60f);
-                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_HEAD_EVIL), currentTarget);
-                    currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_LARGE, location);
-                    continue;
-                }
-
-                if (!passedWillSave)
-                {
-                    ApplyEffectToObject(DURATION_TYPE_TEMPORARY, curse, currentTarget, duration);
-                    ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectVisualEffect(VFX_DUR_CESSATE_NEGATIVE),
-                        currentTarget, duration);
-                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_REDUCE_ABILITY_SCORE),
-                        currentTarget);
-                }
+                creature.ApplyEffect(EffectDuration.Instant, abDecreaseImpVfx);
+                creature.ApplyEffect(EffectDuration.Temporary, abDecrease, duration);
+                continue;
             }
 
-            currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_LARGE, location);
+            creature.ApplyEffect(EffectDuration.Instant, curseImpVfx);
+            creature.ApplyEffect(EffectDuration.Temporary, curse, duration);
         }
+
     }
 }

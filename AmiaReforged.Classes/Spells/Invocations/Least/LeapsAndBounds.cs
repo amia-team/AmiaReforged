@@ -1,24 +1,27 @@
-﻿using AmiaReforged.Classes.EffectUtils;
-using static NWN.Core.NWScript;
+﻿using AmiaReforged.Classes.Warlock;
+using Anvil.API;
+using Anvil.API.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Least;
 
-public class LeapsAndBounds
+[ServiceBinding(typeof(IInvocation))]
+public class LeapsAndBounds : IInvocation
 {
-    public int CastLeapsAndBounds(uint nwnObjectId)
+    public string ImpactScript => "wlk_leapsbounds";
+    public void CastInvocation(NwCreature warlock, int warlockLevel, SpellEvents.OnSpellCast castData)
     {
-        int warlockLevels = GetLevelByClass(57, nwnObjectId);
+        Effect leaps = Effect.LinkEffects
+        (
+            Effect.AbilityIncrease(Ability.Dexterity, 4),
+            Effect.SkillIncrease(Skill.Tumble!, 8),
+            Effect.VisualEffect(VfxType.DurCessatePositive)
+        );
+        leaps.SubType = EffectSubType.Magical;
 
-        IntPtr leaps = NwEffects.LinkEffectList(new List<IntPtr>
-        {
-            EffectAbilityIncrease(ABILITY_DEXTERITY, 4),
-            EffectSkillIncrease(SKILL_TUMBLE, 8),
-            EffectVisualEffect(VFX_DUR_CESSATE_POSITIVE)
-        });
+        TimeSpan duration = NwTimeSpan.FromHours(warlockLevel);
 
-        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, leaps, nwnObjectId, HoursToSeconds(warlockLevels));
-        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_IMPROVE_ABILITY_SCORE), nwnObjectId);
-
-        return 0;
+        warlock.ApplyEffect(EffectDuration.Temporary, leaps, duration);
+        warlock.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpImproveAbilityScore));
     }
 }

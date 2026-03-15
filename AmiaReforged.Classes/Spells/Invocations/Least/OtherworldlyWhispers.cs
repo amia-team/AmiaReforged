@@ -1,26 +1,28 @@
-﻿using AmiaReforged.Classes.EffectUtils;
-using static NWN.Core.NWScript;
+﻿using AmiaReforged.Classes.Warlock;
+using Anvil.API;
+using Anvil.API.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Least;
 
-public class OtherworldlyWhispers
+[ServiceBinding(typeof(IInvocation))]
+public class OtherworldlyWhispers : IInvocation
 {
-    public int CastOtherworldlyWhispers(uint nwnObjectId)
+    public string ImpactScript => "wlk_othrwrldwhis";
+    public void CastInvocation(NwCreature warlock, int warlockLevel, SpellEvents.OnSpellCast castData)
     {
-        int warlockLevels = GetLevelByClass(57, nwnObjectId);
-        int chaMod = GetAbilityModifier(ABILITY_CHARISMA, nwnObjectId);
-        int bonus = 10 + warlockLevels / 2 +  chaMod;
+        int skillBonus = 10 + warlockLevel / 2 + warlock.GetAbilityModifier(Ability.Charisma);
+        Effect whispers = Effect.LinkEffects
+        (
+            Effect.SkillIncrease(Skill.Lore!, skillBonus),
+            Effect.SkillIncrease(Skill.Spellcraft!, skillBonus),
+            Effect.VisualEffect(VfxType.DurCessatePositive)
+        );
+        whispers.SubType = EffectSubType.Magical;
 
-        IntPtr whispers = NwEffects.LinkEffectList(new List<IntPtr>
-        {
-            EffectSkillIncrease(SKILL_LORE, bonus),
-            EffectSkillIncrease(SKILL_SPELLCRAFT, bonus),
-            EffectVisualEffect(VFX_DUR_CESSATE_POSITIVE)
-        });
+        TimeSpan duration = NwTimeSpan.FromHours(warlockLevel);
 
-        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, whispers, nwnObjectId, HoursToSeconds(warlockLevels));
-        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_NIGHTMARE_HEAD_HIT), nwnObjectId);
-
-        return 0;
+        warlock.ApplyEffect(EffectDuration.Temporary, whispers, duration);
+        warlock.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpNightmareHeadHit));
     }
 }

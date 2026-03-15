@@ -15,55 +15,6 @@ public class WarlockGreaterInvocationHandler
         Log.Info(message: "Warlock Greater Invocation Script Handler initialized.");
     }
 
-    [ScriptHandler(scriptName: "wlk_causticmire")]
-    public void OnCausticMire(CallInfo info)
-    {
-        CausticMire script = new();
-        script.CastCausticMire(info.ObjectSelf);
-    }
-
-    [ScriptHandler(scriptName: "wlk_mireent")]
-    public void OnCausticMireEnter(CallInfo info)
-    {
-        CausticMireOnEnter script = new();
-        script.CausticMireEnterEffects(info.ObjectSelf);
-    }
-
-    [ScriptHandler(scriptName: "wlk_mirehbea")]
-    public void OnCausticMireHeartbeat(CallInfo info)
-    {
-        CausticMireHeartbeat script = new();
-        script.CausticMireHeartbeatEffects(info.ObjectSelf);
-    }
-
-    [ScriptHandler(scriptName: "wlk_mireexit")]
-    public void OnCausticMireExit(CallInfo info)
-    {
-        CausticMireOnExit script = new();
-        script.CausticMireExitEffects(info.ObjectSelf);
-    }
-
-    [ScriptHandler(scriptName: "wlk_chilltentac")]
-    public void OnChillingTentacles(CallInfo info)
-    {
-        ChillingTentacles script = new();
-        script.CastChillingTentacles(info.ObjectSelf);
-    }
-
-    [ScriptHandler(scriptName: "wlk_tentent")]
-    public void OnChillingTentaclesEnter(CallInfo info)
-    {
-        ChillingTentaclesEnter script = new();
-        script.ChillingTentaclesEnterEffects(info.ObjectSelf);
-    }
-
-    [ScriptHandler(scriptName: "wlk_tenthbea")]
-    public void OnChillingTentaclesHeartbeat(CallInfo info)
-    {
-        ChillingTentaclesHeartbeat script = new();
-        script.ChillingTentaclesHeartbeatEffects(info.ObjectSelf);
-    }
-
     [ScriptHandler(scriptName: "wlk_tenplague")]
     public void OnTenaciousPlague(CallInfo info)
     {
