@@ -1607,6 +1607,7 @@ window.regionGraph = (function () {
 
     /**
      * Run a named layout algorithm on the current graph.
+     * Uses frame-spread animation for force-directed layouts to avoid hanging.
      * @param {string} name Layout name: compact-grid, cose, fcose, dagre, grid, circle, concentric, breadthfirst
      */
     function runLayout(name, config) {
@@ -1614,14 +1615,27 @@ window.regionGraph = (function () {
         _currentLayout = name || 'compact-grid';
         var cfg = config || {};
 
+        // Stop any running layout before starting a new one
+        if (cy._runningLayout) {
+            try { cy._runningLayout.stop(); } catch (e) {}
+            cy._runningLayout = null;
+        }
+
         if (_currentLayout === 'compact-grid') {
+            _reportProgress(92, 'Laying out grid...');
             _runCompactGridLayout(cy, cfg);
+            _reportProgress(100, 'Complete');
             return;
         }
 
         var totalNodes = cy.nodes('[isRegionParent != "yes"]').length;
         var pad = cfg.padding != null ? cfg.padding : 15;
         var opts;
+
+        // For force-directed layouts with large graphs, use per-frame animation
+        // (animate: true) instead of 'end' (compute all synchronously then jump).
+        // Also reduce iterations to avoid long compute times.
+        var isLargeGraph = totalNodes > 150;
 
         switch (_currentLayout) {
             case 'fcose': {
@@ -1638,13 +1652,14 @@ window.regionGraph = (function () {
                     var edgF = cfg.idealEdgeLength != null ? cfg.idealEdgeLength : defEdgF;
                     var gravF = cfg.gravity != null ? cfg.gravity : defGravF;
                     var nestF = cfg.nestingFactor != null ? cfg.nestingFactor : 0.15;
-                    var iterF = cfg.numIter != null ? cfg.numIter : 2500;
+                    var defIterF = isLargeGraph ? 1500 : 2500;
+                    var iterF = cfg.numIter != null ? cfg.numIter : defIterF;
                     opts = {
                         name: 'fcose',
                         quality: 'default',
                         randomize: true,
-                        animate: 'end',
-                        animationDuration: 500,
+                        animate: true,
+                        animationDuration: isLargeGraph ? 800 : 500,
                         nodeRepulsion: function () { return repF; },
                         idealEdgeLength: function () { return edgF; },
                         edgeElasticity: function () { return 0.45; },
@@ -1668,11 +1683,12 @@ window.regionGraph = (function () {
                 var edg = cfg.idealEdgeLength != null ? cfg.idealEdgeLength : defEdg;
                 var grav = cfg.gravity != null ? cfg.gravity : defGrav;
                 var nest = cfg.nestingFactor != null ? cfg.nestingFactor : 0.1;
-                var iter = cfg.numIter != null ? cfg.numIter : 800;
+                var defIter = isLargeGraph ? 400 : 800;
+                var iter = cfg.numIter != null ? cfg.numIter : defIter;
                 opts = {
                     name: 'cose',
-                    animate: 'end',
-                    animationDuration: 500,
+                    animate: true,
+                    animationDuration: isLargeGraph ? 800 : 500,
                     nodeRepulsion: function () { return rep; },
                     idealEdgeLength: function () { return edg; },
                     edgeElasticity: function () { return 32; },
@@ -1771,7 +1787,17 @@ window.regionGraph = (function () {
             }
         }
 
-        cy.layout(opts).run();
+        _reportProgress(92, 'Running ' + _currentLayout + ' layout...');
+
+        var layout = cy.layout(opts);
+        cy._runningLayout = layout;
+
+        layout.on('layoutstop', function () {
+            cy._runningLayout = null;
+            _reportProgress(100, 'Complete');
+        });
+
+        layout.run();
     }
 
     return {
