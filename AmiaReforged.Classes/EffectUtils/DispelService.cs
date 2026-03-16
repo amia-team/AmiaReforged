@@ -393,6 +393,29 @@ public class DispelService
     }
 
     /// <summary>
+    /// Performs a dispel check against an Area of Effect object.
+    /// </summary>
+    /// <param name="caster">The creature casting the dispel</param>
+    /// <param name="aoeObject">The AoE object to attempt to dispel</param>
+    /// <param name="casterLevel">The effective caster level for the dispel check</param>
+    /// <returns>True if the AoE was successfully dispelled</returns>
+    public bool TryDispelAreaOfEffect(NwCreature caster, NwAreaOfEffect aoeObject, int casterLevel)
+    {
+        // Check if it's a mobile aura (can't dispel these)
+        if (aoeObject.Tag[..7] == "VFX_MOB")
+        {
+            return false;
+        }
+
+        // Perform dispel check
+        if (NwEffects.DispelCheck(casterLevel, aoeObject.CasterLevel) != TRUE) return false;
+
+        aoeObject.Destroy();
+        return true;
+    }
+
+
+    /// <summary>
     /// Checks for conditions that make the target immune to dispel.
     /// </summary>
     /// <param name="targetObject">Target to dispel</param>
