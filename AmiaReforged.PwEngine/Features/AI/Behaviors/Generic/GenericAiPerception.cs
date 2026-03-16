@@ -41,6 +41,11 @@ public class GenericAiPerception : IOnPerceptionBehavior
         // Only react to enemies
         if (!perceived.IsEnemy(creature)) return;
 
+        if (!creature.IsInCombat)
+        {
+            creature.ClearActionQueue();
+            creature.ActionAttackTarget(perceived);
+        }
         AiState? state = _stateManager.GetState(creature);
         if (state == null) return;
 
