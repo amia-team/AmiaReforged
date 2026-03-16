@@ -25,8 +25,8 @@ public class WarlockDarkInvocationHandler
     [ScriptHandler(scriptName: "wlk_devourmagic")]
     public void OnDevourMagic(CallInfo info)
     {
-        DevourMagic script = new();
-        script.CastDevourMagic(info.ObjectSelf);
+        // DevourMagic script = new();
+        // script.CastDevourMagic(info.ObjectSelf);
     }
 
     [ScriptHandler(scriptName: "wlk_retinvis")]
