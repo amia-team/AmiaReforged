@@ -6,15 +6,16 @@ using Anvil.Services;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting.Nui;
 
 /// <summary>
-/// Minimal NUI view for harvesting progress. Displays only a progress bar —
-/// no status text, no time remaining, no done button.
+/// Minimal NUI view for harvesting progress. Displays a status label
+/// and a progress bar inside a transparent, borderless window.
 /// </summary>
 public sealed class HarvestProgressView : ScryView<HarvestProgressPresenter>
 {
     public const float WindowW = 300f;
-    public const float WindowH = 80f;
+    public const float WindowH = 120f;
 
     public readonly NuiBind<float> ProgressValue = new("hp_progress");
+    public readonly NuiBind<string> StatusText = new("hp_status");
 
     public HarvestProgressView(NwPlayer player, string title)
     {
@@ -32,7 +33,25 @@ public sealed class HarvestProgressView : ScryView<HarvestProgressPresenter>
         {
             Children =
             [
-                new NuiSpacer { Height = 15f },
+                new NuiSpacer { Height = 10f },
+
+                // Action label (e.g. "Chopping Oak Tree")
+                new NuiRow
+                {
+                    Height = 26f,
+                    Children =
+                    [
+                        new NuiSpacer(),
+                        new NuiLabel(StatusText)
+                        {
+                            HorizontalAlign = NuiHAlign.Center,
+                            VerticalAlign = NuiVAlign.Middle
+                        },
+                        new NuiSpacer()
+                    ]
+                },
+
+                new NuiSpacer { Height = 8f },
 
                 // Progress bar
                 new NuiRow
@@ -49,7 +68,7 @@ public sealed class HarvestProgressView : ScryView<HarvestProgressPresenter>
                     ]
                 },
 
-                new NuiSpacer { Height = 15f }
+                new NuiSpacer { Height = 10f }
             ]
         };
     }

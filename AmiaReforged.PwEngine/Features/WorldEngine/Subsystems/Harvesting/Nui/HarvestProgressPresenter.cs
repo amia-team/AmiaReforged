@@ -57,7 +57,7 @@ public sealed class HarvestProgressPresenter : ScryPresenter<HarvestProgressView
 
     public override void InitBefore()
     {
-        _window = new NuiWindow(View.RootLayout(), _title)
+        _window = new NuiWindow(View.RootLayout(), "")
         {
             Geometry = new NuiRect(-1f, -1f, HarvestProgressView.WindowW, HarvestProgressView.WindowH),
             Closable = false,
@@ -83,6 +83,7 @@ public sealed class HarvestProgressPresenter : ScryPresenter<HarvestProgressView
         }
 
         _token.SetBindValue(View.ProgressValue, 0f);
+        _token.SetBindValue(View.StatusText, _title);
         _lastUpdateUtc = DateTime.UtcNow;
         _closed = false;
 
