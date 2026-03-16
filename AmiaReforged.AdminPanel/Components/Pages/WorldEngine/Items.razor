@@ -184,30 +184,15 @@
                         <select class="form-control" @bind="_editItem.ItemForm">
                             <option value="">— Select —</option>
                             <option value="None">None</option>
-                            <optgroup label="Tools">
-                                <option value="ToolPick">Pick</option>
-                                <option value="ToolHammer">Hammer</option>
-                                <option value="ToolAxe">Axe</option>
-                                <option value="ToolFroe">Froe</option>
-                                <option value="ToolAdze">Adze</option>
-                                <option value="ToolWoodChisel">Wood Chisel</option>
-                                <option value="ToolMasonChisle">Mason Chisel</option>
-                            </optgroup>
-                            <optgroup label="Resources">
-                                <option value="ResourceOre">Ore</option>
-                                <option value="ResourceStone">Stone</option>
-                                <option value="ResourceLog">Log</option>
-                                <option value="ResourceGem">Gem</option>
-                                <option value="ResourcePlant">Plant</option>
-                            </optgroup>
-                            <optgroup label="Intermediate Products">
-                                <option value="ResourcePlank">Plank</option>
-                                <option value="ResourceBrick">Brick</option>
-                                <option value="ResourceIngot">Ingot</option>
-                            </optgroup>
-                            <optgroup label="Finished Goods">
-                                <option value="Furniture">Furniture</option>
-                            </optgroup>
+                            @foreach (IGrouping<string, EnumOptionDto> grp in _allItemForms.GroupBy(f => f.Group ?? "Other"))
+                            {
+                                <optgroup label="@grp.Key">
+                                    @foreach (EnumOptionDto form in grp)
+                                    {
+                                        <option value="@form.Value">@form.Label</option>
+                                    }
+                                </optgroup>
+                            }
                         </select>
                     </div>
                     <div class="form-group" style="flex:1">
@@ -237,7 +222,7 @@
                                 int i = idx;
                                 string mat = _editItem.Materials[i];
                                 <span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg-secondary);padding:2px 8px;border-radius:12px;font-size:0.85rem">
-                                    @mat
+                                    @GetMaterialLabel(mat)
                                     <button type="button" style="border:none;background:none;color:var(--text-secondary);cursor:pointer;font-size:0.9rem;padding:0 2px" @onclick="() => RemoveMaterial(i)">✕</button>
                                 </span>
                             }
@@ -418,42 +403,27 @@
                                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                                         <strong style="font-size:0.9rem">
                                             Variant @(vi + 1):
-                                            @(string.IsNullOrEmpty(variant.Material) ? "(no material)" : variant.Material)
+                                            @(string.IsNullOrEmpty(variant.Material) ? "(no material)" : GetMaterialLabel(variant.Material))
                                         </strong>
                                         <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveVariant(vi)">✕ Remove</button>
                                     </div>
 
                                     <div class="form-row" style="display:flex;gap:10px">
-                                        <div class="form-group" style="flex:2;position:relative">
+                                        <div class="form-group" style="flex:2">
                                             <label>Material</label>
-                                            <div style="position:relative">
-                                                <input class="form-control form-control-sm"
-                                                       placeholder="Search materials..."
-                                                       value="@GetVariantMaterialSearch(vi)"
-                                                       @oninput="e => OnVariantMaterialSearchInput(vi, e)"
-                                                       @onfocus="() => OnVariantMaterialFocus(vi)"
-                                                       @onblur="DismissVariantMaterialDropdownDelayed" />
-                                                @if (_activeVariantMaterialDropdown == vi && _filteredVariantMaterials.Count > 0)
+                                            <select class="form-control form-control-sm" value="@variant.Material"
+                                                    @onchange="e => OnVariantMaterialChanged(vi, e)">
+                                                <option value="">— Select —</option>
+                                                @foreach (IGrouping<string, EnumOptionDto> grp in _allMaterials.GroupBy(m => m.Category ?? "Other"))
                                                 {
-                                                    <div style="position:absolute;top:100%;left:0;right:0;max-height:180px;overflow-y:auto;background:var(--bg-card);border:1px solid var(--border-color);border-radius:6px;z-index:1070;box-shadow:0 4px 12px rgba(0,0,0,0.3)">
-                                                        @{ string? lastCat = null; }
-                                                        @foreach (EnumOptionDto mat in _filteredVariantMaterials)
+                                                    <optgroup label="@grp.Key">
+                                                        @foreach (EnumOptionDto mat in grp)
                                                         {
-                                                            string cat = mat.Category ?? "Other";
-                                                            @if (cat != lastCat)
-                                                            {
-                                                                lastCat = cat;
-                                                                <div style="padding:3px 10px;font-size:0.7rem;font-weight:600;color:var(--text-secondary);background:var(--bg-secondary);border-bottom:1px solid var(--border-color)">@cat</div>
-                                                            }
-                                                            int capturedVi = vi;
-                                                            <div style="padding:5px 10px;cursor:pointer;font-size:0.85rem" class="dropdown-item"
-                                                                 @onmousedown="() => SelectVariantMaterial(capturedVi, mat.Value)">
-                                                                @mat.Label
-                                                            </div>
+                                                            <option value="@mat.Value">@mat.Label</option>
                                                         }
-                                                    </div>
+                                                    </optgroup>
                                                 }
-                                            </div>
+                                            </select>
                                         </div>
                                         <div class="form-group" style="flex:1">
                                             <label>Base Value Override</label>
@@ -676,17 +646,15 @@
     // ===== Export =====
     private bool _isExporting;
 
-    // ===== Material Dropdown =====
+    // ===== Enums =====
     private List<EnumOptionDto> _allMaterials = [];
+    private List<EnumOptionDto> _allItemForms = [];
+    private bool _enumsLoaded;
+
+    // ===== Material Search Dropdown =====
     private List<EnumOptionDto> _filteredMaterials = [];
     private string _materialSearch = "";
     private bool _showMaterialDropdown;
-    private bool _enumsLoaded;
-
-    // ===== Variant Material Dropdown =====
-    private int _activeVariantMaterialDropdown = -1;
-    private List<EnumOptionDto> _filteredVariantMaterials = [];
-    private Dictionary<int, string> _variantMaterialSearch = new();
 
     // ===== Lifecycle =====
 
@@ -775,7 +743,6 @@
     {
         _isCreating = true;
         _editItem = new ItemBlueprintDto { BaseValue = 1, WeightIncreaseConstant = -1 };
-        _variantMaterialSearch.Clear();
         _showEditModal = true;
     }
 
@@ -835,7 +802,6 @@
             }).ToList(),
             IsTemplate = item.IsTemplate,
         };
-        _variantMaterialSearch.Clear();
         _showEditModal = true;
     }
 
@@ -934,6 +900,7 @@
             if (enums != null)
             {
                 _allMaterials = enums.Materials;
+                _allItemForms = enums.ItemForms;
                 _enumsLoaded = true;
             }
         }
@@ -1017,67 +984,16 @@
     {
         if (_editItem.Variants == null || index < 0 || index >= _editItem.Variants.Count) return;
         _editItem.Variants.RemoveAt(index);
-        _variantMaterialSearch.Remove(index);
         if (_editItem.Variants.Count == 0) _editItem.Variants = null;
     }
 
-    private string GetVariantMaterialSearch(int index)
-    {
-        if (_activeVariantMaterialDropdown == index && _variantMaterialSearch.TryGetValue(index, out string? search))
-            return search;
-        string? material = _editItem.Variants?[index].Material;
-        if (string.IsNullOrEmpty(material)) return "";
-        return _allMaterials.FirstOrDefault(m => m.Value == material)?.Label ?? material;
-    }
+    private string GetMaterialLabel(string value) =>
+        _allMaterials.FirstOrDefault(m => m.Value == value)?.Label ?? value;
 
-    private void OnVariantMaterialSearchInput(int index, ChangeEventArgs e)
+    private void OnVariantMaterialChanged(int index, ChangeEventArgs e)
     {
-        string text = e.Value?.ToString() ?? "";
-        _variantMaterialSearch[index] = text;
-        _activeVariantMaterialDropdown = index;
-        RefreshFilteredVariantMaterials(text);
-    }
-
-    private void OnVariantMaterialFocus(int index)
-    {
-        _activeVariantMaterialDropdown = index;
-        _variantMaterialSearch[index] = "";
-        RefreshFilteredVariantMaterials("");
-    }
-
-    private void SelectVariantMaterial(int index, string materialValue)
-    {
-        if (_editItem.Variants != null && index >= 0 && index < _editItem.Variants.Count)
-        {
-            _editItem.Variants[index].Material = materialValue;
-        }
-        _activeVariantMaterialDropdown = -1;
-        _variantMaterialSearch.Remove(index);
-        _filteredVariantMaterials.Clear();
-    }
-
-    private async Task DismissVariantMaterialDropdownDelayed()
-    {
-        await Task.Delay(200);
-        await InvokeAsync(() =>
-        {
-            _activeVariantMaterialDropdown = -1;
-            _filteredVariantMaterials.Clear();
-            StateHasChanged();
-        });
-    }
-
-    private void RefreshFilteredVariantMaterials(string search)
-    {
-        _filteredVariantMaterials = _allMaterials
-            .Where(m => string.IsNullOrEmpty(search) ||
-                        m.Label.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                        m.Value.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                        (m.Category ?? "").Contains(search, StringComparison.OrdinalIgnoreCase))
-            .OrderBy(m => m.Category ?? "ZZZ")
-            .ThenBy(m => m.Label)
-            .Take(30)
-            .ToList();
+        if (_editItem.Variants == null || index < 0 || index >= _editItem.Variants.Count) return;
+        _editItem.Variants[index].Material = e.Value?.ToString() ?? "";
     }
 
     private void OnVariantBaseValueChanged(int index, ChangeEventArgs e)
