@@ -131,6 +131,12 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
             return CommandResult.Fail(craftingResult.Message);
         }
 
+        // Build result data — always include the computed products so the caller can grant them
+        Dictionary<string, object> resultData = new()
+        {
+            ["products"] = craftingResult.ProductsCreated
+        };
+
         // Award progression points if successful
         if (craftingResult.ProgressionPointsAwarded > 0)
         {
@@ -139,21 +145,17 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
 
             if (progressionResult is { Success: true, KnowledgePointsEarned: > 0 })
             {
-                // Return progression info in the command result data
-                return CommandResult.Ok(new Dictionary<string, object>
-                {
-                    ["knowledgePointsEarned"] = progressionResult.KnowledgePointsEarned,
-                    ["newTotalKnowledgePoints"] = progressionResult.NewTotalKnowledgePoints,
-                    ["progressionPointsRemaining"] = progressionResult.ProgressionPointsRemaining,
-                    ["progressionPointsRequired"] = progressionResult.ProgressionPointsRequired,
-                    ["isAtSoftCap"] = progressionResult.IsAtSoftCap,
-                    ["isAtHardCap"] = progressionResult.IsAtHardCap,
-                    ["message"] = progressionResult.Message ?? string.Empty
-                });
+                resultData["knowledgePointsEarned"] = progressionResult.KnowledgePointsEarned;
+                resultData["newTotalKnowledgePoints"] = progressionResult.NewTotalKnowledgePoints;
+                resultData["progressionPointsRemaining"] = progressionResult.ProgressionPointsRemaining;
+                resultData["progressionPointsRequired"] = progressionResult.ProgressionPointsRequired;
+                resultData["isAtSoftCap"] = progressionResult.IsAtSoftCap;
+                resultData["isAtHardCap"] = progressionResult.IsAtHardCap;
+                resultData["message"] = progressionResult.Message ?? string.Empty;
             }
         }
 
-        return CommandResult.Ok();
+        return CommandResult.Ok(resultData);
     }
 }
 

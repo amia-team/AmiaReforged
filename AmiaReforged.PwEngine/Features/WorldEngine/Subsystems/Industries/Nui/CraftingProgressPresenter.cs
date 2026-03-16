@@ -3,6 +3,9 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Commands
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -36,6 +39,7 @@ public sealed class CraftingProgressPresenter : ScryPresenter<CraftingProgressVi
     private bool _cancelled;
 
     [Inject] private Lazy<IIndustrySubsystem>? IndustrySubsystem { get; init; }
+    [Inject] private Lazy<IItemDefinitionRepository>? ItemDefinitionRepository { get; init; }
 
     public CraftingProgressPresenter(
         CraftingProgressView view,
@@ -180,8 +184,13 @@ public sealed class CraftingProgressPresenter : ScryPresenter<CraftingProgressVi
                 // Consume ingredients from inventory
                 ConsumeIngredients();
 
+                // Grant products to the player
+                List<Product> products = result.Data?.GetValueOrDefault("products") as List<Product>
+                    ?? _recipe.Products;
+                GrantProducts(products);
+
                 // Show success message
-                string productSummary = FormatProductSummary();
+                string productSummary = FormatProductSummary(products);
                 _token.SetBindValue(View.StatusText, "Crafting Complete!");
                 _token.SetBindValue(View.TimeRemainingText, productSummary);
 
@@ -284,15 +293,61 @@ public sealed class CraftingProgressPresenter : ScryPresenter<CraftingProgressVi
     /// <summary>
     /// Formats a summary of the products that will be created.
     /// </summary>
-    private string FormatProductSummary()
+    private string FormatProductSummary(List<Product> products)
     {
-        if (_recipe.Products.Count == 0) return "";
+        if (products.Count == 0) return "";
 
-        List<string> parts = _recipe.Products
+        List<string> parts = products
             .Select(p => $"{p.Quantity.Value}x {p.ItemTag}")
             .ToList();
 
         return string.Join(", ", parts);
+    }
+
+    /// <summary>
+    /// Creates product items in the player's inventory based on the crafting result.
+    /// Uses the same item-creation pattern as <see cref="ResourceHarvestedEventHandler"/>.
+    /// </summary>
+    private void GrantProducts(List<Product> products)
+    {
+        NwCreature? creature = _player.LoginCreature;
+        if (creature == null) return;
+
+        IItemDefinitionRepository? itemRepo = ItemDefinitionRepository?.Value;
+        if (itemRepo == null)
+        {
+            Log.Error("IItemDefinitionRepository not available — cannot grant crafted products");
+            return;
+        }
+
+        foreach (Product product in products)
+        {
+            // Roll success chance if applicable
+            if (product.SuccessChance.HasValue)
+            {
+                float roll = Random.Shared.NextSingle();
+                if (roll > product.SuccessChance.Value) continue;
+            }
+
+            ItemBlueprint? blueprint = itemRepo.GetByTag(product.ItemTag);
+            if (blueprint == null)
+            {
+                Log.Warn("Item blueprint '{ItemTag}' not found — skipping product", product.ItemTag);
+                continue;
+            }
+
+            IPQuality quality = (IPQuality)(product.Quality ?? (int)IPQuality.Average);
+            ItemDto itemDto = new(blueprint, quality, quality);
+
+            RuntimeInventoryPort inventoryPort = new(creature);
+            for (int i = 0; i < product.Quantity.Value; i++)
+            {
+                inventoryPort.AddItem(itemDto);
+            }
+
+            Log.Debug("Granted {Qty}x {Tag} (Q: {Quality}) to player {Player}",
+                product.Quantity.Value, product.ItemTag, quality, _player.PlayerName);
+        }
     }
 
     /// <summary>
