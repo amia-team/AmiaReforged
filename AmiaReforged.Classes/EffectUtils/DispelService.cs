@@ -20,7 +20,8 @@ public class DispelService
         LesserDispel = 165,      // SPELL_LESSER_DISPEL
         DispelMagic = 41,        // SPELL_DISPEL_MAGIC
         GreaterDispelling = 67,  // SPELL_GREATER_DISPELLING
-        MordenkainensDisjunction = 112 // SPELL_MORDENKAINENS_DISJUNCTION
+        MordenkainensDisjunction = 112, // SPELL_MORDENKAINENS_DISJUNCTION
+        DevourMagic = 1014
     }
 
     private const int DispelCooldownSeconds = 30;
