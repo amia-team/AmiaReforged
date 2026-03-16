@@ -22,6 +22,8 @@ public class RuntimeInventoryPort(NwCreature creature) : IInventoryPort
 
         if (gameItem is null) return;
 
+        gameItem.Tag = item.BaseDefinition.ItemTag;
+
         string qualityLabel = QualityLabel.QualityLabelForItem(item.BaseDefinition.ItemForm, item.Quality);
         gameItem.Name = qualityLabel.IsNullOrEmpty()
             ? $"{item.BaseDefinition.Name}"
