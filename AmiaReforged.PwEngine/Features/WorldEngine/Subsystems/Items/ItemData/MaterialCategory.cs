@@ -14,14 +14,11 @@ public enum MaterialCategory
     None = 0,
     Metal = 1,
     Wood = 2,
-    Hide = 3,
-    Textile = 4,
-    Bone = 5,
+    Creature = 3,
+    Plant = 4,
     Gem = 6,
     Stone = 7,
     Elemental = 8,
-    Leather = 9,
-    Scale = 10,
 }
 
 /// <summary>

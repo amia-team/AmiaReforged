@@ -25,34 +25,30 @@ public enum MaterialEnum
     [MaterialCategory(MaterialCategory.Metal)] SilverAlchemical = 14,
     [MaterialCategory(MaterialCategory.Metal)] Steel = 15,
 
-    // === Bone ===
-    [MaterialCategory(MaterialCategory.Bone)] Bone = 16,
+    // === Creature (Bone, Hides, Leather, Scale) ===
+    [MaterialCategory(MaterialCategory.Creature)] Bone = 16,
+    [MaterialCategory(MaterialCategory.Creature)] Hide = 17,
+    [MaterialCategory(MaterialCategory.Creature)] HideSalamander = 18,
+    [MaterialCategory(MaterialCategory.Creature)] HideUmberHulk = 19,
+    [MaterialCategory(MaterialCategory.Creature)] HideWyvern = 20,
+    [MaterialCategory(MaterialCategory.Creature)] HideDragonBlack = 21,
+    [MaterialCategory(MaterialCategory.Creature)] HideDragonBlue = 22,
+    [MaterialCategory(MaterialCategory.Creature)] HideDragonBrass = 23,
+    [MaterialCategory(MaterialCategory.Creature)] HideDragonBronze = 24,
+    [MaterialCategory(MaterialCategory.Creature)] HideDragonCopper = 25,
+    [MaterialCategory(MaterialCategory.Creature)] HideDragonGold = 26,
+    [MaterialCategory(MaterialCategory.Creature)] HideDragonGreen = 27,
+    [MaterialCategory(MaterialCategory.Creature)] HideDragonRed = 28,
+    [MaterialCategory(MaterialCategory.Creature)] HideDragonSilver = 29,
+    [MaterialCategory(MaterialCategory.Creature)] HideDragonWhite = 30,
+    [MaterialCategory(MaterialCategory.Creature)] Leather = 31,
+    [MaterialCategory(MaterialCategory.Creature)] Scale = 32,
 
-    // === Hides ===
-    [MaterialCategory(MaterialCategory.Hide)] Hide = 17,
-    [MaterialCategory(MaterialCategory.Hide)] HideSalamander = 18,
-    [MaterialCategory(MaterialCategory.Hide)] HideUmberHulk = 19,
-    [MaterialCategory(MaterialCategory.Hide)] HideWyvern = 20,
-    [MaterialCategory(MaterialCategory.Hide)] HideDragonBlack = 21,
-    [MaterialCategory(MaterialCategory.Hide)] HideDragonBlue = 22,
-    [MaterialCategory(MaterialCategory.Hide)] HideDragonBrass = 23,
-    [MaterialCategory(MaterialCategory.Hide)] HideDragonBronze = 24,
-    [MaterialCategory(MaterialCategory.Hide)] HideDragonCopper = 25,
-    [MaterialCategory(MaterialCategory.Hide)] HideDragonGold = 26,
-    [MaterialCategory(MaterialCategory.Hide)] HideDragonGreen = 27,
-    [MaterialCategory(MaterialCategory.Hide)] HideDragonRed = 28,
-    [MaterialCategory(MaterialCategory.Hide)] HideDragonSilver = 29,
-    [MaterialCategory(MaterialCategory.Hide)] HideDragonWhite = 30,
-
-    // === Leather & Scale ===
-    [MaterialCategory(MaterialCategory.Leather)] Leather = 31,
-    [MaterialCategory(MaterialCategory.Scale)] Scale = 32,
-
-    // === Textiles ===
-    [MaterialCategory(MaterialCategory.Textile)] Cloth = 33,
-    [MaterialCategory(MaterialCategory.Textile)] Cotton = 34,
-    [MaterialCategory(MaterialCategory.Textile)] Silk = 35,
-    [MaterialCategory(MaterialCategory.Textile)] Wool = 36,
+    // === Plant (Textiles) ===
+    [MaterialCategory(MaterialCategory.Plant)] Cloth = 33,
+    [MaterialCategory(MaterialCategory.Plant)] Cotton = 34,
+    [MaterialCategory(MaterialCategory.Plant)] Silk = 35,
+    [MaterialCategory(MaterialCategory.Plant)] Wool = 36,
 
     // === Woods ===
     [MaterialCategory(MaterialCategory.Wood)] Wood = 37,

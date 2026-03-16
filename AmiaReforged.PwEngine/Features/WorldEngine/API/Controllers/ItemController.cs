@@ -181,7 +181,7 @@ public class ItemController
             .Select(m => new
             {
                 value = m.ToString(),
-                label = m.ToString(),
+                label = m.DisplayName(),
                 category = m.GetCategory().ToString()
             });
 
