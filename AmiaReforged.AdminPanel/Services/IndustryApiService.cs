@@ -23,6 +23,8 @@ public class IndustryApiService
     };
 
     private const string IndustriesBase = "/api/worldengine/industries";
+    private const string ProgressionConfigPath = "/api/worldengine/industries/progression-config";
+    private const string CapProfilesBase = "/api/worldengine/industries/cap-profiles";
 
     public IndustryApiService(IHttpClientFactory httpClientFactory, IWorldEngineEndpointService endpointService)
     {
@@ -94,6 +96,40 @@ public class IndustryApiService
         {
             return raw;
         }
+    }
+
+    // ==================== Knowledge Progression Config ====================
+
+    public async Task<ProgressionConfigDto?> GetProgressionConfigAsync()
+    {
+        return await GetAsync<ProgressionConfigDto>(ProgressionConfigPath);
+    }
+
+    public async Task<ProgressionConfigDto?> UpdateProgressionConfigAsync(ProgressionConfigDto dto)
+    {
+        return await PutAsync<ProgressionConfigDto>(ProgressionConfigPath, dto);
+    }
+
+    // ==================== Knowledge Cap Profiles ====================
+
+    public async Task<KnowledgeCapProfileDto[]?> GetCapProfilesAsync()
+    {
+        return await GetAsync<KnowledgeCapProfileDto[]>(CapProfilesBase);
+    }
+
+    public async Task<KnowledgeCapProfileDto?> CreateCapProfileAsync(KnowledgeCapProfileDto dto)
+    {
+        return await PostAsync<KnowledgeCapProfileDto>(CapProfilesBase, dto);
+    }
+
+    public async Task<KnowledgeCapProfileDto?> UpdateCapProfileAsync(string tag, KnowledgeCapProfileDto dto)
+    {
+        return await PutAsync<KnowledgeCapProfileDto>($"{CapProfilesBase}/{Uri.EscapeDataString(tag)}", dto);
+    }
+
+    public async Task DeleteCapProfileAsync(string tag)
+    {
+        await DeleteRequestAsync($"{CapProfilesBase}/{Uri.EscapeDataString(tag)}");
     }
 
     // ==================== HTTP Helpers ====================

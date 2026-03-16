@@ -337,7 +337,7 @@ public class RecipeTemplateController
                 p.SuccessChance
             }).ToArray(),
             t.CraftingTimeRounds,
-            t.KnowledgePointsAwarded,
+            t.ProgressionPointsAwarded,
             RequiredWorkstation = t.RequiredWorkstation?.Value,
             RequiredTools = t.RequiredTools.Select(tr => new
             {
@@ -384,7 +384,7 @@ public class RecipeTemplateController
                 };
             }).ToList() ?? [],
             CraftingTimeRounds = dto.CraftingTimeRounds,
-            KnowledgePointsAwarded = dto.KnowledgePointsAwarded,
+            ProgressionPointsAwarded = dto.ProgressionPointsAwarded,
             RequiredWorkstation = !string.IsNullOrEmpty(dto.RequiredWorkstation)
                 ? new WorkstationTag(dto.RequiredWorkstation)
                 : null,
@@ -431,7 +431,7 @@ public class RecipeTemplateController
         public TemplateIngredientDto[]? Ingredients { get; init; }
         public TemplateProductDto[]? Products { get; init; }
         public int? CraftingTimeRounds { get; init; }
-        public int KnowledgePointsAwarded { get; init; }
+        public int ProgressionPointsAwarded { get; init; }
         public string? RequiredWorkstation { get; init; }
         public List<ToolRequirementApiDto>? RequiredTools { get; init; }
     }

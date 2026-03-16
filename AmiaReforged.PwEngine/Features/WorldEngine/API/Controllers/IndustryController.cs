@@ -332,7 +332,7 @@ public class IndustryController
                     p.SuccessChance
                 }).ToArray(),
                 r.CraftingTimeRounds,
-                r.KnowledgePointsAwarded,
+                r.ProgressionPointsAwarded,
                 RequiredWorkstation = r.RequiredWorkstation?.Value,
                 RequiredTools = r.RequiredTools.Select(tr => new
                 {
@@ -418,7 +418,7 @@ public class IndustryController
                         SuccessChance = p.SuccessChance
                     }).ToList() ?? [],
                     CraftingTimeRounds = r.CraftingTimeRounds,
-                    KnowledgePointsAwarded = r.KnowledgePointsAwarded,
+                    ProgressionPointsAwarded = r.ProgressionPointsAwarded,
                     Metadata = new Dictionary<string, object>(),
                     RequiredWorkstation = !string.IsNullOrEmpty(r.RequiredWorkstation)
                         ? new SharedKernel.WorkstationTag(r.RequiredWorkstation)
@@ -512,7 +512,7 @@ public class IndustryController
         public IngredientDto[]? Ingredients { get; init; }
         public ProductDto[]? Products { get; init; }
         public int? CraftingTimeRounds { get; init; }
-        public int KnowledgePointsAwarded { get; init; }
+        public int ProgressionPointsAwarded { get; init; }
         public string? RequiredWorkstation { get; init; }
         public List<ToolRequirementApiDto>? RequiredTools { get; init; }
     }
@@ -538,5 +538,237 @@ public class IndustryController
         public string? ItemTag { get; init; }
         public int Quantity { get; init; }
         public float? SuccessChance { get; init; }
+    }
+
+    // ==================== Knowledge Progression Endpoints ====================
+
+    /// <summary>
+    /// Get the global progression curve configuration.
+    /// GET /api/worldengine/industries/progression-config
+    /// </summary>
+    [HttpGet("/api/worldengine/industries/progression-config")]
+    public static async Task<ApiResult> GetProgressionConfig(RouteContext ctx)
+    {
+        IWorldConfigProvider config = AnvilCore.GetService<IWorldConfigProvider>()!;
+
+        ProgressionConfigDto dto = new()
+        {
+            BaseCost = config.GetInt(WorldConstants.KnowledgeProgressionBaseCost) ?? 100,
+            ScalingFactor = config.GetFloat(WorldConstants.KnowledgeProgressionScalingFactor) ?? 1.15f,
+            CurveType = config.GetString(WorldConstants.KnowledgeProgressionCurveType) ?? "Exponential",
+            SoftCap = config.GetInt(WorldConstants.KnowledgePointDefaultSoftCap) ?? 100,
+            HardCap = config.GetInt(WorldConstants.KnowledgePointDefaultHardCap) ?? 150,
+            SoftCapPenaltyMultiplier = config.GetFloat(WorldConstants.KnowledgeSoftCapPenaltyMultiplier) ?? 3.0f
+        };
+
+        return await Task.FromResult(new ApiResult(200, dto));
+    }
+
+    /// <summary>
+    /// Update the global progression curve configuration.
+    /// PUT /api/worldengine/industries/progression-config
+    /// </summary>
+    [HttpPut("/api/worldengine/industries/progression-config")]
+    public static async Task<ApiResult> UpdateProgressionConfig(RouteContext ctx)
+    {
+        string? body = null;
+        if (ctx.Request != null)
+        {
+            using StreamReader reader = new StreamReader(ctx.Request.InputStream);
+            body = await reader.ReadToEndAsync();
+        }
+
+        if (string.IsNullOrWhiteSpace(body))
+            return new ApiResult(400, new { error = "Invalid request body" });
+
+        ProgressionConfigDto? dto;
+        try
+        {
+            dto = JsonSerializer.Deserialize<ProgressionConfigDto>(body, ImportOptions);
+        }
+        catch (JsonException ex)
+        {
+            return new ApiResult(400, new { error = ex.Message });
+        }
+
+        if (dto == null)
+            return new ApiResult(400, new { error = "Invalid request body" });
+
+        IWorldConfigProvider config = AnvilCore.GetService<IWorldConfigProvider>()!;
+
+        config.SetInt(WorldConstants.KnowledgeProgressionBaseCost, dto.BaseCost);
+        config.SetFloat(WorldConstants.KnowledgeProgressionScalingFactor, dto.ScalingFactor);
+        config.SetString(WorldConstants.KnowledgeProgressionCurveType, dto.CurveType);
+        config.SetInt(WorldConstants.KnowledgePointDefaultSoftCap, dto.SoftCap);
+        config.SetInt(WorldConstants.KnowledgePointDefaultHardCap, dto.HardCap);
+        config.SetFloat(WorldConstants.KnowledgeSoftCapPenaltyMultiplier, dto.SoftCapPenaltyMultiplier);
+
+        return new ApiResult(200, dto);
+    }
+
+    /// <summary>
+    /// List all knowledge cap profiles.
+    /// GET /api/worldengine/industries/cap-profiles
+    /// </summary>
+    [HttpGet("/api/worldengine/industries/cap-profiles")]
+    public static async Task<ApiResult> GetCapProfiles(RouteContext ctx)
+    {
+        IKnowledgeCapProfileRepository repo = AnvilCore.GetService<IKnowledgeCapProfileRepository>()!;
+        List<KnowledgeCapProfile> profiles = repo.GetAll();
+
+        KnowledgeCapProfileDto[] dtos = profiles.Select(p => new KnowledgeCapProfileDto
+        {
+            Tag = p.Tag,
+            Name = p.Name,
+            Description = p.Description,
+            SoftCap = p.SoftCap,
+            HardCap = p.HardCap
+        }).ToArray();
+
+        return await Task.FromResult(new ApiResult(200, dtos));
+    }
+
+    /// <summary>
+    /// Create a new knowledge cap profile.
+    /// POST /api/worldengine/industries/cap-profiles
+    /// </summary>
+    [HttpPost("/api/worldengine/industries/cap-profiles")]
+    public static async Task<ApiResult> CreateCapProfile(RouteContext ctx)
+    {
+        string? body = null;
+        if (ctx.Request != null)
+        {
+            using StreamReader reader = new StreamReader(ctx.Request.InputStream);
+            body = await reader.ReadToEndAsync();
+        }
+
+        if (string.IsNullOrWhiteSpace(body))
+            return new ApiResult(400, new { error = "Invalid request body. Tag is required." });
+
+        KnowledgeCapProfileDto? dto;
+        try
+        {
+            dto = JsonSerializer.Deserialize<KnowledgeCapProfileDto>(body, ImportOptions);
+        }
+        catch (JsonException ex)
+        {
+            return new ApiResult(400, new { error = ex.Message });
+        }
+
+        if (dto == null || string.IsNullOrWhiteSpace(dto.Tag))
+            return new ApiResult(400, new { error = "Invalid request body. Tag is required." });
+
+        IKnowledgeCapProfileRepository repo = AnvilCore.GetService<IKnowledgeCapProfileRepository>()!;
+
+        if (repo.GetByTag(dto.Tag) != null)
+            return new ApiResult(409, new { error = $"Cap profile '{dto.Tag}' already exists" });
+
+        KnowledgeCapProfile profile = new()
+        {
+            Tag = dto.Tag,
+            Name = dto.Name ?? dto.Tag,
+            Description = dto.Description,
+            SoftCap = dto.SoftCap,
+            HardCap = dto.HardCap
+        };
+
+        repo.Add(profile);
+        return new ApiResult(201, dto);
+    }
+
+    /// <summary>
+    /// Update an existing knowledge cap profile.
+    /// PUT /api/worldengine/industries/cap-profiles/{tag}
+    /// </summary>
+    [HttpPut("/api/worldengine/industries/cap-profiles/{tag}")]
+    public static async Task<ApiResult> UpdateCapProfile(RouteContext ctx)
+    {
+        string tag = ctx.GetRouteValue("tag");
+
+        string? body = null;
+        if (ctx.Request != null)
+        {
+            using StreamReader reader = new StreamReader(ctx.Request.InputStream);
+            body = await reader.ReadToEndAsync();
+        }
+
+        if (string.IsNullOrWhiteSpace(body))
+            return new ApiResult(400, new { error = "Invalid request body" });
+
+        KnowledgeCapProfileDto? dto;
+        try
+        {
+            dto = JsonSerializer.Deserialize<KnowledgeCapProfileDto>(body, ImportOptions);
+        }
+        catch (JsonException ex)
+        {
+            return new ApiResult(400, new { error = ex.Message });
+        }
+
+        if (dto == null)
+            return new ApiResult(400, new { error = "Invalid request body" });
+
+        IKnowledgeCapProfileRepository repo = AnvilCore.GetService<IKnowledgeCapProfileRepository>()!;
+
+        KnowledgeCapProfile? existing = repo.GetByTag(tag);
+        if (existing == null)
+            return new ApiResult(404, new { error = $"Cap profile '{tag}' not found" });
+
+        existing.Name = dto.Name ?? existing.Name;
+        existing.Description = dto.Description;
+        existing.SoftCap = dto.SoftCap;
+        existing.HardCap = dto.HardCap;
+
+        repo.Update(existing);
+        return new ApiResult(200, new KnowledgeCapProfileDto
+        {
+            Tag = existing.Tag,
+            Name = existing.Name,
+            Description = existing.Description,
+            SoftCap = existing.SoftCap,
+            HardCap = existing.HardCap
+        });
+    }
+
+    /// <summary>
+    /// Delete a knowledge cap profile.
+    /// DELETE /api/worldengine/industries/cap-profiles/{tag}
+    /// </summary>
+    [HttpDelete("/api/worldengine/industries/cap-profiles/{tag}")]
+    public static async Task<ApiResult> DeleteCapProfile(RouteContext ctx)
+    {
+        string tag = ctx.GetRouteValue("tag");
+        IKnowledgeCapProfileRepository repo = AnvilCore.GetService<IKnowledgeCapProfileRepository>()!;
+
+        if (repo.IsInUse(tag))
+            return await Task.FromResult(new ApiResult(409,
+                new { error = $"Cap profile '{tag}' is assigned to one or more characters and cannot be deleted" }));
+
+        bool deleted = repo.Delete(tag);
+        if (!deleted)
+            return new ApiResult(404, new { error = $"Cap profile '{tag}' not found" });
+
+        return new ApiResult(204, null);
+    }
+
+    // ==================== Progression DTOs ====================
+
+    private record ProgressionConfigDto
+    {
+        public int BaseCost { get; init; } = 100;
+        public float ScalingFactor { get; init; } = 1.15f;
+        public string CurveType { get; init; } = "Exponential";
+        public int SoftCap { get; init; } = 100;
+        public int HardCap { get; init; } = 150;
+        public float SoftCapPenaltyMultiplier { get; init; } = 3.0f;
+    }
+
+    private record KnowledgeCapProfileDto
+    {
+        public string Tag { get; init; } = string.Empty;
+        public string? Name { get; init; }
+        public string? Description { get; init; }
+        public int SoftCap { get; init; } = 100;
+        public int HardCap { get; init; } = 150;
     }
 }

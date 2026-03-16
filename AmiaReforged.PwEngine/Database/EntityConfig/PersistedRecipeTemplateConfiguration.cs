@@ -47,8 +47,8 @@ public class PersistedRecipeTemplateConfiguration : IEntityTypeConfiguration<Per
         builder.Property(e => e.CraftingTimeRounds)
             .HasColumnName("crafting_time_rounds");
 
-        builder.Property(e => e.KnowledgePointsAwarded)
-            .HasColumnName("knowledge_points_awarded");
+        builder.Property(e => e.ProgressionPointsAwarded)
+            .HasColumnName("progression_points_awarded");
 
         builder.Property(e => e.RequiredWorkstation)
             .HasColumnName("required_workstation")

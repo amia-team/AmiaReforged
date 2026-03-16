@@ -59,9 +59,9 @@ public class RecipeTemplate
     public int? CraftingTimeRounds { get; init; }
 
     /// <summary>
-    /// Knowledge points awarded on successful crafting (inherited by expanded recipes).
+    /// Progression points awarded toward the next knowledge point on successful crafting (inherited by expanded recipes).
     /// </summary>
-    public int KnowledgePointsAwarded { get; init; }
+    public int ProgressionPointsAwarded { get; init; }
 
     /// <summary>
     /// The workstation type required (inherited by expanded recipes).

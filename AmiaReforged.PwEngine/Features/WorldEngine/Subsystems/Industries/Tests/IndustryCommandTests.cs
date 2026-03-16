@@ -55,7 +55,7 @@ public class IndustryCommandTests
                     Quality = 2
                 }
             ],
-            KnowledgePointsAwarded = 5
+            ProgressionPointsAwarded = 5
         };
 
         // Add industry to repository
@@ -131,7 +131,7 @@ public class IndustryCommandTests
             RequiredKnowledge = [],
             Ingredients = [],
             Products = [],
-            KnowledgePointsAwarded = 0
+            ProgressionPointsAwarded = 0
         };
 
         AddRecipeToIndustryCommand command = new AddRecipeToIndustryCommand

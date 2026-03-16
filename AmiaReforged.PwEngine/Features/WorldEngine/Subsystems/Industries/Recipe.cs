@@ -50,9 +50,9 @@ public class Recipe
     public int? CraftingTimeRounds { get; init; }
 
     /// <summary>
-    /// Knowledge points awarded on successful crafting
+    /// Progression points awarded toward the next knowledge point on successful crafting
     /// </summary>
-    public int KnowledgePointsAwarded { get; init; }
+    public int ProgressionPointsAwarded { get; init; }
 
     /// <summary>
     /// Optional: Additional metadata for industry-specific logic

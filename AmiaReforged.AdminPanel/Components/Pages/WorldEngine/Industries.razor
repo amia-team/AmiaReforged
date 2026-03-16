@@ -53,6 +53,9 @@
     <li class="nav-item">
         <button class="nav-link @(_activeTab == "templates" ? "active" : "")" @onclick='() => SetTab("templates")'>Recipe Templates</button>
     </li>
+    <li class="nav-item">
+        <button class="nav-link @(_activeTab == "progression" ? "active" : "")" @onclick='() => SetTab("progression")'>Knowledge Progression</button>
+    </li>
 </ul>
 
 @if (!string.IsNullOrEmpty(_error))
@@ -383,6 +386,203 @@
             </nav>
         }
     }
+}
+
+@* ==================== KNOWLEDGE PROGRESSION TAB ==================== *@
+@if (_activeTab == "progression")
+{
+    @if (_progressionLoading)
+    {
+        <p><em>Loading progression config...</em></p>
+    }
+    else
+    {
+        @* ---- Global Curve Settings ---- *@
+        <div class="card mb-4" style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px">
+            <div class="card-body" style="padding:24px">
+                <h4 style="margin-bottom:16px">Global Progression Curve</h4>
+                <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:20px">
+                    Controls how many progression points are needed to earn each successive economy knowledge point.
+                    Level-up knowledge points (1 per level, max 30) are free and not subject to this curve.
+                </p>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Base Cost <small style="color:var(--text-secondary)">(points for 1st KP)</small></label>
+                            <input type="number" class="form-control" @bind="_progressionConfig.BaseCost" />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Scaling Factor</label>
+                            <input type="number" step="0.01" class="form-control" @bind="_progressionConfig.ScalingFactor" />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Curve Type</label>
+                            <select class="form-control" @bind="_progressionConfig.CurveType">
+                                <option value="Linear">Linear</option>
+                                <option value="Polynomial">Polynomial</option>
+                                <option value="Exponential">Exponential</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Soft Cap <small style="color:var(--text-secondary)">(economy KP)</small></label>
+                            <input type="number" class="form-control" @bind="_progressionConfig.SoftCap" />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Hard Cap <small style="color:var(--text-secondary)">(economy KP)</small></label>
+                            <input type="number" class="form-control" @bind="_progressionConfig.HardCap" />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Soft Cap Penalty Multiplier</label>
+                            <input type="number" step="0.1" class="form-control" @bind="_progressionConfig.SoftCapPenaltyMultiplier" />
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+                    <button class="btn btn-primary" @onclick="SaveProgressionConfig" disabled="@_isSaving">
+                        @(_isSaving ? "Saving..." : "Save Curve Settings")
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        @* ---- Progression Cost Preview ---- *@
+        <div class="card mb-4" style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px">
+            <div class="card-body" style="padding:24px">
+                <h5 style="margin-bottom:12px">Cost Preview (first 20 economy KP)</h5>
+                <div style="overflow-x:auto">
+                    <table class="table table-sm table-striped" style="max-width:600px">
+                        <thead>
+                            <tr>
+                                <th>Economy KP #</th>
+                                <th>Progression Points Required</th>
+                                <th>Cumulative Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                int cumulative = 0;
+                                int previewCount = Math.Min(20, _progressionConfig.HardCap);
+                                for (int n = 1; n <= previewCount; n++)
+                                {
+                                    int cost = CalculatePreviewCost(n);
+                                    cumulative += cost;
+                                    bool isSoftCapRegion = n > _progressionConfig.SoftCap;
+                                    <tr style="@(isSoftCapRegion ? "color:var(--warning-color, #e6a817);font-style:italic" : "")">
+                                        <td>@n @(isSoftCapRegion ? "(past soft cap)" : "")</td>
+                                        <td>@cost.ToString("N0")</td>
+                                        <td>@cumulative.ToString("N0")</td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        @* ---- Cap Profiles ---- *@
+        <div class="card" style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px">
+            <div class="card-body" style="padding:24px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                    <div>
+                        <h4 style="margin:0">Cap Profiles</h4>
+                        <small style="color:var(--text-secondary)">Named profiles that override the global soft/hard caps for specific characters (e.g. Artisan class)</small>
+                    </div>
+                    <button class="btn btn-success" @onclick="StartCreateCapProfile">+ New Profile</button>
+                </div>
+
+                @if (_capProfiles.Count == 0)
+                {
+                    <p class="text-muted">No cap profiles defined. All characters use the global caps.</p>
+                }
+                else
+                {
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Tag</th>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Soft Cap</th>
+                                <th>Hard Cap</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (KnowledgeCapProfileDto profile in _capProfiles)
+                            {
+                                <tr>
+                                    <td><code>@profile.Tag</code></td>
+                                    <td>@profile.Name</td>
+                                    <td style="color:var(--text-secondary);font-size:0.9rem">@(profile.Description ?? "—")</td>
+                                    <td>@profile.SoftCap</td>
+                                    <td>@profile.HardCap</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => StartEditCapProfile(profile)">Edit</button>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDeleteCapProfile(profile)">Delete</button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    }
+}
+
+@* ==================== CAP PROFILE EDIT MODAL ==================== *@
+@if (_showCapProfileModal)
+{
+    <div class="modal-backdrop" @onclick="CloseModals">
+    <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:550px;margin:15vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+        <h2>@(_isCreatingCapProfile ? "Create Cap Profile" : "Edit Cap Profile")</h2>
+
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:15px">
+            <div class="form-group">
+                <label>Tag <small style="color:var(--text-secondary)">(unique identifier)</small></label>
+                <input class="form-control" @bind="_editCapProfile.Tag" disabled="@(!_isCreatingCapProfile)" placeholder="e.g. artisan" />
+            </div>
+            <div class="form-group">
+                <label>Name</label>
+                <input class="form-control" @bind="_editCapProfile.Name" placeholder="e.g. Artisan" />
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea class="form-control" rows="2" @bind="_editCapProfile.Description" placeholder="When this profile applies..."></textarea>
+            </div>
+            <div class="form-row" style="display:flex;gap:10px">
+                <div class="form-group" style="flex:1">
+                    <label>Soft Cap</label>
+                    <input type="number" class="form-control" @bind="_editCapProfile.SoftCap" />
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label>Hard Cap</label>
+                    <input type="number" class="form-control" @bind="_editCapProfile.HardCap" />
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+            <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
+            <button class="btn btn-primary" @onclick="SaveCapProfile" disabled="@_isSaving">
+                @(_isSaving ? "Saving..." : "Save")
+            </button>
+        </div>
+    </div>
+    </div>
 }
 
 @* ==================== INDUSTRY EDIT MODAL ==================== *@
@@ -719,8 +919,8 @@
                     <input type="number" class="form-control" @bind="_editRecipe.CraftingTimeRounds" />
                 </div>
                 <div class="form-group" style="flex:1">
-                    <label>Knowledge Points Awarded</label>
-                    <input type="number" class="form-control" @bind="_editRecipe.KnowledgePointsAwarded" />
+                    <label>Progression Points Awarded</label>
+                    <input type="number" class="form-control" @bind="_editRecipe.ProgressionPointsAwarded" />
                 </div>
             </div>
             <div class="form-group">
@@ -975,8 +1175,8 @@
                     <input type="number" class="form-control" @bind="_editTemplate.CraftingTimeRounds" />
                 </div>
                 <div class="form-group" style="flex:1">
-                    <label>Knowledge Points Awarded</label>
-                    <input type="number" class="form-control" @bind="_editTemplate.KnowledgePointsAwarded" />
+                    <label>Progression Points Awarded</label>
+                    <input type="number" class="form-control" @bind="_editTemplate.ProgressionPointsAwarded" />
                 </div>
             </div>
             <div class="form-group">
@@ -1192,6 +1392,14 @@
     private bool _itemPickerLoading;
     private System.Threading.Timer? _debounceTimer;
 
+    // Knowledge Progression tab
+    private ProgressionConfigDto _progressionConfig = new();
+    private List<KnowledgeCapProfileDto> _capProfiles = [];
+    private bool _progressionLoading;
+    private bool _showCapProfileModal;
+    private bool _isCreatingCapProfile;
+    private KnowledgeCapProfileDto _editCapProfile = new();
+
     // ==================== Lifecycle ====================
 
     protected override async Task OnInitializedAsync()
@@ -1212,11 +1420,16 @@
         }
     }
 
-    private void SetTab(string tab)
+    private async Task SetTab(string tab)
     {
         _activeTab = tab;
         _error = null;
         _success = null;
+
+        if (tab == "progression")
+        {
+            await LoadProgressionData();
+        }
     }
 
     private async Task RefreshAll()
@@ -1579,7 +1792,7 @@
                 SuccessChance = p.SuccessChance
             }).ToList(),
             CraftingTimeRounds = r.CraftingTimeRounds,
-            KnowledgePointsAwarded = r.KnowledgePointsAwarded,
+            ProgressionPointsAwarded = r.ProgressionPointsAwarded,
             RequiredWorkstation = r.RequiredWorkstation,
             RequiredTools = r.RequiredTools.Select(t => new ToolRequirementDto
             {
@@ -1845,6 +2058,7 @@
         _showKnowledgeModal = false;
         _showRecipeModal = false;
         _showTemplateModal = false;
+        _showCapProfileModal = false;
         _showDeleteConfirm = false;
         _deleteAction = null;
         DismissItemPicker();
@@ -2052,6 +2266,157 @@
             DismissItemPicker();
             StateHasChanged();
         });
+    }
+
+    // ==================== Knowledge Progression ====================
+
+    private async Task LoadProgressionData()
+    {
+        try
+        {
+            _progressionLoading = true;
+            _error = null;
+            ProgressionConfigDto? config = await IndustryApi.GetProgressionConfigAsync();
+            _progressionConfig = config ?? new ProgressionConfigDto();
+
+            KnowledgeCapProfileDto[]? profiles = await IndustryApi.GetCapProfilesAsync();
+            _capProfiles = profiles?.ToList() ?? [];
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load progression config: {ex.Message}";
+            Logger.LogError(ex, "Failed to load progression config");
+        }
+        finally
+        {
+            _progressionLoading = false;
+        }
+    }
+
+    private async Task SaveProgressionConfig()
+    {
+        try
+        {
+            _isSaving = true;
+            _error = null;
+            ProgressionConfigDto? result = await IndustryApi.UpdateProgressionConfigAsync(_progressionConfig);
+            if (result != null)
+            {
+                _progressionConfig = result;
+                _success = "Progression curve settings saved successfully.";
+            }
+            else
+            {
+                _error = "Failed to save progression config.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to save progression config: {ex.Message}";
+            Logger.LogError(ex, "Failed to save progression config");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private int CalculatePreviewCost(int n)
+    {
+        double baseCost = _progressionConfig.BaseCost;
+        double factor = _progressionConfig.ScalingFactor;
+        bool pastSoftCap = n > _progressionConfig.SoftCap;
+
+        double cost = _progressionConfig.CurveType switch
+        {
+            "Linear" => baseCost + (factor * (n - 1)),
+            "Polynomial" => baseCost * Math.Pow(n, factor),
+            _ => baseCost * Math.Pow(factor, n - 1) // Exponential
+        };
+
+        if (pastSoftCap)
+        {
+            cost *= _progressionConfig.SoftCapPenaltyMultiplier;
+        }
+
+        return (int)Math.Ceiling(cost);
+    }
+
+    // ---- Cap Profile CRUD ----
+
+    private void StartCreateCapProfile()
+    {
+        _isCreatingCapProfile = true;
+        _editCapProfile = new KnowledgeCapProfileDto
+        {
+            SoftCap = _progressionConfig.SoftCap,
+            HardCap = _progressionConfig.HardCap
+        };
+        _showCapProfileModal = true;
+    }
+
+    private void StartEditCapProfile(KnowledgeCapProfileDto profile)
+    {
+        _isCreatingCapProfile = false;
+        _editCapProfile = new KnowledgeCapProfileDto
+        {
+            Tag = profile.Tag,
+            Name = profile.Name,
+            Description = profile.Description,
+            SoftCap = profile.SoftCap,
+            HardCap = profile.HardCap
+        };
+        _showCapProfileModal = true;
+    }
+
+    private async Task SaveCapProfile()
+    {
+        try
+        {
+            _isSaving = true;
+            _error = null;
+            KnowledgeCapProfileDto? result;
+            if (_isCreatingCapProfile)
+            {
+                result = await IndustryApi.CreateCapProfileAsync(_editCapProfile);
+            }
+            else
+            {
+                result = await IndustryApi.UpdateCapProfileAsync(_editCapProfile.Tag, _editCapProfile);
+            }
+
+            if (result != null)
+            {
+                _success = $"Cap profile '{result.Name}' saved.";
+                CloseModals();
+                await LoadProgressionData();
+            }
+            else
+            {
+                _error = "Failed to save cap profile.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to save cap profile: {ex.Message}";
+            Logger.LogError(ex, "Failed to save cap profile");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void ConfirmDeleteCapProfile(KnowledgeCapProfileDto profile)
+    {
+        _deleteTargetName = profile.Name;
+        _deleteAction = async () =>
+        {
+            await IndustryApi.DeleteCapProfileAsync(profile.Tag);
+            _success = $"Cap profile '{profile.Name}' deleted.";
+            await LoadProgressionData();
+        };
+        _showDeleteConfirm = true;
     }
 
     public void Dispose()

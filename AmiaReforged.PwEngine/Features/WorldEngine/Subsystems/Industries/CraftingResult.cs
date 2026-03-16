@@ -11,7 +11,7 @@ public class CraftingResult
     public string Message { get; init; } = string.Empty;
     public List<Product> ProductsCreated { get; init; } = [];
     public List<Ingredient> IngredientsConsumed { get; init; } = [];
-    public int KnowledgePointsAwarded { get; init; }
+    public int ProgressionPointsAwarded { get; init; }
     public CraftingFailureReason? FailureReason { get; init; }
 }
 

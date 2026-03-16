@@ -290,7 +290,7 @@ public class IndustryRecipeDto
     public List<IndustryIngredientDto> Ingredients { get; set; } = [];
     public List<IndustryProductDto> Products { get; set; } = [];
     public int? CraftingTimeRounds { get; set; }
-    public int KnowledgePointsAwarded { get; set; }
+    public int ProgressionPointsAwarded { get; set; }
     public string? RequiredWorkstation { get; set; }
     public List<ToolRequirementDto> RequiredTools { get; set; } = [];
 }
@@ -420,7 +420,7 @@ public class RecipeTemplateDefinitionDto
     public List<TemplateIngredientDto> Ingredients { get; set; } = [];
     public List<TemplateProductDto> Products { get; set; } = [];
     public int? CraftingTimeRounds { get; set; }
-    public int KnowledgePointsAwarded { get; set; }
+    public int ProgressionPointsAwarded { get; set; }
     public string? RequiredWorkstation { get; set; }
     public List<ToolRequirementDto> RequiredTools { get; set; } = [];
 }
@@ -471,4 +471,25 @@ public class ToolRequirementDto
     public string? RequiredMaterial { get; set; }
     public int? MinQuality { get; set; }
     public string? ExactItemTag { get; set; }
+}
+
+// ==================== Knowledge Progression DTOs ====================
+
+public class ProgressionConfigDto
+{
+    public int BaseCost { get; set; } = 100;
+    public float ScalingFactor { get; set; } = 1.15f;
+    public string CurveType { get; set; } = "Exponential";
+    public int SoftCap { get; set; } = 100;
+    public int HardCap { get; set; } = 150;
+    public float SoftCapPenaltyMultiplier { get; set; } = 3.0f;
+}
+
+public class KnowledgeCapProfileDto
+{
+    public string Tag { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public int SoftCap { get; set; } = 100;
+    public int HardCap { get; set; } = 150;
 }

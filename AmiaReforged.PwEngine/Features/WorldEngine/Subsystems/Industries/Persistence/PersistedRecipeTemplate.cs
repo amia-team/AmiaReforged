@@ -48,9 +48,9 @@ public class PersistedRecipeTemplate
     public int? CraftingTimeRounds { get; set; }
 
     /// <summary>
-    /// Knowledge points awarded on successful crafting.
+    /// Progression points awarded toward the next knowledge point on successful crafting.
     /// </summary>
-    public int KnowledgePointsAwarded { get; set; }
+    public int ProgressionPointsAwarded { get; set; }
 
     /// <summary>
     /// Optional workstation tag required.

@@ -51,17 +51,20 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
     private readonly IIndustryMembershipRepository _membershipRepository;
     private readonly ICharacterKnowledgeRepository _knowledgeRepository;
     private readonly ICraftingProcessor _craftingProcessor;
+    private readonly IKnowledgeProgressionService _progressionService;
 
     public CraftItemHandler(
         IIndustryRepository industryRepository,
         IIndustryMembershipRepository membershipRepository,
         ICharacterKnowledgeRepository knowledgeRepository,
-        ICraftingProcessor craftingProcessor)
+        ICraftingProcessor craftingProcessor,
+        IKnowledgeProgressionService progressionService)
     {
         _industryRepository = industryRepository;
         _membershipRepository = membershipRepository;
         _knowledgeRepository = knowledgeRepository;
         _craftingProcessor = craftingProcessor;
+        _progressionService = progressionService;
     }
 
     public async Task<CommandResult> HandleAsync(CraftItemCommand command,
@@ -120,19 +123,29 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
             return CommandResult.Fail(craftingResult.Message);
         }
 
-        // Award knowledge points if successful
-        if (craftingResult.KnowledgePointsAwarded > 0)
+        // Award progression points if successful
+        if (craftingResult.ProgressionPointsAwarded > 0)
         {
-            membership.Level = DetermineLevelAfterCrafting(membership.Level, craftingResult.KnowledgePointsAwarded);
+            ProgressionResult progressionResult =
+                _progressionService.AwardProgressionPoints(command.CharacterId, craftingResult.ProgressionPointsAwarded);
+
+            if (progressionResult is { Success: true, KnowledgePointsEarned: > 0 })
+            {
+                // Return progression info in the command result data
+                return CommandResult.Ok(new Dictionary<string, object>
+                {
+                    ["knowledgePointsEarned"] = progressionResult.KnowledgePointsEarned,
+                    ["newTotalKnowledgePoints"] = progressionResult.NewTotalKnowledgePoints,
+                    ["progressionPointsRemaining"] = progressionResult.ProgressionPointsRemaining,
+                    ["progressionPointsRequired"] = progressionResult.ProgressionPointsRequired,
+                    ["isAtSoftCap"] = progressionResult.IsAtSoftCap,
+                    ["isAtHardCap"] = progressionResult.IsAtHardCap,
+                    ["message"] = progressionResult.Message ?? string.Empty
+                });
+            }
         }
 
         return CommandResult.Ok();
-    }
-
-    private ProficiencyLevel DetermineLevelAfterCrafting(ProficiencyLevel currentLevel, int pointsAwarded)
-    {
-        // Simple placeholder - could be more sophisticated
-        return currentLevel;
     }
 }
 
@@ -185,7 +198,7 @@ public class DefaultCraftingProcessor : ICraftingProcessor
             Message = "Crafting completed successfully",
             ProductsCreated = modifiedProducts,
             IngredientsConsumed = recipe.Ingredients.ToList(),
-            KnowledgePointsAwarded = recipe.KnowledgePointsAwarded
+            ProgressionPointsAwarded = recipe.ProgressionPointsAwarded
         };
 
         return Task.FromResult(result);

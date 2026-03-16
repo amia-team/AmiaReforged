@@ -9,6 +9,7 @@ using AmiaReforged.PwEngine.Database.EntityConfig;
 using AmiaReforged.PwEngine.Features.Encounters.Models;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.Persistence;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.Persistence;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.Persistence;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions.Persistence;
@@ -136,6 +137,11 @@ public class PwEngineContext : DbContext
     public DbSet<PersistedInteractionDefinition> InteractionDefinitions { get; set; } = null!;
     public DbSet<PersistedRecipeTemplate> RecipeTemplateDefinitions { get; set; } = null!;
 
+    // === Knowledge Progression ===
+
+    public DbSet<KnowledgeProgression> KnowledgeProgressions { get; set; } = null!;
+    public DbSet<KnowledgeCapProfile> KnowledgeCapProfiles { get; set; } = null!;
+
     // === Glyph Visual Scripting ===
 
     public DbSet<GlyphDefinition> GlyphDefinitions { get; set; } = null!;
@@ -245,6 +251,10 @@ public class PwEngineContext : DbContext
         modelBuilder.ApplyConfiguration(new PersistedWorkstationDefinitionConfiguration());
         modelBuilder.ApplyConfiguration(new PersistedInteractionDefinitionConfiguration());
         modelBuilder.ApplyConfiguration(new PersistedRecipeTemplateConfiguration());
+
+        // Knowledge Progression
+        modelBuilder.ApplyConfiguration(new KnowledgeProgressionConfiguration());
+        modelBuilder.ApplyConfiguration(new KnowledgeCapProfileConfiguration());
 
         // Glyph Visual Scripting
         modelBuilder.ApplyConfiguration(new GlyphDefinitionConfiguration());

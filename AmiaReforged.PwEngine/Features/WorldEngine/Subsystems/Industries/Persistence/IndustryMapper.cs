@@ -158,7 +158,7 @@ public static class IndustryMapper
             SuccessChance = p.SuccessChance
         }).ToList(),
         CraftingTimeRounds = r.CraftingTimeRounds,
-        KnowledgePointsAwarded = r.KnowledgePointsAwarded,
+        ProgressionPointsAwarded = r.ProgressionPointsAwarded,
         Metadata = r.Metadata,
         RequiredWorkstation = r.RequiredWorkstation?.Value,
         RequiredTools = r.RequiredTools.Select(tr => new ToolRequirementJsonDto
@@ -193,7 +193,7 @@ public static class IndustryMapper
                 SuccessChance = p.SuccessChance
             }).ToList() ?? [],
             CraftingTimeRounds = dto.CraftingTimeRounds,
-            KnowledgePointsAwarded = dto.KnowledgePointsAwarded,
+            ProgressionPointsAwarded = dto.ProgressionPointsAwarded,
             Metadata = dto.Metadata ?? new Dictionary<string, object>(),
             RequiredWorkstation = !string.IsNullOrEmpty(dto.RequiredWorkstation)
                 ? new WorkstationTag(dto.RequiredWorkstation)
@@ -277,7 +277,7 @@ public static class IndustryMapper
         public List<IngredientJsonDto>? Ingredients { get; set; }
         public List<ProductJsonDto>? Products { get; set; }
         public int? CraftingTimeRounds { get; set; }
-        public int KnowledgePointsAwarded { get; set; }
+        public int ProgressionPointsAwarded { get; set; }
         public Dictionary<string, object>? Metadata { get; set; }
         public string? RequiredWorkstation { get; set; }
         public List<ToolRequirementJsonDto>? RequiredTools { get; set; }

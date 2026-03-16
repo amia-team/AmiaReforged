@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.ResourceNodeData;
@@ -31,4 +32,9 @@ public interface ICharacterKnowledgeContext
     /// <see cref="KnowledgeEffectType.UnlockInteraction"/> targeting <paramref name="interactionTag"/>.
     /// </summary>
     bool HasUnlockedInteraction(string interactionTag);
+
+    /// <summary>
+    /// Gets the character's knowledge progression state (economy/level-up KP, accumulated points, caps).
+    /// </summary>
+    KnowledgeProgression GetProgression();
 }

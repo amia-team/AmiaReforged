@@ -297,7 +297,7 @@ public class RecipeTemplateExpander
             Ingredients = concreteIngredients,
             Products = concreteProducts,
             CraftingTimeRounds = template.CraftingTimeRounds,
-            KnowledgePointsAwarded = template.KnowledgePointsAwarded,
+            ProgressionPointsAwarded = template.ProgressionPointsAwarded,
             Metadata = new Dictionary<string, object>(template.Metadata)
             {
                 ["_sourceTemplate"] = template.Tag

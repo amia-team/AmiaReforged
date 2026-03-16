@@ -22,4 +22,15 @@ internal static class WorldConstants
     public static string LvarMaxNodesTotal => "max_nodes_total";
     public const int DefaultMaxNodesPerTrigger = 5;
     public const float MinNodeSpacing = 7.5f; // meters
+
+    // Knowledge Progression Configuration Keys
+    public const string KnowledgeProgressionBaseCost = "knowledge_progression_base_cost";
+    public const string KnowledgeProgressionScalingFactor = "knowledge_progression_scaling_factor";
+    public const string KnowledgeProgressionCurveType = "knowledge_progression_curve_type";
+    public const string KnowledgePointDefaultSoftCap = "knowledge_point_soft_cap";
+    public const string KnowledgePointDefaultHardCap = "knowledge_point_hard_cap";
+    public const string KnowledgeSoftCapPenaltyMultiplier = "knowledge_soft_cap_penalty_multiplier";
+    public const string ConfigTypeInt = "int";
+    public const string ConfigTypeFloat = "float";
+    public const string ConfigTypeString = "string";
 }

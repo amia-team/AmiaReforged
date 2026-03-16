@@ -110,6 +110,13 @@ public class RuntimeCharacter(
         return modifiers;
     }
 
+    /// <inheritdoc />
+    public KnowledgeProgression GetProgression()
+    {
+        IKnowledgeProgressionService progressionService = AnvilCore.GetService<IKnowledgeProgressionService>()!;
+        return progressionService.GetProgression(characterId);
+    }
+
     public void AddItem(ItemDto item)
     {
         inventoryPort.AddItem(item);

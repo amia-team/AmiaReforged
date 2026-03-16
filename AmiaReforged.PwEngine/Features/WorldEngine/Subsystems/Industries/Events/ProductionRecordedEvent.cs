@@ -12,7 +12,7 @@ public sealed record ProductionRecordedEvent(
     CharacterId ProducerId,
     IndustryTag IndustryTag,
     RecipeId RecipeId,
-    int KnowledgePointsAwarded,
+    int ProgressionPointsAwarded,
     DateTime OccurredAt) : IDomainEvent
 {
     public Guid EventId { get; } = Guid.NewGuid();

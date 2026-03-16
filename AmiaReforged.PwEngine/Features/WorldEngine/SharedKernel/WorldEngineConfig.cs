@@ -85,10 +85,143 @@ public class WorldEngineConfig : IWorldConfigProvider
 
     public int? GetInt(string key)
     {
+        try
+        {
+            WorldConfiguration? entry = _ctx.WorldConfiguration.FirstOrDefault(b =>
+                b.Key == key && b.ValueType == WorldConstants.ConfigTypeInt);
+
+            if (entry != null && int.TryParse(entry.Value, out int value)) return value;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e);
+        }
+
         return null;
     }
 
-    public float? GetFloat(string key) => null;
+    public void SetInt(string key, int value)
+    {
+        try
+        {
+            WorldConfiguration? entry = _ctx.WorldConfiguration.FirstOrDefault(b =>
+                b.Key == key && b.ValueType == WorldConstants.ConfigTypeInt);
 
-    public string? GetString(string key) => null;
+            if (entry == null)
+            {
+                _ctx.Add(new WorldConfiguration
+                {
+                    Key = key,
+                    Value = value.ToString(),
+                    ValueType = WorldConstants.ConfigTypeInt
+                });
+            }
+            else
+            {
+                entry.Value = value.ToString();
+                _ctx.Update(entry);
+            }
+
+            _ctx.SaveChanges();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e);
+        }
+    }
+
+    public float? GetFloat(string key)
+    {
+        try
+        {
+            WorldConfiguration? entry = _ctx.WorldConfiguration.FirstOrDefault(b =>
+                b.Key == key && b.ValueType == WorldConstants.ConfigTypeFloat);
+
+            if (entry != null && float.TryParse(entry.Value, System.Globalization.CultureInfo.InvariantCulture, out float value))
+                return value;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e);
+        }
+
+        return null;
+    }
+
+    public void SetFloat(string key, float value)
+    {
+        try
+        {
+            WorldConfiguration? entry = _ctx.WorldConfiguration.FirstOrDefault(b =>
+                b.Key == key && b.ValueType == WorldConstants.ConfigTypeFloat);
+
+            if (entry == null)
+            {
+                _ctx.Add(new WorldConfiguration
+                {
+                    Key = key,
+                    Value = value.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    ValueType = WorldConstants.ConfigTypeFloat
+                });
+            }
+            else
+            {
+                entry.Value = value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                _ctx.Update(entry);
+            }
+
+            _ctx.SaveChanges();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e);
+        }
+    }
+
+    public string? GetString(string key)
+    {
+        try
+        {
+            WorldConfiguration? entry = _ctx.WorldConfiguration.FirstOrDefault(b =>
+                b.Key == key && b.ValueType == WorldConstants.ConfigTypeString);
+
+            return entry?.Value;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e);
+        }
+
+        return null;
+    }
+
+    public void SetString(string key, string value)
+    {
+        try
+        {
+            WorldConfiguration? entry = _ctx.WorldConfiguration.FirstOrDefault(b =>
+                b.Key == key && b.ValueType == WorldConstants.ConfigTypeString);
+
+            if (entry == null)
+            {
+                _ctx.Add(new WorldConfiguration
+                {
+                    Key = key,
+                    Value = value,
+                    ValueType = WorldConstants.ConfigTypeString
+                });
+            }
+            else
+            {
+                entry.Value = value;
+                _ctx.Update(entry);
+            }
+
+            _ctx.SaveChanges();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e);
+        }
+    }
 }

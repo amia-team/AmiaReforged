@@ -301,9 +301,9 @@ public sealed class WorkstationCraftingPresenter : ScryPresenter<WorkstationCraf
                 sections.Add($"  Success Chance: {(modifiers.SuccessChanceBonus > 0 ? "+" : "")}{modifiers.SuccessChanceBonus:P0}");
         }
 
-        // Knowledge points
-        if (recipe.KnowledgePointsAwarded > 0)
-            sections.Add($"Knowledge Points: +{recipe.KnowledgePointsAwarded}");
+        // Progression points
+        if (recipe.ProgressionPointsAwarded > 0)
+            sections.Add($"Progression Points: +{recipe.ProgressionPointsAwarded}");
 
         return string.Join("\n", sections);
     }

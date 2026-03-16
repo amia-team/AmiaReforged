@@ -81,7 +81,7 @@ public class IndustryQueryTests
                     Quality = 2
                 }
             ],
-            KnowledgePointsAwarded = 5
+            ProgressionPointsAwarded = 5
         };
 
         _apprenticeRecipe = new Recipe
@@ -108,7 +108,7 @@ public class IndustryQueryTests
                     Quality = 3
                 }
             ],
-            KnowledgePointsAwarded = 10
+            ProgressionPointsAwarded = 10
         };
 
         _testIndustry = new Industry

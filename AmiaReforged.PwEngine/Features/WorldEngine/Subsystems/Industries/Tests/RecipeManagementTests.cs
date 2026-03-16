@@ -52,7 +52,7 @@ public class RecipeManagementTests
                 }
             ],
             CraftingTimeRounds = 300,
-            KnowledgePointsAwarded = 5
+            ProgressionPointsAwarded = 5
         };
     }
 
