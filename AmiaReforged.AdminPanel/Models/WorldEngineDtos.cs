@@ -284,7 +284,7 @@ public class IndustryRecipeDto
     public int? CraftingTimeRounds { get; set; }
     public int KnowledgePointsAwarded { get; set; }
     public string? RequiredWorkstation { get; set; }
-    public List<string> RequiredTools { get; set; } = [];
+    public List<ToolRequirementDto> RequiredTools { get; set; } = [];
 }
 
 public class IndustryIngredientDto
@@ -414,7 +414,7 @@ public class RecipeTemplateDefinitionDto
     public int? CraftingTimeRounds { get; set; }
     public int KnowledgePointsAwarded { get; set; }
     public string? RequiredWorkstation { get; set; }
-    public List<string> RequiredTools { get; set; } = [];
+    public List<ToolRequirementDto> RequiredTools { get; set; } = [];
 }
 
 public class TemplateIngredientDto
@@ -439,6 +439,8 @@ public class RecipeTemplateEnumsDto
 {
     public List<EnumOptionDto> MaterialCategories { get; set; } = [];
     public List<EnumOptionDto> ItemForms { get; set; } = [];
+    public List<EnumOptionDto> ToolForms { get; set; } = [];
+    public List<EnumOptionDto> Materials { get; set; } = [];
 }
 
 public class EnumOptionDto
@@ -446,4 +448,13 @@ public class EnumOptionDto
     public string Value { get; set; } = string.Empty;
     public string Label { get; set; } = string.Empty;
     public string? Group { get; set; }
+    public string? Category { get; set; }
+}
+
+public class ToolRequirementDto
+{
+    public string? RequiredForm { get; set; }
+    public string? RequiredMaterial { get; set; }
+    public int? MinQuality { get; set; }
+    public string? ExactItemTag { get; set; }
 }

@@ -4,6 +4,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.Persistence;
 
@@ -160,7 +161,13 @@ public static class IndustryMapper
         KnowledgePointsAwarded = r.KnowledgePointsAwarded,
         Metadata = r.Metadata,
         RequiredWorkstation = r.RequiredWorkstation?.Value,
-        RequiredTools = r.RequiredTools
+        RequiredTools = r.RequiredTools.Select(tr => new ToolRequirementJsonDto
+        {
+            RequiredForm = tr.RequiredForm.ToString(),
+            RequiredMaterial = tr.RequiredMaterial?.ToString(),
+            MinQuality = tr.MinQuality,
+            ExactItemTag = tr.ExactItemTag
+        }).ToList()
     };
 
     private static Recipe FromRecipeDto(RecipeJsonDto dto)
@@ -191,7 +198,32 @@ public static class IndustryMapper
             RequiredWorkstation = !string.IsNullOrEmpty(dto.RequiredWorkstation)
                 ? new WorkstationTag(dto.RequiredWorkstation)
                 : null,
-            RequiredTools = dto.RequiredTools ?? []
+            RequiredTools = dto.RequiredTools?.Select(tr =>
+            {
+                if (!string.IsNullOrEmpty(tr.ExactItemTag))
+                {
+                    return new ToolRequirement
+                    {
+                        ExactItemTag = tr.ExactItemTag,
+                        MinQuality = tr.MinQuality
+                    };
+                }
+
+                Enum.TryParse<ItemForm>(tr.RequiredForm, true, out ItemForm form);
+                MaterialEnum? material = null;
+                if (!string.IsNullOrEmpty(tr.RequiredMaterial) &&
+                    Enum.TryParse<MaterialEnum>(tr.RequiredMaterial, true, out MaterialEnum parsedMat))
+                {
+                    material = parsedMat;
+                }
+
+                return new ToolRequirement
+                {
+                    RequiredForm = form,
+                    RequiredMaterial = material,
+                    MinQuality = tr.MinQuality
+                };
+            }).ToList() ?? []
         };
     }
 
@@ -248,7 +280,15 @@ public static class IndustryMapper
         public int KnowledgePointsAwarded { get; set; }
         public Dictionary<string, object>? Metadata { get; set; }
         public string? RequiredWorkstation { get; set; }
-        public List<string>? RequiredTools { get; set; }
+        public List<ToolRequirementJsonDto>? RequiredTools { get; set; }
+    }
+
+    private class ToolRequirementJsonDto
+    {
+        public string RequiredForm { get; set; } = string.Empty;
+        public string? RequiredMaterial { get; set; }
+        public int? MinQuality { get; set; }
+        public string? ExactItemTag { get; set; }
     }
 
     private class IngredientJsonDto

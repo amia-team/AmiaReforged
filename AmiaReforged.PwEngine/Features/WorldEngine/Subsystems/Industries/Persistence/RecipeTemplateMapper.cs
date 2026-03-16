@@ -35,7 +35,8 @@ public static class RecipeTemplateMapper
             CraftingTimeRounds = template.CraftingTimeRounds,
             KnowledgePointsAwarded = template.KnowledgePointsAwarded,
             RequiredWorkstation = template.RequiredWorkstation?.Value,
-            RequiredToolsJson = JsonSerializer.Serialize(template.RequiredTools, JsonOptions),
+            RequiredToolsJson = JsonSerializer.Serialize(
+                template.RequiredTools.Select(ToToolRequirementDto).ToList(), JsonOptions),
             MetadataJson = JsonSerializer.Serialize(template.Metadata, JsonOptions),
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -63,7 +64,7 @@ public static class RecipeTemplateMapper
             RequiredWorkstation = !string.IsNullOrEmpty(entity.RequiredWorkstation)
                 ? new WorkstationTag(entity.RequiredWorkstation)
                 : null,
-            RequiredTools = JsonSerializer.Deserialize<List<string>>(entity.RequiredToolsJson, JsonOptions) ?? [],
+            RequiredTools = DeserializeToolRequirements(entity.RequiredToolsJson),
             Metadata = metadata
         };
     }
@@ -81,7 +82,8 @@ public static class RecipeTemplateMapper
         entity.CraftingTimeRounds = template.CraftingTimeRounds;
         entity.KnowledgePointsAwarded = template.KnowledgePointsAwarded;
         entity.RequiredWorkstation = template.RequiredWorkstation?.Value;
-        entity.RequiredToolsJson = JsonSerializer.Serialize(template.RequiredTools, JsonOptions);
+        entity.RequiredToolsJson = JsonSerializer.Serialize(
+            template.RequiredTools.Select(ToToolRequirementDto).ToList(), JsonOptions);
         entity.MetadataJson = JsonSerializer.Serialize(template.Metadata, JsonOptions);
         entity.UpdatedAt = DateTime.UtcNow;
     }
@@ -137,6 +139,83 @@ public static class RecipeTemplateMapper
         };
     }
 
+    // ==================== Tool requirement mapping ====================
+
+    private static ToolRequirementJsonDto ToToolRequirementDto(ToolRequirement tr) => new()
+    {
+        RequiredForm = tr.RequiredForm.ToString(),
+        RequiredMaterial = tr.RequiredMaterial?.ToString(),
+        MinQuality = tr.MinQuality,
+        ExactItemTag = tr.ExactItemTag
+    };
+
+    private static ToolRequirement FromToolRequirementDto(ToolRequirementJsonDto dto)
+    {
+        Enum.TryParse<ItemForm>(dto.RequiredForm, true, out ItemForm form);
+        MaterialEnum? material = null;
+        if (!string.IsNullOrEmpty(dto.RequiredMaterial) &&
+            Enum.TryParse<MaterialEnum>(dto.RequiredMaterial, true, out MaterialEnum parsedMaterial))
+        {
+            material = parsedMaterial;
+        }
+
+        return new ToolRequirement
+        {
+            RequiredForm = form,
+            RequiredMaterial = material,
+            MinQuality = dto.MinQuality,
+            ExactItemTag = dto.ExactItemTag
+        };
+    }
+
+    /// <summary>
+    /// Deserializes tool requirements with backward compatibility.
+    /// Handles both the new structured format and legacy <c>["tag1","tag2"]</c> string arrays.
+    /// </summary>
+    private static List<ToolRequirement> DeserializeToolRequirements(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json) || json == "[]")
+            return [];
+
+        // Try the new structured format first
+        try
+        {
+            List<ToolRequirementJsonDto>? dtos =
+                JsonSerializer.Deserialize<List<ToolRequirementJsonDto>>(json, JsonOptions);
+            if (dtos != null && dtos.Count > 0)
+            {
+                // Verify it's actually the new format (has at least one non-empty field)
+                if (dtos.Any(d => !string.IsNullOrEmpty(d.RequiredForm) || !string.IsNullOrEmpty(d.ExactItemTag)))
+                {
+                    return dtos.Select(FromToolRequirementDto).ToList();
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            // Not the new format — try legacy
+        }
+
+        // Fall back to legacy string array format
+        try
+        {
+            List<string>? legacyTags = JsonSerializer.Deserialize<List<string>>(json, JsonOptions);
+            if (legacyTags != null)
+            {
+                return legacyTags
+                    .Where(t => !string.IsNullOrWhiteSpace(t))
+                    .Select(tag => new ToolRequirement { ExactItemTag = tag })
+                    .ToList();
+            }
+        }
+        catch (JsonException)
+        {
+            // Completely unrecognized — return empty
+        }
+
+        return [];
+    }
+
     // ==================== Internal JSON DTOs ====================
 
     private class TemplateIngredientJsonDto
@@ -155,5 +234,13 @@ public static class RecipeTemplateMapper
         public int MaterialSourceSlot { get; set; }
         public int Quantity { get; set; }
         public float? SuccessChance { get; set; }
+    }
+
+    private class ToolRequirementJsonDto
+    {
+        public string RequiredForm { get; set; } = string.Empty;
+        public string? RequiredMaterial { get; set; }
+        public int? MinQuality { get; set; }
+        public string? ExactItemTag { get; set; }
     }
 }

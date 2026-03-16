@@ -70,10 +70,11 @@ public class RecipeTemplate
     public WorkstationTag? RequiredWorkstation { get; init; }
 
     /// <summary>
-    /// Item tags for tools the player must possess (but are not consumed) to craft.
+    /// Tool requirements the player must satisfy (tools are not consumed) to craft.
+    /// Each requirement can match by exact item tag, by tool form, or by form + material.
     /// Inherited by expanded recipes.
     /// </summary>
-    public List<string> RequiredTools { get; init; } = [];
+    public List<ToolRequirement> RequiredTools { get; init; } = [];
 
     /// <summary>
     /// Optional additional metadata (inherited by expanded recipes).

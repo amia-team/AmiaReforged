@@ -6,6 +6,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.Persistence;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 using Anvil;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.API.Controllers;
@@ -333,7 +334,13 @@ public class IndustryController
                 r.CraftingTimeRounds,
                 r.KnowledgePointsAwarded,
                 RequiredWorkstation = r.RequiredWorkstation?.Value,
-                r.RequiredTools
+                RequiredTools = r.RequiredTools.Select(tr => new
+                {
+                    RequiredForm = tr.RequiredForm.ToString(),
+                    RequiredMaterial = tr.RequiredMaterial?.ToString(),
+                    tr.MinQuality,
+                    tr.ExactItemTag
+                }).ToArray()
             }).ToArray()
         };
     }
@@ -416,7 +423,32 @@ public class IndustryController
                     RequiredWorkstation = !string.IsNullOrEmpty(r.RequiredWorkstation)
                         ? new SharedKernel.WorkstationTag(r.RequiredWorkstation)
                         : null,
-                    RequiredTools = r.RequiredTools ?? []
+                    RequiredTools = r.RequiredTools?.Select(tr =>
+                    {
+                        if (!string.IsNullOrEmpty(tr.ExactItemTag))
+                        {
+                            return new ToolRequirement
+                            {
+                                ExactItemTag = tr.ExactItemTag,
+                                MinQuality = tr.MinQuality
+                            };
+                        }
+
+                        Enum.TryParse<ItemForm>(tr.RequiredForm, true, out ItemForm form);
+                        MaterialEnum? material = null;
+                        if (!string.IsNullOrEmpty(tr.RequiredMaterial) &&
+                            Enum.TryParse<MaterialEnum>(tr.RequiredMaterial, true, out MaterialEnum parsedMat))
+                        {
+                            material = parsedMat;
+                        }
+
+                        return new ToolRequirement
+                        {
+                            RequiredForm = form,
+                            RequiredMaterial = material,
+                            MinQuality = tr.MinQuality
+                        };
+                    }).ToList() ?? []
                 };
             }).ToList() ?? []
         };
@@ -482,7 +514,15 @@ public class IndustryController
         public int? CraftingTimeRounds { get; init; }
         public int KnowledgePointsAwarded { get; init; }
         public string? RequiredWorkstation { get; init; }
-        public List<string>? RequiredTools { get; init; }
+        public List<ToolRequirementApiDto>? RequiredTools { get; init; }
+    }
+
+    private record ToolRequirementApiDto
+    {
+        public string? RequiredForm { get; init; }
+        public string? RequiredMaterial { get; init; }
+        public int? MinQuality { get; init; }
+        public string? ExactItemTag { get; init; }
     }
 
     private record IngredientDto

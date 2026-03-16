@@ -249,10 +249,29 @@ public class RecipeTemplateController
                 group = t.GetGroup().ToString()
             });
 
+        var toolForms = Enum.GetValues<ItemForm>()
+            .Where(t => t.IsTool())
+            .Select(t => new
+            {
+                value = t.ToString(),
+                label = t.DisplayName()
+            });
+
+        var materials = Enum.GetValues<MaterialEnum>()
+            .Where(m => m != MaterialEnum.None && m != MaterialEnum.Unknown)
+            .Select(m => new
+            {
+                value = m.ToString(),
+                label = m.ToString(),
+                category = m.GetCategory().ToString()
+            });
+
         return await Task.FromResult(new ApiResult(200, new
         {
             materialCategories,
-            itemForms
+            itemForms,
+            toolForms,
+            materials
         }));
     }
 
@@ -320,7 +339,13 @@ public class RecipeTemplateController
             t.CraftingTimeRounds,
             t.KnowledgePointsAwarded,
             RequiredWorkstation = t.RequiredWorkstation?.Value,
-            t.RequiredTools
+            RequiredTools = t.RequiredTools.Select(tr => new
+            {
+                RequiredForm = tr.RequiredForm.ToString(),
+                RequiredMaterial = tr.RequiredMaterial?.ToString(),
+                tr.MinQuality,
+                tr.ExactItemTag
+            }).ToArray()
         };
     }
 
@@ -363,7 +388,33 @@ public class RecipeTemplateController
             RequiredWorkstation = !string.IsNullOrEmpty(dto.RequiredWorkstation)
                 ? new WorkstationTag(dto.RequiredWorkstation)
                 : null,
-            RequiredTools = dto.RequiredTools ?? [],
+            RequiredTools = dto.RequiredTools?.Select(tr =>
+            {
+                // ExactItemTag mode — form/material are ignored
+                if (!string.IsNullOrEmpty(tr.ExactItemTag))
+                {
+                    return new ToolRequirement
+                    {
+                        ExactItemTag = tr.ExactItemTag,
+                        MinQuality = tr.MinQuality
+                    };
+                }
+
+                Enum.TryParse<ItemForm>(tr.RequiredForm, true, out ItemForm form);
+                MaterialEnum? material = null;
+                if (!string.IsNullOrEmpty(tr.RequiredMaterial) &&
+                    Enum.TryParse<MaterialEnum>(tr.RequiredMaterial, true, out MaterialEnum parsedMat))
+                {
+                    material = parsedMat;
+                }
+
+                return new ToolRequirement
+                {
+                    RequiredForm = form,
+                    RequiredMaterial = material,
+                    MinQuality = tr.MinQuality
+                };
+            }).ToList() ?? [],
             Metadata = new Dictionary<string, object>()
         };
     }
@@ -382,7 +433,15 @@ public class RecipeTemplateController
         public int? CraftingTimeRounds { get; init; }
         public int KnowledgePointsAwarded { get; init; }
         public string? RequiredWorkstation { get; init; }
-        public List<string>? RequiredTools { get; init; }
+        public List<ToolRequirementApiDto>? RequiredTools { get; init; }
+    }
+
+    private record ToolRequirementApiDto
+    {
+        public string? RequiredForm { get; init; }
+        public string? RequiredMaterial { get; init; }
+        public int? MinQuality { get; init; }
+        public string? ExactItemTag { get; init; }
     }
 
     private record TemplateIngredientDto

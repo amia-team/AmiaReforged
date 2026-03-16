@@ -67,9 +67,9 @@ public class Recipe
     public WorkstationTag? RequiredWorkstation { get; init; }
 
     /// <summary>
-    /// Item tags for tools the player must possess (but are not consumed) to craft this recipe.
-    /// Example: ["smiths_hammer", "tongs"]
+    /// Tool requirements the player must satisfy (tools are not consumed) to craft this recipe.
+    /// Each requirement can match by exact item tag, by tool form, or by form + material.
     /// </summary>
-    public List<string> RequiredTools { get; init; } = [];
+    public List<ToolRequirement> RequiredTools { get; init; } = [];
 }
 

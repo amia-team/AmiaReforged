@@ -245,7 +245,7 @@
                         <td><code>@r.RecipeId</code></td>
                         <td>@r.Name</td>
                         <td>@(r.RequiredWorkstation ?? "—")</td>
-                        <td>@(r.RequiredTools.Count > 0 ? string.Join(", ", r.RequiredTools) : "—")</td>
+                        <td>@(r.RequiredTools.Count > 0 ? string.Join(", ", r.RequiredTools.Select(DescribeToolReq)) : "—")</td>
                         <td>@r.Ingredients.Count</td>
                         <td>@r.Products.Count</td>
                         <td>
@@ -662,8 +662,55 @@
                     </select>
                 </div>
                 <div class="form-group" style="flex:1">
-                    <label>Required Tools <small style="color:var(--text-secondary)">(comma-separated item tags)</small></label>
-                    <input class="form-control" @bind="_editRecipeToolsText" placeholder="e.g. smiths_hammer, tongs" />
+                    <label>Required Tools</label>
+                    <div style="display:flex;flex-direction:column;gap:6px">
+                        @for (int idx = 0; idx < _editRecipe.RequiredTools.Count; idx++)
+                        {
+                            int i = idx;
+                            ToolRequirementDto tr = _editRecipe.RequiredTools[i];
+                            bool isExactMode = !string.IsNullOrEmpty(tr.ExactItemTag);
+                            <div class="tool-req-card">
+                                <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                                    <label style="font-size:0.8rem;display:flex;align-items:center;gap:4px;white-space:nowrap">
+                                        <input type="checkbox" checked="@isExactMode" @onchange="(e) => ToggleRecipeToolReqMode(i, (bool)(e.Value ?? false))" />
+                                        Exact tag
+                                    </label>
+                                    @if (isExactMode)
+                                    {
+                                        <input class="form-control form-control-sm" style="flex:2"
+                                               @bind="tr.ExactItemTag" placeholder="e.g. master_smiths_hammer" />
+                                    }
+                                    else
+                                    {
+                                        <select class="form-control form-control-sm" style="flex:2" @bind="tr.RequiredForm">
+                                            <option value="">— Select tool form —</option>
+                                            @foreach (EnumOptionDto tf in _templateToolForms)
+                                            {
+                                                <option value="@tf.Value">@tf.Label</option>
+                                            }
+                                        </select>
+                                        <select class="form-control form-control-sm" style="flex:2" @bind="tr.RequiredMaterial">
+                                            <option value="">Any material</option>
+                                            @foreach (var grp in _templateMaterials.GroupBy(m => m.Category ?? "Other"))
+                                            {
+                                                <optgroup label="@grp.Key">
+                                                    @foreach (EnumOptionDto mat in grp)
+                                                    {
+                                                        <option value="@mat.Value">@mat.Label</option>
+                                                    }
+                                                </optgroup>
+                                            }
+                                        </select>
+                                    }
+                                    <div style="flex:1;min-width:70px">
+                                        <input type="number" class="form-control form-control-sm" placeholder="Min Q" @bind="tr.MinQuality" />
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => _editRecipe.RequiredTools.RemoveAt(i)">X</button>
+                                </div>
+                            </div>
+                        }
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="AddRecipeToolRequirement">+ Tool Requirement</button>
+                    </div>
                 </div>
             </div>
             <div class="form-row" style="display:flex;gap:10px">
@@ -872,54 +919,53 @@
                 </div>
                 <div class="form-group" style="flex:1">
                     <label>Required Tools</label>
-                    <div class="tool-picker-wrapper">
-                        @if (_editTemplate.RequiredTools.Count > 0)
+                    <div style="display:flex;flex-direction:column;gap:6px">
+                        @for (int idx = 0; idx < _editTemplate.RequiredTools.Count; idx++)
                         {
-                            <div class="tool-chips">
-                                @foreach (string tool in _editTemplate.RequiredTools)
-                                {
-                                    <span class="tool-chip">
-                                        @tool
-                                        <button type="button" class="tool-chip-remove" @onclick="() => RemoveToolFromTemplate(tool)">&times;</button>
-                                    </span>
-                                }
-                            </div>
-                        }
-                        <div class="item-picker-wrapper">
-                            <input class="form-control form-control-sm"
-                                   value="@_toolPickerSearch"
-                                   @onfocus="() => OpenToolPicker()"
-                                   @oninput="OnToolPickerInput"
-                                   @onblur="DismissToolPickerDelayed"
-                                   placeholder="Search tools to add..." />
-                            @if (_toolPickerOpen)
-                            {
-                                <div class="item-picker-dropdown">
-                                    @if (_toolPickerLoading)
+                            int i = idx;
+                            ToolRequirementDto tr = _editTemplate.RequiredTools[i];
+                            bool isExactMode = !string.IsNullOrEmpty(tr.ExactItemTag);
+                            <div class="tool-req-card">
+                                <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                                    <label style="font-size:0.8rem;display:flex;align-items:center;gap:4px;white-space:nowrap">
+                                        <input type="checkbox" checked="@isExactMode" @onchange="(e) => ToggleToolReqMode(i, (bool)(e.Value ?? false))" />
+                                        Exact tag
+                                    </label>
+                                    @if (isExactMode)
                                     {
-                                        <div class="item-picker-status">Searching...</div>
-                                    }
-                                    else if (_toolPickerResults.Count == 0 && _toolPickerSearch.Length >= 2)
-                                    {
-                                        <div class="item-picker-status">No tool items found</div>
-                                    }
-                                    else if (_toolPickerSearch.Length < 2)
-                                    {
-                                        <div class="item-picker-status">Type 2+ characters to search</div>
+                                        <input class="form-control form-control-sm" style="flex:2"
+                                               @bind="tr.ExactItemTag" placeholder="e.g. master_smiths_hammer" />
                                     }
                                     else
                                     {
-                                        @foreach (ItemBlueprintDto item in _toolPickerResults)
-                                        {
-                                            <div class="item-picker-item" @onmousedown="() => AddToolToTemplate(item.ItemTag)">
-                                                <div class="item-picker-name">@item.Name</div>
-                                                <div class="item-picker-detail">@item.ItemTag — @item.ItemForm</div>
-                                            </div>
-                                        }
+                                        <select class="form-control form-control-sm" style="flex:2" @bind="tr.RequiredForm">
+                                            <option value="">— Select tool form —</option>
+                                            @foreach (EnumOptionDto tf in _templateToolForms)
+                                            {
+                                                <option value="@tf.Value">@tf.Label</option>
+                                            }
+                                        </select>
+                                        <select class="form-control form-control-sm" style="flex:2" @bind="tr.RequiredMaterial">
+                                            <option value="">Any material</option>
+                                            @foreach (var grp in _templateMaterials.GroupBy(m => m.Category ?? "Other"))
+                                            {
+                                                <optgroup label="@grp.Key">
+                                                    @foreach (EnumOptionDto mat in grp)
+                                                    {
+                                                        <option value="@mat.Value">@mat.Label</option>
+                                                    }
+                                                </optgroup>
+                                            }
+                                        </select>
                                     }
+                                    <div style="flex:1;min-width:70px">
+                                        <input type="number" class="form-control form-control-sm" placeholder="Min Q" @bind="tr.MinQuality" />
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => _editTemplate.RequiredTools.RemoveAt(i)">X</button>
                                 </div>
-                            }
-                        </div>
+                            </div>
+                        }
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="AddToolRequirement">+ Tool Requirement</button>
                     </div>
                 </div>
             </div>
@@ -1112,7 +1158,7 @@
     private string _editWorkstationIndustriesText = "";
     private string _editKnowledgePrereqText = "";
     private string _editRecipeKnowledgeText = "";
-    private string _editRecipeToolsText = "";
+
 
     // Delete
     private string _deleteTargetName = "";
@@ -1133,14 +1179,11 @@
     private string _industryPickerSearch = "";
     private List<IndustryDefinitionDto> _filteredIndustries = [];
 
-    // Tool picker for template modal
-    private bool _toolPickerOpen;
-    private string _toolPickerSearch = "";
-    private List<ItemBlueprintDto> _toolPickerResults = [];
-    private bool _toolPickerLoading;
-    private System.Threading.Timer? _toolDebounceTimer;
+    // Enums for template dropdowns
     private List<EnumOptionDto> _templateMaterialCategories = [];
     private List<EnumOptionDto> _templateItemForms = [];
+    private List<EnumOptionDto> _templateToolForms = [];
+    private List<EnumOptionDto> _templateMaterials = [];
 
     // Item picker (searchable dropdown)
     private string? _activePickerKey;
@@ -1509,7 +1552,6 @@
             IndustryTag = _selectedIndustryTag
         };
         _editRecipeKnowledgeText = "";
-        _editRecipeToolsText = "";
         _showRecipeModal = true;
     }
 
@@ -1539,10 +1581,15 @@
             CraftingTimeRounds = r.CraftingTimeRounds,
             KnowledgePointsAwarded = r.KnowledgePointsAwarded,
             RequiredWorkstation = r.RequiredWorkstation,
-            RequiredTools = r.RequiredTools.ToList()
+            RequiredTools = r.RequiredTools.Select(t => new ToolRequirementDto
+            {
+                RequiredForm = t.RequiredForm,
+                RequiredMaterial = t.RequiredMaterial,
+                MinQuality = t.MinQuality,
+                ExactItemTag = t.ExactItemTag
+            }).ToList()
         };
         _editRecipeKnowledgeText = string.Join(", ", r.RequiredKnowledge);
-        _editRecipeToolsText = string.Join(", ", r.RequiredTools);
         _showRecipeModal = true;
     }
 
@@ -1556,9 +1603,7 @@
             _editRecipe.RequiredKnowledge = _editRecipeKnowledgeText
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .ToList();
-            _editRecipe.RequiredTools = _editRecipeToolsText
-                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .ToList();
+            // RequiredTools already bound directly via the structured form
             _editRecipe.IndustryTag = _selectedIndustryTag;
 
             if (_isCreating)
@@ -1635,6 +1680,8 @@
             {
                 _templateMaterialCategories = enums.MaterialCategories;
                 _templateItemForms = enums.ItemForms;
+                _templateToolForms = enums.ToolForms;
+                _templateMaterials = enums.Materials;
             }
         }
         catch (Exception ex)
@@ -1663,8 +1710,6 @@
         _originalTemplateTag = null;
         _industryPickerOpen = false;
         _industryPickerSearch = "";
-        _toolPickerOpen = false;
-        _toolPickerSearch = "";
         _showTemplateModal = true;
     }
 
@@ -1682,12 +1727,10 @@
             _isCreating = false;
             _editTemplate = template;
             _editTemplateKnowledgeText = string.Join(", ", template.RequiredKnowledge);
-            _editTemplateToolsText = string.Join(", ", template.RequiredTools);
+            _editTemplateToolsText = "";
             _originalTemplateTag = tag;
             _industryPickerOpen = false;
             _industryPickerSearch = "";
-            _toolPickerOpen = false;
-            _toolPickerSearch = "";
             _showTemplateModal = true;
         }
         catch (Exception ex)
@@ -1704,14 +1747,11 @@
             _editTemplate.RequiredKnowledge = _editTemplateKnowledgeText
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .ToList();
-            // RequiredTools is already managed by the tool picker; no need to parse text
-            // Keep _editTemplateToolsText sync as fallback
-            if (_editTemplate.RequiredTools.Count == 0 && !string.IsNullOrWhiteSpace(_editTemplateToolsText))
-            {
-                _editTemplate.RequiredTools = _editTemplateToolsText
-                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    .ToList();
-            }
+            // RequiredTools is already managed by the structured tool requirement rows
+            // Clean up empty entries
+            _editTemplate.RequiredTools = _editTemplate.RequiredTools
+                .Where(tr => !string.IsNullOrEmpty(tr.ExactItemTag) || !string.IsNullOrEmpty(tr.RequiredForm))
+                .ToList();
 
             if (_isCreating)
                 await TemplateApi.CreateAsync(_editTemplate);
@@ -1940,89 +1980,67 @@
         });
     }
 
-    // ==================== Tool Picker (Template Modal) ====================
+    // ==================== Tool Requirements ====================
 
-    private void OpenToolPicker()
+    private static string DescribeToolReq(ToolRequirementDto tr)
     {
-        _toolPickerOpen = true;
-        _toolPickerSearch = "";
-        _toolPickerResults = [];
+        if (!string.IsNullOrEmpty(tr.ExactItemTag))
+            return tr.ExactItemTag;
+
+        string desc = tr.RequiredForm ?? "Any tool";
+        if (!string.IsNullOrEmpty(tr.RequiredMaterial))
+            desc += $" ({tr.RequiredMaterial})";
+        if (tr.MinQuality.HasValue)
+            desc += $" Q>={tr.MinQuality}";
+        return desc;
     }
 
-    private void OnToolPickerInput(ChangeEventArgs e)
+    // Template modal
+    private void AddToolRequirement()
     {
-        _toolPickerSearch = e.Value?.ToString() ?? "";
+        _editTemplate.RequiredTools.Add(new ToolRequirementDto());
+    }
 
-        _toolDebounceTimer?.Dispose();
-
-        if (_toolPickerSearch.Length < 2)
+    private void ToggleToolReqMode(int index, bool useExactTag)
+    {
+        if (index < 0 || index >= _editTemplate.RequiredTools.Count) return;
+        ToolRequirementDto tr = _editTemplate.RequiredTools[index];
+        if (useExactTag)
         {
-            _toolPickerResults = [];
-            _toolPickerLoading = false;
-            return;
+            tr.RequiredForm = null;
+            tr.RequiredMaterial = null;
+            tr.ExactItemTag = "";
         }
-
-        _toolPickerLoading = true;
-        string searchText = _toolPickerSearch;
-
-        _toolDebounceTimer = new System.Threading.Timer(async _ =>
+        else
         {
-            try
-            {
-                PagedResult<ItemBlueprintDto> result = await ItemApi.GetAllAsync(searchText, 1, 50);
-                await InvokeAsync(() =>
-                {
-                    if (_toolPickerSearch == searchText)
-                    {
-                        _toolPickerResults = result.Items
-                            .Where(i => !string.IsNullOrEmpty(i.ItemForm) && i.ItemForm.StartsWith("Tool", StringComparison.OrdinalIgnoreCase))
-                            .Where(i => !_editTemplate.RequiredTools.Contains(i.ItemTag))
-                            .ToList();
-                        _toolPickerLoading = false;
-                        StateHasChanged();
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning(ex, "Tool picker search failed");
-                await InvokeAsync(() =>
-                {
-                    _toolPickerLoading = false;
-                    _toolPickerResults = [];
-                    StateHasChanged();
-                });
-            }
-        }, null, 300, Timeout.Infinite);
-    }
-
-    private void AddToolToTemplate(string itemTag)
-    {
-        if (!_editTemplate.RequiredTools.Contains(itemTag))
-        {
-            _editTemplate.RequiredTools.Add(itemTag);
+            tr.ExactItemTag = null;
+            tr.RequiredForm = "";
+            tr.RequiredMaterial = null;
         }
-        _toolPickerSearch = "";
-        _toolPickerResults = [];
-        _toolPickerOpen = false;
     }
 
-    private void RemoveToolFromTemplate(string itemTag)
+    // Recipe modal
+    private void AddRecipeToolRequirement()
     {
-        _editTemplate.RequiredTools.Remove(itemTag);
+        _editRecipe.RequiredTools.Add(new ToolRequirementDto());
     }
 
-    private async Task DismissToolPickerDelayed()
+    private void ToggleRecipeToolReqMode(int index, bool useExactTag)
     {
-        await Task.Delay(200);
-        await InvokeAsync(() =>
+        if (index < 0 || index >= _editRecipe.RequiredTools.Count) return;
+        ToolRequirementDto tr = _editRecipe.RequiredTools[index];
+        if (useExactTag)
         {
-            _toolPickerOpen = false;
-            _toolPickerSearch = "";
-            _toolPickerResults = [];
-            _toolPickerLoading = false;
-            StateHasChanged();
-        });
+            tr.RequiredForm = null;
+            tr.RequiredMaterial = null;
+            tr.ExactItemTag = "";
+        }
+        else
+        {
+            tr.ExactItemTag = null;
+            tr.RequiredForm = "";
+            tr.RequiredMaterial = null;
+        }
     }
 
     private async Task DismissPickerDelayed()
@@ -2039,7 +2057,6 @@
     public void Dispose()
     {
         _debounceTimer?.Dispose();
-        _toolDebounceTimer?.Dispose();
     }
 }
 
@@ -2119,36 +2136,10 @@
         gap: 6px;
     }
 
-    .tool-chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-    }
-
-    .tool-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        background: rgba(201,168,76,0.15);
-        color: var(--accent);
-        border: 1px solid rgba(201,168,76,0.3);
-        border-radius: 4px;
-        padding: 2px 8px;
-        font-size: 0.8rem;
-        font-weight: 500;
-    }
-
-    .tool-chip-remove {
-        background: none;
-        border: none;
-        color: var(--text-secondary);
-        cursor: pointer;
-        padding: 0 2px;
-        font-size: 1rem;
-        line-height: 1;
-    }
-
-    .tool-chip-remove:hover {
-        color: var(--danger, #dc3545);
+    .tool-req-card {
+        background: rgba(201,168,76,0.06);
+        border: 1px solid rgba(201,168,76,0.2);
+        border-radius: 6px;
+        padding: 8px 10px;
     }
 </style>
