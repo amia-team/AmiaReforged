@@ -99,6 +99,7 @@ public class ItemController
         IItemDefinitionRepository repo = ResolveRepository();
         ItemBlueprint blueprint = FromDto(dto);
         repo.AddItemDefinition(blueprint);
+        InvalidateExpander();
 
         return new ApiResult(201, ToDto(blueprint));
     }
@@ -134,6 +135,7 @@ public class ItemController
 
         ItemBlueprint blueprint = FromDto(dto);
         repo.AddItemDefinition(blueprint);
+        InvalidateExpander();
 
         return new ApiResult(200, ToDto(blueprint));
     }
@@ -163,6 +165,7 @@ public class ItemController
                 "Not implemented", "Delete is only supported with database-backed repositories")));
         }
 
+        InvalidateExpander();
         return await Task.FromResult(new ApiResult(204, new { message = "Deleted" }));
     }
 
@@ -327,6 +330,32 @@ public class ItemController
         return null;
     }
 
+    /// <summary>
+    /// Get the expanded concrete items for a specific template blueprint.
+    /// GET /api/worldengine/items/{tag}/expanded
+    /// </summary>
+    [HttpGet("/api/worldengine/items/{tag}/expanded")]
+    public static async Task<ApiResult> GetExpanded(RouteContext ctx)
+    {
+        string tag = ctx.GetRouteValue("tag");
+        ItemBlueprintExpander? expander = AnvilCore.GetService<ItemBlueprintExpander>();
+
+        if (expander == null)
+        {
+            return await Task.FromResult(new ApiResult(503, new ErrorResponse(
+                "Service unavailable", "ItemBlueprintExpander is not available")));
+        }
+
+        List<ItemBlueprint> expanded = expander.GetExpandedItemsForTemplate(tag);
+        return await Task.FromResult(new ApiResult(200, expanded.Select(ToDto).ToArray()));
+    }
+
+    private static void InvalidateExpander()
+    {
+        ItemBlueprintExpander? expander = AnvilCore.GetService<ItemBlueprintExpander>();
+        expander?.Invalidate();
+    }
+
     private static object ToDto(ItemBlueprint bp)
     {
         return new
@@ -357,7 +386,29 @@ public class ItemController
             bp.LocalVariables,
             bp.BaseValue,
             bp.WeightIncreaseConstant,
-            bp.SourceFile
+            bp.SourceFile,
+            Variants = bp.Variants?.Select(v => new
+            {
+                Material = v.Material.ToString(),
+                Appearance = new
+                {
+                    v.Appearance.ModelType,
+                    v.Appearance.SimpleModelNumber,
+                    Data = v.Appearance.Data != null
+                        ? new
+                        {
+                            v.Appearance.Data.TopPartModel,
+                            v.Appearance.Data.MiddlePartModel,
+                            v.Appearance.Data.BottomPartModel,
+                            v.Appearance.Data.TopPartColor,
+                            v.Appearance.Data.MiddlePartColor,
+                            v.Appearance.Data.BottomPartColor
+                        }
+                        : null
+                },
+                v.BaseValueOverride
+            }).ToArray(),
+            IsTemplate = bp.IsTemplate
         };
     }
 
@@ -386,6 +437,34 @@ public class ItemController
             dto.Appearance?.SimpleModelNumber,
             weaponData);
 
+        List<MaterialVariant>? variants = dto.Variants?.Select(v =>
+        {
+            Enum.TryParse<MaterialEnum>(v.Material, true, out MaterialEnum mat);
+            WeaponPartData? vWeaponData = null;
+            if (v.Appearance?.Data != null)
+            {
+                vWeaponData = new WeaponPartData(
+                    v.Appearance.Data.TopPartModel,
+                    v.Appearance.Data.MiddlePartModel,
+                    v.Appearance.Data.BottomPartModel,
+                    v.Appearance.Data.TopPartColor,
+                    v.Appearance.Data.MiddlePartColor,
+                    v.Appearance.Data.BottomPartColor);
+            }
+
+            AppearanceData vAppearance = new AppearanceData(
+                v.Appearance?.ModelType ?? 0,
+                v.Appearance?.SimpleModelNumber,
+                vWeaponData);
+
+            return new MaterialVariant
+            {
+                Material = mat,
+                Appearance = vAppearance,
+                BaseValueOverride = v.BaseValueOverride
+            };
+        }).ToList();
+
         return new ItemBlueprint(
             ResRef: dto.ResRef,
             ItemTag: dto.ItemTag,
@@ -399,7 +478,8 @@ public class ItemController
             BaseValue: dto.BaseValue,
             WeightIncreaseConstant: dto.WeightIncreaseConstant)
         {
-            SourceFile = dto.SourceFile
+            SourceFile = dto.SourceFile,
+            Variants = variants
         };
     }
 
@@ -430,6 +510,14 @@ public class ItemController
         public int BaseValue { get; init; } = 1;
         public int WeightIncreaseConstant { get; init; } = -1;
         public string? SourceFile { get; init; }
+        public List<MaterialVariantDto>? Variants { get; init; }
+    }
+
+    private record MaterialVariantDto
+    {
+        public string Material { get; init; } = string.Empty;
+        public AppearanceDto? Appearance { get; init; }
+        public int? BaseValueOverride { get; init; }
     }
 
     private record LocalVariableDto

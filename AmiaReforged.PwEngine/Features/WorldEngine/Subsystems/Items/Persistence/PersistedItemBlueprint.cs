@@ -57,6 +57,12 @@ public class PersistedItemBlueprint
     /// </summary>
     public string? SourceFile { get; set; }
 
+    /// <summary>
+    /// Material variant definitions, stored as JSONB array. Nullable.
+    /// When populated, this item serves as a template for the <see cref="ItemBlueprintExpander"/>.
+    /// </summary>
+    public string? VariantsJson { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

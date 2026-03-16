@@ -15,6 +15,15 @@ public class ItemBlueprintDto
     public List<LocalVariableDto>? LocalVariables { get; set; }
     public int BaseValue { get; set; } = 1;
     public int WeightIncreaseConstant { get; set; } = -1;
+    public List<MaterialVariantDto>? Variants { get; set; }
+    public bool IsTemplate { get; set; }
+}
+
+public class MaterialVariantDto
+{
+    public string Material { get; set; } = string.Empty;
+    public AppearanceDataDto? Appearance { get; set; }
+    public int? BaseValueOverride { get; set; }
 }
 
 public class LocalVariableDto

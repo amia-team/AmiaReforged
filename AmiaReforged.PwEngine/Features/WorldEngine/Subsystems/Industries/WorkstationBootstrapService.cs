@@ -1,6 +1,7 @@
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.Nui;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -28,6 +29,7 @@ public sealed class WorkstationBootstrapService
     private readonly IWorkstationRepository _workstationRepository;
     private readonly WindowDirector _windowDirector;
     private readonly RecipeTemplateExpander _recipeTemplateExpander;
+    private readonly ItemBlueprintExpander _itemBlueprintExpander;
 
     /// <summary>
     /// Tracks which placeable object IDs have already been wired to prevent duplicate subscriptions.
@@ -42,11 +44,13 @@ public sealed class WorkstationBootstrapService
     public WorkstationBootstrapService(
         IWorkstationRepository workstationRepository,
         WindowDirector windowDirector,
-        RecipeTemplateExpander recipeTemplateExpander)
+        RecipeTemplateExpander recipeTemplateExpander,
+        ItemBlueprintExpander itemBlueprintExpander)
     {
         _workstationRepository = workstationRepository;
         _windowDirector = windowDirector;
         _recipeTemplateExpander = recipeTemplateExpander;
+        _itemBlueprintExpander = itemBlueprintExpander;
 
         NwModule.Instance.OnModuleLoad += HandleModuleLoad;
     }
@@ -56,6 +60,12 @@ public sealed class WorkstationBootstrapService
         try
         {
             RegisterWorkstations();
+
+            // Expand item blueprint templates FIRST so that concrete variant items
+            // are available in the repository when RecipeTemplateExpander runs.
+            _itemBlueprintExpander.ExpandAll();
+            Log.Info("Item blueprint templates expanded at module load.");
+
             _recipeTemplateExpander.ExpandAll();
             Log.Info("Recipe templates expanded at module load.");
         }

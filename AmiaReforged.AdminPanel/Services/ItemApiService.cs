@@ -76,6 +76,12 @@ public class ItemApiService
         return await PostAsync<ImportResult>($"{ItemsBase}/import", jsonContent, raw: true);
     }
 
+    public async Task<List<ItemBlueprintDto>> GetExpandedAsync(string tag)
+    {
+        return await GetAsync<List<ItemBlueprintDto>>($"{ItemsBase}/{Uri.EscapeDataString(tag)}/expanded")
+               ?? new List<ItemBlueprintDto>();
+    }
+
     public async Task<string> ExportJsonAsync(string? search = null)
     {
         string url = $"{ItemsBase}/export";

@@ -35,6 +35,7 @@ public static class ItemBlueprintMapper
                 ? JsonSerializer.Serialize(blueprint.LocalVariables, JsonOptions)
                 : null,
             SourceFile = blueprint.SourceFile,
+            VariantsJson = SerializeVariants(blueprint.Variants),
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -79,7 +80,8 @@ public static class ItemBlueprintMapper
             BaseValue: entity.BaseValue,
             WeightIncreaseConstant: entity.WeightIncreaseConstant)
         {
-            SourceFile = entity.SourceFile
+            SourceFile = entity.SourceFile,
+            Variants = DeserializeVariants(entity.VariantsJson)
         };
     }
 
@@ -102,6 +104,56 @@ public static class ItemBlueprintMapper
             ? JsonSerializer.Serialize(blueprint.LocalVariables, JsonOptions)
             : null;
         entity.SourceFile = blueprint.SourceFile;
+        entity.VariantsJson = SerializeVariants(blueprint.Variants);
         entity.UpdatedAt = DateTime.UtcNow;
+    }
+
+    // ==================== Variant Serialization ====================
+
+    private class MaterialVariantJsonDto
+    {
+        public string Material { get; set; } = string.Empty;
+        public AppearanceData Appearance { get; set; } = new(0, null, null);
+        public int? BaseValueOverride { get; set; }
+    }
+
+    private static string? SerializeVariants(List<MaterialVariant>? variants)
+    {
+        if (variants == null || variants.Count == 0) return null;
+
+        List<MaterialVariantJsonDto> dtos = variants.Select(v => new MaterialVariantJsonDto
+        {
+            Material = v.Material.ToString(),
+            Appearance = v.Appearance,
+            BaseValueOverride = v.BaseValueOverride
+        }).ToList();
+
+        return JsonSerializer.Serialize(dtos, JsonOptions);
+    }
+
+    private static List<MaterialVariant>? DeserializeVariants(string? json)
+    {
+        if (string.IsNullOrEmpty(json)) return null;
+
+        try
+        {
+            List<MaterialVariantJsonDto>? dtos = JsonSerializer.Deserialize<List<MaterialVariantJsonDto>>(json, JsonOptions);
+            if (dtos == null || dtos.Count == 0) return null;
+
+            return dtos.Select(d =>
+            {
+                Enum.TryParse<MaterialEnum>(d.Material, true, out MaterialEnum mat);
+                return new MaterialVariant
+                {
+                    Material = mat,
+                    Appearance = d.Appearance,
+                    BaseValueOverride = d.BaseValueOverride
+                };
+            }).ToList();
+        }
+        catch
+        {
+            return null;
+        }
     }
 }
