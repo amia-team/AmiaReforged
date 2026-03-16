@@ -52,19 +52,22 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
     private readonly ICharacterKnowledgeRepository _knowledgeRepository;
     private readonly ICraftingProcessor _craftingProcessor;
     private readonly IKnowledgeProgressionService _progressionService;
+    private readonly RecipeTemplateExpander _templateExpander;
 
     public CraftItemHandler(
         IIndustryRepository industryRepository,
         IIndustryMembershipRepository membershipRepository,
         ICharacterKnowledgeRepository knowledgeRepository,
         ICraftingProcessor craftingProcessor,
-        IKnowledgeProgressionService progressionService)
+        IKnowledgeProgressionService progressionService,
+        RecipeTemplateExpander templateExpander)
     {
         _industryRepository = industryRepository;
         _membershipRepository = membershipRepository;
         _knowledgeRepository = knowledgeRepository;
         _craftingProcessor = craftingProcessor;
         _progressionService = progressionService;
+        _templateExpander = templateExpander;
     }
 
     public async Task<CommandResult> HandleAsync(CraftItemCommand command,
@@ -78,6 +81,11 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
         }
 
         Recipe? recipe = industry.Recipes.FirstOrDefault(r => r.RecipeId == command.RecipeId);
+
+        // Fall back to template-expanded recipes (cached in memory by RecipeTemplateExpander)
+        recipe ??= _templateExpander.GetExpandedRecipes(command.IndustryTag)
+            .FirstOrDefault(r => r.RecipeId == command.RecipeId);
+
         if (recipe == null)
         {
             return CommandResult.Fail(
