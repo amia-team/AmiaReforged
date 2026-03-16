@@ -56,6 +56,12 @@ public class TestCharacter(
                       && string.Equals(e.TargetTag, interactionTag, StringComparison.OrdinalIgnoreCase));
     }
 
+    public KnowledgeProgression GetProgression()
+    {
+        // TODO: Implement progression for test character if needed in future tests.
+        return new KnowledgeProgression();
+    }
+
     /// <inheritdoc />
     public List<CraftingModifier> CraftingModifiersForRecipe(string recipeId, string industryTag)
     {
