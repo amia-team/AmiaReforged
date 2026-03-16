@@ -1025,7 +1025,9 @@
     {
         if (_activeVariantMaterialDropdown == index && _variantMaterialSearch.TryGetValue(index, out string? search))
             return search;
-        return _editItem.Variants?[index].Material ?? "";
+        string? material = _editItem.Variants?[index].Material;
+        if (string.IsNullOrEmpty(material)) return "";
+        return _allMaterials.FirstOrDefault(m => m.Value == material)?.Label ?? material;
     }
 
     private void OnVariantMaterialSearchInput(int index, ChangeEventArgs e)
@@ -1039,8 +1041,8 @@
     private void OnVariantMaterialFocus(int index)
     {
         _activeVariantMaterialDropdown = index;
-        string currentText = _variantMaterialSearch.GetValueOrDefault(index, _editItem.Variants?[index].Material ?? "");
-        RefreshFilteredVariantMaterials(currentText);
+        _variantMaterialSearch[index] = "";
+        RefreshFilteredVariantMaterials("");
     }
 
     private void SelectVariantMaterial(int index, string materialValue)
@@ -1070,6 +1072,7 @@
         _filteredVariantMaterials = _allMaterials
             .Where(m => string.IsNullOrEmpty(search) ||
                         m.Label.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                        m.Value.Contains(search, StringComparison.OrdinalIgnoreCase) ||
                         (m.Category ?? "").Contains(search, StringComparison.OrdinalIgnoreCase))
             .OrderBy(m => m.Category ?? "ZZZ")
             .ThenBy(m => m.Label)
