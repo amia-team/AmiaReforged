@@ -822,7 +822,37 @@
                 </div>
                 <div class="form-group" style="flex:1">
                     <label>Industry Tag</label>
-                    <input class="form-control" @bind="_editTemplate.IndustryTag" placeholder="e.g. woodworking" />
+                    <div class="item-picker-wrapper">
+                        <input class="form-control"
+                               value="@(_industryPickerOpen ? _industryPickerSearch : _editTemplate.IndustryTag)"
+                               @onfocus="() => OpenIndustryPicker()"
+                               @oninput="OnIndustryPickerInput"
+                               @onblur="DismissIndustryPickerDelayed"
+                               placeholder="Search industries..." />
+                        @if (!string.IsNullOrEmpty(_editTemplate.IndustryTag) && !_industryPickerOpen)
+                        {
+                            <span class="item-picker-tag-badge">@_editTemplate.IndustryTag</span>
+                        }
+                        @if (_industryPickerOpen)
+                        {
+                            <div class="item-picker-dropdown">
+                                @if (_filteredIndustries.Count == 0)
+                                {
+                                    <div class="item-picker-status">No industries found</div>
+                                }
+                                else
+                                {
+                                    @foreach (IndustryDefinitionDto ind in _filteredIndustries)
+                                    {
+                                        <div class="item-picker-item" @onmousedown="() => SelectIndustryForTemplate(ind.Tag)">
+                                            <div class="item-picker-name">@ind.Name</div>
+                                            <div class="item-picker-detail">@ind.Tag</div>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
             <div class="form-group">
@@ -841,8 +871,56 @@
                     </select>
                 </div>
                 <div class="form-group" style="flex:1">
-                    <label>Required Tools <small style="color:var(--text-secondary)">(comma-separated item tags)</small></label>
-                    <input class="form-control" @bind="_editTemplateToolsText" placeholder="e.g. smiths_hammer, tongs" />
+                    <label>Required Tools</label>
+                    <div class="tool-picker-wrapper">
+                        @if (_editTemplate.RequiredTools.Count > 0)
+                        {
+                            <div class="tool-chips">
+                                @foreach (string tool in _editTemplate.RequiredTools)
+                                {
+                                    <span class="tool-chip">
+                                        @tool
+                                        <button type="button" class="tool-chip-remove" @onclick="() => RemoveToolFromTemplate(tool)">&times;</button>
+                                    </span>
+                                }
+                            </div>
+                        }
+                        <div class="item-picker-wrapper">
+                            <input class="form-control form-control-sm"
+                                   value="@_toolPickerSearch"
+                                   @onfocus="() => OpenToolPicker()"
+                                   @oninput="OnToolPickerInput"
+                                   @onblur="DismissToolPickerDelayed"
+                                   placeholder="Search tools to add..." />
+                            @if (_toolPickerOpen)
+                            {
+                                <div class="item-picker-dropdown">
+                                    @if (_toolPickerLoading)
+                                    {
+                                        <div class="item-picker-status">Searching...</div>
+                                    }
+                                    else if (_toolPickerResults.Count == 0 && _toolPickerSearch.Length >= 2)
+                                    {
+                                        <div class="item-picker-status">No tool items found</div>
+                                    }
+                                    else if (_toolPickerSearch.Length < 2)
+                                    {
+                                        <div class="item-picker-status">Type 2+ characters to search</div>
+                                    }
+                                    else
+                                    {
+                                        @foreach (ItemBlueprintDto item in _toolPickerResults)
+                                        {
+                                            <div class="item-picker-item" @onmousedown="() => AddToolToTemplate(item.ItemTag)">
+                                                <div class="item-picker-name">@item.Name</div>
+                                                <div class="item-picker-detail">@item.ItemTag — @item.ItemForm</div>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="form-row" style="display:flex;gap:10px">
@@ -1049,6 +1127,18 @@
     private string _editTemplateKnowledgeText = "";
     private string _editTemplateToolsText = "";
     private string? _originalTemplateTag;
+
+    // Industry picker for template modal
+    private bool _industryPickerOpen;
+    private string _industryPickerSearch = "";
+    private List<IndustryDefinitionDto> _filteredIndustries = [];
+
+    // Tool picker for template modal
+    private bool _toolPickerOpen;
+    private string _toolPickerSearch = "";
+    private List<ItemBlueprintDto> _toolPickerResults = [];
+    private bool _toolPickerLoading;
+    private System.Threading.Timer? _toolDebounceTimer;
     private List<EnumOptionDto> _templateMaterialCategories = [];
     private List<EnumOptionDto> _templateItemForms = [];
 
@@ -1571,6 +1661,10 @@
         _editTemplateKnowledgeText = "";
         _editTemplateToolsText = "";
         _originalTemplateTag = null;
+        _industryPickerOpen = false;
+        _industryPickerSearch = "";
+        _toolPickerOpen = false;
+        _toolPickerSearch = "";
         _showTemplateModal = true;
     }
 
@@ -1590,6 +1684,10 @@
             _editTemplateKnowledgeText = string.Join(", ", template.RequiredKnowledge);
             _editTemplateToolsText = string.Join(", ", template.RequiredTools);
             _originalTemplateTag = tag;
+            _industryPickerOpen = false;
+            _industryPickerSearch = "";
+            _toolPickerOpen = false;
+            _toolPickerSearch = "";
             _showTemplateModal = true;
         }
         catch (Exception ex)
@@ -1606,9 +1704,14 @@
             _editTemplate.RequiredKnowledge = _editTemplateKnowledgeText
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .ToList();
-            _editTemplate.RequiredTools = _editTemplateToolsText
-                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .ToList();
+            // RequiredTools is already managed by the tool picker; no need to parse text
+            // Keep _editTemplateToolsText sync as fallback
+            if (_editTemplate.RequiredTools.Count == 0 && !string.IsNullOrWhiteSpace(_editTemplateToolsText))
+            {
+                _editTemplate.RequiredTools = _editTemplateToolsText
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .ToList();
+            }
 
             if (_isCreating)
                 await TemplateApi.CreateAsync(_editTemplate);
@@ -1787,6 +1890,141 @@
         _itemPickerLoading = false;
     }
 
+    // ==================== Industry Picker (Template Modal) ====================
+
+    private void OpenIndustryPicker()
+    {
+        _industryPickerOpen = true;
+        _industryPickerSearch = _editTemplate.IndustryTag ?? "";
+        FilterIndustries();
+    }
+
+    private void OnIndustryPickerInput(ChangeEventArgs e)
+    {
+        _industryPickerSearch = e.Value?.ToString() ?? "";
+        FilterIndustries();
+    }
+
+    private void FilterIndustries()
+    {
+        if (string.IsNullOrWhiteSpace(_industryPickerSearch))
+        {
+            _filteredIndustries = _industries.Take(20).ToList();
+        }
+        else
+        {
+            string search = _industryPickerSearch.ToLowerInvariant();
+            _filteredIndustries = _industries
+                .Where(i => i.Tag.Contains(search, StringComparison.OrdinalIgnoreCase)
+                         || i.Name.Contains(search, StringComparison.OrdinalIgnoreCase))
+                .Take(20)
+                .ToList();
+        }
+    }
+
+    private void SelectIndustryForTemplate(string tag)
+    {
+        _editTemplate.IndustryTag = tag;
+        _industryPickerOpen = false;
+        _industryPickerSearch = "";
+    }
+
+    private async Task DismissIndustryPickerDelayed()
+    {
+        await Task.Delay(200);
+        await InvokeAsync(() =>
+        {
+            _industryPickerOpen = false;
+            _industryPickerSearch = "";
+            StateHasChanged();
+        });
+    }
+
+    // ==================== Tool Picker (Template Modal) ====================
+
+    private void OpenToolPicker()
+    {
+        _toolPickerOpen = true;
+        _toolPickerSearch = "";
+        _toolPickerResults = [];
+    }
+
+    private void OnToolPickerInput(ChangeEventArgs e)
+    {
+        _toolPickerSearch = e.Value?.ToString() ?? "";
+
+        _toolDebounceTimer?.Dispose();
+
+        if (_toolPickerSearch.Length < 2)
+        {
+            _toolPickerResults = [];
+            _toolPickerLoading = false;
+            return;
+        }
+
+        _toolPickerLoading = true;
+        string searchText = _toolPickerSearch;
+
+        _toolDebounceTimer = new System.Threading.Timer(async _ =>
+        {
+            try
+            {
+                PagedResult<ItemBlueprintDto> result = await ItemApi.GetAllAsync(searchText, 1, 50);
+                await InvokeAsync(() =>
+                {
+                    if (_toolPickerSearch == searchText)
+                    {
+                        _toolPickerResults = result.Items
+                            .Where(i => !string.IsNullOrEmpty(i.ItemForm) && i.ItemForm.StartsWith("Tool", StringComparison.OrdinalIgnoreCase))
+                            .Where(i => !_editTemplate.RequiredTools.Contains(i.ItemTag))
+                            .ToList();
+                        _toolPickerLoading = false;
+                        StateHasChanged();
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Tool picker search failed");
+                await InvokeAsync(() =>
+                {
+                    _toolPickerLoading = false;
+                    _toolPickerResults = [];
+                    StateHasChanged();
+                });
+            }
+        }, null, 300, Timeout.Infinite);
+    }
+
+    private void AddToolToTemplate(string itemTag)
+    {
+        if (!_editTemplate.RequiredTools.Contains(itemTag))
+        {
+            _editTemplate.RequiredTools.Add(itemTag);
+        }
+        _toolPickerSearch = "";
+        _toolPickerResults = [];
+        _toolPickerOpen = false;
+    }
+
+    private void RemoveToolFromTemplate(string itemTag)
+    {
+        _editTemplate.RequiredTools.Remove(itemTag);
+    }
+
+    private async Task DismissToolPickerDelayed()
+    {
+        await Task.Delay(200);
+        await InvokeAsync(() =>
+        {
+            _toolPickerOpen = false;
+            _toolPickerSearch = "";
+            _toolPickerResults = [];
+            _toolPickerLoading = false;
+            StateHasChanged();
+        });
+    }
+
     private async Task DismissPickerDelayed()
     {
         // Short delay so @onmousedown on dropdown items fires before the blur dismisses the picker
@@ -1801,6 +2039,7 @@
     public void Dispose()
     {
         _debounceTimer?.Dispose();
+        _toolDebounceTimer?.Dispose();
     }
 }
 
@@ -1872,5 +2111,44 @@
         padding: 1px 6px;
         border-radius: 3px;
         pointer-events: none;
+    }
+
+    .tool-picker-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .tool-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .tool-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: rgba(201,168,76,0.15);
+        color: var(--accent);
+        border: 1px solid rgba(201,168,76,0.3);
+        border-radius: 4px;
+        padding: 2px 8px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .tool-chip-remove {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 0 2px;
+        font-size: 1rem;
+        line-height: 1;
+    }
+
+    .tool-chip-remove:hover {
+        color: var(--danger, #dc3545);
     }
 </style>
