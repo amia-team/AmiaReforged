@@ -115,7 +115,11 @@ public sealed class MineralHarvestStrategy(
                             presenter.Complete();
                         }
 
-                        player.FloatingTextString($"This resource has {node.Instance.Uses} uses left.");
+                        // Sync SpawnedNode's instance with the DB-updated value
+                        int remaining = result.Data?.GetValueOrDefault("remainingUses") is int ru ? ru : node.Instance.Uses;
+                        node.Instance.Uses = remaining;
+
+                        player.FloatingTextString($"This resource has {remaining} uses left.");
                         Effect completeEffect = Effect.VisualEffect(VfxType.ComChunkStoneMedium);
                         plc.Location.ApplyEffect(EffectDuration.Instant, completeEffect);
                         break;
@@ -127,6 +131,7 @@ public sealed class MineralHarvestStrategy(
                             presenter.Complete();
                         }
 
+                        node.Instance.Uses = 0;
                         // Node will be destroyed by event handler
                         break;
                     }

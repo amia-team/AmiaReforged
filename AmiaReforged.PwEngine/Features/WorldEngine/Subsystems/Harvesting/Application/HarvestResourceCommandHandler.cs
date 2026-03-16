@@ -113,7 +113,11 @@ public class HarvestResourceCommandHandler(
             // Remove from cache - node is gone
             _activeHarvestSessions.Remove(command.NodeInstanceId);
 
-            return CommandResult.OkWith("status", "NodeDepleted");
+            return CommandResult.Ok(new Dictionary<string, object>
+            {
+                ["status"] = "NodeDepleted",
+                ["remainingUses"] = 0
+            });
         }
 
         nodeRepository.Update(node);
@@ -122,7 +126,11 @@ public class HarvestResourceCommandHandler(
         // Remove from cache - harvest complete, reset for next harvester
         _activeHarvestSessions.Remove(command.NodeInstanceId);
 
-        return CommandResult.OkWith("status", "Completed");
+        return CommandResult.Ok(new Dictionary<string, object>
+        {
+            ["status"] = "Completed",
+            ["remainingUses"] = node.Uses
+        });
     }
 
     private List<HarvestedItem> CalculateHarvestOutputs(ResourceNodeInstance node, ICharacter character)
