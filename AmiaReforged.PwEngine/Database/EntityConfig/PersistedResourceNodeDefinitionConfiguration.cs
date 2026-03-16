@@ -55,6 +55,10 @@ public class PersistedResourceNodeDefinitionConfiguration : IEntityTypeConfigura
             .HasColumnName("flora_properties")
             .HasColumnType("jsonb");
 
+        builder.Property(e => e.TreePropertiesJson)
+            .HasColumnName("tree_properties")
+            .HasColumnType("jsonb");
+
         builder.Property(e => e.CreatedAt)
             .HasColumnName("created_at");
 

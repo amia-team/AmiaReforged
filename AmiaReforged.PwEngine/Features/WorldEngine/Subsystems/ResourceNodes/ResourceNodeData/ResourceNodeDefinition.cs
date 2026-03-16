@@ -15,7 +15,8 @@ public record ResourceNodeDefinition(
     int BaseHarvestRounds = 0,
     string Name = "",
     string Description = "",
-    FloraProperties? FloraProperties = null)
+    FloraProperties? FloraProperties = null,
+    TreeProperties? TreeProperties = null)
 {
     public EconomyQuality GetQualityForArea(AreaDefinition area)
     {
@@ -53,6 +54,15 @@ public record ResourceNodeDefinition(
 }
 
 public record FloraProperties(Climate PreferredClimate, EconomyQuality RequiredSoilQuality);
+
+/// <summary>
+/// Properties specific to Tree-type nodes. Controls how many logs are
+/// yielded when the tree is felled, adjusted by the node's quality.
+/// </summary>
+/// <param name="MinLogs">Baseline minimum log yield (before quality adjustment).</param>
+/// <param name="MaxLogs">Baseline maximum log yield (before quality adjustment).</param>
+/// <param name="LogItemTag">Item definition tag of the log item to grant.</param>
+public record TreeProperties(int MinLogs, int MaxLogs, string LogItemTag);
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum EconomyQuality

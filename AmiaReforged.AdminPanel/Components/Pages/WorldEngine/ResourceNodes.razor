@@ -304,6 +304,41 @@
                         }
                     </div>
                 }
+
+                @* ===== Tree Properties (conditional) ===== *@
+                @if (string.Equals(_editNode.Type, "Tree", StringComparison.OrdinalIgnoreCase))
+                {
+                    <div style="border:1px solid var(--border-color);border-radius:8px;padding:15px;margin-top:5px">
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <h4 style="margin:0">Tree Properties</h4>
+                            @if (_editNode.TreeProperties == null)
+                            {
+                                <button class="btn btn-sm btn-outline-info" @onclick="AddTreeProperties">Add</button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-outline-danger" @onclick="RemoveTreeProperties">Remove</button>
+                            }
+                        </div>
+                        @if (_editNode.TreeProperties != null)
+                        {
+                            <div style="margin-top:10px;display:flex;gap:10px">
+                                <div class="form-group" style="flex:1">
+                                    <label>Min Logs</label>
+                                    <input class="form-control" type="number" @bind="_editNode.TreeProperties.MinLogs" min="1" />
+                                </div>
+                                <div class="form-group" style="flex:1">
+                                    <label>Max Logs</label>
+                                    <input class="form-control" type="number" @bind="_editNode.TreeProperties.MaxLogs" min="1" />
+                                </div>
+                                <div class="form-group" style="flex:1">
+                                    <label>Log Item Tag</label>
+                                    <input class="form-control" @bind="_editNode.TreeProperties.LogItemTag" placeholder="e.g. log_oak" />
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
             </div>
 
             <div class="form-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
@@ -548,6 +583,12 @@
                 PreferredClimate = node.FloraProperties.PreferredClimate,
                 RequiredSoilQuality = node.FloraProperties.RequiredSoilQuality,
             } : null,
+            TreeProperties = node.TreeProperties != null ? new TreePropertiesDto
+            {
+                MinLogs = node.TreeProperties.MinLogs,
+                MaxLogs = node.TreeProperties.MaxLogs,
+                LogItemTag = node.TreeProperties.LogItemTag,
+            } : null,
         };
         _editOutputs = node.Outputs?.Select(o => new HarvestOutputDto
         {
@@ -615,6 +656,8 @@
     private void RemoveRequirement() => _editNode.Requirement = null;
     private void AddFloraProperties() => _editNode.FloraProperties = new FloraPropertiesDto();
     private void RemoveFloraProperties() => _editNode.FloraProperties = null;
+    private void AddTreeProperties() => _editNode.TreeProperties = new TreePropertiesDto();
+    private void RemoveTreeProperties() => _editNode.TreeProperties = null;
 
     // ===== Import =====
 

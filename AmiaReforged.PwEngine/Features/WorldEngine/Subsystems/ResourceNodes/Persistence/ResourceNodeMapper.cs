@@ -33,6 +33,9 @@ public static class ResourceNodeMapper
             FloraPropertiesJson = definition.FloraProperties != null
                 ? JsonSerializer.Serialize(definition.FloraProperties, JsonOptions)
                 : null,
+            TreePropertiesJson = definition.TreeProperties != null
+                ? JsonSerializer.Serialize(definition.TreeProperties, JsonOptions)
+                : null,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -54,6 +57,12 @@ public static class ResourceNodeMapper
             floraProps = JsonSerializer.Deserialize<FloraProperties>(entity.FloraPropertiesJson, JsonOptions);
         }
 
+        TreeProperties? treeProps = null;
+        if (!string.IsNullOrEmpty(entity.TreePropertiesJson))
+        {
+            treeProps = JsonSerializer.Deserialize<TreeProperties>(entity.TreePropertiesJson, JsonOptions);
+        }
+
         return new ResourceNodeDefinition(
             PlcAppearance: entity.PlcAppearance,
             Type: resourceType,
@@ -64,7 +73,8 @@ public static class ResourceNodeMapper
             BaseHarvestRounds: entity.BaseHarvestRounds,
             Name: entity.Name,
             Description: entity.Description,
-            FloraProperties: floraProps);
+            FloraProperties: floraProps,
+            TreeProperties: treeProps);
     }
 
     /// <summary>
@@ -82,6 +92,9 @@ public static class ResourceNodeMapper
         entity.OutputsJson = JsonSerializer.Serialize(definition.Outputs, JsonOptions);
         entity.FloraPropertiesJson = definition.FloraProperties != null
             ? JsonSerializer.Serialize(definition.FloraProperties, JsonOptions)
+            : null;
+        entity.TreePropertiesJson = definition.TreeProperties != null
+            ? JsonSerializer.Serialize(definition.TreeProperties, JsonOptions)
             : null;
         entity.UpdatedAt = DateTime.UtcNow;
     }

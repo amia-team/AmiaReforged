@@ -1,7 +1,5 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting.Strategies;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.ResourceNodeData;
 using Anvil.API;
 using Anvil.API.Events;
@@ -12,29 +10,26 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.Se
 
 [ServiceBinding(typeof(RuntimeNodeService))]
 public class RuntimeNodeService(
-    RuntimeCharacterService characterService,
-    ICommandHandler<HarvestResourceCommand> harvestCommandHandler)
+    NodeHarvestStrategyRegistry strategyRegistry)
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly Dictionary<Guid, SpawnedNode> _spawnedNodes = new();
 
+    /// <summary>
+    /// Look up a <see cref="SpawnedNode"/> by its placeable UUID.
+    /// Used by harvest strategies to resolve the game-world context.
+    /// </summary>
+    public SpawnedNode? GetSpawnedNode(Guid placeableUuid)
+        => _spawnedNodes.GetValueOrDefault(placeableUuid);
+
     public void RegisterPlaceable(NwPlaceable placeable, ResourceNodeInstance instance)
     {
-        _spawnedNodes.Add(placeable.UUID, new SpawnedNode(placeable, instance));
+        SpawnedNode spawnedNode = new(placeable, instance);
+        _spawnedNodes.Add(placeable.UUID, spawnedNode);
 
-        switch (instance.Definition.Type)
-        {
-            case ResourceType.Undefined:
-                break;
-            case ResourceType.Ore:
-            case ResourceType.Geode:
-            case ResourceType.Boulder:
-            case ResourceType.Tree:
-                placeable.OnPhysicalAttacked += HandleAttackedHarvest;
-                break;
-            case ResourceType.Flora:
-                break;
-        }
+        // Delegate event wiring to the type-specific harvest strategy
+        INodeHarvestStrategy? strategy = strategyRegistry.GetStrategy(instance.Definition.Type);
+        strategy?.WireEvents(placeable, spawnedNode);
 
         NwModule.Instance.SendMessageToAllDMs($"New resource node registered in {placeable.Area?.Name}");
         Log.Info("Node registered.");
@@ -79,8 +74,11 @@ public class RuntimeNodeService(
             NwPlaceable? plc = kvp.Value.Placeable;
             if (plc is not null && plc.IsValid)
             {
-                // Unhook events so the death handler doesn't fire during cleanup
-                plc.OnPhysicalAttacked -= HandleAttackedHarvest;
+                // Unhook harvest strategy events
+                INodeHarvestStrategy? strategy = strategyRegistry.GetStrategy(
+                    kvp.Value.Instance.Definition.Type);
+                strategy?.UnwireEvents(plc);
+
                 plc.OnDeath -= Delete;
                 plc.Destroy();
             }
@@ -89,80 +87,5 @@ public class RuntimeNodeService(
         }
 
         Log.Info($"Cleared {toRemove.Count} runtime node(s) in area {areaResRef}");
-    }
-
-    private void HandleAttackedHarvest(PlaceableEvents.OnPhysicalAttacked obj)
-    {
-        SpawnedNode? node = _spawnedNodes.GetValueOrDefault(obj.Placeable.UUID);
-
-        if (node is null) return;
-
-        NwPlaceable? plc = node.Placeable;
-
-        if (plc is null || !plc.IsValid) return;
-
-        if (obj.Attacker is null) return;
-
-        if (!obj.Attacker.IsPlayerControlled(out NwPlayer? player)) return;
-
-        RuntimeCharacter? character = characterService.GetRuntimeCharacter(obj.Attacker);
-
-        if (character is null) return;
-
-        // Execute harvest command
-        HarvestResourceCommand command = new HarvestResourceCommand(
-            character.GetId().Value,
-            node.Instance.Id
-        );
-
-        // Fire and forget - command handler will publish events
-        _ = NwTask.Run(async () =>
-        {
-            try
-            {
-                // Ensure we're on the main thread for NWN VM calls in the command handler
-                await NwTask.SwitchToMainThread();
-                
-                CommandResult result = await harvestCommandHandler.HandleAsync(command);
-
-                // Ensure we're still on main thread for NWN API calls
-                await NwTask.SwitchToMainThread();
-
-                if (!result.Success)
-                {
-                    player.FloatingTextString(result.ErrorMessage ?? "Harvest failed");
-                    return;
-                }
-
-                string? status = result.Data?.GetValueOrDefault("status") as string;
-
-                switch (status)
-                {
-                    case "InProgress":
-
-                        Effect visualEffect = node.Instance.Definition.Type == ResourceType.Tree
-                            ? Effect.VisualEffect(VfxType.ImpDustExplosion, false, 0.4f)
-                            : Effect.VisualEffect(VfxType.ComChunkStoneMedium);
-
-                        plc.Location.ApplyEffect(EffectDuration.Instant, visualEffect);
-                        break;
-                    case "Completed":
-                        player.FloatingTextString($"This resource has {node.Instance.Uses} uses left.");
-                        Effect completeEffect = node.Instance.Definition.Type == ResourceType.Tree
-                            ? Effect.VisualEffect(VfxType.ImpDustExplosion, false, 0.4f)
-                            : Effect.VisualEffect(VfxType.ComChunkStoneMedium);
-
-                        plc.Location.ApplyEffect(EffectDuration.Instant, completeEffect);
-                        break;
-                    case "NodeDepleted":
-                        // Node will be destroyed by event handler
-                        break;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error handling harvest");
-            }
-        });
     }
 }

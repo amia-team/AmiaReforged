@@ -50,6 +50,11 @@ public class PersistedResourceNodeDefinition
     /// </summary>
     public string? FloraPropertiesJson { get; set; }
 
+    /// <summary>
+    /// Tree-specific properties, stored as JSONB. Null for non-tree types.
+    /// </summary>
+    public string? TreePropertiesJson { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

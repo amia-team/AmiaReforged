@@ -292,6 +292,14 @@ public class ResourceNodeController
                     PreferredClimate = def.FloraProperties.PreferredClimate.ToString(),
                     RequiredSoilQuality = def.FloraProperties.RequiredSoilQuality.ToString()
                 }
+                : null,
+            TreeProperties = def.TreeProperties != null
+                ? new
+                {
+                    def.TreeProperties.MinLogs,
+                    def.TreeProperties.MaxLogs,
+                    def.TreeProperties.LogItemTag
+                }
                 : null
         };
     }
@@ -317,6 +325,15 @@ public class ResourceNodeController
             floraProps = new FloraProperties(climate, soilQuality);
         }
 
+        TreeProperties? treeProps = null;
+        if (dto.TreeProperties != null)
+        {
+            treeProps = new TreeProperties(
+                dto.TreeProperties.MinLogs,
+                dto.TreeProperties.MaxLogs,
+                dto.TreeProperties.LogItemTag ?? string.Empty);
+        }
+
         return new ResourceNodeDefinition(
             PlcAppearance: dto.PlcAppearance,
             Type: resourceType,
@@ -327,7 +344,8 @@ public class ResourceNodeController
             BaseHarvestRounds: dto.BaseHarvestRounds,
             Name: dto.Name ?? string.Empty,
             Description: dto.Description ?? string.Empty,
-            FloraProperties: floraProps);
+            FloraProperties: floraProps,
+            TreeProperties: treeProps);
     }
 
     // DTO classes for request/response
@@ -343,6 +361,7 @@ public class ResourceNodeController
         public RequirementDto? Requirement { get; init; }
         public HarvestOutputDto[]? Outputs { get; init; }
         public FloraPropertiesDto? FloraProperties { get; init; }
+        public TreePropertiesDto? TreeProperties { get; init; }
     }
 
     private record RequirementDto
@@ -362,5 +381,12 @@ public class ResourceNodeController
     {
         public string? PreferredClimate { get; init; }
         public string? RequiredSoilQuality { get; init; }
+    }
+
+    private record TreePropertiesDto
+    {
+        public int MinLogs { get; init; }
+        public int MaxLogs { get; init; }
+        public string? LogItemTag { get; init; }
     }
 }

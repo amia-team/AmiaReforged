@@ -64,6 +64,7 @@ public class ResourceNodeDefinitionDto
     public HarvestContextDto? Requirement { get; set; }
     public HarvestOutputDto[]? Outputs { get; set; }
     public FloraPropertiesDto? FloraProperties { get; set; }
+    public TreePropertiesDto? TreeProperties { get; set; }
 }
 
 public class HarvestContextDto
@@ -83,6 +84,13 @@ public class FloraPropertiesDto
 {
     public string? PreferredClimate { get; set; }
     public string? RequiredSoilQuality { get; set; }
+}
+
+public class TreePropertiesDto
+{
+    public int MinLogs { get; set; } = 1;
+    public int MaxLogs { get; set; } = 3;
+    public string LogItemTag { get; set; } = string.Empty;
 }
 
 // ==================== Common Response DTOs ====================
