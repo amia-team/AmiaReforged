@@ -64,6 +64,33 @@ public class RuntimeNodeService(
         _spawnedNodes.Remove(node.Instance.Id);
     }
 
+    /// <summary>
+    /// Destroy all in-game placeables for nodes in the given area and remove them from the runtime dictionary.
+    /// Must be called before the DB rows are deleted so the placeables don't become orphaned ghosts.
+    /// </summary>
+    public void ClearNodesInArea(string areaResRef)
+    {
+        List<KeyValuePair<Guid, SpawnedNode>> toRemove = _spawnedNodes
+            .Where(kvp => kvp.Value.Instance.Area == areaResRef)
+            .ToList();
+
+        foreach (KeyValuePair<Guid, SpawnedNode> kvp in toRemove)
+        {
+            NwPlaceable? plc = kvp.Value.Placeable;
+            if (plc is not null && plc.IsValid)
+            {
+                // Unhook events so the death handler doesn't fire during cleanup
+                plc.OnPhysicalAttacked -= HandleAttackedHarvest;
+                plc.OnDeath -= Delete;
+                plc.Destroy();
+            }
+
+            _spawnedNodes.Remove(kvp.Key);
+        }
+
+        Log.Info($"Cleared {toRemove.Count} runtime node(s) in area {areaResRef}");
+    }
+
     private void HandleAttackedHarvest(PlaceableEvents.OnPhysicalAttacked obj)
     {
         SpawnedNode? node = _spawnedNodes.GetValueOrDefault(obj.Placeable.UUID);

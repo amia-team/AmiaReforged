@@ -19,6 +19,7 @@ public class ResourceNodeInstanceSetupService(
     IQueryHandler<GetNodesForAreaQuery, List<ResourceNodeInstance>> getNodesQueryHandler,
     IRegionRepository regionRepository,
     ResourceNodeService nodeService,
+    RuntimeNodeService runtimeNodeService,
     TriggerBasedSpawnService triggerSpawnService)
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
@@ -49,7 +50,10 @@ public class ResourceNodeInstanceSetupService(
 
             NwModule.Instance.SendMessageToAllDMs($"PURGING NODES IN {area.Name} . . .");
 
-            // Execute clear command
+            // Destroy in-game placeables and unregister from runtime BEFORE deleting DB rows
+            runtimeNodeService.ClearNodesInArea(area.ResRef);
+
+            // Execute clear command (deletes DB rows)
             ClearAreaNodesCommand command = new ClearAreaNodesCommand(area.ResRef);
             _ = clearNodesCommandHandler.HandleAsync(command).GetAwaiter().GetResult();
         }
