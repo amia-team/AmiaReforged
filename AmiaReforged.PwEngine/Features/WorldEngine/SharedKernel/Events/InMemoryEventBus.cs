@@ -1,13 +1,10 @@
-using Anvil.Services;
-
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 
 /// <summary>
-/// In-memory, synchronous event bus for Phase 3.3.
+/// In-memory, synchronous event bus for testing.
 /// Events are dispatched immediately to all subscribers on the calling thread.
-/// This will be replaced with a Channel-based async implementation in Phase 4.
+/// Not registered as a service — use <see cref="AnvilEventBusService"/> at runtime.
 /// </summary>
-[ServiceBinding(typeof(IEventBus))]
 public class InMemoryEventBus : IEventBus
 {
     private readonly Dictionary<Type, List<Delegate>> _subscribers = new();

@@ -63,7 +63,8 @@ public sealed class HarvestProgressPresenter : ScryPresenter<HarvestProgressView
             Closable = false,
             Resizable = false,
             Collapsed = false,
-            Border = true
+            Transparent = true,
+            Border = false
         };
     }
 
