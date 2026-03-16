@@ -391,4 +391,23 @@ public class DispelService
 
         return false;
     }
+
+    /// <summary>
+    /// Checks for conditions that make the target immune to dispel.
+    /// </summary>
+    /// <param name="targetObject">Target to dispel</param>
+    /// <returns>True if the target is immune to dispel, otherwise false</returns>
+    public bool IsDispelImmune(NwGameObject targetObject)
+    {
+        // Petrified or timestopped objects or objects marked for dispel immune with a local int
+        if (targetObject.GetObjectVariable<LocalVariableInt>("X1_L_IMMUNE_TO_DISPEL").Value == 10
+            || targetObject.ActiveEffects.Any(e => e.Spell?.SpellType == Spell.TimeStop
+                                                   || e.EffectType == EffectType.Petrify))
+        {
+            targetObject.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpGlobeUse));
+            return true;
+        }
+
+        return false;
+    }
 }
