@@ -96,6 +96,8 @@ public sealed class MineralHarvestStrategy(
                             string nodeName = node.Instance.Definition.Name;
                             HarvestProgressView view = new(player, $"Mining {nodeName}");
                             presenter = view.Presenter;
+                            NwPlayer closurePlayer = player;
+                            presenter.OnClosed += () => _activeProgressBars.Remove(closurePlayer);
                             windowDirector.OpenWindow(presenter);
                             _activeProgressBars[player] = presenter;
                         }
@@ -111,7 +113,6 @@ public sealed class MineralHarvestStrategy(
                         if (_activeProgressBars.TryGetValue(player, out HarvestProgressPresenter? presenter))
                         {
                             presenter.Complete();
-                            _activeProgressBars.Remove(player);
                         }
 
                         player.FloatingTextString($"This resource has {node.Instance.Uses} uses left.");
@@ -124,7 +125,6 @@ public sealed class MineralHarvestStrategy(
                         if (_activeProgressBars.TryGetValue(player, out HarvestProgressPresenter? presenter))
                         {
                             presenter.Complete();
-                            _activeProgressBars.Remove(player);
                         }
 
                         // Node will be destroyed by event handler

@@ -117,6 +117,8 @@ public sealed class TreeFellingStrategy(
             {
                 HarvestProgressView view = new(player, $"Chopping {def.Name}");
                 presenter = view.Presenter;
+                NwPlayer closurePlayer = player;
+                presenter.OnClosed += () => _activeProgressBars.Remove(closurePlayer);
                 windowDirector.OpenWindow(presenter);
                 _activeProgressBars[player] = presenter;
             }
@@ -131,7 +133,6 @@ public sealed class TreeFellingStrategy(
         if (_activeProgressBars.TryGetValue(player, out HarvestProgressPresenter? felledPresenter))
         {
             felledPresenter.Complete();
-            _activeProgressBars.Remove(player);
         }
 
         Guid characterId = character.GetId().Value;
