@@ -48,7 +48,7 @@ public enum MaterialEnum
     [MaterialCategory(MaterialCategory.Plant)] Cloth = 33,
     [MaterialCategory(MaterialCategory.Plant)] Cotton = 34,
     [MaterialCategory(MaterialCategory.Plant)] Silk = 35,
-    [MaterialCategory(MaterialCategory.Plant)] Wool = 36,
+    [MaterialCategory(MaterialCategory.Creature)] Wool = 36,
 
     // === Woods ===
     [MaterialCategory(MaterialCategory.Wood)] Wood = 37,
