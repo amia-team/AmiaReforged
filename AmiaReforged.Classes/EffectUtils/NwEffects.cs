@@ -191,6 +191,7 @@ public static class NwEffects
 
         return default;
     }
+    
 
     public static bool IsValidSpellTarget(uint target, int targetType, uint caster)
     {
