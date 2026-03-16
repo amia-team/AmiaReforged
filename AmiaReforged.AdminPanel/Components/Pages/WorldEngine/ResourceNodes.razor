@@ -198,16 +198,31 @@
                     </div>
                 </div>
 
-                <div class="form-row" style="display:flex;gap:10px">
-                    <div class="form-group" style="flex:1">
-                        <label>Uses</label>
-                        <input class="form-control" type="number" @bind="_editNode.Uses" />
+                @{ bool isTree = string.Equals(_editNode.Type, "Tree", StringComparison.OrdinalIgnoreCase); }
+                @{ bool isFlora = string.Equals(_editNode.Type, "Flora", StringComparison.OrdinalIgnoreCase); }
+
+                @if (!isTree && !isFlora)
+                {
+                    <div class="form-row" style="display:flex;gap:10px">
+                        <div class="form-group" style="flex:1">
+                            <label>Uses</label>
+                            <input class="form-control" type="number" @bind="_editNode.Uses" />
+                        </div>
+                        <div class="form-group" style="flex:1">
+                            <label>Base Harvest Rounds</label>
+                            <input class="form-control" type="number" @bind="_editNode.BaseHarvestRounds" />
+                        </div>
                     </div>
-                    <div class="form-group" style="flex:1">
-                        <label>Base Harvest Rounds</label>
-                        <input class="form-control" type="number" @bind="_editNode.BaseHarvestRounds" />
+                }
+                else if (isTree)
+                {
+                    <div class="form-row" style="display:flex;gap:10px">
+                        <div class="form-group" style="flex:1">
+                            <label>Base Harvest Rounds</label>
+                            <input class="form-control" type="number" @bind="_editNode.BaseHarvestRounds" />
+                        </div>
                     </div>
-                </div>
+                }
 
                 @* ===== Harvest Requirement ===== *@
                 <div style="border:1px solid var(--border-color);border-radius:8px;padding:15px;margin-top:5px">
@@ -237,45 +252,48 @@
                     }
                 </div>
 
-                @* ===== Harvest Outputs ===== *@
-                <div style="border:1px solid var(--border-color);border-radius:8px;padding:15px;margin-top:5px">
-                    <div style="display:flex;justify-content:space-between;align-items:center">
-                        <h4 style="margin:0">Harvest Outputs</h4>
-                        <button class="btn btn-sm btn-outline-info" @onclick="AddOutput">+ Add Output</button>
-                    </div>
-                    @if (_editOutputs.Count > 0)
-                    {
-                        <table class="table" style="margin-top:10px">
-                            <thead>
-                                <tr>
-                                    <th>Item Tag</th>
-                                    <th>Quantity</th>
-                                    <th>Chance (%)</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @for (int i = 0; i < _editOutputs.Count; i++)
-                                {
-                                    int idx = i;
+                @* ===== Harvest Outputs (not shown for Tree — uses Tree Properties instead) ===== *@
+                @if (!isTree)
+                {
+                    <div style="border:1px solid var(--border-color);border-radius:8px;padding:15px;margin-top:5px">
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <h4 style="margin:0">Harvest Outputs</h4>
+                            <button class="btn btn-sm btn-outline-info" @onclick="AddOutput">+ Add Output</button>
+                        </div>
+                        @if (_editOutputs.Count > 0)
+                        {
+                            <table class="table" style="margin-top:10px">
+                                <thead>
                                     <tr>
-                                        <td><input class="form-control form-control-sm" @bind="_editOutputs[idx].ItemDefinitionTag" /></td>
-                                        <td><input class="form-control form-control-sm" type="number" @bind="_editOutputs[idx].Quantity" /></td>
-                                        <td><input class="form-control form-control-sm" type="number" @bind="_editOutputs[idx].Chance" min="0" max="100" /></td>
-                                        <td><button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveOutput(idx)">✕</button></td>
+                                        <th>Item Tag</th>
+                                        <th>Quantity</th>
+                                        <th>Chance (%)</th>
+                                        <th></th>
                                     </tr>
-                                }
-                            </tbody>
-                        </table>
-                    }
-                    else
-                    {
-                        <p style="color:var(--text-secondary);font-size:0.85rem;margin-top:8px">No outputs defined.</p>
-                    }
-                </div>
+                                </thead>
+                                <tbody>
+                                    @for (int i = 0; i < _editOutputs.Count; i++)
+                                    {
+                                        int idx = i;
+                                        <tr>
+                                            <td><input class="form-control form-control-sm" @bind="_editOutputs[idx].ItemDefinitionTag" /></td>
+                                            <td><input class="form-control form-control-sm" type="number" @bind="_editOutputs[idx].Quantity" /></td>
+                                            <td><input class="form-control form-control-sm" type="number" @bind="_editOutputs[idx].Chance" min="0" max="100" /></td>
+                                            <td><button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveOutput(idx)">✕</button></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                        else
+                        {
+                            <p style="color:var(--text-secondary);font-size:0.85rem;margin-top:8px">No outputs defined.</p>
+                        }
+                    </div>
+                }
 
                 @* ===== Flora Properties (conditional) ===== *@
-                @if (string.Equals(_editNode.Type, "Flora", StringComparison.OrdinalIgnoreCase))
+                @if (isFlora)
                 {
                     <div style="border:1px solid var(--border-color);border-radius:8px;padding:15px;margin-top:5px">
                         <div style="display:flex;justify-content:space-between;align-items:center">
@@ -306,7 +324,7 @@
                 }
 
                 @* ===== Tree Properties (conditional) ===== *@
-                @if (string.Equals(_editNode.Type, "Tree", StringComparison.OrdinalIgnoreCase))
+                @if (isTree)
                 {
                     <div style="border:1px solid var(--border-color);border-radius:8px;padding:15px;margin-top:5px">
                         <div style="display:flex;justify-content:space-between;align-items:center">
