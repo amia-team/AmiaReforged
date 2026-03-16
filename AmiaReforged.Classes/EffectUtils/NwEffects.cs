@@ -192,13 +192,6 @@ public static class NwEffects
         return default;
     }
 
-    public static int DispelCheck(int dispelCl, int targetEffectCl)
-    {
-        int dispelCheck = d20() + dispelCl - targetEffectCl + 11;
-        if (dispelCheck >= 0) return TRUE;
-        return FALSE;
-    }
-
     public static bool IsValidSpellTarget(uint target, int targetType, uint caster)
     {
         // if dead, not a valid target
@@ -483,11 +476,11 @@ public static class NwEffects
 
         List<Spell> breachList = BreachList.BreachSpells;
         List<Spell> breachableSpellEffects = new();
-        
+
         foreach (Effect effect in creature.ActiveEffects)
         {
             if (effect.Spell is null) continue;
-            
+
             breachableSpellEffects.Add(effect.Spell.SpellType);
         }
 
@@ -501,7 +494,7 @@ public static class NwEffects
             Effect? effectToBreach = creature.ActiveEffects.FirstOrDefault(effect => effect.Spell!.SpellType == spell);
 
             if (effectToBreach == null) return;
-            
+
             creature.RemoveEffect(effectToBreach);
             creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpBreach));
         }

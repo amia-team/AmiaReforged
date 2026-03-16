@@ -383,7 +383,7 @@ public class DispelService
         int aoeCreatorCl = GetCasterLevel(aoeCreator);
 
         // Perform dispel check
-        if (NwEffects.DispelCheck(casterLevel, aoeCreatorCl) == TRUE)
+        if (DispelCheck(casterLevel, aoeCreatorCl))
         {
             DestroyObject(aoeObject);
             return true;
@@ -408,7 +408,7 @@ public class DispelService
         }
 
         // Perform dispel check
-        if (NwEffects.DispelCheck(casterLevel, aoeObject.CasterLevel) != TRUE) return false;
+        if (!DispelCheck(casterLevel, aoeObject.CasterLevel)) return false;
 
         aoeObject.Destroy();
         return true;
@@ -433,4 +433,14 @@ public class DispelService
 
         return false;
     }
+
+    /// <summary>
+    /// Performs a dispel check of D20 + Dispel CL vs. 11 + Effect CL.
+    /// </summary>
+    /// <param name="dispelCl">The dispel CL of the dispel caster</param>
+    /// <param name="targetEffectCl">The effective CL of the target effect being removed</param>
+    /// <returns>True if the dispel check is greater or equal than the opposing check, otherwise false</returns>
+    private static bool DispelCheck(int dispelCl, int targetEffectCl)
+        => d20() + dispelCl >= 11 + targetEffectCl;
+
 }
