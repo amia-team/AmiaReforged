@@ -4,6 +4,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
+using Anvil;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -31,6 +32,7 @@ public sealed class WorkstationCraftingPresenter : ScryPresenter<WorkstationCraf
     [Inject] private Lazy<IIndustrySubsystem>? IndustrySubsystem { get; init; }
     [Inject] private Lazy<RuntimeCharacterService>? CharacterService { get; init; }
     [Inject] private Lazy<ICharacterRepository>? CharacterRepository { get; init; }
+    [Inject] private Lazy<WindowDirector>? Director { get; init; }
 
     public WorkstationCraftingPresenter(
         WorkstationCraftingView view,
@@ -319,9 +321,72 @@ public sealed class WorkstationCraftingPresenter : ScryPresenter<WorkstationCraf
             return;
         }
 
-        _player.SendServerMessage(
-            $"Crafting '{recipe.Name}' is not yet implemented. The process-based crafting system is coming soon!",
-            ColorConstants.Orange);
+        // Resolve character ID
+        CharacterId? characterId = ResolveCharacterId();
+        if (characterId == null)
+        {
+            _player.SendServerMessage("No character key found.", ColorConstants.Orange);
+            return;
+        }
+
+        // Validate ingredients in player inventory
+        string? validationError = ValidateIngredients(recipe);
+        if (validationError != null)
+        {
+            _player.SendServerMessage(validationError, ColorConstants.Orange);
+            return;
+        }
+
+        // Resolve crafting modifiers from character knowledge
+        AggregatedCraftingModifiers modifiers = AggregatedCraftingModifiers.None;
+        if (CharacterRepository?.Value != null)
+        {
+            ICharacter? character = CharacterRepository.Value.GetById(characterId.Value.Value);
+            if (character != null)
+            {
+                List<CraftingModifier> rawModifiers = character.CraftingModifiersForRecipe(
+                    recipe.RecipeId.Value, recipe.IndustryTag.Value);
+                modifiers = AggregatedCraftingModifiers.Aggregate(rawModifiers);
+            }
+        }
+
+        // Close the workstation recipe window
+        RaiseCloseEvent();
+        Close();
+
+        // Open the crafting progress window
+        CraftingProgressView progressView = new(_player, recipe, modifiers, characterId.Value);
+        Director!.Value.OpenWindow(progressView.Presenter);
+    }
+
+    /// <summary>
+    /// Validates that the player has all required ingredients in their inventory.
+    /// Returns null if validation passes, or an error message if it fails.
+    /// </summary>
+    private string? ValidateIngredients(Recipe recipe)
+    {
+        NwCreature? creature = _player.LoginCreature;
+        if (creature == null) return "No character found.";
+
+        List<string> missing = [];
+
+        foreach (Ingredient ingredient in recipe.Ingredients)
+        {
+            // Count how many matching items the player has
+            int available = creature.Inventory.Items
+                .Where(item => item.Tag == ingredient.ItemTag)
+                .Sum(item => item.StackSize);
+
+            if (available < ingredient.Quantity.Value)
+            {
+                int deficit = ingredient.Quantity.Value - available;
+                missing.Add($"{deficit}x {ingredient.ItemTag}");
+            }
+        }
+
+        return missing.Count > 0
+            ? $"Missing ingredients: {string.Join(", ", missing)}"
+            : null;
     }
 
     // --- Helpers ---
