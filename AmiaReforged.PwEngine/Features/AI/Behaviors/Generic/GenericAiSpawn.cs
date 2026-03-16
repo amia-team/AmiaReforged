@@ -64,5 +64,21 @@ public class GenericAiSpawn : IOnSpawnBehavior
 
         // Set AI identifier for compatibility with legacy scripts
         creature.GetObjectVariable<LocalVariableString>("ai").Value = "ds_ai";
+
+        List<NwCreature> nearestCreatures =
+            creature.GetNearestCreatures(CreatureTypeFilter.Perception(PerceptionType.SeenAndHeard))
+                .Where(c => c.IsEnemy(creature)).ToList();
+
+
+        bool isCaster = creature.GetObjectVariable<LocalVariableBool>("is_caster").Value;
+
+        if (isCaster || nearestCreatures.Count <= 0) return;
+
+        state.MarkActive();
+
+        if (nearestCreatures.Count > 0)
+        {
+            Task actionAttackTarget = creature.ActionAttackTarget(nearestCreatures.First());
+        }
     }
 }

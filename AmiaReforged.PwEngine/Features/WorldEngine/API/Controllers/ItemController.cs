@@ -167,6 +167,38 @@ public class ItemController
     }
 
     /// <summary>
+    /// Get available material enums and item forms for UI dropdowns.
+    /// GET /api/worldengine/items/enums
+    /// </summary>
+    [HttpGet("/api/worldengine/items/enums")]
+    public static async Task<ApiResult> GetEnums(RouteContext ctx)
+    {
+        var materials = Enum.GetValues<MaterialEnum>()
+            .Where(m => m != MaterialEnum.None && m != MaterialEnum.Unknown)
+            .Select(m => new
+            {
+                value = m.ToString(),
+                label = m.ToString(),
+                category = m.GetCategory().ToString()
+            });
+
+        var itemForms = Enum.GetValues<ItemForm>()
+            .Where(t => t != ItemForm.None)
+            .Select(t => new
+            {
+                value = t.ToString(),
+                label = t.DisplayName(),
+                group = t.GetGroup().ToString()
+            });
+
+        return await Task.FromResult(new ApiResult(200, new
+        {
+            materials,
+            itemForms
+        }));
+    }
+
+    /// <summary>
     /// Export all item blueprints (optionally filtered) as a JSON array.
     /// GET /api/worldengine/items/export?search=
     /// </summary>

@@ -102,8 +102,8 @@
                             <th>Tag</th>
                             <th>Name</th>
                             <th>Item Category</th>
+                            <th>Materials</th>
                             <th>Base Value</th>
-                            <th>Source</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -115,8 +115,8 @@
                                 <td style="font-family:monospace;font-size:0.9rem">@item.ItemTag</td>
                                 <td>@item.Name</td>
                                 <td>@(item.ItemForm ?? "—")</td>
+                                <td style="font-size:0.85rem">@(item.Materials is { Length: > 0 } ? string.Join(", ", item.Materials) : "—")</td>
                                 <td>@item.BaseValue</td>
-                                <td style="color:var(--text-secondary);font-size:0.85rem">@(item.SourceFile ?? "—")</td>
                                 <td class="actions">
                                     <button class="btn btn-sm btn-secondary" @onclick="() => ShowEditModal(item)">Edit</button>
                                     <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(item)">Delete</button>
@@ -221,15 +221,45 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Materials <small style="color:var(--text-secondary)">(comma-separated)</small></label>
-                    <input class="form-control" value="@(string.Join(", ", _editItem.Materials ?? []))"
-                           @onchange="OnMaterialsChanged" placeholder="e.g. Iron, Wood, Leather" />
-                </div>
-
-                <div class="form-group">
-                    <label>Source File</label>
-                    <input class="form-control" @bind="_editItem.SourceFile" placeholder="e.g. items/weapons.json" />
+                <div class="form-group" style="position:relative">
+                    <label>Materials</label>
+                    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">
+                        @if (_editItem.Materials is { Length: > 0 })
+                        {
+                            @for (int idx = 0; idx < _editItem.Materials.Length; idx++)
+                            {
+                                int i = idx;
+                                string mat = _editItem.Materials[i];
+                                <span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg-secondary);padding:2px 8px;border-radius:12px;font-size:0.85rem">
+                                    @mat
+                                    <button type="button" style="border:none;background:none;color:var(--text-secondary);cursor:pointer;font-size:0.9rem;padding:0 2px" @onclick="() => RemoveMaterial(i)">✕</button>
+                                </span>
+                            }
+                        }
+                    </div>
+                    <div style="position:relative">
+                        <input class="form-control" placeholder="Search materials..." value="@_materialSearch"
+                               @oninput="OnMaterialSearchInput"
+                               @onfocus="OnMaterialSearchFocus" @onblur="DismissMaterialDropdownDelayed" />
+                        @if (_showMaterialDropdown && _filteredMaterials.Count > 0)
+                        {
+                            <div style="position:absolute;top:100%;left:0;right:0;max-height:220px;overflow-y:auto;background:var(--bg-card);border:1px solid var(--border-color);border-radius:6px;z-index:1060;box-shadow:0 4px 12px rgba(0,0,0,0.3)">
+                                @{ string? lastCategory = null; }
+                                @foreach (EnumOptionDto mat in _filteredMaterials)
+                                {
+                                    string cat = mat.Category ?? "Other";
+                                    @if (cat != lastCategory)
+                                    {
+                                        lastCategory = cat;
+                                        <div style="padding:4px 10px;font-size:0.75rem;font-weight:600;color:var(--text-secondary);background:var(--bg-secondary);border-bottom:1px solid var(--border-color)">@cat</div>
+                                    }
+                                    <div style="padding:6px 10px;cursor:pointer;font-size:0.9rem" class="dropdown-item" @onmousedown="() => AddMaterial(mat.Value)">
+                                        @mat.Label
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
                 </div>
 
                 @* ===== Appearance Section ===== *@
@@ -477,11 +507,19 @@
     // ===== Export =====
     private bool _isExporting;
 
+    // ===== Material Dropdown =====
+    private List<EnumOptionDto> _allMaterials = [];
+    private List<EnumOptionDto> _filteredMaterials = [];
+    private string _materialSearch = "";
+    private bool _showMaterialDropdown;
+    private bool _enumsLoaded;
+
     // ===== Lifecycle =====
 
     protected override async Task OnInitializedAsync()
     {
         await RefreshEndpoints();
+        await LoadEnums();
     }
 
     // ===== Endpoint Handling =====
@@ -581,7 +619,6 @@
             BaseItemType = item.BaseItemType,
             BaseValue = item.BaseValue,
             WeightIncreaseConstant = item.WeightIncreaseConstant,
-            SourceFile = item.SourceFile,
             Appearance = item.Appearance != null ? new AppearanceDataDto
             {
                 ModelType = item.Appearance.ModelType,
@@ -690,12 +727,83 @@
         _editItem.Appearance.SimpleModelNumber = int.TryParse(e.Value?.ToString(), out int v) ? v : null;
     }
 
-    private void OnMaterialsChanged(ChangeEventArgs e)
+    // ===== Material Dropdown Helpers =====
+
+    private async Task LoadEnums()
     {
-        string raw = e.Value?.ToString() ?? "";
-        _editItem.Materials = string.IsNullOrWhiteSpace(raw)
-            ? null
-            : raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (_enumsLoaded) return;
+        try
+        {
+            ItemEnumsDto? enums = await Api.GetEnumsAsync();
+            if (enums != null)
+            {
+                _allMaterials = enums.Materials;
+                _enumsLoaded = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Could not load item enums (server may not be selected yet)");
+        }
+    }
+
+    private void OnMaterialSearchInput(ChangeEventArgs e)
+    {
+        _materialSearch = e.Value?.ToString() ?? "";
+        _showMaterialDropdown = true;
+        RefreshFilteredMaterials();
+    }
+
+    private void OnMaterialSearchFocus()
+    {
+        _showMaterialDropdown = true;
+        RefreshFilteredMaterials();
+    }
+
+    private void AddMaterial(string materialValue)
+    {
+        List<string> current = _editItem.Materials?.ToList() ?? new();
+        if (!current.Contains(materialValue))
+        {
+            current.Add(materialValue);
+            _editItem.Materials = current.ToArray();
+        }
+        _materialSearch = "";
+        _showMaterialDropdown = false;
+        RefreshFilteredMaterials();
+    }
+
+    private void RemoveMaterial(int index)
+    {
+        if (_editItem.Materials == null || index < 0 || index >= _editItem.Materials.Length) return;
+        List<string> current = _editItem.Materials.ToList();
+        current.RemoveAt(index);
+        _editItem.Materials = current.Count > 0 ? current.ToArray() : null;
+        RefreshFilteredMaterials();
+    }
+
+    private void RefreshFilteredMaterials()
+    {
+        HashSet<string> selected = new(_editItem.Materials ?? []);
+        _filteredMaterials = _allMaterials
+            .Where(m => !selected.Contains(m.Value))
+            .Where(m => string.IsNullOrEmpty(_materialSearch) ||
+                        m.Label.Contains(_materialSearch, StringComparison.OrdinalIgnoreCase) ||
+                        (m.Category ?? "").Contains(_materialSearch, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(m => m.Category ?? "ZZZ")
+            .ThenBy(m => m.Label)
+            .Take(30)
+            .ToList();
+    }
+
+    private async Task DismissMaterialDropdownDelayed()
+    {
+        await Task.Delay(200);
+        await InvokeAsync(() =>
+        {
+            _showMaterialDropdown = false;
+            StateHasChanged();
+        });
     }
 
     // ===== Import =====

@@ -15,7 +15,6 @@ public class ItemBlueprintDto
     public List<LocalVariableDto>? LocalVariables { get; set; }
     public int BaseValue { get; set; } = 1;
     public int WeightIncreaseConstant { get; set; } = -1;
-    public string? SourceFile { get; set; }
 }
 
 public class LocalVariableDto
@@ -433,6 +432,12 @@ public class TemplateProductDto
     public int MaterialSourceSlot { get; set; }
     public int Quantity { get; set; }
     public float? SuccessChance { get; set; }
+}
+
+public class ItemEnumsDto
+{
+    public List<EnumOptionDto> Materials { get; set; } = [];
+    public List<EnumOptionDto> ItemForms { get; set; } = [];
 }
 
 public class RecipeTemplateEnumsDto

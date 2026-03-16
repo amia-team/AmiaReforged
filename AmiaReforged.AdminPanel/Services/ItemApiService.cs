@@ -51,6 +51,11 @@ public class ItemApiService
         return await GetAsync<ItemBlueprintDto>($"{ItemsBase}/{Uri.EscapeDataString(tag)}");
     }
 
+    public async Task<ItemEnumsDto?> GetEnumsAsync()
+    {
+        return await GetAsync<ItemEnumsDto>($"{ItemsBase}/enums");
+    }
+
     public async Task<ItemBlueprintDto?> CreateAsync(ItemBlueprintDto dto)
     {
         return await PostAsync<ItemBlueprintDto>(ItemsBase, dto);
