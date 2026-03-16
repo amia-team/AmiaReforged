@@ -683,6 +683,7 @@
         {
             _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
             Api.SelectEndpoint(id);
+            await LoadEnums();
             _page = 1;
             await RefreshItems();
         }
