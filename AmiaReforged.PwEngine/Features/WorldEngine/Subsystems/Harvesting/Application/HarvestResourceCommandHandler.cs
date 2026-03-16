@@ -73,7 +73,12 @@ public class HarvestResourceCommandHandler(
         if (currentProgress < node.Definition.BaseHarvestRounds)
         {
             // Still harvesting - keep instance cached for next round
-            return CommandResult.OkWith("status", "InProgress");
+            return CommandResult.Ok(new Dictionary<string, object>
+            {
+                ["status"] = "InProgress",
+                ["currentProgress"] = currentProgress,
+                ["requiredProgress"] = node.Definition.BaseHarvestRounds
+            });
         }
 
         // Harvest is complete - calculate outputs

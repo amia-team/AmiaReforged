@@ -1,6 +1,8 @@
+using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting.Nui;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.ResourceNodeData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.Services;
 using Anvil.API;
@@ -20,9 +22,15 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting.Strat
 public sealed class MineralHarvestStrategy(
     RuntimeCharacterService characterService,
     Lazy<RuntimeNodeService> runtimeNodeService,
-    ICommandHandler<HarvestResourceCommand> harvestCommandHandler) : INodeHarvestStrategy
+    ICommandHandler<HarvestResourceCommand> harvestCommandHandler,
+    WindowDirector windowDirector) : INodeHarvestStrategy
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
+    /// <summary>
+    /// Tracks active harvest progress bars per player. One bar at a time per player.
+    /// </summary>
+    private readonly Dictionary<NwPlayer, HarvestProgressPresenter> _activeProgressBars = new();
 
     private static readonly HashSet<ResourceType> Types = new()
     {
@@ -79,17 +87,49 @@ public sealed class MineralHarvestStrategy(
                 switch (status)
                 {
                     case "InProgress":
+                    {
+                        int current = result.Data?.GetValueOrDefault("currentProgress") is int cp ? cp : 0;
+                        int total = result.Data?.GetValueOrDefault("requiredProgress") is int rp ? rp : 1;
+
+                        if (!_activeProgressBars.TryGetValue(player, out HarvestProgressPresenter? presenter))
+                        {
+                            string nodeName = node.Instance.Definition.Name;
+                            HarvestProgressView view = new(player, $"Mining {nodeName}");
+                            presenter = view.Presenter;
+                            windowDirector.OpenWindow(presenter);
+                            _activeProgressBars[player] = presenter;
+                        }
+
+                        presenter.UpdateProgress(current, total);
+
                         Effect visualEffect = Effect.VisualEffect(VfxType.ComChunkStoneMedium);
                         plc.Location.ApplyEffect(EffectDuration.Instant, visualEffect);
                         break;
+                    }
                     case "Completed":
+                    {
+                        if (_activeProgressBars.TryGetValue(player, out HarvestProgressPresenter? presenter))
+                        {
+                            presenter.Complete();
+                            _activeProgressBars.Remove(player);
+                        }
+
                         player.FloatingTextString($"This resource has {node.Instance.Uses} uses left.");
                         Effect completeEffect = Effect.VisualEffect(VfxType.ComChunkStoneMedium);
                         plc.Location.ApplyEffect(EffectDuration.Instant, completeEffect);
                         break;
+                    }
                     case "NodeDepleted":
+                    {
+                        if (_activeProgressBars.TryGetValue(player, out HarvestProgressPresenter? presenter))
+                        {
+                            presenter.Complete();
+                            _activeProgressBars.Remove(player);
+                        }
+
                         // Node will be destroyed by event handler
                         break;
+                    }
                 }
             }
             catch (Exception ex)

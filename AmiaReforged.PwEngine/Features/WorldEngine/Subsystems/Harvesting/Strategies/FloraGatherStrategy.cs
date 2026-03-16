@@ -1,8 +1,10 @@
+using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting.Nui;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes;
@@ -25,7 +27,8 @@ public sealed class FloraGatherStrategy(
     RuntimeCharacterService characterService,
     Lazy<RuntimeNodeService> runtimeNodeService,
     IResourceNodeInstanceRepository nodeRepository,
-    IEventBus eventBus) : INodeHarvestStrategy
+    IEventBus eventBus,
+    WindowDirector windowDirector) : INodeHarvestStrategy
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -104,6 +107,13 @@ public sealed class FloraGatherStrategy(
                 // Show gathering VFX
                 Effect gatherEffect = Effect.VisualEffect(VfxType.ImpHeadNature);
                 plc.Location.ApplyEffect(EffectDuration.Instant, gatherEffect);
+
+                // Show instant-complete progress bar
+                HarvestProgressView view = new(player, $"Gathering {def.Name}");
+                HarvestProgressPresenter presenter = view.Presenter;
+                windowDirector.OpenWindow(presenter);
+                presenter.UpdateProgress(1, 1);
+                presenter.Complete();
 
                 string summary = string.Join(", ", harvestedItems.Select(h => $"{h.Quantity}x {h.ItemTag}"));
                 player.FloatingTextString($"Gathered: {summary}");

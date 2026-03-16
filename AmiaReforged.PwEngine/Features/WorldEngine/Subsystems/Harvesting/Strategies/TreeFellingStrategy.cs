@@ -1,8 +1,10 @@
+using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting.Nui;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes;
@@ -28,7 +30,8 @@ public sealed class TreeFellingStrategy(
     Lazy<RuntimeNodeService> runtimeNodeService,
     ICharacterRepository characterRepository,
     IResourceNodeInstanceRepository nodeRepository,
-    IEventBus eventBus) : INodeHarvestStrategy
+    IEventBus eventBus,
+    WindowDirector windowDirector) : INodeHarvestStrategy
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -37,6 +40,11 @@ public sealed class TreeFellingStrategy(
     /// value is accumulated progress ticks. Cleared when the tree is felled.
     /// </summary>
     private readonly Dictionary<Guid, int> _chopProgress = new();
+
+    /// <summary>
+    /// Tracks active harvest progress bars per player.
+    /// </summary>
+    private readonly Dictionary<NwPlayer, HarvestProgressPresenter> _activeProgressBars = new();
 
     private static readonly HashSet<ResourceType> Types = new() { ResourceType.Tree };
 
@@ -101,15 +109,30 @@ public sealed class TreeFellingStrategy(
 
         if (current < required)
         {
-            // Still chopping — show VFX and progress text
+            // Still chopping — show VFX and update progress bar
             Effect dustEffect = Effect.VisualEffect(VfxType.ImpDustExplosion, false, 0.4f);
             plc.Location.ApplyEffect(EffectDuration.Instant, dustEffect);
-            player.FloatingTextString($"Chopping... ({current}/{required})");
+
+            if (!_activeProgressBars.TryGetValue(player, out HarvestProgressPresenter? presenter))
+            {
+                HarvestProgressView view = new(player, $"Chopping {def.Name}");
+                presenter = view.Presenter;
+                windowDirector.OpenWindow(presenter);
+                _activeProgressBars[player] = presenter;
+            }
+
+            presenter.UpdateProgress(current, required);
             return;
         }
 
-        // Tree is felled — compute yield and fire events
+        // Tree is felled — complete progress bar, compute yield and fire events
         _chopProgress.Remove(plc.UUID);
+
+        if (_activeProgressBars.TryGetValue(player, out HarvestProgressPresenter? felledPresenter))
+        {
+            felledPresenter.Complete();
+            _activeProgressBars.Remove(player);
+        }
 
         Guid characterId = character.GetId().Value;
         Guid nodeId = node.Id;
