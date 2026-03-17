@@ -8,6 +8,7 @@
 @implements IAsyncDisposable
 @inject InteractionApiService Api
 @inject GlyphApiService GlyphApi
+@inject IndustryApiService IndustryApi
 @inject IWorldEngineEndpointService EndpointService
 @inject ILogger<Interactions> Logger
 @inject IJSRuntime JS
@@ -202,6 +203,88 @@
                         <input type="checkbox" @bind="_editItem.RequiresIndustryMembership" />
                         Requires Industry Membership
                     </label>
+                </div>
+
+                @* ===== Validity / Context Section ===== *@
+                <div style="border:1px solid var(--border-color);border-radius:8px;padding:15px;margin-top:5px">
+                    <h4 style="margin:0 0 10px 0">Validity &amp; Context</h4>
+
+                    @* Required Industries (multi-select dropdown from loaded industries) *@
+                    <div class="form-group">
+                        <label>Required Industries</label>
+                        <p style="color:var(--text-secondary);font-size:0.8rem;margin:0 0 6px 0">
+                            Character must belong to at least one of these industries. Leave empty for "any industry" (when Industry Membership is required).
+                        </p>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">
+                            @foreach (string tag in _editItem.RequiredIndustryTags)
+                            {
+                                string capturedTag = tag;
+                                <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(0,200,200,0.15);border:1px solid rgba(0,200,200,0.3);border-radius:4px;padding:2px 8px;font-size:0.85rem">
+                                    @capturedTag
+                                    <button type="button" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;padding:0;font-size:0.8rem" @onclick="() => _editItem.RequiredIndustryTags.Remove(capturedTag)">✕</button>
+                                </span>
+                            }
+                        </div>
+                        @if (_availableIndustries.Count > 0)
+                        {
+                            <select class="form-control form-control-sm" style="max-width:300px"
+                                    @onchange="OnIndustrySelected">
+                                <option value="">— Add industry —</option>
+                                @foreach (var ind in _availableIndustries.Where(i => !_editItem.RequiredIndustryTags.Contains(i.Tag)))
+                                {
+                                    <option value="@ind.Tag">@ind.Name (@ind.Tag)</option>
+                                }
+                            </select>
+                        }
+                        else
+                        {
+                            <p style="color:var(--text-secondary);font-size:0.8rem;font-style:italic">No industries loaded. Select a WorldEngine endpoint first.</p>
+                        }
+                    </div>
+
+                    @* Allowed Areas (free-form chip-style input) *@
+                    <div class="form-group" style="margin-top:10px">
+                        <label>Allowed Areas</label>
+                        <p style="color:var(--text-secondary);font-size:0.8rem;margin:0 0 6px 0">
+                            Limit this interaction to specific area resrefs. Leave empty to allow it everywhere.
+                        </p>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">
+                            @foreach (string area in _editItem.AllowedAreaResRefs)
+                            {
+                                string capturedArea = area;
+                                <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(200,200,0,0.15);border:1px solid rgba(200,200,0,0.3);border-radius:4px;padding:2px 8px;font-size:0.85rem">
+                                    @capturedArea
+                                    <button type="button" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;padding:0;font-size:0.8rem" @onclick="() => _editItem.AllowedAreaResRefs.Remove(capturedArea)">✕</button>
+                                </span>
+                            }
+                        </div>
+                        <div style="display:flex;gap:6px;max-width:400px">
+                            <input class="form-control form-control-sm" @bind="_newAreaResRef" placeholder="area_resref" @onkeydown="OnAreaKeyDown" />
+                            <button type="button" class="btn btn-sm btn-outline-info" @onclick="AddAreaResRef">Add</button>
+                        </div>
+                    </div>
+
+                    @* Required Knowledge (free-form chip-style input) *@
+                    <div class="form-group" style="margin-top:10px">
+                        <label>Required Knowledge</label>
+                        <p style="color:var(--text-secondary);font-size:0.8rem;margin:0 0 6px 0">
+                            Additional knowledge tags the character must have unlocked (beyond the implicit interaction unlock gate).
+                        </p>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">
+                            @foreach (string k in _editItem.RequiredKnowledgeTags)
+                            {
+                                string capturedK = k;
+                                <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(200,0,200,0.15);border:1px solid rgba(200,0,200,0.3);border-radius:4px;padding:2px 8px;font-size:0.85rem">
+                                    @capturedK
+                                    <button type="button" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;padding:0;font-size:0.8rem" @onclick="() => _editItem.RequiredKnowledgeTags.Remove(capturedK)">✕</button>
+                                </span>
+                            }
+                        </div>
+                        <div style="display:flex;gap:6px;max-width:400px">
+                            <input class="form-control form-control-sm" @bind="_newKnowledgeTag" placeholder="knowledge_tag" @onkeydown="OnKnowledgeKeyDown" />
+                            <button type="button" class="btn btn-sm btn-outline-info" @onclick="AddKnowledgeTag">Add</button>
+                        </div>
+                    </div>
                 </div>
 
                 @* ===== Responses Section ===== *@
@@ -546,6 +629,11 @@
     private ImportResult? _importResult;
     private List<JsonElement> _importedItems = new();
 
+    // ===== Validity / Context =====
+    private List<IndustryDefinitionDto> _availableIndustries = [];
+    private string _newAreaResRef = "";
+    private string _newKnowledgeTag = "";
+
     // ===== Delete Confirmation =====
     private bool _showDeleteConfirm;
     private InteractionDefinitionDto? _deleteTarget;
@@ -645,19 +733,37 @@
             _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
             Api.SelectEndpoint(id);
             GlyphApi.SelectEndpoint(id);
+            IndustryApi.SelectEndpoint(id);
             _page = 1;
             await RefreshInteractions();
+            await LoadAvailableIndustries();
         }
         else
         {
             _selectedEndpoint = null;
             Api.SelectEndpoint(null);
             GlyphApi.SelectEndpoint(null);
+            IndustryApi.SelectEndpoint(null);
             _interactions.Clear();
+            _availableIndustries.Clear();
         }
     }
 
     // ===== Data Loading =====
+
+    private async Task LoadAvailableIndustries()
+    {
+        try
+        {
+            PagedResult<IndustryDefinitionDto> result = await IndustryApi.GetAllAsync(pageSize: 500);
+            _availableIndustries = result.Items;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load industries for dropdown");
+            _availableIndustries = [];
+        }
+    }
 
     private async Task RefreshInteractions()
     {
@@ -712,6 +818,9 @@
             MinRounds = 2,
             ProficiencyReducesRounds = true,
             RequiresIndustryMembership = true,
+            RequiredIndustryTags = [],
+            AllowedAreaResRefs = [],
+            RequiredKnowledgeTags = [],
         };
         ResetScriptState();
         _showEditModal = true;
@@ -975,6 +1084,9 @@
             MinRounds = src.MinRounds,
             ProficiencyReducesRounds = src.ProficiencyReducesRounds,
             RequiresIndustryMembership = src.RequiresIndustryMembership,
+            RequiredIndustryTags = [..src.RequiredIndustryTags],
+            AllowedAreaResRefs = [..src.AllowedAreaResRefs],
+            RequiredKnowledgeTags = [..src.RequiredKnowledgeTags],
             CreatedAt = src.CreatedAt,
             UpdatedAt = src.UpdatedAt,
             Responses = src.Responses.Select(r => new InteractionResponseDto
@@ -991,6 +1103,52 @@
                 }).ToList(),
             }).ToList(),
         };
+    }
+
+    // ===== Validity & Context Helpers =====
+
+    private void OnIndustrySelected(ChangeEventArgs e)
+    {
+        string? tag = e.Value?.ToString();
+        if (!string.IsNullOrWhiteSpace(tag) && !_editItem.RequiredIndustryTags.Contains(tag))
+        {
+            _editItem.RequiredIndustryTags.Add(tag);
+        }
+    }
+
+    private void RemoveIndustryTag(string tag)
+    {
+        _editItem.RequiredIndustryTags.Remove(tag);
+    }
+
+    private void AddAreaResRef()
+    {
+        string val = _newAreaResRef.Trim();
+        if (!string.IsNullOrEmpty(val) && !_editItem.AllowedAreaResRefs.Contains(val))
+        {
+            _editItem.AllowedAreaResRefs.Add(val);
+            _newAreaResRef = "";
+        }
+    }
+
+    private void OnAreaKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") AddAreaResRef();
+    }
+
+    private void AddKnowledgeTag()
+    {
+        string val = _newKnowledgeTag.Trim();
+        if (!string.IsNullOrEmpty(val) && !_editItem.RequiredKnowledgeTags.Contains(val))
+        {
+            _editItem.RequiredKnowledgeTags.Add(val);
+            _newKnowledgeTag = "";
+        }
+    }
+
+    private void OnKnowledgeKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") AddKnowledgeTag();
     }
 
     private static string GetEffectValueHint(string effectType) => effectType switch

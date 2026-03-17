@@ -397,6 +397,9 @@ public class InteractionDefinitionDto
     public int MinRounds { get; set; } = 2;
     public bool ProficiencyReducesRounds { get; set; } = true;
     public bool RequiresIndustryMembership { get; set; } = true;
+    public List<string> RequiredIndustryTags { get; set; } = [];
+    public List<string> AllowedAreaResRefs { get; set; } = [];
+    public List<string> RequiredKnowledgeTags { get; set; } = [];
     public List<InteractionResponseDto> Responses { get; set; } = [];
     public DateTime? CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }

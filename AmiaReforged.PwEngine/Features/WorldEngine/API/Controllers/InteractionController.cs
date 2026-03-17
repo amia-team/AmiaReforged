@@ -162,6 +162,9 @@ public class InteractionController
         existing.MinRounds = dto.MinRounds;
         existing.ProficiencyReducesRounds = dto.ProficiencyReducesRounds;
         existing.RequiresIndustryMembership = dto.RequiresIndustryMembership;
+        existing.RequiredIndustryTagsJson = JsonSerializer.Serialize(dto.RequiredIndustryTags ?? [], JsonOptions);
+        existing.AllowedAreaResRefsJson = JsonSerializer.Serialize(dto.AllowedAreaResRefs ?? [], JsonOptions);
+        existing.RequiredKnowledgeTagsJson = JsonSerializer.Serialize(dto.RequiredKnowledgeTags ?? [], JsonOptions);
         existing.ResponsesJson = SerializeResponses(dto.Responses);
         existing.UpdatedAt = DateTime.UtcNow;
 
@@ -267,6 +270,9 @@ public class InteractionController
                     existing.MinRounds = dto.MinRounds;
                     existing.ProficiencyReducesRounds = dto.ProficiencyReducesRounds;
                     existing.RequiresIndustryMembership = dto.RequiresIndustryMembership;
+                    existing.RequiredIndustryTagsJson = JsonSerializer.Serialize(dto.RequiredIndustryTags ?? [], JsonOptions);
+                    existing.AllowedAreaResRefsJson = JsonSerializer.Serialize(dto.AllowedAreaResRefs ?? [], JsonOptions);
+                    existing.RequiredKnowledgeTagsJson = JsonSerializer.Serialize(dto.RequiredKnowledgeTags ?? [], JsonOptions);
                     existing.ResponsesJson = SerializeResponses(dto.Responses);
                     existing.UpdatedAt = DateTime.UtcNow;
                 }
@@ -362,6 +368,9 @@ public class InteractionController
             entity.MinRounds,
             entity.ProficiencyReducesRounds,
             entity.RequiresIndustryMembership,
+            RequiredIndustryTags = DeserializeStringList(entity.RequiredIndustryTagsJson),
+            AllowedAreaResRefs = DeserializeStringList(entity.AllowedAreaResRefsJson),
+            RequiredKnowledgeTags = DeserializeStringList(entity.RequiredKnowledgeTagsJson),
             Responses = responses.Select(r => new
             {
                 r.ResponseTag,
@@ -392,6 +401,9 @@ public class InteractionController
             MinRounds = dto.MinRounds,
             ProficiencyReducesRounds = dto.ProficiencyReducesRounds,
             RequiresIndustryMembership = dto.RequiresIndustryMembership,
+            RequiredIndustryTagsJson = JsonSerializer.Serialize(dto.RequiredIndustryTags ?? [], JsonOptions),
+            AllowedAreaResRefsJson = JsonSerializer.Serialize(dto.AllowedAreaResRefs ?? [], JsonOptions),
+            RequiredKnowledgeTagsJson = JsonSerializer.Serialize(dto.RequiredKnowledgeTags ?? [], JsonOptions),
             ResponsesJson = SerializeResponses(dto.Responses)
         };
     }
@@ -417,6 +429,13 @@ public class InteractionController
         return JsonSerializer.Serialize(jsonDtos, JsonOptions);
     }
 
+    private static List<string> DeserializeStringList(string? json)
+    {
+        if (string.IsNullOrEmpty(json) || json == "[]") return [];
+        try { return JsonSerializer.Deserialize<List<string>>(json, JsonOptions) ?? []; }
+        catch { return []; }
+    }
+
     // ═══════════════════════════════════════════════════════════════════
     //  DTOs
     // ═══════════════════════════════════════════════════════════════════
@@ -431,6 +450,9 @@ public class InteractionController
         public int MinRounds { get; init; } = 2;
         public bool ProficiencyReducesRounds { get; init; } = true;
         public bool RequiresIndustryMembership { get; init; } = true;
+        public List<string>? RequiredIndustryTags { get; init; }
+        public List<string>? AllowedAreaResRefs { get; init; }
+        public List<string>? RequiredKnowledgeTags { get; init; }
         public List<ResponseDto>? Responses { get; init; }
     }
 

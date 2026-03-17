@@ -44,6 +44,9 @@ public static class InteractionDefinitionMapper
             MinRounds = definition.MinRounds,
             ProficiencyReducesRounds = definition.ProficiencyReducesRounds,
             RequiresIndustryMembership = definition.RequiresIndustryMembership,
+            RequiredIndustryTagsJson = JsonSerializer.Serialize(definition.RequiredIndustryTags, JsonOptions),
+            AllowedAreaResRefsJson = JsonSerializer.Serialize(definition.AllowedAreaResRefs, JsonOptions),
+            RequiredKnowledgeTagsJson = JsonSerializer.Serialize(definition.RequiredKnowledgeTags, JsonOptions),
             ResponsesJson = JsonSerializer.Serialize(responseDtos, JsonOptions),
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -96,6 +99,9 @@ public static class InteractionDefinitionMapper
             MinRounds = entity.MinRounds,
             ProficiencyReducesRounds = entity.ProficiencyReducesRounds,
             RequiresIndustryMembership = entity.RequiresIndustryMembership,
+            RequiredIndustryTags = JsonSerializer.Deserialize<List<string>>(entity.RequiredIndustryTagsJson, JsonOptions) ?? [],
+            AllowedAreaResRefs = JsonSerializer.Deserialize<List<string>>(entity.AllowedAreaResRefsJson, JsonOptions) ?? [],
+            RequiredKnowledgeTags = JsonSerializer.Deserialize<List<string>>(entity.RequiredKnowledgeTagsJson, JsonOptions) ?? [],
             Responses = responses
         };
     }
@@ -110,6 +116,9 @@ public static class InteractionDefinitionMapper
         entity.MinRounds = definition.MinRounds;
         entity.ProficiencyReducesRounds = definition.ProficiencyReducesRounds;
         entity.RequiresIndustryMembership = definition.RequiresIndustryMembership;
+        entity.RequiredIndustryTagsJson = JsonSerializer.Serialize(definition.RequiredIndustryTags, JsonOptions);
+        entity.AllowedAreaResRefsJson = JsonSerializer.Serialize(definition.AllowedAreaResRefs, JsonOptions);
+        entity.RequiredKnowledgeTagsJson = JsonSerializer.Serialize(definition.RequiredKnowledgeTags, JsonOptions);
 
         List<ResponseJsonDto> responseDtos = definition.Responses.Select(r => new ResponseJsonDto
         {

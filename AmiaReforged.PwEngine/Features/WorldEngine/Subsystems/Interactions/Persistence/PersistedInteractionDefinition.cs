@@ -31,6 +31,15 @@ public class PersistedInteractionDefinition
     /// <summary>Whether industry membership is required.</summary>
     public bool RequiresIndustryMembership { get; set; } = true;
 
+    /// <summary>Required industry tags, stored as JSONB array. Empty = any industry.</summary>
+    public string RequiredIndustryTagsJson { get; set; } = "[]";
+
+    /// <summary>Allowed area resrefs, stored as JSONB array. Empty = valid everywhere.</summary>
+    public string AllowedAreaResRefsJson { get; set; } = "[]";
+
+    /// <summary>Required knowledge tags (beyond the UnlockInteraction gate), stored as JSONB array.</summary>
+    public string RequiredKnowledgeTagsJson { get; set; } = "[]";
+
     /// <summary>
     /// All responses for this interaction, stored as a JSONB array.
     /// </summary>

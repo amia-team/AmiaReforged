@@ -53,6 +53,42 @@ internal sealed class DataDrivenInteractionAdapter : IInteractionHandler
             {
                 return PreconditionResult.Fail("You must be a member of an industry");
             }
+
+            // If specific industries are required, verify the character belongs to at least one
+            if (_definition.RequiredIndustryTags.Count > 0)
+            {
+                bool hasRequired = memberships.Any(m =>
+                    _definition.RequiredIndustryTags.Contains(m.IndustryTag.Value));
+                if (!hasRequired)
+                {
+                    return PreconditionResult.Fail(
+                        $"You must be a member of one of the required industries: {string.Join(", ", _definition.RequiredIndustryTags)}");
+                }
+            }
+        }
+
+        // Area restriction check
+        if (_definition.AllowedAreaResRefs.Count > 0)
+        {
+            if (string.IsNullOrEmpty(context.AreaResRef) ||
+                !_definition.AllowedAreaResRefs.Contains(context.AreaResRef))
+            {
+                return PreconditionResult.Fail("This interaction cannot be performed in this area");
+            }
+        }
+
+        // Required knowledge tags check
+        if (_definition.RequiredKnowledgeTags.Count > 0)
+        {
+            var knownTags = character.AllKnowledge().Select(k => k.Tag).ToHashSet();
+            List<string> missing = _definition.RequiredKnowledgeTags
+                .Where(t => !knownTags.Contains(t))
+                .ToList();
+            if (missing.Count > 0)
+            {
+                return PreconditionResult.Fail(
+                    $"You are missing required knowledge: {string.Join(", ", missing)}");
+            }
         }
 
         return PreconditionResult.Success();
@@ -130,10 +166,20 @@ internal sealed class DataDrivenInteractionAdapter : IInteractionHandler
             _definition.Tag, session.CharacterId);
     }
 
-    private static ProficiencyLevel GetBestProficiency(ICharacter character)
+    private ProficiencyLevel GetBestProficiency(ICharacter character)
     {
         List<IndustryMembership> memberships = character.AllIndustryMemberships();
         if (memberships.Count == 0) return ProficiencyLevel.Layman;
+
+        // When specific industries are required, only consider those for proficiency calculation
+        if (_definition.RequiredIndustryTags.Count > 0)
+        {
+            List<IndustryMembership> relevant = memberships
+                .Where(m => _definition.RequiredIndustryTags.Contains(m.IndustryTag.Value))
+                .ToList();
+            return relevant.Count == 0 ? ProficiencyLevel.Layman : relevant.Max(m => m.Level);
+        }
+
         return memberships.Max(m => m.Level);
     }
 }

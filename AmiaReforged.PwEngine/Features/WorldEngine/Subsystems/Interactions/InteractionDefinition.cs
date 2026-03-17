@@ -50,6 +50,24 @@ public class InteractionDefinition
     public bool RequiresIndustryMembership { get; init; } = true;
 
     /// <summary>
+    /// When non-empty, the character must belong to at least one of these industries.
+    /// If empty and <see cref="RequiresIndustryMembership"/> is <c>true</c>, any industry counts.
+    /// </summary>
+    public List<string> RequiredIndustryTags { get; init; } = [];
+
+    /// <summary>
+    /// When non-empty, this interaction is only valid in the listed area resrefs.
+    /// Empty means valid in any area.
+    /// </summary>
+    public List<string> AllowedAreaResRefs { get; init; } = [];
+
+    /// <summary>
+    /// Knowledge tags (beyond the implicit <c>UnlockInteraction</c> gate) that the character
+    /// must have unlocked before starting this interaction.
+    /// </summary>
+    public List<string> RequiredKnowledgeTags { get; init; } = [];
+
+    /// <summary>
     /// Possible outcomes when this interaction completes. One response is selected
     /// via weighted random from the eligible pool (filtered by proficiency).
     /// Must have at least one response for the interaction to succeed.
