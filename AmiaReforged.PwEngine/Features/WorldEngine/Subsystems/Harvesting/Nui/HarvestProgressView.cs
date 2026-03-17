@@ -11,7 +11,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting.Nui;
 /// </summary>
 public sealed class HarvestProgressView : ScryView<HarvestProgressPresenter>
 {
-    public const float WindowW = 300f;
+    public const float WindowW = 400f;
     public const float WindowH = 120f;
 
     public readonly NuiBind<float> ProgressValue = new("hp_progress");
@@ -41,13 +41,12 @@ public sealed class HarvestProgressView : ScryView<HarvestProgressPresenter>
                     Height = 26f,
                     Children =
                     [
-                        new NuiSpacer(),
                         new NuiLabel(StatusText)
                         {
+                            Width = WindowW - 30f,
                             HorizontalAlign = NuiHAlign.Center,
                             VerticalAlign = NuiVAlign.Middle
-                        },
-                        new NuiSpacer()
+                        }
                     ]
                 },
 
