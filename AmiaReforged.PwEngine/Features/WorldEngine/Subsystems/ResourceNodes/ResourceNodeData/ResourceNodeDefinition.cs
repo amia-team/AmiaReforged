@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions;
 using NWN.Core;
@@ -16,8 +17,22 @@ public record ResourceNodeDefinition(
     string Name = "",
     string Description = "",
     FloraProperties? FloraProperties = null,
-    TreeProperties? TreeProperties = null)
+    TreeProperties? TreeProperties = null,
+    EconomyQuality? MinQuality = null,
+    EconomyQuality? MaxQuality = null)
 {
+    /// <summary>
+    /// Clamps a quality value to this node's quality bounds. Falls back to the
+    /// global <see cref="CraftingQuality.MinCraftable"/>/<see cref="CraftingQuality.MaxCraftable"/>
+    /// when no per-node override is set.
+    /// </summary>
+    public int ClampQuality(int quality)
+    {
+        int min = MinQuality.HasValue ? (int)MinQuality.Value : CraftingQuality.MinCraftable;
+        int max = MaxQuality.HasValue ? (int)MaxQuality.Value : CraftingQuality.MaxCraftable;
+        return Math.Clamp(quality, min, max);
+    }
+
     public EconomyQuality GetQualityForArea(AreaDefinition area)
     {
         EconomyQuality baseline = EconomyQuality.Average;
@@ -26,7 +41,8 @@ public record ResourceNodeDefinition(
         {
             int min = (int)area.Environment.MineralQualityRange.Min;
             int max = (int)area.Environment.MineralQualityRange.Max;
-            return (EconomyQuality)(Random.Shared.Next(max - min + 1) + min);
+            EconomyQuality raw = (EconomyQuality)(Random.Shared.Next(max - min + 1) + min);
+            return (EconomyQuality)ClampQuality((int)raw);
         }
 
         if (FloraProperties != null)
@@ -49,7 +65,7 @@ public record ResourceNodeDefinition(
             }
         }
 
-        return baseline;
+        return (EconomyQuality)ClampQuality((int)baseline);
     }
 }
 

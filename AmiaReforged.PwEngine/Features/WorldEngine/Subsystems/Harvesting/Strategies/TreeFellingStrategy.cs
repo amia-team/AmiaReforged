@@ -234,7 +234,7 @@ public sealed class TreeFellingStrategy(
             };
         }
 
-        totalQuality = Math.Clamp(totalQuality, CraftingQuality.MinCraftable, CraftingQuality.MaxCraftable);
+        totalQuality = node.Definition.ClampQuality(totalQuality);
 
         return [new HarvestedItem(treeProps.LogItemTag, logCount, (IPQuality)totalQuality)];
     }
@@ -268,7 +268,7 @@ public sealed class TreeFellingStrategy(
                 };
             }
 
-            totalQuality = Math.Clamp(totalQuality, CraftingQuality.MinCraftable, CraftingQuality.MaxCraftable);
+            totalQuality = node.Definition.ClampQuality(totalQuality);
 
             int totalQuantity = harvestOutput.Quantity;
             foreach (KnowledgeHarvestEffect ye in applicable.Where(e => e.StepModified == HarvestStep.ItemYield))

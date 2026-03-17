@@ -59,6 +59,12 @@ public class PersistedResourceNodeDefinitionConfiguration : IEntityTypeConfigura
             .HasColumnName("tree_properties")
             .HasColumnType("jsonb");
 
+        builder.Property(e => e.MinQuality)
+            .HasColumnName("min_quality");
+
+        builder.Property(e => e.MaxQuality)
+            .HasColumnName("max_quality");
+
         builder.Property(e => e.CreatedAt)
             .HasColumnName("created_at");
 

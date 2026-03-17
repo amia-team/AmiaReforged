@@ -161,7 +161,7 @@ public sealed class FloraGatherStrategy(
                 };
             }
 
-            totalQuality = Math.Clamp(totalQuality, CraftingQuality.MinCraftable, CraftingQuality.MaxCraftable);
+            totalQuality = node.Definition.ClampQuality(totalQuality);
 
             // Yield modifiers
             int totalQuantity = harvestOutput.Quantity;

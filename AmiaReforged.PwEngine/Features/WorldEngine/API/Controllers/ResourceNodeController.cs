@@ -300,7 +300,9 @@ public class ResourceNodeController
                     def.TreeProperties.MaxLogs,
                     def.TreeProperties.LogItemTag
                 }
-                : null
+                : null,
+            MinQuality = def.MinQuality?.ToString(),
+            MaxQuality = def.MaxQuality?.ToString()
         };
     }
 
@@ -345,7 +347,9 @@ public class ResourceNodeController
             Name: dto.Name ?? string.Empty,
             Description: dto.Description ?? string.Empty,
             FloraProperties: floraProps,
-            TreeProperties: treeProps);
+            TreeProperties: treeProps,
+            MinQuality: Enum.TryParse<EconomyQuality>(dto.MinQuality, true, out EconomyQuality minQ) ? minQ : null,
+            MaxQuality: Enum.TryParse<EconomyQuality>(dto.MaxQuality, true, out EconomyQuality maxQ) ? maxQ : null);
     }
 
     // DTO classes for request/response
@@ -362,6 +366,8 @@ public class ResourceNodeController
         public HarvestOutputDto[]? Outputs { get; init; }
         public FloraPropertiesDto? FloraProperties { get; init; }
         public TreePropertiesDto? TreeProperties { get; init; }
+        public string? MinQuality { get; init; }
+        public string? MaxQuality { get; init; }
     }
 
     private record RequirementDto

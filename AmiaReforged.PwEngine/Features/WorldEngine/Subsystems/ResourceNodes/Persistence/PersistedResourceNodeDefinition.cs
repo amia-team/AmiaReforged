@@ -55,6 +55,16 @@ public class PersistedResourceNodeDefinition
     /// </summary>
     public string? TreePropertiesJson { get; set; }
 
+    /// <summary>
+    /// Optional minimum quality override for this node (EconomyQuality int value). Null = use global default.
+    /// </summary>
+    public int? MinQuality { get; set; }
+
+    /// <summary>
+    /// Optional maximum quality override for this node (EconomyQuality int value). Null = use global default.
+    /// </summary>
+    public int? MaxQuality { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

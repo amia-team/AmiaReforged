@@ -36,6 +36,8 @@ public static class ResourceNodeMapper
             TreePropertiesJson = definition.TreeProperties != null
                 ? JsonSerializer.Serialize(definition.TreeProperties, JsonOptions)
                 : null,
+            MinQuality = definition.MinQuality.HasValue ? (int)definition.MinQuality.Value : null,
+            MaxQuality = definition.MaxQuality.HasValue ? (int)definition.MaxQuality.Value : null,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -74,7 +76,9 @@ public static class ResourceNodeMapper
             Name: entity.Name,
             Description: entity.Description,
             FloraProperties: floraProps,
-            TreeProperties: treeProps);
+            TreeProperties: treeProps,
+            MinQuality: entity.MinQuality.HasValue ? (EconomyQuality)entity.MinQuality.Value : null,
+            MaxQuality: entity.MaxQuality.HasValue ? (EconomyQuality)entity.MaxQuality.Value : null);
     }
 
     /// <summary>
@@ -96,6 +100,8 @@ public static class ResourceNodeMapper
         entity.TreePropertiesJson = definition.TreeProperties != null
             ? JsonSerializer.Serialize(definition.TreeProperties, JsonOptions)
             : null;
+        entity.MinQuality = definition.MinQuality.HasValue ? (int)definition.MinQuality.Value : null;
+        entity.MaxQuality = definition.MaxQuality.HasValue ? (int)definition.MaxQuality.Value : null;
         entity.UpdatedAt = DateTime.UtcNow;
     }
 }

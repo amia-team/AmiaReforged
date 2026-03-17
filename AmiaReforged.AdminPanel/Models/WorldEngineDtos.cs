@@ -65,6 +65,8 @@ public class ResourceNodeDefinitionDto
     public HarvestOutputDto[]? Outputs { get; set; }
     public FloraPropertiesDto? FloraProperties { get; set; }
     public TreePropertiesDto? TreeProperties { get; set; }
+    public string? MinQuality { get; set; }
+    public string? MaxQuality { get; set; }
 }
 
 public class HarvestContextDto

@@ -166,8 +166,7 @@ public class HarvestResourceCommandHandler(
                 }
             }
 
-            totalQuality = Math.Max(CraftingQuality.MinCraftable,
-                Math.Min(CraftingQuality.MaxCraftable, totalQuality));
+            totalQuality = node.Definition.ClampQuality(totalQuality);
 
             // Calculate quantity
             int totalQuantity = harvestOutput.Quantity;
