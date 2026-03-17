@@ -2,9 +2,12 @@
 @using Microsoft.AspNetCore.Authorization
 @using AmiaReforged.AdminPanel.Models
 @using AmiaReforged.AdminPanel.Services
+@using System.Text.Json
+@using System.Text.Json.Serialization
 @attribute [Authorize]
 @inject WorldEngineEditorState EditorState
 @inject IWorldEngineEndpointService EndpointService
+@inject GraphLayoutService LayoutService
 @inject ItemApiService ItemApi
 @inject ResourceNodeApiService ResourceNodeApi
 @inject RegionApiService RegionApi
@@ -18,7 +21,7 @@
 @inject ILogger<WorldEngineEditor> Logger
 @inject IJSRuntime JS
 @rendermode InteractiveServer
-@implements IDisposable
+@implements IAsyncDisposable
 
 <PageTitle>World Engine Editor</PageTitle>
 
@@ -91,6 +94,25 @@
                 }
                 else
                 {
+                    @* Region graph button (only for Regions type) *@
+                    @if (EditorState.ActiveEntityType == WorldEngineEntityType.Regions && EditorState.SelectedEndpointId != null)
+                    {
+                        <div class="we-editor__list-graph-btn">
+                            @if (_regionGraphOpen)
+                            {
+                                <button class="btn btn-sm btn-accent w-100" @onclick="CloseRegionGraph">
+                                    <span class="bi bi-x-circle me-1"></span> Close Graph View
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-primary w-100" @onclick="OpenRegionGraph">
+                                    <span class="bi bi-diagram-3 me-1"></span> Open Region Graph
+                                </button>
+                            }
+                        </div>
+                    }
+
                     @* Search box *@
                     <div class="we-editor__list-search">
                         <input type="text" class="form-control form-control-sm"
@@ -136,6 +158,421 @@
 
         @* ── Editor area ─────────────────────────────────────────── *@
         <div class="we-editor__editor-area">
+            @if (_regionGraphOpen)
+            {
+                @* ══════ Region Graph GL Mode ══════ *@
+                <div class="we-editor__region-graph-wrap">
+                    @if (_regionGraphLoading)
+                    {
+                        <div class="we-editor__region-graph-loading">
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                            <span>@_regionGraphLoadPhase @(_regionGraphLoadPercent > 0 ? $"{_regionGraphLoadPercent}%" : "")</span>
+                        </div>
+                    }
+                    else if (_regionGraphError != null)
+                    {
+                        <div class="we-editor__tab-error">
+                            <span class="bi bi-exclamation-triangle me-1"></span> @_regionGraphError
+                            <button class="btn btn-sm btn-outline-warning ms-2" @onclick="OpenRegionGraph">Retry</button>
+                        </div>
+                    }
+
+                    @* GL container *@
+                    <div id="we-region-gl-container" class="we-editor__region-gl-host"></div>
+
+                    @* Pre-rendered panel: Region Graph (Cytoscape + toolbar) *@
+                    <div id="bl-panel-regiongraph" class="we-editor__gl-panel" style="display:none">
+                        @* Compact graph toolbar *@
+                        <div class="we-rg-toolbar">
+                            <div class="we-rg-toolbar__group">
+                                <input class="form-control form-control-sm" style="width:160px" @bind="_rgGraphSearchQuery" @bind:event="oninput"
+                                       placeholder="Search areas…" @onkeydown="OnRgGraphSearchKeyDown" />
+                                <button class="btn btn-sm btn-primary" @onclick="RgSearchInGraph" title="Search">
+                                    <span class="bi bi-search"></span>
+                                </button>
+                            </div>
+                            <div class="we-rg-toolbar__divider"></div>
+                            <div class="we-rg-toolbar__group">
+                                <button class="btn btn-sm btn-info" @onclick="RgHighlightOrphans" title="Highlight unassigned">Unassigned</button>
+                                <button class="btn btn-sm btn-secondary" @onclick="RgClearHighlight" title="Clear highlights">Clear</button>
+                                <button class="btn btn-sm btn-secondary" @onclick="RgFitView" title="Fit graph to view">Fit</button>
+                            </div>
+                            <div class="we-rg-toolbar__divider"></div>
+                            <div class="we-rg-toolbar__group">
+                                <select class="form-control form-control-sm" style="width:auto;min-width:120px" @bind="_rgSelectedLayout">
+                                    <option value="compact-grid">Compact Grid</option>
+                                    <option value="cose">CoSE</option>
+                                    <option value="fcose">fCoSE</option>
+                                    <option value="dagre">Dagre</option>
+                                    <option value="grid">Grid</option>
+                                    <option value="circle">Circle</option>
+                                    <option value="concentric">Concentric</option>
+                                    <option value="breadthfirst">Breadthfirst</option>
+                                </select>
+                                <button class="btn btn-sm btn-secondary" @onclick="RgApplyLayout" title="Re-layout">Re-Layout</button>
+                            </div>
+                            <div style="flex:1"></div>
+                            @if (_rgRegionColors.Count > 0)
+                            {
+                                <div class="we-rg-toolbar__legend">
+                                    @foreach (KeyValuePair<string, string> kv in _rgRegionColors.Where(kv => _rgRegions.Any(r => r.Name == kv.Key || r.Tag == kv.Key)).DistinctBy(kv => kv.Value))
+                                    {
+                                        <span class="we-rg-legend-item" @onclick="() => RgHighlightRegion(kv.Key)">
+                                            <span class="we-rg-legend-swatch" style="background:@kv.Value"></span>
+                                            @kv.Key
+                                        </span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                        @* Graph info bar *@
+                        @if (_regionGraphData != null)
+                        {
+                            <div class="we-rg-info-bar">
+                                <span>🟢 @_regionGraphData.Nodes.Count connected</span>
+                                <span>💎 @_regionGraphData.DisconnectedAreas.Count disconnected</span>
+                                <span>📍 @_rgRegions.Count regions</span>
+                            </div>
+                        }
+                        @* Cytoscape container *@
+                        <div id="region-cy-gl" class="we-rg-cytoscape"></div>
+                    </div>
+
+                    @* Pre-rendered panel: Region Properties *@
+                    <div id="bl-panel-regionprops" class="we-editor__gl-panel" style="display:none">
+                        <div class="we-rg-props">
+                            @* Properties panel header *@
+                            <div class="we-rg-props__header">
+                                @if (_rgPanelMode == RgPanelMode.AreaEditor)
+                                {
+                                    <span>Area: @(_rgEditAreaName ?? _rgEditArea?.ResRef ?? "—")</span>
+                                    <button class="btn btn-sm btn-secondary" @onclick="RgCloseEditor">✕</button>
+                                }
+                                else if (_rgPanelMode == RgPanelMode.RegionEditor)
+                                {
+                                    <span>@(_rgIsCreating ? "New Region" : $"Region: {_rgEditRegion.Name}")</span>
+                                    <button class="btn btn-sm btn-secondary" @onclick="RgCloseEditor">✕</button>
+                                }
+                                else
+                                {
+                                    <span>Regions (@_rgRegions.Count)</span>
+                                    <button class="btn btn-sm btn-primary" @onclick="RgShowCreateRegion">+ New</button>
+                                }
+                            </div>
+
+                            @* Properties panel body *@
+                            <div class="we-rg-props__body">
+                                @if (_rgPanelMode == RgPanelMode.RegionList)
+                                {
+                                    @* Region List *@
+                                    <div class="form-group" style="margin-bottom:10px">
+                                        <input class="form-control form-control-sm" @bind="_rgRegionListFilter" @bind:event="oninput"
+                                               placeholder="Filter regions…" />
+                                    </div>
+                                    @if (_rgRegions.Count == 0)
+                                    {
+                                        <p class="text-muted small p-2">No regions. Right-click the graph or click + New.</p>
+                                    }
+                                    else
+                                    {
+                                        @foreach (RegionDefinitionDto region in RgFilteredRegions())
+                                        {
+                                            string color = _rgRegionColors.GetValueOrDefault(region.Name, _rgRegionColors.GetValueOrDefault(region.Tag, "#6b6b6b"));
+                                            <div class="region-list-item @(RgIsRegionSelected(region) ? "region-list-item--active" : "")"
+                                                 @onclick="() => RgSelectRegionForEdit(region)">
+                                                <span class="region-list-item__swatch" style="background:@color"></span>
+                                                <div class="region-list-item__info">
+                                                    <div class="region-list-item__name">@region.Name</div>
+                                                    <div class="region-list-item__tag">@region.Tag</div>
+                                                </div>
+                                                <span class="region-list-item__count">@region.Areas.Count areas</span>
+                                                <button class="btn btn-sm btn-info" style="padding:1px 5px;font-size:0.7rem"
+                                                        @onclick="() => RgHighlightRegion(region.Name)" @onclick:stopPropagation>Show</button>
+                                            </div>
+                                        }
+                                    }
+                                }
+                                else if (_rgPanelMode == RgPanelMode.RegionEditor)
+                                {
+                                    @* Region Editor *@
+                                    <div class="panel-section">
+                                        <strong style="font-size:0.9rem">Basic Info</strong>
+                                        <div class="form-group" style="margin-top:8px">
+                                            <label>Tag <small>(unique identifier)</small></label>
+                                            <input class="form-control form-control-sm" @bind="_rgEditRegion.Tag" disabled="@(!_rgIsCreating)" />
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Name</label>
+                                            <input class="form-control form-control-sm" @bind="_rgEditRegion.Name" />
+                                        </div>
+                                    </div>
+
+                                    @* Default Chaos *@
+                                    <div class="panel-section">
+                                        <div class="panel-section__header">
+                                            <strong>Default Chaos</strong>
+                                            @if (_rgEditRegion.DefaultChaos == null)
+                                            {
+                                                <button class="btn btn-sm btn-secondary" style="font-size:0.75rem" @onclick="() => _rgEditRegion.DefaultChaos = new ChaosStateDto()">+ Add</button>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn btn-sm btn-outline-danger" style="font-size:0.75rem" @onclick="() => _rgEditRegion.DefaultChaos = null">Remove</button>
+                                            }
+                                        </div>
+                                        @if (_rgEditRegion.DefaultChaos != null)
+                                        {
+                                            <div style="display:flex;flex-direction:column;gap:4px">
+                                                <div class="form-group"><label>Danger (@_rgEditRegion.DefaultChaos.Danger)</label><input type="range" class="form-range" min="0" max="100" @bind="_rgEditRegion.DefaultChaos.Danger" /></div>
+                                                <div class="form-group"><label>Corruption (@_rgEditRegion.DefaultChaos.Corruption)</label><input type="range" class="form-range" min="0" max="100" @bind="_rgEditRegion.DefaultChaos.Corruption" /></div>
+                                                <div class="form-group"><label>Density (@_rgEditRegion.DefaultChaos.Density)</label><input type="range" class="form-range" min="0" max="100" @bind="_rgEditRegion.DefaultChaos.Density" /></div>
+                                                <div class="form-group"><label>Mutation (@_rgEditRegion.DefaultChaos.Mutation)</label><input type="range" class="form-range" min="0" max="100" @bind="_rgEditRegion.DefaultChaos.Mutation" /></div>
+                                            </div>
+                                        }
+                                    </div>
+
+                                    @* Areas belonging to this region *@
+                                    <div class="panel-section">
+                                        <div class="panel-section__header">
+                                            <strong>Areas (@_rgEditRegion.Areas.Count)</strong>
+                                            <button class="btn btn-sm btn-primary" style="font-size:0.75rem" @onclick="RgOpenAddArea">+ Add</button>
+                                        </div>
+                                        @for (int idx = 0; idx < _rgEditRegion.Areas.Count; idx++)
+                                        {
+                                            int i = idx;
+                                            AreaDefinitionDto area = _rgEditRegion.Areas[i];
+                                            <div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--border-subtle)">
+                                                <code style="flex:1;font-size:0.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="@area.ResRef">
+                                                    @(string.IsNullOrWhiteSpace(area.ResRef) ? "(new)" : area.ResRef)
+                                                    @{ string? n = RgGetAreaName(area.ResRef); }
+                                                    @if (!string.IsNullOrEmpty(n)) { <small style="color:var(--text-secondary)"> — @n</small> }
+                                                </code>
+                                                <button class="btn btn-sm btn-secondary" style="font-size:0.7rem;padding:1px 5px"
+                                                        @onclick="() => RgEditAreaInRegion(i)">Edit</button>
+                                                <button class="btn btn-sm btn-outline-danger" style="font-size:0.7rem;padding:1px 5px"
+                                                        @onclick="() => _rgEditRegion.Areas.RemoveAt(i)">✕</button>
+                                            </div>
+                                        }
+                                        @if (_rgShowAddAreaInput)
+                                        {
+                                            <div style="display:flex;gap:4px;margin-top:6px;align-items:end">
+                                                <input class="form-control form-control-sm" @bind="_rgNewAreaResRef" placeholder="ResRef…" style="flex:1" maxlength="16" />
+                                                <button class="btn btn-sm btn-primary" @onclick="RgConfirmAddArea" disabled="@string.IsNullOrWhiteSpace(_rgNewAreaResRef)">Add</button>
+                                                <button class="btn btn-sm btn-secondary" @onclick="() => _rgShowAddAreaInput = false">✕</button>
+                                            </div>
+                                        }
+                                    </div>
+
+                                    @* Delete region *@
+                                    @if (!_rgIsCreating)
+                                    {
+                                        @if (_rgShowDeleteConfirm)
+                                        {
+                                            <div class="inline-confirm">
+                                                <span>Delete <strong>@_rgEditRegion.Name</strong>?</span>
+                                                <button class="btn btn-sm btn-danger" @onclick="RgDeleteRegion" disabled="@_rgIsSaving">Yes</button>
+                                                <button class="btn btn-sm btn-secondary" @onclick="() => _rgShowDeleteConfirm = false">No</button>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-sm btn-outline-danger" style="width:100%;margin-top:4px" @onclick="() => _rgShowDeleteConfirm = true">Delete Region</button>
+                                        }
+                                    }
+                                }
+                                else if (_rgPanelMode == RgPanelMode.AreaEditor && _rgEditArea != null)
+                                {
+                                    @* Area Editor *@
+                                    <div class="panel-section">
+                                        <strong style="font-size:0.9rem">Area Info</strong>
+                                        <div class="form-group" style="margin-top:8px">
+                                            <label>ResRef</label>
+                                            <input class="form-control form-control-sm" value="@_rgEditArea.ResRef" disabled />
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Region</label>
+                                            <select class="form-control form-control-sm" value="@_rgEditAreaRegionTag"
+                                                    @onchange="RgOnAreaRegionChanged">
+                                                <option value="">— Unassigned —</option>
+                                                @foreach (RegionDefinitionDto r in _rgRegions)
+                                                {
+                                                    <option value="@r.Tag">@r.Name (@r.Tag)</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Linked Settlement ID</label>
+                                            <input type="number" class="form-control form-control-sm"
+                                                   value="@(_rgEditArea.LinkedSettlement?.ToString() ?? "")"
+                                                   @onchange="e => _rgEditArea.LinkedSettlement = int.TryParse(e.Value?.ToString(), out int v) && v > 0 ? v : null" min="1" />
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Resource Node Definitions</label>
+                                            @if (_rgEditArea.DefinitionTags.Count > 0)
+                                            {
+                                                <div class="def-tag-chips">
+                                                    @foreach (string tag in _rgEditArea.DefinitionTags)
+                                                    {
+                                                        <span class="def-tag-chip" title="@tag">
+                                                            @tag
+                                                            <button type="button" class="def-tag-chip-remove" @onclick="() => _rgEditArea.DefinitionTags.Remove(tag)">×</button>
+                                                        </span>
+                                                    }
+                                                </div>
+                                            }
+                                            <div class="def-tag-picker" @onfocusin="() => _rgDefTagDropdownOpen = true" @onfocusout="RgOnDefTagBlur">
+                                                <input class="form-control form-control-sm" placeholder="Search definitions…"
+                                                       @bind="_rgDefTagSearch" @bind:event="oninput"
+                                                       @onfocus="() => _rgDefTagDropdownOpen = true" />
+                                                @if (_rgDefTagDropdownOpen)
+                                                {
+                                                    List<ResourceNodeDefinitionDto> filtered = RgGetFilteredResourceDefs();
+                                                    @if (filtered.Count > 0)
+                                                    {
+                                                        <div class="def-tag-dropdown">
+                                                            @foreach (ResourceNodeDefinitionDto def in filtered.Take(30))
+                                                            {
+                                                                <div class="def-tag-dropdown-item" @onmousedown="() => RgAddDefinitionTag(def.Tag)" @onmousedown:preventDefault>
+                                                                    <span class="def-tag-dropdown-tag">@def.Tag</span>
+                                                                    @if (!string.IsNullOrEmpty(def.Name) || !string.IsNullOrEmpty(def.Type))
+                                                                    {
+                                                                        <span class="def-tag-dropdown-info">@(def.Name ?? "") @(!string.IsNullOrEmpty(def.Type) ? $"· {def.Type}" : "")</span>
+                                                                    }
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    }
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @* Environment *@
+                                    <div class="panel-section">
+                                        <strong style="font-size:0.9rem">Environment</strong>
+                                        <div class="form-group" style="margin-top:8px">
+                                            <label>Climate</label>
+                                            <select class="form-control form-control-sm" @bind="_rgEditArea.Environment.Climate">
+                                                <option value="">— Select —</option>
+                                                @foreach (string c in _rgClimateOptions) { <option value="@c">@c</option> }
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Soil Quality</label>
+                                            <select class="form-control form-control-sm" @bind="_rgEditArea.Environment.SoilQuality">
+                                                <option value="">— Select —</option>
+                                                @foreach (string q in _rgQualityOptions) { <option value="@q">@q</option> }
+                                            </select>
+                                        </div>
+                                        <div style="display:flex;gap:8px">
+                                            <div class="form-group" style="flex:1">
+                                                <label>Mineral Min</label>
+                                                <select class="form-control form-control-sm" @bind="_rgEditArea.Environment.MineralQualityRange.Min">
+                                                    <option value="">—</option>
+                                                    @foreach (string q in _rgQualityOptions) { <option value="@q">@q</option> }
+                                                </select>
+                                            </div>
+                                            <div class="form-group" style="flex:1">
+                                                <label>Mineral Max</label>
+                                                <select class="form-control form-control-sm" @bind="_rgEditArea.Environment.MineralQualityRange.Max">
+                                                    <option value="">—</option>
+                                                    @foreach (string q in _rgQualityOptions) { <option value="@q">@q</option> }
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @* Chaos Override *@
+                                    <div class="panel-section">
+                                        <div class="panel-section__header">
+                                            <strong>Chaos Override</strong>
+                                            @if (_rgEditArea.Environment.Chaos == null)
+                                            {
+                                                <button class="btn btn-sm btn-secondary" style="font-size:0.75rem" @onclick="() => _rgEditArea.Environment.Chaos = new ChaosStateDto()">+ Add</button>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn btn-sm btn-outline-danger" style="font-size:0.75rem" @onclick="() => _rgEditArea.Environment.Chaos = null">Remove</button>
+                                            }
+                                        </div>
+                                        @if (_rgEditArea.Environment.Chaos != null)
+                                        {
+                                            <div style="display:flex;flex-direction:column;gap:4px">
+                                                <div class="form-group"><label>Danger (@_rgEditArea.Environment.Chaos.Danger)</label><input type="range" class="form-range" min="0" max="100" @bind="_rgEditArea.Environment.Chaos.Danger" /></div>
+                                                <div class="form-group"><label>Corruption (@_rgEditArea.Environment.Chaos.Corruption)</label><input type="range" class="form-range" min="0" max="100" @bind="_rgEditArea.Environment.Chaos.Corruption" /></div>
+                                                <div class="form-group"><label>Density (@_rgEditArea.Environment.Chaos.Density)</label><input type="range" class="form-range" min="0" max="100" @bind="_rgEditArea.Environment.Chaos.Density" /></div>
+                                                <div class="form-group"><label>Mutation (@_rgEditArea.Environment.Chaos.Mutation)</label><input type="range" class="form-range" min="0" max="100" @bind="_rgEditArea.Environment.Chaos.Mutation" /></div>
+                                            </div>
+                                        }
+                                    </div>
+
+                                    @* Places of Interest *@
+                                    <div class="panel-section">
+                                        <div class="panel-section__header">
+                                            <strong>Places of Interest (@(_rgEditArea.PlacesOfInterest?.Count ?? 0))</strong>
+                                            <button class="btn btn-sm btn-secondary" style="font-size:0.75rem" @onclick="RgAddPoi">+ POI</button>
+                                        </div>
+                                        @if (_rgEditArea.PlacesOfInterest != null)
+                                        {
+                                            @for (int pidx = 0; pidx < _rgEditArea.PlacesOfInterest.Count; pidx++)
+                                            {
+                                                int pi = pidx;
+                                                PlaceOfInterestDto poi = _rgEditArea.PlacesOfInterest[pi];
+                                                <div class="poi-card">
+                                                    <div class="poi-card__header">
+                                                        <small><strong>@(string.IsNullOrWhiteSpace(poi.Name) ? $"POI {pi + 1}" : poi.Name)</strong></small>
+                                                        <button class="btn btn-sm btn-outline-danger" style="font-size:0.65rem;padding:0 5px" @onclick="() => _rgEditArea.PlacesOfInterest.RemoveAt(pi)">✕</button>
+                                                    </div>
+                                                    <div class="poi-card__fields">
+                                                        <div class="form-group"><label>ResRef</label><input class="form-control form-control-sm" @bind="poi.ResRef" maxlength="16" placeholder="Area…" /></div>
+                                                        <div class="form-group"><label>Tag</label><input class="form-control form-control-sm" @bind="poi.Tag" /></div>
+                                                        <div class="form-group"><label>Name</label><input class="form-control form-control-sm" @bind="poi.Name" /></div>
+                                                        <div class="form-group">
+                                                            <label>Type</label>
+                                                            <select class="form-control form-control-sm" @bind="poi.Type">
+                                                                <option value="">—</option>
+                                                                @foreach (string t in _rgPoiTypeOptions) { <option value="@t">@t</option> }
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group" style="margin-top:4px">
+                                                        <label>Description</label>
+                                                        <input class="form-control form-control-sm" @bind="poi.Description" />
+                                                    </div>
+                                                </div>
+                                            }
+                                        }
+                                    </div>
+                                }
+
+                                @* Status messages *@
+                                @if (_rgError != null)
+                                {
+                                    <div class="alert alert-danger" style="font-size:0.82rem;margin-top:8px">@_rgError</div>
+                                }
+                                @if (_rgSuccess != null)
+                                {
+                                    <div class="alert alert-success" style="font-size:0.82rem;margin-top:8px">@_rgSuccess</div>
+                                }
+                            </div>
+
+                            @* Properties panel footer (save buttons) *@
+                            @if (_rgPanelMode == RgPanelMode.RegionEditor || _rgPanelMode == RgPanelMode.AreaEditor)
+                            {
+                                <div class="we-rg-props__footer">
+                                    <button class="btn btn-secondary btn-sm" @onclick="RgCloseEditor">Cancel</button>
+                                    <button class="btn btn-primary btn-sm" @onclick="RgSaveCurrentEditor" disabled="@_rgIsSaving">
+                                        @(_rgIsSaving ? "Saving…" : "Save")
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+            @* ══════ Normal Tab Mode ══════ *@
             @* Tab bar *@
             @if (EditorState.OpenTabs.Count > 0)
             {
@@ -159,8 +596,8 @@
                 </div>
             }
 
-            @* GL Host area *@
-            <div class="we-editor__gl-host" id="we-gl-host">
+            @* Entity editor content *@
+            <div class="we-editor__content">
                 @if (EditorState.OpenTabs.Count == 0)
                 {
                     <div class="we-editor__welcome">
@@ -168,7 +605,30 @@
                         <p class="text-muted">Select an entity type from the activity bar, then open an item to begin editing.</p>
                     </div>
                 }
+                else if (EditorState.ActiveTab is { } activeTab)
+                {
+                    @if (_tabDataLoading)
+                    {
+                        <div class="we-editor__tab-loading">
+                            <span class="spinner-border spinner-border-sm me-2"></span> Loading…
+                        </div>
+                    }
+                    else if (_tabDataError != null)
+                    {
+                        <div class="we-editor__tab-error">
+                            <span class="bi bi-exclamation-triangle me-1"></span> @_tabDataError
+                            <button class="btn btn-sm btn-outline-warning ms-2" @onclick="() => LoadTabData(activeTab)">Retry</button>
+                        </div>
+                    }
+                    else if (_tabData.TryGetValue(activeTab.Id, out object? data) && data != null)
+                    {
+                        <div class="we-editor__entity-editor">
+                            @RenderEntityEditor(activeTab, data)
+                        </div>
+                    }
+                }
             </div>
+            } @* end normal tab mode *@
         </div>
     </div>
 </div>
@@ -190,6 +650,65 @@
     /// <summary>Lightweight display model for the entity list.</summary>
     private sealed record EntityListItem(string Key, string DisplayName, WorldEngineEntityType EntityType);
 
+    // ── Tab data state ──────────────────────────────────────────────
+    private readonly Dictionary<string, object?> _tabData = new();
+    private bool _tabDataLoading;
+    private string? _tabDataError;
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Region Graph state
+    // ═══════════════════════════════════════════════════════════════════
+    private const string RegionGlInstanceId = "we-region-graph";
+    private bool _regionGraphOpen;
+    private bool _regionGraphLoading;
+    private bool _regionGraphNeedsInit;
+    private string? _regionGraphError;
+    private int _regionGraphLoadPercent;
+    private string _regionGraphLoadPhase = "";
+
+    private AreaGraphDto? _regionGraphData;
+    private List<RegionDefinitionDto> _rgRegions = [];
+    private List<AreaNodeDto> _rgKnownAreas = [];
+    private Dictionary<string, string> _rgRegionColors = new();
+    private List<ResourceNodeDefinitionDto> _rgAllResourceDefs = [];
+
+    // Region graph editing state
+    private enum RgPanelMode { RegionList, RegionEditor, AreaEditor }
+    private RgPanelMode _rgPanelMode = RgPanelMode.RegionList;
+    private string _rgRegionListFilter = "";
+    private bool _rgIsCreating;
+    private RegionDefinitionDto _rgEditRegion = new();
+    private bool _rgShowDeleteConfirm;
+    private bool _rgShowAddAreaInput;
+    private string _rgNewAreaResRef = "";
+    private AreaDefinitionDto? _rgEditArea;
+    private string? _rgEditAreaRegionTag;
+    private string? _rgEditAreaOriginalRegionTag;
+    private string? _rgEditAreaName;
+    private bool _rgIsSaving;
+    private string? _rgError;
+    private string? _rgSuccess;
+    private string _rgDefTagSearch = "";
+    private bool _rgDefTagDropdownOpen;
+
+    // Region graph toolbar state
+    private string _rgGraphSearchQuery = "";
+    private string _rgSelectedLayout = "cose";
+
+    // GL bridge refs
+    private IJSObjectReference? _regionBridgeModule;
+    private DotNetObjectReference<WorldEngineEditor>? _regionDotNetRef;
+
+    private static readonly JsonSerializerOptions RgCamelCase = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Converters = { new JsonStringEnumConverter() }
+    };
+
+    private static readonly string[] _rgClimateOptions = { "Tropical", "Arid", "Temperate", "Continental", "Polar", "Marine", "Subterranean", "Planar" };
+    private static readonly string[] _rgQualityOptions = { "Terrible", "Poor", "Low", "Average", "Good", "High", "Excellent", "Legendary" };
+    private static readonly string[] _rgPoiTypeOptions = { "Undefined", "Dungeon", "Landmark", "ResourceNode", "House", "Guild", "Temple", "Library", "Shop", "Warehouse", "Bank" };
+
     protected override async Task OnInitializedAsync()
     {
         _endpoints = (await EndpointService.GetEnabledEndpointsAsync()).ToList();
@@ -197,7 +716,7 @@
         // Subscribe to state changes
         EditorState.OnEndpointChanged += OnEditorEndpointChanged;
         EditorState.OnActiveEntityTypeChanged += OnActiveEntityTypeChanged;
-        EditorState.OnActiveTabChanged += StateHasChangedSafe;
+        EditorState.OnActiveTabChanged += OnActiveTabChanged;
         EditorState.OnTabListChanged += StateHasChangedSafe;
     }
 
@@ -239,8 +758,14 @@
     //  Activity bar
     // ═══════════════════════════════════════════════════════════════════
 
-    private void OnActivityBarClick(WorldEngineEntityType entityType)
+    private async Task OnActivityBarClick(WorldEngineEntityType entityType)
     {
+        // Close region graph if switching away from Regions
+        if (_regionGraphOpen && entityType != WorldEngineEntityType.Regions)
+        {
+            await CloseRegionGraph();
+        }
+
         if (EditorState.ActiveEntityType == entityType)
         {
             _listPanelOpen = !_listPanelOpen;
@@ -437,9 +962,75 @@
     //  List item click → open tab
     // ═══════════════════════════════════════════════════════════════════
 
-    private void OnListItemClick(EntityListItem item)
+    private async Task OnListItemClick(EntityListItem item)
     {
-        EditorState.OpenTab(item.EntityType, item.DisplayName, item.Key);
+        if (item.EntityType == WorldEngineEntityType.Regions)
+        {
+            await OnRegionListItemClick(item);
+        }
+        else
+        {
+            EditorTab tab = EditorState.OpenTab(item.EntityType, item.DisplayName, item.Key);
+            // Data will be loaded by OnActiveTabChanged
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Tab data loading
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void OnActiveTabChanged()
+    {
+        _ = InvokeAsync(async () =>
+        {
+            EditorTab? tab = EditorState.ActiveTab;
+            if (tab != null && !_tabData.ContainsKey(tab.Id))
+            {
+                await LoadTabData(tab);
+            }
+            StateHasChanged();
+        });
+    }
+
+    private async Task LoadTabData(EditorTab tab)
+    {
+        if (tab.EntityKey == null) return;
+
+        _tabDataLoading = true;
+        _tabDataError = null;
+        StateHasChanged();
+
+        try
+        {
+            object? data = tab.EntityType switch
+            {
+                WorldEngineEntityType.Items => await ItemApi.GetByTagAsync(tab.EntityKey),
+                WorldEngineEntityType.ResourceNodes => await ResourceNodeApi.GetByTagAsync(tab.EntityKey),
+                WorldEngineEntityType.Regions => await RegionApi.GetByTagAsync(tab.EntityKey),
+                WorldEngineEntityType.Lore => await LoreApi.GetByIdAsync(tab.EntityKey),
+                WorldEngineEntityType.Traits => await TraitApi.GetByTagAsync(tab.EntityKey),
+                WorldEngineEntityType.Glyphs => await GlyphApi.GetDefinitionAsync(Guid.Parse(tab.EntityKey)),
+                WorldEngineEntityType.Industries => await IndustryApi.GetByTagAsync(tab.EntityKey),
+                WorldEngineEntityType.Interactions => await InteractionApi.GetByTagAsync(tab.EntityKey),
+                WorldEngineEntityType.Coinhouses => await CoinhouseApi.GetByTagAsync(tab.EntityKey),
+                WorldEngineEntityType.AreaGraph => null, // Area graph is a singleton, no per-entity load
+                _ => null,
+            };
+
+            if (data != null)
+                _tabData[tab.Id] = data;
+            else
+                _tabDataError = "Entity not found.";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load entity data for tab {TabId}", tab.Id);
+            _tabDataError = $"Failed to load: {ex.Message}";
+        }
+        finally
+        {
+            _tabDataLoading = false;
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -448,7 +1039,205 @@
 
     private void CloseTab(string tabId)
     {
+        _tabData.Remove(tabId);
         EditorState.CloseTab(tabId);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Entity rendering
+    // ═══════════════════════════════════════════════════════════════════
+
+    private RenderFragment RenderEntityEditor(EditorTab tab, object data) => builder =>
+    {
+        switch (tab.EntityType)
+        {
+            case WorldEngineEntityType.Items when data is ItemBlueprintDto item:
+                RenderItemEditor(builder, item);
+                break;
+            case WorldEngineEntityType.ResourceNodes when data is ResourceNodeDefinitionDto node:
+                RenderResourceNodeEditor(builder, node);
+                break;
+            case WorldEngineEntityType.Regions when data is RegionDefinitionDto region:
+                RenderRegionEditor(builder, region);
+                break;
+            case WorldEngineEntityType.Lore when data is LoreDefinitionDto lore:
+                RenderLoreEditor(builder, lore);
+                break;
+            case WorldEngineEntityType.Traits when data is TraitDefinitionDto trait:
+                RenderTraitEditor(builder, trait);
+                break;
+            case WorldEngineEntityType.Glyphs when data is GlyphDefinitionDto glyph:
+                RenderGlyphEditor(builder, glyph);
+                break;
+            case WorldEngineEntityType.Industries when data is IndustryDefinitionDto industry:
+                RenderIndustryEditor(builder, industry);
+                break;
+            case WorldEngineEntityType.Interactions when data is InteractionDefinitionDto interaction:
+                RenderInteractionEditor(builder, interaction);
+                break;
+            case WorldEngineEntityType.Coinhouses when data is CoinhouseDto coinhouse:
+                RenderCoinhouseEditor(builder, coinhouse);
+                break;
+        }
+    };
+
+    // ── Item ────────────────────────────────────────────────────────
+    private static void RenderItemEditor(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b, ItemBlueprintDto dto)
+    {
+        int s = 0;
+        b.OpenElement(s++, "div"); b.AddAttribute(s++, "class", "we-entity-form");
+        AddField(b, ref s, "Tag", dto.ItemTag);
+        AddField(b, ref s, "Name", dto.Name);
+        AddField(b, ref s, "ResRef", dto.ResRef);
+        AddField(b, ref s, "Description", dto.Description);
+        AddField(b, ref s, "Base Item Type", dto.BaseItemType.ToString());
+        AddField(b, ref s, "Base Value", dto.BaseValue.ToString());
+        AddField(b, ref s, "Item Form", dto.ItemForm);
+        AddField(b, ref s, "Materials", dto.Materials != null ? string.Join(", ", dto.Materials) : "—");
+        AddField(b, ref s, "Is Template", dto.IsTemplate ? "Yes" : "No");
+        AddField(b, ref s, "Variants", dto.Variants?.Count.ToString() ?? "0");
+        b.CloseElement();
+    }
+
+    // ── Resource Node ───────────────────────────────────────────────
+    private static void RenderResourceNodeEditor(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b, ResourceNodeDefinitionDto dto)
+    {
+        int s = 0;
+        b.OpenElement(s++, "div"); b.AddAttribute(s++, "class", "we-entity-form");
+        AddField(b, ref s, "Tag", dto.Tag);
+        AddField(b, ref s, "Name", dto.Name);
+        AddField(b, ref s, "Type", dto.Type);
+        AddField(b, ref s, "Description", dto.Description);
+        AddField(b, ref s, "Uses", dto.Uses.ToString());
+        AddField(b, ref s, "Harvest Rounds", dto.BaseHarvestRounds.ToString());
+        AddField(b, ref s, "PLC Appearance", dto.PlcAppearance.ToString());
+        AddField(b, ref s, "Quality", $"{dto.MinQuality ?? "—"} → {dto.MaxQuality ?? "—"}");
+        AddField(b, ref s, "Outputs", dto.Outputs?.Length.ToString() ?? "0");
+        b.CloseElement();
+    }
+
+    // ── Region ──────────────────────────────────────────────────────
+    private static void RenderRegionEditor(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b, RegionDefinitionDto dto)
+    {
+        int s = 0;
+        b.OpenElement(s++, "div"); b.AddAttribute(s++, "class", "we-entity-form");
+        AddField(b, ref s, "Tag", dto.Tag);
+        AddField(b, ref s, "Name", dto.Name);
+        AddField(b, ref s, "Areas", dto.Areas.Count.ToString());
+        if (dto.DefaultChaos != null)
+        {
+            AddField(b, ref s, "Default Chaos", $"D:{dto.DefaultChaos.Danger} C:{dto.DefaultChaos.Corruption} N:{dto.DefaultChaos.Density} M:{dto.DefaultChaos.Mutation}");
+        }
+        b.CloseElement();
+    }
+
+    // ── Lore ────────────────────────────────────────────────────────
+    private static void RenderLoreEditor(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b, LoreDefinitionDto dto)
+    {
+        int s = 0;
+        b.OpenElement(s++, "div"); b.AddAttribute(s++, "class", "we-entity-form");
+        AddField(b, ref s, "Lore ID", dto.LoreId);
+        AddField(b, ref s, "Title", dto.Title);
+        AddField(b, ref s, "Category", dto.CategoryName ?? dto.Category.ToString());
+        AddField(b, ref s, "Tier", dto.Tier.ToString());
+        AddField(b, ref s, "Keywords", dto.Keywords);
+        AddField(b, ref s, "Always Available", dto.IsAlwaysAvailable ? "Yes" : "No");
+        AddField(b, ref s, "Created", dto.CreatedUtc.ToString("yyyy-MM-dd"));
+        // Content preview
+        b.OpenElement(s++, "div"); b.AddAttribute(s++, "class", "we-entity-form__field");
+        b.OpenElement(s++, "label"); b.AddContent(s++, "Content"); b.CloseElement();
+        b.OpenElement(s++, "div"); b.AddAttribute(s++, "class", "we-entity-form__content-preview");
+        b.AddContent(s++, dto.Content.Length > 500 ? dto.Content[..500] + "…" : dto.Content);
+        b.CloseElement(); b.CloseElement();
+        b.CloseElement();
+    }
+
+    // ── Trait ────────────────────────────────────────────────────────
+    private static void RenderTraitEditor(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b, TraitDefinitionDto dto)
+    {
+        int s = 0;
+        b.OpenElement(s++, "div"); b.AddAttribute(s++, "class", "we-entity-form");
+        AddField(b, ref s, "Tag", dto.Tag);
+        AddField(b, ref s, "Name", dto.Name);
+        AddField(b, ref s, "Category", dto.Category);
+        AddField(b, ref s, "Point Cost", dto.PointCost.ToString());
+        AddField(b, ref s, "Death Behavior", dto.DeathBehavior);
+        AddField(b, ref s, "DM Only", dto.DmOnly ? "Yes" : "No");
+        AddField(b, ref s, "Requires Unlock", dto.RequiresUnlock ? "Yes" : "No");
+        AddField(b, ref s, "Effects", dto.Effects.Count.ToString());
+        AddField(b, ref s, "Description", dto.Description);
+        b.CloseElement();
+    }
+
+    // ── Glyph ───────────────────────────────────────────────────────
+    private static void RenderGlyphEditor(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b, GlyphDefinitionDto dto)
+    {
+        int s = 0;
+        b.OpenElement(s++, "div"); b.AddAttribute(s++, "class", "we-entity-form");
+        AddField(b, ref s, "ID", dto.Id.ToString());
+        AddField(b, ref s, "Name", dto.Name);
+        AddField(b, ref s, "Description", dto.Description);
+        AddField(b, ref s, "Event Type", dto.EventType);
+        AddField(b, ref s, "Category", dto.Category);
+        AddField(b, ref s, "Active", dto.IsActive ? "Yes" : "No");
+        AddField(b, ref s, "Created", dto.CreatedAt.ToString("yyyy-MM-dd"));
+        AddField(b, ref s, "Updated", dto.UpdatedAt.ToString("yyyy-MM-dd"));
+        b.CloseElement();
+    }
+
+    // ── Industry ────────────────────────────────────────────────────
+    private static void RenderIndustryEditor(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b, IndustryDefinitionDto dto)
+    {
+        int s = 0;
+        b.OpenElement(s++, "div"); b.AddAttribute(s++, "class", "we-entity-form");
+        AddField(b, ref s, "Tag", dto.Tag);
+        AddField(b, ref s, "Name", dto.Name);
+        AddField(b, ref s, "Knowledge Entries", dto.Knowledge.Count.ToString());
+        AddField(b, ref s, "Recipes", dto.Recipes.Count.ToString());
+        b.CloseElement();
+    }
+
+    // ── Interaction ─────────────────────────────────────────────────
+    private static void RenderInteractionEditor(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b, InteractionDefinitionDto dto)
+    {
+        int s = 0;
+        b.OpenElement(s++, "div"); b.AddAttribute(s++, "class", "we-entity-form");
+        AddField(b, ref s, "Tag", dto.Tag);
+        AddField(b, ref s, "Name", dto.Name);
+        AddField(b, ref s, "Description", dto.Description);
+        AddField(b, ref s, "Target Mode", dto.TargetMode);
+        AddField(b, ref s, "Base Rounds", dto.BaseRounds.ToString());
+        AddField(b, ref s, "Min Rounds", dto.MinRounds.ToString());
+        AddField(b, ref s, "Proficiency Reduces", dto.ProficiencyReducesRounds ? "Yes" : "No");
+        AddField(b, ref s, "Requires Industry", dto.RequiresIndustryMembership ? "Yes" : "No");
+        AddField(b, ref s, "Industry Tags", dto.RequiredIndustryTags.Count > 0 ? string.Join(", ", dto.RequiredIndustryTags) : "—");
+        AddField(b, ref s, "Knowledge Tags", dto.RequiredKnowledgeTags.Count > 0 ? string.Join(", ", dto.RequiredKnowledgeTags) : "—");
+        AddField(b, ref s, "Area ResRefs", dto.AllowedAreaResRefs.Count > 0 ? string.Join(", ", dto.AllowedAreaResRefs) : "Any");
+        AddField(b, ref s, "Responses", dto.Responses.Count.ToString());
+        b.CloseElement();
+    }
+
+    // ── Coinhouse ───────────────────────────────────────────────────
+    private static void RenderCoinhouseEditor(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b, CoinhouseDto dto)
+    {
+        int s = 0;
+        b.OpenElement(s++, "div"); b.AddAttribute(s++, "class", "we-entity-form");
+        AddField(b, ref s, "Tag", dto.Tag);
+        AddField(b, ref s, "Settlement", dto.Settlement.ToString());
+        AddField(b, ref s, "Stored Gold", dto.StoredGold.ToString("N0"));
+        AddField(b, ref s, "Accounts", dto.AccountCount.ToString());
+        AddField(b, ref s, "Total Deposits", dto.TotalDeposits.ToString("N0"));
+        AddField(b, ref s, "Total Credits", dto.TotalCredits.ToString("N0"));
+        b.CloseElement();
+    }
+
+    // ── Shared field renderer ───────────────────────────────────────
+    private static void AddField(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b, ref int seq, string label, string? value)
+    {
+        b.OpenElement(seq++, "div");  b.AddAttribute(seq++, "class", "we-entity-form__field");
+        b.OpenElement(seq++, "label"); b.AddContent(seq++, label); b.CloseElement();
+        b.OpenElement(seq++, "span");  b.AddContent(seq++, value ?? "—"); b.CloseElement();
+        b.CloseElement();
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -490,13 +1279,802 @@
         InvokeAsync(StateHasChanged);
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         _searchCts?.Cancel();
         _searchCts?.Dispose();
         EditorState.OnEndpointChanged -= OnEditorEndpointChanged;
         EditorState.OnActiveEntityTypeChanged -= OnActiveEntityTypeChanged;
-        EditorState.OnActiveTabChanged -= StateHasChangedSafe;
+        EditorState.OnActiveTabChanged -= OnActiveTabChanged;
         EditorState.OnTabListChanged -= StateHasChangedSafe;
+
+        // Destroy region graph if open
+        if (_regionGraphOpen)
+        {
+            try { await JS.InvokeVoidAsync("regionGraph.destroy"); } catch { }
+            try
+            {
+                if (_regionBridgeModule != null)
+                {
+                    await _regionBridgeModule.InvokeVoidAsync("destroy", RegionGlInstanceId);
+                    await _regionBridgeModule.DisposeAsync();
+                }
+            }
+            catch { }
+        }
+        _regionDotNetRef?.Dispose();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Region Graph — Lifecycle
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task OpenRegionGraph()
+    {
+        if (_regionGraphOpen) return;
+
+        _regionGraphOpen = true;
+        _regionGraphLoading = true;
+        _regionGraphError = null;
+        _regionGraphLoadPercent = 0;
+        _regionGraphLoadPhase = "Fetching data…";
+        StateHasChanged();
+
+        try
+        {
+            // Load graph data and regions in parallel
+            Task<AreaGraphDto?> graphTask = AreaGraphApi.GetGraphAsync();
+            Task<PagedResult<RegionDefinitionDto>> regionsTask = RegionApi.GetAllAsync(null, 1, 200);
+
+            await Task.WhenAll(graphTask, regionsTask);
+
+            _regionGraphData = await graphTask;
+            PagedResult<RegionDefinitionDto> regResult = await regionsTask;
+            _rgRegions = regResult.Items;
+
+            if (_regionGraphData == null)
+            {
+                _regionGraphError = "No area graph data available. Ensure the graph has been generated on the server.";
+                _regionGraphLoading = false;
+                StateHasChanged();
+                return;
+            }
+
+            // Load resource definitions for the area editor
+            try
+            {
+                PagedResult<ResourceNodeDefinitionDto> rdResult = await ResourceNodeApi.GetAllAsync(pageSize: 9999);
+                _rgAllResourceDefs = rdResult.Items;
+            }
+            catch { _rgAllResourceDefs = []; }
+
+            RgBuildKnownAreas();
+            RgBuildRegionColors();
+
+            _regionGraphLoadPercent = 15;
+            _regionGraphLoadPhase = "Computing layout…";
+            StateHasChanged();
+
+            // Compute layout server-side
+            GraphLayoutResult layoutResult = await RgComputeLayout();
+
+            _regionGraphLoadPercent = 85;
+            _regionGraphLoadPhase = "Rendering…";
+            _regionGraphNeedsInit = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to open region graph");
+            _regionGraphError = $"Failed to load: {ex.Message}";
+            _regionGraphLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_regionGraphNeedsInit && _regionGraphData != null)
+        {
+            _regionGraphNeedsInit = false;
+            await InitRegionGraphGl();
+        }
+    }
+
+    private async Task InitRegionGraphGl()
+    {
+        try
+        {
+            // 1. Initialize Golden Layout bridge for this instance
+            _regionBridgeModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/golden-layout-bridge.js");
+            _regionDotNetRef?.Dispose();
+            _regionDotNetRef = DotNetObjectReference.Create(this);
+
+            string layoutConfig = BuildRegionGlLayoutConfig();
+            await _regionBridgeModule.InvokeVoidAsync("init", RegionGlInstanceId, "we-region-gl-container", layoutConfig, _regionDotNetRef);
+
+            // 2. Wait a tick for GL to bind the panels, then init Cytoscape
+            await Task.Delay(150);
+
+            GraphLayoutResult layoutResult = await RgComputeLayout();
+
+            string nodesJson = JsonSerializer.Serialize(_regionGraphData!.Nodes, RgCamelCase);
+            string edgesJson = JsonSerializer.Serialize(_regionGraphData.Edges, RgCamelCase);
+            string disconnectedJson = JsonSerializer.Serialize(_regionGraphData.DisconnectedAreas, RgCamelCase);
+            string regionsJson = RgBuildRegionsGraphJson();
+            string positionsJson = JsonSerializer.Serialize(layoutResult.Positions, RgCamelCase);
+
+            await JS.InvokeVoidAsync("regionGraph.init", "region-cy-gl", nodesJson, edgesJson, disconnectedJson, regionsJson, _regionDotNetRef, positionsJson);
+
+            _regionGraphLoading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to initialize region graph GL");
+            _regionGraphError = $"Failed to initialize: {ex.Message}";
+            _regionGraphLoading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private static string BuildRegionGlLayoutConfig()
+    {
+        // Two-panel row: graph (70%) + properties (30%)
+        return JsonSerializer.Serialize(new
+        {
+            root = new
+            {
+                type = "row",
+                content = new object[]
+                {
+                    new { type = "component", componentType = "regiongraph", title = "Region Graph", size = "70%" },
+                    new { type = "component", componentType = "regionprops", title = "Properties", size = "30%" }
+                }
+            }
+        });
+    }
+
+    private async Task CloseRegionGraph()
+    {
+        try { await JS.InvokeVoidAsync("regionGraph.destroy"); } catch { }
+        try
+        {
+            if (_regionBridgeModule != null)
+            {
+                await _regionBridgeModule.InvokeVoidAsync("destroy", RegionGlInstanceId);
+            }
+        }
+        catch { }
+
+        _regionGraphOpen = false;
+        _regionGraphData = null;
+        _rgRegions = [];
+        _rgKnownAreas = [];
+        _rgRegionColors.Clear();
+        _rgPanelMode = RgPanelMode.RegionList;
+        _rgEditArea = null;
+        _rgError = null;
+        _rgSuccess = null;
+        StateHasChanged();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Region Graph — GL Bridge Callbacks
+    // ═══════════════════════════════════════════════════════════════════
+
+    [JSInvokable]
+    public async Task OnPanelResized(string instanceId, string componentType, double width, double height)
+    {
+        if (instanceId == RegionGlInstanceId && componentType == "regiongraph")
+        {
+            try { await JS.InvokeVoidAsync("regionGraph.resize"); } catch { }
+        }
+    }
+
+    [JSInvokable]
+    public Task OnPanelRemoved(string instanceId, string componentType) => Task.CompletedTask;
+
+    [JSInvokable]
+    public Task OnPanelVisibilityChanged(string instanceId, string componentType, bool visible) => Task.CompletedTask;
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Region Graph — Cytoscape JS Callbacks
+    // ═══════════════════════════════════════════════════════════════════
+
+    [JSInvokable]
+    public Task OnGraphLoadProgress(int percent, string phase)
+    {
+        _regionGraphLoadPercent = percent;
+        _regionGraphLoadPhase = phase;
+        if (percent >= 100) _regionGraphLoading = false;
+        InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public Task OnGraphNodeSelected(string json)
+    {
+        try
+        {
+            var info = JsonSerializer.Deserialize<RgGraphNodeInfo>(json, RgCamelCase);
+            if (info != null)
+            {
+                RgOpenAreaEditor(info.ResRef, info.Region, info.Name);
+            }
+        }
+        catch (Exception ex) { Logger.LogError(ex, "Failed to deserialize graph node selection"); }
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public Task OnGraphNodeDeselected()
+    {
+        if (_rgPanelMode == RgPanelMode.AreaEditor)
+        {
+            _rgPanelMode = RgPanelMode.RegionList;
+            StateHasChanged();
+        }
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public Task OnRegionParentSelected(string regionTag)
+    {
+        RegionDefinitionDto? region = _rgRegions.FirstOrDefault(r =>
+            string.Equals(r.Tag, regionTag, StringComparison.OrdinalIgnoreCase));
+        if (region != null)
+        {
+            RgSelectRegionForEdit(region);
+            StateHasChanged();
+        }
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public async Task OnNodeAssignedToRegion(string resRef, string regionTag)
+    {
+        RegionDefinitionDto? target = _rgRegions.FirstOrDefault(r =>
+            string.Equals(r.Tag, regionTag, StringComparison.OrdinalIgnoreCase));
+        if (target == null) return;
+
+        foreach (RegionDefinitionDto r in _rgRegions)
+            r.Areas.RemoveAll(a => string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
+
+        if (!target.Areas.Any(a => string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase)))
+            target.Areas.Add(new AreaDefinitionDto { ResRef = resRef });
+
+        try
+        {
+            foreach (RegionDefinitionDto r in _rgRegions) await RegionApi.UpdateAsync(r.Tag, r);
+            _rgSuccess = $"Assigned '{resRef}' to '{target.Name}'.";
+            await RgRefreshRegions();
+            await RgUpdateGraphRegionData();
+        }
+        catch (Exception ex) { _rgError = ex.Message; Logger.LogError(ex, "Failed to assign area"); }
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public async Task OnNodeUnassigned(string resRef)
+    {
+        bool changed = false;
+        foreach (RegionDefinitionDto r in _rgRegions)
+        {
+            int removed = r.Areas.RemoveAll(a => string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
+            if (removed > 0)
+            {
+                try { await RegionApi.UpdateAsync(r.Tag, r); changed = true; }
+                catch (Exception ex) { _rgError = ex.Message; Logger.LogError(ex, "Failed to unassign area"); }
+            }
+        }
+        if (changed)
+        {
+            _rgSuccess = $"Unassigned '{resRef}'.";
+            await RgRefreshRegions();
+            await RgUpdateGraphRegionData();
+        }
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public Task OnContextMenuAction(string action, string targetId)
+    {
+        switch (action)
+        {
+            case "newRegion":
+                RgShowCreateRegion();
+                break;
+            case "deleteRegion":
+                RegionDefinitionDto? region = _rgRegions.FirstOrDefault(r =>
+                    string.Equals(r.Tag, targetId, StringComparison.OrdinalIgnoreCase));
+                if (region != null) { RgSelectRegionForEdit(region); _rgShowDeleteConfirm = true; }
+                break;
+        }
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Region Graph — Graph Interaction
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task RgSearchInGraph()
+    {
+        if (string.IsNullOrWhiteSpace(_rgGraphSearchQuery)) return;
+        try { await JS.InvokeAsync<bool>("regionGraph.highlightNode", _rgGraphSearchQuery); }
+        catch (Exception ex) { Logger.LogError(ex, "Graph search error"); }
+    }
+
+    private async Task OnRgGraphSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await RgSearchInGraph();
+    }
+
+    private async Task RgHighlightOrphans()
+    {
+        try { await JS.InvokeVoidAsync("regionGraph.highlightOrphans"); } catch { }
+    }
+
+    private async Task RgClearHighlight()
+    {
+        try { await JS.InvokeVoidAsync("regionGraph.clearHighlight"); } catch { }
+    }
+
+    private async Task RgFitView()
+    {
+        try { await JS.InvokeVoidAsync("regionGraph.fitView"); } catch { }
+    }
+
+    private async Task RgHighlightRegion(string regionName)
+    {
+        try { await JS.InvokeVoidAsync("regionGraph.highlightRegion", regionName); } catch { }
+    }
+
+    private async Task RgApplyLayout()
+    {
+        if (_regionGraphData == null) return;
+
+        _regionGraphLoading = true;
+        _regionGraphLoadPercent = 10;
+        _regionGraphLoadPhase = "Computing layout…";
+        StateHasChanged();
+
+        try
+        {
+            GraphLayoutResult layoutResult = await RgComputeLayout();
+            _regionGraphLoadPercent = 90;
+            _regionGraphLoadPhase = "Applying positions…";
+            StateHasChanged();
+
+            string positionsJson = JsonSerializer.Serialize(layoutResult.Positions, RgCamelCase);
+            await JS.InvokeVoidAsync("regionGraph.applyPositions", positionsJson);
+
+            _regionGraphLoadPercent = 100;
+            _regionGraphLoadPhase = "Complete";
+            _regionGraphLoading = false;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to apply layout");
+            _regionGraphError = "Failed to compute layout.";
+            _regionGraphLoading = false;
+        }
+        StateHasChanged();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Region Graph — Data Helpers
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task RgRefreshRegions()
+    {
+        try
+        {
+            PagedResult<RegionDefinitionDto> result = await RegionApi.GetAllAsync(null, 1, 200);
+            _rgRegions = result.Items;
+        }
+        catch (Exception ex) { Logger.LogError(ex, "Failed to refresh regions"); }
+    }
+
+    private void RgBuildKnownAreas()
+    {
+        if (_regionGraphData == null) { _rgKnownAreas = []; return; }
+        List<AreaNodeDto> all = [.._regionGraphData.Nodes, .._regionGraphData.DisconnectedAreas];
+        all.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
+        _rgKnownAreas = all;
+    }
+
+    private void RgBuildRegionColors()
+    {
+        _rgRegionColors.Clear();
+        string[] palette = ["#e6194b", "#3cb44b", "#4363d8", "#f58231", "#911eb4", "#42d4f4", "#f032e6", "#bfef45", "#fabed4", "#469990", "#dcbeff", "#9A6324"];
+        for (int i = 0; i < _rgRegions.Count; i++)
+        {
+            _rgRegionColors[_rgRegions[i].Tag] = palette[i % palette.Length];
+            if (!_rgRegionColors.ContainsKey(_rgRegions[i].Name))
+                _rgRegionColors[_rgRegions[i].Name] = palette[i % palette.Length];
+        }
+    }
+
+    private string RgBuildRegionsGraphJson()
+    {
+        var data = _rgRegions.Select(r => new
+        {
+            tag = r.Tag ?? "",
+            name = r.Name ?? "",
+            areaResRefs = r.Areas.Where(a => !string.IsNullOrWhiteSpace(a.ResRef)).Select(a => a.ResRef).ToList(),
+            poiCounts = r.Areas
+                .Where(a => !string.IsNullOrWhiteSpace(a.ResRef) && a.PlacesOfInterest?.Count > 0)
+                .ToDictionary(a => a.ResRef, a => a.PlacesOfInterest!.Count)
+        });
+        return JsonSerializer.Serialize(data, RgCamelCase);
+    }
+
+    private async Task<GraphLayoutResult> RgComputeLayout()
+    {
+        List<RegionInfo> regionInfos = _rgRegions.Select(r => new RegionInfo
+        {
+            Tag = r.Tag,
+            Name = r.Name,
+            AreaResRefs = r.Areas.Where(a => !string.IsNullOrWhiteSpace(a.ResRef)).Select(a => a.ResRef).ToList()
+        }).ToList();
+
+        var progress = new Progress<(int Percent, string Phase)>(p =>
+        {
+            _regionGraphLoadPercent = 15 + (int)(p.Percent * 0.7);
+            _regionGraphLoadPhase = p.Phase;
+            InvokeAsync(StateHasChanged);
+        });
+
+        return await LayoutService.ComputeLayoutAsync(_regionGraphData!, regionInfos, _rgSelectedLayout, new Dictionary<string, object>(), progress);
+    }
+
+    private async Task RgUpdateGraphRegionData()
+    {
+        if (_regionGraphData == null) return;
+        try
+        {
+            Dictionary<string, string> assignments = new(StringComparer.OrdinalIgnoreCase);
+            foreach (RegionDefinitionDto region in _rgRegions)
+                foreach (AreaDefinitionDto area in region.Areas)
+                    if (!string.IsNullOrWhiteSpace(area.ResRef))
+                        assignments[area.ResRef] = region.Tag;
+
+            foreach (AreaNodeDto node in _regionGraphData.Nodes.Concat(_regionGraphData.DisconnectedAreas))
+                node.Region = assignments.TryGetValue(node.ResRef, out string? tag) ? tag : null;
+
+            RgBuildRegionColors();
+            string regionsJson = RgBuildRegionsGraphJson();
+            await JS.InvokeVoidAsync("regionGraph.updateRegionData", regionsJson);
+            StateHasChanged();
+        }
+        catch (Exception ex) { Logger.LogError(ex, "Failed to update graph region data"); }
+    }
+
+    private string? RgGetAreaName(string? resRef)
+    {
+        if (string.IsNullOrWhiteSpace(resRef) || _rgKnownAreas.Count == 0) return null;
+        return _rgKnownAreas.FirstOrDefault(a => string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase))?.Name;
+    }
+
+    private IEnumerable<RegionDefinitionDto> RgFilteredRegions()
+    {
+        if (string.IsNullOrWhiteSpace(_rgRegionListFilter)) return _rgRegions;
+        string f = _rgRegionListFilter.Trim();
+        return _rgRegions.Where(r => r.Name.Contains(f, StringComparison.OrdinalIgnoreCase) || r.Tag.Contains(f, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private bool RgIsRegionSelected(RegionDefinitionDto region) =>
+        _rgPanelMode == RgPanelMode.RegionEditor && !_rgIsCreating &&
+        string.Equals(_rgEditRegion.Tag, region.Tag, StringComparison.OrdinalIgnoreCase);
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Region Graph — Panel Mode Management
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void RgShowCreateRegion()
+    {
+        _rgIsCreating = true;
+        _rgEditRegion = new RegionDefinitionDto();
+        _rgShowDeleteConfirm = false;
+        _rgShowAddAreaInput = false;
+        _rgPanelMode = RgPanelMode.RegionEditor;
+    }
+
+    private void RgSelectRegionForEdit(RegionDefinitionDto region)
+    {
+        _rgIsCreating = false;
+        _rgEditRegion = RgCloneRegion(region);
+        _rgShowDeleteConfirm = false;
+        _rgShowAddAreaInput = false;
+        _rgPanelMode = RgPanelMode.RegionEditor;
+    }
+
+    private void RgCloseEditor()
+    {
+        _rgPanelMode = RgPanelMode.RegionList;
+        _rgEditArea = null;
+        _rgShowDeleteConfirm = false;
+        _rgShowAddAreaInput = false;
+    }
+
+    private void RgOpenAreaEditor(string resRef, string? regionTag, string? areaName)
+    {
+        _rgEditAreaRegionTag = regionTag ?? "";
+        _rgEditAreaOriginalRegionTag = _rgEditAreaRegionTag;
+        _rgEditAreaName = areaName;
+
+        AreaDefinitionDto? found = null;
+        if (!string.IsNullOrEmpty(regionTag))
+        {
+            RegionDefinitionDto? region = _rgRegions.FirstOrDefault(r => string.Equals(r.Tag, regionTag, StringComparison.OrdinalIgnoreCase));
+            found = region?.Areas.FirstOrDefault(a => string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
+        }
+        if (found == null)
+        {
+            foreach (RegionDefinitionDto r in _rgRegions)
+            {
+                found = r.Areas.FirstOrDefault(a => string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
+                if (found != null) { _rgEditAreaRegionTag = r.Tag; _rgEditAreaOriginalRegionTag = r.Tag; break; }
+            }
+        }
+
+        _rgEditArea = found != null ? RgCloneArea(found) : new AreaDefinitionDto { ResRef = resRef };
+        _rgPanelMode = RgPanelMode.AreaEditor;
+        StateHasChanged();
+    }
+
+    private void RgEditAreaInRegion(int areaIndex)
+    {
+        AreaDefinitionDto area = _rgEditRegion.Areas[areaIndex];
+        _rgEditAreaRegionTag = _rgEditRegion.Tag;
+        _rgEditAreaOriginalRegionTag = _rgEditRegion.Tag;
+        _rgEditAreaName = RgGetAreaName(area.ResRef);
+        _rgEditArea = RgCloneArea(area);
+        _rgPanelMode = RgPanelMode.AreaEditor;
+    }
+
+    private void RgConfirmAddArea()
+    {
+        if (string.IsNullOrWhiteSpace(_rgNewAreaResRef)) return;
+        _rgEditRegion.Areas.Add(new AreaDefinitionDto { ResRef = _rgNewAreaResRef.Trim() });
+        _rgNewAreaResRef = "";
+        _rgShowAddAreaInput = false;
+    }
+
+    private void RgOpenAddArea()
+    {
+        _rgShowAddAreaInput = true;
+        _rgNewAreaResRef = "";
+    }
+
+    private void RgOnAreaRegionChanged(ChangeEventArgs e)
+    {
+        _rgEditAreaRegionTag = e.Value?.ToString() ?? "";
+    }
+
+    private void RgAddPoi()
+    {
+        if (_rgEditArea == null) return;
+        _rgEditArea.PlacesOfInterest ??= new List<PlaceOfInterestDto>();
+        _rgEditArea.PlacesOfInterest.Add(new PlaceOfInterestDto());
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Region Graph — Save / Delete
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task RgSaveCurrentEditor()
+    {
+        if (_rgPanelMode == RgPanelMode.RegionEditor)
+            await RgSaveRegion();
+        else if (_rgPanelMode == RgPanelMode.AreaEditor)
+            await RgSaveArea();
+    }
+
+    private async Task RgSaveRegion()
+    {
+        _rgIsSaving = true;
+        _rgError = null;
+        try
+        {
+            if (_rgIsCreating)
+                await RegionApi.CreateAsync(_rgEditRegion);
+            else
+                await RegionApi.UpdateAsync(_rgEditRegion.Tag, _rgEditRegion);
+
+            _rgSuccess = _rgIsCreating ? $"Region '{_rgEditRegion.Name}' created." : $"Region '{_rgEditRegion.Name}' updated.";
+            await RgRefreshRegions();
+            RgBuildRegionColors();
+            await RgUpdateGraphRegionData();
+            _rgPanelMode = RgPanelMode.RegionList;
+        }
+        catch (Exception ex) { _rgError = ex.Message; Logger.LogError(ex, "Failed to save region"); }
+        finally { _rgIsSaving = false; StateHasChanged(); }
+    }
+
+    private async Task RgSaveArea()
+    {
+        if (_rgEditArea == null) return;
+        _rgIsSaving = true;
+        _rgError = null;
+        try
+        {
+            string resRef = _rgEditArea.ResRef;
+            string? newRegionTag = _rgEditAreaRegionTag;
+            string? oldRegionTag = _rgEditAreaOriginalRegionTag;
+
+            if (!string.Equals(oldRegionTag, newRegionTag, StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.IsNullOrEmpty(oldRegionTag))
+                {
+                    RegionDefinitionDto? oldRegion = _rgRegions.FirstOrDefault(r => string.Equals(r.Tag, oldRegionTag, StringComparison.OrdinalIgnoreCase));
+                    if (oldRegion != null)
+                    {
+                        oldRegion.Areas.RemoveAll(a => string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
+                        await RegionApi.UpdateAsync(oldRegion.Tag, oldRegion);
+                    }
+                }
+                if (!string.IsNullOrEmpty(newRegionTag))
+                {
+                    RegionDefinitionDto? newRegion = _rgRegions.FirstOrDefault(r => string.Equals(r.Tag, newRegionTag, StringComparison.OrdinalIgnoreCase));
+                    if (newRegion != null)
+                    {
+                        newRegion.Areas.RemoveAll(a => string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
+                        newRegion.Areas.Add(RgCloneArea(_rgEditArea));
+                        await RegionApi.UpdateAsync(newRegion.Tag, newRegion);
+                    }
+                }
+            }
+            else if (!string.IsNullOrEmpty(newRegionTag))
+            {
+                RegionDefinitionDto? targetRegion = _rgRegions.FirstOrDefault(r => string.Equals(r.Tag, newRegionTag, StringComparison.OrdinalIgnoreCase));
+                if (targetRegion != null)
+                {
+                    int idx = targetRegion.Areas.FindIndex(a => string.Equals(a.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
+                    if (idx >= 0) targetRegion.Areas[idx] = RgCloneArea(_rgEditArea);
+                    else targetRegion.Areas.Add(RgCloneArea(_rgEditArea));
+                    await RegionApi.UpdateAsync(targetRegion.Tag, targetRegion);
+                }
+            }
+
+            _rgSuccess = $"Area '{resRef}' saved.";
+            await RgRefreshRegions();
+            RgBuildRegionColors();
+            await RgUpdateGraphRegionData();
+            _rgPanelMode = RgPanelMode.RegionList;
+        }
+        catch (Exception ex) { _rgError = ex.Message; Logger.LogError(ex, "Failed to save area"); }
+        finally { _rgIsSaving = false; StateHasChanged(); }
+    }
+
+    private async Task RgDeleteRegion()
+    {
+        _rgIsSaving = true;
+        _rgError = null;
+        try
+        {
+            await RegionApi.DeleteAsync(_rgEditRegion.Tag);
+            _rgSuccess = $"Deleted region '{_rgEditRegion.Name}'.";
+            _rgShowDeleteConfirm = false;
+            _rgPanelMode = RgPanelMode.RegionList;
+            await RgRefreshRegions();
+            RgBuildRegionColors();
+            await RgUpdateGraphRegionData();
+        }
+        catch (Exception ex) { _rgError = ex.Message; Logger.LogError(ex, "Failed to delete region"); }
+        finally { _rgIsSaving = false; StateHasChanged(); }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Region Graph — Resource Def Picker
+    // ═══════════════════════════════════════════════════════════════════
+
+    private List<ResourceNodeDefinitionDto> RgGetFilteredResourceDefs()
+    {
+        List<string> selected = _rgEditArea?.DefinitionTags ?? [];
+        string query = _rgDefTagSearch?.Trim() ?? "";
+        return _rgAllResourceDefs
+            .Where(d => !selected.Contains(d.Tag))
+            .Where(d => string.IsNullOrEmpty(query)
+                        || d.Tag.Contains(query, StringComparison.OrdinalIgnoreCase)
+                        || (d.Name?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)
+                        || (d.Type?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false))
+            .OrderBy(d => d.Tag)
+            .ToList();
+    }
+
+    private void RgAddDefinitionTag(string tag)
+    {
+        if (_rgEditArea == null) return;
+        if (!_rgEditArea.DefinitionTags.Contains(tag))
+            _rgEditArea.DefinitionTags.Add(tag);
+        _rgDefTagSearch = "";
+        _rgDefTagDropdownOpen = false;
+    }
+
+    private async Task RgOnDefTagBlur()
+    {
+        await Task.Delay(200);
+        _rgDefTagDropdownOpen = false;
+        StateHasChanged();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Region Graph — List Item Click → Graph Highlight
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task OnRegionListItemClick(EntityListItem item)
+    {
+        if (_regionGraphOpen)
+        {
+            // Highlight in graph and open properties
+            try { await JS.InvokeVoidAsync("regionGraph.highlightRegion", item.DisplayName); } catch { }
+            RegionDefinitionDto? region = _rgRegions.FirstOrDefault(r => string.Equals(r.Tag, item.Key, StringComparison.OrdinalIgnoreCase));
+            if (region != null)
+            {
+                RgSelectRegionForEdit(region);
+                StateHasChanged();
+            }
+        }
+        else
+        {
+            // Normal behavior: open a tab
+            EditorState.OpenTab(item.EntityType, item.DisplayName, item.Key);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Region Graph — Clone Helpers
+    // ═══════════════════════════════════════════════════════════════════
+
+    private static RegionDefinitionDto RgCloneRegion(RegionDefinitionDto source) => new()
+    {
+        Tag = source.Tag,
+        Name = source.Name,
+        DefaultChaos = source.DefaultChaos != null ? new ChaosStateDto
+        {
+            Danger = source.DefaultChaos.Danger,
+            Corruption = source.DefaultChaos.Corruption,
+            Density = source.DefaultChaos.Density,
+            Mutation = source.DefaultChaos.Mutation
+        } : null,
+        Areas = source.Areas.Select(RgCloneArea).ToList()
+    };
+
+    private static AreaDefinitionDto RgCloneArea(AreaDefinitionDto a) => new()
+    {
+        ResRef = a.ResRef,
+        DefinitionTags = a.DefinitionTags.ToList(),
+        LinkedSettlement = a.LinkedSettlement,
+        Environment = new EnvironmentDataDto
+        {
+            Climate = a.Environment.Climate,
+            SoilQuality = a.Environment.SoilQuality,
+            MineralQualityRange = new QualityRangeDto
+            {
+                Min = a.Environment.MineralQualityRange.Min,
+                Max = a.Environment.MineralQualityRange.Max
+            },
+            Chaos = a.Environment.Chaos != null ? new ChaosStateDto
+            {
+                Danger = a.Environment.Chaos.Danger,
+                Corruption = a.Environment.Chaos.Corruption,
+                Density = a.Environment.Chaos.Density,
+                Mutation = a.Environment.Chaos.Mutation
+            } : null
+        },
+        PlacesOfInterest = a.PlacesOfInterest?.Select(p => new PlaceOfInterestDto
+        {
+            ResRef = p.ResRef, Tag = p.Tag, Name = p.Name, Type = p.Type, Description = p.Description
+        }).ToList()
+    };
+
+    private sealed class RgGraphNodeInfo
+    {
+        public string ResRef { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string? Region { get; set; }
     }
 }
