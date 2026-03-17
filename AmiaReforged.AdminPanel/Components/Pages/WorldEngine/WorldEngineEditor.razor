@@ -217,7 +217,7 @@
 
                     @if (_interactionEditorLoading)
                     {
-                        <div class="we-editor__region-graph-loading">
+                        <div class="we-ie-loading-overlay">
                             <span class="spinner-border spinner-border-sm me-2"></span>
                             <span>Loading interaction editor…</span>
                         </div>
@@ -229,10 +229,12 @@
                         </div>
                     }
 
-                    @* GL container *@
-                    <div id="we-interaction-gl-container" class="we-ie-gl-host"></div>
+                    @* ── Layout area: position:relative wrapper for GL + panels ── *@
+                    <div class="we-ie-layout-area">
+                        @* GL container *@
+                        <div id="we-interaction-gl-container" class="we-ie-gl-host"></div>
 
-                    @* ── Pre-rendered Panel: Node Palette ── *@
+                        @* ── Pre-rendered Panel: Node Palette ── *@
                     <div id="bl-panel-ie-palette" class="we-editor__gl-panel" style="display:none">
                         <div style="background:var(--bg-card);height:100%;display:flex;flex-direction:column">
                             <div style="padding:8px 12px;border-bottom:1px solid var(--border-subtle);flex-shrink:0">
@@ -535,6 +537,7 @@
                             }
                         </div>
                     </div>
+                    </div> @* end we-ie-layout-area *@
                 </div>
             }
             else if (_regionGraphOpen)

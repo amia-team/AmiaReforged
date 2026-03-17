@@ -776,11 +776,34 @@
     flex-shrink: 0;
 }
 
-/* GL host container */
+/* Layout area — positioned wrapper for GL root + panels */
+.we-ie-layout-area {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* GL host container — fills the layout area */
 .we-ie-gl-host {
     flex: 1;
+    min-height: 0;
     overflow: hidden;
-    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+/* Loading overlay */
+.we-ie-loading-overlay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    color: var(--text-secondary, #a09882);
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    background: rgba(26, 24, 19, 0.8);
 }
 
 /* Glyph node palette hover effect (shared with InteractionEditor) */
