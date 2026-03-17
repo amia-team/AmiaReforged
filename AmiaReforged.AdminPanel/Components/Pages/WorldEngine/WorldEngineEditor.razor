@@ -5,6 +5,16 @@
 @attribute [Authorize]
 @inject WorldEngineEditorState EditorState
 @inject IWorldEngineEndpointService EndpointService
+@inject ItemApiService ItemApi
+@inject ResourceNodeApiService ResourceNodeApi
+@inject RegionApiService RegionApi
+@inject AreaGraphApiService AreaGraphApi
+@inject LoreApiService LoreApi
+@inject TraitApiService TraitApi
+@inject GlyphApiService GlyphApi
+@inject IndustryApiService IndustryApi
+@inject InteractionApiService InteractionApi
+@inject CoinhouseApiService CoinhouseApi
 @inject ILogger<WorldEngineEditor> Logger
 @inject IJSRuntime JS
 @rendermode InteractiveServer
@@ -72,12 +82,55 @@
                         <span class="bi bi-x"></span>
                     </button>
                 </div>
-                <div class="we-editor__list-body">
-                    <p class="text-muted small p-2">
-                        Select an endpoint to load entities.
-                    </p>
-                    @* Entity list content will be provided by EntityListPanel in a future phase *@
-                </div>
+
+                @if (EditorState.SelectedEndpointId == null)
+                {
+                    <div class="we-editor__list-body">
+                        <p class="text-muted small p-2">Select an endpoint to load entities.</p>
+                    </div>
+                }
+                else
+                {
+                    @* Search box *@
+                    <div class="we-editor__list-search">
+                        <input type="text" class="form-control form-control-sm"
+                               placeholder="Search…"
+                               value="@_listSearch"
+                               @oninput="OnListSearchInput" />
+                    </div>
+
+                    <div class="we-editor__list-body">
+                        @if (_listLoading)
+                        {
+                            <p class="text-muted small p-2"><em>Loading…</em></p>
+                        }
+                        else if (_listError != null)
+                        {
+                            <p class="text-danger small p-2">@_listError</p>
+                        }
+                        else if (_listItems.Count == 0)
+                        {
+                            <p class="text-muted small p-2">No entities found.</p>
+                        }
+                        else
+                        {
+                            @foreach (EntityListItem item in _listItems)
+                            {
+                                <button class="we-editor__list-item" @onclick="() => OnListItemClick(item)">
+                                    <span class="we-editor__list-item-name">@item.DisplayName</span>
+                                    <span class="we-editor__list-item-key">@item.Key</span>
+                                </button>
+                            }
+
+                            @if (_listHasMore)
+                            {
+                                <button class="we-editor__list-load-more" @onclick="LoadMoreEntities">
+                                    Load more…
+                                </button>
+                            }
+                        }
+                    </div>
+                }
             </div>
         }
 
@@ -124,13 +177,26 @@
     private List<WorldEngineEndpoint> _endpoints = [];
     private bool _listPanelOpen = true;
 
+    // ── Entity list state ───────────────────────────────────────────
+    private List<EntityListItem> _listItems = [];
+    private bool _listLoading;
+    private string? _listError;
+    private string _listSearch = "";
+    private int _listPage = 1;
+    private bool _listHasMore;
+    private const int ListPageSize = 50;
+    private CancellationTokenSource? _searchCts;
+
+    /// <summary>Lightweight display model for the entity list.</summary>
+    private sealed record EntityListItem(string Key, string DisplayName, WorldEngineEntityType EntityType);
+
     protected override async Task OnInitializedAsync()
     {
         _endpoints = (await EndpointService.GetEnabledEndpointsAsync()).ToList();
 
         // Subscribe to state changes
-        EditorState.OnEndpointChanged += StateHasChangedSafe;
-        EditorState.OnActiveEntityTypeChanged += StateHasChangedSafe;
+        EditorState.OnEndpointChanged += OnEditorEndpointChanged;
+        EditorState.OnActiveEntityTypeChanged += OnActiveEntityTypeChanged;
         EditorState.OnActiveTabChanged += StateHasChangedSafe;
         EditorState.OnTabListChanged += StateHasChangedSafe;
     }
@@ -145,6 +211,30 @@
         EditorState.SelectedEndpointId = Guid.TryParse(val, out Guid id) ? id : null;
     }
 
+    private void OnEditorEndpointChanged()
+    {
+        // Push the endpoint selection to ALL API services
+        Guid? eid = EditorState.SelectedEndpointId;
+        ItemApi.SelectEndpoint(eid);
+        ResourceNodeApi.SelectEndpoint(eid);
+        RegionApi.SelectEndpoint(eid);
+        AreaGraphApi.SelectEndpoint(eid);
+        LoreApi.SelectEndpoint(eid);
+        TraitApi.SelectEndpoint(eid);
+        GlyphApi.SelectEndpoint(eid);
+        IndustryApi.SelectEndpoint(eid);
+        InteractionApi.SelectEndpoint(eid);
+        CoinhouseApi.SelectEndpoint(eid);
+
+        // Reload the current entity list
+        _ = InvokeAsync(async () =>
+        {
+            _listSearch = "";
+            await LoadEntityList(reset: true);
+            StateHasChanged();
+        });
+    }
+
     // ═══════════════════════════════════════════════════════════════════
     //  Activity bar
     // ═══════════════════════════════════════════════════════════════════
@@ -153,7 +243,6 @@
     {
         if (EditorState.ActiveEntityType == entityType)
         {
-            // Toggle list panel if clicking same type
             _listPanelOpen = !_listPanelOpen;
         }
         else
@@ -161,6 +250,196 @@
             EditorState.ActiveEntityType = entityType;
             _listPanelOpen = true;
         }
+    }
+
+    private void OnActiveEntityTypeChanged()
+    {
+        _ = InvokeAsync(async () =>
+        {
+            _listSearch = "";
+            await LoadEntityList(reset: true);
+            StateHasChanged();
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Entity list loading
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task OnListSearchInput(ChangeEventArgs e)
+    {
+        _listSearch = e.Value?.ToString() ?? "";
+
+        // Debounce: cancel any pending search, wait 300ms
+        _searchCts?.Cancel();
+        _searchCts = new CancellationTokenSource();
+        CancellationToken token = _searchCts.Token;
+
+        try
+        {
+            await Task.Delay(300, token);
+            if (!token.IsCancellationRequested)
+            {
+                await LoadEntityList(reset: true);
+                StateHasChanged();
+            }
+        }
+        catch (TaskCanceledException) { /* debounce — expected */ }
+    }
+
+    private async Task LoadMoreEntities()
+    {
+        _listPage++;
+        await LoadEntityList(reset: false);
+    }
+
+    private async Task LoadEntityList(bool reset)
+    {
+        if (EditorState.SelectedEndpointId == null || EditorState.ActiveEntityType == null)
+        {
+            _listItems.Clear();
+            _listHasMore = false;
+            return;
+        }
+
+        if (reset)
+        {
+            _listPage = 1;
+            _listItems.Clear();
+        }
+
+        _listLoading = true;
+        _listError = null;
+        StateHasChanged();
+
+        try
+        {
+            WorldEngineEntityType type = EditorState.ActiveEntityType.Value;
+            string? search = string.IsNullOrWhiteSpace(_listSearch) ? null : _listSearch.Trim();
+
+            List<EntityListItem> fetched = type switch
+            {
+                WorldEngineEntityType.Items => await LoadItems(search),
+                WorldEngineEntityType.ResourceNodes => await LoadResourceNodes(search),
+                WorldEngineEntityType.Regions => await LoadRegions(search),
+                WorldEngineEntityType.AreaGraph => await LoadAreaGraph(),
+                WorldEngineEntityType.Lore => await LoadLore(search),
+                WorldEngineEntityType.Traits => await LoadTraits(search),
+                WorldEngineEntityType.Glyphs => await LoadGlyphs(),
+                WorldEngineEntityType.Industries => await LoadIndustries(search),
+                WorldEngineEntityType.Interactions => await LoadInteractions(search),
+                WorldEngineEntityType.Coinhouses => await LoadCoinhouses(search),
+                _ => [],
+            };
+
+            if (reset)
+                _listItems = fetched;
+            else
+                _listItems.AddRange(fetched);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load entity list for {Type}", EditorState.ActiveEntityType);
+            _listError = $"Failed to load: {ex.Message}";
+        }
+        finally
+        {
+            _listLoading = false;
+        }
+    }
+
+    // ── Per-type loaders ────────────────────────────────────────────
+
+    private async Task<List<EntityListItem>> LoadItems(string? search)
+    {
+        PagedResult<ItemBlueprintDto> result = await ItemApi.GetAllAsync(search, _listPage, ListPageSize);
+        _listHasMore = _listPage * ListPageSize < result.TotalCount;
+        return result.Items.Select(i => new EntityListItem(i.ItemTag, i.Name, WorldEngineEntityType.Items)).ToList();
+    }
+
+    private async Task<List<EntityListItem>> LoadResourceNodes(string? search)
+    {
+        PagedResult<ResourceNodeDefinitionDto> result = await ResourceNodeApi.GetAllAsync(search, page: _listPage, pageSize: ListPageSize);
+        _listHasMore = _listPage * ListPageSize < result.TotalCount;
+        return result.Items.Select(i => new EntityListItem(i.Tag, i.Name ?? i.Tag, WorldEngineEntityType.ResourceNodes)).ToList();
+    }
+
+    private async Task<List<EntityListItem>> LoadRegions(string? search)
+    {
+        PagedResult<RegionDefinitionDto> result = await RegionApi.GetAllAsync(search, _listPage, ListPageSize);
+        _listHasMore = _listPage * ListPageSize < result.TotalCount;
+        return result.Items.Select(i => new EntityListItem(i.Tag, i.Name, WorldEngineEntityType.Regions)).ToList();
+    }
+
+    private async Task<List<EntityListItem>> LoadAreaGraph()
+    {
+        AreaGraphDto? graph = await AreaGraphApi.GetGraphAsync();
+        _listHasMore = false;
+        if (graph == null) return [];
+        List<AreaNodeDto> all = [..graph.Nodes, ..graph.DisconnectedAreas];
+        if (!string.IsNullOrWhiteSpace(_listSearch))
+        {
+            string filter = _listSearch.Trim();
+            all = all.Where(n => (n.Name?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false)
+                               || n.ResRef.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+        return all.Select(n => new EntityListItem(n.ResRef, n.Name ?? n.ResRef, WorldEngineEntityType.AreaGraph)).ToList();
+    }
+
+    private async Task<List<EntityListItem>> LoadLore(string? search)
+    {
+        PagedResult<LoreDefinitionDto> result = await LoreApi.GetAllAsync(search, page: _listPage, pageSize: ListPageSize);
+        _listHasMore = _listPage * ListPageSize < result.TotalCount;
+        return result.Items.Select(i => new EntityListItem(i.LoreId, i.Title, WorldEngineEntityType.Lore)).ToList();
+    }
+
+    private async Task<List<EntityListItem>> LoadTraits(string? search)
+    {
+        PagedResult<TraitDefinitionDto> result = await TraitApi.GetAllAsync(search, page: _listPage, pageSize: ListPageSize);
+        _listHasMore = _listPage * ListPageSize < result.TotalCount;
+        return result.Items.Select(i => new EntityListItem(i.Tag, i.Name, WorldEngineEntityType.Traits)).ToList();
+    }
+
+    private async Task<List<EntityListItem>> LoadGlyphs()
+    {
+        List<GlyphDefinitionDto> all = await GlyphApi.GetAllDefinitionsAsync();
+        _listHasMore = false;
+        if (!string.IsNullOrWhiteSpace(_listSearch))
+        {
+            string filter = _listSearch.Trim();
+            all = all.Where(g => g.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+        return all.Select(g => new EntityListItem(g.Id.ToString(), g.Name, WorldEngineEntityType.Glyphs)).ToList();
+    }
+
+    private async Task<List<EntityListItem>> LoadIndustries(string? search)
+    {
+        PagedResult<IndustryDefinitionDto> result = await IndustryApi.GetAllAsync(search, _listPage, ListPageSize);
+        _listHasMore = _listPage * ListPageSize < result.TotalCount;
+        return result.Items.Select(i => new EntityListItem(i.Tag, i.Name, WorldEngineEntityType.Industries)).ToList();
+    }
+
+    private async Task<List<EntityListItem>> LoadInteractions(string? search)
+    {
+        PagedResult<InteractionDefinitionDto> result = await InteractionApi.GetAllAsync(search, _listPage, ListPageSize);
+        _listHasMore = _listPage * ListPageSize < result.TotalCount;
+        return result.Items.Select(i => new EntityListItem(i.Tag, i.Name, WorldEngineEntityType.Interactions)).ToList();
+    }
+
+    private async Task<List<EntityListItem>> LoadCoinhouses(string? search)
+    {
+        PagedResult<CoinhouseDto> result = await CoinhouseApi.GetAllAsync(search, _listPage, ListPageSize);
+        _listHasMore = _listPage * ListPageSize < result.TotalCount;
+        return result.Items.Select(i => new EntityListItem(i.Tag, i.Tag, WorldEngineEntityType.Coinhouses)).ToList();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  List item click → open tab
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void OnListItemClick(EntityListItem item)
+    {
+        EditorState.OpenTab(item.EntityType, item.DisplayName, item.Key);
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -213,8 +492,10 @@
 
     public void Dispose()
     {
-        EditorState.OnEndpointChanged -= StateHasChangedSafe;
-        EditorState.OnActiveEntityTypeChanged -= StateHasChangedSafe;
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        EditorState.OnEndpointChanged -= OnEditorEndpointChanged;
+        EditorState.OnActiveEntityTypeChanged -= OnActiveEntityTypeChanged;
         EditorState.OnActiveTabChanged -= StateHasChangedSafe;
         EditorState.OnTabListChanged -= StateHasChangedSafe;
     }
