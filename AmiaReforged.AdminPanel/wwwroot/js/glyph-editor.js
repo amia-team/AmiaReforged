@@ -1091,6 +1091,19 @@ export function arrangeNodes() {
     autoArrange();
 }
 
+/**
+ * Resize the canvas to an explicit width and height.
+ * Called by the Golden Layout bridge when the canvas panel is resized,
+ * bypassing the ResizeObserver for deterministic sizing.
+ * @param {number} w  Width in pixels
+ * @param {number} h  Height in pixels
+ */
+export function resizeCanvasToSize(w, h) {
+    if (!canvas) return;
+    canvas.width = w;
+    canvas.height = h;
+}
+
 export function destroy() {
     if (canvas) {
         canvas.removeEventListener('mousedown', onMouseDown);

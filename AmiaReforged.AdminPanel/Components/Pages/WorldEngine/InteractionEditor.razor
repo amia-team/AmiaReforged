@@ -1,0 +1,1163 @@
+@using System.Text.Json
+@implements IAsyncDisposable
+
+@inject InteractionApiService Api
+@inject GlyphApiService GlyphApi
+@inject IndustryApiService IndustryApi
+@inject ILogger<InteractionEditor> Logger
+@inject IJSRuntime JS
+
+@if (_isOpen)
+{
+<div class="interaction-editor" style="position:fixed;inset:0;z-index:1040;background:var(--bg-dark);display:flex;flex-direction:column">
+    @* ═══════ Toolbar ═══════ *@
+    <div style="display:flex;align-items:center;gap:12px;padding:6px 16px;background:var(--bg-card);border-bottom:1px solid var(--border-subtle);flex-shrink:0;height:42px;min-height:42px">
+        <h5 style="margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:400px">
+            @(_isCreating ? "New Interaction" : _editItem.Name)
+        </h5>
+
+        @if (!string.IsNullOrEmpty(_editItem.Tag))
+        {
+            <span class="badge" style="background:var(--bg-input);color:var(--text-secondary);font-size:0.75rem;font-weight:normal">@_editItem.Tag</span>
+        }
+
+        <div style="flex:1"></div>
+
+        @* Canvas controls *@
+        <button class="btn btn-sm btn-outline-secondary" style="font-size:0.72rem;padding:2px 8px" @onclick="FitAll" title="Fit all nodes in view">Fit All</button>
+        <button class="btn btn-sm btn-outline-secondary" style="font-size:0.72rem;padding:2px 8px" @onclick="ArrangeNodes" title="Auto-arrange">Arrange</button>
+        <button class="btn btn-sm btn-outline-danger" style="font-size:0.72rem;padding:2px 8px" @onclick="ClearCurrentScript" disabled="@(!HasCurrentScript)" title="Clear script">Clear Script</button>
+
+        <div style="width:1px;height:20px;background:var(--border-subtle)"></div>
+
+        @* View menu — re-open closed panels *@
+        <div class="dropdown" style="position:relative">
+            <button class="btn btn-sm btn-outline-secondary" style="font-size:0.72rem;padding:2px 8px" @onclick="() => _showViewMenu = !_showViewMenu">View ▾</button>
+            @if (_showViewMenu)
+            {
+                <div style="position:absolute;top:100%;right:0;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:4px;padding:4px 0;z-index:1060;min-width:160px;box-shadow:0 4px 12px rgba(0,0,0,0.4)">
+                    @foreach (var kv in _panelTitles)
+                    {
+                        bool isOpen = _openPanels.Contains(kv.Key);
+                        <button style="display:block;width:100%;text-align:left;background:none;border:none;padding:4px 12px;font-size:0.8rem;color:var(--text-primary);cursor:pointer"
+                                @onclick="() => TogglePanel(kv.Key)" disabled="@isOpen">
+                            @(isOpen ? "✓ " : "  ")@kv.Value
+                        </button>
+                    }
+                    <div style="border-top:1px solid var(--border-subtle);margin:4px 0"></div>
+                    <button style="display:block;width:100%;text-align:left;background:none;border:none;padding:4px 12px;font-size:0.8rem;color:var(--text-secondary);cursor:pointer"
+                            @onclick="ResetLayout">
+                        Reset Layout
+                    </button>
+                </div>
+            }
+        </div>
+
+        <div style="width:1px;height:20px;background:var(--border-subtle)"></div>
+
+        @* Save / Cancel *@
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <span style="color:var(--danger);font-size:0.8rem;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="@_error">⚠ @_error</span>
+        }
+        <button class="btn btn-sm btn-secondary" @onclick="Cancel">Cancel</button>
+        <button class="btn btn-sm btn-primary" @onclick="Save" disabled="@_isSaving">
+            @(_isSaving ? "Saving..." : (_isCreating ? "Create" : "Save"))
+        </button>
+        <button class="btn btn-sm" style="background:none;border:none;color:var(--text-secondary);font-size:1.2rem;padding:0 4px;cursor:pointer" @onclick="Cancel" title="Close">✕</button>
+    </div>
+
+    @* ═══════ Golden Layout Host ═══════ *@
+    <div id="gl-container" class="interaction-editor__gl-host" style="flex:1;overflow:hidden">
+    </div>
+
+    @* ═══════ Pre-rendered Blazor Panel Divs ═══════ *@
+    @* These are positioned absolutely by the GL bridge when bound *@
+
+    @* ── Node Palette Panel ── *@
+    <div id="bl-panel-palette" class="interaction-editor__panel interaction-editor__panel--scrollable">
+        <div style="background:var(--bg-card);height:100%;display:flex;flex-direction:column">
+            <div style="padding:8px 12px;border-bottom:1px solid var(--border-subtle);flex-shrink:0">
+                <input type="text" class="form-control form-control-sm" placeholder="Search nodes..."
+                       @bind="_scriptNodeSearchFilter" @bind:event="oninput"
+                       style="font-size:0.8rem" />
+            </div>
+            <div style="flex:1;overflow-y:auto">
+                @foreach (IGrouping<string, GlyphNodeCatalogEntryDto> category in ScriptFilteredCatalog)
+                {
+                    <div style="padding:4px 12px;background:var(--bg-input);color:var(--text-secondary);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;position:sticky;top:0;z-index:1">
+                        @category.Key
+                    </div>
+                    @foreach (GlyphNodeCatalogEntryDto node in category)
+                    {
+                        <div style="padding:5px 12px;border-bottom:1px solid var(--border-subtle);cursor:pointer;font-size:0.82rem"
+                             class="glyph-node-entry"
+                             @onclick="() => AddScriptNode(node)" title="@node.Description">
+                            <span class="badge me-1" style="background:@GetNodeColor(node.ColorClass);font-size:0.65rem">@node.ColorClass</span>
+                            <span style="color:var(--text-primary)">@node.DisplayName</span>
+                            @if (node.RestrictToEventType != null)
+                            {
+                                <br /><small style="color:var(--text-secondary);font-size:0.65rem">@node.RestrictToEventType</small>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+
+    @* ── Graph Canvas Panel ── *@
+    <div id="bl-panel-canvas" class="interaction-editor__panel">
+        <div style="width:100%;height:100%;background:#12121f;position:relative">
+            <div id="interaction-glyph-canvas" style="width:100%;height:100%"></div>
+            @if (!_scriptEditorReady)
+            {
+                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--text-secondary)">
+                    <em>Initializing editor...</em>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* ── Form / Properties Panel ── *@
+    <div id="bl-panel-form" class="interaction-editor__panel interaction-editor__panel--scrollable">
+        <div style="background:var(--bg-card);padding:12px;min-height:100%">
+            <h5 style="margin:0 0 10px 0;font-size:0.9rem">Interaction Properties</h5>
+
+            @* Basic Fields *@
+            <div class="form-group" style="margin-bottom:8px">
+                <label style="font-size:0.8rem">Tag</label>
+                <input class="form-control form-control-sm" @bind="_editItem.Tag" disabled="@(!_isCreating)" placeholder="e.g. prospect_minerals" />
+            </div>
+            <div class="form-group" style="margin-bottom:8px">
+                <label style="font-size:0.8rem">Name</label>
+                <input class="form-control form-control-sm" @bind="_editItem.Name" placeholder="e.g. Prospect for Minerals" />
+            </div>
+            <div class="form-group" style="margin-bottom:8px">
+                <label style="font-size:0.8rem">Description</label>
+                <textarea class="form-control form-control-sm" rows="2" @bind="_editItem.Description" placeholder="Optional description..."></textarea>
+            </div>
+
+            <div style="display:flex;gap:8px;margin-bottom:8px">
+                <div class="form-group" style="flex:1">
+                    <label style="font-size:0.8rem">Target Mode</label>
+                    <select class="form-control form-control-sm" @bind="_editItem.TargetMode">
+                        <option value="Node">Node</option>
+                        <option value="Trigger">Trigger</option>
+                        <option value="Placeable">Placeable</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label style="font-size:0.8rem">Base Rounds</label>
+                    <input class="form-control form-control-sm" type="number" min="1" @bind="_editItem.BaseRounds" />
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label style="font-size:0.8rem">Min Rounds</label>
+                    <input class="form-control form-control-sm" type="number" min="1" @bind="_editItem.MinRounds" />
+                </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.8rem">
+                    <input type="checkbox" @bind="_editItem.ProficiencyReducesRounds" />
+                    Proficiency Reduces Rounds
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.8rem">
+                    <input type="checkbox" @bind="_editItem.RequiresIndustryMembership" />
+                    Requires Industry Membership
+                </label>
+            </div>
+
+            @* ── Validity & Context ── *@
+            <div style="border:1px solid var(--border-subtle);border-radius:6px;padding:10px;margin-bottom:10px">
+                <h6 style="margin:0 0 8px 0;font-size:0.85rem">Validity &amp; Context</h6>
+
+                @* Required Industries *@
+                <div class="form-group" style="margin-bottom:8px">
+                    <label style="font-size:0.78rem">Required Industries</label>
+                    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px">
+                        @foreach (string tag in _editItem.RequiredIndustryTags)
+                        {
+                            string capturedTag = tag;
+                            <span style="display:inline-flex;align-items:center;gap:3px;background:rgba(0,200,200,0.15);border:1px solid rgba(0,200,200,0.3);border-radius:3px;padding:1px 6px;font-size:0.75rem">
+                                @capturedTag
+                                <button type="button" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;padding:0;font-size:0.7rem" @onclick="() => _editItem.RequiredIndustryTags.Remove(capturedTag)">✕</button>
+                            </span>
+                        }
+                    </div>
+                    @if (_availableIndustries.Count > 0)
+                    {
+                        <select class="form-control form-control-sm" style="font-size:0.78rem" @onchange="OnIndustrySelected">
+                            <option value="">— Add industry —</option>
+                            @foreach (var ind in _availableIndustries.Where(i => !_editItem.RequiredIndustryTags.Contains(i.Tag)))
+                            {
+                                <option value="@ind.Tag">@ind.Name (@ind.Tag)</option>
+                            }
+                        </select>
+                    }
+                </div>
+
+                @* Allowed Areas *@
+                <div class="form-group" style="margin-bottom:8px">
+                    <label style="font-size:0.78rem">Allowed Areas</label>
+                    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px">
+                        @foreach (string area in _editItem.AllowedAreaResRefs)
+                        {
+                            string capturedArea = area;
+                            <span style="display:inline-flex;align-items:center;gap:3px;background:rgba(200,200,0,0.15);border:1px solid rgba(200,200,0,0.3);border-radius:3px;padding:1px 6px;font-size:0.75rem">
+                                @capturedArea
+                                <button type="button" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;padding:0;font-size:0.7rem" @onclick="() => _editItem.AllowedAreaResRefs.Remove(capturedArea)">✕</button>
+                            </span>
+                        }
+                    </div>
+                    <div style="display:flex;gap:4px">
+                        <input class="form-control form-control-sm" style="font-size:0.78rem" @bind="_newAreaResRef" placeholder="area_resref" @onkeydown="OnAreaKeyDown" />
+                        <button type="button" class="btn btn-sm btn-outline-info" style="font-size:0.72rem;padding:2px 6px" @onclick="AddAreaResRef">Add</button>
+                    </div>
+                </div>
+
+                @* Required Knowledge *@
+                <div class="form-group">
+                    <label style="font-size:0.78rem">Required Knowledge</label>
+                    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px">
+                        @foreach (string k in _editItem.RequiredKnowledgeTags)
+                        {
+                            string capturedK = k;
+                            <span style="display:inline-flex;align-items:center;gap:3px;background:rgba(200,0,200,0.15);border:1px solid rgba(200,0,200,0.3);border-radius:3px;padding:1px 6px;font-size:0.75rem">
+                                @capturedK
+                                <button type="button" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;padding:0;font-size:0.7rem" @onclick="() => _editItem.RequiredKnowledgeTags.Remove(capturedK)">✕</button>
+                            </span>
+                        }
+                    </div>
+                    <div style="display:flex;gap:4px">
+                        <input class="form-control form-control-sm" style="font-size:0.78rem" @bind="_newKnowledgeTag" placeholder="knowledge_tag" @onkeydown="OnKnowledgeKeyDown" />
+                        <button type="button" class="btn btn-sm btn-outline-info" style="font-size:0.72rem;padding:2px 6px" @onclick="AddKnowledgeTag">Add</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ── Responses Panel ── *@
+    <div id="bl-panel-responses" class="interaction-editor__panel interaction-editor__panel--scrollable">
+        <div style="background:var(--bg-card);padding:12px;min-height:100%">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <h5 style="margin:0;font-size:0.9rem">Responses (@_editItem.Responses.Count)</h5>
+                <button class="btn btn-sm btn-outline-info" style="font-size:0.72rem;padding:2px 8px" @onclick="AddResponse">+ Add</button>
+            </div>
+
+            @if (_editItem.Responses.Count == 0)
+            {
+                <p style="color:var(--text-secondary);font-size:0.8rem">No responses defined. Add at least one.</p>
+            }
+
+            @for (int ri = 0; ri < _editItem.Responses.Count; ri++)
+            {
+                int rIdx = ri;
+                InteractionResponseDto response = _editItem.Responses[rIdx];
+                <div style="border:1px solid var(--border-subtle);border-radius:5px;padding:10px;margin-bottom:8px;background:rgba(255,255,255,0.02)">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                        <strong style="font-size:0.8rem">Response #@(rIdx + 1)</strong>
+                        <button class="btn btn-sm btn-outline-danger" style="font-size:0.68rem;padding:1px 5px" @onclick="() => RemoveResponse(rIdx)">✕</button>
+                    </div>
+
+                    <div style="display:flex;gap:6px;margin-bottom:6px">
+                        <div class="form-group" style="flex:2">
+                            <label style="font-size:0.72rem">Tag</label>
+                            <input class="form-control form-control-sm" style="font-size:0.78rem" @bind="response.ResponseTag" placeholder="e.g. find_iron_ore" />
+                        </div>
+                        <div class="form-group" style="flex:1">
+                            <label style="font-size:0.72rem">Weight</label>
+                            <input class="form-control form-control-sm" style="font-size:0.78rem" type="number" min="1" @bind="response.Weight" />
+                        </div>
+                        <div class="form-group" style="flex:1">
+                            <label style="font-size:0.72rem">Min Prof.</label>
+                            <select class="form-control form-control-sm" style="font-size:0.78rem" @bind="response.MinProficiency">
+                                <option value="">None</option>
+                                <option value="Layman">Layman</option>
+                                <option value="Novice">Novice</option>
+                                <option value="Apprentice">Apprentice</option>
+                                <option value="Journeyman">Journeyman</option>
+                                <option value="Expert">Expert</option>
+                                <option value="Master">Master</option>
+                                <option value="Grandmaster">Grandmaster</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:6px">
+                        <label style="font-size:0.72rem">Message</label>
+                        <input class="form-control form-control-sm" style="font-size:0.78rem" @bind="response.Message" placeholder="Text shown to the player..." />
+                    </div>
+
+                    @* Effects *@
+                    <div style="border:1px solid var(--border-subtle);border-radius:4px;padding:8px;background:rgba(0,0,0,0.15)">
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <span style="font-size:0.75rem;font-weight:600">Effects (@response.Effects.Count)</span>
+                            <button class="btn btn-sm btn-outline-info" style="font-size:0.68rem;padding:1px 6px" @onclick="() => AddEffect(rIdx)">+ Effect</button>
+                        </div>
+
+                        @if (response.Effects.Count == 0)
+                        {
+                            <p style="color:var(--text-secondary);font-size:0.72rem;margin:4px 0 0 0">No effects.</p>
+                        }
+
+                        @for (int ei = 0; ei < response.Effects.Count; ei++)
+                        {
+                            int eIdx = ei;
+                            InteractionResponseEffectDto effect = response.Effects[eIdx];
+                            <div style="display:flex;gap:6px;align-items:end;margin-top:4px">
+                                <div class="form-group" style="flex:1">
+                                    @if (eIdx == 0) { <label style="font-size:0.7rem">Type</label> }
+                                    <select class="form-control form-control-sm" style="font-size:0.78rem" @bind="effect.EffectType">
+                                        <option value="">— Select —</option>
+                                        <option value="FloatingText">FloatingText</option>
+                                        <option value="VfxAtLocation">VfxAtLocation</option>
+                                        <option value="VfxOnPlayer">VfxOnPlayer</option>
+                                        <option value="SpawnResourceNode">SpawnResourceNode</option>
+                                        <option value="DirectionalHint">DirectionalHint</option>
+                                        <option value="Custom">Custom</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="flex:2">
+                                    @if (eIdx == 0) { <label style="font-size:0.7rem">Value</label> }
+                                    <input class="form-control form-control-sm" style="font-size:0.78rem" @bind="effect.Value" placeholder="@GetEffectValueHint(effect.EffectType)" />
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger" style="font-size:0.68rem;padding:1px 4px;margin-bottom:2px" @onclick="() => RemoveEffect(rIdx, eIdx)">✕</button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* ── Inspector Panel (selected node properties) ── *@
+    <div id="bl-panel-inspector" class="interaction-editor__panel interaction-editor__panel--scrollable">
+        <div style="background:var(--bg-card);padding:12px;min-height:100%">
+            @if (_scriptSelectedNodeInfo != null)
+            {
+                <h6 style="margin:0 0 4px 0;font-size:0.85rem;color:var(--text-primary)">@_scriptSelectedNodeInfo.DisplayName</h6>
+                <small style="color:var(--text-secondary);font-size:0.7rem;display:block;margin-bottom:8px">@_scriptSelectedNodeInfo.TypeId</small>
+
+                @if (GetEditablePins().Count == 0)
+                {
+                    <p style="color:var(--text-secondary);font-size:0.78rem;margin:0">No editable properties.</p>
+                }
+                else
+                {
+                    @foreach (SelectedPinInfo pin in GetEditablePins())
+                    {
+                        <div style="margin-bottom:6px">
+                            <label style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:2px;display:block">@pin.Name <small>(@pin.DataType)</small></label>
+                            @if (pin.DataType == "Bool")
+                            {
+                                <select class="form-control form-control-sm" style="font-size:0.78rem"
+                                        value="@GetScriptPinValue(pin)"
+                                        @onchange="e => OnScriptPropertyChanged(pin, ExtractStringValue(e))">
+                                    <option value="">default</option>
+                                    <option value="true">true</option>
+                                    <option value="false">false</option>
+                                </select>
+                            }
+                            else
+                            {
+                                <input class="form-control form-control-sm" style="font-size:0.78rem"
+                                       type="@(pin.DataType is "Int" or "Float" ? "number" : "text")"
+                                       value="@GetScriptPinValue(pin)"
+                                       @onchange="e => OnScriptPropertyChanged(pin, ExtractStringValue(e))"
+                                       placeholder="@(pin.DefaultValue ?? string.Empty)" />
+                            }
+                        </div>
+                    }
+                }
+            }
+            else
+            {
+                <p style="color:var(--text-secondary);font-size:0.8rem;margin:0">Select a node on the canvas to view its properties.</p>
+            }
+        </div>
+    </div>
+</div>
+}
+
+@code {
+    // ═══════════════════════════════════════════════════════════════════
+    //  Parameters
+    // ═══════════════════════════════════════════════════════════════════
+
+    /// <summary>Available industries for the dropdown (loaded by parent).</summary>
+    [Parameter] public List<IndustryDefinitionDto> AvailableIndustries { get; set; } = [];
+
+    /// <summary>Raised when the editor is closed (saved or cancelled).</summary>
+    [Parameter] public EventCallback<InteractionEditorResult> OnClosed { get; set; }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  State
+    // ═══════════════════════════════════════════════════════════════════
+
+    private bool _isOpen;
+    private bool _isCreating;
+    private bool _isSaving;
+    private string? _error;
+    private InteractionDefinitionDto _editItem = new();
+
+    // Validity / Context helpers
+    private List<IndustryDefinitionDto> _availableIndustries = [];
+    private string _newAreaResRef = "";
+    private string _newKnowledgeTag = "";
+
+    // View menu
+    private bool _showViewMenu;
+    private readonly HashSet<string> _openPanels = ["palette", "canvas", "form", "responses", "inspector"];
+
+    private static readonly Dictionary<string, string> _panelTitles = new()
+    {
+        ["palette"] = "Node Palette",
+        ["canvas"] = "Graph Canvas",
+        ["form"] = "Properties",
+        ["responses"] = "Responses",
+        ["inspector"] = "Inspector",
+    };
+
+    // Script editor
+    private const string PipelineEventType = "InteractionPipeline";
+    private string _pipelineGraphJson = "{}";
+    private GlyphDefinitionDto? _pipelineScript;
+    private List<GlyphNodeCatalogEntryDto> _nodeCatalog = [];
+    private string _scriptNodeSearchFilter = "";
+    private bool _scriptEditorReady;
+    private SelectedNodeInfo? _scriptSelectedNodeInfo;
+
+    // JS module references
+    private IJSObjectReference? _bridgeModule;
+    private IJSObjectReference? _scriptEditorModule;
+    private DotNetObjectReference<InteractionEditor>? _dotNetRef;
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Computed
+    // ═══════════════════════════════════════════════════════════════════
+
+    private bool HasCurrentScript => GraphHasNodes(_pipelineGraphJson);
+
+    private IEnumerable<IGrouping<string, GlyphNodeCatalogEntryDto>> ScriptFilteredCatalog
+    {
+        get
+        {
+            IEnumerable<GlyphNodeCatalogEntryDto> nodes = _nodeCatalog;
+            nodes = nodes.Where(n => n.RestrictToEventType == null || n.RestrictToEventType == PipelineEventType);
+            nodes = nodes.Where(n => n.ScriptCategory == null || n.ScriptCategory.Equals("Interaction", StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrWhiteSpace(_scriptNodeSearchFilter))
+            {
+                string filter = _scriptNodeSearchFilter.Trim().ToLowerInvariant();
+                nodes = nodes.Where(n =>
+                    n.DisplayName.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
+                    n.Category.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
+                    n.Description.Contains(filter, StringComparison.OrdinalIgnoreCase));
+            }
+            return nodes.GroupBy(n => n.Category).OrderBy(g => g.Key);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Public API — called by parent component
+    // ═══════════════════════════════════════════════════════════════════
+
+    /// <summary>Open the editor for a new interaction.</summary>
+    public async Task OpenCreate()
+    {
+        _isCreating = true;
+        _editItem = new InteractionDefinitionDto
+        {
+            TargetMode = "Trigger",
+            BaseRounds = 4,
+            MinRounds = 2,
+            ProficiencyReducesRounds = true,
+            RequiresIndustryMembership = true,
+            RequiredIndustryTags = [],
+            AllowedAreaResRefs = [],
+            RequiredKnowledgeTags = [],
+        };
+        _availableIndustries = AvailableIndustries;
+        ResetScriptState();
+        _error = null;
+        _isOpen = true;
+        StateHasChanged();
+        await Task.Delay(50); // Let DOM render the GL host and panels
+        await InitLayout();
+    }
+
+    /// <summary>Open the editor for an existing interaction.</summary>
+    public async Task OpenEdit(InteractionDefinitionDto item)
+    {
+        _isCreating = false;
+        _editItem = DeepCopy(item);
+        _availableIndustries = AvailableIndustries;
+        ResetScriptState();
+        _error = null;
+        _isOpen = true;
+        StateHasChanged();
+        await Task.Delay(50);
+        await InitLayout();
+        await LoadInteractionScripts(item.Tag);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Golden Layout Lifecycle
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task InitLayout()
+    {
+        try
+        {
+            _bridgeModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/golden-layout-bridge.js");
+            _dotNetRef ??= DotNetObjectReference.Create(this);
+
+            string layoutConfig = BuildDefaultLayoutConfig();
+            await _bridgeModule.InvokeVoidAsync("init", "gl-container", layoutConfig, _dotNetRef);
+
+            // Load node catalog if needed
+            if (_nodeCatalog.Count == 0)
+            {
+                try { _nodeCatalog = await GlyphApi.GetNodeCatalogAsync(); }
+                catch (Exception ex) { Logger.LogWarning(ex, "Failed to load node catalog"); }
+            }
+
+            // Wait for GL to position the canvas panel, then init the glyph editor
+            await Task.Delay(100);
+            await InitScriptEditor();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to initialize Golden Layout");
+            _error = "Layout initialization failed. Try closing and reopening.";
+        }
+    }
+
+    private async Task DestroyLayout()
+    {
+        await DestroyScriptEditor();
+
+        if (_bridgeModule != null)
+        {
+            try { await _bridgeModule.InvokeVoidAsync("destroy"); }
+            catch (Exception ex) { Logger.LogWarning(ex, "GL bridge destroy failed"); }
+        }
+    }
+
+    private static string BuildDefaultLayoutConfig()
+    {
+        var config = new
+        {
+            root = new
+            {
+                type = "row",
+                content = new object[]
+                {
+                    new
+                    {
+                        type = "component",
+                        componentType = "palette",
+                        title = "Node Palette",
+                        size = "15%",
+                    },
+                    new
+                    {
+                        type = "component",
+                        componentType = "canvas",
+                        title = "Graph",
+                        size = "55%",
+                    },
+                    new
+                    {
+                        type = "column",
+                        size = "30%",
+                        content = new object[]
+                        {
+                            new
+                            {
+                                type = "stack",
+                                size = "65%",
+                                content = new object[]
+                                {
+                                    new
+                                    {
+                                        type = "component",
+                                        componentType = "form",
+                                        title = "Properties",
+                                    },
+                                    new
+                                    {
+                                        type = "component",
+                                        componentType = "responses",
+                                        title = "Responses",
+                                    },
+                                },
+                            },
+                            new
+                            {
+                                type = "component",
+                                componentType = "inspector",
+                                title = "Inspector",
+                                size = "35%",
+                            },
+                        },
+                    },
+                },
+            },
+        };
+        return JsonSerializer.Serialize(config);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  GL Callbacks (from golden-layout-bridge.js)
+    // ═══════════════════════════════════════════════════════════════════
+
+    [JSInvokable]
+    public async Task OnPanelResized(string componentType, double width, double height)
+    {
+        if (componentType == "canvas" && _scriptEditorModule != null && _scriptEditorReady)
+        {
+            try
+            {
+                await _scriptEditorModule.InvokeVoidAsync("resizeCanvasToSize", width, height);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Canvas resize failed");
+            }
+        }
+    }
+
+    [JSInvokable]
+    public Task OnPanelRemoved(string componentType)
+    {
+        _openPanels.Remove(componentType);
+        InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public Task OnPanelVisibilityChanged(string componentType, bool visible)
+    {
+        // Could be used for pausing canvas render when tab is hidden
+        return Task.CompletedTask;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  View Menu / Panel Management
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task TogglePanel(string componentType)
+    {
+        _showViewMenu = false;
+        if (_openPanels.Contains(componentType)) return;
+
+        if (_bridgeModule != null)
+        {
+            string title = _panelTitles.GetValueOrDefault(componentType, componentType);
+            await _bridgeModule.InvokeVoidAsync("addPanel", componentType, title, new { });
+            _openPanels.Add(componentType);
+        }
+    }
+
+    private async Task ResetLayout()
+    {
+        _showViewMenu = false;
+        _openPanels.Clear();
+        _openPanels.UnionWith(["palette", "canvas", "form", "responses", "inspector"]);
+
+        if (_bridgeModule != null)
+        {
+            string layoutConfig = BuildDefaultLayoutConfig();
+            await _bridgeModule.InvokeVoidAsync("loadLayout", layoutConfig);
+
+            // Re-init the canvas editor since GL will unbind/rebind panels
+            await Task.Delay(100);
+            await InitScriptEditor();
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Save / Cancel
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task Save()
+    {
+        _isSaving = true;
+        _error = null;
+        try
+        {
+            await CaptureCurrentScriptGraph();
+
+            if (_isCreating)
+                await Api.CreateAsync(_editItem);
+            else
+                await Api.UpdateAsync(_editItem.Tag, _editItem);
+
+            await SaveEventScripts(_editItem.Tag);
+
+            await DestroyLayout();
+            _isOpen = false;
+            StateHasChanged();
+
+            await OnClosed.InvokeAsync(new InteractionEditorResult
+            {
+                Saved = true,
+                InteractionTag = _editItem.Tag,
+                IsNew = _isCreating,
+                Message = _isCreating
+                    ? $"Interaction '{_editItem.Name}' created."
+                    : $"Interaction '{_editItem.Name}' updated.",
+            });
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to save interaction");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task Cancel()
+    {
+        await DestroyLayout();
+        _isOpen = false;
+        _error = null;
+        StateHasChanged();
+        await OnClosed.InvokeAsync(new InteractionEditorResult { Saved = false });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Script Editor Lifecycle
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task InitScriptEditor()
+    {
+        try
+        {
+            _scriptEditorModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js");
+            _dotNetRef ??= DotNetObjectReference.Create(this);
+
+            string catalogJson = JsonSerializer.Serialize(_nodeCatalog);
+            string graphJson = _pipelineGraphJson;
+
+            if (string.IsNullOrEmpty(graphJson) || graphJson == "{}" || !GraphHasNodes(graphJson))
+            {
+                graphJson = BuildEmptyPipelineGraphJson();
+            }
+
+            await _scriptEditorModule.InvokeVoidAsync("initGlyphEditor", "interaction-glyph-canvas", catalogJson, graphJson, _dotNetRef);
+            _scriptEditorReady = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Script editor init failed");
+            _scriptEditorReady = false;
+        }
+    }
+
+    private async Task DestroyScriptEditor()
+    {
+        if (_scriptEditorModule == null) return;
+        try { await _scriptEditorModule.InvokeVoidAsync("destroy"); }
+        catch (Exception ex) { Logger.LogWarning(ex, "Failed to destroy script editor"); }
+        _scriptEditorReady = false;
+    }
+
+    private void ResetScriptState()
+    {
+        _pipelineGraphJson = "{}";
+        _pipelineScript = null;
+        _scriptNodeSearchFilter = "";
+        _scriptEditorReady = false;
+        _scriptSelectedNodeInfo = null;
+    }
+
+    private async Task CaptureCurrentScriptGraph()
+    {
+        if (_scriptEditorModule == null || !_scriptEditorReady) return;
+        try
+        {
+            string json = await _scriptEditorModule.InvokeAsync<string>("getGraphJson");
+            _pipelineGraphJson = json;
+        }
+        catch (Exception ex) { Logger.LogWarning(ex, "Failed to capture pipeline script graph"); }
+    }
+
+    private async Task LoadInteractionScripts(string interactionTag)
+    {
+        try
+        {
+            if (_nodeCatalog.Count == 0)
+                _nodeCatalog = await GlyphApi.GetNodeCatalogAsync();
+
+            List<InteractionGlyphBindingDto> bindings = await GlyphApi.GetInteractionBindingsAsync(interactionTag);
+            foreach (InteractionGlyphBindingDto binding in bindings)
+            {
+                GlyphDefinitionDto? def = await GlyphApi.GetDefinitionAsync(binding.GlyphDefinitionId);
+                if (def == null) continue;
+                if (def.EventType == PipelineEventType ||
+                    def.EventType.StartsWith("OnInteraction", StringComparison.OrdinalIgnoreCase))
+                {
+                    _pipelineGraphJson = def.GraphJson ?? "{}";
+                    _pipelineScript = def;
+                    break;
+                }
+            }
+
+            // Re-init the glyph editor with the loaded graph
+            await DestroyScriptEditor();
+            await Task.Delay(50);
+            await InitScriptEditor();
+        }
+        catch (Exception ex) { Logger.LogWarning(ex, "Failed to load interaction scripts for {Tag}", interactionTag); }
+    }
+
+    private async Task SaveEventScripts(string interactionTag)
+    {
+        string graphJson = _pipelineGraphJson;
+        bool hasGraph = GraphHasNodes(graphJson);
+        GlyphDefinitionDto? existingDef = _pipelineScript;
+
+        if (hasGraph)
+        {
+            if (existingDef != null)
+            {
+                GlyphDefinitionDto? updated = await GlyphApi.UpdateDefinitionAsync(existingDef.Id,
+                    new UpdateGlyphRequest(GraphJson: graphJson, IsActive: true));
+                if (updated != null) _pipelineScript = updated;
+            }
+            else
+            {
+                List<InteractionGlyphBindingDto> existingBindings = await GlyphApi.GetInteractionBindingsAsync(interactionTag);
+                InteractionGlyphBindingDto? matchingBinding = existingBindings.FirstOrDefault();
+
+                if (matchingBinding != null)
+                {
+                    GlyphDefinitionDto? updated = await GlyphApi.UpdateDefinitionAsync(
+                        matchingBinding.GlyphDefinitionId,
+                        new UpdateGlyphRequest(GraphJson: graphJson, IsActive: true));
+                    if (updated != null) _pipelineScript = updated;
+                }
+                else
+                {
+                    string name = $"{interactionTag}/InteractionPipeline";
+                    GlyphDefinitionDto? created = await GlyphApi.CreateDefinitionAsync(new CreateGlyphRequest(
+                        Name: name,
+                        EventType: PipelineEventType,
+                        Category: "Interaction",
+                        Description: $"Pipeline script for interaction '{interactionTag}'",
+                        GraphJson: graphJson,
+                        IsActive: true));
+
+                    if (created != null)
+                    {
+                        _pipelineScript = created;
+                        await GlyphApi.CreateInteractionBindingAsync(
+                            new CreateInteractionGlyphBindingRequest(
+                                InteractionTag: interactionTag,
+                                GlyphDefinitionId: created.Id));
+                    }
+                }
+            }
+        }
+        else if (existingDef != null)
+        {
+            await GlyphApi.UpdateDefinitionAsync(existingDef.Id, new UpdateGlyphRequest(IsActive: false));
+            _pipelineScript = null;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Script — Node Palette & Properties
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task AddScriptNode(GlyphNodeCatalogEntryDto node)
+    {
+        if (_scriptEditorModule == null || !_scriptEditorReady) return;
+        try
+        {
+            string nodeJson = JsonSerializer.Serialize(node);
+            await _scriptEditorModule.InvokeVoidAsync("addNode", nodeJson);
+        }
+        catch (Exception ex) { Logger.LogWarning(ex, "Failed to add script node"); }
+    }
+
+    [JSInvokable]
+    public Task OnNodeSelectionChanged(string? json)
+    {
+        if (string.IsNullOrEmpty(json) || json == "null")
+        {
+            _scriptSelectedNodeInfo = null;
+        }
+        else
+        {
+            try
+            {
+                _scriptSelectedNodeInfo = JsonSerializer.Deserialize<SelectedNodeInfo>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+            }
+            catch { _scriptSelectedNodeInfo = null; }
+        }
+        InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
+    }
+
+    private async Task OnScriptPropertyChanged(SelectedPinInfo pin, string value)
+    {
+        if (_scriptEditorModule == null || _scriptSelectedNodeInfo == null) return;
+        try
+        {
+            await _scriptEditorModule.InvokeVoidAsync("setPropertyOverride", _scriptSelectedNodeInfo.NodeId, pin.Id, value);
+            pin.OverrideValue = string.IsNullOrEmpty(value) ? null : value;
+        }
+        catch (Exception ex) { Logger.LogWarning(ex, "Failed to set script property override"); }
+    }
+
+    private async Task FitAll()
+    {
+        if (_scriptEditorModule == null) return;
+        try { await _scriptEditorModule.InvokeVoidAsync("fitAll"); }
+        catch (Exception ex) { Logger.LogWarning(ex, "fitAll failed"); }
+    }
+
+    private async Task ArrangeNodes()
+    {
+        if (_scriptEditorModule == null) return;
+        try { await _scriptEditorModule.InvokeVoidAsync("arrangeNodes"); }
+        catch (Exception ex) { Logger.LogWarning(ex, "arrangeNodes failed"); }
+    }
+
+    private async Task ClearCurrentScript()
+    {
+        _pipelineGraphJson = "{}";
+        _scriptSelectedNodeInfo = null;
+        await DestroyScriptEditor();
+        StateHasChanged();
+        await Task.Delay(50);
+        await InitScriptEditor();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Validity & Context Helpers
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void OnIndustrySelected(ChangeEventArgs e)
+    {
+        string? tag = e.Value?.ToString();
+        if (!string.IsNullOrWhiteSpace(tag) && !_editItem.RequiredIndustryTags.Contains(tag))
+            _editItem.RequiredIndustryTags.Add(tag);
+    }
+
+    private void AddAreaResRef()
+    {
+        string val = _newAreaResRef.Trim();
+        if (!string.IsNullOrEmpty(val) && !_editItem.AllowedAreaResRefs.Contains(val))
+        {
+            _editItem.AllowedAreaResRefs.Add(val);
+            _newAreaResRef = "";
+        }
+    }
+
+    private void OnAreaKeyDown(KeyboardEventArgs e) { if (e.Key == "Enter") AddAreaResRef(); }
+
+    private void AddKnowledgeTag()
+    {
+        string val = _newKnowledgeTag.Trim();
+        if (!string.IsNullOrEmpty(val) && !_editItem.RequiredKnowledgeTags.Contains(val))
+        {
+            _editItem.RequiredKnowledgeTags.Add(val);
+            _newKnowledgeTag = "";
+        }
+    }
+
+    private void OnKnowledgeKeyDown(KeyboardEventArgs e) { if (e.Key == "Enter") AddKnowledgeTag(); }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Response / Effect Management
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void AddResponse()
+    {
+        _editItem.Responses.Add(new InteractionResponseDto { ResponseTag = "", Weight = 1 });
+    }
+
+    private void RemoveResponse(int index)
+    {
+        if (index >= 0 && index < _editItem.Responses.Count)
+            _editItem.Responses.RemoveAt(index);
+    }
+
+    private void AddEffect(int responseIndex)
+    {
+        if (responseIndex >= 0 && responseIndex < _editItem.Responses.Count)
+            _editItem.Responses[responseIndex].Effects.Add(new InteractionResponseEffectDto());
+    }
+
+    private void RemoveEffect(int responseIndex, int effectIndex)
+    {
+        if (responseIndex >= 0 && responseIndex < _editItem.Responses.Count)
+        {
+            List<InteractionResponseEffectDto> effects = _editItem.Responses[responseIndex].Effects;
+            if (effectIndex >= 0 && effectIndex < effects.Count)
+                effects.RemoveAt(effectIndex);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Helpers
+    // ═══════════════════════════════════════════════════════════════════
+
+    private static InteractionDefinitionDto DeepCopy(InteractionDefinitionDto src) => new()
+    {
+        Tag = src.Tag,
+        Name = src.Name,
+        Description = src.Description,
+        TargetMode = src.TargetMode,
+        BaseRounds = src.BaseRounds,
+        MinRounds = src.MinRounds,
+        ProficiencyReducesRounds = src.ProficiencyReducesRounds,
+        RequiresIndustryMembership = src.RequiresIndustryMembership,
+        RequiredIndustryTags = [..src.RequiredIndustryTags],
+        AllowedAreaResRefs = [..src.AllowedAreaResRefs],
+        RequiredKnowledgeTags = [..src.RequiredKnowledgeTags],
+        CreatedAt = src.CreatedAt,
+        UpdatedAt = src.UpdatedAt,
+        Responses = src.Responses.Select(r => new InteractionResponseDto
+        {
+            ResponseTag = r.ResponseTag,
+            Weight = r.Weight,
+            MinProficiency = r.MinProficiency,
+            Message = r.Message,
+            Effects = r.Effects.Select(e => new InteractionResponseEffectDto
+            {
+                EffectType = e.EffectType,
+                Value = e.Value,
+                Metadata = e.Metadata != null ? new Dictionary<string, object>(e.Metadata) : null,
+            }).ToList(),
+        }).ToList(),
+    };
+
+    private static bool GraphHasNodes(string? graphJson)
+    {
+        if (string.IsNullOrEmpty(graphJson) || graphJson == "{}") return false;
+        try
+        {
+            using JsonDocument doc = JsonDocument.Parse(graphJson);
+            return doc.RootElement.TryGetProperty("Nodes", out JsonElement nodesEl)
+                && nodesEl.ValueKind == JsonValueKind.Array
+                && nodesEl.GetArrayLength() > 0;
+        }
+        catch { return false; }
+    }
+
+    private static string BuildEmptyPipelineGraphJson()
+    {
+        Guid n1 = Guid.NewGuid(), n2 = Guid.NewGuid(), n3 = Guid.NewGuid(), n4 = Guid.NewGuid();
+        var graph = new
+        {
+            Id = Guid.NewGuid(),
+            Name = "",
+            Description = "",
+            EventType = PipelineEventType,
+            Nodes = new object[]
+            {
+                new { InstanceId = n1, TypeId = "stage.interaction_attempted", PositionX = 50.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
+                new { InstanceId = n2, TypeId = "stage.interaction_started", PositionX = 500.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
+                new { InstanceId = n3, TypeId = "stage.interaction_tick", PositionX = 950.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
+                new { InstanceId = n4, TypeId = "stage.interaction_completed", PositionX = 1400.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() }
+            },
+            Edges = new[]
+            {
+                new { SourceNodeId = n1, SourcePinId = "exec_out", TargetNodeId = n2, TargetPinId = "exec_in" },
+                new { SourceNodeId = n2, SourcePinId = "exec_out", TargetNodeId = n3, TargetPinId = "exec_in" },
+                new { SourceNodeId = n3, SourcePinId = "exec_out", TargetNodeId = n4, TargetPinId = "exec_in" },
+            },
+            Variables = Array.Empty<object>()
+        };
+        return JsonSerializer.Serialize(graph);
+    }
+
+    private static string GetEffectValueHint(string effectType) => effectType switch
+    {
+        "FloatingText" => "Text to display...",
+        "VfxAtLocation" => "VFX constant (int)",
+        "VfxOnPlayer" => "VFX constant (int)",
+        "SpawnResourceNode" => "Node tag to spawn",
+        "DirectionalHint" => "Hint parameters...",
+        "Custom" => "Custom value...",
+        _ => "Value..."
+    };
+
+    private static string GetNodeColor(string colorClass) => colorClass.ToLowerInvariant() switch
+    {
+        "event" => "#e74c3c",
+        "flow" => "#3498db",
+        "action" => "#2ecc71",
+        "getter" => "#9b59b6",
+        "math" => "#f39c12",
+        "logic" => "#1abc9c",
+        _ => "#7f8c8d"
+    };
+
+    private static string GetScriptPinValue(SelectedPinInfo pin) => pin.OverrideValue ?? pin.DefaultValue ?? "";
+    private static string ExtractStringValue(ChangeEventArgs e) => e.Value?.ToString() ?? string.Empty;
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Inner Types
+    // ═══════════════════════════════════════════════════════════════════
+
+    private class SelectedNodeInfo
+    {
+        public string NodeId { get; set; } = "";
+        public string TypeId { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+        public List<SelectedPinInfo> InputPins { get; set; } = [];
+    }
+
+    private class SelectedPinInfo
+    {
+        public string Id { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string DataType { get; set; } = "";
+        public string? DefaultValue { get; set; }
+        public string? OverrideValue { get; set; }
+        public bool IsConnected { get; set; }
+    }
+
+    private List<SelectedPinInfo> GetEditablePins()
+    {
+        return _scriptSelectedNodeInfo?.InputPins?.Where(p => !p.IsConnected).ToList() ?? [];
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Disposal
+    // ═══════════════════════════════════════════════════════════════════
+
+    public async ValueTask DisposeAsync()
+    {
+        await DestroyLayout();
+
+        if (_scriptEditorModule != null)
+        {
+            try { await _scriptEditorModule.DisposeAsync(); }
+            catch { /* ignore during teardown */ }
+        }
+
+        if (_bridgeModule != null)
+        {
+            try { await _bridgeModule.DisposeAsync(); }
+            catch { /* ignore during teardown */ }
+        }
+
+        _dotNetRef?.Dispose();
+    }
+}
