@@ -55,14 +55,20 @@ public class GlyphGraph
             GlyphEventType.OnCreatureDeath => "event.on_creature_death",
             GlyphEventType.OnTraitGranted => "event.on_trait_granted",
             GlyphEventType.OnTraitRemoved => "event.on_trait_removed",
-            GlyphEventType.OnInteractionAttempted => "event.on_interaction_attempted",
-            GlyphEventType.OnInteractionStarted => "event.on_interaction_started",
-            GlyphEventType.OnInteractionTick => "event.on_interaction_tick",
-            GlyphEventType.OnInteractionCompleted => "event.on_interaction_completed",
+            GlyphEventType.InteractionPipeline => "stage.interaction_attempted",
             _ => string.Empty
         };
 
         return Nodes.FirstOrDefault(n => n.TypeId == expectedPrefix);
+    }
+
+    /// <summary>
+    /// Finds a pipeline stage node by its TypeId. Used by the interpreter to locate
+    /// the entry point for a specific stage within a pipeline graph.
+    /// </summary>
+    public GlyphNodeInstance? FindStageNode(string stageTypeId)
+    {
+        return Nodes.FirstOrDefault(n => n.TypeId == stageTypeId);
     }
 
     /// <summary>

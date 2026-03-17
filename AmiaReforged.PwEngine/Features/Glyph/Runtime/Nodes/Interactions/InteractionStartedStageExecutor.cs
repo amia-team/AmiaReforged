@@ -1,14 +1,16 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
-namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Events;
+namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 
 /// <summary>
-/// Entry-point node for <see cref="GlyphEventType.OnInteractionStarted"/> graphs.
-/// Fires after a new interaction session has been created and provides session details.
+/// Pipeline stage node for the "Started" phase of an interaction pipeline.
+/// Second stage in the chain: Attempted → Started → Tick → Completed.
+/// Fires after the interaction session has been created. Provides session details
+/// and allows setup logic. Route to <c>interaction.fail</c> to cancel the session.
 /// </summary>
-public class OnInteractionStartedEventExecutor : IGlyphNodeExecutor
+public class InteractionStartedStageExecutor : IGlyphNodeExecutor
 {
-    public const string NodeTypeId = "event.on_interaction_started";
+    public const string NodeTypeId = "stage.interaction_started";
 
     public string TypeId => NodeTypeId;
 
@@ -17,7 +19,7 @@ public class OnInteractionStartedEventExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        Dictionary<string, object?> outputs = new Dictionary<string, object?>
+        Dictionary<string, object?> outputs = new()
         {
             ["character_id"] = context.CharacterId ?? string.Empty,
             ["creature"] = context.InteractionCreature,
@@ -40,14 +42,14 @@ public class OnInteractionStartedEventExecutor : IGlyphNodeExecutor
     public static GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
-        DisplayName = "On Interaction Started",
-        Category = "Events",
-        Description = "Entry point for scripts that run after an interaction session is created. " +
-                      "Use this to set up visual effects, messages, or modify context variables.",
-        ColorClass = "node-event",
-        Archetype = GlyphNodeArchetype.EventEntry,
+        DisplayName = "2. Started",
+        Category = "Pipeline Stages",
+        Description = "Second stage in the interaction pipeline. Fires after the interaction session " +
+                      "is created. Use for setup logic, VFX, or messages. Route to Fail Interaction to cancel.",
+        ColorClass = "node-stage",
+        Archetype = GlyphNodeArchetype.PipelineStage,
         IsSingleton = true,
-        RestrictToEventType = GlyphEventType.OnInteractionStarted,
+        RestrictToEventType = GlyphEventType.InteractionPipeline,
         ScriptCategory = GlyphScriptCategory.Interaction,
         InputPins = [],
         OutputPins =

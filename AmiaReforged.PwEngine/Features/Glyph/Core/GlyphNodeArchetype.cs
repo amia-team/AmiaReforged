@@ -34,4 +34,12 @@ public enum GlyphNodeArchetype
     /// loops the body N times, Branch picks one of two paths).
     /// </summary>
     FlowControl,
+
+    /// <summary>
+    /// Pipeline stage node. Similar to EventEntry (no exec_in, provides context data outputs
+    /// and exec_out), but multiple can coexist in one graph. Each represents a discrete phase
+    /// in a causal pipeline (e.g., Attempted → Started → Tick → Completed for interactions).
+    /// The interpreter invokes the appropriate stage node based on the current lifecycle event.
+    /// </summary>
+    PipelineStage,
 }

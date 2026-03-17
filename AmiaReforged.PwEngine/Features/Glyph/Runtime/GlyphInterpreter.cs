@@ -65,6 +65,53 @@ public class GlyphInterpreter
     }
 
     /// <summary>
+    /// Executes a specific pipeline stage within a multi-stage graph. Used for interaction
+    /// pipeline graphs where a single graph contains multiple stage nodes (Attempted, Started,
+    /// Tick, Completed), each invoked independently when its lifecycle event fires.
+    /// </summary>
+    /// <param name="context">The execution context containing the graph and mutable state</param>
+    /// <param name="stageTypeId">The TypeId of the stage node to execute (e.g., "stage.interaction_attempted")</param>
+    /// <returns>True if the stage executed normally; false if the stage node was not found or execution failed</returns>
+    public async Task<bool> ExecuteStageAsync(GlyphExecutionContext context, string stageTypeId)
+    {
+        GlyphGraph graph = context.Graph;
+
+        GlyphNodeInstance? stageNode = graph.FindStageNode(stageTypeId);
+        if (stageNode == null)
+        {
+            Log.Warn("[Glyph] Graph '{Name}' has no stage node for '{StageTypeId}'. " +
+                     "Nodes in graph: [{NodeTypes}]",
+                graph.Name, stageTypeId,
+                string.Join(", ", graph.Nodes.Select(n => n.TypeId)));
+            return false;
+        }
+
+        Log.Debug("[Glyph] Found stage node '{TypeId}' ({Id}) for graph '{Name}'",
+            stageNode.TypeId, stageNode.InstanceId, graph.Name);
+
+        // Set the current pipeline stage so stage-aware nodes (e.g., FailInteraction) know
+        // which phase is active
+        context.CurrentPipelineStage = stageTypeId;
+
+        // Initialize variables (idempotent for repeated calls within the same context)
+        InitializeVariables(context);
+
+        Trace(context, $"Starting stage '{stageTypeId}' of graph '{graph.Name}'");
+
+        // Execute the stage node (same as an entry node — no exec_in, produces outputs + exec_out)
+        GlyphNodeResult stageResult = await ExecuteNode(stageNode, context);
+
+        // Follow the execution chain from the stage node's output Exec pin
+        if (stageResult.NextExecPinId != null)
+        {
+            await FollowExecChain(stageNode, stageResult.NextExecPinId, context);
+        }
+
+        Trace(context, $"Stage '{stageTypeId}' completed. Steps: {context.ExecutionStepCount}");
+        return true;
+    }
+
+    /// <summary>
     /// Follows the execution chain starting from a specific output Exec pin on a node.
     /// Uses a stack of <see cref="GlyphExecFrame"/>s to support multi-branch flow control
     /// (Sequence) and loops (ForEach).

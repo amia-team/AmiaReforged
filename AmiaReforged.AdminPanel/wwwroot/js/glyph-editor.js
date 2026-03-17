@@ -46,6 +46,21 @@ const DATA_TYPE_COLORS = {
     List:     '#e91e63',
 };
 
+const STAGE_NODE_COLOR = '#0088aa';
+const STAGE_NODE_MIN_WIDTH = 240;
+const STAGE_TYPE_IDS = [
+    'stage.interaction_attempted',
+    'stage.interaction_started',
+    'stage.interaction_tick',
+    'stage.interaction_completed',
+];
+const STAGE_LABELS = {
+    'stage.interaction_attempted': '1. Attempted',
+    'stage.interaction_started':   '2. Started',
+    'stage.interaction_tick':      '3. Tick',
+    'stage.interaction_completed': '4. Completed',
+};
+
 // ==================== State ====================
 
 let canvas, ctx;
@@ -164,7 +179,8 @@ function createNodeInstance(def, x, y, existingId) {
             if (tw > maxTextWidth) maxTextWidth = tw;
         }
     }
-    const width = Math.max(maxTextWidth, NODE_MIN_WIDTH);
+    const minW = (def.TypeId && def.TypeId.startsWith('stage.')) ? STAGE_NODE_MIN_WIDTH : NODE_MIN_WIDTH;
+    const width = Math.max(maxTextWidth, minW);
 
     // Calculate pin positions (relative to node top-left)
     for (const p of inputPins) {
@@ -224,6 +240,9 @@ function draw() {
         );
     }
 
+    // Draw pipeline guide lines between stage nodes
+    drawPipelineGuides();
+
     // Draw nodes
     for (const node of nodes) {
         drawNode(node);
@@ -256,7 +275,8 @@ function drawGrid(w, h) {
 }
 
 function drawNode(node) {
-    const color = COLOR_MAP[node.def.ColorClass?.toLowerCase()] || '#7f8c8d';
+    const isStage = isStageNode(node);
+    const color = isStage ? STAGE_NODE_COLOR : (COLOR_MAP[node.def.ColorClass?.toLowerCase()] || '#7f8c8d');
     const isSelected = node.id === selectedNodeId;
 
     // Shadow
@@ -298,7 +318,8 @@ function drawNode(node) {
     ctx.font = 'bold 11px sans-serif';
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'center';
-    ctx.fillText(node.def.DisplayName, node.x + node.width / 2, node.y + NODE_HEADER_HEIGHT / 2);
+    const headerLabel = STAGE_LABELS[node.typeId] || node.def.DisplayName;
+    ctx.fillText(headerLabel, node.x + node.width / 2, node.y + NODE_HEADER_HEIGHT / 2);
 
     // Pins
     for (const pin of node.inputPins) {
@@ -414,6 +435,42 @@ function isPinConnected(nodeId, pinId, dir) {
         return edges.some(e => e.tgtNodeId === nodeId && e.tgtPinId === pinId);
     }
     return edges.some(e => e.srcNodeId === nodeId && e.srcPinId === pinId);
+}
+
+function isStageNode(node) {
+    return node.typeId.startsWith('stage.');
+}
+
+function drawPipelineGuides() {
+    const stageNodes = nodes
+        .filter(n => STAGE_TYPE_IDS.includes(n.typeId))
+        .sort((a, b) => STAGE_TYPE_IDS.indexOf(a.typeId) - STAGE_TYPE_IDS.indexOf(b.typeId));
+
+    if (stageNodes.length < 2) return;
+
+    ctx.save();
+    ctx.strokeStyle = '#445566';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 6]);
+
+    for (let i = 0; i < stageNodes.length - 1; i++) {
+        const a = stageNodes[i];
+        const b = stageNodes[i + 1];
+        const y = Math.min(a.y, b.y) - 20;
+        const x1 = a.x + a.width / 2;
+        const x2 = b.x + b.width / 2;
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y);
+        ctx.lineTo(x2, y);
+        // Arrow head
+        ctx.moveTo(x2 - 8, y - 5);
+        ctx.lineTo(x2, y);
+        ctx.lineTo(x2 - 8, y + 5);
+        ctx.stroke();
+    }
+
+    ctx.restore();
 }
 
 // ==================== Hit Testing ====================
@@ -620,6 +677,10 @@ function onWheel(e) {
 function onKeyDown(e) {
     if (e.key === 'Delete' || e.key === 'Backspace') {
         if (selectedNodeId && document.activeElement === canvas) {
+            // Prevent deletion of pipeline stage nodes
+            const selNode = nodes.find(n => n.id === selectedNodeId);
+            if (selNode && isStageNode(selNode)) return;
+
             // Remove node and its edges
             nodes = nodes.filter(n => n.id !== selectedNodeId);
             edges = edges.filter(e => e.srcNodeId !== selectedNodeId && e.tgtNodeId !== selectedNodeId);
@@ -783,6 +844,12 @@ function autoArrange() {
     const hGap = 40;
     const vGap = 16;
 
+    // Preserve stage node positions — they are fixed in the pipeline layout
+    const stagePositions = new Map();
+    for (const n of nodes) {
+        if (isStageNode(n)) stagePositions.set(n.id, { x: n.x, y: n.y });
+    }
+
     // Build adjacency: node id → set of downstream node ids
     const downstream = new Map();
     const upstream = new Map();
@@ -862,6 +929,12 @@ function autoArrange() {
         }
 
         xOffset += maxWidth + hGap;
+    }
+
+    // Restore stage node positions
+    for (const [id, pos] of stagePositions) {
+        const n = nodes.find(nd => nd.id === id);
+        if (n) { n.x = pos.x; n.y = pos.y; }
     }
 
     fitToView();

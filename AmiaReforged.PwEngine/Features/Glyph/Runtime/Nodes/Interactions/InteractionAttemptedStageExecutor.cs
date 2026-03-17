@@ -1,15 +1,16 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
-namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Events;
+namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 
 /// <summary>
-/// Entry-point node for <see cref="GlyphEventType.OnInteractionAttempted"/> graphs.
-/// Fires before precondition checks. Exposes the interaction context and allows
-/// the script to block the interaction via the <c>interaction.block</c> action node.
+/// Pipeline stage node for the "Attempted" phase of an interaction pipeline.
+/// This is the first stage in the causal chain: Attempted → Started → Tick → Completed.
+/// Fires before precondition checks. Downstream nodes can inspect context and
+/// route to <c>interaction.fail</c> to block the interaction from starting.
 /// </summary>
-public class OnInteractionAttemptedEventExecutor : IGlyphNodeExecutor
+public class InteractionAttemptedStageExecutor : IGlyphNodeExecutor
 {
-    public const string NodeTypeId = "event.on_interaction_attempted";
+    public const string NodeTypeId = "stage.interaction_attempted";
 
     public string TypeId => NodeTypeId;
 
@@ -18,7 +19,7 @@ public class OnInteractionAttemptedEventExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        Dictionary<string, object?> outputs = new Dictionary<string, object?>
+        Dictionary<string, object?> outputs = new()
         {
             ["character_id"] = context.CharacterId ?? string.Empty,
             ["creature"] = context.InteractionCreature,
@@ -39,14 +40,14 @@ public class OnInteractionAttemptedEventExecutor : IGlyphNodeExecutor
     public static GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
-        DisplayName = "On Interaction Attempted",
-        Category = "Events",
-        Description = "Entry point for scripts that run when a character attempts to start an interaction, " +
-                      "before precondition checks. Use the Block Interaction node to prevent it from starting.",
-        ColorClass = "node-event",
-        Archetype = GlyphNodeArchetype.EventEntry,
+        DisplayName = "1. Attempted",
+        Category = "Pipeline Stages",
+        Description = "First stage in the interaction pipeline. Fires when a character attempts to start " +
+                      "an interaction, before precondition checks. Route to Fail Interaction to block it.",
+        ColorClass = "node-stage",
+        Archetype = GlyphNodeArchetype.PipelineStage,
         IsSingleton = true,
-        RestrictToEventType = GlyphEventType.OnInteractionAttempted,
+        RestrictToEventType = GlyphEventType.InteractionPipeline,
         ScriptCategory = GlyphScriptCategory.Interaction,
         InputPins = [],
         OutputPins =

@@ -70,6 +70,15 @@ public class GlyphController
         if (req == null || string.IsNullOrWhiteSpace(req.Name) || string.IsNullOrWhiteSpace(req.EventType))
             return new ApiResult(400, new ErrorResponse("Bad request", "Name and EventType are required."));
 
+        string graphJson = req.GraphJson ?? "{}";
+
+        // For Interaction category, auto-populate the graph with 4 pipeline stage nodes
+        if (string.Equals(req.Category, "Interaction", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(req.EventType, nameof(GlyphEventType.InteractionPipeline), StringComparison.OrdinalIgnoreCase))
+        {
+            graphJson = BuildInteractionPipelineGraphJson(req.Name, req.EventType);
+        }
+
         GlyphDefinition definition = new()
         {
             Id = Guid.NewGuid(),
@@ -77,7 +86,7 @@ public class GlyphController
             Description = req.Description,
             EventType = req.EventType,
             Category = req.Category,
-            GraphJson = req.GraphJson ?? "{}",
+            GraphJson = graphJson,
             IsActive = req.IsActive
         };
 
@@ -423,6 +432,38 @@ public class GlyphController
 
     private static ApiResult ServiceUnavailable()
         => new(503, new ErrorResponse("Service unavailable", "Glyph service is not initialized."));
+
+    /// <summary>
+    /// Builds a pre-populated GraphJson for interaction pipeline definitions.
+    /// Creates 4 stage nodes arranged horizontally at y=300.
+    /// </summary>
+    private static string BuildInteractionPipelineGraphJson(string name, string eventType)
+    {
+        Guid graphId = Guid.NewGuid();
+        Guid node1 = Guid.NewGuid();
+        Guid node2 = Guid.NewGuid();
+        Guid node3 = Guid.NewGuid();
+        Guid node4 = Guid.NewGuid();
+
+        var graph = new
+        {
+            Id = graphId,
+            Name = name,
+            Description = "",
+            EventType = eventType,
+            Nodes = new[]
+            {
+                new { InstanceId = node1, TypeId = "stage.interaction_attempted", PositionX = 50.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
+                new { InstanceId = node2, TypeId = "stage.interaction_started", PositionX = 500.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
+                new { InstanceId = node3, TypeId = "stage.interaction_tick", PositionX = 950.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
+                new { InstanceId = node4, TypeId = "stage.interaction_completed", PositionX = 1400.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() }
+            },
+            Edges = Array.Empty<object>(),
+            Variables = Array.Empty<object>()
+        };
+
+        return JsonSerializer.Serialize(graph, JsonOptions);
+    }
 
     private static GlyphDefinitionDto ToDto(GlyphDefinition d) => new(
         d.Id, d.Name, d.Description, d.EventType, d.Category, d.GraphJson, d.IsActive,

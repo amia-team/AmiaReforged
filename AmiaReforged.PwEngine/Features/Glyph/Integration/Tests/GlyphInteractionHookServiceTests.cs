@@ -3,7 +3,6 @@ using System.Text.Json.Serialization;
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using AmiaReforged.PwEngine.Features.Glyph.Persistence;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime;
-using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Events;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.Events;
@@ -38,11 +37,11 @@ public class GlyphInteractionHookServiceTests
     // ==================== OnInteractionAttempted ====================
 
     [Test]
-    public void Attempted_graph_with_block_node_should_block_interaction()
+    public void Attempted_stage_with_fail_node_should_block_interaction()
     {
-        // Given: a graph that blocks interactions via BlockInteraction
-        GlyphGraph graph = BuildBlockInteractionGraph("Custom block message");
-        RegisterBinding("prospecting", GlyphEventType.OnInteractionAttempted, graph);
+        // Given: a pipeline graph where the Attempted stage routes to FailInteraction
+        GlyphGraph graph = BuildFailAtAttemptedGraph("Custom block message");
+        RegisterBinding("prospecting", graph);
         CreateHookService();
 
         // When
@@ -61,11 +60,11 @@ public class GlyphInteractionHookServiceTests
     }
 
     [Test]
-    public void Attempted_graph_without_block_node_should_allow_interaction()
+    public void Attempted_stage_without_fail_node_should_allow_interaction()
     {
-        // Given: a graph that has an entry point but no block action
-        GlyphGraph graph = BuildPassthroughGraph(GlyphEventType.OnInteractionAttempted);
-        RegisterBinding("prospecting", GlyphEventType.OnInteractionAttempted, graph);
+        // Given: a pipeline graph with no fail action wired to Attempted
+        GlyphGraph graph = BuildPassthroughPipelineGraph();
+        RegisterBinding("prospecting", graph);
         CreateHookService();
 
         // When
@@ -87,8 +86,8 @@ public class GlyphInteractionHookServiceTests
     public void Attempted_with_no_matching_tag_should_allow_interaction()
     {
         // Given: a binding for "mining" but we attempt "prospecting"
-        GlyphGraph graph = BuildBlockInteractionGraph("Blocked!");
-        RegisterBinding("mining", GlyphEventType.OnInteractionAttempted, graph);
+        GlyphGraph graph = BuildFailAtAttemptedGraph("Blocked!");
+        RegisterBinding("mining", graph);
         CreateHookService();
 
         // When
@@ -108,11 +107,11 @@ public class GlyphInteractionHookServiceTests
     // ==================== OnInteractionTick ====================
 
     [Test]
-    public void Tick_graph_with_cancel_node_should_cancel_interaction()
+    public void Tick_stage_with_fail_node_should_cancel_interaction()
     {
-        // Given: a graph that cancels interactions via CancelInteraction
-        GlyphGraph graph = BuildCancelInteractionGraph("Script cancelled it");
-        RegisterBinding("prospecting", GlyphEventType.OnInteractionTick, graph);
+        // Given: a pipeline graph where Tick stage routes to FailInteraction
+        GlyphGraph graph = BuildFailAtTickGraph("Script cancelled it");
+        RegisterBinding("prospecting", graph);
         CreateHookService();
 
         // When
@@ -160,8 +159,8 @@ public class GlyphInteractionHookServiceTests
     public void Global_binding_matches_any_area()
     {
         // Given: a binding with no area restriction
-        GlyphGraph graph = BuildBlockInteractionGraph("Global block");
-        RegisterBinding("prospecting", GlyphEventType.OnInteractionAttempted, graph, areaResRef: null);
+        GlyphGraph graph = BuildFailAtAttemptedGraph("Global block");
+        RegisterBinding("prospecting", graph, areaResRef: null);
         CreateHookService();
 
         // When: attempting from a specific area
@@ -183,8 +182,8 @@ public class GlyphInteractionHookServiceTests
     public void Area_scoped_binding_matches_only_correct_area()
     {
         // Given: a binding scoped to "area_mining_camp"
-        GlyphGraph graph = BuildBlockInteractionGraph("Area-specific block");
-        RegisterBinding("prospecting", GlyphEventType.OnInteractionAttempted, graph, areaResRef: "area_mining_camp");
+        GlyphGraph graph = BuildFailAtAttemptedGraph("Area-specific block");
+        RegisterBinding("prospecting", graph, areaResRef: "area_mining_camp");
         CreateHookService();
 
         // When: attempting from the correct area
@@ -205,8 +204,8 @@ public class GlyphInteractionHookServiceTests
     public void Area_scoped_binding_does_not_match_different_area()
     {
         // Given: a binding scoped to "area_mining_camp"
-        GlyphGraph graph = BuildBlockInteractionGraph("Should not fire");
-        RegisterBinding("prospecting", GlyphEventType.OnInteractionAttempted, graph, areaResRef: "area_mining_camp");
+        GlyphGraph graph = BuildFailAtAttemptedGraph("Should not fire");
+        RegisterBinding("prospecting", graph, areaResRef: "area_mining_camp");
         CreateHookService();
 
         // When: attempting from a different area
@@ -226,11 +225,11 @@ public class GlyphInteractionHookServiceTests
     // ==================== Async Event Handlers ====================
 
     [Test]
-    public async Task OnStarted_event_executes_matching_graphs()
+    public async Task OnStarted_event_executes_matching_pipeline()
     {
-        // Given: a passthrough graph bound to OnInteractionStarted
-        GlyphGraph graph = BuildPassthroughGraph(GlyphEventType.OnInteractionStarted);
-        RegisterBinding("prospecting", GlyphEventType.OnInteractionStarted, graph);
+        // Given: a passthrough pipeline graph
+        GlyphGraph graph = BuildPassthroughPipelineGraph();
+        RegisterBinding("prospecting", graph);
         CreateHookService();
 
         // When: publishing the started event — should not throw
@@ -249,11 +248,11 @@ public class GlyphInteractionHookServiceTests
     }
 
     [Test]
-    public async Task OnCompleted_event_executes_matching_graphs()
+    public async Task OnCompleted_event_executes_matching_pipeline()
     {
         // Given
-        GlyphGraph graph = BuildPassthroughGraph(GlyphEventType.OnInteractionCompleted);
-        RegisterBinding("prospecting", GlyphEventType.OnInteractionCompleted, graph);
+        GlyphGraph graph = BuildPassthroughPipelineGraph();
+        RegisterBinding("prospecting", graph);
         CreateHookService();
 
         // When
@@ -276,8 +275,8 @@ public class GlyphInteractionHookServiceTests
     public async Task OnStarted_event_with_no_matching_tag_does_nothing()
     {
         // Given: binding for 'mining', event for 'prospecting'
-        GlyphGraph graph = BuildPassthroughGraph(GlyphEventType.OnInteractionStarted);
-        RegisterBinding("mining", GlyphEventType.OnInteractionStarted, graph);
+        GlyphGraph graph = BuildPassthroughPipelineGraph();
+        RegisterBinding("mining", graph);
         CreateHookService();
 
         InteractionStartedEvent started = new(
@@ -307,8 +306,8 @@ public class GlyphInteractionHookServiceTests
         shouldBlock.Should().BeFalse("no bindings initially");
 
         // When: add a binding and refresh
-        GlyphGraph graph = BuildBlockInteractionGraph("Newly added");
-        RegisterBinding("prospecting", GlyphEventType.OnInteractionAttempted, graph);
+        GlyphGraph graph = BuildFailAtAttemptedGraph("Newly added");
+        RegisterBinding("prospecting", graph);
         await _hookService.RefreshCacheAsync();
 
         // Then
@@ -323,8 +322,8 @@ public class GlyphInteractionHookServiceTests
     public void Inactive_definitions_are_excluded_from_cache()
     {
         // Given: an inactive definition
-        GlyphGraph graph = BuildBlockInteractionGraph("Should not fire");
-        RegisterBinding("prospecting", GlyphEventType.OnInteractionAttempted, graph, isActive: false);
+        GlyphGraph graph = BuildFailAtAttemptedGraph("Should not fire");
+        RegisterBinding("prospecting", graph, isActive: false);
         CreateHookService();
 
         // When
@@ -339,35 +338,50 @@ public class GlyphInteractionHookServiceTests
     // ==================== Graph Builder Helpers ====================
 
     /// <summary>
-    /// Builds a graph: OnInteractionAttempted → BlockInteraction(message)
+    /// Builds a pipeline graph where the Attempted stage routes to FailInteraction(message).
+    /// All 4 stage nodes are present (as required by the pipeline model).
     /// </summary>
-    private static GlyphGraph BuildBlockInteractionGraph(string message)
+    private static GlyphGraph BuildFailAtAttemptedGraph(string message)
     {
-        GlyphNodeInstance entryNode = new()
+        GlyphNodeInstance attemptedNode = new()
         {
-            TypeId = OnInteractionAttemptedEventExecutor.NodeTypeId,
+            TypeId = InteractionAttemptedStageExecutor.NodeTypeId,
             InstanceId = Guid.NewGuid()
         };
-
-        GlyphNodeInstance blockNode = new()
+        GlyphNodeInstance startedNode = new()
         {
-            TypeId = BlockInteractionExecutor.NodeTypeId,
+            TypeId = InteractionStartedStageExecutor.NodeTypeId,
+            InstanceId = Guid.NewGuid()
+        };
+        GlyphNodeInstance tickNode = new()
+        {
+            TypeId = InteractionTickStageExecutor.NodeTypeId,
+            InstanceId = Guid.NewGuid()
+        };
+        GlyphNodeInstance completedNode = new()
+        {
+            TypeId = InteractionCompletedStageExecutor.NodeTypeId,
+            InstanceId = Guid.NewGuid()
+        };
+        GlyphNodeInstance failNode = new()
+        {
+            TypeId = FailInteractionExecutor.NodeTypeId,
             InstanceId = Guid.NewGuid(),
             PropertyOverrides = new Dictionary<string, string> { ["message"] = message }
         };
 
         return new GlyphGraph
         {
-            EventType = GlyphEventType.OnInteractionAttempted,
-            Name = "Block Test Graph",
-            Nodes = [entryNode, blockNode],
+            EventType = GlyphEventType.InteractionPipeline,
+            Name = "Fail-at-Attempted Test Graph",
+            Nodes = [attemptedNode, startedNode, tickNode, completedNode, failNode],
             Edges =
             [
                 new GlyphEdge
                 {
-                    SourceNodeId = entryNode.InstanceId,
+                    SourceNodeId = attemptedNode.InstanceId,
                     SourcePinId = "exec_out",
-                    TargetNodeId = blockNode.InstanceId,
+                    TargetNodeId = failNode.InstanceId,
                     TargetPinId = "exec_in"
                 }
             ]
@@ -375,35 +389,49 @@ public class GlyphInteractionHookServiceTests
     }
 
     /// <summary>
-    /// Builds a graph: OnInteractionTick → CancelInteraction(message)
+    /// Builds a pipeline graph where the Tick stage routes to FailInteraction(message).
     /// </summary>
-    private static GlyphGraph BuildCancelInteractionGraph(string message)
+    private static GlyphGraph BuildFailAtTickGraph(string message)
     {
-        GlyphNodeInstance entryNode = new()
+        GlyphNodeInstance attemptedNode = new()
         {
-            TypeId = OnInteractionTickEventExecutor.NodeTypeId,
+            TypeId = InteractionAttemptedStageExecutor.NodeTypeId,
             InstanceId = Guid.NewGuid()
         };
-
-        GlyphNodeInstance cancelNode = new()
+        GlyphNodeInstance startedNode = new()
         {
-            TypeId = CancelInteractionExecutor.NodeTypeId,
+            TypeId = InteractionStartedStageExecutor.NodeTypeId,
+            InstanceId = Guid.NewGuid()
+        };
+        GlyphNodeInstance tickNode = new()
+        {
+            TypeId = InteractionTickStageExecutor.NodeTypeId,
+            InstanceId = Guid.NewGuid()
+        };
+        GlyphNodeInstance completedNode = new()
+        {
+            TypeId = InteractionCompletedStageExecutor.NodeTypeId,
+            InstanceId = Guid.NewGuid()
+        };
+        GlyphNodeInstance failNode = new()
+        {
+            TypeId = FailInteractionExecutor.NodeTypeId,
             InstanceId = Guid.NewGuid(),
             PropertyOverrides = new Dictionary<string, string> { ["message"] = message }
         };
 
         return new GlyphGraph
         {
-            EventType = GlyphEventType.OnInteractionTick,
-            Name = "Cancel Test Graph",
-            Nodes = [entryNode, cancelNode],
+            EventType = GlyphEventType.InteractionPipeline,
+            Name = "Fail-at-Tick Test Graph",
+            Nodes = [attemptedNode, startedNode, tickNode, completedNode, failNode],
             Edges =
             [
                 new GlyphEdge
                 {
-                    SourceNodeId = entryNode.InstanceId,
+                    SourceNodeId = tickNode.InstanceId,
                     SourcePinId = "exec_out",
-                    TargetNodeId = cancelNode.InstanceId,
+                    TargetNodeId = failNode.InstanceId,
                     TargetPinId = "exec_in"
                 }
             ]
@@ -411,25 +439,38 @@ public class GlyphInteractionHookServiceTests
     }
 
     /// <summary>
-    /// Builds a graph with just an entry node (no actions). Tests that graphs
-    /// execute without side effects when no action nodes are wired.
+    /// Builds a pipeline graph with all 4 stage nodes but no actions wired.
+    /// Tests that graphs execute without side effects when no fail nodes are connected.
     /// </summary>
-    private static GlyphGraph BuildPassthroughGraph(GlyphEventType eventType)
+    private static GlyphGraph BuildPassthroughPipelineGraph()
     {
-        string typeId = eventType switch
-        {
-            GlyphEventType.OnInteractionAttempted => OnInteractionAttemptedEventExecutor.NodeTypeId,
-            GlyphEventType.OnInteractionStarted => OnInteractionStartedEventExecutor.NodeTypeId,
-            GlyphEventType.OnInteractionTick => OnInteractionTickEventExecutor.NodeTypeId,
-            GlyphEventType.OnInteractionCompleted => OnInteractionCompletedEventExecutor.NodeTypeId,
-            _ => throw new ArgumentException($"Unsupported event type: {eventType}")
-        };
-
         return new GlyphGraph
         {
-            EventType = eventType,
-            Name = $"Passthrough {eventType}",
-            Nodes = [new GlyphNodeInstance { TypeId = typeId, InstanceId = Guid.NewGuid() }],
+            EventType = GlyphEventType.InteractionPipeline,
+            Name = "Passthrough Pipeline",
+            Nodes =
+            [
+                new GlyphNodeInstance
+                {
+                    TypeId = InteractionAttemptedStageExecutor.NodeTypeId,
+                    InstanceId = Guid.NewGuid()
+                },
+                new GlyphNodeInstance
+                {
+                    TypeId = InteractionStartedStageExecutor.NodeTypeId,
+                    InstanceId = Guid.NewGuid()
+                },
+                new GlyphNodeInstance
+                {
+                    TypeId = InteractionTickStageExecutor.NodeTypeId,
+                    InstanceId = Guid.NewGuid()
+                },
+                new GlyphNodeInstance
+                {
+                    TypeId = InteractionCompletedStageExecutor.NodeTypeId,
+                    InstanceId = Guid.NewGuid()
+                }
+            ],
             Edges = []
         };
     }
@@ -438,7 +479,6 @@ public class GlyphInteractionHookServiceTests
 
     private void RegisterBinding(
         string interactionTag,
-        GlyphEventType eventType,
         GlyphGraph graph,
         string? areaResRef = null,
         int priority = 0,
@@ -448,8 +488,8 @@ public class GlyphInteractionHookServiceTests
         GlyphDefinition definition = new()
         {
             Id = Guid.NewGuid(),
-            Name = $"Test-{eventType}",
-            EventType = eventType.ToString(),
+            Name = $"Test-Pipeline",
+            EventType = GlyphEventType.InteractionPipeline.ToString(),
             Category = "Interaction",
             GraphJson = graphJson,
             IsActive = isActive

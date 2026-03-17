@@ -111,13 +111,12 @@ public class GlyphBootstrap
         registry.Register(HasTraitExecutor.CreateDefinition());
         registry.Register(GetCreatureTraitsExecutor.CreateDefinition());
 
-        // Interactions
-        registry.Register(OnInteractionAttemptedEventExecutor.CreateDefinition());
-        registry.Register(OnInteractionStartedEventExecutor.CreateDefinition());
-        registry.Register(OnInteractionTickEventExecutor.CreateDefinition());
-        registry.Register(OnInteractionCompletedEventExecutor.CreateDefinition());
-        registry.Register(BlockInteractionExecutor.CreateDefinition());
-        registry.Register(CancelInteractionExecutor.CreateDefinition());
+        // Interaction pipeline stages
+        registry.Register(InteractionAttemptedStageExecutor.CreateDefinition());
+        registry.Register(InteractionStartedStageExecutor.CreateDefinition());
+        registry.Register(InteractionTickStageExecutor.CreateDefinition());
+        registry.Register(InteractionCompletedStageExecutor.CreateDefinition());
+        registry.Register(FailInteractionExecutor.CreateDefinition());
         registry.Register(GetInteractionInfoExecutor.CreateDefinition());
         registry.Register(SuppressEventExecutor.CreateDefinition());
         registry.Register(SetProgressExecutor.CreateDefinition());
@@ -196,13 +195,12 @@ public class GlyphBootstrap
         new HasTraitExecutor(),
         new GetCreatureTraitsExecutor(),
 
-        // Interactions
-        new OnInteractionAttemptedEventExecutor(),
-        new OnInteractionStartedEventExecutor(),
-        new OnInteractionTickEventExecutor(),
-        new OnInteractionCompletedEventExecutor(),
-        new BlockInteractionExecutor(),
-        new CancelInteractionExecutor(),
+        // Interaction pipeline stages
+        new InteractionAttemptedStageExecutor(),
+        new InteractionStartedStageExecutor(),
+        new InteractionTickStageExecutor(),
+        new InteractionCompletedStageExecutor(),
+        new FailInteractionExecutor(),
         new GetInteractionInfoExecutor(),
         new SuppressEventExecutor(),
         new SetProgressExecutor(),

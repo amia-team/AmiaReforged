@@ -203,10 +203,17 @@ public class GlyphExecutionContext
     public Dictionary<string, object>? InteractionMetadata { get; set; }
 
     /// <summary>
-    /// Reference to the live interaction session. Null for OnInteractionAttempted (session not yet created)
+    /// Reference to the live interaction session. Null for the Attempted stage (session not yet created)
     /// and for non-interaction scripts. Allows nodes to modify session state directly.
     /// </summary>
     public AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.InteractionSession? Session { get; set; }
+
+    /// <summary>
+    /// The TypeId of the pipeline stage currently being executed (e.g., "stage.interaction_attempted").
+    /// Used by stage-aware nodes like FailInteraction to determine the appropriate failure behavior.
+    /// Null for non-pipeline scripts.
+    /// </summary>
+    public string? CurrentPipelineStage { get; set; }
 
     // ==================== Variables & Cache ====================
 

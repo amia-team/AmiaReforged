@@ -37,28 +37,11 @@ public enum GlyphEventType
     OnTraitRemoved,
 
     /// <summary>
-    /// Fires when a character attempts to start an interaction, before precondition checks.
-    /// The script can block the interaction from starting by setting ShouldBlockInteraction.
+    /// Pipeline event type for interaction scripts. A single graph contains four stage nodes
+    /// (Attempted → Started → Tick → Completed), each executed when its corresponding
+    /// lifecycle event fires. Replaces the individual OnInteraction* event types.
     /// </summary>
-    OnInteractionAttempted,
-
-    /// <summary>
-    /// Fires after an interaction session has been created and the first tick is about to run.
-    /// Can set up visual effects, messages, or modify context variables.
-    /// </summary>
-    OnInteractionStarted,
-
-    /// <summary>
-    /// Fires each round/tick of an active interaction.
-    /// Can perform per-tick logic or conditionally cancel the interaction mid-progress.
-    /// </summary>
-    OnInteractionTick,
-
-    /// <summary>
-    /// Fires when an interaction session completes (all rounds finished).
-    /// Runs before the data-driven response system to augment the outcome.
-    /// </summary>
-    OnInteractionCompleted,
+    InteractionPipeline,
 
     /// <summary>
     /// Fires once per creature immediately after it is spawned, before bonuses and mutations
