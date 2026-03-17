@@ -1114,10 +1114,10 @@
             string catalogJson = JsonSerializer.Serialize(_nodeCatalog);
             string graphJson = _pipelineGraphJson;
 
-            // Ensure EventType is set in the graph JSON even for new/empty graphs
-            if (string.IsNullOrEmpty(graphJson) || graphJson == "{}")
+            // For new/empty graphs, pre-populate with the 4 pipeline stage nodes
+            if (string.IsNullOrEmpty(graphJson) || graphJson == "{}" || !GraphHasNodes(graphJson))
             {
-                graphJson = JsonSerializer.Serialize(new { EventType = PipelineEventType });
+                graphJson = BuildEmptyPipelineGraphJson();
             }
 
             await _scriptEditorModule.InvokeVoidAsync("initGlyphEditor", "interaction-glyph-canvas", catalogJson, graphJson, _dotNetRef);
@@ -1152,11 +1152,36 @@
         _pipelineGraphJson = "{}";
         _scriptSelectedNodeInfo = null;
 
-        // Re-init with empty graph
+        // Re-init with pre-populated pipeline stage nodes
         await DestroyScriptEditor();
         StateHasChanged();
         await Task.Delay(50);
         await InitScriptEditor();
+    }
+
+    /// <summary>
+    /// Builds a pipeline graph JSON with the 4 stage nodes pre-placed on the canvas.
+    /// Mirrors GlyphController.BuildInteractionPipelineGraphJson.
+    /// </summary>
+    private static string BuildEmptyPipelineGraphJson()
+    {
+        var graph = new
+        {
+            Id = Guid.NewGuid(),
+            Name = "",
+            Description = "",
+            EventType = PipelineEventType,
+            Nodes = new object[]
+            {
+                new { InstanceId = Guid.NewGuid(), TypeId = "stage.interaction_attempted", PositionX = 50.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
+                new { InstanceId = Guid.NewGuid(), TypeId = "stage.interaction_started", PositionX = 500.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
+                new { InstanceId = Guid.NewGuid(), TypeId = "stage.interaction_tick", PositionX = 950.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
+                new { InstanceId = Guid.NewGuid(), TypeId = "stage.interaction_completed", PositionX = 1400.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() }
+            },
+            Edges = Array.Empty<object>(),
+            Variables = Array.Empty<object>()
+        };
+        return JsonSerializer.Serialize(graph);
     }
 
     private async Task FitAll()
