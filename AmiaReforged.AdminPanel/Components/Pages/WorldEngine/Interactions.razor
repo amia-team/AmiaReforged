@@ -318,25 +318,7 @@
 
                 @if (_showScriptsSection)
                 {
-                    @* Event Type Tabs *@
-                    <div style="display:flex;gap:4px;margin-top:12px;border-bottom:2px solid var(--border-color);padding-bottom:0">
-                        @foreach (string evt in InteractionEventTypes)
-                        {
-                            bool isActive = evt == _activeScriptTab;
-                            bool hasScript = _eventGraphJsons.TryGetValue(evt, out string? json) && !string.IsNullOrEmpty(json) && json != "{}";
-                            <button class="btn btn-sm @(isActive ? "btn-primary" : "btn-outline-secondary")"
-                                    style="border-radius:6px 6px 0 0;border-bottom:none;position:relative;@(isActive ? "" : "opacity:0.8")"
-                                    @onclick="() => SwitchScriptTab(evt)">
-                                @GetEventTabLabel(evt)
-                                @if (hasScript)
-                                {
-                                    <span style="position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;background:#2ecc71"></span>
-                                }
-                            </button>
-                        }
-                    </div>
-
-                    @* Editor Area *@
+                    @* Editor Area — single pipeline canvas with all 4 stage nodes *@
                     <div style="display:flex;gap:12px;margin-top:12px">
                         @* Node Palette *@
                         <div style="width:220px;flex-shrink:0">
@@ -569,13 +551,11 @@
     private InteractionDefinitionDto? _deleteTarget;
 
     // ===== Event Scripts =====
-    private static readonly string[] InteractionEventTypes =
-        ["OnInteractionAttempted", "OnInteractionStarted", "OnInteractionTick", "OnInteractionCompleted"];
+    private const string PipelineEventType = "InteractionPipeline";
 
     private bool _showScriptsSection;
-    private string _activeScriptTab = "OnInteractionAttempted";
-    private Dictionary<string, string> _eventGraphJsons = new();        // eventType → GraphJson
-    private Dictionary<string, GlyphDefinitionDto?> _eventScripts = new(); // eventType → existing definition (null = new)
+    private string _pipelineGraphJson = "{}";                           // single pipeline graph
+    private GlyphDefinitionDto? _pipelineScript;                        // existing definition (null = new)
     private List<GlyphNodeCatalogEntryDto> _nodeCatalog = [];
     private string _scriptNodeSearchFilter = "";
     private IJSObjectReference? _scriptEditorModule;
@@ -585,8 +565,7 @@
     // Selected node in script editor (from JS callback)
     private SelectedNodeInfo? _scriptSelectedNodeInfo;
 
-    private bool HasCurrentScript =>
-        _eventGraphJsons.TryGetValue(_activeScriptTab, out string? json) && GraphHasNodes(json);
+    private bool HasCurrentScript => GraphHasNodes(_pipelineGraphJson);
 
     /// <summary>
     /// Checks whether a graph JSON string contains at least one node.
@@ -615,10 +594,10 @@
         {
             IEnumerable<GlyphNodeCatalogEntryDto> nodes = _nodeCatalog;
 
-            // Filter by the active tab's event type
+            // Filter by pipeline event type
             nodes = nodes.Where(n =>
                 n.RestrictToEventType == null ||
-                n.RestrictToEventType == _activeScriptTab);
+                n.RestrictToEventType == PipelineEventType);
 
             // Show only Interaction-category nodes + universal nodes
             nodes = nodes.Where(n =>
@@ -1038,18 +1017,11 @@
     private void ResetScriptState()
     {
         _showScriptsSection = false;
-        _activeScriptTab = "OnInteractionAttempted";
-        _eventGraphJsons = new Dictionary<string, string>();
-        _eventScripts = new Dictionary<string, GlyphDefinitionDto?>();
+        _pipelineGraphJson = "{}";
+        _pipelineScript = null;
         _scriptNodeSearchFilter = "";
         _scriptEditorReady = false;
         _scriptSelectedNodeInfo = null;
-
-        foreach (string evt in InteractionEventTypes)
-        {
-            _eventGraphJsons[evt] = "{}";
-            _eventScripts[evt] = null;
-        }
     }
 
     private async Task LoadInteractionScripts(string interactionTag)
@@ -1071,12 +1043,13 @@
                 GlyphDefinitionDto? def = await GlyphApi.GetDefinitionAsync(binding.GlyphDefinitionId);
                 if (def == null) continue;
 
-                // Map by event type
-                string eventType = def.EventType;
-                if (_eventGraphJsons.ContainsKey(eventType))
+                // Use the pipeline definition (or legacy event types)
+                if (def.EventType == PipelineEventType ||
+                    def.EventType.StartsWith("OnInteraction", StringComparison.OrdinalIgnoreCase))
                 {
-                    _eventGraphJsons[eventType] = def.GraphJson ?? "{}";
-                    _eventScripts[eventType] = def;
+                    _pipelineGraphJson = def.GraphJson ?? "{}";
+                    _pipelineScript = def;
+                    break; // single pipeline definition per interaction
                 }
             }
         }
@@ -1116,23 +1089,6 @@
         }
     }
 
-    private async Task SwitchScriptTab(string newEventType)
-    {
-        if (newEventType == _activeScriptTab) return;
-
-        // Save current tab's graph
-        await CaptureCurrentScriptGraph();
-        await DestroyScriptEditor();
-
-        _activeScriptTab = newEventType;
-        _scriptSelectedNodeInfo = null;
-        _scriptNodeSearchFilter = "";
-        StateHasChanged();
-
-        await Task.Delay(50); // Wait for DOM update
-        await InitScriptEditor();
-    }
-
     private async Task CaptureCurrentScriptGraph()
     {
         if (_scriptEditorModule == null || !_scriptEditorReady) return;
@@ -1140,11 +1096,11 @@
         try
         {
             string json = await _scriptEditorModule.InvokeAsync<string>("getGraphJson");
-            _eventGraphJsons[_activeScriptTab] = json;
+            _pipelineGraphJson = json;
         }
         catch (Exception ex)
         {
-            Logger.LogWarning(ex, "Failed to capture script graph for {EventType}", _activeScriptTab);
+            Logger.LogWarning(ex, "Failed to capture pipeline script graph");
         }
     }
 
@@ -1156,12 +1112,12 @@
             _dotNetRef ??= DotNetObjectReference.Create(this);
 
             string catalogJson = JsonSerializer.Serialize(_nodeCatalog);
-            string graphJson = _eventGraphJsons.GetValueOrDefault(_activeScriptTab, "{}");
+            string graphJson = _pipelineGraphJson;
 
             // Ensure EventType is set in the graph JSON even for new/empty graphs
             if (string.IsNullOrEmpty(graphJson) || graphJson == "{}")
             {
-                graphJson = JsonSerializer.Serialize(new { EventType = _activeScriptTab });
+                graphJson = JsonSerializer.Serialize(new { EventType = PipelineEventType });
             }
 
             await _scriptEditorModule.InvokeVoidAsync("initGlyphEditor", "interaction-glyph-canvas", catalogJson, graphJson, _dotNetRef);
@@ -1193,7 +1149,7 @@
 
     private async Task ClearCurrentScript()
     {
-        _eventGraphJsons[_activeScriptTab] = "{}";
+        _pipelineGraphJson = "{}";
         _scriptSelectedNodeInfo = null;
 
         // Re-init with empty graph
@@ -1221,70 +1177,64 @@
 
     private async Task SaveEventScripts(string interactionTag)
     {
-        foreach (string eventType in InteractionEventTypes)
-        {
-            string graphJson = _eventGraphJsons.GetValueOrDefault(eventType, "{}");
-            bool hasGraph = GraphHasNodes(graphJson);
-            GlyphDefinitionDto? existingDef = _eventScripts.GetValueOrDefault(eventType);
+        string graphJson = _pipelineGraphJson;
+        bool hasGraph = GraphHasNodes(graphJson);
+        GlyphDefinitionDto? existingDef = _pipelineScript;
 
-            if (hasGraph)
+        if (hasGraph)
+        {
+            if (existingDef != null)
             {
-                if (existingDef != null)
+                // Update existing pipeline definition
+                GlyphDefinitionDto? updated = await GlyphApi.UpdateDefinitionAsync(existingDef.Id,
+                    new UpdateGlyphRequest(GraphJson: graphJson, IsActive: true));
+                if (updated != null) _pipelineScript = updated;
+            }
+            else
+            {
+                // Deduplication safeguard: check if a binding already exists
+                List<InteractionGlyphBindingDto> existingBindings = await GlyphApi.GetInteractionBindingsAsync(interactionTag);
+                InteractionGlyphBindingDto? matchingBinding = existingBindings.FirstOrDefault();
+
+                if (matchingBinding != null)
                 {
-                    // Update existing definition
-                    GlyphDefinitionDto? updated = await GlyphApi.UpdateDefinitionAsync(existingDef.Id,
+                    // Reuse the existing definition — update it and reactivate
+                    GlyphDefinitionDto? updated = await GlyphApi.UpdateDefinitionAsync(
+                        matchingBinding.GlyphDefinitionId,
                         new UpdateGlyphRequest(GraphJson: graphJson, IsActive: true));
-                    if (updated != null) _eventScripts[eventType] = updated;
+                    if (updated != null) _pipelineScript = updated;
                 }
                 else
                 {
-                    // Deduplication safeguard: check if a binding already exists
-                    // for this tag + event type (e.g., from a prior failed save or
-                    // an orphaned definition). If so, update it instead of creating.
-                    List<InteractionGlyphBindingDto> existingBindings = await GlyphApi.GetInteractionBindingsAsync(interactionTag);
-                    InteractionGlyphBindingDto? matchingBinding = existingBindings.FirstOrDefault(b =>
-                        b.EventType.Equals(eventType, StringComparison.OrdinalIgnoreCase));
+                    // Create new pipeline definition + binding
+                    string name = $"{interactionTag}/InteractionPipeline";
+                    GlyphDefinitionDto? created = await GlyphApi.CreateDefinitionAsync(new CreateGlyphRequest(
+                        Name: name,
+                        EventType: PipelineEventType,
+                        Category: "Interaction",
+                        Description: $"Pipeline script for interaction '{interactionTag}'",
+                        GraphJson: graphJson,
+                        IsActive: true));
 
-                    if (matchingBinding != null)
+                    if (created != null)
                     {
-                        // Reuse the existing definition — update it and reactivate
-                        GlyphDefinitionDto? updated = await GlyphApi.UpdateDefinitionAsync(
-                            matchingBinding.GlyphDefinitionId,
-                            new UpdateGlyphRequest(GraphJson: graphJson, IsActive: true));
-                        if (updated != null) _eventScripts[eventType] = updated;
-                    }
-                    else
-                    {
-                        // Create new definition + binding
-                        string name = $"{interactionTag}/{eventType}";
-                        GlyphDefinitionDto? created = await GlyphApi.CreateDefinitionAsync(new CreateGlyphRequest(
-                            Name: name,
-                            EventType: eventType,
-                            Category: "Interaction",
-                            Description: $"Auto-created script for interaction '{interactionTag}' — {eventType}",
-                            GraphJson: graphJson,
-                            IsActive: true));
+                        _pipelineScript = created;
 
-                        if (created != null)
-                        {
-                            _eventScripts[eventType] = created;
-
-                            // Create the binding
-                            await GlyphApi.CreateInteractionBindingAsync(
-                                new CreateInteractionGlyphBindingRequest(
-                                    InteractionTag: interactionTag,
-                                    GlyphDefinitionId: created.Id));
-                        }
+                        // Create the binding
+                        await GlyphApi.CreateInteractionBindingAsync(
+                            new CreateInteractionGlyphBindingRequest(
+                                InteractionTag: interactionTag,
+                                GlyphDefinitionId: created.Id));
                     }
                 }
             }
-            else if (existingDef != null)
-            {
-                // Graph was cleared — soft-disable the definition
-                await GlyphApi.UpdateDefinitionAsync(existingDef.Id,
-                    new UpdateGlyphRequest(IsActive: false));
-                _eventScripts[eventType] = null;
-            }
+        }
+        else if (existingDef != null)
+        {
+            // Graph was cleared — soft-disable the definition
+            await GlyphApi.UpdateDefinitionAsync(existingDef.Id,
+                new UpdateGlyphRequest(IsActive: false));
+            _pipelineScript = null;
         }
     }
 
@@ -1361,15 +1311,6 @@
             _ => "#7f8c8d"
         };
     }
-
-    private static string GetEventTabLabel(string eventType) => eventType switch
-    {
-        "OnInteractionAttempted" => "Attempted",
-        "OnInteractionStarted" => "Started",
-        "OnInteractionTick" => "Tick",
-        "OnInteractionCompleted" => "Completed",
-        _ => eventType
-    };
 
     private static string ExtractStringValue(ChangeEventArgs e) => e.Value?.ToString() ?? string.Empty;
 
