@@ -335,6 +335,83 @@ public class GlyphInteractionHookServiceTests
         shouldBlock.Should().BeFalse();
     }
 
+    [Test]
+    public void Attempted_exec_chain_does_not_bleed_into_started_stage()
+    {
+        // Given: a pipeline graph where Started stage has a FailInteraction wired to its exec_out,
+        //        but exec chain auto-chains Attempted → Started. The interpreter should skip the
+        //        Started stage and NOT execute the fail node when running the Attempted stage.
+        GlyphNodeInstance attemptedNode = new()
+        {
+            TypeId = InteractionAttemptedStageExecutor.NodeTypeId,
+            InstanceId = Guid.NewGuid()
+        };
+        GlyphNodeInstance startedNode = new()
+        {
+            TypeId = InteractionStartedStageExecutor.NodeTypeId,
+            InstanceId = Guid.NewGuid()
+        };
+        GlyphNodeInstance tickNode = new()
+        {
+            TypeId = InteractionTickStageExecutor.NodeTypeId,
+            InstanceId = Guid.NewGuid()
+        };
+        GlyphNodeInstance completedNode = new()
+        {
+            TypeId = InteractionCompletedStageExecutor.NodeTypeId,
+            InstanceId = Guid.NewGuid()
+        };
+        GlyphNodeInstance failNode = new()
+        {
+            TypeId = FailInteractionExecutor.NodeTypeId,
+            InstanceId = Guid.NewGuid(),
+            PropertyOverrides = new Dictionary<string, string> { ["message"] = "Started fail" }
+        };
+
+        GlyphGraph graph = new()
+        {
+            EventType = GlyphEventType.InteractionPipeline,
+            Name = "Bleed Test Graph",
+            Nodes = [attemptedNode, startedNode, tickNode, completedNode, failNode],
+            Edges =
+            [
+                // Auto-chain: Attempted → Started
+                new GlyphEdge
+                {
+                    SourceNodeId = attemptedNode.InstanceId,
+                    SourcePinId = "exec_out",
+                    TargetNodeId = startedNode.InstanceId,
+                    TargetPinId = "exec_in"
+                },
+                // Started → FailInteraction (should only fire when Started is actually triggered)
+                new GlyphEdge
+                {
+                    SourceNodeId = startedNode.InstanceId,
+                    SourcePinId = "exec_out",
+                    TargetNodeId = failNode.InstanceId,
+                    TargetPinId = "exec_in"
+                },
+            ]
+        };
+
+        RegisterBinding("prospecting", graph);
+        CreateHookService();
+
+        // When: running the Attempted stage
+        (bool shouldBlock, string? message) = _hookService.RunOnInteractionAttempted(
+            interactionTag: "prospecting",
+            characterId: Guid.NewGuid().ToString(),
+            targetId: Guid.NewGuid(),
+            targetMode: "Node",
+            areaResRef: null,
+            proficiency: null,
+            metadata: null);
+
+        // Then: the fail node on Started should NOT have fired
+        shouldBlock.Should().BeFalse("the exec chain should skip the Started pipeline stage");
+        message.Should().BeNull();
+    }
+
     // ==================== Graph Builder Helpers ====================
 
     /// <summary>
@@ -439,39 +516,61 @@ public class GlyphInteractionHookServiceTests
     }
 
     /// <summary>
-    /// Builds a pipeline graph with all 4 stage nodes but no actions wired.
-    /// Tests that graphs execute without side effects when no fail nodes are connected.
+    /// Builds a pipeline graph with all 4 stage nodes and auto-chained exec edges but
+    /// no action nodes wired. Tests that graphs execute without side effects.
     /// </summary>
     private static GlyphGraph BuildPassthroughPipelineGraph()
     {
+        GlyphNodeInstance attempted = new()
+        {
+            TypeId = InteractionAttemptedStageExecutor.NodeTypeId,
+            InstanceId = Guid.NewGuid()
+        };
+        GlyphNodeInstance started = new()
+        {
+            TypeId = InteractionStartedStageExecutor.NodeTypeId,
+            InstanceId = Guid.NewGuid()
+        };
+        GlyphNodeInstance tick = new()
+        {
+            TypeId = InteractionTickStageExecutor.NodeTypeId,
+            InstanceId = Guid.NewGuid()
+        };
+        GlyphNodeInstance completed = new()
+        {
+            TypeId = InteractionCompletedStageExecutor.NodeTypeId,
+            InstanceId = Guid.NewGuid()
+        };
+
         return new GlyphGraph
         {
             EventType = GlyphEventType.InteractionPipeline,
             Name = "Passthrough Pipeline",
-            Nodes =
+            Nodes = [attempted, started, tick, completed],
+            Edges =
             [
-                new GlyphNodeInstance
+                new GlyphEdge
                 {
-                    TypeId = InteractionAttemptedStageExecutor.NodeTypeId,
-                    InstanceId = Guid.NewGuid()
+                    SourceNodeId = attempted.InstanceId,
+                    SourcePinId = "exec_out",
+                    TargetNodeId = started.InstanceId,
+                    TargetPinId = "exec_in"
                 },
-                new GlyphNodeInstance
+                new GlyphEdge
                 {
-                    TypeId = InteractionStartedStageExecutor.NodeTypeId,
-                    InstanceId = Guid.NewGuid()
+                    SourceNodeId = started.InstanceId,
+                    SourcePinId = "exec_out",
+                    TargetNodeId = tick.InstanceId,
+                    TargetPinId = "exec_in"
                 },
-                new GlyphNodeInstance
+                new GlyphEdge
                 {
-                    TypeId = InteractionTickStageExecutor.NodeTypeId,
-                    InstanceId = Guid.NewGuid()
+                    SourceNodeId = tick.InstanceId,
+                    SourcePinId = "exec_out",
+                    TargetNodeId = completed.InstanceId,
+                    TargetPinId = "exec_in"
                 },
-                new GlyphNodeInstance
-                {
-                    TypeId = InteractionCompletedStageExecutor.NodeTypeId,
-                    InstanceId = Guid.NewGuid()
-                }
-            ],
-            Edges = []
+            ]
         };
     }
 

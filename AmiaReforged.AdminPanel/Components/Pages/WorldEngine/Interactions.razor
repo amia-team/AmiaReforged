@@ -1165,6 +1165,8 @@
     /// </summary>
     private static string BuildEmptyPipelineGraphJson()
     {
+        Guid n1 = Guid.NewGuid(), n2 = Guid.NewGuid(), n3 = Guid.NewGuid(), n4 = Guid.NewGuid();
+
         var graph = new
         {
             Id = Guid.NewGuid(),
@@ -1173,12 +1175,17 @@
             EventType = PipelineEventType,
             Nodes = new object[]
             {
-                new { InstanceId = Guid.NewGuid(), TypeId = "stage.interaction_attempted", PositionX = 50.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
-                new { InstanceId = Guid.NewGuid(), TypeId = "stage.interaction_started", PositionX = 500.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
-                new { InstanceId = Guid.NewGuid(), TypeId = "stage.interaction_tick", PositionX = 950.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
-                new { InstanceId = Guid.NewGuid(), TypeId = "stage.interaction_completed", PositionX = 1400.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() }
+                new { InstanceId = n1, TypeId = "stage.interaction_attempted", PositionX = 50.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
+                new { InstanceId = n2, TypeId = "stage.interaction_started", PositionX = 500.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
+                new { InstanceId = n3, TypeId = "stage.interaction_tick", PositionX = 950.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
+                new { InstanceId = n4, TypeId = "stage.interaction_completed", PositionX = 1400.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() }
             },
-            Edges = Array.Empty<object>(),
+            Edges = new[]
+            {
+                new { SourceNodeId = n1, SourcePinId = "exec_out", TargetNodeId = n2, TargetPinId = "exec_in" },
+                new { SourceNodeId = n2, SourcePinId = "exec_out", TargetNodeId = n3, TargetPinId = "exec_in" },
+                new { SourceNodeId = n3, SourcePinId = "exec_out", TargetNodeId = n4, TargetPinId = "exec_in" },
+            },
             Variables = Array.Empty<object>()
         };
         return JsonSerializer.Serialize(graph);

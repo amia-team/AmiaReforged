@@ -458,7 +458,12 @@ public class GlyphController
                 new { InstanceId = node3, TypeId = "stage.interaction_tick", PositionX = 950.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
                 new { InstanceId = node4, TypeId = "stage.interaction_completed", PositionX = 1400.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() }
             },
-            Edges = Array.Empty<object>(),
+            Edges = new[]
+            {
+                new { SourceNodeId = node1, SourcePinId = "exec_out", TargetNodeId = node2, TargetPinId = "exec_in" },
+                new { SourceNodeId = node2, SourcePinId = "exec_out", TargetNodeId = node3, TargetPinId = "exec_in" },
+                new { SourceNodeId = node3, SourcePinId = "exec_out", TargetNodeId = node4, TargetPinId = "exec_in" },
+            },
             Variables = Array.Empty<object>()
         };
 

@@ -163,6 +163,34 @@ public class InteractionNodeExecutorTests
         result.OutputValues!["response_tag"].Should().Be("success_rare_gem");
     }
 
+    [Test]
+    public async Task Attempted_stage_prefers_wired_input_over_context()
+    {
+        InteractionAttemptedStageExecutor executor = new();
+        GlyphNodeInstance node = new() { TypeId = InteractionAttemptedStageExecutor.NodeTypeId };
+
+        GlyphExecutionContext context = CreatePipelineContext();
+        context.CharacterId = "context-char";
+        context.InteractionTag = "context-tag";
+        context.InteractionTargetId = Guid.NewGuid();
+
+        // Simulate wired inputs overriding context values
+        GlyphNodeResult result = await executor.ExecuteAsync(node, context,
+            pin => pin switch
+            {
+                "character_id" => Task.FromResult<object?>("wired-char"),
+                "creature" => Task.FromResult<object?>("wired-creature"),
+                "interaction_tag" => Task.FromResult<object?>("wired-tag"),
+                "target_id" => Task.FromResult<object?>("wired-target"),
+                _ => Task.FromResult<object?>(null)
+            });
+
+        result.OutputValues!["character_id"].Should().Be("wired-char");
+        result.OutputValues["creature"].Should().Be("wired-creature");
+        result.OutputValues["interaction_tag"].Should().Be("wired-tag");
+        result.OutputValues["target_id"].Should().Be("wired-target");
+    }
+
     // ==================== GetInteractionInfoExecutor ====================
 
     [Test]
@@ -213,17 +241,30 @@ public class InteractionNodeExecutorTests
         attempted.Archetype.Should().Be(GlyphNodeArchetype.PipelineStage);
         attempted.IsSingleton.Should().BeTrue();
         attempted.RestrictToEventType.Should().Be(GlyphEventType.InteractionPipeline);
+        attempted.InputPins.Should().HaveCount(5);
+        attempted.InputPins.Should().Contain(p => p.Id == "exec_in" && p.DataType == GlyphDataType.Exec);
+        attempted.InputPins.Should().Contain(p => p.Id == "character_id");
+        attempted.InputPins.Should().Contain(p => p.Id == "creature");
+        attempted.InputPins.Should().Contain(p => p.Id == "interaction_tag");
+        attempted.InputPins.Should().Contain(p => p.Id == "target_id");
+        attempted.OutputPins.Should().Contain(p => p.Id == "exec_out" && p.Name == "Then");
 
         GlyphNodeDefinition started = InteractionStartedStageExecutor.CreateDefinition();
         started.TypeId.Should().Be("stage.interaction_started");
         started.Archetype.Should().Be(GlyphNodeArchetype.PipelineStage);
         started.IsSingleton.Should().BeTrue();
+        started.InputPins.Should().HaveCount(5);
+        started.OutputPins.Should().Contain(p => p.Id == "exec_out" && p.Name == "Then");
 
         GlyphNodeDefinition tick = InteractionTickStageExecutor.CreateDefinition();
         tick.TypeId.Should().Be("stage.interaction_tick");
+        tick.InputPins.Should().HaveCount(5);
+        tick.OutputPins.Should().Contain(p => p.Id == "exec_out" && p.Name == "Then");
 
         GlyphNodeDefinition completed = InteractionCompletedStageExecutor.CreateDefinition();
         completed.TypeId.Should().Be("stage.interaction_completed");
+        completed.InputPins.Should().HaveCount(5);
+        completed.OutputPins.Should().Contain(p => p.Id == "exec_out" && p.Name == "Then");
     }
 
     [Test]

@@ -14,28 +14,34 @@ public class InteractionCompletedStageExecutor : IGlyphNodeExecutor
 
     public string TypeId => NodeTypeId;
 
-    public Task<GlyphNodeResult> ExecuteAsync(
+    public async Task<GlyphNodeResult> ExecuteAsync(
         GlyphNodeInstance node,
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
+        // Resolve passthrough-overridable inputs (wired value wins, else context)
+        object? charIn = await resolveInput("character_id");
+        object? creatureIn = await resolveInput("creature");
+        object? tagIn = await resolveInput("interaction_tag");
+        object? targetIn = await resolveInput("target_id");
+
         Dictionary<string, object?> outputs = new()
         {
-            ["character_id"] = context.CharacterId ?? string.Empty,
-            ["creature"] = context.InteractionCreature,
-            ["interaction_tag"] = context.InteractionTag ?? string.Empty,
-            ["target_id"] = context.InteractionTargetId.ToString(),
+            ["character_id"] = charIn?.ToString() ?? context.CharacterId ?? string.Empty,
+            ["creature"] = creatureIn ?? context.InteractionCreature,
+            ["interaction_tag"] = tagIn?.ToString() ?? context.InteractionTag ?? string.Empty,
+            ["target_id"] = targetIn?.ToString() ?? context.InteractionTargetId.ToString(),
             ["area_resref"] = context.InteractionAreaResRef ?? string.Empty,
             ["session_id"] = context.InteractionSessionId.ToString(),
             ["proficiency"] = context.InteractionProficiency ?? string.Empty,
             ["response_tag"] = context.InteractionResponseTag ?? string.Empty
         };
 
-        return Task.FromResult(new GlyphNodeResult
+        return new GlyphNodeResult
         {
             NextExecPinId = "exec_out",
             OutputValues = outputs
-        });
+        };
     }
 
     public static GlyphNodeDefinition CreateDefinition() => new()
@@ -50,10 +56,17 @@ public class InteractionCompletedStageExecutor : IGlyphNodeExecutor
         IsSingleton = true,
         RestrictToEventType = GlyphEventType.InteractionPipeline,
         ScriptCategory = GlyphScriptCategory.Interaction,
-        InputPins = [],
+        InputPins =
+        [
+            new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input },
+            new GlyphPin { Id = "character_id", Name = "Character ID", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input },
+            new GlyphPin { Id = "creature", Name = "Creature", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Input },
+            new GlyphPin { Id = "interaction_tag", Name = "Interaction Tag", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input },
+            new GlyphPin { Id = "target_id", Name = "Target ID", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input }
+        ],
         OutputPins =
         [
-            new GlyphPin { Id = "exec_out", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output },
+            new GlyphPin { Id = "exec_out", Name = "Then", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output },
             new GlyphPin { Id = "character_id", Name = "Character ID", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
             new GlyphPin { Id = "creature", Name = "Creature", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Output },
             new GlyphPin { Id = "interaction_tag", Name = "Interaction Tag", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
