@@ -430,6 +430,7 @@
     private SelectedNodeInfo? _scriptSelectedNodeInfo;
 
     // JS module references
+    private const string GlInstanceId = "interaction-editor";
     private IJSObjectReference? _bridgeModule;
     private IJSObjectReference? _scriptEditorModule;
     private DotNetObjectReference<InteractionEditor>? _dotNetRef;
@@ -514,7 +515,7 @@
             _dotNetRef ??= DotNetObjectReference.Create(this);
 
             string layoutConfig = BuildDefaultLayoutConfig();
-            await _bridgeModule.InvokeVoidAsync("init", "gl-container", layoutConfig, _dotNetRef);
+            await _bridgeModule.InvokeVoidAsync("init", GlInstanceId, "gl-container", layoutConfig, _dotNetRef);
 
             // Load node catalog if needed
             if (_nodeCatalog.Count == 0)
@@ -540,7 +541,7 @@
 
         if (_bridgeModule != null)
         {
-            try { await _bridgeModule.InvokeVoidAsync("destroy"); }
+            try { await _bridgeModule.InvokeVoidAsync("destroy", GlInstanceId); }
             catch (Exception ex) { Logger.LogWarning(ex, "GL bridge destroy failed"); }
         }
     }
@@ -614,7 +615,7 @@
     // ═══════════════════════════════════════════════════════════════════
 
     [JSInvokable]
-    public async Task OnPanelResized(string componentType, double width, double height)
+    public async Task OnPanelResized(string instanceId, string componentType, double width, double height)
     {
         if (componentType == "canvas" && _scriptEditorModule != null && _scriptEditorReady)
         {
@@ -630,7 +631,7 @@
     }
 
     [JSInvokable]
-    public Task OnPanelRemoved(string componentType)
+    public Task OnPanelRemoved(string instanceId, string componentType)
     {
         _openPanels.Remove(componentType);
         InvokeAsync(StateHasChanged);
@@ -638,7 +639,7 @@
     }
 
     [JSInvokable]
-    public Task OnPanelVisibilityChanged(string componentType, bool visible)
+    public Task OnPanelVisibilityChanged(string instanceId, string componentType, bool visible)
     {
         // Could be used for pausing canvas render when tab is hidden
         return Task.CompletedTask;
@@ -656,7 +657,7 @@
         if (_bridgeModule != null)
         {
             string title = _panelTitles.GetValueOrDefault(componentType, componentType);
-            await _bridgeModule.InvokeVoidAsync("addPanel", componentType, title, new { });
+            await _bridgeModule.InvokeVoidAsync("addPanel", GlInstanceId, componentType, title, new { });
             _openPanels.Add(componentType);
         }
     }
@@ -670,7 +671,7 @@
         if (_bridgeModule != null)
         {
             string layoutConfig = BuildDefaultLayoutConfig();
-            await _bridgeModule.InvokeVoidAsync("loadLayout", layoutConfig);
+            await _bridgeModule.InvokeVoidAsync("loadLayout", GlInstanceId, layoutConfig);
 
             // Re-init the canvas editor since GL will unbind/rebind panels
             await Task.Delay(100);

@@ -72,6 +72,9 @@ public class Program
             builder.Services.AddScoped<RecipeTemplateApiService>();
             builder.Services.AddScoped<DependencyGraphApiService>();
 
+            // World Engine Editor state (one per circuit)
+            builder.Services.AddScoped<WorldEngineEditorState>();
+
             // Graph layout computation (singleton for shared cache)
             builder.Services.AddSingleton<GraphLayoutService>();
 

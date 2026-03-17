@@ -6,72 +6,111 @@
  * bridge positions them absolutely inside the GL host element using GL's
  * virtual-component events.
  *
+ * Multi-instance: each layout is keyed by an instanceId string, allowing
+ * multiple simultaneous GL layouts (e.g. tabbed editor panes).
+ *
  * Exported functions are called from Blazor via IJSObjectReference interop.
  */
 
 import { VirtualLayout } from './lib/golden-layout.js';
 
-// ── Module state ────────────────────────────────────────────────────
-let /** @type {VirtualLayout|null} */     layout = null;
-let /** @type {DotNetObjectReference} */  dotNetRef = null;
-let /** @type {HTMLElement|null} */        glRootElement = null;
-let /** @type {DOMRect|null} */           glRootRect = null;
+// ── Instance registry ───────────────────────────────────────────────
 
-/** @type {Map<object, { element: HTMLElement, componentType: string }>} */
-const componentMap = new Map();
+/**
+ * @typedef {Object} LayoutInstance
+ * @property {VirtualLayout}     layout
+ * @property {DotNetObjectReference} dotNetRef
+ * @property {HTMLElement}       glRootElement
+ * @property {DOMRect|null}      glRootRect
+ * @property {Map<object, { element: HTMLElement, componentType: string }>} componentMap
+ * @property {Map<string, object>} typeToContainer
+ */
 
-/** @type {Map<string, object>} componentType → container (for removePanel) */
-const typeToContainer = new Map();
+/** @type {Map<string, LayoutInstance>} */
+const instances = new Map();
+
+/**
+ * Get an instance or throw.
+ * @param {string} instanceId
+ * @returns {LayoutInstance}
+ */
+function getInstance(instanceId) {
+    const inst = instances.get(instanceId);
+    if (!inst) throw new Error(`[GL Bridge] No layout instance '${instanceId}'`);
+    return inst;
+}
 
 // ── Public API ──────────────────────────────────────────────────────
 
 /**
  * Initialise Golden Layout inside a host element.
+ * @param {string}  instanceId        Unique key for this layout instance
  * @param {string}  containerId       DOM id of the GL host element
  * @param {string}  layoutConfigJson  Serialised LayoutConfig JSON
  * @param {object}  blazorRef         DotNetObjectReference for callbacks
  */
-export function init(containerId, layoutConfigJson, blazorRef) {
-    dotNetRef = blazorRef;
-    glRootElement = document.getElementById(containerId);
+export function init(instanceId, containerId, layoutConfigJson, blazorRef) {
+    // Destroy any previous instance with the same id
+    if (instances.has(instanceId)) {
+        destroy(instanceId);
+    }
+
+    const glRootElement = document.getElementById(containerId);
     if (!glRootElement) throw new Error(`GL host element #${containerId} not found`);
 
     // Ensure the host is positioned so absolute children work
     const pos = getComputedStyle(glRootElement).position;
     if (pos === 'static') glRootElement.style.position = 'relative';
 
-    layout = new VirtualLayout(
+    /** @type {LayoutInstance} */
+    const inst = {
+        layout: null,
+        dotNetRef: blazorRef,
         glRootElement,
-        handleBind,
-        handleUnbind
+        glRootRect: null,
+        componentMap: new Map(),
+        typeToContainer: new Map(),
+    };
+
+    inst.layout = new VirtualLayout(
+        glRootElement,
+        (container, itemConfig) => handleBind(inst, instanceId, container, itemConfig),
+        (container) => handleUnbind(inst, instanceId, container)
     );
 
     // Cache the root rect once before a batch of recting events
-    layout.beforeVirtualRectingEvent = () => {
-        glRootRect = glRootElement.getBoundingClientRect();
+    inst.layout.beforeVirtualRectingEvent = () => {
+        inst.glRootRect = glRootElement.getBoundingClientRect();
     };
 
+    instances.set(instanceId, inst);
+
     const config = JSON.parse(layoutConfigJson);
-    layout.loadLayout(config);
+    inst.layout.loadLayout(config);
 }
 
 /**
  * Programmatically add a panel.
+ * @param {string}  instanceId     Layout instance key
  * @param {string}  componentType  Matches the bl-panel-{type} element id
  * @param {string}  title          Tab title
  * @param {object=} state          Optional componentState
  */
-export function addPanel(componentType, title, state) {
-    if (!layout) return;
-    layout.addComponent(componentType, state ?? {}, title);
+export function addPanel(instanceId, componentType, title, state) {
+    const inst = instances.get(instanceId);
+    if (!inst?.layout) return;
+    inst.layout.addComponent(componentType, state ?? {}, title);
 }
 
 /**
  * Remove a panel by its componentType.
+ * @param {string} instanceId
  * @param {string} componentType
  */
-export function removePanel(componentType) {
-    const container = typeToContainer.get(componentType);
+export function removePanel(instanceId, componentType) {
+    const inst = instances.get(instanceId);
+    if (!inst) return;
+    const container = inst.typeToContainer.get(componentType);
     if (container && container.parent) {
         container.parent.remove();
     }
@@ -79,46 +118,67 @@ export function removePanel(componentType) {
 
 /**
  * Save the current layout configuration as JSON.
+ * @param {string} instanceId
  * @returns {string} Serialised layout config
  */
-export function saveLayout() {
-    if (!layout) return '{}';
-    return JSON.stringify(layout.saveLayout());
+export function saveLayout(instanceId) {
+    const inst = instances.get(instanceId);
+    if (!inst?.layout) return '{}';
+    return JSON.stringify(inst.layout.saveLayout());
 }
 
 /**
  * Replace the current layout with a new config.
+ * @param {string} instanceId
  * @param {string} configJson  Serialised LayoutConfig
  */
-export function loadLayout(configJson) {
-    if (!layout) return;
-    layout.loadLayout(JSON.parse(configJson));
+export function loadLayout(instanceId, configJson) {
+    const inst = instances.get(instanceId);
+    if (!inst?.layout) return;
+    inst.layout.loadLayout(JSON.parse(configJson));
 }
 
 /**
- * Tear down the layout and clean up.
+ * Tear down a single layout instance and clean up.
+ * @param {string} instanceId
  */
-export function destroy() {
-    if (layout) {
-        layout.destroy();
-        layout = null;
+export function destroy(instanceId) {
+    const inst = instances.get(instanceId);
+    if (!inst) return;
+
+    if (inst.layout) {
+        inst.layout.destroy();
+        inst.layout = null;
     }
-    componentMap.forEach(entry => {
+    inst.componentMap.forEach(entry => {
         entry.element.style.display = 'none';
     });
-    componentMap.clear();
-    typeToContainer.clear();
-    glRootElement = null;
-    glRootRect = null;
-    dotNetRef = null;
+    inst.componentMap.clear();
+    inst.typeToContainer.clear();
+    inst.glRootElement = null;
+    inst.glRootRect = null;
+    inst.dotNetRef = null;
+    instances.delete(instanceId);
 }
 
 /**
- * Get the list of currently bound component types.
+ * Tear down ALL layout instances. Useful on page navigation / dispose.
+ */
+export function destroyAll() {
+    for (const id of Array.from(instances.keys())) {
+        destroy(id);
+    }
+}
+
+/**
+ * Get the list of currently bound component types for an instance.
+ * @param {string} instanceId
  * @returns {string[]}
  */
-export function getBoundPanels() {
-    return Array.from(typeToContainer.keys());
+export function getBoundPanels(instanceId) {
+    const inst = instances.get(instanceId);
+    if (!inst) return [];
+    return Array.from(inst.typeToContainer.keys());
 }
 
 // ── Virtual component event handlers ────────────────────────────────
@@ -127,8 +187,10 @@ export function getBoundPanels() {
  * Called by GL when a component needs to be bound.
  * Finds the pre-rendered Blazor <div id="bl-panel-{type}"> and wires
  * positioning events.
+ * @param {LayoutInstance} inst
+ * @param {string}         instanceId
  */
-function handleBind(container, itemConfig) {
+function handleBind(inst, instanceId, container, itemConfig) {
     const typeName = itemConfig.componentType ?? itemConfig.type;
     if (!typeName) {
         console.error('[GL Bridge] bindComponentEvent: no componentType in config', itemConfig);
@@ -147,52 +209,56 @@ function handleBind(container, itemConfig) {
     blazorEl.style.overflow = 'hidden';
     blazorEl.style.display = 'none'; // Hidden until first rect event
 
-    componentMap.set(container, { element: blazorEl, componentType: typeName });
-    typeToContainer.set(typeName, container);
+    inst.componentMap.set(container, { element: blazorEl, componentType: typeName });
+    inst.typeToContainer.set(typeName, container);
 
     // Wire virtual-component events
     container.virtualRectingRequiredEvent =
-        (c, w, h) => handleRect(c, w, h);
+        (c, w, h) => handleRect(inst, instanceId, c, w, h);
     container.virtualVisibilityChangeRequiredEvent =
-        (c, visible) => handleVisibility(c, visible);
+        (c, visible) => handleVisibility(inst, instanceId, c, visible);
     container.virtualZIndexChangeRequiredEvent =
-        (c, _logicalZ, defaultZ) => handleZIndex(c, defaultZ);
+        (c, _logicalZ, defaultZ) => handleZIndex(inst, c, defaultZ);
 
     return { component: undefined, virtual: true };
 }
 
 /**
  * Called by GL when a component is removed from the layout.
+ * @param {LayoutInstance} inst
+ * @param {string}         instanceId
  */
-function handleUnbind(container) {
-    const entry = componentMap.get(container);
+function handleUnbind(inst, instanceId, container) {
+    const entry = inst.componentMap.get(container);
     if (!entry) return;
 
     entry.element.style.display = 'none';
-    componentMap.delete(container);
-    typeToContainer.delete(entry.componentType);
+    inst.componentMap.delete(container);
+    inst.typeToContainer.delete(entry.componentType);
 
     // Notify Blazor
-    if (dotNetRef) {
-        dotNetRef.invokeMethodAsync('OnPanelRemoved', entry.componentType)
+    if (inst.dotNetRef) {
+        inst.dotNetRef.invokeMethodAsync('OnPanelRemoved', instanceId, entry.componentType)
             .catch(err => console.warn('[GL Bridge] OnPanelRemoved failed:', err));
     }
 }
 
 /**
  * Position and size a panel element to match its GL container.
+ * @param {LayoutInstance} inst
+ * @param {string}         instanceId
  */
-function handleRect(container, width, height) {
-    const entry = componentMap.get(container);
+function handleRect(inst, instanceId, container, width, height) {
+    const entry = inst.componentMap.get(container);
     if (!entry) return;
 
     const containerRect = container.element.getBoundingClientRect();
-    if (!glRootRect) {
-        glRootRect = glRootElement.getBoundingClientRect();
+    if (!inst.glRootRect) {
+        inst.glRootRect = inst.glRootElement.getBoundingClientRect();
     }
 
-    const left = containerRect.left - glRootRect.left;
-    const top = containerRect.top - glRootRect.top;
+    const left = containerRect.left - inst.glRootRect.left;
+    const top = containerRect.top - inst.glRootRect.top;
 
     const el = entry.element;
     el.style.left = `${left}px`;
@@ -202,32 +268,35 @@ function handleRect(container, width, height) {
     el.style.display = '';
 
     // Notify Blazor of panel resize (canvas needs to update dimensions)
-    if (dotNetRef) {
-        dotNetRef.invokeMethodAsync('OnPanelResized', entry.componentType, width, height)
+    if (inst.dotNetRef) {
+        inst.dotNetRef.invokeMethodAsync('OnPanelResized', instanceId, entry.componentType, width, height)
             .catch(err => console.warn('[GL Bridge] OnPanelResized failed:', err));
     }
 }
 
 /**
  * Show or hide a panel when GL tabs switch.
+ * @param {LayoutInstance} inst
+ * @param {string}         instanceId
  */
-function handleVisibility(container, visible) {
-    const entry = componentMap.get(container);
+function handleVisibility(inst, instanceId, container, visible) {
+    const entry = inst.componentMap.get(container);
     if (!entry) return;
     entry.element.style.display = visible ? '' : 'none';
 
     // Notify Blazor of visibility change
-    if (dotNetRef) {
-        dotNetRef.invokeMethodAsync('OnPanelVisibilityChanged', entry.componentType, visible)
+    if (inst.dotNetRef) {
+        inst.dotNetRef.invokeMethodAsync('OnPanelVisibilityChanged', instanceId, entry.componentType, visible)
             .catch(err => console.warn('[GL Bridge] OnPanelVisibilityChanged failed:', err));
     }
 }
 
 /**
  * Update z-index when GL reorders overlapping panels.
+ * @param {LayoutInstance} inst
  */
-function handleZIndex(container, defaultZIndex) {
-    const entry = componentMap.get(container);
+function handleZIndex(inst, container, defaultZIndex) {
+    const entry = inst.componentMap.get(container);
     if (!entry) return;
     entry.element.style.zIndex = defaultZIndex;
 }

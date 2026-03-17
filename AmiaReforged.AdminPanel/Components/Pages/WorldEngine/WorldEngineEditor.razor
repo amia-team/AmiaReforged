@@ -1,0 +1,221 @@
+@page "/worldengine/editor"
+@using Microsoft.AspNetCore.Authorization
+@using AmiaReforged.AdminPanel.Models
+@using AmiaReforged.AdminPanel.Services
+@attribute [Authorize]
+@inject WorldEngineEditorState EditorState
+@inject IWorldEngineEndpointService EndpointService
+@inject ILogger<WorldEngineEditor> Logger
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+@implements IDisposable
+
+<PageTitle>World Engine Editor</PageTitle>
+
+<div class="we-editor">
+    @* ── Toolbar ─────────────────────────────────────────────────── *@
+    <div class="we-editor__toolbar">
+        <span class="we-editor__toolbar-brand">World Engine</span>
+
+        @* Endpoint selector *@
+        <div class="we-editor__endpoint-selector">
+            <label>Server:</label>
+            <select class="form-control form-control-sm"
+                    value="@(EditorState.SelectedEndpointId?.ToString() ?? "")"
+                    @onchange="OnEndpointChanged">
+                <option value="">— Select —</option>
+                @foreach (WorldEngineEndpoint ep in _endpoints)
+                {
+                    <option value="@ep.Id">@ep.Name</option>
+                }
+            </select>
+        </div>
+
+        @* Breadcrumb *@
+        @if (EditorState.ActiveEntityType != null)
+        {
+            <span class="we-editor__breadcrumb">
+                <span class="bi @GetEntityIcon(EditorState.ActiveEntityType.Value)"></span>
+                @GetEntityLabel(EditorState.ActiveEntityType.Value)
+                @if (EditorState.ActiveTab != null)
+                {
+                    <span class="we-editor__breadcrumb-sep">/</span>
+                    <span>@EditorState.ActiveTab.Title</span>
+                }
+            </span>
+        }
+
+        <div class="we-editor__toolbar-spacer"></div>
+    </div>
+
+    <div class="we-editor__body">
+        @* ── Activity bar ────────────────────────────────────────── *@
+        <div class="we-editor__activity-bar">
+            @foreach (WorldEngineEntityType entityType in Enum.GetValues<WorldEngineEntityType>())
+            {
+                bool isActive = EditorState.ActiveEntityType == entityType;
+                <button class="we-editor__activity-btn @(isActive ? "we-editor__activity-btn--active" : "")"
+                        title="@GetEntityLabel(entityType)"
+                        @onclick="() => OnActivityBarClick(entityType)">
+                    <span class="bi @GetEntityIcon(entityType)"></span>
+                </button>
+            }
+        </div>
+
+        @* ── List panel (collapsible) ────────────────────────────── *@
+        @if (_listPanelOpen && EditorState.ActiveEntityType != null)
+        {
+            <div class="we-editor__list-panel">
+                <div class="we-editor__list-header">
+                    <span>@GetEntityLabel(EditorState.ActiveEntityType.Value)</span>
+                    <button class="btn btn-sm btn-link" @onclick="() => _listPanelOpen = false" title="Close">
+                        <span class="bi bi-x"></span>
+                    </button>
+                </div>
+                <div class="we-editor__list-body">
+                    <p class="text-muted small p-2">
+                        Select an endpoint to load entities.
+                    </p>
+                    @* Entity list content will be provided by EntityListPanel in a future phase *@
+                </div>
+            </div>
+        }
+
+        @* ── Editor area ─────────────────────────────────────────── *@
+        <div class="we-editor__editor-area">
+            @* Tab bar *@
+            @if (EditorState.OpenTabs.Count > 0)
+            {
+                <div class="we-editor__tab-bar">
+                    @foreach (EditorTab tab in EditorState.OpenTabs)
+                    {
+                        bool isActive = tab.Id == EditorState.ActiveTabId;
+                        <div class="we-editor__tab @(isActive ? "we-editor__tab--active" : "")"
+                             @onclick="() => EditorState.ActiveTabId = tab.Id">
+                            <span class="bi @GetEntityIcon(tab.EntityType) me-1"></span>
+                            <span class="we-editor__tab-title">@tab.Title</span>
+                            @if (tab.IsDirty)
+                            {
+                                <span class="we-editor__tab-dirty">●</span>
+                            }
+                            <button class="we-editor__tab-close" @onclick="() => CloseTab(tab.Id)" @onclick:stopPropagation="true">
+                                <span class="bi bi-x"></span>
+                            </button>
+                        </div>
+                    }
+                </div>
+            }
+
+            @* GL Host area *@
+            <div class="we-editor__gl-host" id="we-gl-host">
+                @if (EditorState.OpenTabs.Count == 0)
+                {
+                    <div class="we-editor__welcome">
+                        <h2>World Engine Editor</h2>
+                        <p class="text-muted">Select an entity type from the activity bar, then open an item to begin editing.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<WorldEngineEndpoint> _endpoints = [];
+    private bool _listPanelOpen = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _endpoints = (await EndpointService.GetEnabledEndpointsAsync()).ToList();
+
+        // Subscribe to state changes
+        EditorState.OnEndpointChanged += StateHasChangedSafe;
+        EditorState.OnActiveEntityTypeChanged += StateHasChangedSafe;
+        EditorState.OnActiveTabChanged += StateHasChangedSafe;
+        EditorState.OnTabListChanged += StateHasChangedSafe;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Endpoint
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void OnEndpointChanged(ChangeEventArgs e)
+    {
+        string? val = e.Value?.ToString();
+        EditorState.SelectedEndpointId = Guid.TryParse(val, out Guid id) ? id : null;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Activity bar
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void OnActivityBarClick(WorldEngineEntityType entityType)
+    {
+        if (EditorState.ActiveEntityType == entityType)
+        {
+            // Toggle list panel if clicking same type
+            _listPanelOpen = !_listPanelOpen;
+        }
+        else
+        {
+            EditorState.ActiveEntityType = entityType;
+            _listPanelOpen = true;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Tabs
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void CloseTab(string tabId)
+    {
+        EditorState.CloseTab(tabId);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Helpers
+    // ═══════════════════════════════════════════════════════════════════
+
+    private static string GetEntityIcon(WorldEngineEntityType type) => type switch
+    {
+        WorldEngineEntityType.Items => "bi-box-seam",
+        WorldEngineEntityType.ResourceNodes => "bi-tree",
+        WorldEngineEntityType.Regions => "bi-map",
+        WorldEngineEntityType.AreaGraph => "bi-diagram-3",
+        WorldEngineEntityType.Lore => "bi-book",
+        WorldEngineEntityType.Traits => "bi-person-badge",
+        WorldEngineEntityType.Glyphs => "bi-code",
+        WorldEngineEntityType.Industries => "bi-gear",
+        WorldEngineEntityType.Interactions => "bi-lightning",
+        WorldEngineEntityType.Coinhouses => "bi-bank",
+        _ => "bi-question-circle",
+    };
+
+    private static string GetEntityLabel(WorldEngineEntityType type) => type switch
+    {
+        WorldEngineEntityType.Items => "Items",
+        WorldEngineEntityType.ResourceNodes => "Resource Nodes",
+        WorldEngineEntityType.Regions => "Regions",
+        WorldEngineEntityType.AreaGraph => "Area Graph",
+        WorldEngineEntityType.Lore => "Codex Lore",
+        WorldEngineEntityType.Traits => "Traits",
+        WorldEngineEntityType.Glyphs => "Glyph Scripts",
+        WorldEngineEntityType.Industries => "Industries",
+        WorldEngineEntityType.Interactions => "Interactions",
+        WorldEngineEntityType.Coinhouses => "Coinhouses",
+        _ => type.ToString(),
+    };
+
+    private void StateHasChangedSafe()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        EditorState.OnEndpointChanged -= StateHasChangedSafe;
+        EditorState.OnActiveEntityTypeChanged -= StateHasChangedSafe;
+        EditorState.OnActiveTabChanged -= StateHasChangedSafe;
+        EditorState.OnTabListChanged -= StateHasChangedSafe;
+    }
+}

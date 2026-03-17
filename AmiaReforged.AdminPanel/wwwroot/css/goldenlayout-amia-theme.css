@@ -159,19 +159,269 @@
 }
 
 /* ── Interaction editor specific ─────────────────────────────────── */
-.interaction-editor__gl-host {
+.interaction-editor__gl-host,
+.we-editor__gl-host {
     position: relative;
     width: 100%;
     height: 100%;
 }
 
-.interaction-editor__panel {
+.interaction-editor__panel,
+.we-editor__panel {
     position: absolute;
     overflow: hidden;
     display: none; /* Shown by GL bridge when bound */
 }
 
-.interaction-editor__panel--scrollable {
+.interaction-editor__panel--scrollable,
+.we-editor__panel--scrollable {
     overflow-y: auto;
     overflow-x: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   World Engine Editor — Unified Layout
+   ═══════════════════════════════════════════════════════════════════ */
+
+.we-editor {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100%;
+    background: var(--bg-dark, #1c1b19);
+    color: var(--text-primary, #d0ccc2);
+    overflow: hidden;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────── */
+.we-editor__toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0 12px;
+    background: var(--bg-header, #3a3520);
+    border-bottom: 1px solid var(--border-subtle, #3e3a30);
+    z-index: 10;
+}
+
+.we-editor__toolbar-brand {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--accent, #c9a84c);
+    white-space: nowrap;
+}
+
+.we-editor__endpoint-selector {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.we-editor__endpoint-selector label {
+    font-size: 0.8rem;
+    color: var(--text-secondary, #8a8477);
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+.we-editor__endpoint-selector select {
+    width: 180px;
+    background: var(--bg-input, #33302a);
+    border: 1px solid var(--border-subtle, #3e3a30);
+    color: var(--text-primary, #d0ccc2);
+    font-size: 0.8rem;
+}
+
+.we-editor__breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--text-secondary, #8a8477);
+}
+.we-editor__breadcrumb-sep {
+    opacity: 0.5;
+}
+
+.we-editor__toolbar-spacer {
+    flex: 1;
+}
+
+/* ── Body (activity bar + list + editor) ─────────────────────────── */
+.we-editor__body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* ── Activity bar ────────────────────────────────────────────────── */
+.we-editor__activity-bar {
+    display: flex;
+    flex-direction: column;
+    width: 48px;
+    min-width: 48px;
+    background: var(--bg-dark, #1c1b19);
+    border-right: 1px solid var(--border-subtle, #3e3a30);
+    padding-top: 4px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.we-editor__activity-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary, #8a8477);
+    font-size: 1.2rem;
+    cursor: pointer;
+    position: relative;
+    transition: color 150ms ease, background 150ms ease;
+}
+.we-editor__activity-btn:hover {
+    color: var(--text-primary, #d0ccc2);
+    background: var(--bg-input, #33302a);
+}
+.we-editor__activity-btn--active {
+    color: var(--accent, #c9a84c);
+}
+.we-editor__activity-btn--active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 25%;
+    bottom: 25%;
+    width: 3px;
+    background: var(--accent, #c9a84c);
+    border-radius: 0 2px 2px 0;
+}
+
+/* ── List panel ──────────────────────────────────────────────────── */
+.we-editor__list-panel {
+    display: flex;
+    flex-direction: column;
+    width: 250px;
+    min-width: 200px;
+    max-width: 350px;
+    background: var(--bg-card, #26241f);
+    border-right: 1px solid var(--border-subtle, #3e3a30);
+    overflow: hidden;
+}
+
+.we-editor__list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary, #d0ccc2);
+    border-bottom: 1px solid var(--border-subtle, #3e3a30);
+}
+.we-editor__list-header .btn-link {
+    color: var(--text-secondary, #8a8477);
+    padding: 0;
+    line-height: 1;
+}
+
+.we-editor__list-body {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* ── Editor area ─────────────────────────────────────────────────── */
+.we-editor__editor-area {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+/* ── Tab bar ─────────────────────────────────────────────────────── */
+.we-editor__tab-bar {
+    display: flex;
+    align-items: stretch;
+    height: 32px;
+    min-height: 32px;
+    background: var(--bg-dark, #1c1b19);
+    border-bottom: 1px solid var(--border-subtle, #3e3a30);
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.we-editor__tab {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 12px;
+    font-size: 0.8rem;
+    color: var(--text-secondary, #8a8477);
+    background: var(--bg-input, #33302a);
+    border-right: 1px solid var(--border-subtle, #3e3a30);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 150ms ease, background 150ms ease;
+}
+.we-editor__tab:hover {
+    color: var(--text-primary, #d0ccc2);
+    background: var(--bg-card, #26241f);
+}
+.we-editor__tab--active {
+    color: var(--text-primary, #d0ccc2);
+    background: var(--bg-card, #26241f);
+    border-bottom: 2px solid var(--accent, #c9a84c);
+}
+.we-editor__tab-title {
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.we-editor__tab-dirty {
+    color: var(--accent, #c9a84c);
+    font-size: 0.6rem;
+    margin-left: 2px;
+}
+.we-editor__tab-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary, #8a8477);
+    padding: 0 2px;
+    margin-left: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 150ms ease;
+}
+.we-editor__tab-close:hover {
+    opacity: 1;
+    color: var(--text-primary, #d0ccc2);
+}
+
+/* ── GL host ─────────────────────────────────────────────────────── */
+.we-editor__gl-host {
+    flex: 1;
+    min-height: 0;
+}
+
+/* ── Welcome / empty state ───────────────────────────────────────── */
+.we-editor__welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    opacity: 0.6;
+}
+.we-editor__welcome h2 {
+    color: var(--accent, #c9a84c);
+    margin-bottom: 0.5rem;
 }
