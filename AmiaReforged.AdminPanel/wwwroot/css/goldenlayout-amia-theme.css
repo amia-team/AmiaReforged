@@ -729,3 +729,61 @@
     flex-shrink: 0;
     justify-content: flex-end;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Interaction Editor (embedded in World Engine Editor)
+   ═══════════════════════════════════════════════════════════════ */
+
+.we-editor__interaction-editor-wrap {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Toolbar */
+.we-ie-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 14px;
+    background: var(--bg-card, #1e1b16);
+    border-bottom: 1px solid var(--border-subtle, #3e3a30);
+    flex-shrink: 0;
+    height: 42px;
+    min-height: 42px;
+}
+
+.we-ie-toolbar__title {
+    margin: 0;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+}
+
+.we-ie-toolbar__group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.we-ie-toolbar__divider {
+    width: 1px;
+    height: 20px;
+    background: var(--border-subtle, #3e3a30);
+    flex-shrink: 0;
+}
+
+/* GL host container */
+.we-ie-gl-host {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Glyph node palette hover effect (shared with InteractionEditor) */
+.glyph-node-entry:hover {
+    background: rgba(255, 255, 255, 0.05);
+}

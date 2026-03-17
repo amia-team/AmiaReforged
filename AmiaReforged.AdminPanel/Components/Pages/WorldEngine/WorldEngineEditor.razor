@@ -158,7 +158,386 @@
 
         @* ── Editor area ─────────────────────────────────────────── *@
         <div class="we-editor__editor-area">
-            @if (_regionGraphOpen)
+            @if (_interactionEditorOpen)
+            {
+                @* ══════ Interaction Editor GL Mode ══════ *@
+                <div class="we-editor__interaction-editor-wrap">
+                    @* ── Toolbar ── *@
+                    <div class="we-ie-toolbar">
+                        <h5 class="we-ie-toolbar__title">
+                            @(_ieIsCreating ? "New Interaction" : _ieEditItem.Name)
+                        </h5>
+                        @if (!string.IsNullOrEmpty(_ieEditItem.Tag))
+                        {
+                            <span class="badge" style="background:var(--bg-input);color:var(--text-secondary);font-size:0.75rem;font-weight:normal">@_ieEditItem.Tag</span>
+                        }
+                        <div class="we-ie-toolbar__divider"></div>
+                        <div class="we-ie-toolbar__group">
+                            <button class="btn btn-sm btn-outline-secondary" style="font-size:0.72rem;padding:2px 8px" @onclick="IeFitAll" title="Fit all nodes in view">Fit All</button>
+                            <button class="btn btn-sm btn-outline-secondary" style="font-size:0.72rem;padding:2px 8px" @onclick="IeArrangeNodes" title="Auto-arrange">Arrange</button>
+                            <button class="btn btn-sm btn-outline-danger" style="font-size:0.72rem;padding:2px 8px" @onclick="IeClearCurrentScript" disabled="@(!IeHasCurrentScript)" title="Clear script">Clear Script</button>
+                        </div>
+                        <div class="we-ie-toolbar__divider"></div>
+                        @* View menu *@
+                        <div class="dropdown" style="position:relative">
+                            <button class="btn btn-sm btn-outline-secondary" style="font-size:0.72rem;padding:2px 8px" @onclick="IeToggleViewMenu">View ▾</button>
+                            @if (_ieShowViewMenu)
+                            {
+                                <div style="position:absolute;top:100%;right:0;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:4px;padding:4px 0;z-index:1060;min-width:160px;box-shadow:0 4px 12px rgba(0,0,0,0.4)">
+                                    @foreach (KeyValuePair<string, string> kv in _iePanelTitles)
+                                    {
+                                        bool isOpen = _ieOpenPanels.Contains(kv.Key);
+                                        <button style="display:block;width:100%;text-align:left;background:none;border:none;padding:4px 12px;font-size:0.8rem;color:var(--text-primary);cursor:pointer"
+                                                @onclick="() => IeTogglePanel(kv.Key)" disabled="@isOpen">
+                                            @(isOpen ? "✓ " : "  ")@kv.Value
+                                        </button>
+                                    }
+                                    <div style="border-top:1px solid var(--border-subtle);margin:4px 0"></div>
+                                    <button style="display:block;width:100%;text-align:left;background:none;border:none;padding:4px 12px;font-size:0.8rem;color:var(--text-secondary);cursor:pointer"
+                                            @onclick="IeResetLayout">
+                                        Reset Layout
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                        <div style="flex:1"></div>
+                        @if (!string.IsNullOrEmpty(_ieError))
+                        {
+                            <span style="color:var(--danger);font-size:0.8rem;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="@_ieError">⚠ @_ieError</span>
+                        }
+                        @if (!string.IsNullOrEmpty(_ieSuccess))
+                        {
+                            <span style="color:var(--success, #2ecc71);font-size:0.8rem">✓ @_ieSuccess</span>
+                        }
+                        <button class="btn btn-sm btn-secondary" @onclick="IeCancel">Cancel</button>
+                        <button class="btn btn-sm btn-primary" @onclick="IeSave" disabled="@_ieIsSaving">
+                            @(_ieIsSaving ? "Saving…" : "Save")
+                        </button>
+                    </div>
+
+                    @if (_interactionEditorLoading)
+                    {
+                        <div class="we-editor__region-graph-loading">
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                            <span>Loading interaction editor…</span>
+                        </div>
+                    }
+                    else if (_interactionEditorError != null)
+                    {
+                        <div class="we-editor__tab-error">
+                            <span class="bi bi-exclamation-triangle me-1"></span> @_interactionEditorError
+                        </div>
+                    }
+
+                    @* GL container *@
+                    <div id="we-interaction-gl-container" class="we-ie-gl-host"></div>
+
+                    @* ── Pre-rendered Panel: Node Palette ── *@
+                    <div id="bl-panel-ie-palette" class="we-editor__gl-panel" style="display:none">
+                        <div style="background:var(--bg-card);height:100%;display:flex;flex-direction:column">
+                            <div style="padding:8px 12px;border-bottom:1px solid var(--border-subtle);flex-shrink:0">
+                                <input type="text" class="form-control form-control-sm" placeholder="Search nodes..."
+                                       @bind="_ieScriptNodeSearchFilter" @bind:event="oninput"
+                                       style="font-size:0.8rem" />
+                            </div>
+                            <div style="flex:1;overflow-y:auto">
+                                @foreach (IGrouping<string, GlyphNodeCatalogEntryDto> category in IeFilteredCatalog)
+                                {
+                                    <div style="padding:4px 12px;background:var(--bg-input);color:var(--text-secondary);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;position:sticky;top:0;z-index:1">
+                                        @category.Key
+                                    </div>
+                                    @foreach (GlyphNodeCatalogEntryDto node in category)
+                                    {
+                                        <div style="padding:5px 12px;border-bottom:1px solid var(--border-subtle);cursor:pointer;font-size:0.82rem"
+                                             class="glyph-node-entry"
+                                             @onclick="() => IeAddScriptNode(node)" title="@node.Description">
+                                            <span class="badge me-1" style="background:@IeGetNodeColor(node.ColorClass);font-size:0.65rem">@node.ColorClass</span>
+                                            <span style="color:var(--text-primary)">@node.DisplayName</span>
+                                            @if (node.RestrictToEventType != null)
+                                            {
+                                                <br /><small style="color:var(--text-secondary);font-size:0.65rem">@node.RestrictToEventType</small>
+                                            }
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    @* ── Pre-rendered Panel: Graph Canvas ── *@
+                    <div id="bl-panel-ie-canvas" class="we-editor__gl-panel" style="display:none">
+                        <div style="width:100%;height:100%;background:#12121f;position:relative">
+                            <div id="we-interaction-glyph-canvas" style="width:100%;height:100%"></div>
+                            @if (!_ieScriptEditorReady)
+                            {
+                                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--text-secondary)">
+                                    <em>Initializing editor...</em>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    @* ── Pre-rendered Panel: Form / Properties ── *@
+                    <div id="bl-panel-ie-form" class="we-editor__gl-panel" style="display:none">
+                        <div style="background:var(--bg-card);padding:12px;min-height:100%;overflow-y:auto">
+                            <h5 style="margin:0 0 10px 0;font-size:0.9rem">Interaction Properties</h5>
+
+                            <div class="form-group" style="margin-bottom:8px">
+                                <label style="font-size:0.8rem">Tag</label>
+                                <input class="form-control form-control-sm" @bind="_ieEditItem.Tag" disabled="@(!_ieIsCreating)" placeholder="e.g. prospect_minerals" />
+                            </div>
+                            <div class="form-group" style="margin-bottom:8px">
+                                <label style="font-size:0.8rem">Name</label>
+                                <input class="form-control form-control-sm" @bind="_ieEditItem.Name" placeholder="e.g. Prospect for Minerals" />
+                            </div>
+                            <div class="form-group" style="margin-bottom:8px">
+                                <label style="font-size:0.8rem">Description</label>
+                                <textarea class="form-control form-control-sm" rows="2" @bind="_ieEditItem.Description" placeholder="Optional description..."></textarea>
+                            </div>
+
+                            <div style="display:flex;gap:8px;margin-bottom:8px">
+                                <div class="form-group" style="flex:1">
+                                    <label style="font-size:0.8rem">Target Mode</label>
+                                    <select class="form-control form-control-sm" @bind="_ieEditItem.TargetMode">
+                                        <option value="Node">Node</option>
+                                        <option value="Trigger">Trigger</option>
+                                        <option value="Placeable">Placeable</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="flex:1">
+                                    <label style="font-size:0.8rem">Base Rounds</label>
+                                    <input class="form-control form-control-sm" type="number" min="1" @bind="_ieEditItem.BaseRounds" />
+                                </div>
+                                <div class="form-group" style="flex:1">
+                                    <label style="font-size:0.8rem">Min Rounds</label>
+                                    <input class="form-control form-control-sm" type="number" min="1" @bind="_ieEditItem.MinRounds" />
+                                </div>
+                            </div>
+
+                            <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.8rem">
+                                    <input type="checkbox" @bind="_ieEditItem.ProficiencyReducesRounds" />
+                                    Proficiency Reduces Rounds
+                                </label>
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.8rem">
+                                    <input type="checkbox" @bind="_ieEditItem.RequiresIndustryMembership" />
+                                    Requires Industry Membership
+                                </label>
+                            </div>
+
+                            @* Validity & Context *@
+                            <div style="border:1px solid var(--border-subtle);border-radius:6px;padding:10px;margin-bottom:10px">
+                                <h6 style="margin:0 0 8px 0;font-size:0.85rem">Validity &amp; Context</h6>
+
+                                @* Required Industries *@
+                                <div class="form-group" style="margin-bottom:8px">
+                                    <label style="font-size:0.78rem">Required Industries</label>
+                                    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px">
+                                        @foreach (string tag in _ieEditItem.RequiredIndustryTags)
+                                        {
+                                            string capturedTag = tag;
+                                            <span style="display:inline-flex;align-items:center;gap:3px;background:rgba(0,200,200,0.15);border:1px solid rgba(0,200,200,0.3);border-radius:3px;padding:1px 6px;font-size:0.75rem">
+                                                @capturedTag
+                                                <button type="button" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;padding:0;font-size:0.7rem" @onclick="() => _ieEditItem.RequiredIndustryTags.Remove(capturedTag)">✕</button>
+                                            </span>
+                                        }
+                                    </div>
+                                    @if (_ieAvailableIndustries.Count > 0)
+                                    {
+                                        <select class="form-control form-control-sm" style="font-size:0.78rem" @onchange="IeOnIndustrySelected">
+                                            <option value="">— Add industry —</option>
+                                            @foreach (IndustryDefinitionDto ind in _ieAvailableIndustries.Where(i => !_ieEditItem.RequiredIndustryTags.Contains(i.Tag)))
+                                            {
+                                                <option value="@ind.Tag">@ind.Name (@ind.Tag)</option>
+                                            }
+                                        </select>
+                                    }
+                                </div>
+
+                                @* Allowed Areas *@
+                                <div class="form-group" style="margin-bottom:8px">
+                                    <label style="font-size:0.78rem">Allowed Areas</label>
+                                    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px">
+                                        @foreach (string area in _ieEditItem.AllowedAreaResRefs)
+                                        {
+                                            string capturedArea = area;
+                                            <span style="display:inline-flex;align-items:center;gap:3px;background:rgba(200,200,0,0.15);border:1px solid rgba(200,200,0,0.3);border-radius:3px;padding:1px 6px;font-size:0.75rem">
+                                                @capturedArea
+                                                <button type="button" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;padding:0;font-size:0.7rem" @onclick="() => _ieEditItem.AllowedAreaResRefs.Remove(capturedArea)">✕</button>
+                                            </span>
+                                        }
+                                    </div>
+                                    <div style="display:flex;gap:4px">
+                                        <input class="form-control form-control-sm" style="font-size:0.78rem" @bind="_ieNewAreaResRef" placeholder="area_resref" @onkeydown="IeOnAreaKeyDown" />
+                                        <button type="button" class="btn btn-sm btn-outline-info" style="font-size:0.72rem;padding:2px 6px" @onclick="IeAddAreaResRef">Add</button>
+                                    </div>
+                                </div>
+
+                                @* Required Knowledge *@
+                                <div class="form-group">
+                                    <label style="font-size:0.78rem">Required Knowledge</label>
+                                    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px">
+                                        @foreach (string k in _ieEditItem.RequiredKnowledgeTags)
+                                        {
+                                            string capturedK = k;
+                                            <span style="display:inline-flex;align-items:center;gap:3px;background:rgba(200,0,200,0.15);border:1px solid rgba(200,0,200,0.3);border-radius:3px;padding:1px 6px;font-size:0.75rem">
+                                                @capturedK
+                                                <button type="button" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;padding:0;font-size:0.7rem" @onclick="() => _ieEditItem.RequiredKnowledgeTags.Remove(capturedK)">✕</button>
+                                            </span>
+                                        }
+                                    </div>
+                                    <div style="display:flex;gap:4px">
+                                        <input class="form-control form-control-sm" style="font-size:0.78rem" @bind="_ieNewKnowledgeTag" placeholder="knowledge_tag" @onkeydown="IeOnKnowledgeKeyDown" />
+                                        <button type="button" class="btn btn-sm btn-outline-info" style="font-size:0.72rem;padding:2px 6px" @onclick="IeAddKnowledgeTag">Add</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* ── Pre-rendered Panel: Responses ── *@
+                    <div id="bl-panel-ie-responses" class="we-editor__gl-panel" style="display:none">
+                        <div style="background:var(--bg-card);padding:12px;min-height:100%;overflow-y:auto">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                                <h5 style="margin:0;font-size:0.9rem">Responses (@_ieEditItem.Responses.Count)</h5>
+                                <button class="btn btn-sm btn-outline-info" style="font-size:0.72rem;padding:2px 8px" @onclick="IeAddResponse">+ Add</button>
+                            </div>
+
+                            @if (_ieEditItem.Responses.Count == 0)
+                            {
+                                <p style="color:var(--text-secondary);font-size:0.8rem">No responses defined. Add at least one.</p>
+                            }
+
+                            @for (int ri = 0; ri < _ieEditItem.Responses.Count; ri++)
+                            {
+                                int rIdx = ri;
+                                InteractionResponseDto response = _ieEditItem.Responses[rIdx];
+                                <div style="border:1px solid var(--border-subtle);border-radius:5px;padding:10px;margin-bottom:8px;background:rgba(255,255,255,0.02)">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                                        <strong style="font-size:0.8rem">Response #@(rIdx + 1)</strong>
+                                        <button class="btn btn-sm btn-outline-danger" style="font-size:0.68rem;padding:1px 5px" @onclick="() => IeRemoveResponse(rIdx)">✕</button>
+                                    </div>
+
+                                    <div style="display:flex;gap:6px;margin-bottom:6px">
+                                        <div class="form-group" style="flex:2">
+                                            <label style="font-size:0.72rem">Tag</label>
+                                            <input class="form-control form-control-sm" style="font-size:0.78rem" @bind="response.ResponseTag" placeholder="e.g. find_iron_ore" />
+                                        </div>
+                                        <div class="form-group" style="flex:1">
+                                            <label style="font-size:0.72rem">Weight</label>
+                                            <input class="form-control form-control-sm" style="font-size:0.78rem" type="number" min="1" @bind="response.Weight" />
+                                        </div>
+                                        <div class="form-group" style="flex:1">
+                                            <label style="font-size:0.72rem">Min Prof.</label>
+                                            <select class="form-control form-control-sm" style="font-size:0.78rem" @bind="response.MinProficiency">
+                                                <option value="">None</option>
+                                                <option value="Layman">Layman</option>
+                                                <option value="Novice">Novice</option>
+                                                <option value="Apprentice">Apprentice</option>
+                                                <option value="Journeyman">Journeyman</option>
+                                                <option value="Expert">Expert</option>
+                                                <option value="Master">Master</option>
+                                                <option value="Grandmaster">Grandmaster</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group" style="margin-bottom:6px">
+                                        <label style="font-size:0.72rem">Message</label>
+                                        <input class="form-control form-control-sm" style="font-size:0.78rem" @bind="response.Message" placeholder="Text shown to the player..." />
+                                    </div>
+
+                                    @* Effects *@
+                                    <div style="border:1px solid var(--border-subtle);border-radius:4px;padding:8px;background:rgba(0,0,0,0.15)">
+                                        <div style="display:flex;justify-content:space-between;align-items:center">
+                                            <span style="font-size:0.75rem;font-weight:600">Effects (@response.Effects.Count)</span>
+                                            <button class="btn btn-sm btn-outline-info" style="font-size:0.68rem;padding:1px 6px" @onclick="() => IeAddEffect(rIdx)">+ Effect</button>
+                                        </div>
+
+                                        @if (response.Effects.Count == 0)
+                                        {
+                                            <p style="color:var(--text-secondary);font-size:0.72rem;margin:4px 0 0 0">No effects.</p>
+                                        }
+
+                                        @for (int ei = 0; ei < response.Effects.Count; ei++)
+                                        {
+                                            int eIdx = ei;
+                                            InteractionResponseEffectDto effect = response.Effects[eIdx];
+                                            <div style="display:flex;gap:6px;align-items:end;margin-top:4px">
+                                                <div class="form-group" style="flex:1">
+                                                    @if (eIdx == 0) { <label style="font-size:0.7rem">Type</label> }
+                                                    <select class="form-control form-control-sm" style="font-size:0.78rem" @bind="effect.EffectType">
+                                                        <option value="">— Select —</option>
+                                                        <option value="FloatingText">FloatingText</option>
+                                                        <option value="VfxAtLocation">VfxAtLocation</option>
+                                                        <option value="VfxOnPlayer">VfxOnPlayer</option>
+                                                        <option value="SpawnResourceNode">SpawnResourceNode</option>
+                                                        <option value="DirectionalHint">DirectionalHint</option>
+                                                        <option value="Custom">Custom</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group" style="flex:2">
+                                                    @if (eIdx == 0) { <label style="font-size:0.7rem">Value</label> }
+                                                    <input class="form-control form-control-sm" style="font-size:0.78rem" @bind="effect.Value" placeholder="@IeGetEffectValueHint(effect.EffectType)" />
+                                                </div>
+                                                <button class="btn btn-sm btn-outline-danger" style="font-size:0.68rem;padding:1px 4px;margin-bottom:2px" @onclick="() => IeRemoveEffect(rIdx, eIdx)">✕</button>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    @* ── Pre-rendered Panel: Inspector ── *@
+                    <div id="bl-panel-ie-inspector" class="we-editor__gl-panel" style="display:none">
+                        <div style="background:var(--bg-card);padding:12px;min-height:100%;overflow-y:auto">
+                            @if (_ieSelectedNodeInfo != null)
+                            {
+                                <h6 style="margin:0 0 4px 0;font-size:0.85rem;color:var(--text-primary)">@_ieSelectedNodeInfo.DisplayName</h6>
+                                <small style="color:var(--text-secondary);font-size:0.7rem;display:block;margin-bottom:8px">@_ieSelectedNodeInfo.TypeId</small>
+
+                                @if (IeGetEditablePins().Count == 0)
+                                {
+                                    <p style="color:var(--text-secondary);font-size:0.78rem;margin:0">No editable properties.</p>
+                                }
+                                else
+                                {
+                                    @foreach (IeSelectedPinInfo pin in IeGetEditablePins())
+                                    {
+                                        <div style="margin-bottom:6px">
+                                            <label style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:2px;display:block">@pin.Name <small>(@pin.DataType)</small></label>
+                                            @if (pin.DataType == "Bool")
+                                            {
+                                                <select class="form-control form-control-sm" style="font-size:0.78rem"
+                                                        value="@IeGetScriptPinValue(pin)"
+                                                        @onchange="e => IeOnScriptPropertyChanged(pin, e.Value?.ToString() ?? string.Empty)">
+                                                    <option value="">default</option>
+                                                    <option value="true">true</option>
+                                                    <option value="false">false</option>
+                                                </select>
+                                            }
+                                            else
+                                            {
+                                                <input class="form-control form-control-sm" style="font-size:0.78rem"
+                                                       type="@(pin.DataType is "Int" or "Float" ? "number" : "text")"
+                                                       value="@IeGetScriptPinValue(pin)"
+                                                       @onchange="e => IeOnScriptPropertyChanged(pin, e.Value?.ToString() ?? string.Empty)"
+                                                       placeholder="@(pin.DefaultValue ?? string.Empty)" />
+                                            }
+                                        </div>
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                <p style="color:var(--text-secondary);font-size:0.8rem;margin:0">Select a node on the canvas to view its properties.</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (_regionGraphOpen)
             {
                 @* ══════ Region Graph GL Mode ══════ *@
                 <div class="we-editor__region-graph-wrap">
@@ -709,6 +1088,70 @@
     private static readonly string[] _rgQualityOptions = { "Terrible", "Poor", "Low", "Average", "Good", "High", "Excellent", "Legendary" };
     private static readonly string[] _rgPoiTypeOptions = { "Undefined", "Dungeon", "Landmark", "ResourceNode", "House", "Guild", "Temple", "Library", "Shop", "Warehouse", "Bank" };
 
+    // ═══════════════════════════════════════════════════════════════════
+    //  Interaction Editor state
+    // ═══════════════════════════════════════════════════════════════════
+    private const string InteractionGlInstanceId = "we-interaction-editor";
+    private const string IePipelineEventType = "InteractionPipeline";
+    private bool _interactionEditorOpen;
+    private bool _interactionEditorLoading;
+    private string? _interactionEditorError;
+
+    private InteractionDefinitionDto _ieEditItem = new();
+    private bool _ieIsCreating;
+    private bool _ieIsSaving;
+    private string? _ieError;
+    private string? _ieSuccess;
+
+    // Script editor state
+    private string _iePipelineGraphJson = "{}";
+    private GlyphDefinitionDto? _iePipelineScript;
+    private List<GlyphNodeCatalogEntryDto> _ieNodeCatalog = [];
+    private string _ieScriptNodeSearchFilter = "";
+    private bool _ieScriptEditorReady;
+    private IeSelectedNodeInfo? _ieSelectedNodeInfo;
+
+    // View menu
+    private bool _ieShowViewMenu;
+    private readonly HashSet<string> _ieOpenPanels = ["ie-palette", "ie-canvas", "ie-form", "ie-responses", "ie-inspector"];
+    private static readonly Dictionary<string, string> _iePanelTitles = new()
+    {
+        ["ie-palette"] = "Node Palette",
+        ["ie-canvas"] = "Graph Canvas",
+        ["ie-form"] = "Properties",
+        ["ie-responses"] = "Responses",
+        ["ie-inspector"] = "Inspector",
+    };
+
+    // Validity helpers
+    private List<IndustryDefinitionDto> _ieAvailableIndustries = [];
+    private string _ieNewAreaResRef = "";
+    private string _ieNewKnowledgeTag = "";
+
+    // JS module references
+    private IJSObjectReference? _ieBridgeModule;
+    private IJSObjectReference? _ieScriptEditorModule;
+    private DotNetObjectReference<WorldEngineEditor>? _ieDotNetRef;
+
+    // Inner types for script editor node inspector
+    private sealed class IeSelectedNodeInfo
+    {
+        public string NodeId { get; set; } = "";
+        public string TypeId { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+        public List<IeSelectedPinInfo> InputPins { get; set; } = [];
+    }
+
+    private sealed class IeSelectedPinInfo
+    {
+        public string Id { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string DataType { get; set; } = "";
+        public string? DefaultValue { get; set; }
+        public string? OverrideValue { get; set; }
+        public bool IsConnected { get; set; }
+    }
+
     protected override async Task OnInitializedAsync()
     {
         _endpoints = (await EndpointService.GetEnabledEndpointsAsync()).ToList();
@@ -764,6 +1207,12 @@
         if (_regionGraphOpen && entityType != WorldEngineEntityType.Regions)
         {
             await CloseRegionGraph();
+        }
+
+        // Close interaction editor if switching away from Interactions
+        if (_interactionEditorOpen && entityType != WorldEngineEntityType.Interactions)
+        {
+            await CloseInteractionEditor();
         }
 
         if (EditorState.ActiveEntityType == entityType)
@@ -967,6 +1416,10 @@
         if (item.EntityType == WorldEngineEntityType.Regions)
         {
             await OnRegionListItemClick(item);
+        }
+        else if (item.EntityType == WorldEngineEntityType.Interactions)
+        {
+            await OpenInteractionEditor(item.Key);
         }
         else
         {
@@ -1303,6 +1756,23 @@
             catch { }
         }
         _regionDotNetRef?.Dispose();
+
+        // Destroy interaction editor if open
+        if (_interactionEditorOpen)
+        {
+            try { await IeDestroyScriptEditor(); } catch { }
+            try
+            {
+                if (_ieBridgeModule != null)
+                {
+                    await _ieBridgeModule.InvokeVoidAsync("destroy", InteractionGlInstanceId);
+                    await _ieBridgeModule.DisposeAsync();
+                }
+            }
+            catch { }
+            try { if (_ieScriptEditorModule != null) await _ieScriptEditorModule.DisposeAsync(); } catch { }
+        }
+        _ieDotNetRef?.Dispose();
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -1470,10 +1940,23 @@
         {
             try { await JS.InvokeVoidAsync("regionGraph.resize"); } catch { }
         }
+        else if (instanceId == InteractionGlInstanceId && componentType == "ie-canvas" && _ieScriptEditorModule != null && _ieScriptEditorReady)
+        {
+            try { await _ieScriptEditorModule.InvokeVoidAsync("resizeCanvasToSize", width, height); }
+            catch (Exception ex) { Logger.LogWarning(ex, "IE canvas resize failed"); }
+        }
     }
 
     [JSInvokable]
-    public Task OnPanelRemoved(string instanceId, string componentType) => Task.CompletedTask;
+    public Task OnPanelRemoved(string instanceId, string componentType)
+    {
+        if (instanceId == InteractionGlInstanceId)
+        {
+            _ieOpenPanels.Remove(componentType);
+            InvokeAsync(StateHasChanged);
+        }
+        return Task.CompletedTask;
+    }
 
     [JSInvokable]
     public Task OnPanelVisibilityChanged(string instanceId, string componentType, bool visible) => Task.CompletedTask;
@@ -2077,4 +2560,670 @@
         public string Name { get; set; } = "";
         public string? Region { get; set; }
     }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Interaction Editor — Lifecycle
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task OpenInteractionEditor(string interactionTag)
+    {
+        if (_interactionEditorOpen) await CloseInteractionEditor();
+
+        _interactionEditorOpen = true;
+        _interactionEditorLoading = true;
+        _interactionEditorError = null;
+        _ieError = null;
+        _ieSuccess = null;
+        _ieIsCreating = false;
+        IeResetScriptState();
+        StateHasChanged();
+
+        try
+        {
+            // Load interaction and industries in parallel
+            Task<InteractionDefinitionDto?> interactionTask = InteractionApi.GetByTagAsync(interactionTag);
+            Task<PagedResult<IndustryDefinitionDto>> industriesTask = IndustryApi.GetAllAsync(null, 1, 200);
+
+            await Task.WhenAll(interactionTask, industriesTask);
+
+            InteractionDefinitionDto? loaded = await interactionTask;
+            if (loaded == null)
+            {
+                _interactionEditorError = $"Interaction '{interactionTag}' not found.";
+                _interactionEditorLoading = false;
+                StateHasChanged();
+                return;
+            }
+
+            _ieEditItem = IeDeepCopy(loaded);
+            PagedResult<IndustryDefinitionDto> indResult = await industriesTask;
+            _ieAvailableIndustries = indResult.Items;
+
+            StateHasChanged();
+            await Task.Delay(50); // Let DOM render GL host + panel divs
+
+            await IeInitLayout();
+
+            // Load existing glyph scripts for this interaction
+            await IeLoadInteractionScripts(interactionTag);
+
+            _interactionEditorLoading = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to open interaction editor for {Tag}", interactionTag);
+            _interactionEditorError = $"Failed to load: {ex.Message}";
+            _interactionEditorLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CloseInteractionEditor()
+    {
+        await IeDestroyScriptEditor();
+
+        if (_ieBridgeModule != null)
+        {
+            try { await _ieBridgeModule.InvokeVoidAsync("destroy", InteractionGlInstanceId); }
+            catch (Exception ex) { Logger.LogWarning(ex, "IE GL bridge destroy failed"); }
+        }
+
+        _interactionEditorOpen = false;
+        _interactionEditorLoading = false;
+        _interactionEditorError = null;
+        _ieError = null;
+        _ieSuccess = null;
+        _ieShowViewMenu = false;
+        IeResetScriptState();
+        StateHasChanged();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Interaction Editor — GL Layout
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task IeInitLayout()
+    {
+        try
+        {
+            _ieBridgeModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/golden-layout-bridge.js");
+            _ieDotNetRef ??= DotNetObjectReference.Create(this);
+
+            string layoutConfig = IeBuildDefaultLayoutConfig();
+            await _ieBridgeModule.InvokeVoidAsync("init", InteractionGlInstanceId, "we-interaction-gl-container", layoutConfig, _ieDotNetRef);
+
+            // Load node catalog if needed
+            if (_ieNodeCatalog.Count == 0)
+            {
+                try { _ieNodeCatalog = await GlyphApi.GetNodeCatalogAsync(); }
+                catch (Exception ex) { Logger.LogWarning(ex, "Failed to load node catalog for IE"); }
+            }
+
+            // Wait for GL to position the canvas panel, then init glyph editor
+            await Task.Delay(100);
+            await IeInitScriptEditor();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to initialize Interaction GL layout");
+            _interactionEditorError = "Layout initialization failed. Try closing and reopening.";
+        }
+    }
+
+    private static string IeBuildDefaultLayoutConfig()
+    {
+        var config = new
+        {
+            root = new
+            {
+                type = "row",
+                content = new object[]
+                {
+                    new
+                    {
+                        type = "component",
+                        componentType = "ie-palette",
+                        title = "Node Palette",
+                        size = "15%",
+                    },
+                    new
+                    {
+                        type = "component",
+                        componentType = "ie-canvas",
+                        title = "Graph",
+                        size = "55%",
+                    },
+                    new
+                    {
+                        type = "column",
+                        size = "30%",
+                        content = new object[]
+                        {
+                            new
+                            {
+                                type = "stack",
+                                size = "65%",
+                                content = new object[]
+                                {
+                                    new
+                                    {
+                                        type = "component",
+                                        componentType = "ie-form",
+                                        title = "Properties",
+                                    },
+                                    new
+                                    {
+                                        type = "component",
+                                        componentType = "ie-responses",
+                                        title = "Responses",
+                                    },
+                                },
+                            },
+                            new
+                            {
+                                type = "component",
+                                componentType = "ie-inspector",
+                                title = "Inspector",
+                                size = "35%",
+                            },
+                        },
+                    },
+                },
+            },
+        };
+        return JsonSerializer.Serialize(config);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Interaction Editor — Script Editor Lifecycle
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task IeInitScriptEditor()
+    {
+        try
+        {
+            _ieScriptEditorModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js");
+            _ieDotNetRef ??= DotNetObjectReference.Create(this);
+
+            string catalogJson = JsonSerializer.Serialize(_ieNodeCatalog);
+            string graphJson = _iePipelineGraphJson;
+
+            if (string.IsNullOrEmpty(graphJson) || graphJson == "{}" || !IeGraphHasNodes(graphJson))
+            {
+                graphJson = IeBuildEmptyPipelineGraphJson();
+            }
+
+            await _ieScriptEditorModule.InvokeVoidAsync("initGlyphEditor", "we-interaction-glyph-canvas", catalogJson, graphJson, _ieDotNetRef);
+            _ieScriptEditorReady = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "IE script editor init failed");
+            _ieScriptEditorReady = false;
+        }
+    }
+
+    private async Task IeDestroyScriptEditor()
+    {
+        if (_ieScriptEditorModule == null) return;
+        try { await _ieScriptEditorModule.InvokeVoidAsync("destroy"); }
+        catch (Exception ex) { Logger.LogWarning(ex, "Failed to destroy IE script editor"); }
+        _ieScriptEditorReady = false;
+    }
+
+    private void IeResetScriptState()
+    {
+        _iePipelineGraphJson = "{}";
+        _iePipelineScript = null;
+        _ieScriptNodeSearchFilter = "";
+        _ieScriptEditorReady = false;
+        _ieSelectedNodeInfo = null;
+    }
+
+    private async Task IeCaptureCurrentScriptGraph()
+    {
+        if (_ieScriptEditorModule == null || !_ieScriptEditorReady) return;
+        try
+        {
+            string json = await _ieScriptEditorModule.InvokeAsync<string>("getGraphJson");
+            _iePipelineGraphJson = json;
+        }
+        catch (Exception ex) { Logger.LogWarning(ex, "Failed to capture IE pipeline graph"); }
+    }
+
+    private async Task IeLoadInteractionScripts(string interactionTag)
+    {
+        try
+        {
+            if (_ieNodeCatalog.Count == 0)
+                _ieNodeCatalog = await GlyphApi.GetNodeCatalogAsync();
+
+            List<InteractionGlyphBindingDto> bindings = await GlyphApi.GetInteractionBindingsAsync(interactionTag);
+            foreach (InteractionGlyphBindingDto binding in bindings)
+            {
+                GlyphDefinitionDto? def = await GlyphApi.GetDefinitionAsync(binding.GlyphDefinitionId);
+                if (def == null) continue;
+                if (def.EventType == IePipelineEventType ||
+                    def.EventType.StartsWith("OnInteraction", StringComparison.OrdinalIgnoreCase))
+                {
+                    _iePipelineGraphJson = def.GraphJson ?? "{}";
+                    _iePipelineScript = def;
+                    break;
+                }
+            }
+
+            // Re-init the glyph editor with the loaded graph
+            await IeDestroyScriptEditor();
+            await Task.Delay(50);
+            await IeInitScriptEditor();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load IE scripts for {Tag}", interactionTag);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Interaction Editor — GL Callbacks
+    // ═══════════════════════════════════════════════════════════════════
+
+    // OnPanelResized is already a JSInvokable — we extend it for the IE instance
+    // (handled in the existing OnPanelResized method — see below)
+
+    // OnNodeSelectionChanged: called by glyph-editor.js when selected node changes
+    [JSInvokable]
+    public Task OnNodeSelectionChanged(string? json)
+    {
+        if (string.IsNullOrEmpty(json) || json == "null")
+        {
+            _ieSelectedNodeInfo = null;
+        }
+        else
+        {
+            try
+            {
+                _ieSelectedNodeInfo = JsonSerializer.Deserialize<IeSelectedNodeInfo>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+            }
+            catch { _ieSelectedNodeInfo = null; }
+        }
+        InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Interaction Editor — View Menu / Panel Management
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void IeToggleViewMenu()
+    {
+        _ieShowViewMenu = !_ieShowViewMenu;
+    }
+
+    private async Task IeTogglePanel(string componentType)
+    {
+        _ieShowViewMenu = false;
+        if (_ieOpenPanels.Contains(componentType)) return;
+
+        if (_ieBridgeModule != null)
+        {
+            string title = _iePanelTitles.GetValueOrDefault(componentType, componentType);
+            await _ieBridgeModule.InvokeVoidAsync("addPanel", InteractionGlInstanceId, componentType, title, new { });
+            _ieOpenPanels.Add(componentType);
+        }
+    }
+
+    private async Task IeResetLayout()
+    {
+        _ieShowViewMenu = false;
+        _ieOpenPanels.Clear();
+        _ieOpenPanels.UnionWith(["ie-palette", "ie-canvas", "ie-form", "ie-responses", "ie-inspector"]);
+
+        if (_ieBridgeModule != null)
+        {
+            string layoutConfig = IeBuildDefaultLayoutConfig();
+            await _ieBridgeModule.InvokeVoidAsync("loadLayout", InteractionGlInstanceId, layoutConfig);
+
+            await Task.Delay(100);
+            await IeInitScriptEditor();
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Interaction Editor — Script Node Palette & Properties
+    // ═══════════════════════════════════════════════════════════════════
+
+    private bool IeHasCurrentScript => IeGraphHasNodes(_iePipelineGraphJson);
+
+    private IEnumerable<IGrouping<string, GlyphNodeCatalogEntryDto>> IeFilteredCatalog
+    {
+        get
+        {
+            IEnumerable<GlyphNodeCatalogEntryDto> nodes = _ieNodeCatalog;
+            nodes = nodes.Where(n => n.RestrictToEventType == null || n.RestrictToEventType == IePipelineEventType);
+            nodes = nodes.Where(n => n.ScriptCategory == null || n.ScriptCategory.Equals("Interaction", StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrWhiteSpace(_ieScriptNodeSearchFilter))
+            {
+                string filter = _ieScriptNodeSearchFilter.Trim().ToLowerInvariant();
+                nodes = nodes.Where(n =>
+                    n.DisplayName.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
+                    n.Category.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
+                    n.Description.Contains(filter, StringComparison.OrdinalIgnoreCase));
+            }
+            return nodes.GroupBy(n => n.Category).OrderBy(g => g.Key);
+        }
+    }
+
+    private async Task IeAddScriptNode(GlyphNodeCatalogEntryDto node)
+    {
+        if (_ieScriptEditorModule == null || !_ieScriptEditorReady) return;
+        try
+        {
+            string nodeJson = JsonSerializer.Serialize(node);
+            await _ieScriptEditorModule.InvokeVoidAsync("addNode", nodeJson);
+        }
+        catch (Exception ex) { Logger.LogWarning(ex, "Failed to add IE script node"); }
+    }
+
+    private async Task IeOnScriptPropertyChanged(IeSelectedPinInfo pin, string value)
+    {
+        if (_ieScriptEditorModule == null || _ieSelectedNodeInfo == null) return;
+        try
+        {
+            await _ieScriptEditorModule.InvokeVoidAsync("setPropertyOverride", _ieSelectedNodeInfo.NodeId, pin.Id, value);
+            pin.OverrideValue = string.IsNullOrEmpty(value) ? null : value;
+        }
+        catch (Exception ex) { Logger.LogWarning(ex, "Failed to set IE script property override"); }
+    }
+
+    private async Task IeFitAll()
+    {
+        if (_ieScriptEditorModule == null) return;
+        try { await _ieScriptEditorModule.InvokeVoidAsync("fitAll"); }
+        catch (Exception ex) { Logger.LogWarning(ex, "IE fitAll failed"); }
+    }
+
+    private async Task IeArrangeNodes()
+    {
+        if (_ieScriptEditorModule == null) return;
+        try { await _ieScriptEditorModule.InvokeVoidAsync("arrangeNodes"); }
+        catch (Exception ex) { Logger.LogWarning(ex, "IE arrangeNodes failed"); }
+    }
+
+    private async Task IeClearCurrentScript()
+    {
+        _iePipelineGraphJson = "{}";
+        _ieSelectedNodeInfo = null;
+        await IeDestroyScriptEditor();
+        StateHasChanged();
+        await Task.Delay(50);
+        await IeInitScriptEditor();
+    }
+
+    private List<IeSelectedPinInfo> IeGetEditablePins()
+    {
+        return _ieSelectedNodeInfo?.InputPins?.Where(p => !p.IsConnected).ToList() ?? [];
+    }
+
+    private static string IeGetScriptPinValue(IeSelectedPinInfo pin) => pin.OverrideValue ?? pin.DefaultValue ?? "";
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Interaction Editor — Validity & Context Helpers
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void IeOnIndustrySelected(ChangeEventArgs e)
+    {
+        string? tag = e.Value?.ToString();
+        if (!string.IsNullOrWhiteSpace(tag) && !_ieEditItem.RequiredIndustryTags.Contains(tag))
+            _ieEditItem.RequiredIndustryTags.Add(tag);
+    }
+
+    private void IeAddAreaResRef()
+    {
+        string val = _ieNewAreaResRef.Trim();
+        if (!string.IsNullOrEmpty(val) && !_ieEditItem.AllowedAreaResRefs.Contains(val))
+        {
+            _ieEditItem.AllowedAreaResRefs.Add(val);
+            _ieNewAreaResRef = "";
+        }
+    }
+
+    private void IeOnAreaKeyDown(KeyboardEventArgs e) { if (e.Key == "Enter") IeAddAreaResRef(); }
+
+    private void IeAddKnowledgeTag()
+    {
+        string val = _ieNewKnowledgeTag.Trim();
+        if (!string.IsNullOrEmpty(val) && !_ieEditItem.RequiredKnowledgeTags.Contains(val))
+        {
+            _ieEditItem.RequiredKnowledgeTags.Add(val);
+            _ieNewKnowledgeTag = "";
+        }
+    }
+
+    private void IeOnKnowledgeKeyDown(KeyboardEventArgs e) { if (e.Key == "Enter") IeAddKnowledgeTag(); }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Interaction Editor — Response / Effect Management
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void IeAddResponse()
+    {
+        _ieEditItem.Responses.Add(new InteractionResponseDto { ResponseTag = "", Weight = 1 });
+    }
+
+    private void IeRemoveResponse(int index)
+    {
+        if (index >= 0 && index < _ieEditItem.Responses.Count)
+            _ieEditItem.Responses.RemoveAt(index);
+    }
+
+    private void IeAddEffect(int responseIndex)
+    {
+        if (responseIndex >= 0 && responseIndex < _ieEditItem.Responses.Count)
+            _ieEditItem.Responses[responseIndex].Effects.Add(new InteractionResponseEffectDto());
+    }
+
+    private void IeRemoveEffect(int responseIndex, int effectIndex)
+    {
+        if (responseIndex >= 0 && responseIndex < _ieEditItem.Responses.Count)
+        {
+            List<InteractionResponseEffectDto> effects = _ieEditItem.Responses[responseIndex].Effects;
+            if (effectIndex >= 0 && effectIndex < effects.Count)
+                effects.RemoveAt(effectIndex);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Interaction Editor — Save / Cancel
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task IeSave()
+    {
+        _ieIsSaving = true;
+        _ieError = null;
+        _ieSuccess = null;
+        try
+        {
+            await IeCaptureCurrentScriptGraph();
+
+            if (_ieIsCreating)
+                await InteractionApi.CreateAsync(_ieEditItem);
+            else
+                await InteractionApi.UpdateAsync(_ieEditItem.Tag, _ieEditItem);
+
+            await IeSaveEventScripts(_ieEditItem.Tag);
+
+            _ieSuccess = $"Interaction '{_ieEditItem.Name}' saved.";
+        }
+        catch (Exception ex)
+        {
+            _ieError = ex.Message;
+            Logger.LogError(ex, "Failed to save interaction from IE");
+        }
+        finally
+        {
+            _ieIsSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task IeCancel()
+    {
+        await CloseInteractionEditor();
+    }
+
+    private async Task IeSaveEventScripts(string interactionTag)
+    {
+        string graphJson = _iePipelineGraphJson;
+        bool hasGraph = IeGraphHasNodes(graphJson);
+        GlyphDefinitionDto? existingDef = _iePipelineScript;
+
+        if (hasGraph)
+        {
+            if (existingDef != null)
+            {
+                GlyphDefinitionDto? updated = await GlyphApi.UpdateDefinitionAsync(existingDef.Id,
+                    new UpdateGlyphRequest(GraphJson: graphJson, IsActive: true));
+                if (updated != null) _iePipelineScript = updated;
+            }
+            else
+            {
+                List<InteractionGlyphBindingDto> existingBindings = await GlyphApi.GetInteractionBindingsAsync(interactionTag);
+                InteractionGlyphBindingDto? matchingBinding = existingBindings.FirstOrDefault();
+
+                if (matchingBinding != null)
+                {
+                    GlyphDefinitionDto? updated = await GlyphApi.UpdateDefinitionAsync(
+                        matchingBinding.GlyphDefinitionId,
+                        new UpdateGlyphRequest(GraphJson: graphJson, IsActive: true));
+                    if (updated != null) _iePipelineScript = updated;
+                }
+                else
+                {
+                    string name = $"{interactionTag}/InteractionPipeline";
+                    GlyphDefinitionDto? created = await GlyphApi.CreateDefinitionAsync(new CreateGlyphRequest(
+                        Name: name,
+                        EventType: IePipelineEventType,
+                        Category: "Interaction",
+                        Description: $"Pipeline script for interaction '{interactionTag}'",
+                        GraphJson: graphJson,
+                        IsActive: true));
+
+                    if (created != null)
+                    {
+                        _iePipelineScript = created;
+                        await GlyphApi.CreateInteractionBindingAsync(
+                            new CreateInteractionGlyphBindingRequest(
+                                InteractionTag: interactionTag,
+                                GlyphDefinitionId: created.Id));
+                    }
+                }
+            }
+        }
+        else if (existingDef != null)
+        {
+            await GlyphApi.UpdateDefinitionAsync(existingDef.Id, new UpdateGlyphRequest(IsActive: false));
+            _iePipelineScript = null;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Interaction Editor — Helpers
+    // ═══════════════════════════════════════════════════════════════════
+
+    private static InteractionDefinitionDto IeDeepCopy(InteractionDefinitionDto src) => new()
+    {
+        Tag = src.Tag,
+        Name = src.Name,
+        Description = src.Description,
+        TargetMode = src.TargetMode,
+        BaseRounds = src.BaseRounds,
+        MinRounds = src.MinRounds,
+        ProficiencyReducesRounds = src.ProficiencyReducesRounds,
+        RequiresIndustryMembership = src.RequiresIndustryMembership,
+        RequiredIndustryTags = [..src.RequiredIndustryTags],
+        AllowedAreaResRefs = [..src.AllowedAreaResRefs],
+        RequiredKnowledgeTags = [..src.RequiredKnowledgeTags],
+        CreatedAt = src.CreatedAt,
+        UpdatedAt = src.UpdatedAt,
+        Responses = src.Responses.Select(r => new InteractionResponseDto
+        {
+            ResponseTag = r.ResponseTag,
+            Weight = r.Weight,
+            MinProficiency = r.MinProficiency,
+            Message = r.Message,
+            Effects = r.Effects.Select(e => new InteractionResponseEffectDto
+            {
+                EffectType = e.EffectType,
+                Value = e.Value,
+                Metadata = e.Metadata != null ? new Dictionary<string, object>(e.Metadata) : null,
+            }).ToList(),
+        }).ToList(),
+    };
+
+    private static bool IeGraphHasNodes(string? graphJson)
+    {
+        if (string.IsNullOrEmpty(graphJson) || graphJson == "{}") return false;
+        try
+        {
+            using JsonDocument doc = JsonDocument.Parse(graphJson);
+            return doc.RootElement.TryGetProperty("Nodes", out JsonElement nodesEl)
+                && nodesEl.ValueKind == JsonValueKind.Array
+                && nodesEl.GetArrayLength() > 0;
+        }
+        catch { return false; }
+    }
+
+    private static string IeBuildEmptyPipelineGraphJson()
+    {
+        Guid n1 = Guid.NewGuid(), n2 = Guid.NewGuid(), n3 = Guid.NewGuid(), n4 = Guid.NewGuid();
+        var graph = new
+        {
+            Id = Guid.NewGuid(),
+            Name = "",
+            Description = "",
+            EventType = IePipelineEventType,
+            Nodes = new object[]
+            {
+                new { InstanceId = n1, TypeId = "stage.interaction_attempted", PositionX = 50.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
+                new { InstanceId = n2, TypeId = "stage.interaction_started", PositionX = 500.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
+                new { InstanceId = n3, TypeId = "stage.interaction_tick", PositionX = 950.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
+                new { InstanceId = n4, TypeId = "stage.interaction_completed", PositionX = 1400.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() }
+            },
+            Edges = new[]
+            {
+                new { SourceNodeId = n1, SourcePinId = "exec_out", TargetNodeId = n2, TargetPinId = "exec_in" },
+                new { SourceNodeId = n2, SourcePinId = "exec_out", TargetNodeId = n3, TargetPinId = "exec_in" },
+                new { SourceNodeId = n3, SourcePinId = "exec_out", TargetNodeId = n4, TargetPinId = "exec_in" },
+            },
+            Variables = Array.Empty<object>()
+        };
+        return JsonSerializer.Serialize(graph);
+    }
+
+    private static string IeGetEffectValueHint(string effectType) => effectType switch
+    {
+        "FloatingText" => "Text to display...",
+        "VfxAtLocation" => "VFX constant (int)",
+        "VfxOnPlayer" => "VFX constant (int)",
+        "SpawnResourceNode" => "Node tag to spawn",
+        "DirectionalHint" => "Hint parameters...",
+        "Custom" => "Custom value...",
+        _ => "Value..."
+    };
+
+    private static string IeGetNodeColor(string colorClass) => colorClass.ToLowerInvariant() switch
+    {
+        "event" => "#e74c3c",
+        "flow" => "#3498db",
+        "action" => "#2ecc71",
+        "getter" => "#9b59b6",
+        "math" => "#f39c12",
+        "logic" => "#1abc9c",
+        _ => "#7f8c8d"
+    };
 }
