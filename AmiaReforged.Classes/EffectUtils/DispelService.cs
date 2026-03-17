@@ -408,11 +408,14 @@ public class DispelService
             return false;
         }
 
-        // Perform dispel check
-        if (!DispelCheck(casterLevel, aoeObject.CasterLevel)) return false;
+        if (aoeObject.Creator == caster || DispelCheck(casterLevel, aoeObject.CasterLevel))
+        {
+            aoeObject.Destroy();
+            SendDispelFeedback(caster, aoeObject, aoeObject.Name, casterLevel);
+            return true;
+        }
 
-        aoeObject.Destroy();
-        return true;
+        return false;
     }
 
 
