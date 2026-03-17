@@ -9,7 +9,7 @@ public class UtterdarkEssence : IEssence
 {
     public EssenceType Essence => EssenceType.Utterdark;
 
-    public EssenceData GetEssenceData(int warlockLevel, NwCreature warlock) => new
+    public EssenceData GetEssenceData(int invocationCl, NwCreature warlock) => new
     (
         Type: Essence,
         DamageType: DamageType.Negative,
@@ -21,16 +21,16 @@ public class UtterdarkEssence : IEssence
         PulseVfx: WarlockVfx.ImpPulseNegative,
         Effect: UtterdarkEffect,
         AllowStacking: true,
-        Duration: EssenceDuration(warlockLevel),
+        Duration: EssenceDuration(invocationCl),
         EffectImpVfx: VfxType.ImpReduceAbilityScore
     );
 
     private static Effect UtterdarkEffect => Effect.LinkEffects(Effect.VisualEffect(VfxType.DurCessateNegative),
         Effect.NegativeLevel(2));
 
-    private static TimeSpan EssenceDuration(int warlockLevel)
+    private static TimeSpan EssenceDuration(int invocationCl)
     {
-        int rounds = Math.Max(1, warlockLevel / 5);
+        int rounds = Math.Max(1, invocationCl / 5);
         return NwTimeSpan.FromRounds(rounds);
     }
 }

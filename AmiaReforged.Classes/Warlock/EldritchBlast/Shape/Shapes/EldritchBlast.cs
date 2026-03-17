@@ -12,7 +12,7 @@ public class EldritchBlast : IShape
 {
     public ShapeType ShapeType => ShapeType.Blast;
 
-    public void CastEldritchShape(NwCreature warlock, int warlockLevel, int invocationDc, EssenceData essence,
+    public void CastEldritchShape(NwCreature warlock, int invocationCl, int invocationDc, EssenceData essence,
         SpellEvents.OnSpellCast eventData)
     {
         if (eventData.TargetObject is not { } targetObject || eventData.Spell is not { } spell) return;
@@ -24,12 +24,12 @@ public class EldritchBlast : IShape
         ApplyBeamVfx(targetObject, warlock, essence.BeamVfx, touchAttackResult);
 
         if (touchAttackResult == TouchAttackResult.Miss
-            || !essence.BypassSpellResistance && warlock.InvocationResistCheck(targetObject, warlockLevel, true))
+            || !essence.BypassSpellResistance && warlock.InvocationResistCheck(targetObject, invocationCl, true))
             return;
 
-        (int FlatBonus, double Multiplier) damageModifiers = GetEldritchDamageModifiers(warlock, warlockLevel);
+        (int FlatBonus, double Multiplier) damageModifiers = GetEldritchDamageModifiers(warlock, invocationCl);
 
-        int damage = RollEldritchDamage(damageModifiers, warlockLevel, touchAttackResult);
+        int damage = RollEldritchDamage(damageModifiers, invocationCl, touchAttackResult);
 
         targetObject.ApplyEldritchBlast(warlock, damage, invocationDc, essence);
     }

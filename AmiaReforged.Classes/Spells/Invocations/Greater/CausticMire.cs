@@ -11,7 +11,7 @@ public class CausticMire(ScriptHandleFactory scriptHandleFactory) : IInvocation
     private const int VfxPerCaustMireId = 49;
 
     public string ImpactScript => "wlk_causticmire";
-    public void CastInvocation(NwCreature warlock, int warlockLevel, SpellEvents.OnSpellCast castData)
+    public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
         if (castData.TargetLocation is not { } location) return;
 
@@ -26,21 +26,21 @@ public class CausticMire(ScriptHandleFactory scriptHandleFactory) : IInvocation
         int chaMod = warlock.GetAbilityModifier(Ability.Charisma);
 
         ScriptCallbackHandle onEnterMire = scriptHandleFactory.CreateUniqueHandler(info =>
-            OnEnterMire(info, warlock, warlockLevel, causticSlow, chaMod, castData.Spell));
+            OnEnterMire(info, warlock, invocationCl, causticSlow, chaMod, castData.Spell));
         ScriptCallbackHandle onHeartbeatMire = scriptHandleFactory.CreateUniqueHandler(info =>
-            OnHeartbeatMire(info, warlock, warlockLevel, chaMod, castData.Spell));
+            OnHeartbeatMire(info, warlock, invocationCl, chaMod, castData.Spell));
         ScriptCallbackHandle onExitMire = scriptHandleFactory.CreateUniqueHandler(info =>
             OnExitMire(info, warlock, castData.Spell));
 
         PersistentVfxTableEntry persistentVfx = NwGameTables.PersistentEffectTable.GetRow(VfxPerCaustMireId);
         Effect causticMire = Effect.AreaOfEffect(persistentVfx, onEnterMire, onHeartbeatMire, onExitMire);
-        TimeSpan duration = NwTimeSpan.FromRounds(warlockLevel);
+        TimeSpan duration = NwTimeSpan.FromRounds(invocationCl);
 
         location.RemoveAoeSpell(warlock, castData.Spell, RadiusSize.Huge);
         location.ApplyEffect(EffectDuration.Temporary, causticMire, duration);
     }
 
-    private static ScriptHandleResult OnEnterMire(CallInfo info, NwCreature warlock, int warlockLevel, Effect causticSlow,
+    private static ScriptHandleResult OnEnterMire(CallInfo info, NwCreature warlock, int invocationCl, Effect causticSlow,
         int chaMod, NwSpell spell)
     {
         if (!info.TryGetEvent(out AreaOfEffectEvents.OnEnter? eventData)
@@ -50,7 +50,7 @@ public class CausticMire(ScriptHandleFactory scriptHandleFactory) : IInvocation
 
         CreatureEvents.OnSpellCastAt.Signal(warlock, creature, spell);
 
-        if (warlock.InvocationResistCheck(creature, warlockLevel))
+        if (warlock.InvocationResistCheck(creature, invocationCl))
             return ScriptHandleResult.Handled;
 
         creature.ApplyEffect(EffectDuration.Permanent, causticSlow);
@@ -60,7 +60,7 @@ public class CausticMire(ScriptHandleFactory scriptHandleFactory) : IInvocation
         return ScriptHandleResult.Handled;
     }
 
-    private static ScriptHandleResult OnHeartbeatMire(CallInfo info, NwCreature warlock, int warlockLevel, int chaMod,
+    private static ScriptHandleResult OnHeartbeatMire(CallInfo info, NwCreature warlock, int invocationCl, int chaMod,
         NwSpell spell)
     {
         if (!info.TryGetEvent(out AreaOfEffectEvents.OnHeartbeat? eventData))
@@ -73,7 +73,7 @@ public class CausticMire(ScriptHandleFactory scriptHandleFactory) : IInvocation
 
             CreatureEvents.OnSpellCastAt.Signal(warlock, creature, spell);
 
-            if (warlock.InvocationResistCheck(creature, warlockLevel))
+            if (warlock.InvocationResistCheck(creature, invocationCl))
                 continue;
 
             int damage = CalculateDamage(chaMod);

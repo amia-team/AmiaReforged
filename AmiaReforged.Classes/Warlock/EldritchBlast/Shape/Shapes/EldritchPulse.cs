@@ -11,17 +11,17 @@ public class EldritchPulse(ScriptHandleFactory scriptHandleFactory) : IShape
 {
     public ShapeType ShapeType => ShapeType.Pulse;
 
-    public void CastEldritchShape(NwCreature warlock, int warlockLevel, int invocationDc, EssenceData essence,
+    public void CastEldritchShape(NwCreature warlock, int invocationCl, int invocationDc, EssenceData essence,
         SpellEvents.OnSpellCast eventData)
     {
         if (eventData.TargetObject is not { } targetObject || eventData.Spell is not { } spell) return;
 
-        (int FlatBonus, double Multiplier) damageModifiers = GetEldritchDamageModifiers(warlock, warlockLevel);
+        (int FlatBonus, double Multiplier) damageModifiers = GetEldritchDamageModifiers(warlock, invocationCl);
 
         BlastContext blast = new
         (
             Warlock: warlock,
-            Cl: warlockLevel,
+            Cl: invocationCl,
             Dc: invocationDc,
             Essence: essence,
             Spell: spell,

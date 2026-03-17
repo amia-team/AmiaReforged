@@ -9,7 +9,7 @@ public class BrimstoneEssence(ScriptHandleFactory scriptHandleFactory) : IEssenc
 {
     public EssenceType Essence => EssenceType.Brimstone;
 
-    public EssenceData GetEssenceData(int warlockLevel, NwCreature warlock) => new
+    public EssenceData GetEssenceData(int invocationCl, NwCreature warlock) => new
     (
         Type: Essence,
         DamageType: DamageType.Fire,
@@ -20,12 +20,12 @@ public class BrimstoneEssence(ScriptHandleFactory scriptHandleFactory) : IEssenc
         DoomVfx: WarlockVfx.FnfDoomFire,
         PulseVfx: WarlockVfx.ImpPulseFire,
         Effect: BrimstoneEffect(warlock),
-        Duration: EssenceDuration(warlockLevel)
+        Duration: EssenceDuration(invocationCl)
     );
 
-    private static TimeSpan EssenceDuration(int warlockLevel)
+    private static TimeSpan EssenceDuration(int invocationCl)
     {
-        int rounds = Math.Max(1, warlockLevel / 5);
+        int rounds = Math.Max(1, invocationCl / 5);
         return NwTimeSpan.FromRounds(rounds);
     }
 

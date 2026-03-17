@@ -30,15 +30,13 @@ public class InvocationRegister
 
     private ScriptHandleResult HandleInvocation(CallInfo info)
     {
-
         SpellEvents.OnSpellCast eventData = new();
         if (eventData.Caster is not NwCreature warlock) return ScriptHandleResult.Handled;
 
         _invocationFactory.CastInvocation(
             info.ScriptName,
             warlock,
-            warlock.WarlockLevel(),
-            warlock.InvocationDc(warlock.WarlockLevel()),
+            warlock.GetInvocationCasterLevel(),
             eventData);
 
         return ScriptHandleResult.Handled;

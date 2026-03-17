@@ -10,9 +10,9 @@ public class RepelTheHail : IInvocation
 {
     private const VfxType DurDeathWardMid = (VfxType)2543;
     public string ImpactScript => "wlk_repelhail";
-    public void CastInvocation(NwCreature warlock, int warlockLevel, SpellEvents.OnSpellCast castData)
+    public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
-        int rangedConcealment = 25 + warlockLevel + warlock.GetAbilityModifier(Ability.Charisma) / 2;
+        int rangedConcealment = 25 + invocationCl + warlock.GetAbilityModifier(Ability.Charisma) / 2;
 
         Effect repelHail = Effect.LinkEffects
         (
@@ -23,7 +23,7 @@ public class RepelTheHail : IInvocation
         );
         repelHail.SubType = EffectSubType.Magical;
 
-        TimeSpan duration = NwTimeSpan.FromTurns(warlockLevel);
+        TimeSpan duration = NwTimeSpan.FromTurns(invocationCl);
 
         warlock.ApplyEffect(EffectDuration.Temporary, repelHail, duration);
     }

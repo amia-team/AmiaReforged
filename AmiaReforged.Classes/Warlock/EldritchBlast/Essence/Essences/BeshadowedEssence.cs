@@ -9,7 +9,7 @@ public class BeshadowedEssence : IEssence
 {
     public EssenceType Essence => EssenceType.Beshadowed;
 
-    public EssenceData GetEssenceData(int warlockLevel, NwCreature warlock) => new
+    public EssenceData GetEssenceData(int invocationCl, NwCreature warlock) => new
     (
         Type: Essence,
         DamageType: DamageType.Magical,
@@ -21,15 +21,15 @@ public class BeshadowedEssence : IEssence
         PulseVfx: WarlockVfx.ImpPulseShadow,
         Effect: BeshadowedEffect,
         EffectImpVfx: VfxType.ImpBlindDeafM,
-        Duration: EssenceDuration(warlockLevel)
+        Duration: EssenceDuration(invocationCl)
     );
 
     private static Effect BeshadowedEffect =>
         Effect.LinkEffects(Effect.Blindness(), Effect.VisualEffect(VfxType.DurCessateNegative));
 
-    private static TimeSpan EssenceDuration(int warlockLevel)
+    private static TimeSpan EssenceDuration(int invocationCl)
     {
-        int rounds = Math.Max(1, warlockLevel / 10);
+        int rounds = Math.Max(1, invocationCl / 10);
         return NwTimeSpan.FromRounds(rounds);
     }
 }

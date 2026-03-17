@@ -12,7 +12,7 @@ public class EldritchChain : IShape
 {
     public ShapeType ShapeType => ShapeType.Chain;
 
-    public void CastEldritchShape(NwCreature warlock, int warlockLevel, int invocationDc, EssenceData essence,
+    public void CastEldritchShape(NwCreature warlock, int invocationCl, int invocationDc, EssenceData essence,
         SpellEvents.OnSpellCast eventData)
     {
         if (eventData.TargetObject is not { } targetObject || eventData.Spell is not { } spell) return;
@@ -24,12 +24,12 @@ public class EldritchChain : IShape
         ApplyChainVfx(targetObject, warlock, essence.BeamVfx, BodyNode.Hand, touchAttackResult);
 
         if (touchAttackResult == TouchAttackResult.Miss ||
-            !essence.BypassSpellResistance && warlock.InvocationResistCheck(targetObject, warlockLevel, true))
+            !essence.BypassSpellResistance && warlock.InvocationResistCheck(targetObject, invocationCl, true))
             return;
 
-        (int FlatBonus, double Multiplier) damageModifiers = GetEldritchDamageModifiers(warlock, warlockLevel);
+        (int FlatBonus, double Multiplier) damageModifiers = GetEldritchDamageModifiers(warlock, invocationCl);
 
-        int damage = RollEldritchDamage(damageModifiers, warlockLevel, touchAttackResult);
+        int damage = RollEldritchDamage(damageModifiers, invocationCl, touchAttackResult);
 
         targetObject.ApplyEldritchBlast(warlock, damage, invocationDc, essence);
 
@@ -38,14 +38,14 @@ public class EldritchChain : IShape
         BlastContext blast = new
         (
             Warlock: warlock,
-            WarlockLevel: warlockLevel,
+            InvocationCl: invocationCl,
             InvocationDc: invocationDc,
             Essence: essence,
             Spell: spell,
             DamageModifiers: damageModifiers
         );
 
-        int remainingChains = Math.Max(1, warlockLevel / 5);
+        int remainingChains = Math.Max(1, invocationCl / 5);
 
         HashSet<NwCreature> previouslyHitCreatures = [creature];
 
@@ -72,9 +72,9 @@ public class EldritchChain : IShape
 
             // We want to stop the chain in its tracks if a creature successfully resists it
             if (!blast.Essence.BypassSpellResistance &&
-                blast.Warlock.InvocationResistCheck(creature, blast.WarlockLevel, true)) return;
+                blast.Warlock.InvocationResistCheck(creature, blast.InvocationCl, true)) return;
 
-            int damage = RollEldritchDamage(blast.DamageModifiers, blast.WarlockLevel);
+            int damage = RollEldritchDamage(blast.DamageModifiers, blast.InvocationCl);
 
             creature.ApplyEldritchBlast(blast.Warlock, damage, blast.InvocationDc, blast.Essence);
 
@@ -91,7 +91,7 @@ public class EldritchChain : IShape
         }
     }
 
-    private record BlastContext(NwCreature Warlock, int WarlockLevel, int InvocationDc, EssenceData Essence,
+    private record BlastContext(NwCreature Warlock, int InvocationCl, int InvocationDc, EssenceData Essence,
         NwSpell Spell, (int FlatBonus, double Multiplier) DamageModifiers);
 
     private static void ApplyChainVfx(NwGameObject targetObject, NwGameObject currentSource,

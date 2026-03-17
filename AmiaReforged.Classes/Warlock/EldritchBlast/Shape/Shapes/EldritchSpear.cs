@@ -14,7 +14,7 @@ public class EldritchSpear : IShape
     private const float LongDistance = 40f;
     public ShapeType ShapeType => ShapeType.Spear;
 
-    public void CastEldritchShape(NwCreature warlock, int warlockLevel, int invocationDc, EssenceData essence,
+    public void CastEldritchShape(NwCreature warlock, int invocationCl, int invocationDc, EssenceData essence,
         SpellEvents.OnSpellCast eventData)
     {
         if (eventData.TargetObject is not { } targetObject || eventData.Spell is not { } spell) return;
@@ -28,12 +28,12 @@ public class EldritchSpear : IShape
         // If the touch attack misses, nothing in line of spell gets hit
         if (touchAttackResult == TouchAttackResult.Miss) return;
 
-        (int FlatBonus, double Multiplier) damageModifiers = GetEldritchDamageModifiers(warlock, warlockLevel);
+        (int FlatBonus, double Multiplier) damageModifiers = GetEldritchDamageModifiers(warlock, invocationCl);
 
         // Even if the target resists the spell, we continue to hurt targets in line of spell
-        if (essence.BypassSpellResistance || !warlock.InvocationResistCheck(targetObject, warlockLevel, true))
+        if (essence.BypassSpellResistance || !warlock.InvocationResistCheck(targetObject, invocationCl, true))
         {
-            int damage = RollEldritchDamage(damageModifiers, warlockLevel, touchAttackResult);
+            int damage = RollEldritchDamage(damageModifiers, invocationCl, touchAttackResult);
             targetObject.ApplyEldritchBlast(warlock, damage, invocationDc, essence);
         }
 
@@ -49,7 +49,7 @@ public class EldritchSpear : IShape
 
             CreatureEvents.OnSpellCastAt.Signal(warlock, creature, spell);
 
-            if (!essence.BypassSpellResistance && warlock.InvocationResistCheck(creature, warlockLevel, true))
+            if (!essence.BypassSpellResistance && warlock.InvocationResistCheck(creature, invocationCl, true))
                 continue;
 
             SavingThrowResult reflexSave
@@ -64,7 +64,7 @@ public class EldritchSpear : IShape
                 if (creature.KnowsFeat(Feat.Evasion!) || hasImpEvasion) continue;
             }
 
-            int damage = RollEldritchDamage(damageModifiers, warlockLevel) / 2;
+            int damage = RollEldritchDamage(damageModifiers, invocationCl) / 2;
 
             if (reflexSave == SavingThrowResult.Success || hasImpEvasion)
                 damage /= 2;

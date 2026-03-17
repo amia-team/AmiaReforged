@@ -12,11 +12,10 @@ public class InvocationFactory
     public InvocationFactory(IEnumerable<IInvocation> invocations)
         => _invocations = invocations.ToDictionary(i => i.ImpactScript);
 
-    public void CastInvocation(string scriptName, NwCreature warlock, int warlockLevel, int dc,
-        SpellEvents.OnSpellCast castData)
+    public void CastInvocation(string scriptName, NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
         if (!_invocations.TryGetValue(scriptName, out IInvocation? invocation)) return;
 
-        invocation.CastInvocation(warlock, warlockLevel, castData);
+        invocation.CastInvocation(warlock, invocationCl, castData);
     }
 }

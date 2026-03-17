@@ -9,7 +9,7 @@ namespace AmiaReforged.Classes.Spells.Invocations.Least;
 public class LeapsAndBounds : IInvocation
 {
     public string ImpactScript => "wlk_leapsbounds";
-    public void CastInvocation(NwCreature warlock, int warlockLevel, SpellEvents.OnSpellCast castData)
+    public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
         Effect leaps = Effect.LinkEffects
         (
@@ -19,7 +19,7 @@ public class LeapsAndBounds : IInvocation
         );
         leaps.SubType = EffectSubType.Magical;
 
-        TimeSpan duration = NwTimeSpan.FromHours(warlockLevel);
+        TimeSpan duration = NwTimeSpan.FromHours(invocationCl);
 
         warlock.ApplyEffect(EffectDuration.Temporary, leaps, duration);
         warlock.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpImproveAbilityScore));

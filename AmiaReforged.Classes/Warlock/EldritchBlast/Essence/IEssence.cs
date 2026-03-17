@@ -5,5 +5,5 @@ namespace AmiaReforged.Classes.Warlock.EldritchBlast.Essence;
 public interface IEssence
 {
     EssenceType Essence { get; }
-    EssenceData GetEssenceData(int warlockLevel, NwCreature warlock);
+    EssenceData GetEssenceData(int invocationCl, NwCreature warlock);
 }

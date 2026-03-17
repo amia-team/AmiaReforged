@@ -9,9 +9,9 @@ namespace AmiaReforged.Classes.Spells.Invocations.Lesser;
 public class WalkUnseen : IInvocation
 {
     public string ImpactScript => "wlk_walkunseen";
-    public void CastInvocation(NwCreature warlock, int warlockLevel, SpellEvents.OnSpellCast castData)
+    public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
-        TimeSpan duration = NwTimeSpan.FromRounds(warlockLevel);
+        TimeSpan duration = NwTimeSpan.FromRounds(invocationCl);
         warlock.ApplyEffect(EffectDuration.Temporary, Effect.Invisibility(InvisibilityType.Normal), duration);
     }
 }

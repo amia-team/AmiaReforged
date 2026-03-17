@@ -9,7 +9,7 @@ public class BewitchingEssence : IEssence
 {
     public EssenceType Essence => EssenceType.Bewitching;
 
-    public EssenceData GetEssenceData(int warlockLevel, NwCreature warlock) => new
+    public EssenceData GetEssenceData(int invocationCl, NwCreature warlock) => new
     (
         Type: Essence,
         DamageType: DamageType.Magical,
@@ -21,15 +21,15 @@ public class BewitchingEssence : IEssence
         PulseVfx: WarlockVfx.ImpPulseMind,
         Effect: BewitchingEffect,
         EffectImpVfx: VfxType.ImpCharm,
-        Duration: EssenceDuration(warlockLevel)
+        Duration: EssenceDuration(invocationCl)
     );
 
     private static Effect BewitchingEffect =>
         Effect.LinkEffects(Effect.Confused(), Effect.VisualEffect(VfxType.DurMindAffectingDisabled));
 
-    private static TimeSpan EssenceDuration(int warlockLevel)
+    private static TimeSpan EssenceDuration(int invocationCl)
     {
-        int rounds = Math.Max(1, warlockLevel / 10);
+        int rounds = Math.Max(1, invocationCl / 10);
         return NwTimeSpan.FromRounds(rounds);
     }
 }

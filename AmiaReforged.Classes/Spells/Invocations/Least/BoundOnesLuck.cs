@@ -9,7 +9,7 @@ namespace AmiaReforged.Classes.Spells.Invocations.Least;
 public class BoundOnesLuck : IInvocation
 {
     public string ImpactScript => "wlk_boundluck";
-    public void CastInvocation(NwCreature warlock, int warlockLevel, SpellEvents.OnSpellCast castData)
+    public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
         if (warlock.KnowsFeat(Feat.PrestigeDarkBlessing!))
         {
@@ -17,8 +17,8 @@ public class BoundOnesLuck : IInvocation
             return;
         }
 
-        int savesCap = warlockLevel / 7;
-        if (warlockLevel == 30)
+        int savesCap = invocationCl / 7;
+        if (invocationCl == 30)
             savesCap += 6;
 
         int uniSavesBonus = Math.Min(savesCap, warlock.GetAbilityModifier(Ability.Charisma));
@@ -27,7 +27,7 @@ public class BoundOnesLuck : IInvocation
             Effect.VisualEffect(VfxType.DurCessatePositive));
         boundOnesLuck.SubType = EffectSubType.Magical;
 
-        TimeSpan duration = NwTimeSpan.FromHours(warlockLevel);
+        TimeSpan duration = NwTimeSpan.FromHours(invocationCl);
 
         warlock.ApplyEffect(EffectDuration.Temporary, boundOnesLuck, duration);
         warlock.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpHeadOdd));

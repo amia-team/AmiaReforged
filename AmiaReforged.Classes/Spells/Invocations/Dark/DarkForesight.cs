@@ -1,24 +1,23 @@
-using AmiaReforged.Classes.EffectUtils;
-using static NWN.Core.NWScript;
+using AmiaReforged.Classes.Warlock;
+using Anvil.API;
+using Anvil.API.Events;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Dark;
 
-public class DarkForesight
+public class DarkForesight : IInvocation
 {
-    public int CastDarkForesight(uint nwnObjectId)
+    public string ImpactScript => "wlk_darksight";
+    public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
-        int reduced = 10 + GetAbilityModifier(ABILITY_CHARISMA, nwnObjectId);
+        int damageReduction = 10 + warlock.GetAbilityModifier(Ability.Charisma);
+        int damageAbsorption = 10 * invocationCl;
 
-        int foresightLimit = GetCasterLevel(nwnObjectId) * reduced;
-        float duration = TurnsToSeconds(GetCasterLevel(nwnObjectId));
+        Effect darkForesight = Effect.LinkEffects(Effect.VisualEffect(VfxType.DurProtPremonition),
+            Effect.DamageReduction(damageReduction, DamagePower.Plus5, damageAbsorption));
+        darkForesight.SubType = EffectSubType.Magical;
 
-        IntPtr darkForesight = NwEffects.LinkEffectList(new List<IntPtr>
-        {
-            EffectDamageReduction(reduced, DAMAGE_POWER_PLUS_FIVE, foresightLimit),
-            EffectVisualEffect(VFX_DUR_PROT_PREMONITION)
-        });
+        TimeSpan duration = NwTimeSpan.FromTurns(invocationCl);
 
-        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, darkForesight, nwnObjectId, duration);
-        return 0;
+        warlock.ApplyEffect(EffectDuration.Temporary, darkForesight, duration);
     }
 }

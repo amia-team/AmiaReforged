@@ -10,16 +10,16 @@ public class ChillingTentacles(ScriptHandleFactory scriptHandleFactory) : IInvoc
 {
     private const int VfxPerChillingId = 51;
     public string ImpactScript => "wlk_chilltentac";
-    public void CastInvocation(NwCreature warlock, int warlockLevel, SpellEvents.OnSpellCast castData)
+    public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
         if (castData.TargetLocation is not { } location) return;
 
-        int dc = warlock.InvocationDc(warlockLevel);
+        int dc = warlock.InvocationDc(invocationCl);
         Effect paralyze = Effect.LinkEffects(Effect.Paralyze(), Effect.VisualEffect(VfxType.DurParalyzed));
         paralyze.SubType = EffectSubType.Magical;
 
         ScriptCallbackHandle onTentacleStrike = scriptHandleFactory.CreateUniqueHandler(info
-            => OnTentacleStrike(info, warlock, warlockLevel, dc, paralyze));
+            => OnTentacleStrike(info, warlock, invocationCl, dc, paralyze));
         Effect tentacleStrike = Effect.RunAction(onTentacleStrike);
         tentacleStrike.SubType = EffectSubType.Supernatural;
 
@@ -37,7 +37,7 @@ public class ChillingTentacles(ScriptHandleFactory scriptHandleFactory) : IInvoc
         );
         chillingTentacles.SubType = EffectSubType.Magical;
 
-        TimeSpan duration = NwTimeSpan.FromRounds(warlockLevel);
+        TimeSpan duration = NwTimeSpan.FromRounds(invocationCl);
 
         location.RemoveAoeSpell(warlock, castData.Spell, RadiusSize.Large);
         location.ApplyEffect(EffectDuration.Temporary, chillingTentacles, duration);
@@ -64,14 +64,14 @@ public class ChillingTentacles(ScriptHandleFactory scriptHandleFactory) : IInvoc
         return ScriptHandleResult.Handled;
     }
 
-    private static ScriptHandleResult OnTentacleStrike(CallInfo info, NwCreature warlock, int warlockLevel, int dc,
+    private static ScriptHandleResult OnTentacleStrike(CallInfo info, NwCreature warlock, int invocationCl, int dc,
         Effect paralyze)
     {
         if (info.ObjectSelf is not NwCreature creature) return ScriptHandleResult.Handled;
 
         int tentacleCount = Random.Shared.Roll(4);
 
-        int warlockBonus = warlockLevel + warlock.GetAbilityModifier(Ability.Charisma);
+        int warlockBonus = invocationCl + warlock.GetAbilityModifier(Ability.Charisma);
         int creatureBonus = creature.BaseAttackBonus +
                             creature.GetAbilityModifier(Ability.Strength) +
                             SizeModifiers.GetValueOrDefault(creature.Size, 0);

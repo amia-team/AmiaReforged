@@ -13,12 +13,12 @@ public class EssenceFactory
     public EssenceFactory(IEnumerable<IEssence> essences)
         => _essences = essences.ToDictionary(e => e.Essence);
 
-    public EssenceData GetEssenceData(NwCreature warlock, int warlockLevel)
+    public EssenceData GetEssenceData(NwCreature warlock, int invocationCl)
     {
         EssenceType activeEssence = GetActivateEssence(warlock);
 
         return _essences.TryGetValue(activeEssence, out IEssence? essence)
-            ? essence.GetEssenceData(warlockLevel, warlock)
+            ? essence.GetEssenceData(invocationCl, warlock)
             : DefaultEssence;
     }
 

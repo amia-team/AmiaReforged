@@ -1,22 +1,28 @@
-﻿using AmiaReforged.Classes.EffectUtils;
-using static NWN.Core.NWScript;
+﻿using AmiaReforged.Classes.Warlock;
+using Anvil.API;
+using Anvil.API.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Dark;
 
-public class ShadowShape
+[ServiceBinding(typeof(IInvocation))]
+public class ShadowShape : IInvocation
 {
-    public void CastShadowShape(uint nwnObjectId)
+    public string ImpactScript => "wlk_retinvis";
+    public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
-        float duration = TurnsToSeconds(GetCasterLevel(nwnObjectId));
-        IntPtr linkedConceal = NwEffects.LinkEffectList(new List<IntPtr>
-        {
-            EffectVisualEffect(VFX_DUR_GHOST_TRANSPARENT),
-            EffectVisualEffect(VFX_DUR_GHOST_SMOKE_2),
-            EffectSavingThrowIncrease(SAVING_THROW_ALL, 4, SAVING_THROW_TYPE_DEATH),
-            EffectSavingThrowIncrease(SAVING_THROW_ALL, 4, SAVING_THROW_TYPE_NEGATIVE),
-            EffectConcealment(50)
-        });
+        Effect shadowShape = Effect.LinkEffects
+            (
+                Effect.VisualEffect(VfxType.DurGhostTransparent),
+                Effect.VisualEffect(VfxType.DurGhostSmoke2),
+                Effect.SavingThrowIncrease(SavingThrow.All, 4, SavingThrowType.Death),
+                Effect.SavingThrowIncrease(SavingThrow.All, 4, SavingThrowType.Negative),
+                Effect.Concealment(50)
+            );
+        shadowShape.SubType = EffectSubType.Magical;
 
-        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, linkedConceal, nwnObjectId, duration);
+        TimeSpan duration = NwTimeSpan.FromTurns(invocationCl);
+
+        warlock.ApplyEffect(EffectDuration.Temporary, shadowShape, duration);
     }
 }

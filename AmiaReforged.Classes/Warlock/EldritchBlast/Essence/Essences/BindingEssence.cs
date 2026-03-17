@@ -9,7 +9,7 @@ public class BindingEssence : IEssence
 {
     public EssenceType Essence => EssenceType.Binding;
 
-    public EssenceData GetEssenceData(int warlockLevel, NwCreature warlock) => new
+    public EssenceData GetEssenceData(int invocationCl, NwCreature warlock) => new
     (
         Type: Essence,
         DamageType: DamageType.Magical,
@@ -21,12 +21,12 @@ public class BindingEssence : IEssence
         PulseVfx: WarlockVfx.ImpPulseMind,
         Effect: Effect.Stunned(),
         EffectImpVfx: VfxType.ImpStun,
-        Duration: EssenceDuration(warlockLevel)
+        Duration: EssenceDuration(invocationCl)
     );
 
-    private static TimeSpan EssenceDuration(int warlockLevel)
+    private static TimeSpan EssenceDuration(int invocationCl)
     {
-        int rounds = Math.Max(1, warlockLevel / 10);
+        int rounds = Math.Max(1, invocationCl / 10);
         return NwTimeSpan.FromRounds(rounds);
     }
 }

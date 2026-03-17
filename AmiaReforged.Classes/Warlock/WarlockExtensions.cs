@@ -10,9 +10,23 @@ public static class WarlockExtensions
 
     public static readonly NwClass? WarlockClass = NwClass.FromClassId(WarlockId);
 
+    private const int WordOfChangingId = 994;
+
     public const string EldritchBlastImpactScript = "wlk_el_blst";
 
     public static int WarlockLevel(this NwCreature warlock) => NWScript.GetLevelByClass(WarlockId, warlock);
+
+    public static int GetInvocationCasterLevel(this NwCreature warlock)
+    {
+        int casterLevel = warlock.WarlockLevel();
+
+        if (warlock.ActiveEffects.Any(e => e.Spell?.Id == WordOfChangingId))
+        {
+            casterLevel -= 5;
+        }
+
+        return casterLevel;
+    }
 
     public static int InvocationDc(this NwCreature warlock, int warlockLevel) =>
         10 + warlock.GetAbilityModifier(Ability.Charisma) + warlockLevel / 3;
@@ -47,7 +61,7 @@ public static class WarlockExtensions
     /// A custom spell resistance check for warlock invocations; should always be used in place of other checks.
     /// </summary>
     /// <returns>True if the target successfully resisted the spell, otherwise false.</returns>
-    public static bool InvocationResistCheck(this NwCreature warlock, NwGameObject target, int warlockLevel,
+    public static bool InvocationResistCheck(this NwCreature warlock, NwGameObject target, int invocationCl,
         bool isEldritchBlast = false)
     {
         if (isEldritchBlast)
@@ -67,12 +81,12 @@ public static class WarlockExtensions
         // because we want to bound warlock CL to warlock levels for immutability, we add spell pen feats separately
         // for the spell resist check
         if (warlock.KnowsFeat(Feat.EpicSpellPenetration!))
-            warlockLevel += 6;
+            invocationCl += 6;
         else if (warlock.KnowsFeat(Feat.GreaterSpellPenetration!))
-            warlockLevel += 4;
+            invocationCl += 4;
         else if (warlock.KnowsFeat(Feat.SpellPenetration!))
-            warlockLevel += 2;
+            invocationCl += 2;
 
-        return warlock.SpellResistanceCheck(target, casterLevel: warlockLevel);
+        return warlock.SpellResistanceCheck(target, casterLevel: invocationCl);
     }
 }

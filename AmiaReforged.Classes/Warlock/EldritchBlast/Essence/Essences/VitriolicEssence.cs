@@ -9,7 +9,7 @@ public class VitriolicEssence(ScriptHandleFactory scriptHandleFactory) : IEssenc
 {
     public EssenceType Essence => EssenceType.Vitriolic;
 
-    public EssenceData GetEssenceData(int warlockLevel, NwCreature warlock) => new
+    public EssenceData GetEssenceData(int invocationCl, NwCreature warlock) => new
     (
         Type: Essence,
         DamageType: DamageType.Acid,
@@ -21,12 +21,12 @@ public class VitriolicEssence(ScriptHandleFactory scriptHandleFactory) : IEssenc
         PulseVfx: WarlockVfx.ImpPulseNature,
         Effect: VitriolicEffect(warlock),
         AllowStacking: true,
-        Duration: EssenceDuration(warlockLevel)
+        Duration: EssenceDuration(invocationCl)
     );
 
-    private static TimeSpan EssenceDuration(int warlockLevel)
+    private static TimeSpan EssenceDuration(int invocationCl)
     {
-        int rounds = Math.Max(1, warlockLevel / 5);
+        int rounds = Math.Max(1, invocationCl / 5);
         return NwTimeSpan.FromRounds(rounds);
     }
 

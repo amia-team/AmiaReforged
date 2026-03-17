@@ -81,13 +81,13 @@ public static class BlastMechanics
     /// Rolls damage for an Eldritch Blast and applies all modifiers.
     /// </summary>
     /// <param name="damageModifiers"></param>
-    /// <param name="warlockLevel"></param>
+    /// <param name="invocationCl"></param>
     /// <param name="touchAttackResult">Used to double the damage on critical hits of touch attacks</param>
     /// <returns>The total damage to Eldritch Blast applied with ApplyEldritchBlast</returns>
-    public static int RollEldritchDamage((int FlatBonus, double Multiplier) damageModifiers, int warlockLevel,
+    public static int RollEldritchDamage((int FlatBonus, double Multiplier) damageModifiers, int invocationCl,
         TouchAttackResult? touchAttackResult = null)
     {
-        double damage = Random.Shared.Roll(2, warlockLevel);
+        double damage = Random.Shared.Roll(2, invocationCl);
         damage += damageModifiers.FlatBonus;
         damage *= damageModifiers.Multiplier;
 
@@ -96,7 +96,7 @@ public static class BlastMechanics
         return (int)damage;
     }
 
-    public static (int FlatBonus, double Multiplier) GetEldritchDamageModifiers(NwCreature warlock, int warlockLevel)
+    public static (int FlatBonus, double Multiplier) GetEldritchDamageModifiers(NwCreature warlock, int invocationCl)
     {
         // Every Epic Eldritch Blast feat increases the damage by 5.
         int epicEldritchCount = EpicEldritchFeatCount(warlock);
@@ -106,7 +106,7 @@ public static class BlastMechanics
 
         // Charisma multiplies the damage by 1% per Cha Mod, multiplied by 1.5 if warlock is level 30
         int chaMod = warlock.GetAbilityModifier(Ability.Charisma);
-        double chaScale = warlockLevel == 30 ? 1.5 : 1.0;
+        double chaScale = invocationCl == 30 ? 1.5 : 1.0;
         multiplier += chaMod * chaScale / 100;
 
         // Eldritch Master increases the damage by 25%

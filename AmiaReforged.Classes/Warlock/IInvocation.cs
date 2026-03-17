@@ -7,5 +7,5 @@ public interface IInvocation
 {
     string ImpactScript { get; }
 
-    void CastInvocation(NwCreature warlock, int warlockLevel, SpellEvents.OnSpellCast castData);
+    void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData);
 }

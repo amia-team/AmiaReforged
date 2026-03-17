@@ -11,7 +11,7 @@ public class DreadSeizure(ScriptHandleFactory scriptHandleFactory) : IInvocation
     private const VfxType DurImmobilize = (VfxType)2526;
     private const int MobAuraCustomId = 52;
     public string ImpactScript => "wlk_dreadseizure";
-    public void CastInvocation(NwCreature warlock, int warlockLevel, SpellEvents.OnSpellCast castData)
+    public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
         Effect? dreadSeizureAura =
             warlock.ActiveEffects.FirstOrDefault(e => e.Spell == castData.Spell && e.Creator == warlock);
@@ -28,7 +28,7 @@ public class DreadSeizure(ScriptHandleFactory scriptHandleFactory) : IInvocation
         dreadSeizureEffect.SubType = EffectSubType.Magical;
 
         ScriptCallbackHandle onEnterDread = scriptHandleFactory.CreateUniqueHandler(info =>
-            OnEnterDread(info, warlock, dreadSeizureEffect, warlockLevel, warlock.InvocationDc(warlockLevel)));
+            OnEnterDread(info, warlock, dreadSeizureEffect, invocationCl, warlock.InvocationDc(invocationCl)));
 
         ScriptCallbackHandle onExitDread = scriptHandleFactory.CreateUniqueHandler(OnExitDread);
 
@@ -39,13 +39,13 @@ public class DreadSeizure(ScriptHandleFactory scriptHandleFactory) : IInvocation
             Effect.VisualEffect(VfxType.ImpAuraNegativeEnergy)
         );
 
-        TimeSpan duration = NwTimeSpan.FromRounds(warlockLevel);
+        TimeSpan duration = NwTimeSpan.FromRounds(invocationCl);
         warlock.ApplyEffect(EffectDuration.Temporary, dreadSeizureAura, duration);
         warlock.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfPwkill));
     }
 
     private static ScriptHandleResult OnEnterDread(CallInfo info, NwCreature warlock, Effect dreadSeizureEffect,
-        int warlockLevel, int dc)
+        int invocationCl, int dc)
     {
         if (!info.TryGetEvent(out AreaOfEffectEvents.OnEnter? eventData)
             || eventData.Entering is not NwCreature targetCreature
@@ -55,7 +55,7 @@ public class DreadSeizure(ScriptHandleFactory scriptHandleFactory) : IInvocation
 
         CreatureEvents.OnSpellCastAt.Signal(warlock, targetCreature, spell);
 
-        targetCreature.InvocationResistCheck(warlock, warlockLevel);
+        targetCreature.InvocationResistCheck(warlock, invocationCl);
 
         SavingThrowResult fortSave =
             targetCreature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Spell, warlock);

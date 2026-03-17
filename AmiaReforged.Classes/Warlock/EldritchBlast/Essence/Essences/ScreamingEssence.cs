@@ -9,7 +9,7 @@ public class ScreamingEssence : IEssence
 {
     public EssenceType Essence => EssenceType.Screaming;
 
-    public EssenceData GetEssenceData(int warlockLevel, NwCreature warlock) => new
+    public EssenceData GetEssenceData(int invocationCl, NwCreature warlock) => new
     (
         Type: Essence,
         DamageType: DamageType.Sonic,
@@ -21,15 +21,15 @@ public class ScreamingEssence : IEssence
         PulseVfx: WarlockVfx.ImpPulseWind,
         Effect: ScreamingEffect,
         EffectImpVfx: VfxType.ImpBlindDeafM,
-        Duration: EssenceDuration(warlockLevel)
+        Duration: EssenceDuration(invocationCl)
     );
 
     private static Effect ScreamingEffect => Effect.LinkEffects(Effect.VisualEffect(VfxType.DurCessateNegative),
         Effect.DamageImmunityDecrease(DamageType.Sonic, 15));
 
-    private static TimeSpan EssenceDuration(int warlockLevel)
+    private static TimeSpan EssenceDuration(int invocationCl)
     {
-        int rounds = Math.Max(1, warlockLevel / 5);
+        int rounds = Math.Max(1, invocationCl / 5);
         return NwTimeSpan.FromRounds(rounds);
     }
 }

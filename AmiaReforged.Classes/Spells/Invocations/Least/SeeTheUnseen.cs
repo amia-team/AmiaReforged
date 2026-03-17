@@ -11,7 +11,7 @@ namespace AmiaReforged.Classes.Spells.Invocations.Least;
 public class SeeTheUnseen : IInvocation
 {
     public string ImpactScript => "wlk_see_unseen";
-    public void CastInvocation(NwCreature warlock, int warlockLevel, SpellEvents.OnSpellCast castData)
+    public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
         Effect seeUnseen = Effect.LinkEffects
         (
@@ -21,7 +21,7 @@ public class SeeTheUnseen : IInvocation
         );
         seeUnseen.SubType = EffectSubType.Magical;
 
-        TimeSpan duration = NwTimeSpan.FromHours(warlockLevel);
+        TimeSpan duration = NwTimeSpan.FromHours(invocationCl);
 
         warlock.ApplyEffect(EffectDuration.Temporary, seeUnseen, duration);
     }

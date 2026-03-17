@@ -9,7 +9,7 @@ namespace AmiaReforged.Classes.Spells.Invocations.Lesser;
 public class CurseOfDespair : IInvocation
 {
     public string ImpactScript => "wlk_curse";
-    public void CastInvocation(NwCreature warlock, int warlockLevel, SpellEvents.OnSpellCast castData)
+    public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
         if (castData.TargetLocation is not { } location) return;
 
@@ -30,8 +30,8 @@ public class CurseOfDespair : IInvocation
         Effect curseImpVfx = Effect.VisualEffect(VfxType.ImpReduceAbilityScore);
         Effect abDecreaseImpVfx = Effect.VisualEffect(VfxType.ImpHeadEvil);
 
-        int invocationDc = warlock.InvocationDc(warlockLevel);
-        TimeSpan duration = NwTimeSpan.FromRounds(warlockLevel);
+        int invocationDc = warlock.InvocationDc(invocationCl);
+        TimeSpan duration = NwTimeSpan.FromRounds(invocationCl);
 
         location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpPulseNegative));
 

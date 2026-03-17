@@ -31,15 +31,15 @@ public class BlastHandler
         if (eventData.Caster is not NwCreature warlock) return ScriptHandleResult.Handled;
 
         ShapeType shapeType = (ShapeType)eventData.Spell.Id;
-        int warlockLevel = warlock.WarlockLevel();
-        int dc = warlock.InvocationDc(warlockLevel);
+        int invocationCl = warlock.GetInvocationCasterLevel();
+        int dc = warlock.InvocationDc(invocationCl);
 
-        EssenceData essenceData = _essenceFactory.GetEssenceData(warlock, warlockLevel);
+        EssenceData essenceData = _essenceFactory.GetEssenceData(warlock, invocationCl);
 
         SpellEvents.OnSpellCast castData = new();
 
         _shapeFactory.GetShapeType(shapeType)?
-            .CastEldritchShape(warlock, warlockLevel, dc, essenceData, castData);
+            .CastEldritchShape(warlock, invocationCl, dc, essenceData, castData);
 
         if (warlock.KnowsFeat(WarlockFeats.EldritchMaster!))
             warlock.ApplyEldritchMasterAttackBonus();

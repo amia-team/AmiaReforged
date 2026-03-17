@@ -12,26 +12,26 @@ public class WrithingDarkness(ScriptHandleFactory scriptHandleFactory) : IInvoca
     private const int VfxPerWlkDarkId = 48;
 
     public string ImpactScript => "wlk_insid_shadws";
-    public void CastInvocation(NwCreature warlock, int warlockLevel, SpellEvents.OnSpellCast castData)
+    public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
         if (castData.TargetLocation is not { } location
             || IsDarknessProhibited(warlock)) return;
 
         int chaMod = warlock.GetAbilityModifier(Ability.Charisma);
-        int dc = warlock.InvocationDc(warlockLevel);
+        int dc = warlock.InvocationDc(invocationCl);
         Effect blindness = Effect.LinkEffects(Effect.Blindness(), Effect.VisualEffect(VfxType.DurCessateNegative));
         blindness.SubType = EffectSubType.Magical;
 
         ScriptCallbackHandle onEnterWrithing = scriptHandleFactory.CreateUniqueHandler(info
-            => OnEnterWrithing(info, warlock, chaMod, warlockLevel, dc, blindness, castData.Spell));
+            => OnEnterWrithing(info, warlock, chaMod, invocationCl, dc, blindness, castData.Spell));
         ScriptCallbackHandle onHeartbeatWrithing = scriptHandleFactory.CreateUniqueHandler(info
-            => OnHeartbeatWrithing(info, warlock, chaMod, warlockLevel, dc, blindness, castData.Spell));
+            => OnHeartbeatWrithing(info, warlock, chaMod, invocationCl, dc, blindness, castData.Spell));
 
         PersistentVfxTableEntry persistentVfx = NwGameTables.PersistentEffectTable.GetRow(VfxPerWlkDarkId);
         Effect writhingDark = Effect.AreaOfEffect(persistentVfx, onEnterWrithing, onHeartbeatWrithing);
         writhingDark.SubType = EffectSubType.Magical;
 
-        TimeSpan duration = NwTimeSpan.FromRounds(warlockLevel);
+        TimeSpan duration = NwTimeSpan.FromRounds(invocationCl);
 
         location.RemoveAoeSpell(warlock, castData.Spell, RadiusSize.Huge);
         location.ApplyEffect(EffectDuration.Temporary, writhingDark, duration);
@@ -49,7 +49,7 @@ public class WrithingDarkness(ScriptHandleFactory scriptHandleFactory) : IInvoca
         return true;
     }
 
-    private static ScriptHandleResult OnHeartbeatWrithing(CallInfo info, NwCreature warlock, int chaMod, int warlockLevel,
+    private static ScriptHandleResult OnHeartbeatWrithing(CallInfo info, NwCreature warlock, int chaMod, int invocationCl,
         int dc, Effect blindness, NwSpell spell)
     {
         if (!info.TryGetEvent(out AreaOfEffectEvents.OnHeartbeat? eventData))
@@ -64,7 +64,7 @@ public class WrithingDarkness(ScriptHandleFactory scriptHandleFactory) : IInvoca
             CreatureEvents.OnSpellCastAt.Signal(warlock, creature, spell);
 
             if (creature.ActiveEffects.Any(e => e.EffectType is EffectType.TrueSeeing or EffectType.Ultravision)
-                || warlock.InvocationResistCheck(creature, warlockLevel))
+                || warlock.InvocationResistCheck(creature, invocationCl))
                 continue;
 
             BlindnessCheck(creature, warlock, dc, blindness, duration);
@@ -77,7 +77,7 @@ public class WrithingDarkness(ScriptHandleFactory scriptHandleFactory) : IInvoca
         return ScriptHandleResult.Handled;
     }
 
-    private static ScriptHandleResult OnEnterWrithing(CallInfo info, NwCreature warlock, int chaMod, int warlockLevel,
+    private static ScriptHandleResult OnEnterWrithing(CallInfo info, NwCreature warlock, int chaMod, int invocationCl,
         int dc, Effect blindness, NwSpell spell)
     {
         if (!info.TryGetEvent(out AreaOfEffectEvents.OnEnter? eventData)
@@ -88,7 +88,7 @@ public class WrithingDarkness(ScriptHandleFactory scriptHandleFactory) : IInvoca
         CreatureEvents.OnSpellCastAt.Signal(warlock, creature, spell);
 
         if (creature.ActiveEffects.Any(e => e.EffectType is EffectType.Blindness)
-            || warlock.InvocationResistCheck(creature, warlockLevel))
+            || warlock.InvocationResistCheck(creature, invocationCl))
             return ScriptHandleResult.Handled;
 
         TimeSpan duration = NwTimeSpan.FromRounds(1);

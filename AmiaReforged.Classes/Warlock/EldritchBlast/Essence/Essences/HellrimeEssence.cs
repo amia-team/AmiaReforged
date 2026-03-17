@@ -9,7 +9,7 @@ public class HellrimeEssence : IEssence
 {
     public EssenceType Essence => EssenceType.Hellrime;
 
-    public EssenceData GetEssenceData(int warlockLevel, NwCreature warlock) => new
+    public EssenceData GetEssenceData(int invocationCl, NwCreature warlock) => new
     (
         Type: Essence,
         DamageType: DamageType.Cold,
@@ -20,15 +20,15 @@ public class HellrimeEssence : IEssence
         DoomVfx: WarlockVfx.FnfDoomCold,
         PulseVfx: WarlockVfx.ImpPulseCold,
         Effect: HellrimeEffect,
-        Duration: EssenceDuration(warlockLevel)
+        Duration: EssenceDuration(invocationCl)
     );
 
     private static Effect HellrimeEffect => Effect.LinkEffects(Effect.AbilityDecrease(Ability.Dexterity, 4),
             Effect.VisualEffect(VfxType.DurIceskin));
 
-    private static TimeSpan EssenceDuration(int warlockLevel)
+    private static TimeSpan EssenceDuration(int invocationCl)
     {
-        int rounds = Math.Max(1, warlockLevel / 5);
+        int rounds = Math.Max(1, invocationCl / 5);
         return NwTimeSpan.FromRounds(rounds);
     }
 }

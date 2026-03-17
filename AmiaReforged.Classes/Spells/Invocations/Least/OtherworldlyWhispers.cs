@@ -9,9 +9,9 @@ namespace AmiaReforged.Classes.Spells.Invocations.Least;
 public class OtherworldlyWhispers : IInvocation
 {
     public string ImpactScript => "wlk_othrwrldwhis";
-    public void CastInvocation(NwCreature warlock, int warlockLevel, SpellEvents.OnSpellCast castData)
+    public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
-        int skillBonus = 10 + warlockLevel / 2 + warlock.GetAbilityModifier(Ability.Charisma);
+        int skillBonus = 10 + invocationCl / 2 + warlock.GetAbilityModifier(Ability.Charisma);
         Effect whispers = Effect.LinkEffects
         (
             Effect.SkillIncrease(Skill.Lore!, skillBonus),
@@ -20,7 +20,7 @@ public class OtherworldlyWhispers : IInvocation
         );
         whispers.SubType = EffectSubType.Magical;
 
-        TimeSpan duration = NwTimeSpan.FromHours(warlockLevel);
+        TimeSpan duration = NwTimeSpan.FromHours(invocationCl);
 
         warlock.ApplyEffect(EffectDuration.Temporary, whispers, duration);
         warlock.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpNightmareHeadHit));
