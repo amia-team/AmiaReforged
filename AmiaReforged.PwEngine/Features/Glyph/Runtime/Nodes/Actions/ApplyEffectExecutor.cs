@@ -63,7 +63,7 @@ public class ApplyEffectExecutor : IGlyphNodeExecutor
         };
     }
 
-    public static GlyphNodeDefinition CreateDefinition() => new()
+    public GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
         DisplayName = "Apply Effect",

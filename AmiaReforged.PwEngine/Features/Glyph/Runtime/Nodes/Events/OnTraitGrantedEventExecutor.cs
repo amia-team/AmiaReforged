@@ -31,7 +31,7 @@ public class OnTraitGrantedEventExecutor : IGlyphNodeExecutor
         });
     }
 
-    public static GlyphNodeDefinition CreateDefinition() => new()
+    public GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
         DisplayName = "On Trait Granted",

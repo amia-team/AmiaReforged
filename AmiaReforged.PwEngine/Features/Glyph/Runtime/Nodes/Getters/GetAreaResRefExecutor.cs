@@ -21,7 +21,7 @@ public class GetAreaResRefExecutor : IGlyphNodeExecutor
         }));
     }
 
-    public static GlyphNodeDefinition CreateDefinition() => new()
+    public GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
         DisplayName = "Get Area ResRef",

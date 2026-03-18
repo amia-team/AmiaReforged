@@ -1,5 +1,3 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using AmiaReforged.PwEngine.Features.Glyph.Persistence;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime;
@@ -26,12 +24,6 @@ public class GlyphTraitHookService
       IEventHandlerMarker
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        Converters = { new JsonStringEnumConverter() }
-    };
 
     private readonly GlyphBootstrap _bootstrap;
     private readonly IGlyphRepository _repository;
@@ -168,23 +160,6 @@ public class GlyphTraitHookService
 
     private GlyphGraph? DeserializeGraph(GlyphDefinition definition)
     {
-        try
-        {
-            GlyphGraph? graph = JsonSerializer.Deserialize<GlyphGraph>(definition.GraphJson, JsonOptions);
-            if (graph != null)
-            {
-                graph.Name = definition.Name;
-                graph.Description = definition.Description ?? string.Empty;
-                if (Enum.TryParse<GlyphEventType>(definition.EventType, out GlyphEventType et))
-                    graph.EventType = et;
-            }
-            return graph;
-        }
-        catch (JsonException ex)
-        {
-            Log.Error(ex, "Failed to deserialize Glyph graph JSON for definition '{Name}' ({Id}).",
-                definition.Name, definition.Id);
-            return null;
-        }
+        return GlyphGraphSerializer.Deserialize(definition);
     }
 }

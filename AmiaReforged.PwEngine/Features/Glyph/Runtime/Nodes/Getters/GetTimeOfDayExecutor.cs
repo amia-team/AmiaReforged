@@ -19,7 +19,7 @@ public class GetTimeOfDayExecutor : IGlyphNodeExecutor
         }));
     }
 
-    public static GlyphNodeDefinition CreateDefinition() => new()
+    public GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
         DisplayName = "Get Time of Day",

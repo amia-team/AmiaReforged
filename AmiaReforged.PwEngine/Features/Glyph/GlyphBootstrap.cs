@@ -33,101 +33,20 @@ public class GlyphBootstrap
     {
         Log.Info("Bootstrapping Glyph visual scripting system...");
 
-        // Register all built-in node definitions
-        RegisterDefinitions(registry);
-
-        // Create all built-in node executors
+        // Create all built-in node executors — single authoritative list
         List<IGlyphNodeExecutor> executors = CreateExecutors();
+
+        // Auto-register definitions from each executor (eliminates the old dual-list)
+        foreach (IGlyphNodeExecutor executor in executors)
+        {
+            registry.Register(executor.CreateDefinition());
+        }
 
         // Create the interpreter
         Interpreter = new GlyphInterpreter(registry, executors);
 
         Log.Info("Glyph bootstrap complete. {DefCount} definitions registered, {ExecCount} executors loaded.",
             registry.GetAll().Count, executors.Count);
-    }
-
-    private static void RegisterDefinitions(IGlyphNodeDefinitionRegistry registry)
-    {
-        // Event nodes
-        registry.Register(BeforeGroupSpawnEventExecutor.CreateDefinition());
-        registry.Register(AfterGroupSpawnEventExecutor.CreateDefinition());
-        registry.Register(OnCreatureDeathEventExecutor.CreateDefinition());
-        registry.Register(OnCreatureSpawnEventExecutor.CreateDefinition());
-        registry.Register(OnBossSpawnEventExecutor.CreateDefinition());
-        registry.Register(OnTraitGrantedEventExecutor.CreateDefinition());
-        registry.Register(OnTraitRemovedEventExecutor.CreateDefinition());
-
-        // Flow control
-        registry.Register(BranchExecutor.CreateDefinition());
-        registry.Register(ForEachExecutor.CreateDefinition());
-        registry.Register(SequenceExecutor.CreateDefinition());
-        registry.Register(DoNothingExecutor.CreateDefinition());
-
-        // Actions
-        registry.Register(ApplyEffectExecutor.CreateDefinition());
-        registry.Register(ModifySpawnCountExecutor.CreateDefinition());
-        registry.Register(CancelSpawnExecutor.CreateDefinition());
-        registry.Register(SendFloatingTextExecutor.CreateDefinition());
-        registry.Register(SetLocalVariableExecutor.CreateDefinition());
-        registry.Register(DespawnCreatureExecutor.CreateDefinition());
-        registry.Register(SkipBonusesExecutor.CreateDefinition());
-        registry.Register(SkipMutationsExecutor.CreateDefinition());
-        registry.Register(SetCreatureNameExecutor.CreateDefinition());
-        registry.Register(HealCreatureExecutor.CreateDefinition());
-        registry.Register(DamageCreatureExecutor.CreateDefinition());
-
-        // Constants
-        registry.Register(StringConstantExecutor.CreateDefinition());
-        registry.Register(IntConstantExecutor.CreateDefinition());
-        registry.Register(FloatConstantExecutor.CreateDefinition());
-        registry.Register(BoolConstantExecutor.CreateDefinition());
-
-        // Getters
-        registry.Register(GetCreatureHPExecutor.CreateDefinition());
-        registry.Register(GetPartySizeExecutor.CreateDefinition());
-        registry.Register(GetChaosStateExecutor.CreateDefinition());
-        registry.Register(GetTimeOfDayExecutor.CreateDefinition());
-        registry.Register(GetRandomIntExecutor.CreateDefinition());
-        registry.Register(GetAreaResRefExecutor.CreateDefinition());
-        registry.Register(GetRegionInfoExecutor.CreateDefinition());
-        registry.Register(GetCreatureLevelExecutor.CreateDefinition());
-        registry.Register(GetPartyMembersExecutor.CreateDefinition());
-        registry.Register(GetLocalVariableExecutor.CreateDefinition());
-        registry.Register(GetCreatureResRefExecutor.CreateDefinition());
-        registry.Register(GetCreatureNameExecutor.CreateDefinition());
-        registry.Register(GetCreatureACExecutor.CreateDefinition());
-        registry.Register(GetCreatureAbilityScoreExecutor.CreateDefinition());
-        registry.Register(GetCreatureRaceExecutor.CreateDefinition());
-        registry.Register(GetSpawnGroupInfoExecutor.CreateDefinition());
-        registry.Register(GetTriggeringPlayerExecutor.CreateDefinition());
-
-        // Math / Logic
-        registry.Register(CompareExecutor.CreateDefinition());
-        registry.Register(MathOpExecutor.CreateDefinition());
-        registry.Register(BooleanOpExecutor.CreateDefinition());
-        registry.Register(NotExecutor.CreateDefinition());
-
-        // Traits
-        registry.Register(HasTraitExecutor.CreateDefinition());
-        registry.Register(GetCreatureTraitsExecutor.CreateDefinition());
-
-        // Interaction pipeline stages
-        registry.Register(InteractionAttemptedStageExecutor.CreateDefinition());
-        registry.Register(InteractionStartedStageExecutor.CreateDefinition());
-        registry.Register(InteractionTickStageExecutor.CreateDefinition());
-        registry.Register(InteractionCompletedStageExecutor.CreateDefinition());
-        registry.Register(FailInteractionExecutor.CreateDefinition());
-        registry.Register(GetInteractionInfoExecutor.CreateDefinition());
-        registry.Register(SuppressEventExecutor.CreateDefinition());
-        registry.Register(SetProgressExecutor.CreateDefinition());
-        registry.Register(SetRequiredRoundsExecutor.CreateDefinition());
-        registry.Register(SetStatusExecutor.CreateDefinition());
-        registry.Register(SetMetadataExecutor.CreateDefinition());
-        registry.Register(GetMetadataExecutor.CreateDefinition());
-        registry.Register(SkillCheckExecutor.CreateDefinition());
-        registry.Register(PlayVfxExecutor.CreateDefinition());
-        registry.Register(SendMessageExecutor.CreateDefinition());
-        registry.Register(HasItemExecutor.CreateDefinition());
     }
 
     private static List<IGlyphNodeExecutor> CreateExecutors() =>

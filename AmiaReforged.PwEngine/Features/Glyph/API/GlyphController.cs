@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using AmiaReforged.PwEngine.Features.Glyph.Persistence;
 using AmiaReforged.PwEngine.Features.WorldEngine.API;
@@ -19,11 +18,7 @@ public class GlyphController
     internal static Integration.GlyphTraitHookService? TraitHooks;
     internal static Integration.GlyphInteractionHookService? InteractionHooks;
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        Converters = { new JsonStringEnumConverter() }
-    };
+    private static JsonSerializerOptions JsonOptions => GlyphJsonDefaults.Options;
 
     private const string BasePath = "/api/worldengine/glyphs";
 
@@ -458,12 +453,7 @@ public class GlyphController
                 new { InstanceId = node3, TypeId = "stage.interaction_tick", PositionX = 950.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
                 new { InstanceId = node4, TypeId = "stage.interaction_completed", PositionX = 1400.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() }
             },
-            Edges = new[]
-            {
-                new { SourceNodeId = node1, SourcePinId = "exec_out", TargetNodeId = node2, TargetPinId = "exec_in" },
-                new { SourceNodeId = node2, SourcePinId = "exec_out", TargetNodeId = node3, TargetPinId = "exec_in" },
-                new { SourceNodeId = node3, SourcePinId = "exec_out", TargetNodeId = node4, TargetPinId = "exec_in" },
-            },
+            Edges = Array.Empty<object>(),
             Variables = Array.Empty<object>()
         };
 

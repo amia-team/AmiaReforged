@@ -22,7 +22,7 @@ public class CancelSpawnExecutor : IGlyphNodeExecutor
         return Task.FromResult(GlyphNodeResult.Continue("exec_out"));
     }
 
-    public static GlyphNodeDefinition CreateDefinition() => new()
+    public GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
         DisplayName = "Cancel Spawn",

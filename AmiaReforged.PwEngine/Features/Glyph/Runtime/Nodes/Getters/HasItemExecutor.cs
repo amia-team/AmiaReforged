@@ -49,7 +49,7 @@ public class HasItemExecutor : IGlyphNodeExecutor
         });
     }
 
-    public static GlyphNodeDefinition CreateDefinition() => new()
+    public GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
         DisplayName = "Has Item",

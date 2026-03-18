@@ -22,7 +22,7 @@ public class FloatConstantExecutor : IGlyphNodeExecutor
         });
     }
 
-    public static GlyphNodeDefinition CreateDefinition() => new()
+    public GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
         DisplayName = "Float Constant",

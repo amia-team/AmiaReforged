@@ -31,4 +31,11 @@ public interface IGlyphNodeExecutor
         GlyphNodeInstance node,
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput);
+
+    /// <summary>
+    /// Creates the <see cref="GlyphNodeDefinition"/> that describes this executor's node type,
+    /// including its pins, category, and display information. Used by <see cref="GlyphBootstrap"/>
+    /// to register both the definition and executor from a single list.
+    /// </summary>
+    GlyphNodeDefinition CreateDefinition();
 }

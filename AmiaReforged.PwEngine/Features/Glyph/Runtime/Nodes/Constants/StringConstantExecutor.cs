@@ -22,7 +22,7 @@ public class StringConstantExecutor : IGlyphNodeExecutor
         });
     }
 
-    public static GlyphNodeDefinition CreateDefinition() => new()
+    public GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
         DisplayName = "String Constant",

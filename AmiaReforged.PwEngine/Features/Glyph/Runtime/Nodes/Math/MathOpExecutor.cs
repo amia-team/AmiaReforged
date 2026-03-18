@@ -38,7 +38,7 @@ public class MathOpExecutor : IGlyphNodeExecutor
         });
     }
 
-    public static GlyphNodeDefinition CreateDefinition() => new()
+    public GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
         DisplayName = "Math Op",

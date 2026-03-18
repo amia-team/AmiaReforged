@@ -1,5 +1,3 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using AmiaReforged.PwEngine.Features.Glyph.Persistence;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime;
@@ -14,12 +12,6 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Integration.Tests;
 [TestFixture]
 public class GlyphInteractionHookServiceTests
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        Converters = { new JsonStringEnumConverter() }
-    };
-
     private InMemoryGlyphRepository _repository = null!;
     private GlyphBootstrap _bootstrap = null!;
     private GlyphInteractionHookService _hookService = null!;
@@ -336,11 +328,11 @@ public class GlyphInteractionHookServiceTests
     }
 
     [Test]
-    public void Attempted_exec_chain_does_not_bleed_into_started_stage()
+    public void Attempted_stage_does_not_affect_started_stage()
     {
-        // Given: a pipeline graph where Started stage has a FailInteraction wired to its exec_out,
-        //        but exec chain auto-chains Attempted → Started. The interpreter should skip the
-        //        Started stage and NOT execute the fail node when running the Attempted stage.
+        // Given: a pipeline graph where Started stage has a FailInteraction wired to its exec_out.
+        // Since stages no longer have exec_in, there is no auto-chain from Attempted → Started.
+        // Running the Attempted stage should NOT execute anything in the Started stage's chain.
         GlyphNodeInstance attemptedNode = new()
         {
             TypeId = InteractionAttemptedStageExecutor.NodeTypeId,
@@ -371,18 +363,10 @@ public class GlyphInteractionHookServiceTests
         GlyphGraph graph = new()
         {
             EventType = GlyphEventType.InteractionPipeline,
-            Name = "Bleed Test Graph",
+            Name = "Isolation Test Graph",
             Nodes = [attemptedNode, startedNode, tickNode, completedNode, failNode],
             Edges =
             [
-                // Auto-chain: Attempted → Started
-                new GlyphEdge
-                {
-                    SourceNodeId = attemptedNode.InstanceId,
-                    SourcePinId = "exec_out",
-                    TargetNodeId = startedNode.InstanceId,
-                    TargetPinId = "exec_in"
-                },
                 // Started → FailInteraction (should only fire when Started is actually triggered)
                 new GlyphEdge
                 {
@@ -408,7 +392,7 @@ public class GlyphInteractionHookServiceTests
             metadata: null);
 
         // Then: the fail node on Started should NOT have fired
-        shouldBlock.Should().BeFalse("the exec chain should skip the Started pipeline stage");
+        shouldBlock.Should().BeFalse("the Attempted stage has no outgoing connections");
         message.Should().BeNull();
     }
 
@@ -547,30 +531,7 @@ public class GlyphInteractionHookServiceTests
             EventType = GlyphEventType.InteractionPipeline,
             Name = "Passthrough Pipeline",
             Nodes = [attempted, started, tick, completed],
-            Edges =
-            [
-                new GlyphEdge
-                {
-                    SourceNodeId = attempted.InstanceId,
-                    SourcePinId = "exec_out",
-                    TargetNodeId = started.InstanceId,
-                    TargetPinId = "exec_in"
-                },
-                new GlyphEdge
-                {
-                    SourceNodeId = started.InstanceId,
-                    SourcePinId = "exec_out",
-                    TargetNodeId = tick.InstanceId,
-                    TargetPinId = "exec_in"
-                },
-                new GlyphEdge
-                {
-                    SourceNodeId = tick.InstanceId,
-                    SourcePinId = "exec_out",
-                    TargetNodeId = completed.InstanceId,
-                    TargetPinId = "exec_in"
-                },
-            ]
+            Edges = [] // No inter-stage edges — stages are independent entry points
         };
     }
 
@@ -583,7 +544,7 @@ public class GlyphInteractionHookServiceTests
         int priority = 0,
         bool isActive = true)
     {
-        string graphJson = JsonSerializer.Serialize(graph, JsonOptions);
+        string graphJson = GlyphGraphSerializer.Serialize(graph);
         GlyphDefinition definition = new()
         {
             Id = Guid.NewGuid(),

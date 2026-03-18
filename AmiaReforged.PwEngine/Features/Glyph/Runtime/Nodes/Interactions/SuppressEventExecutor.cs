@@ -28,7 +28,7 @@ public class SuppressEventExecutor : IGlyphNodeExecutor
         return GlyphNodeResult.Continue("exec_out");
     }
 
-    public static GlyphNodeDefinition CreateDefinition() => new()
+    public GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
         DisplayName = "Suppress Stage",

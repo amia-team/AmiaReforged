@@ -23,7 +23,7 @@ public class DoNothingExecutor : IGlyphNodeExecutor
     /// <summary>
     /// Creates the node definition for registration in the registry.
     /// </summary>
-    public static GlyphNodeDefinition CreateDefinition() => new()
+    public GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
         DisplayName = "Do Nothing",

@@ -47,7 +47,7 @@ public class FailInteractionExecutor : IGlyphNodeExecutor
         return GlyphNodeResult.Done();
     }
 
-    public static GlyphNodeDefinition CreateDefinition() => new()
+    public GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
         DisplayName = "Fail Interaction",

@@ -165,19 +165,6 @@ public class GlyphInterpreter
                 continue;
             }
 
-            // Pipeline stage nodes are entry points triggered by the runtime — don't
-            // follow exec edges into them during chain traversal. The runtime will
-            // trigger each stage independently when its lifecycle event fires.
-            GlyphNodeDefinition? targetDef = _registry.Get(targetNode.TypeId);
-            if (targetDef?.Archetype == GlyphNodeArchetype.PipelineStage)
-            {
-                Trace(context, $"Skipping exec edge into pipeline stage '{targetNode.TypeId}' — stages are triggered independently.");
-                (Guid nodeId, string pinId)? resume = await TryResumeFromStack(stack, context);
-                if (resume == null) return;
-                (currentNodeId, currentPinId) = resume.Value;
-                continue;
-            }
-
             // Execute the target node
             GlyphNodeResult result = await ExecuteNode(targetNode, context);
 

@@ -24,7 +24,7 @@ public class GetTriggeringPlayerExecutor : IGlyphNodeExecutor
         }));
     }
 
-    public static GlyphNodeDefinition CreateDefinition() => new()
+    public GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
         DisplayName = "Get Triggering Player",

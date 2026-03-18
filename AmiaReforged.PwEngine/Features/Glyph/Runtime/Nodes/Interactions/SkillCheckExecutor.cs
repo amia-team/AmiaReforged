@@ -89,7 +89,7 @@ public class SkillCheckExecutor : IGlyphNodeExecutor
         _ => -1
     };
 
-    public static GlyphNodeDefinition CreateDefinition() => new()
+    public GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
         DisplayName = "Skill Check",

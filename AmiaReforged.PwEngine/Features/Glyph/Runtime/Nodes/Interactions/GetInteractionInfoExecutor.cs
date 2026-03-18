@@ -31,7 +31,7 @@ public class GetInteractionInfoExecutor : IGlyphNodeExecutor
         return Task.FromResult(GlyphNodeResult.Data(outputs));
     }
 
-    public static GlyphNodeDefinition CreateDefinition() => new()
+    public GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
         DisplayName = "Get Interaction Info",

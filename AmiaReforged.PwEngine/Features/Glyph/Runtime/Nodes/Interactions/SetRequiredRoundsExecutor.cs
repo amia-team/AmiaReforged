@@ -30,7 +30,7 @@ public class SetRequiredRoundsExecutor : IGlyphNodeExecutor
         return GlyphNodeResult.Continue("exec_out");
     }
 
-    public static GlyphNodeDefinition CreateDefinition() => new()
+    public GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
         DisplayName = "Set Required Rounds",

@@ -34,7 +34,7 @@ public class GetSpawnGroupInfoExecutor : IGlyphNodeExecutor
         }));
     }
 
-    public static GlyphNodeDefinition CreateDefinition() => new()
+    public GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
         DisplayName = "Get Spawn Group Info",

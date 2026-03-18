@@ -642,7 +642,7 @@ function onMouseUp(e) {
                     if (!tgtPin.AllowMultipleConnections) {
                         edges = edges.filter(e => !(e.tgtNodeId === tgtNodeId && e.tgtPinId === tgtPinId));
                     }
-                    if (!srcPin.AllowMultipleConnections && srcPin.DataType !== 'Exec') {
+                    if (!srcPin.AllowMultipleConnections) {
                         edges = edges.filter(e => !(e.srcNodeId === srcNodeId && e.srcPinId === srcPinId));
                     }
 

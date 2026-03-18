@@ -227,7 +227,7 @@ public class InteractionNodeExecutorTests
     [Test]
     public void Fail_executor_definition_is_restricted_to_InteractionPipeline()
     {
-        GlyphNodeDefinition def = FailInteractionExecutor.CreateDefinition();
+        GlyphNodeDefinition def = new FailInteractionExecutor().CreateDefinition();
         def.TypeId.Should().Be("interaction.fail");
         def.RestrictToEventType.Should().Be(GlyphEventType.InteractionPipeline);
         def.ScriptCategory.Should().Be(GlyphScriptCategory.Interaction);
@@ -236,41 +236,41 @@ public class InteractionNodeExecutorTests
     [Test]
     public void Stage_definitions_are_singleton_pipeline_stages()
     {
-        GlyphNodeDefinition attempted = InteractionAttemptedStageExecutor.CreateDefinition();
+        GlyphNodeDefinition attempted = new InteractionAttemptedStageExecutor().CreateDefinition();
         attempted.TypeId.Should().Be("stage.interaction_attempted");
         attempted.Archetype.Should().Be(GlyphNodeArchetype.PipelineStage);
         attempted.IsSingleton.Should().BeTrue();
         attempted.RestrictToEventType.Should().Be(GlyphEventType.InteractionPipeline);
-        attempted.InputPins.Should().HaveCount(5);
-        attempted.InputPins.Should().Contain(p => p.Id == "exec_in" && p.DataType == GlyphDataType.Exec);
+        attempted.InputPins.Should().HaveCount(4);
+        attempted.InputPins.Should().NotContain(p => p.Id == "exec_in", "stage nodes are entry points with no exec_in");
         attempted.InputPins.Should().Contain(p => p.Id == "character_id");
         attempted.InputPins.Should().Contain(p => p.Id == "creature");
         attempted.InputPins.Should().Contain(p => p.Id == "interaction_tag");
         attempted.InputPins.Should().Contain(p => p.Id == "target_id");
         attempted.OutputPins.Should().Contain(p => p.Id == "exec_out" && p.Name == "Then");
 
-        GlyphNodeDefinition started = InteractionStartedStageExecutor.CreateDefinition();
+        GlyphNodeDefinition started = new InteractionStartedStageExecutor().CreateDefinition();
         started.TypeId.Should().Be("stage.interaction_started");
         started.Archetype.Should().Be(GlyphNodeArchetype.PipelineStage);
         started.IsSingleton.Should().BeTrue();
-        started.InputPins.Should().HaveCount(5);
+        started.InputPins.Should().HaveCount(4);
         started.OutputPins.Should().Contain(p => p.Id == "exec_out" && p.Name == "Then");
 
-        GlyphNodeDefinition tick = InteractionTickStageExecutor.CreateDefinition();
+        GlyphNodeDefinition tick = new InteractionTickStageExecutor().CreateDefinition();
         tick.TypeId.Should().Be("stage.interaction_tick");
-        tick.InputPins.Should().HaveCount(5);
+        tick.InputPins.Should().HaveCount(4);
         tick.OutputPins.Should().Contain(p => p.Id == "exec_out" && p.Name == "Then");
 
-        GlyphNodeDefinition completed = InteractionCompletedStageExecutor.CreateDefinition();
+        GlyphNodeDefinition completed = new InteractionCompletedStageExecutor().CreateDefinition();
         completed.TypeId.Should().Be("stage.interaction_completed");
-        completed.InputPins.Should().HaveCount(5);
+        completed.InputPins.Should().HaveCount(4);
         completed.OutputPins.Should().Contain(p => p.Id == "exec_out" && p.Name == "Then");
     }
 
     [Test]
     public void GetInfo_executor_definition_has_correct_output_pins()
     {
-        GlyphNodeDefinition def = GetInteractionInfoExecutor.CreateDefinition();
+        GlyphNodeDefinition def = new GetInteractionInfoExecutor().CreateDefinition();
         def.TypeId.Should().Be("interaction.get_info");
         def.ScriptCategory.Should().Be(GlyphScriptCategory.Interaction);
         def.OutputPins.Should().Contain(p => p.Id == "tag");

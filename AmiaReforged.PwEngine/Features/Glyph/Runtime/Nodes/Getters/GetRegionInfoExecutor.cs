@@ -23,7 +23,7 @@ public class GetRegionInfoExecutor : IGlyphNodeExecutor
         }));
     }
 
-    public static GlyphNodeDefinition CreateDefinition() => new()
+    public GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
         DisplayName = "Get Region Info",
