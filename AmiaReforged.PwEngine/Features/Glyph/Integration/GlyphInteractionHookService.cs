@@ -35,6 +35,7 @@ public class GlyphInteractionHookService
     private readonly GlyphBootstrap _bootstrap;
     private readonly IGlyphRepository _repository;
     private readonly IInteractionSessionManager _sessionManager;
+    private readonly IGlyphWorldEngineApi _worldEngineApi;
 
     /// <summary>
     /// Cache of active pipeline bindings keyed by InteractionTag.
@@ -45,11 +46,13 @@ public class GlyphInteractionHookService
     public GlyphInteractionHookService(
         GlyphBootstrap bootstrap,
         IGlyphRepository repository,
-        IInteractionSessionManager sessionManager)
+        IInteractionSessionManager sessionManager,
+        IGlyphWorldEngineApi worldEngineApi)
     {
         _bootstrap = bootstrap;
         _repository = repository;
         _sessionManager = sessionManager;
+        _worldEngineApi = worldEngineApi;
 
         RefreshCacheAsync().GetAwaiter().GetResult();
         Log.Info("GlyphInteractionHookService initialized with {Count} cached interaction bindings.", _cache.Count);
@@ -391,7 +394,7 @@ public class GlyphInteractionHookService
         return result;
     }
 
-    private static GlyphExecutionContext CreateInteractionContext(
+    private GlyphExecutionContext CreateInteractionContext(
         GlyphGraph graph,
         string interactionTag,
         string characterId,
@@ -414,6 +417,7 @@ public class GlyphInteractionHookService
             InteractionProficiency = proficiency,
             InteractionMetadata = metadata,
             InteractionCreature = creatureObjectId,
+            WorldEngine = _worldEngineApi,
             MaxExecutionSteps = 10_000,
             EnableTracing = true,
             CancellationToken = cancellationToken

@@ -2,6 +2,7 @@ using AmiaReforged.PwEngine.Features.Glyph.Core;
 using AmiaReforged.PwEngine.Features.Glyph.Persistence;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.Events;
 using FluentAssertions;
@@ -570,7 +571,20 @@ public class GlyphInteractionHookServiceTests
 
     private void CreateHookService()
     {
-        _hookService = new GlyphInteractionHookService(_bootstrap, _repository, new InteractionSessionManager());
+        _hookService = new GlyphInteractionHookService(_bootstrap, _repository, new InteractionSessionManager(), new NullWorldEngineApi());
+    }
+
+    // ==================== Stub World Engine API ====================
+
+    private class NullWorldEngineApi : IGlyphWorldEngineApi
+    {
+        public List<IndustryMembershipInfo> GetIndustryMemberships(Guid characterId) => [];
+        public ProficiencyLevel? GetIndustryLevel(Guid characterId, string industryTag) => null;
+        public bool IsIndustryMember(Guid characterId, string industryTag) => false;
+        public List<string> GetLearnedKnowledgeTags(Guid characterId) => [];
+        public bool HasKnowledge(Guid characterId, string knowledgeTag) => false;
+        public bool HasUnlockedInteraction(Guid characterId, string interactionTag) => false;
+        public KnowledgeProgressionInfo GetKnowledgeProgression(Guid characterId) => new(0, 0, 0, 0);
     }
 
     // ==================== In-Memory Test Double ====================

@@ -215,6 +215,15 @@ public class GlyphExecutionContext
     /// </summary>
     public string? CurrentPipelineStage { get; set; }
 
+    // ==================== World Engine API ====================
+
+    /// <summary>
+    /// Read-only facade for querying World Engine industry and knowledge data.
+    /// Set by the hook service that creates the context. Null for non-interaction scripts
+    /// or in test environments where the facade is not provided.
+    /// </summary>
+    public IGlyphWorldEngineApi? WorldEngine { get; init; }
+
     // ==================== Variables & Cache ====================
 
     /// Mutable variable store for the current execution run.

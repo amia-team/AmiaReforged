@@ -130,6 +130,15 @@ public class GlyphBootstrap
         new SkillCheckExecutor(),
         new PlayVfxExecutor(),
         new SendMessageExecutor(),
-        new HasItemExecutor()
+        new HasItemExecutor(),
+
+        // Industries & Knowledge
+        new GetIndustryMembershipsExecutor(),
+        new GetIndustryLevelExecutor(),
+        new IsIndustryMemberExecutor(),
+        new HasKnowledgeExecutor(),
+        new HasUnlockedInteractionExecutor(),
+        new GetKnowledgeProgressionExecutor(),
+        new GetLearnedKnowledgeExecutor()
     ];
 }

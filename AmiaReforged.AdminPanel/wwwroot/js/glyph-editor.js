@@ -54,11 +54,18 @@ const STAGE_TYPE_IDS = [
     'stage.interaction_tick',
     'stage.interaction_completed',
 ];
+const STAGE_NODE_HEADER_HEIGHT = 44;
 const STAGE_LABELS = {
     'stage.interaction_attempted': '1. Attempted',
     'stage.interaction_started':   '2. Started',
     'stage.interaction_tick':      '3. Tick',
     'stage.interaction_completed': '4. Completed',
+};
+const STAGE_SUBTITLES = {
+    'stage.interaction_attempted': 'Entry point \u00b7 fires on attempt',
+    'stage.interaction_started':   'Entry point \u00b7 fires on start',
+    'stage.interaction_tick':      'Entry point \u00b7 fires each round (~6s)',
+    'stage.interaction_completed': 'Entry point \u00b7 fires on completion',
 };
 
 // ==================== State ====================
@@ -167,8 +174,10 @@ function createNodeInstance(def, x, y, existingId) {
         ...p, dir: 'output', index: i, nodeX: 0, nodeY: 0,
     }));
 
+    const isStage = def.TypeId && def.TypeId.startsWith('stage.');
+    const headerH = isStage ? STAGE_NODE_HEADER_HEIGHT : NODE_HEADER_HEIGHT;
     const pinCount = Math.max(inputPins.length, outputPins.length, 1);
-    const height = NODE_HEADER_HEIGHT + pinCount * PIN_SPACING + NODE_PADDING;
+    const height = headerH + pinCount * PIN_SPACING + NODE_PADDING;
 
     // Measure text widths for node sizing
     let maxTextWidth = NODE_MIN_WIDTH;
@@ -179,17 +188,17 @@ function createNodeInstance(def, x, y, existingId) {
             if (tw > maxTextWidth) maxTextWidth = tw;
         }
     }
-    const minW = (def.TypeId && def.TypeId.startsWith('stage.')) ? STAGE_NODE_MIN_WIDTH : NODE_MIN_WIDTH;
+    const minW = isStage ? STAGE_NODE_MIN_WIDTH : NODE_MIN_WIDTH;
     const width = Math.max(maxTextWidth, minW);
 
     // Calculate pin positions (relative to node top-left)
     for (const p of inputPins) {
         p.nodeX = 0;
-        p.nodeY = NODE_HEADER_HEIGHT + p.index * PIN_SPACING + PIN_SPACING / 2;
+        p.nodeY = headerH + p.index * PIN_SPACING + PIN_SPACING / 2;
     }
     for (const p of outputPins) {
         p.nodeX = width;
-        p.nodeY = NODE_HEADER_HEIGHT + p.index * PIN_SPACING + PIN_SPACING / 2;
+        p.nodeY = headerH + p.index * PIN_SPACING + PIN_SPACING / 2;
     }
 
     return {
@@ -276,7 +285,8 @@ function drawGrid(w, h) {
 
 function drawNode(node) {
     const isStage = isStageNode(node);
-    const color = isStage ? STAGE_NODE_COLOR : (COLOR_MAP[node.def.ColorClass?.toLowerCase()] || '#7f8c8d');
+    const colorKey = node.def.ColorClass?.replace('node-', '') || '';
+    const color = isStage ? STAGE_NODE_COLOR : (COLOR_MAP[colorKey] || '#7f8c8d');
     const isSelected = node.id === selectedNodeId;
 
     // Shadow
@@ -301,13 +311,14 @@ function drawNode(node) {
     ctx.shadowOffsetY = 0;
 
     // Header bar
+    const headerH = isStage ? STAGE_NODE_HEADER_HEIGHT : NODE_HEADER_HEIGHT;
     ctx.fillStyle = color;
     ctx.beginPath();
     ctx.moveTo(node.x + 6, node.y);
     ctx.lineTo(node.x + node.width - 6, node.y);
     ctx.arcTo(node.x + node.width, node.y, node.x + node.width, node.y + 6, 6);
-    ctx.lineTo(node.x + node.width, node.y + NODE_HEADER_HEIGHT);
-    ctx.lineTo(node.x, node.y + NODE_HEADER_HEIGHT);
+    ctx.lineTo(node.x + node.width, node.y + headerH);
+    ctx.lineTo(node.x, node.y + headerH);
     ctx.lineTo(node.x, node.y + 6);
     ctx.arcTo(node.x, node.y, node.x + 6, node.y, 6);
     ctx.closePath();
@@ -319,7 +330,15 @@ function drawNode(node) {
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'center';
     const headerLabel = STAGE_LABELS[node.typeId] || node.def.DisplayName;
-    ctx.fillText(headerLabel, node.x + node.width / 2, node.y + NODE_HEADER_HEIGHT / 2);
+    const headerTextY = isStage ? node.y + headerH / 2 - 6 : node.y + headerH / 2;
+    ctx.fillText(headerLabel, node.x + node.width / 2, headerTextY);
+
+    // Subtitle for stage nodes
+    if (isStage && STAGE_SUBTITLES[node.typeId]) {
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.font = 'italic 9px sans-serif';
+        ctx.fillText(STAGE_SUBTITLES[node.typeId], node.x + node.width / 2, node.y + headerH / 2 + 7);
+    }
 
     // Pins
     for (const pin of node.inputPins) {
@@ -448,27 +467,42 @@ function drawPipelineGuides() {
 
     if (stageNodes.length < 2) return;
 
+    // Calculate timeline Y — above the tallest stage node
+    const minY = Math.min(...stageNodes.map(n => n.y));
+    const timelineY = minY - 30;
+    const leftX = stageNodes[0].x + stageNodes[0].width / 2;
+    const rightX = stageNodes[stageNodes.length - 1].x + stageNodes[stageNodes.length - 1].width / 2;
+
     ctx.save();
+
+    // Dotted connecting line (non-directional)
     ctx.strokeStyle = '#445566';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([8, 6]);
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(leftX, timelineY);
+    ctx.lineTo(rightX, timelineY);
+    ctx.stroke();
+    ctx.setLineDash([]);
 
-    for (let i = 0; i < stageNodes.length - 1; i++) {
-        const a = stageNodes[i];
-        const b = stageNodes[i + 1];
-        const y = Math.min(a.y, b.y) - 20;
-        const x1 = a.x + a.width / 2;
-        const x2 = b.x + b.width / 2;
-
+    // Stage marker circles
+    for (const node of stageNodes) {
+        const cx = node.x + node.width / 2;
         ctx.beginPath();
-        ctx.moveTo(x1, y);
-        ctx.lineTo(x2, y);
-        // Arrow head
-        ctx.moveTo(x2 - 8, y - 5);
-        ctx.lineTo(x2, y);
-        ctx.lineTo(x2 - 8, y + 5);
+        ctx.arc(cx, timelineY, 5, 0, Math.PI * 2);
+        ctx.fillStyle = STAGE_NODE_COLOR;
+        ctx.strokeStyle = '#667788';
+        ctx.lineWidth = 1.5;
+        ctx.fill();
         ctx.stroke();
     }
+
+    // "Pipeline Stages" label
+    ctx.fillStyle = '#667788';
+    ctx.font = 'italic 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Pipeline Stages (independent entry points)', (leftX + rightX) / 2, timelineY - 10);
 
     ctx.restore();
 }
