@@ -81,9 +81,15 @@
             <div class="we-editor__list-panel">
                 <div class="we-editor__list-header">
                     <span>@GetEntityLabel(EditorState.ActiveEntityType.Value)</span>
-                    <button class="btn btn-sm btn-link" @onclick="() => _listPanelOpen = false" title="Close">
-                        <span class="bi bi-x"></span>
-                    </button>
+                    <div style="display:flex;align-items:center;gap:4px">
+                        @if (EditorState.ActiveEntityType == WorldEngineEntityType.Interactions && EditorState.SelectedEndpointId != null)
+                        {
+                            <button class="btn btn-sm btn-primary" @onclick="OpenNewInteractionEditor" title="Create new interaction">+ New</button>
+                        }
+                        <button class="btn btn-sm btn-link" @onclick="() => _listPanelOpen = false" title="Close">
+                            <span class="bi bi-x"></span>
+                        </button>
+                    </div>
                 </div>
 
                 @if (EditorState.SelectedEndpointId == null)
@@ -2569,6 +2575,53 @@
     //  Interaction Editor — Lifecycle
     // ═══════════════════════════════════════════════════════════════════
 
+    private async Task OpenNewInteractionEditor()
+    {
+        if (_interactionEditorOpen) await CloseInteractionEditor();
+
+        _interactionEditorOpen = true;
+        _interactionEditorLoading = true;
+        _interactionEditorError = null;
+        _ieError = null;
+        _ieSuccess = null;
+        _ieIsCreating = true;
+        _ieEditItem = new InteractionDefinitionDto
+        {
+            TargetMode = "Trigger",
+            BaseRounds = 4,
+            MinRounds = 2,
+            ProficiencyReducesRounds = true,
+            RequiresIndustryMembership = true,
+            RequiredIndustryTags = [],
+            AllowedAreaResRefs = [],
+            RequiredKnowledgeTags = [],
+        };
+        IeResetScriptState();
+        StateHasChanged();
+
+        try
+        {
+            // Load available industries for the form
+            PagedResult<IndustryDefinitionDto> indResult = await IndustryApi.GetAllAsync(null, 1, 200);
+            _ieAvailableIndustries = indResult.Items;
+
+            StateHasChanged();
+            await Task.Delay(50); // Let DOM render GL host + panel divs
+
+            await IeInitLayout();
+
+            _interactionEditorLoading = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to open new interaction editor");
+            _interactionEditorError = $"Failed to load: {ex.Message}";
+            _interactionEditorLoading = false;
+            StateHasChanged();
+        }
+    }
+
     private async Task OpenInteractionEditor(string interactionTag)
     {
         if (_interactionEditorOpen) await CloseInteractionEditor();
@@ -3062,6 +3115,13 @@
             await IeSaveEventScripts(_ieEditItem.Tag);
 
             _ieSuccess = $"Interaction '{_ieEditItem.Name}' saved.";
+
+            // After creating, switch to edit mode and refresh the list
+            if (_ieIsCreating)
+            {
+                _ieIsCreating = false;
+                await LoadEntityList(reset: true);
+            }
         }
         catch (Exception ex)
         {

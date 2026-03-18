@@ -85,6 +85,7 @@ public class RuntimeCharacter(
     /// <inheritdoc />
     public bool HasUnlockedInteraction(string interactionTag)
     {
+
         _unlockedInteractionCache ??= AllKnowledge()
             .SelectMany(k => k.Effects)
             .Where(e => e.EffectType == KnowledgeEffectType.UnlockInteraction)

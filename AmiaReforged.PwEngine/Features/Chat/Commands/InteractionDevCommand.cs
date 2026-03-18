@@ -90,7 +90,6 @@ public class InteractionDevCommand : IChatCommand
         NwCreature? creature = caller.LoginCreature;
         if (creature is null)
         {
-            caller.SendServerMessage("You must be logged in with a character.", ColorConstants.Red);
             return;
         }
 
@@ -104,7 +103,6 @@ public class InteractionDevCommand : IChatCommand
         Guid targetId = creature.UUID;
         string? areaResRef = creature.Area?.ResRef;
 
-        // ── Trace: pre-tick state ──
         Trace(caller, $"═══ Interaction Trace: '{tag}' ═══");
         Trace(caller, $"Character: {creature.Name} ({characterId.Value})");
         Trace(caller, $"Target: {targetId}");
