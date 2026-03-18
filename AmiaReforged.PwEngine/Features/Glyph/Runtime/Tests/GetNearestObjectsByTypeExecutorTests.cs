@@ -43,16 +43,19 @@ public class GetNearestObjectsByTypeExecutorTests
     }
 
     [Test]
-    public void Definition_has_origin_and_max_count_input_pins()
+    public void Definition_has_origin_max_count_and_tag_input_pins()
     {
         GlyphNodeDefinition def = _executor.CreateDefinition();
-        def.InputPins.Should().HaveCount(2);
+        def.InputPins.Should().HaveCount(3);
 
         def.InputPins.Should().Contain(p =>
             p.Id == "origin" && p.DataType == GlyphDataType.NwObject && p.Direction == GlyphPinDirection.Input);
 
         def.InputPins.Should().Contain(p =>
             p.Id == "max_count" && p.DataType == GlyphDataType.Int && p.Direction == GlyphPinDirection.Input && p.DefaultValue == "10");
+
+        def.InputPins.Should().Contain(p =>
+            p.Id == "tag" && p.DataType == GlyphDataType.String && p.Direction == GlyphPinDirection.Input && p.DefaultValue == "");
     }
 
     [Test]

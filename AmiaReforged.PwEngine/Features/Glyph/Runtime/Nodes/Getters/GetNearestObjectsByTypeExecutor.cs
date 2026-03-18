@@ -27,16 +27,16 @@ public class GetNearestObjectsByTypeExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        // Resolve origin object
         object? originVal = await resolveInput("origin");
         uint originId = Convert.ToUInt32(originVal ?? 0);
 
-        // Resolve max count (optional — falls back to property override or default of 10)
         object? maxCountVal = await resolveInput("max_count");
         int maxCount = Convert.ToInt32(maxCountVal ?? 10);
         if (maxCount <= 0) maxCount = 10;
 
-        // Resolve type from property override (not a connected pin)
+        object? tagVal = await resolveInput("tag");
+        string tag = tagVal?.ToString() ?? string.Empty;
+
         string objectType = node.PropertyOverrides.TryGetValue("type", out string? typeOverride)
             ? typeOverride
             : "Creature";
@@ -44,24 +44,16 @@ public class GetNearestObjectsByTypeExecutor : IGlyphNodeExecutor
         // Guard: NWN uses 0x7F000000 as OBJECT_INVALID; treat 0 the same way.
         if (originId == 0 || originId == 0x7F000000)
         {
-            return GlyphNodeResult.Data(new Dictionary<string, object?>
-            {
-                ["objects"] = new List<uint>(),
-                ["count"] = 0
-            });
+            return EmptyResult();
         }
 
         NwGameObject? origin = originId.ToNwObject<NwGameObject>();
         if (origin == null)
         {
-            return GlyphNodeResult.Data(new Dictionary<string, object?>
-            {
-                ["objects"] = new List<uint>(),
-                ["count"] = 0
-            });
+            return EmptyResult();
         }
 
-        List<uint> objectIds = CollectNearbyObjects(origin, objectType, maxCount);
+        List<uint> objectIds = CollectNearbyObjects(origin, objectType, maxCount, tag);
 
         return GlyphNodeResult.Data(new Dictionary<string, object?>
         {
@@ -70,29 +62,42 @@ public class GetNearestObjectsByTypeExecutor : IGlyphNodeExecutor
         });
     }
 
+    private static GlyphNodeResult EmptyResult() => GlyphNodeResult.Data(new Dictionary<string, object?>
+    {
+        ["objects"] = new List<uint>(),
+        ["count"] = 0
+    });
+
     /// <summary>
     /// Dispatches to the appropriate generic <c>GetNearestObjectsByType&lt;T&gt;</c> call
-    /// based on the type name string.
+    /// based on the type name string, optionally filtering by tag.
     /// </summary>
-    internal static List<uint> CollectNearbyObjects(NwGameObject origin, string objectType, int maxCount)
+    internal static List<uint> CollectNearbyObjects(NwGameObject origin, string objectType, int maxCount, string tag)
     {
         return objectType switch
         {
-            "Creature" => Collect<NwCreature>(origin, maxCount),
-            "Placeable" => Collect<NwPlaceable>(origin, maxCount),
-            "Door" => Collect<NwDoor>(origin, maxCount),
-            "Trigger" => Collect<NwTrigger>(origin, maxCount),
-            "AreaOfEffect" => Collect<NwAreaOfEffect>(origin, maxCount),
-            "Waypoint" => Collect<NwWaypoint>(origin, maxCount),
-            "Store" => Collect<NwStore>(origin, maxCount),
-            "Item" => Collect<NwItem>(origin, maxCount),
+            "Creature" => Collect<NwCreature>(origin, maxCount, tag),
+            "Placeable" => Collect<NwPlaceable>(origin, maxCount, tag),
+            "Door" => Collect<NwDoor>(origin, maxCount, tag),
+            "Trigger" => Collect<NwTrigger>(origin, maxCount, tag),
+            "AreaOfEffect" => Collect<NwAreaOfEffect>(origin, maxCount, tag),
+            "Waypoint" => Collect<NwWaypoint>(origin, maxCount, tag),
+            "Store" => Collect<NwStore>(origin, maxCount, tag),
+            "Item" => Collect<NwItem>(origin, maxCount, tag),
             _ => []
         };
     }
 
-    private static List<uint> Collect<T>(NwGameObject origin, int maxCount) where T : NwGameObject
+    private static List<uint> Collect<T>(NwGameObject origin, int maxCount, string tag) where T : NwGameObject
     {
-        return origin.GetNearestObjectsByType<T>()
+        IEnumerable<T> query = origin.GetNearestObjectsByType<T>();
+
+        if (!string.IsNullOrEmpty(tag))
+        {
+            query = query.Where(obj => string.Equals(obj.Tag, tag, StringComparison.OrdinalIgnoreCase));
+        }
+
+        return query
             .Take(maxCount)
             .Select(obj => obj.ObjectId)
             .ToList();
@@ -103,7 +108,8 @@ public class GetNearestObjectsByTypeExecutor : IGlyphNodeExecutor
         TypeId = NodeTypeId,
         DisplayName = "Get Nearest Objects By Type",
         Category = "Getters",
-        Description = "Returns nearby game objects of a specified type, ordered by distance from the origin.",
+        Description = "Returns nearby game objects of a specified type, ordered by distance from the origin. " +
+                      "Optionally filter by tag (leave empty for no tag filter).",
         ColorClass = "node-getter",
         Archetype = GlyphNodeArchetype.PureFunction,
         Properties =
@@ -127,6 +133,11 @@ public class GetNearestObjectsByTypeExecutor : IGlyphNodeExecutor
             {
                 Id = "max_count", Name = "Max Count", DataType = GlyphDataType.Int,
                 Direction = GlyphPinDirection.Input, DefaultValue = "10"
+            },
+            new GlyphPin
+            {
+                Id = "tag", Name = "Tag", DataType = GlyphDataType.String,
+                Direction = GlyphPinDirection.Input, DefaultValue = ""
             }
         ],
         OutputPins =

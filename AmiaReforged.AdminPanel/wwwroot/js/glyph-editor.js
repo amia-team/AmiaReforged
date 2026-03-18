@@ -46,6 +46,9 @@ const DATA_TYPE_COLORS = {
     List:     '#e91e63',
 };
 
+// Types that can implicitly convert to String when connecting to a String input pin
+const STRING_CONVERTIBLE_TYPES = new Set(['Int', 'Float', 'Bool', 'NwObject']);
+
 const STAGE_NODE_COLOR = '#0088aa';
 const STAGE_NODE_MIN_WIDTH = 240;
 const STAGE_TYPE_IDS = [
@@ -460,21 +463,36 @@ function drawEdge(edge) {
     // Special styling for loop-body exec wires
     const isLoopBody = srcPin.DataType === 'Exec' && srcPin.Id === 'loop_body';
 
+    // Detect implicit conversion (different data types on an allowed connection)
+    const isImplicitConversion = srcPin.DataType !== tgtPin.DataType;
+
     drawWire(
         srcNode.x + srcPin.nodeX, srcNode.y + srcPin.nodeY,
         tgtNode.x + tgtPin.nodeX, tgtNode.y + tgtPin.nodeY,
         srcPin.DataType || 'Exec',
         isLoopBody ? LOOP_BODY_WIRE_COLOR : null,
-        isLoopBody ? 2.5 : null
+        isLoopBody ? 2.5 : null,
+        isImplicitConversion ? tgtPin.DataType : null
     );
 }
 
-function drawWire(x1, y1, x2, y2, dataType, colorOverride, widthOverride) {
-    const color = colorOverride || DATA_TYPE_COLORS[dataType] || '#aaaaaa';
+function drawWire(x1, y1, x2, y2, dataType, colorOverride, widthOverride, endDataType) {
+    const startColor = colorOverride || DATA_TYPE_COLORS[dataType] || '#aaaaaa';
     const dx = Math.abs(x2 - x1) * 0.5;
 
-    ctx.strokeStyle = color;
     ctx.lineWidth = widthOverride || 2;
+
+    // If there's a different end type (implicit conversion), draw a gradient wire
+    if (endDataType && endDataType !== dataType && !colorOverride) {
+        const endColor = DATA_TYPE_COLORS[endDataType] || '#aaaaaa';
+        const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
+        gradient.addColorStop(0, startColor);
+        gradient.addColorStop(1, endColor);
+        ctx.strokeStyle = gradient;
+    } else {
+        ctx.strokeStyle = startColor;
+    }
+
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.bezierCurveTo(x1 + dx, y1, x2 - dx, y2, x2, y2);
@@ -717,7 +735,12 @@ function onMouseUp(e) {
                 const srcPin = srcNode?.outputPins.find(p => p.Id === srcPinId);
                 const tgtPin = tgtNode?.inputPins.find(p => p.Id === tgtPinId);
 
-                if (srcPin && tgtPin && srcPin.DataType === tgtPin.DataType) {
+                const typesMatch = srcPin && tgtPin && (
+                    srcPin.DataType === tgtPin.DataType ||
+                    (tgtPin.DataType === 'String' && STRING_CONVERTIBLE_TYPES.has(srcPin.DataType)) ||
+                    (srcPin.DataType === 'String' && STRING_CONVERTIBLE_TYPES.has(tgtPin.DataType))
+                );
+                if (typesMatch) {
                     // Remove existing connection to target pin if not multi-connect
                     if (!tgtPin.AllowMultipleConnections) {
                         edges = edges.filter(e => !(e.tgtNodeId === tgtNodeId && e.tgtPinId === tgtPinId));

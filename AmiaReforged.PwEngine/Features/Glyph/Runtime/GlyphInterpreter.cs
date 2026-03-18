@@ -378,8 +378,20 @@ public class GlyphInterpreter
         // Execute the source node to get its output values
         GlyphNodeResult sourceResult = await ExecuteNode(sourceNode, context);
 
-        // Return the specific output pin value
-        return sourceResult.OutputValues.GetValueOrDefault(edge.SourcePinId);
+        object? resolvedValue = sourceResult.OutputValues.GetValueOrDefault(edge.SourcePinId);
+
+        // Implicit conversion: when the target pin is String but the source value is not,
+        // auto-convert to string. This enables connecting Int/Float/Bool/NwObject → String pins.
+        GlyphNodeDefinition? targetDef = _registry.Get(node.TypeId);
+        GlyphPin? targetPin = targetDef?.InputPins.FirstOrDefault(p => p.Id == inputPinId);
+        if (targetPin?.DataType == GlyphDataType.String && resolvedValue is not null and not string)
+        {
+            string converted = resolvedValue.ToString() ?? string.Empty;
+            Trace(context, $"  Implicit conversion to String: {FormatValue(resolvedValue)} → \"{converted}\"");
+            return converted;
+        }
+
+        return resolvedValue;
     }
 
     /// <summary>
