@@ -103,6 +103,7 @@ public class GlyphBootstrap
         new GetCreatureRaceExecutor(),
         new GetSpawnGroupInfoExecutor(),
         new GetTriggeringPlayerExecutor(),
+        new GetNearestObjectsByTypeExecutor(),
 
         // Math / Logic
         new CompareExecutor(),

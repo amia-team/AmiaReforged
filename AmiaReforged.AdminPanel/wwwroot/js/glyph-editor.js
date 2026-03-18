@@ -68,6 +68,9 @@ const STAGE_SUBTITLES = {
     'stage.interaction_completed': 'Entry point \u00b7 fires on completion',
 };
 
+const LOOP_BODY_WIRE_COLOR = '#00bcd4'; // Cyan for loop-body exec wires
+const LOOP_NODE_TYPE_IDS = ['flow.for_each']; // Node types that get a loop badge
+
 // ==================== State ====================
 
 let canvas, ctx;
@@ -340,6 +343,17 @@ function drawNode(node) {
         ctx.fillText(STAGE_SUBTITLES[node.typeId], node.x + node.width / 2, node.y + headerH / 2 + 7);
     }
 
+    // Loop badge for ForEach / loop nodes
+    if (LOOP_NODE_TYPE_IDS.includes(node.typeId)) {
+        const badgeX = node.x + node.width - 20;
+        const badgeY = node.y + headerH / 2;
+        ctx.fillStyle = LOOP_BODY_WIRE_COLOR;
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('\u27F3', badgeX, badgeY);
+    }
+
     // Pins
     for (const pin of node.inputPins) {
         drawPin(node.x + pin.nodeX, node.y + pin.nodeY, pin, 'input', node);
@@ -416,19 +430,24 @@ function drawEdge(edge) {
     const tgtPin = tgtNode.inputPins.find(p => p.Id === edge.tgtPinId);
     if (!srcPin || !tgtPin) return;
 
+    // Special styling for loop-body exec wires
+    const isLoopBody = srcPin.DataType === 'Exec' && srcPin.Id === 'loop_body';
+
     drawWire(
         srcNode.x + srcPin.nodeX, srcNode.y + srcPin.nodeY,
         tgtNode.x + tgtPin.nodeX, tgtNode.y + tgtPin.nodeY,
-        srcPin.DataType || 'Exec'
+        srcPin.DataType || 'Exec',
+        isLoopBody ? LOOP_BODY_WIRE_COLOR : null,
+        isLoopBody ? 2.5 : null
     );
 }
 
-function drawWire(x1, y1, x2, y2, dataType) {
-    const color = DATA_TYPE_COLORS[dataType] || '#aaaaaa';
+function drawWire(x1, y1, x2, y2, dataType, colorOverride, widthOverride) {
+    const color = colorOverride || DATA_TYPE_COLORS[dataType] || '#aaaaaa';
     const dx = Math.abs(x2 - x1) * 0.5;
 
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = widthOverride || 2;
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.bezierCurveTo(x1 + dx, y1, x2 - dx, y2, x2, y2);
