@@ -1,6 +1,7 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using AmiaReforged.PwEngine.Features.Glyph.Integration;
 using AmiaReforged.PwEngine.Features.Glyph.Persistence;
+using AmiaReforged.PwEngine.Features.WorldEngine.API.Controllers;
 using Anvil.Services;
 using NLog;
 
@@ -28,6 +29,10 @@ public class GlyphApiBootstrap
         GlyphController.EncounterHooks = encounterHooks;
         GlyphController.TraitHooks = traitHooks;
         GlyphController.InteractionHooks = interactionHooks;
+
+        // Also wire the interaction controller so it can invalidate the glyph cache
+        // when interaction definitions are created, updated, or deleted.
+        InteractionController.InteractionHooks = interactionHooks;
 
         Log.Info("Glyph API bootstrap complete — controller wired to services.");
     }

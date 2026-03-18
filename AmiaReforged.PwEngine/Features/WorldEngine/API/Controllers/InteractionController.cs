@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using AmiaReforged.PwEngine.Database;
+using AmiaReforged.PwEngine.Features.Glyph.Integration;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.Persistence;
 using Anvil;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,12 @@ public class InteractionController
     };
 
     private const string BasePath = "/api/worldengine/interactions";
+
+    /// <summary>
+    /// Set by <see cref="Glyph.API.GlyphApiBootstrap"/> to allow cache invalidation
+    /// after interaction definition mutations.
+    /// </summary>
+    internal static GlyphInteractionHookService? InteractionHooks;
 
     // ═══════════════════════════════════════════════════════════════════
     //  CRUD Endpoints
@@ -121,6 +128,9 @@ public class InteractionController
         context.InteractionDefinitions.Add(entity);
         await context.SaveChangesAsync();
 
+        // Refresh glyph interaction cache so scripts see the new definition immediately
+        if (InteractionHooks != null) await InteractionHooks.RefreshCacheAsync();
+
         return new ApiResult(201, ToDto(entity));
     }
 
@@ -170,6 +180,9 @@ public class InteractionController
 
         await context.SaveChangesAsync();
 
+        // Refresh glyph interaction cache so scripts pick up the updated definition immediately
+        if (InteractionHooks != null) await InteractionHooks.RefreshCacheAsync();
+
         return new ApiResult(200, ToDto(existing));
     }
 
@@ -193,6 +206,9 @@ public class InteractionController
 
         context.InteractionDefinitions.Remove(existing);
         await context.SaveChangesAsync();
+
+        // Refresh glyph interaction cache to remove any references to the deleted definition
+        if (InteractionHooks != null) await InteractionHooks.RefreshCacheAsync();
 
         return new ApiResult(204, new { message = "Deleted" });
     }
@@ -294,6 +310,9 @@ public class InteractionController
         }
 
         await context.SaveChangesAsync();
+
+        // Refresh glyph interaction cache for any imported/updated definitions
+        if (InteractionHooks != null) await InteractionHooks.RefreshCacheAsync();
 
         return new ApiResult(200, new
         {
