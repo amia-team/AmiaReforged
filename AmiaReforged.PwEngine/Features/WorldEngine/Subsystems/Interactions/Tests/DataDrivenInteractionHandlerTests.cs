@@ -115,6 +115,7 @@ public class DataDrivenInteractionHandlerTests
         int minRounds = 1,
         bool proficiencyReducesRounds = false,
         bool requiresIndustryMembership = false,
+        List<string>? requiredKnowledgeTags = null,
         List<InteractionResponse>? responses = null)
     {
         responses ??=
@@ -137,6 +138,7 @@ public class DataDrivenInteractionHandlerTests
             MinRounds = minRounds,
             ProficiencyReducesRounds = proficiencyReducesRounds,
             RequiresIndustryMembership = requiresIndustryMembership,
+            RequiredKnowledgeTags = requiredKnowledgeTags ?? [],
             Responses = responses
         };
     }
@@ -146,9 +148,9 @@ public class DataDrivenInteractionHandlerTests
     #region Knowledge Gate
 
     [Test]
-    public async Task Character_without_unlock_knowledge_cannot_start_data_driven_interaction()
+    public async Task Interaction_with_no_required_knowledge_tags_succeeds_without_any_knowledge()
     {
-        // Given a definition exists but the character has NOT unlocked the interaction
+        // Given a definition with no RequiredKnowledgeTags (empty = no knowledge gate)
         _definitionRepository.Create(CreateDefinition());
         CreateCharacter();
 
@@ -156,17 +158,49 @@ public class DataDrivenInteractionHandlerTests
         CommandResult result = await _handler.HandleAsync(
             new PerformInteractionCommand(_characterId, InteractionTag, Guid.NewGuid()));
 
-        // Then it should fail with a knowledge-related message
-        result.Success.Should().BeFalse();
-        result.ErrorMessage.Should().Contain("haven't learned");
+        // Then it should succeed — no knowledge prerequisite
+        result.Success.Should().BeTrue();
     }
 
     [Test]
-    public async Task Character_with_unlock_knowledge_can_start_data_driven_interaction()
+    public async Task Character_missing_required_knowledge_tag_cannot_start_interaction()
     {
-        // Given a definition exists and the character HAS unlocked the interaction
-        _definitionRepository.Create(CreateDefinition());
-        UnlockInteractionForCharacter(InteractionTag);
+        // Given a definition that requires a specific knowledge tag
+        _definitionRepository.Create(CreateDefinition(
+            requiredKnowledgeTags: ["novice_prospecting"]));
+        CreateCharacter(); // character has no knowledge
+
+        // When attempting the interaction
+        CommandResult result = await _handler.HandleAsync(
+            new PerformInteractionCommand(_characterId, InteractionTag, Guid.NewGuid()));
+
+        // Then it should fail with a missing-knowledge message
+        result.Success.Should().BeFalse();
+        result.ErrorMessage.Should().Contain("missing required knowledge");
+    }
+
+    [Test]
+    public async Task Character_with_required_knowledge_tag_can_start_interaction()
+    {
+        // Given a definition that requires a specific knowledge tag
+        _definitionRepository.Create(CreateDefinition(
+            requiredKnowledgeTags: ["novice_prospecting"]));
+
+        // And the character has that knowledge
+        _knowledgeRepository.Add(new CharacterKnowledge
+        {
+            Id = Guid.NewGuid(),
+            IndustryTag = "test_industry",
+            CharacterId = _characterId.Value,
+            Definition = new Knowledge
+            {
+                Tag = "novice_prospecting",
+                Name = "Novice Prospecting",
+                Description = "Test",
+                Level = ProficiencyLevel.Novice,
+                Effects = []
+            }
+        });
         CreateCharacter();
 
         // When performing the interaction
@@ -180,8 +214,12 @@ public class DataDrivenInteractionHandlerTests
     [Test]
     public async Task Knowledge_gate_is_case_insensitive()
     {
-        // Given a definition with lowercase tag but knowledge with uppercase TargetTag
-        _definitionRepository.Create(CreateDefinition(tag: "surveying"));
+        // Given a definition requiring a lowercase knowledge tag
+        _definitionRepository.Create(CreateDefinition(
+            tag: "surveying",
+            requiredKnowledgeTags: ["novice_surveying"]));
+
+        // And the character has knowledge with a DIFFERENT case tag
         _knowledgeRepository.Add(new CharacterKnowledge
         {
             Id = Guid.NewGuid(),
@@ -189,18 +227,11 @@ public class DataDrivenInteractionHandlerTests
             CharacterId = _characterId.Value,
             Definition = new Knowledge
             {
-                Tag = "knowledge_upper",
+                Tag = "NOVICE_SURVEYING", // Different case
                 Name = "Upper Case Test",
                 Description = "Test",
                 Level = ProficiencyLevel.Novice,
-                Effects =
-                [
-                    new KnowledgeEffect
-                    {
-                        EffectType = KnowledgeEffectType.UnlockInteraction,
-                        TargetTag = "SURVEYING" // Different case
-                    }
-                ]
+                Effects = []
             }
         });
         CreateCharacter();

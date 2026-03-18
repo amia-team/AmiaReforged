@@ -37,15 +37,14 @@ internal sealed class DataDrivenInteractionAdapter : IInteractionHandler
     /// <inheritdoc />
     public PreconditionResult CanStart(ICharacter character, InteractionContext context)
     {
-        // Knowledge gate — two mutually exclusive modes:
-        //  1. Explicit RequiredKnowledgeTags: character must possess each listed tag.
-        //  2. Implicit UnlockInteraction effects: character's knowledge must contain a
-        //     KnowledgeEffectType.UnlockInteraction effect targeting this interaction tag.
-        // When the definition specifies explicit tags, those ARE the knowledge gate and the
-        // implicit effect-based check is skipped.
+        // Knowledge gate — only applies when the definition explicitly lists required tags.
+        // If RequiredKnowledgeTags is empty, there is no knowledge prerequisite for this
+        // data-driven interaction.
         if (_definition.RequiredKnowledgeTags.Count > 0)
         {
-            var knownTags = character.AllKnowledge().Select(k => k.Tag).ToHashSet();
+            var knownTags = character.AllKnowledge()
+                .Select(k => k.Tag)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
             List<string> missing = _definition.RequiredKnowledgeTags
                 .Where(t => !knownTags.Contains(t))
                 .ToList();
@@ -53,15 +52,6 @@ internal sealed class DataDrivenInteractionAdapter : IInteractionHandler
             {
                 return PreconditionResult.Fail(
                     $"You are missing required knowledge: {string.Join(", ", missing)}");
-            }
-        }
-        else
-        {
-            // No explicit tags — fall back to the implicit UnlockInteraction effect gate
-            if (!character.HasUnlockedInteraction(_definition.Tag))
-            {
-                return PreconditionResult.Fail(
-                    $"You haven't learned the knowledge required for {_definition.Name}");
             }
         }
 
