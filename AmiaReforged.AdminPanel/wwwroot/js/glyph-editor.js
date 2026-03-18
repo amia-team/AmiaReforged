@@ -871,6 +871,10 @@ function getSelectedNodeData() {
 function notifySelectionChanged() {
     if (blazorRef) {
         const data = getSelectedNodeData();
+        console.log('[GlyphEditor] Selection data:', JSON.stringify(data, null, 2));
+        if (data && data.properties) {
+            console.log('[GlyphEditor] Properties count:', data.properties.length, data.properties);
+        }
         blazorRef.invokeMethodAsync('OnNodeSelectionChanged', JSON.stringify(data));
     }
 }

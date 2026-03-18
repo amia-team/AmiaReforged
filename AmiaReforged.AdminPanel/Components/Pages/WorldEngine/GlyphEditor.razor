@@ -3,6 +3,7 @@
 @using AmiaReforged.AdminPanel.Models
 @using AmiaReforged.AdminPanel.Services
 @using System.Text.Json
+@using System.Text.Json.Serialization
 @attribute [Authorize]
 @inject GlyphApiService Api
 @inject EncounterApiService EncounterApi
@@ -926,9 +927,53 @@
                 {
                     PropertyNameCaseInsensitive = true
                 });
+
+                // Diagnostic: log what was deserialized
+                if (_selectedNodeInfo != null)
+                {
+                    Logger.LogInformation(
+                        "[GlyphEditor] Deserialized node {NodeId}: InputPins={PinCount}, Properties={PropCount}",
+                        _selectedNodeInfo.NodeId,
+                        _selectedNodeInfo.InputPins?.Count ?? -1,
+                        _selectedNodeInfo.Properties?.Count ?? -1);
+
+                    // Fallback: if Properties is empty, try manual extraction from the raw JSON
+                    if ((_selectedNodeInfo.Properties?.Count ?? 0) == 0)
+                    {
+                        using JsonDocument doc = JsonDocument.Parse(json);
+                        if (doc.RootElement.TryGetProperty("properties", out JsonElement propsElem)
+                            && propsElem.ValueKind == JsonValueKind.Array
+                            && propsElem.GetArrayLength() > 0)
+                        {
+                            Logger.LogWarning(
+                                "[GlyphEditor] Properties array has {Count} elements in JSON but deserialized as 0. Attempting manual parse.",
+                                propsElem.GetArrayLength());
+
+                            List<SelectedPropertyInfo> manualProps = [];
+                            foreach (JsonElement propElem in propsElem.EnumerateArray())
+                            {
+                                manualProps.Add(new SelectedPropertyInfo
+                                {
+                                    Id = propElem.GetProperty("id").GetString() ?? "",
+                                    DisplayName = propElem.GetProperty("displayName").GetString() ?? "",
+                                    DefaultValue = propElem.GetProperty("defaultValue").GetString() ?? "",
+                                    AllowedValues = propElem.TryGetProperty("allowedValues", out JsonElement av)
+                                        ? av.EnumerateArray().Select(v => v.GetString() ?? "").ToList()
+                                        : [],
+                                    CurrentValue = propElem.TryGetProperty("currentValue", out JsonElement cv)
+                                        ? cv.GetString() ?? ""
+                                        : "",
+                                });
+                            }
+                            _selectedNodeInfo.Properties = manualProps;
+                            Logger.LogWarning("[GlyphEditor] Manual parse recovered {Count} properties.", manualProps.Count);
+                        }
+                    }
+                }
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.LogError(ex, "[GlyphEditor] Failed to deserialize node selection JSON: {Json}", json);
                 _selectedNodeInfo = null;
             }
         }
@@ -989,29 +1034,45 @@
 
     private class SelectedNodeInfo
     {
+        [JsonPropertyName("nodeId")]
         public string NodeId { get; set; } = "";
+        [JsonPropertyName("typeId")]
         public string TypeId { get; set; } = "";
+        [JsonPropertyName("displayName")]
         public string DisplayName { get; set; } = "";
+        [JsonPropertyName("inputPins")]
         public List<SelectedPinInfo> InputPins { get; set; } = [];
+        [JsonPropertyName("properties")]
         public List<SelectedPropertyInfo> Properties { get; set; } = [];
     }
 
     private class SelectedPinInfo
     {
+        [JsonPropertyName("id")]
         public string Id { get; set; } = "";
+        [JsonPropertyName("name")]
         public string Name { get; set; } = "";
+        [JsonPropertyName("dataType")]
         public string DataType { get; set; } = "";
+        [JsonPropertyName("defaultValue")]
         public string? DefaultValue { get; set; }
+        [JsonPropertyName("overrideValue")]
         public string? OverrideValue { get; set; }
+        [JsonPropertyName("isConnected")]
         public bool IsConnected { get; set; }
     }
 
     private class SelectedPropertyInfo
     {
+        [JsonPropertyName("id")]
         public string Id { get; set; } = "";
+        [JsonPropertyName("displayName")]
         public string DisplayName { get; set; } = "";
+        [JsonPropertyName("defaultValue")]
         public string DefaultValue { get; set; } = "";
+        [JsonPropertyName("allowedValues")]
         public List<string> AllowedValues { get; set; } = [];
+        [JsonPropertyName("currentValue")]
         public string CurrentValue { get; set; } = "";
     }
 
