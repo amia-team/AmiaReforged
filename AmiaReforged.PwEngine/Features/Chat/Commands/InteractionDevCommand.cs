@@ -134,7 +134,8 @@ public class InteractionDevCommand : IChatCommand
     private async Task RunSingleTick(NwPlayer caller, CharacterId characterId, string tag,
         Guid targetId, string? areaResRef)
     {
-        Trace(caller, "─── Tick ───");
+        InteractionInfo? pre = _interactions.GetActiveInteraction(characterId);
+        Trace(caller, pre == null ? "─── Attempt ───" : "─── Tick ───");
 
         CommandResult result = await _interactions.PerformInteractionAsync(
             characterId, tag, targetId, areaResRef);
@@ -147,13 +148,14 @@ public class InteractionDevCommand : IChatCommand
     {
         Trace(caller, "Mode: auto (running all rounds to completion)");
 
-        int tick = 0;
+        int step = 0;
         const int maxTicks = 100; // safety limit
 
-        while (tick < maxTicks)
+        while (step < maxTicks)
         {
-            tick++;
-            Trace(caller, $"─── Tick {tick} ───");
+            step++;
+            InteractionInfo? pre = _interactions.GetActiveInteraction(characterId);
+            Trace(caller, pre == null ? "─── Attempt ───" : $"─── Tick {step} ───");
 
             CommandResult result = await _interactions.PerformInteractionAsync(
                 characterId, tag, targetId, areaResRef);
@@ -162,7 +164,7 @@ public class InteractionDevCommand : IChatCommand
 
             if (!result.Success)
             {
-                Trace(caller, $"Interaction stopped (failure on tick {tick}).");
+                Trace(caller, $"Interaction stopped (failure on step {step}).");
                 break;
             }
 
@@ -172,12 +174,12 @@ public class InteractionDevCommand : IChatCommand
 
             if (status is "Completed" or "Failed")
             {
-                Trace(caller, $"Interaction finished on tick {tick}.");
+                Trace(caller, $"Interaction finished on step {step}.");
                 break;
             }
         }
 
-        if (tick >= maxTicks)
+        if (step >= maxTicks)
         {
             Trace(caller, "Safety limit reached — aborting auto-run.", ColorConstants.Orange);
         }

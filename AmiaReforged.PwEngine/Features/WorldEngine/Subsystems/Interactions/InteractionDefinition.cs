@@ -16,9 +16,11 @@ public class InteractionDefinition
 {
     /// <summary>
     /// Unique tag identifying this interaction type (e.g. <c>"prospecting"</c>, <c>"surveying"</c>).
-    /// Acts as the primary key and must match the tag used in
-    /// <see cref="Industries.KnowledgeSubsystem.KnowledgeEffect"/> with
-    /// <see cref="Industries.KnowledgeSubsystem.KnowledgeEffectType.UnlockInteraction"/>.
+    /// Acts as the primary key. When <see cref="RequiredKnowledgeTags"/> is empty, the character
+    /// must possess a <see cref="Industries.KnowledgeSubsystem.KnowledgeEffect"/> of type
+    /// <see cref="Industries.KnowledgeSubsystem.KnowledgeEffectType.UnlockInteraction"/> targeting
+    /// this tag. When <see cref="RequiredKnowledgeTags"/> is non-empty, those explicit tags
+    /// serve as the knowledge gate instead.
     /// </summary>
     public required string Tag { get; init; }
 
@@ -62,8 +64,11 @@ public class InteractionDefinition
     public List<string> AllowedAreaResRefs { get; init; } = [];
 
     /// <summary>
-    /// Knowledge tags (beyond the implicit <c>UnlockInteraction</c> gate) that the character
-    /// must have unlocked before starting this interaction.
+    /// Knowledge tags that the character must have before starting this interaction.
+    /// When non-empty, these tags replace the implicit <c>UnlockInteraction</c> effect gate,
+    /// providing a simpler prerequisite model. When empty, the system falls back to
+    /// requiring a <c>KnowledgeEffectType.UnlockInteraction</c> effect targeting this
+    /// interaction's <see cref="Tag"/>.
     /// </summary>
     public List<string> RequiredKnowledgeTags { get; init; } = [];
 

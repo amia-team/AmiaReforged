@@ -37,12 +37,32 @@ internal sealed class DataDrivenInteractionAdapter : IInteractionHandler
     /// <inheritdoc />
     public PreconditionResult CanStart(ICharacter character, InteractionContext context)
     {
-        // Knowledge unlock gate — character must have learned knowledge
-        // with KnowledgeEffectType.UnlockInteraction targeting this tag
-        if (!character.HasUnlockedInteraction(_definition.Tag))
+        // Knowledge gate — two mutually exclusive modes:
+        //  1. Explicit RequiredKnowledgeTags: character must possess each listed tag.
+        //  2. Implicit UnlockInteraction effects: character's knowledge must contain a
+        //     KnowledgeEffectType.UnlockInteraction effect targeting this interaction tag.
+        // When the definition specifies explicit tags, those ARE the knowledge gate and the
+        // implicit effect-based check is skipped.
+        if (_definition.RequiredKnowledgeTags.Count > 0)
         {
-            return PreconditionResult.Fail(
-                $"You haven't learned the knowledge required for {_definition.Name}");
+            var knownTags = character.AllKnowledge().Select(k => k.Tag).ToHashSet();
+            List<string> missing = _definition.RequiredKnowledgeTags
+                .Where(t => !knownTags.Contains(t))
+                .ToList();
+            if (missing.Count > 0)
+            {
+                return PreconditionResult.Fail(
+                    $"You are missing required knowledge: {string.Join(", ", missing)}");
+            }
+        }
+        else
+        {
+            // No explicit tags — fall back to the implicit UnlockInteraction effect gate
+            if (!character.HasUnlockedInteraction(_definition.Tag))
+            {
+                return PreconditionResult.Fail(
+                    $"You haven't learned the knowledge required for {_definition.Name}");
+            }
         }
 
         // Optional industry membership check
@@ -74,20 +94,6 @@ internal sealed class DataDrivenInteractionAdapter : IInteractionHandler
                 !_definition.AllowedAreaResRefs.Contains(context.AreaResRef))
             {
                 return PreconditionResult.Fail("This interaction cannot be performed in this area");
-            }
-        }
-
-        // Required knowledge tags check
-        if (_definition.RequiredKnowledgeTags.Count > 0)
-        {
-            var knownTags = character.AllKnowledge().Select(k => k.Tag).ToHashSet();
-            List<string> missing = _definition.RequiredKnowledgeTags
-                .Where(t => !knownTags.Contains(t))
-                .ToList();
-            if (missing.Count > 0)
-            {
-                return PreconditionResult.Fail(
-                    $"You are missing required knowledge: {string.Join(", ", missing)}");
             }
         }
 
