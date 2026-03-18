@@ -506,7 +506,34 @@
                                 <h6 style="margin:0 0 4px 0;font-size:0.85rem;color:var(--text-primary)">@_ieSelectedNodeInfo.DisplayName</h6>
                                 <small style="color:var(--text-secondary);font-size:0.7rem;display:block;margin-bottom:8px">@_ieSelectedNodeInfo.TypeId</small>
 
-                                @if (IeGetEditablePins().Count == 0)
+                                @* -- Node Properties (dropdowns / free-text from definition) -- *@
+                                @foreach (IeSelectedPropertyInfo prop in IeGetNodeProperties())
+                                {
+                                    <div style="margin-bottom:6px">
+                                        <label style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:2px;display:block">@prop.DisplayName</label>
+                                        @if (prop.AllowedValues is { Count: > 0 })
+                                        {
+                                            <select class="form-control form-control-sm" style="font-size:0.78rem"
+                                                    value="@prop.CurrentValue"
+                                                    @onchange="e => IeOnNodePropertyChanged(prop, e.Value?.ToString() ?? string.Empty)">
+                                                @foreach (string opt in prop.AllowedValues)
+                                                {
+                                                    <option value="@opt" selected="@(opt == prop.CurrentValue)">@opt</option>
+                                                }
+                                            </select>
+                                        }
+                                        else
+                                        {
+                                            <input class="form-control form-control-sm" style="font-size:0.78rem"
+                                                   type="text"
+                                                   value="@prop.CurrentValue"
+                                                   @onchange="e => IeOnNodePropertyChanged(prop, e.Value?.ToString() ?? string.Empty)" />
+                                        }
+                                    </div>
+                                }
+
+                                @* -- Pin Overrides (unconnected input pins) -- *@
+                                @if (IeGetEditablePins().Count == 0 && IeGetNodeProperties().Count == 0)
                                 {
                                     <p style="color:var(--text-secondary);font-size:0.78rem;margin:0">No editable properties.</p>
                                 }
@@ -1150,6 +1177,7 @@
         public string TypeId { get; set; } = "";
         public string DisplayName { get; set; } = "";
         public List<IeSelectedPinInfo> InputPins { get; set; } = [];
+        public List<IeSelectedPropertyInfo> Properties { get; set; } = [];
     }
 
     private sealed class IeSelectedPinInfo
@@ -1160,6 +1188,15 @@
         public string? DefaultValue { get; set; }
         public string? OverrideValue { get; set; }
         public bool IsConnected { get; set; }
+    }
+
+    private sealed class IeSelectedPropertyInfo
+    {
+        public string Id { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+        public string DefaultValue { get; set; } = "";
+        public List<string> AllowedValues { get; set; } = [];
+        public string CurrentValue { get; set; } = "";
     }
 
     protected override async Task OnInitializedAsync()
@@ -2997,6 +3034,17 @@
         catch (Exception ex) { Logger.LogWarning(ex, "Failed to set IE script property override"); }
     }
 
+    private async Task IeOnNodePropertyChanged(IeSelectedPropertyInfo prop, string value)
+    {
+        if (_ieScriptEditorModule == null || _ieSelectedNodeInfo == null) return;
+        try
+        {
+            await _ieScriptEditorModule.InvokeVoidAsync("setPropertyOverride", _ieSelectedNodeInfo.NodeId, prop.Id, value);
+            prop.CurrentValue = value;
+        }
+        catch (Exception ex) { Logger.LogWarning(ex, "Failed to set IE script node property"); }
+    }
+
     private async Task IeFitAll()
     {
         if (_ieScriptEditorModule == null) return;
@@ -3024,6 +3072,11 @@
     private List<IeSelectedPinInfo> IeGetEditablePins()
     {
         return _ieSelectedNodeInfo?.InputPins?.Where(p => !p.IsConnected).ToList() ?? [];
+    }
+
+    private List<IeSelectedPropertyInfo> IeGetNodeProperties()
+    {
+        return _ieSelectedNodeInfo?.Properties ?? [];
     }
 
     private static string IeGetScriptPinValue(IeSelectedPinInfo pin) => pin.OverrideValue ?? pin.DefaultValue ?? "";

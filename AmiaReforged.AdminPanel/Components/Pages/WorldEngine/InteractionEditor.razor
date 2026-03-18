@@ -341,7 +341,34 @@
                 <h6 style="margin:0 0 4px 0;font-size:0.85rem;color:var(--text-primary)">@_scriptSelectedNodeInfo.DisplayName</h6>
                 <small style="color:var(--text-secondary);font-size:0.7rem;display:block;margin-bottom:8px">@_scriptSelectedNodeInfo.TypeId</small>
 
-                @if (GetEditablePins().Count == 0)
+                @* -- Node Properties (dropdowns / free-text from definition) -- *@
+                @foreach (SelectedPropertyInfo prop in GetNodeProperties())
+                {
+                    <div style="margin-bottom:6px">
+                        <label style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:2px;display:block">@prop.DisplayName</label>
+                        @if (prop.AllowedValues is { Count: > 0 })
+                        {
+                            <select class="form-control form-control-sm" style="font-size:0.78rem"
+                                    value="@prop.CurrentValue"
+                                    @onchange="e => OnNodePropertyChanged(prop, ExtractStringValue(e))">
+                                @foreach (string opt in prop.AllowedValues)
+                                {
+                                    <option value="@opt" selected="@(opt == prop.CurrentValue)">@opt</option>
+                                }
+                            </select>
+                        }
+                        else
+                        {
+                            <input class="form-control form-control-sm" style="font-size:0.78rem"
+                                   type="text"
+                                   value="@prop.CurrentValue"
+                                   @onchange="e => OnNodePropertyChanged(prop, ExtractStringValue(e))" />
+                        }
+                    </div>
+                }
+
+                @* -- Pin Overrides (unconnected input pins) -- *@
+                @if (GetEditablePins().Count == 0 && GetNodeProperties().Count == 0)
                 {
                     <p style="color:var(--text-secondary);font-size:0.78rem;margin:0">No editable properties.</p>
                 }
@@ -924,6 +951,17 @@
         catch (Exception ex) { Logger.LogWarning(ex, "Failed to set script property override"); }
     }
 
+    private async Task OnNodePropertyChanged(SelectedPropertyInfo prop, string value)
+    {
+        if (_scriptEditorModule == null || _scriptSelectedNodeInfo == null) return;
+        try
+        {
+            await _scriptEditorModule.InvokeVoidAsync("setPropertyOverride", _scriptSelectedNodeInfo.NodeId, prop.Id, value);
+            prop.CurrentValue = value;
+        }
+        catch (Exception ex) { Logger.LogWarning(ex, "Failed to set script node property"); }
+    }
+
     private async Task FitAll()
     {
         if (_scriptEditorModule == null) return;
@@ -1123,6 +1161,7 @@
         public string TypeId { get; set; } = "";
         public string DisplayName { get; set; } = "";
         public List<SelectedPinInfo> InputPins { get; set; } = [];
+        public List<SelectedPropertyInfo> Properties { get; set; } = [];
     }
 
     private class SelectedPinInfo
@@ -1135,9 +1174,23 @@
         public bool IsConnected { get; set; }
     }
 
+    private class SelectedPropertyInfo
+    {
+        public string Id { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+        public string DefaultValue { get; set; } = "";
+        public List<string> AllowedValues { get; set; } = [];
+        public string CurrentValue { get; set; } = "";
+    }
+
     private List<SelectedPinInfo> GetEditablePins()
     {
         return _scriptSelectedNodeInfo?.InputPins?.Where(p => !p.IsConnected).ToList() ?? [];
+    }
+
+    private List<SelectedPropertyInfo> GetNodeProperties()
+    {
+        return _scriptSelectedNodeInfo?.Properties ?? [];
     }
 
     // ═══════════════════════════════════════════════════════════════════
