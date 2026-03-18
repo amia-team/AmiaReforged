@@ -695,7 +695,9 @@ function onMouseUp(e) {
                     if (!tgtPin.AllowMultipleConnections) {
                         edges = edges.filter(e => !(e.tgtNodeId === tgtNodeId && e.tgtPinId === tgtPinId));
                     }
-                    if (!srcPin.AllowMultipleConnections) {
+                    // Data output pins always allow fan-out (one source → many targets).
+                    // Only Exec outputs are restricted to a single outgoing connection.
+                    if (srcPin.DataType === 'Exec' && !srcPin.AllowMultipleConnections) {
                         edges = edges.filter(e => !(e.srcNodeId === srcNodeId && e.srcPinId === srcPinId));
                     }
 
