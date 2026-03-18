@@ -1282,7 +1282,8 @@
                                                     @foreach (GlyphNodeCatalogEntryDto node in category)
                                                     {
                                                         <div style="padding:5px 12px;border-bottom:1px solid var(--border-color);cursor:pointer;font-size:0.85rem"
-                                                             class="glyph-node-entry"
+                                                             class="glyph-node-entry" draggable="true"
+                                                             ondragstart="event.dataTransfer.setData('application/glyph-node', '@node.TypeId')"
                                                              @onclick="() => AddScriptNode(node)" title="@node.Description">
                                                             <span class="badge me-1" style="background:@GetNodeColor(node.ColorClass);font-size:0.7rem">@node.ColorClass</span>
                                                             <span style="color:var(--text-primary)">@node.DisplayName</span>

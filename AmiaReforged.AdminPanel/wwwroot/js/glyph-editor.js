@@ -987,7 +987,39 @@ function resizeCanvas() {
 
 let resizeObserver = null;
 
-// ==================== Public API ====================
+// ==================== Drag & Drop from Palette ====================
+
+function onDragOver(e) {
+    if (e.dataTransfer.types.includes('application/glyph-node')) {
+        e.preventDefault(); // Allow the drop
+        e.dataTransfer.dropEffect = 'copy';
+    }
+}
+
+function onDrop(e) {
+    e.preventDefault();
+    const typeId = e.dataTransfer.getData('application/glyph-node');
+    if (!typeId) return;
+
+    const def = catalog.find(d => d.TypeId === typeId);
+    if (!def) return;
+
+    // Singleton check
+    if (def.IsSingleton && nodes.some(n => n.typeId === def.TypeId)) return;
+
+    // Convert drop position (relative to canvas) to world coordinates
+    const rect = canvas.getBoundingClientRect();
+    const sx = e.clientX - rect.left;
+    const sy = e.clientY - rect.top;
+    const wp = screenToWorld(sx, sy);
+
+    const node = createNodeInstance(def, wp.x, wp.y);
+    nodes.push(node);
+    selectedNodeId = node.id;
+    notifySelectionChanged();
+}
+
+// ==================== Public API ==
 
 export function initGlyphEditor(containerId, catalogJson, graphJson, dotNetRef) {
     blazorRef = dotNetRef || null;
@@ -1035,6 +1067,10 @@ export function initGlyphEditor(containerId, catalogJson, graphJson, dotNetRef) 
     canvas.addEventListener('wheel', onWheel, { passive: false });
     canvas.addEventListener('keydown', onKeyDown);
     canvas.addEventListener('contextmenu', onContextMenu);
+
+    // Drag-and-drop from palette
+    canvas.addEventListener('dragover', onDragOver);
+    canvas.addEventListener('drop', onDrop);
 
     // Resize observer
     resizeObserver = new ResizeObserver(() => resizeCanvas());
@@ -1146,6 +1182,8 @@ export function destroy() {
         canvas.removeEventListener('wheel', onWheel);
         canvas.removeEventListener('keydown', onKeyDown);
         canvas.removeEventListener('contextmenu', onContextMenu);
+        canvas.removeEventListener('dragover', onDragOver);
+        canvas.removeEventListener('drop', onDrop);
     }
 
     if (resizeObserver) {

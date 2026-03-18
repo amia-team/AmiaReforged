@@ -109,6 +109,7 @@
                                 @foreach (GlyphNodeCatalogEntryDto node in category)
                                 {
                                     <div class="px-3 py-2 glyph-node-entry" style="border-bottom:1px solid var(--border-color);cursor:pointer"
+                                         draggable="true" ondragstart="event.dataTransfer.setData('application/glyph-node', '@node.TypeId')"
                                          @onclick="() => AddNodeToGraph(node)" title="@node.Description">
                                         <span class="badge me-1" style="background:@GetNodeColor(node.ColorClass)">@node.ColorClass</span>
                                         <span style="color:var(--text-primary)">@node.DisplayName</span>
