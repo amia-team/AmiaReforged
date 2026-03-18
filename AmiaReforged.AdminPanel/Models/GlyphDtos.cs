@@ -38,7 +38,17 @@ public record GlyphNodeCatalogEntryDto(
     string? RestrictToEventType,
     string? ScriptCategory,
     List<GlyphPinDto> InputPins,
-    List<GlyphPinDto> OutputPins);
+    List<GlyphPinDto> OutputPins,
+    List<GlyphPropertyDefinitionDto> Properties);
+
+/// <summary>
+/// A configurable property on a Glyph node (dropdown or free-text, shown in the property panel).
+/// </summary>
+public record GlyphPropertyDefinitionDto(
+    string Id,
+    string DisplayName,
+    string DefaultValue,
+    List<string> AllowedValues);
 
 /// <summary>
 /// A pin on a Glyph node definition.

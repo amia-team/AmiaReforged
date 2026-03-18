@@ -132,8 +132,35 @@
                                 <small class="d-block" style="color:var(--text-secondary)">@_selectedNodeInfo.DisplayName</small>
                             </div>
                             <div class="card-body p-2">
+                                @* Node Properties (dropdowns / free-text from definition) *@
+                                @{ List<SelectedPropertyInfo> nodeProperties = _selectedNodeInfo.Properties ?? []; }
+                                @foreach (SelectedPropertyInfo prop in nodeProperties)
+                                {
+                                    <div class="mb-2">
+                                        <label class="form-label mb-0" style="font-size:0.8rem;color:var(--text-secondary)">@prop.DisplayName</label>
+                                        @if (prop.AllowedValues is { Count: > 0 })
+                                        {
+                                            <select class="form-select form-select-sm"
+                                                    value="@prop.CurrentValue"
+                                                    @onchange="@(e => OnNodePropertyChanged(prop, e.Value?.ToString() ?? string.Empty))">
+                                                @foreach (string opt in prop.AllowedValues)
+                                                {
+                                                    <option value="@opt" selected="@(opt == prop.CurrentValue)">@opt</option>
+                                                }
+                                            </select>
+                                        }
+                                        else
+                                        {
+                                            <input type="text" class="form-control form-control-sm"
+                                                   value="@prop.CurrentValue"
+                                                   @onchange="@(e => OnNodePropertyChanged(prop, e.Value?.ToString() ?? string.Empty))" />
+                                        }
+                                    </div>
+                                }
+
+                                @* Pin Overrides (unconnected input pins) *@
                                 @{ List<SelectedPinInfo> editablePins = _selectedNodeInfo.InputPins?.Where(p => !p.IsConnected).ToList() ?? []; }
-                                @if (editablePins.Count == 0)
+                                @if (editablePins.Count == 0 && nodeProperties.Count == 0)
                                 {
                                     <p class="mb-0" style="color:var(--text-secondary);font-size:0.85rem">No editable properties. Connect or add data input pins.</p>
                                 }
@@ -930,6 +957,21 @@
         }
     }
 
+    private async Task OnNodePropertyChanged(SelectedPropertyInfo prop, string value)
+    {
+        if (_editorModule == null || _selectedNodeInfo == null) return;
+
+        try
+        {
+            await _editorModule.InvokeVoidAsync("setPropertyOverride", _selectedNodeInfo.NodeId, prop.Id, value);
+            prop.CurrentValue = value;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to set node property");
+        }
+    }
+
     private static List<string> GetEventTypesForCategory(string category)
     {
         return category switch
@@ -951,6 +993,7 @@
         public string TypeId { get; set; } = "";
         public string DisplayName { get; set; } = "";
         public List<SelectedPinInfo> InputPins { get; set; } = [];
+        public List<SelectedPropertyInfo> Properties { get; set; } = [];
     }
 
     private class SelectedPinInfo
@@ -961,6 +1004,15 @@
         public string? DefaultValue { get; set; }
         public string? OverrideValue { get; set; }
         public bool IsConnected { get; set; }
+    }
+
+    private class SelectedPropertyInfo
+    {
+        public string Id { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+        public string DefaultValue { get; set; } = "";
+        public List<string> AllowedValues { get; set; } = [];
+        public string CurrentValue { get; set; } = "";
     }
 
     // ==================== Bindings Management ====================

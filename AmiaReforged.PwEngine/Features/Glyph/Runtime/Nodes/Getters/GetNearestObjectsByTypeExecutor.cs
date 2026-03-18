@@ -103,11 +103,19 @@ public class GetNearestObjectsByTypeExecutor : IGlyphNodeExecutor
         TypeId = NodeTypeId,
         DisplayName = "Get Nearest Objects By Type",
         Category = "Getters",
-        Description = "Returns nearby game objects of a specified type, ordered by distance from the origin. " +
-                      "Set the 'type' property to one of: Creature, Placeable, Door, Trigger, " +
-                      "AreaOfEffect, Waypoint, Store, Item.",
+        Description = "Returns nearby game objects of a specified type, ordered by distance from the origin.",
         ColorClass = "node-getter",
         Archetype = GlyphNodeArchetype.PureFunction,
+        Properties =
+        [
+            new GlyphPropertyDefinition
+            {
+                Id = "type",
+                DisplayName = "Object Type",
+                DefaultValue = "Creature",
+                AllowedValues = ["Creature", "Placeable", "Door", "Trigger", "AreaOfEffect", "Waypoint", "Store", "Item"]
+            }
+        ],
         InputPins =
         [
             new GlyphPin

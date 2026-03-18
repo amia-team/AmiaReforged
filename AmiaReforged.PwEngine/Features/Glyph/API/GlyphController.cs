@@ -483,11 +483,15 @@ public class GlyphController
         d.TypeId, d.DisplayName, d.Category, d.Description, d.ColorClass,
         d.IsSingleton, d.RestrictToEventType?.ToString(), d.ScriptCategory?.ToString(),
         d.InputPins.Select(PinToDto).ToList(),
-        d.OutputPins.Select(PinToDto).ToList());
+        d.OutputPins.Select(PinToDto).ToList(),
+        d.Properties.Select(PropertyToDto).ToList());
 
     private static GlyphPinDto PinToDto(GlyphPin p) => new(
         p.Id, p.Name, p.DataType.ToString(), p.Direction.ToString(),
         p.DefaultValue, p.AllowMultipleConnections);
+
+    private static GlyphPropertyDefinitionDto PropertyToDto(GlyphPropertyDefinition p) => new(
+        p.Id, p.DisplayName, p.DefaultValue, p.AllowedValues);
 
     // ==================== DTOs ====================
 
@@ -511,11 +515,15 @@ public class GlyphController
     public record GlyphNodeCatalogEntryDto(
         string TypeId, string DisplayName, string Category, string Description,
         string ColorClass, bool IsSingleton, string? RestrictToEventType, string? ScriptCategory,
-        List<GlyphPinDto> InputPins, List<GlyphPinDto> OutputPins);
+        List<GlyphPinDto> InputPins, List<GlyphPinDto> OutputPins,
+        List<GlyphPropertyDefinitionDto> Properties);
 
     public record GlyphPinDto(
         string Id, string Name, string DataType, string Direction,
         string? DefaultValue, bool AllowMultipleConnections);
+
+    public record GlyphPropertyDefinitionDto(
+        string Id, string DisplayName, string DefaultValue, List<string> AllowedValues);
 
     public record CreateGlyphRequest(
         string Name, string EventType, string Category = "Encounter",

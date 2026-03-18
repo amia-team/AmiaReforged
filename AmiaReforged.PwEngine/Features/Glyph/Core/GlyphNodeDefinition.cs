@@ -44,6 +44,13 @@ public class GlyphNodeDefinition
     public List<GlyphPin> OutputPins { get; init; } = [];
 
     /// <summary>
+    /// Configurable properties shown in the editor property panel. Unlike pins, properties
+    /// are not connected to other nodes — they are static configuration values stored in
+    /// <see cref="GlyphNodeInstance.PropertyOverrides"/>.
+    /// </summary>
+    public List<GlyphPropertyDefinition> Properties { get; init; } = [];
+
+    /// <summary>
     /// When true, only one instance of this node can exist per graph (e.g., event entry points).
     /// </summary>
     public bool IsSingleton { get; init; }

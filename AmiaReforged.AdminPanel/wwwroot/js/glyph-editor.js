@@ -148,7 +148,8 @@ function loadGraphJson(json) {
             if (!def) continue;
             const nodeInst = createNodeInstance(def, n.PositionX, n.PositionY, n.InstanceId);
             if (n.PropertyOverrides) {
-                nodeInst.propertyOverrides = { ...n.PropertyOverrides };
+                // Merge saved overrides on top of definition defaults
+                nodeInst.propertyOverrides = { ...nodeInst.propertyOverrides, ...n.PropertyOverrides };
             }
             nodes.push(nodeInst);
         }
@@ -204,6 +205,16 @@ function createNodeInstance(def, x, y, existingId) {
         p.nodeY = headerH + p.index * PIN_SPACING + PIN_SPACING / 2;
     }
 
+    // Seed property overrides with defaults from the definition's Properties list
+    const defaultOverrides = {};
+    if (def.Properties) {
+        for (const prop of def.Properties) {
+            if (prop.DefaultValue != null && prop.DefaultValue !== '') {
+                defaultOverrides[prop.Id] = prop.DefaultValue;
+            }
+        }
+    }
+
     return {
         id: existingId || generateId(),
         typeId: def.TypeId,
@@ -211,7 +222,7 @@ function createNodeInstance(def, x, y, existingId) {
         def,
         inputPins,
         outputPins,
-        propertyOverrides: {},
+        propertyOverrides: defaultOverrides,
     };
 }
 
@@ -352,6 +363,22 @@ function drawNode(node) {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('\u27F3', badgeX, badgeY);
+    }
+
+    // Show property values as subtitle on non-stage nodes that have definition properties
+    if (!isStage && node.def.Properties && node.def.Properties.length > 0) {
+        const overrides = node.propertyOverrides || {};
+        const propSummary = node.def.Properties
+            .map(p => overrides[p.Id] ?? p.DefaultValue ?? '')
+            .filter(v => v !== '')
+            .join(', ');
+        if (propSummary) {
+            ctx.fillStyle = 'rgba(255,255,255,0.55)';
+            ctx.font = 'italic 9px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(propSummary, node.x + node.width / 2, node.y + headerH - 4);
+        }
     }
 
     // Pins
@@ -800,11 +827,21 @@ function getSelectedNodeData() {
             isConnected: isPinConnected(node.id, p.Id, 'input'),
         }));
 
+    // Build property definitions with current values for the Blazor property panel
+    const properties = (node.def.Properties || []).map(prop => ({
+        id: prop.Id,
+        displayName: prop.DisplayName,
+        defaultValue: prop.DefaultValue ?? '',
+        allowedValues: prop.AllowedValues ?? [],
+        currentValue: (node.propertyOverrides || {})[prop.Id] ?? prop.DefaultValue ?? '',
+    }));
+
     return {
         nodeId: node.id,
         typeId: node.typeId,
         displayName: node.def.DisplayName,
         inputPins: inputPinData,
+        properties: properties,
     };
 }
 
