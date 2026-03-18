@@ -168,6 +168,15 @@ public class GlyphInterpreter
             // Execute the target node
             GlyphNodeResult result = await ExecuteNode(targetNode, context);
 
+            // Handle Break signal — unwind to the nearest enclosing loop frame
+            if (result.IsBreak)
+            {
+                (Guid nodeId, string pinId)? breakResume = HandleBreak(stack, context);
+                if (breakResume == null) return; // No enclosing loop — terminate branch
+                (currentNodeId, currentPinId) = breakResume.Value;
+                continue;
+            }
+
             if (result.NextExecPinId == null)
             {
                 // Node terminates this branch — check stack
@@ -264,6 +273,47 @@ public class GlyphInterpreter
             stack.Pop();
         }
 
+        return null;
+    }
+
+    /// <summary>
+    /// Handles a Break signal by unwinding the execution stack to the nearest loop frame,
+    /// cleaning up the loop's iteration state, and returning the loop's "completed" pin
+    /// so execution continues after the loop.
+    /// Returns null if no enclosing loop is found (break outside a loop terminates the branch).
+    /// </summary>
+    private (Guid nodeId, string pinId)? HandleBreak(
+        Stack<GlyphExecFrame> stack,
+        GlyphExecutionContext context)
+    {
+        // Pop frames until we find a loop frame
+        while (stack.Count > 0)
+        {
+            GlyphExecFrame frame = stack.Pop();
+
+            if (frame.IsLoop)
+            {
+                // Clean up the loop's iteration state (ForEach stores list + index in Variables)
+                string listKey = $"__foreach_{frame.Node.InstanceId}_list";
+                string indexKey = $"__foreach_{frame.Node.InstanceId}_index";
+                context.Variables.Remove(listKey);
+                context.Variables.Remove(indexKey);
+
+                // Clear cached outputs so downstream nodes don't see stale iteration values
+                ClearNodeOutputCache(frame.Node, context);
+
+                Trace(context, $"Break: unwound to loop node {frame.Node.TypeId}, resuming via 'completed' pin.");
+
+                // Resume from the loop node's "completed" pin
+                return (frame.Node.InstanceId, "completed");
+            }
+
+            // Non-loop frame (e.g., Sequence) — pop and keep unwinding
+            Trace(context, $"Break: popped non-loop frame for node {frame.Node.TypeId}.");
+        }
+
+        // No enclosing loop found — terminate the branch
+        Trace(context, "Break: no enclosing loop found. Branch terminates.");
         return null;
     }
 

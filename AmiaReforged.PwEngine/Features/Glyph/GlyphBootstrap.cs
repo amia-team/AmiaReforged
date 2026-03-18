@@ -65,6 +65,7 @@ public class GlyphBootstrap
         new ForEachExecutor(),
         new SequenceExecutor(),
         new DoNothingExecutor(),
+        new BreakExecutor(),
 
         // Actions
         new ApplyEffectExecutor(),

@@ -38,6 +38,13 @@ public class GlyphNodeResult
     public bool IsLoopNode { get; init; }
 
     /// <summary>
+    /// When true, signals the interpreter to break out of the innermost loop.
+    /// The interpreter unwinds the execution stack to the nearest loop frame,
+    /// cleans up loop state, and continues via the loop's "completed" pin.
+    /// </summary>
+    public bool IsBreak { get; init; }
+
+    /// <summary>
     /// Creates a result that continues execution along the specified output Exec pin.
     /// </summary>
     public static GlyphNodeResult Continue(string execPinId) => new() { NextExecPinId = execPinId };
@@ -81,4 +88,10 @@ public class GlyphNodeResult
             OutputValues = outputs,
             IsLoopNode = true,
         };
+
+    /// <summary>
+    /// Creates a result that breaks out of the innermost enclosing loop.
+    /// Execution resumes after the loop (via its "completed" pin).
+    /// </summary>
+    public static GlyphNodeResult Break() => new() { IsBreak = true };
 }
