@@ -42,4 +42,13 @@ public enum GlyphNodeArchetype
     /// The interpreter invokes the appropriate stage node based on the current lifecycle event.
     /// </summary>
     PipelineStage,
+
+    /// <summary>
+    /// Context getter node. No exec pins and no input pins. Lazily evaluated like
+    /// <see cref="PureFunction"/>, but reads a specific value directly from the
+    /// <see cref="Runtime.GlyphExecutionContext"/> — no wire needed back to the source
+    /// entry/stage node. Each context getter is associated with a source node type via
+    /// <see cref="GlyphNodeDefinition.ContextSourceTypeId"/>.
+    /// </summary>
+    ContextGetter,
 }

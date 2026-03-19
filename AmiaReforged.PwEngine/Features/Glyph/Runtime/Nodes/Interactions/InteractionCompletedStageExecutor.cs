@@ -14,6 +14,18 @@ public class InteractionCompletedStageExecutor : InteractionStageExecutorBase
 
     public override string TypeId => NodeTypeId;
 
+    public override string SourceDisplayName => "Completed";
+
+    protected override void AddStageContextPins(List<ContextPinDescriptor> pins)
+    {
+        pins.Add(new("session_id", "Session ID", GlyphDataType.String,
+            ctx => ctx.InteractionSessionId.ToString()));
+        pins.Add(new("proficiency", "Proficiency", GlyphDataType.String,
+            ctx => ctx.InteractionProficiency ?? string.Empty));
+        pins.Add(new("response_tag", "Response Tag", GlyphDataType.String,
+            ctx => ctx.InteractionResponseTag ?? string.Empty));
+    }
+
     protected override void AddStageOutputs(Dictionary<string, object?> outputs, GlyphExecutionContext context)
     {
         outputs["session_id"] = context.InteractionSessionId.ToString();

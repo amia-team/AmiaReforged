@@ -88,4 +88,15 @@ public class RuntimeNodeService(
 
         Log.Info($"Cleared {toRemove.Count} runtime node(s) in area {areaResRef}");
     }
+
+    /// <summary>
+    /// Returns the number of live resource nodes of the given <paramref name="resourceType"/>
+    /// currently tracked in the specified area. Counts ALL nodes (bootstrapped, provisioned, and Glyph-spawned).
+    /// </summary>
+    public int CountNodesOfTypeInArea(string areaResRef, ResourceType resourceType)
+    {
+        return _spawnedNodes.Values.Count(n =>
+            string.Equals(n.Instance.Area, areaResRef, StringComparison.OrdinalIgnoreCase) &&
+            n.Instance.Definition.Type == resourceType);
+    }
 }

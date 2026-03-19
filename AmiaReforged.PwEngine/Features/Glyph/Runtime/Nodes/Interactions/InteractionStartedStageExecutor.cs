@@ -14,6 +14,20 @@ public class InteractionStartedStageExecutor : InteractionStageExecutorBase
 
     public override string TypeId => NodeTypeId;
 
+    public override string SourceDisplayName => "Started";
+
+    protected override void AddStageContextPins(List<ContextPinDescriptor> pins)
+    {
+        pins.Add(new("target_mode", "Target Mode", GlyphDataType.String,
+            ctx => ctx.InteractionTargetMode ?? string.Empty));
+        pins.Add(new("session_id", "Session ID", GlyphDataType.String,
+            ctx => ctx.InteractionSessionId.ToString()));
+        pins.Add(new("required_rounds", "Required Rounds", GlyphDataType.Int,
+            ctx => ctx.InteractionRequiredRounds));
+        pins.Add(new("proficiency", "Proficiency", GlyphDataType.String,
+            ctx => ctx.InteractionProficiency ?? string.Empty));
+    }
+
     protected override void AddStageOutputs(Dictionary<string, object?> outputs, GlyphExecutionContext context)
     {
         outputs["target_mode"] = context.InteractionTargetMode ?? string.Empty;

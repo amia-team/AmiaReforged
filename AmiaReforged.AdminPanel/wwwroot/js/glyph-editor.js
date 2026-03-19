@@ -1036,6 +1036,18 @@ function onContextMenu(e) {
             });
         }
 
+        // Context Nodes — show if this node is a context provider (has matching getters in catalog)
+        const hasContextNodes = catalog.some(d => d.ContextSourceTypeId === nodeHit.typeId);
+        if (hasContextNodes && blazorRef) {
+            items.push({
+                label: 'Context Nodes',
+                icon: '📌',
+                action: () => {
+                    blazorRef.invokeMethodAsync('OnShowContextNodes', nodeHit.typeId);
+                },
+            });
+        }
+
         if (items.length > 0) {
             showContextMenu(e.clientX, e.clientY, items);
         }

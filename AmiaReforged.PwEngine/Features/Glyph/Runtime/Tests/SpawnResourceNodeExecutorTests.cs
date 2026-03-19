@@ -72,9 +72,9 @@ public class SpawnResourceNodeExecutorTests
     {
         GlyphNodeDefinition def = _executor.CreateDefinition();
 
-        def.OutputPins.Should().HaveCount(10);
+        def.OutputPins.Should().HaveCount(11);
 
-        string[] expectedIds = ["exec_out", "success", "node_id", "node_name",
+        string[] expectedIds = ["exec_out", "success", "message", "node_id", "node_name",
             "definition_tag", "quality", "uses", "spawn_x", "spawn_y", "spawn_z"];
         def.OutputPins.Select(p => p.Id).Should().BeEquivalentTo(expectedIds,
             options => options.WithStrictOrdering());
@@ -106,7 +106,7 @@ public class SpawnResourceNodeExecutorTests
     [Test]
     public async Task WorldEngine_returns_null_sets_success_false()
     {
-        StubWorldEngineApi stub = new() { SpawnResult = null };
+        StubWorldEngineApi stub = new() { SpawnOutcome = new SpawnResourceNodeOutcome(false, "some_reason", null) };
         GlyphNodeInstance node = CreateNode();
         GlyphExecutionContext context = CreateContext(worldEngine: stub);
 
@@ -138,7 +138,10 @@ public class SpawnResourceNodeExecutorTests
             Y: 20.3f,
             Z: 0f);
 
-        StubWorldEngineApi stub = new() { SpawnResult = spawnResult };
+        StubWorldEngineApi stub = new()
+        {
+            SpawnOutcome = new SpawnResourceNodeOutcome(true, null, spawnResult),
+        };
         GlyphNodeInstance node = CreateNode();
         GlyphExecutionContext context = CreateContext(worldEngine: stub);
 
@@ -166,8 +169,9 @@ public class SpawnResourceNodeExecutorTests
     {
         StubWorldEngineApi stub = new()
         {
-            SpawnResult = new SpawnResourceNodeResult(
-                Guid.NewGuid(), "Test Node", "test_tag", "Average", 50, 5f, 5f, 0f),
+            SpawnOutcome = new SpawnResourceNodeOutcome(true, null,
+                new SpawnResourceNodeResult(
+                    Guid.NewGuid(), "Test Node", "test_tag", "Average", 50, 5f, 5f, 0f)),
         };
         GlyphNodeInstance node = CreateNode();
         GlyphExecutionContext context = CreateContext(worldEngine: stub);
@@ -183,18 +187,149 @@ public class SpawnResourceNodeExecutorTests
     }
 
     // ──────────────────────────────────────────────────────────────
+    //  Properties tests
+    // ──────────────────────────────────────────────────────────────
+
+    [Test]
+    public void Definition_has_success_and_failure_message_properties()
+    {
+        GlyphNodeDefinition def = _executor.CreateDefinition();
+
+        def.Properties.Should().HaveCount(2);
+        def.Properties[0].Id.Should().Be("success_message");
+        def.Properties[0].DisplayName.Should().Be("Success Message");
+        def.Properties[0].DefaultValue.Should().NotBeNullOrWhiteSpace();
+        def.Properties[1].Id.Should().Be("failure_message");
+        def.Properties[1].DisplayName.Should().Be("Failure Message");
+        def.Properties[1].DefaultValue.Should().NotBeNullOrWhiteSpace();
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  Message output pin tests
+    // ──────────────────────────────────────────────────────────────
+
+    [Test]
+    public async Task Success_outputs_success_message()
+    {
+        SpawnResourceNodeResult spawnResult = new(
+            Guid.NewGuid(), "Test Node", "test_tag", "Average", 50, 5f, 5f, 0f);
+        StubWorldEngineApi stub = new()
+        {
+            SpawnOutcome = new SpawnResourceNodeOutcome(true, null, spawnResult),
+        };
+
+        GlyphNodeInstance node = CreateNode();
+        node.PropertyOverrides["success_message"] = "Hooray, you found something!";
+        GlyphExecutionContext context = CreateContext(worldEngine: stub);
+
+        GlyphNodeResult result = await _executor.ExecuteAsync(node, context,
+            pin => Task.FromResult<object?>(pin switch
+            {
+                "trigger" => (uint)1,
+                _ => null,
+            }));
+
+        result.OutputValues!["message"].Should().Be("Hooray, you found something!");
+    }
+
+    [Test]
+    public async Task Failure_outputs_failure_message()
+    {
+        StubWorldEngineApi stub = new()
+        {
+            SpawnOutcome = new SpawnResourceNodeOutcome(false, "cap_reached:Ore", null),
+        };
+
+        GlyphNodeInstance node = CreateNode();
+        node.PropertyOverrides["failure_message"] = "Nothing here!";
+        GlyphExecutionContext context = CreateContext(worldEngine: stub);
+
+        GlyphNodeResult result = await _executor.ExecuteAsync(node, context,
+            pin => Task.FromResult<object?>(pin switch
+            {
+                "trigger" => (uint)1,
+                _ => null,
+            }));
+
+        result.OutputValues!["success"].Should().Be(false);
+        result.OutputValues["message"].Should().Be("Nothing here!");
+    }
+
+    [Test]
+    public async Task Default_messages_used_when_no_overrides()
+    {
+        SpawnResourceNodeResult spawnResult = new(
+            Guid.NewGuid(), "Test Node", "test_tag", "Average", 50, 5f, 5f, 0f);
+        StubWorldEngineApi stub = new()
+        {
+            SpawnOutcome = new SpawnResourceNodeOutcome(true, null, spawnResult),
+        };
+
+        GlyphNodeInstance node = CreateNode(); // no property overrides
+        GlyphExecutionContext context = CreateContext(worldEngine: stub);
+
+        GlyphNodeResult result = await _executor.ExecuteAsync(node, context,
+            pin => Task.FromResult<object?>(pin switch
+            {
+                "trigger" => (uint)1,
+                _ => null,
+            }));
+
+        result.OutputValues!["message"].Should().Be("You discovered a new resource!");
+    }
+
+    [Test]
+    public async Task Default_failure_message_used_when_no_overrides()
+    {
+        StubWorldEngineApi stub = new()
+        {
+            SpawnOutcome = new SpawnResourceNodeOutcome(false, "cap_reached:Ore", null),
+        };
+
+        GlyphNodeInstance node = CreateNode(); // no property overrides
+        GlyphExecutionContext context = CreateContext(worldEngine: stub);
+
+        GlyphNodeResult result = await _executor.ExecuteAsync(node, context,
+            pin => Task.FromResult<object?>(pin switch
+            {
+                "trigger" => (uint)1,
+                _ => null,
+            }));
+
+        result.OutputValues!["message"].Should().Be("There are no more resources of this type to be found here.");
+    }
+
+    [Test]
+    public async Task Null_WorldEngine_outputs_failure_message()
+    {
+        GlyphNodeInstance node = CreateNode();
+        node.PropertyOverrides["failure_message"] = "Engine unavailable!";
+        GlyphExecutionContext context = CreateContext(worldEngine: null);
+
+        GlyphNodeResult result = await _executor.ExecuteAsync(node, context,
+            pin => Task.FromResult<object?>(pin switch
+            {
+                "trigger" => (uint)1,
+                _ => null,
+            }));
+
+        result.OutputValues!["success"].Should().Be(false);
+        result.OutputValues["message"].Should().Be("Engine unavailable!");
+    }
+
+    // ──────────────────────────────────────────────────────────────
     //  Test stub
     // ──────────────────────────────────────────────────────────────
 
     private class StubWorldEngineApi : IGlyphWorldEngineApi
     {
-        public SpawnResourceNodeResult? SpawnResult { get; init; }
+        public SpawnResourceNodeOutcome? SpawnOutcome { get; init; }
         public uint? LastTriggerHandle { get; private set; }
 
-        public SpawnResourceNodeResult? SpawnResourceNode(uint triggerHandle)
+        public SpawnResourceNodeOutcome SpawnResourceNode(uint triggerHandle)
         {
             LastTriggerHandle = triggerHandle;
-            return SpawnResult;
+            return SpawnOutcome ?? new SpawnResourceNodeOutcome(false, null, null);
         }
 
         // Unused stubs — return defaults

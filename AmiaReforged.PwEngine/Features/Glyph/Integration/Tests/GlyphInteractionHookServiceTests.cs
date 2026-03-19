@@ -585,7 +585,7 @@ public class GlyphInteractionHookServiceTests
         public bool HasKnowledge(Guid characterId, string knowledgeTag) => false;
         public bool HasUnlockedInteraction(Guid characterId, string interactionTag) => false;
         public KnowledgeProgressionInfo GetKnowledgeProgression(Guid characterId) => new(0, 0, 0, 0);
-        public SpawnResourceNodeResult? SpawnResourceNode(uint triggerHandle) => null;
+        public SpawnResourceNodeOutcome SpawnResourceNode(uint triggerHandle) => new(false, null, null);
         public string? GetResourceNodeType(uint objectHandle) => null;
     }
 

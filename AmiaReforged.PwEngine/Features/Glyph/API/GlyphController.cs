@@ -484,7 +484,8 @@ public class GlyphController
         d.IsSingleton, d.RestrictToEventType?.ToString(), d.ScriptCategory?.ToString(),
         d.InputPins.Select(PinToDto).ToList(),
         d.OutputPins.Select(PinToDto).ToList(),
-        d.Properties.Select(PropertyToDto).ToList());
+        d.Properties.Select(PropertyToDto).ToList(),
+        d.ContextSourceTypeId);
 
     private static GlyphPinDto PinToDto(GlyphPin p) => new(
         p.Id, p.Name, p.DataType.ToString(), p.Direction.ToString(),
@@ -516,7 +517,8 @@ public class GlyphController
         string TypeId, string DisplayName, string Category, string Description,
         string ColorClass, bool IsSingleton, string? RestrictToEventType, string? ScriptCategory,
         List<GlyphPinDto> InputPins, List<GlyphPinDto> OutputPins,
-        List<GlyphPropertyDefinitionDto> Properties);
+        List<GlyphPropertyDefinitionDto> Properties,
+        string? ContextSourceTypeId = null);
 
     public record GlyphPinDto(
         string Id, string Name, string DataType, string Direction,

@@ -35,9 +35,18 @@ public class SpawnResourceNodeExecutor : IGlyphNodeExecutor
         object? triggerValue = await resolveInput("trigger");
         uint triggerHandle = Convert.ToUInt32(triggerValue ?? 0);
 
+        // Read configurable messages from property overrides (or use defaults)
+        string successMessage = node.PropertyOverrides.TryGetValue("success_message", out string? sm) && !string.IsNullOrWhiteSpace(sm)
+            ? sm
+            : "You discovered a new resource!";
+        string failureMessage = node.PropertyOverrides.TryGetValue("failure_message", out string? fm) && !string.IsNullOrWhiteSpace(fm)
+            ? fm
+            : "There are no more resources of this type to be found here.";
+
         Dictionary<string, object?> outputs = new()
         {
             ["success"] = false,
+            ["message"] = string.Empty,
             ["node_id"] = string.Empty,
             ["node_name"] = string.Empty,
             ["definition_tag"] = string.Empty,
@@ -50,20 +59,29 @@ public class SpawnResourceNodeExecutor : IGlyphNodeExecutor
 
         if (context.WorldEngine != null)
         {
-            SpawnResourceNodeResult? result = context.WorldEngine.SpawnResourceNode(triggerHandle);
+            SpawnResourceNodeOutcome outcome = context.WorldEngine.SpawnResourceNode(triggerHandle);
 
-            if (result != null)
+            if (outcome.Success && outcome.Result != null)
             {
                 outputs["success"] = true;
-                outputs["node_id"] = result.NodeId.ToString();
-                outputs["node_name"] = result.Name;
-                outputs["definition_tag"] = result.DefinitionTag;
-                outputs["quality"] = result.QualityLabel;
-                outputs["uses"] = result.Uses;
-                outputs["spawn_x"] = result.X;
-                outputs["spawn_y"] = result.Y;
-                outputs["spawn_z"] = result.Z;
+                outputs["message"] = successMessage;
+                outputs["node_id"] = outcome.Result.NodeId.ToString();
+                outputs["node_name"] = outcome.Result.Name;
+                outputs["definition_tag"] = outcome.Result.DefinitionTag;
+                outputs["quality"] = outcome.Result.QualityLabel;
+                outputs["uses"] = outcome.Result.Uses;
+                outputs["spawn_x"] = outcome.Result.X;
+                outputs["spawn_y"] = outcome.Result.Y;
+                outputs["spawn_z"] = outcome.Result.Z;
             }
+            else
+            {
+                outputs["message"] = failureMessage;
+            }
+        }
+        else
+        {
+            outputs["message"] = failureMessage;
         }
 
         return new GlyphNodeResult
@@ -84,6 +102,21 @@ public class SpawnResourceNodeExecutor : IGlyphNodeExecutor
         ColorClass = "node-action",
         Archetype = GlyphNodeArchetype.Action,
         ScriptCategory = GlyphScriptCategory.Interaction,
+        Properties =
+        [
+            new GlyphPropertyDefinition
+            {
+                Id = "success_message",
+                DisplayName = "Success Message",
+                DefaultValue = "You discovered a new resource!",
+            },
+            new GlyphPropertyDefinition
+            {
+                Id = "failure_message",
+                DisplayName = "Failure Message",
+                DefaultValue = "There are no more resources of this type to be found here.",
+            },
+        ],
         InputPins =
         [
             new GlyphPin
@@ -107,6 +140,11 @@ public class SpawnResourceNodeExecutor : IGlyphNodeExecutor
             new GlyphPin
             {
                 Id = "success", Name = "Success", DataType = GlyphDataType.Bool,
+                Direction = GlyphPinDirection.Output,
+            },
+            new GlyphPin
+            {
+                Id = "message", Name = "Message", DataType = GlyphDataType.String,
                 Direction = GlyphPinDirection.Output,
             },
             new GlyphPin

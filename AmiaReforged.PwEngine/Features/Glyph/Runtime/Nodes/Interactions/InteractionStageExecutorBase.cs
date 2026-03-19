@@ -12,10 +12,52 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 /// triggered by the runtime via <see cref="GlyphInterpreter.ExecuteStageAsync"/>.
 /// Each stage's "Then" output is entirely user-directed.
 /// </para>
+/// <para>
+/// Also implements <see cref="IContextNodeProvider"/> so that each stage automatically
+/// generates wireless context getter nodes for its output pins.
+/// </para>
 /// </summary>
-public abstract class InteractionStageExecutorBase : IGlyphNodeExecutor
+public abstract class InteractionStageExecutorBase : IGlyphNodeExecutor, IContextNodeProvider
 {
     public abstract string TypeId { get; }
+
+    // ── IContextNodeProvider ─────────────────────────────────────────────
+
+    public string SourceTypeId => TypeId;
+
+    public abstract string SourceDisplayName { get; }
+
+    public GlyphEventType? SourceEventType => GlyphEventType.InteractionPipeline;
+
+    public GlyphScriptCategory? SourceScriptCategory => GlyphScriptCategory.Interaction;
+
+    public List<ContextPinDescriptor> GetContextPins()
+    {
+        // Common pins shared by all interaction stages
+        List<ContextPinDescriptor> pins =
+        [
+            new("character_id", "Character ID", GlyphDataType.String,
+                ctx => ctx.CharacterId ?? string.Empty),
+            new("creature", "Creature", GlyphDataType.NwObject,
+                ctx => ctx.InteractionCreature),
+            new("interaction_tag", "Interaction Tag", GlyphDataType.String,
+                ctx => ctx.InteractionTag ?? string.Empty),
+            new("target_id", "Target ID", GlyphDataType.String,
+                ctx => ctx.InteractionTargetId.ToString()),
+            new("area_resref", "Area ResRef", GlyphDataType.String,
+                ctx => ctx.InteractionAreaResRef ?? string.Empty),
+        ];
+
+        // Let subclasses append stage-specific context pins
+        AddStageContextPins(pins);
+
+        return pins;
+    }
+
+    /// <summary>
+    /// Override to add stage-specific context pin descriptors beyond the shared set.
+    /// </summary>
+    protected virtual void AddStageContextPins(List<ContextPinDescriptor> pins) { }
 
     public async Task<GlyphNodeResult> ExecuteAsync(
         GlyphNodeInstance node,

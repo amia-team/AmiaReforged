@@ -14,6 +14,20 @@ public class InteractionTickStageExecutor : InteractionStageExecutorBase
 
     public override string TypeId => NodeTypeId;
 
+    public override string SourceDisplayName => "Tick";
+
+    protected override void AddStageContextPins(List<ContextPinDescriptor> pins)
+    {
+        pins.Add(new("session_id", "Session ID", GlyphDataType.String,
+            ctx => ctx.InteractionSessionId.ToString()));
+        pins.Add(new("progress", "Progress", GlyphDataType.Int,
+            ctx => ctx.InteractionProgress));
+        pins.Add(new("required_rounds", "Required Rounds", GlyphDataType.Int,
+            ctx => ctx.InteractionRequiredRounds));
+        pins.Add(new("proficiency", "Proficiency", GlyphDataType.String,
+            ctx => ctx.InteractionProficiency ?? string.Empty));
+    }
+
     protected override void AddStageOutputs(Dictionary<string, object?> outputs, GlyphExecutionContext context)
     {
         outputs["session_id"] = context.InteractionSessionId.ToString();

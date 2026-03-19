@@ -39,7 +39,8 @@ public record GlyphNodeCatalogEntryDto(
     string? ScriptCategory,
     List<GlyphPinDto> InputPins,
     List<GlyphPinDto> OutputPins,
-    List<GlyphPropertyDefinitionDto> Properties);
+    List<GlyphPropertyDefinitionDto> Properties,
+    string? ContextSourceTypeId = null);
 
 /// <summary>
 /// A configurable property on a Glyph node (dropdown or free-text, shown in the property panel).

@@ -72,4 +72,11 @@ public class GlyphNodeDefinition
     /// Defaults to <see cref="GlyphNodeArchetype.PureFunction"/> (no exec pins, lazily evaluated).
     /// </summary>
     public GlyphNodeArchetype Archetype { get; init; } = GlyphNodeArchetype.PureFunction;
+
+    /// <summary>
+    /// When set, identifies the source node type (e.g. <c>"stage.interaction_attempted"</c>) that
+    /// this context getter belongs to. Used by the editor to populate context-specific palettes.
+    /// <c>null</c> for all non-context-getter nodes.
+    /// </summary>
+    public string? ContextSourceTypeId { get; init; }
 }

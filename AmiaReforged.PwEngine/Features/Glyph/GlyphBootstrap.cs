@@ -2,6 +2,7 @@ using AmiaReforged.PwEngine.Features.Glyph.Core;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Constants;
+using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Context;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Events;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Flow;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
@@ -37,6 +38,10 @@ public class GlyphBootstrap
         // Create all built-in node executors — single authoritative list
         List<IGlyphNodeExecutor> executors = CreateExecutors();
 
+        // Generate context getter nodes from providers
+        List<IGlyphNodeExecutor> contextGetters = CreateContextGetters(executors);
+        executors.AddRange(contextGetters);
+
         // Auto-register definitions from each executor (eliminates the old dual-list)
         foreach (IGlyphNodeExecutor executor in executors)
         {
@@ -46,8 +51,9 @@ public class GlyphBootstrap
         // Create the interpreter
         Interpreter = new GlyphInterpreter(registry, executors);
 
-        Log.Info("Glyph bootstrap complete. {DefCount} definitions registered, {ExecCount} executors loaded.",
-            registry.GetAll().Count, executors.Count);
+        Log.Info("Glyph bootstrap complete. {DefCount} definitions registered, {ExecCount} executors loaded " +
+                 "(including {CtxCount} context getters).",
+            registry.GetAll().Count, executors.Count, contextGetters.Count);
     }
 
     private static List<IGlyphNodeExecutor> CreateExecutors() =>
@@ -152,4 +158,34 @@ public class GlyphBootstrap
         new GetKnowledgeProgressionExecutor(),
         new GetLearnedKnowledgeExecutor()
     ];
+
+    /// <summary>
+    /// Iterates executors that implement <see cref="IContextNodeProvider"/> and creates
+    /// a <see cref="ContextGetterExecutor"/> for each of their context pins.
+    /// </summary>
+    private static List<IGlyphNodeExecutor> CreateContextGetters(List<IGlyphNodeExecutor> executors)
+    {
+        List<IGlyphNodeExecutor> contextGetters = [];
+
+        foreach (IGlyphNodeExecutor executor in executors)
+        {
+            if (executor is not IContextNodeProvider provider) continue;
+
+            List<ContextPinDescriptor> pins = provider.GetContextPins();
+            foreach (ContextPinDescriptor pin in pins)
+            {
+                contextGetters.Add(new ContextGetterExecutor(
+                    provider.SourceTypeId,
+                    provider.SourceDisplayName,
+                    pin,
+                    provider.SourceEventType,
+                    provider.SourceScriptCategory));
+            }
+
+            Log.Info("  Context provider '{Source}': {Count} getter(s)",
+                provider.SourceDisplayName, pins.Count);
+        }
+
+        return contextGetters;
+    }
 }

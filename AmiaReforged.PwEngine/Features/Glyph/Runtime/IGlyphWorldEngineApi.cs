@@ -64,9 +64,9 @@ public interface IGlyphWorldEngineApi
     /// </para>
     /// </summary>
     /// <param name="triggerHandle">The raw NWN object handle of the trigger to spawn within.</param>
-    /// <returns>A <see cref="SpawnResourceNodeResult"/> on success, or <c>null</c> if spawning failed
-    /// (wrong tag, missing definitions, invalid trigger, etc. — reason logged server-side).</returns>
-    SpawnResourceNodeResult? SpawnResourceNode(uint triggerHandle);
+    /// <returns>A <see cref="SpawnResourceNodeOutcome"/> indicating success or failure,
+    /// with an optional failure reason and result details.</returns>
+    SpawnResourceNodeOutcome SpawnResourceNode(uint triggerHandle);
 
     /// <summary>
     /// Returns the <c>ResourceType</c> name (e.g. "Ore", "Tree", "Flora") for the given game object,
@@ -90,6 +90,13 @@ public record IndustryMembershipInfo(string Tag, string Name, ProficiencyLevel L
 /// Lightweight DTO wrapping the character's knowledge point progression state.
 /// </summary>
 public record KnowledgeProgressionInfo(int TotalKp, int EconomyKp, int LevelUpKp, int AccumulatedProgressionPoints);
+
+/// <summary>
+/// Outcome envelope returned by <see cref="IGlyphWorldEngineApi.SpawnResourceNode"/>.
+/// <see cref="Success"/> is <c>true</c> when a node was created; otherwise <see cref="FailureReason"/>
+/// describes why the spawn was rejected.
+/// </summary>
+public record SpawnResourceNodeOutcome(bool Success, string? FailureReason, SpawnResourceNodeResult? Result);
 
 /// <summary>
 /// Result DTO returned by <see cref="IGlyphWorldEngineApi.SpawnResourceNode"/> on success.

@@ -5,12 +5,53 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Events;
 /// <summary>
 /// Entry-point node for <see cref="GlyphEventType.BeforeGroupSpawn"/> graphs.
 /// Exposes encounter context data as output pins and a single Exec output to begin the script.
+/// Also implements <see cref="IContextNodeProvider"/> to generate wireless context getter nodes.
 /// </summary>
-public class BeforeGroupSpawnEventExecutor : IGlyphNodeExecutor
+public class BeforeGroupSpawnEventExecutor : IGlyphNodeExecutor, IContextNodeProvider
 {
     public const string NodeTypeId = "event.before_group_spawn";
 
     public string TypeId => NodeTypeId;
+
+    // ── IContextNodeProvider ─────────────────────────────────────────────
+
+    public string SourceTypeId => NodeTypeId;
+
+    public string SourceDisplayName => "Before Group Spawn";
+
+    public GlyphEventType? SourceEventType => GlyphEventType.BeforeGroupSpawn;
+
+    public GlyphScriptCategory? SourceScriptCategory => null;
+
+    public List<ContextPinDescriptor> GetContextPins() =>
+    [
+        new("party_size", "Party Size", GlyphDataType.Int,
+            ctx => ctx.EncounterContext?.PartySize ?? 0),
+        new("spawn_count", "Spawn Count", GlyphDataType.Int,
+            ctx => ctx.SpawnCount),
+        new("area_resref", "Area ResRef", GlyphDataType.String,
+            ctx => ctx.EncounterContext?.AreaResRef ?? string.Empty),
+        new("game_time", "Game Time (hours)", GlyphDataType.Float,
+            ctx => ctx.EncounterContext?.GameTime.TotalHours ?? 0.0),
+        new("danger", "Chaos: Danger", GlyphDataType.Int,
+            ctx => ctx.EncounterContext?.Chaos.Danger ?? 0),
+        new("corruption", "Chaos: Corruption", GlyphDataType.Int,
+            ctx => ctx.EncounterContext?.Chaos.Corruption ?? 0),
+        new("density", "Chaos: Density", GlyphDataType.Int,
+            ctx => ctx.EncounterContext?.Chaos.Density ?? 0),
+        new("mutation", "Chaos: Mutation", GlyphDataType.Int,
+            ctx => ctx.EncounterContext?.Chaos.Mutation ?? 0),
+        new("profile_name", "Profile Name", GlyphDataType.String,
+            ctx => ctx.Profile?.Name ?? string.Empty),
+        new("group_name", "Group Name", GlyphDataType.String,
+            ctx => ctx.Group?.Name ?? string.Empty),
+        new("is_in_region", "Is In Region", GlyphDataType.Bool,
+            ctx => ctx.EncounterContext?.IsInRegion ?? false),
+        new("region_tag", "Region Tag", GlyphDataType.String,
+            ctx => ctx.EncounterContext?.RegionTag ?? string.Empty),
+        new("triggering_player", "Triggering Player", GlyphDataType.NwObject,
+            ctx => ctx.TriggeringPlayer),
+    ];
 
     public Task<GlyphNodeResult> ExecuteAsync(
         GlyphNodeInstance node,
