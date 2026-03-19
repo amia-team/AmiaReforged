@@ -18,7 +18,7 @@ public sealed class InteractionSession
     public string? AreaResRef { get; init; }
 
     /// <summary>Handler-specific data carried from the original command context.</summary>
-    public Dictionary<string, object>? Metadata { get; init; }
+    public Dictionary<string, object>? Metadata { get; set; }
 
     /// <summary>How many ticks / rounds of work have been completed so far.</summary>
     public int Progress { get; set; }

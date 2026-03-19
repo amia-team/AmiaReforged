@@ -23,19 +23,23 @@ public class SetMetadataExecutor : IGlyphNodeExecutor
         string key = keyValue?.ToString() ?? string.Empty;
         string value = valueValue?.ToString() ?? string.Empty;
 
-        if (!string.IsNullOrEmpty(key) && context.Session != null)
+        if (string.IsNullOrEmpty(key))
         {
-            // Initialize the metadata dictionary if needed (session's Metadata can be null)
-            if (context.Session.Metadata != null)
-            {
-                context.Session.Metadata[key] = value;
-            }
-            else
-            {
-                // Metadata is init-only on the session, but we can write to the context copy
-                context.InteractionMetadata ??= new Dictionary<string, object>();
-                context.InteractionMetadata[key] = value;
-            }
+            return GlyphNodeResult.Continue("exec_out");
+        }
+
+        // Prefer writing to the live session so data persists across stages.
+        // In the Attempted stage the session doesn't exist yet, so fall back to
+        // the context's metadata dictionary (still visible within this execution).
+        if (context.Session != null)
+        {
+            context.Session.Metadata ??= new Dictionary<string, object>();
+            context.Session.Metadata[key] = value;
+        }
+        else
+        {
+            context.InteractionMetadata ??= new Dictionary<string, object>();
+            context.InteractionMetadata[key] = value;
         }
 
         return GlyphNodeResult.Continue("exec_out");
