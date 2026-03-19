@@ -67,6 +67,18 @@ public interface IGlyphWorldEngineApi
     /// <returns>A <see cref="SpawnResourceNodeResult"/> on success, or <c>null</c> if spawning failed
     /// (wrong tag, missing definitions, invalid trigger, etc. — reason logged server-side).</returns>
     SpawnResourceNodeResult? SpawnResourceNode(uint triggerHandle);
+
+    /// <summary>
+    /// Returns the <c>ResourceType</c> name (e.g. "Ore", "Tree", "Flora") for the given game object,
+    /// or <c>null</c> if the object is not a recognized resource node.
+    /// <para>
+    /// Resolves the object from its NWN handle, reads its tag, and looks it up in the
+    /// resource node definition repository.
+    /// </para>
+    /// </summary>
+    /// <param name="objectHandle">The raw NWN object handle of the object to check.</param>
+    /// <returns>The resource type name as a string, or <c>null</c> if not a resource node.</returns>
+    string? GetResourceNodeType(uint objectHandle);
 }
 
 /// <summary>

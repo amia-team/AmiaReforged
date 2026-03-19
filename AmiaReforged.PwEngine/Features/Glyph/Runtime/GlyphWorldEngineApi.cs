@@ -326,4 +326,28 @@ public class GlyphWorldEngineApi : IGlyphWorldEngineApi
 
         return null;
     }
+
+    /// <inheritdoc />
+    public string? GetResourceNodeType(uint objectHandle)
+    {
+        try
+        {
+            NwObject? obj = objectHandle.ToNwObject<NwObject>();
+            if (obj == null) return null;
+
+            string tag = obj.Tag;
+            if (string.IsNullOrWhiteSpace(tag)) return null;
+
+            ResourceNodeDefinition? definition = _definitionRepository.Get(tag);
+            if (definition == null) return null;
+            if (definition.Type == ResourceType.Undefined) return null;
+
+            return definition.Type.ToString();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "[GlyphWorldEngineApi] GetResourceNodeType failed for handle {Handle}.", objectHandle);
+            return null;
+        }
+    }
 }

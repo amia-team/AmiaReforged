@@ -421,5 +421,6 @@ public class IndustryKnowledgeNodeTests
         public bool HasUnlockedInteraction(Guid characterId, string interactionTag) => HasUnlockedInteractionResult;
         public KnowledgeProgressionInfo GetKnowledgeProgression(Guid characterId) => Progression;
         public SpawnResourceNodeResult? SpawnResourceNode(uint triggerHandle) => null;
+        public string? GetResourceNodeType(uint objectHandle) => null;
     }
 }

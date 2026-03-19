@@ -205,5 +205,6 @@ public class SpawnResourceNodeExecutorTests
         public bool HasKnowledge(Guid characterId, string knowledgeTag) => false;
         public bool HasUnlockedInteraction(Guid characterId, string interactionTag) => false;
         public KnowledgeProgressionInfo GetKnowledgeProgression(Guid characterId) => new(0, 0, 0, 0);
+        public string? GetResourceNodeType(uint objectHandle) => null;
     }
 }
