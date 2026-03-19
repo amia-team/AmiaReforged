@@ -1043,7 +1043,8 @@ function onContextMenu(e) {
                 label: 'Context Nodes',
                 icon: '📌',
                 action: () => {
-                    blazorRef.invokeMethodAsync('OnShowContextNodes', nodeHit.typeId);
+                    blazorRef.invokeMethodAsync('OnShowContextNodes', nodeHit.typeId)
+                        .catch(err => console.warn('[Glyph] Context nodes not supported on this page:', err.message));
                 },
             });
         }

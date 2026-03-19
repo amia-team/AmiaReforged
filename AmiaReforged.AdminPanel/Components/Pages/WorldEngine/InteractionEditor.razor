@@ -919,6 +919,9 @@
     }
 
     [JSInvokable]
+    public Task OnShowContextNodes(string sourceTypeId) => Task.CompletedTask;
+
+    [JSInvokable]
     public Task OnNodeSelectionChanged(string? json)
     {
         if (string.IsNullOrEmpty(json) || json == "null")
