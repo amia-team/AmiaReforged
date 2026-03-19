@@ -89,4 +89,6 @@ public static class WarlockExtensions
 
         return warlock.SpellResistanceCheck(target, casterLevel: invocationCl);
     }
+
+    public static string AddWarlockColor(this string message) => message.ColorString(ColorConstants.Magenta);
 }
