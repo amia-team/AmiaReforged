@@ -571,6 +571,36 @@
                             }
                         </div>
                     </div>
+
+                    @* ── Pre-rendered Panel: Context Nodes ── *@
+                    <div id="bl-panel-ie-context" class="we-editor__gl-panel" style="display:none">
+                        <div style="background:var(--bg-card);padding:0;min-height:100%;display:flex;flex-direction:column">
+                            @if (_ieContextNodes.Count > 0)
+                            {
+                                <div style="padding:6px 12px;border-bottom:1px solid var(--border-subtle);flex-shrink:0">
+                                    <small style="color:var(--text-secondary);font-size:0.72rem">Source: <strong style="color:var(--text-primary)">@_ieContextSourceDisplayName</strong></small>
+                                </div>
+                                <div style="flex:1;overflow-y:auto">
+                                    @foreach (GlyphNodeCatalogEntryDto ctxNode in _ieContextNodes)
+                                    {
+                                        <div style="padding:5px 12px;border-bottom:1px solid var(--border-subtle);cursor:pointer;font-size:0.82rem"
+                                             class="glyph-node-entry" draggable="true"
+                                             ondragstart="event.dataTransfer.setData('application/glyph-node', '@ctxNode.TypeId')"
+                                             @onclick="() => IeAddScriptNode(ctxNode)" title="@ctxNode.Description">
+                                            <span class="badge me-1" style="background:@IeGetNodeColor(ctxNode.ColorClass);font-size:0.65rem">@ctxNode.ColorClass</span>
+                                            <span style="color:var(--text-primary)">@ctxNode.DisplayName</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div style="padding:16px 12px;text-align:center">
+                                    <p style="color:var(--text-secondary);font-size:0.8rem;margin:0">📌 Right-click a source node (e.g. a pipeline stage) and choose <strong>Context Nodes</strong> to see its available getters.</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
                     </div> @* end we-ie-layout-area *@
                 </div>
             }
@@ -1150,7 +1180,7 @@
 
     // View menu
     private bool _ieShowViewMenu;
-    private readonly HashSet<string> _ieOpenPanels = ["ie-palette", "ie-canvas", "ie-form", "ie-responses", "ie-inspector"];
+    private readonly HashSet<string> _ieOpenPanels = ["ie-palette", "ie-canvas", "ie-form", "ie-responses", "ie-inspector", "ie-context"];
     private static readonly Dictionary<string, string> _iePanelTitles = new()
     {
         ["ie-palette"] = "Node Palette",
@@ -1158,7 +1188,13 @@
         ["ie-form"] = "Properties",
         ["ie-responses"] = "Responses",
         ["ie-inspector"] = "Inspector",
+        ["ie-context"] = "Context Nodes",
     };
+
+    // Context nodes panel
+    private string? _ieContextSourceTypeId;
+    private string _ieContextSourceDisplayName = "";
+    private List<GlyphNodeCatalogEntryDto> _ieContextNodes = [];
 
     // Validity helpers
     private List<IndustryDefinitionDto> _ieAvailableIndustries = [];
@@ -2816,10 +2852,23 @@
                             },
                             new
                             {
-                                type = "component",
-                                componentType = "ie-inspector",
-                                title = "Inspector",
+                                type = "stack",
                                 size = "35%",
+                                content = new object[]
+                                {
+                                    new
+                                    {
+                                        type = "component",
+                                        componentType = "ie-inspector",
+                                        title = "Inspector",
+                                    },
+                                    new
+                                    {
+                                        type = "component",
+                                        componentType = "ie-context",
+                                        title = "Context Nodes",
+                                    },
+                                },
                             },
                         },
                     },
@@ -2926,9 +2975,35 @@
     // OnPanelResized is already a JSInvokable — we extend it for the IE instance
     // (handled in the existing OnPanelResized method — see below)
 
-    // OnShowContextNodes: no-op stub — context panel only supported on GlyphEditor page
     [JSInvokable]
-    public Task OnShowContextNodes(string sourceTypeId) => Task.CompletedTask;
+    public Task OnShowContextNodes(string sourceTypeId)
+    {
+        try
+        {
+            _ieContextSourceTypeId = sourceTypeId;
+            _ieContextNodes = _ieNodeCatalog
+                .Where(n => n.ContextSourceTypeId == sourceTypeId)
+                .ToList();
+
+            // Derive a friendly display name from the first context node's category
+            _ieContextSourceDisplayName = _ieContextNodes.Count > 0
+                ? _ieContextNodes[0].Category.Replace("Context: ", "")
+                : sourceTypeId;
+
+            // Focus the Context Nodes tab in GL
+            if (_ieBridgeModule != null)
+            {
+                _ = _ieBridgeModule.InvokeVoidAsync("focusPanel", InteractionGlInstanceId, "ie-context");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "[WE] OnShowContextNodes failed for {SourceTypeId}", sourceTypeId);
+        }
+
+        InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
+    }
 
     // OnNodeSelectionChanged: called by glyph-editor.js when selected node changes
     [JSInvokable]
@@ -2979,7 +3054,7 @@
     {
         _ieShowViewMenu = false;
         _ieOpenPanels.Clear();
-        _ieOpenPanels.UnionWith(["ie-palette", "ie-canvas", "ie-form", "ie-responses", "ie-inspector"]);
+        _ieOpenPanels.UnionWith(["ie-palette", "ie-canvas", "ie-form", "ie-responses", "ie-inspector", "ie-context"]);
 
         if (_ieBridgeModule != null)
         {

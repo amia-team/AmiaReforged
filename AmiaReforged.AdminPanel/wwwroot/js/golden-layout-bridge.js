@@ -117,6 +117,22 @@ export function removePanel(instanceId, componentType) {
 }
 
 /**
+ * Focus (activate) a panel's tab so it becomes visible in its stack.
+ * @param {string} instanceId
+ * @param {string} componentType
+ */
+export function focusPanel(instanceId, componentType) {
+    const inst = instances.get(instanceId);
+    if (!inst) return;
+    const container = inst.typeToContainer.get(componentType);
+    if (container) {
+        // container is a ComponentContainer; its parent is a ComponentItem
+        // which has a focus() method that activates its tab in the stack
+        try { container.focus(); } catch { /* ignore */ }
+    }
+}
+
+/**
  * Save the current layout configuration as JSON.
  * @param {string} instanceId
  * @returns {string} Serialised layout config
