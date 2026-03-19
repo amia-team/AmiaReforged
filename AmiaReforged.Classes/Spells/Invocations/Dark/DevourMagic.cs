@@ -36,31 +36,31 @@ public class DevourMagic(DispelService dispelService) : IInvocation
 
     private void DevourArea(Location location, NwCreature warlock, int invocationCl)
     {
-        location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfMysticalExplosion));
+        location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfMysticalExplosion, fScale: 0.2f));
 
-        int dispelCount = 0;
-        foreach (NwGameObject targetObject in location.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, true))
+        HashSet<int> dispelledSpellIds = [];
+        foreach (NwGameObject targetObject in location.GetObjectsInShape(Shape.Sphere, RadiusSize.Large,
+                     losCheck: true, ObjectTypes.AreaOfEffect | ObjectTypes.Creature | ObjectTypes.Placeable))
         {
-            if (dispelService.IsDispelImmune(targetObject)) continue;
-
-            if (targetObject is NwAreaOfEffect aoeObject
-                && dispelService.TryDispelAreaOfEffect(warlock, aoeObject, invocationCl))
+            if (targetObject is NwAreaOfEffect aoeObject)
             {
-                dispelCount++;
-                aoeObject.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDestruction));
+                targetObject.Location?.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDestruction));
+                if (dispelService.TryDispelAreaOfEffect(warlock, aoeObject, invocationCl) && aoeObject.Spell != null)
+                        dispelledSpellIds.Add(aoeObject.Spell.Id);
                 continue;
             }
 
-            if (dispelService.DispelEffectsAll(warlock, targetObject, invocationCl,
+            if (dispelService.IsDispelImmune(targetObject)) continue;
+
+            if (dispelService.DispelEffectsAll(warlock, targetObject, casterLevel: invocationCl,
                     DispelService.DispelType.DevourMagic, maxSpells: 1) <= 0) continue;
 
-            dispelCount++;
             targetObject.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDestruction));
         }
 
-        if (dispelCount <= 0) return;
+        if (dispelledSpellIds.Count <= 0) return;
 
-        _ = Heal(warlock, dispelCount);
+        _ = Heal(warlock, dispelledSpellIds.Count);
     }
 
     private static async Task Heal(NwCreature warlock, int dispelCount)
