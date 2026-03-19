@@ -19,9 +19,9 @@ namespace AmiaReforged.PwEngine.Features.Chat.Commands;
 /// Disabled on the live server via <c>SERVER_MODE</c> environment variable.
 /// <list type="bullet">
 ///   <item><c>./interaction list</c> — lists all registered interaction types</item>
-///   <item><c>./interaction &lt;tag&gt;</c> — performs a tick of the named interaction on the caller</item>
-///   <item><c>./interaction &lt;tag&gt; auto</c> — runs the interaction to completion (all rounds)</item>
-///   <item><c>./interaction &lt;tag&gt; ui</c> — opens a progress-bar popup (6 s / tick, auto-advances)</item>
+///   <item><c>./interaction &lt;tag&gt;</c> — opens a progress-bar popup (6 s / tick, auto-advances)</item>
+///   <item><c>./interaction &lt;tag&gt; tick</c> — performs a single tick (debug)</item>
+///   <item><c>./interaction &lt;tag&gt; auto</c> — runs to completion instantly (debug)</item>
 /// </list>
 /// </summary>
 [ServiceBinding(typeof(IChatCommand))]
@@ -74,17 +74,23 @@ public class InteractionDevCommand : IChatCommand
             return;
         }
 
-        bool autoComplete = args.Length >= 2 && args[1].Equals("auto", StringComparison.OrdinalIgnoreCase);
-        bool useUi = args.Length >= 2 && args[1].Equals("ui", StringComparison.OrdinalIgnoreCase);
+        string mode = args.Length >= 2 ? args[1].ToLowerInvariant() : "";
 
-        if (useUi)
+        switch (mode)
         {
-            OpenProgressPopup(caller, args[0]);
-            return;
+            case "tick":
+                // Single tick for granular debugging
+                await PerformInteraction(caller, args[0], autoComplete: false);
+                return;
+            case "auto":
+                // Instant run-to-completion for quick testing
+                await PerformInteraction(caller, args[0], autoComplete: true);
+                return;
+            default:
+                // Default: open progress-bar popup with natural 6 s/tick pacing
+                OpenProgressPopup(caller, args[0]);
+                return;
         }
-
-        // Treat the first arg as an interaction tag.
-        await PerformInteraction(caller, args[0], autoComplete);
     }
 
     private void ListInteractions(NwPlayer caller)
@@ -338,6 +344,6 @@ public class InteractionDevCommand : IChatCommand
 
     private static void SendUsage(NwPlayer caller)
     {
-        caller.SendServerMessage("Usage: ./interaction list | ./interaction <tag> [auto|ui]", ColorConstants.White);
+        caller.SendServerMessage("Usage: ./interaction list | ./interaction <tag> [tick|auto]", ColorConstants.White);
     }
 }
