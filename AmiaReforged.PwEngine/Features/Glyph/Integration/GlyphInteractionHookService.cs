@@ -43,6 +43,12 @@ public class GlyphInteractionHookService
     /// </summary>
     private Dictionary<string, List<CachedBinding>> _cache = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Per-character buffer of stage trace reports, populated after each Glyph stage execution.
+    /// Consumed (and cleared) by the dev command to surface execution metadata in chat.
+    /// </summary>
+    private readonly Dictionary<string, List<StageTraceReport>> _traceBuffer = new();
+
     public GlyphInteractionHookService(
         GlyphBootstrap bootstrap,
         IGlyphRepository repository,
@@ -160,6 +166,7 @@ public class GlyphInteractionHookService
                 _bootstrap.Interpreter.ExecuteStageAsync(ctx, InteractionAttemptedStageExecutor.NodeTypeId)
                     .GetAwaiter().GetResult();
                 DumpTraceLog(ctx, "OnAttempted");
+                CaptureStageTrace(ctx, "OnAttempted");
 
                 if (ctx.ShouldBlockInteraction)
                 {
@@ -227,6 +234,7 @@ public class GlyphInteractionHookService
                 _bootstrap.Interpreter.ExecuteStageAsync(ctx, InteractionTickStageExecutor.NodeTypeId)
                     .GetAwaiter().GetResult();
                 DumpTraceLog(ctx, "OnTick");
+                CaptureStageTrace(ctx, "OnTick");
 
                 if (ctx.ShouldCancelInteraction)
                 {
@@ -299,6 +307,7 @@ public class GlyphInteractionHookService
             {
                 await _bootstrap.Interpreter.ExecuteStageAsync(ctx, InteractionStartedStageExecutor.NodeTypeId);
                 DumpTraceLog(ctx, "OnStarted");
+                CaptureStageTrace(ctx, "OnStarted");
             }
             catch (Exception ex)
             {
@@ -362,6 +371,7 @@ public class GlyphInteractionHookService
             {
                 await _bootstrap.Interpreter.ExecuteStageAsync(ctx, InteractionCompletedStageExecutor.NodeTypeId);
                 DumpTraceLog(ctx, "OnCompleted");
+                CaptureStageTrace(ctx, "OnCompleted");
             }
             catch (Exception ex)
             {
@@ -476,6 +486,68 @@ public class GlyphInteractionHookService
     }
 
     /// <summary>
+    /// Captures a stage execution trace report into the per-character buffer for consumption
+    /// by the <c>./interaction</c> dev command.
+    /// </summary>
+    private void CaptureStageTrace(GlyphExecutionContext ctx, string stageName)
+    {
+        string charId = ctx.CharacterId ?? "";
+
+        Dictionary<string, string> snapshot = new();
+
+        // Interaction context
+        if (ctx.InteractionTag != null) snapshot["interaction_tag"] = ctx.InteractionTag;
+        if (ctx.InteractionTargetId != Guid.Empty) snapshot["target_id"] = ctx.InteractionTargetId.ToString();
+        if (ctx.InteractionTargetMode != null) snapshot["target_mode"] = ctx.InteractionTargetMode;
+        if (ctx.InteractionAreaResRef != null) snapshot["area"] = ctx.InteractionAreaResRef;
+        if (ctx.InteractionSessionId != Guid.Empty) snapshot["session_id"] = ctx.InteractionSessionId.ToString();
+        if (ctx.InteractionRequiredRounds > 0) snapshot["progress"] = $"{ctx.InteractionProgress}/{ctx.InteractionRequiredRounds}";
+        if (ctx.InteractionProficiency != null) snapshot["proficiency"] = ctx.InteractionProficiency;
+        if (ctx.InteractionCreature != 0) snapshot["creature"] = $"0x{ctx.InteractionCreature:X}";
+
+        // Execution flags
+        if (ctx.ShouldBlockInteraction) snapshot["blocked"] = ctx.BlockInteractionMessage ?? "true";
+        if (ctx.ShouldCancelInteraction) snapshot["cancelled"] = ctx.CancelInteractionMessage ?? "true";
+
+        // Variables
+        foreach (KeyValuePair<string, object?> kvp in ctx.Variables)
+        {
+            snapshot[$"var:{kvp.Key}"] = kvp.Value?.ToString() ?? "(null)";
+        }
+
+        StageTraceReport report = new()
+        {
+            StageName = stageName,
+            GraphName = ctx.Graph.Name,
+            StepsExecuted = ctx.ExecutionStepCount,
+            TraceEntries = new List<string>(ctx.TraceLog),
+            ContextSnapshot = snapshot,
+        };
+
+        if (!_traceBuffer.TryGetValue(charId, out List<StageTraceReport>? list))
+        {
+            list = [];
+            _traceBuffer[charId] = list;
+        }
+
+        list.Add(report);
+    }
+
+    /// <summary>
+    /// Returns and clears all stage trace reports accumulated for the given character.
+    /// Called by the <c>./interaction</c> dev command after each <see cref="IInteractionSubsystem.PerformInteractionAsync"/> call.
+    /// </summary>
+    public List<StageTraceReport> GetAndClearStageTraces(string characterId)
+    {
+        if (_traceBuffer.Remove(characterId, out List<StageTraceReport>? reports))
+        {
+            return reports;
+        }
+
+        return [];
+    }
+
+    /// <summary>
     /// Switches to the NWN main thread if running under Anvil.
     /// No-ops gracefully in test environments where NwTask is unavailable.
     /// </summary>
@@ -492,4 +564,27 @@ public class GlyphInteractionHookService
     }
 
     private sealed record CachedBinding(GlyphGraph Graph, string? AreaResRef, int Priority);
+}
+
+/// <summary>
+/// Snapshot of a single Glyph pipeline stage execution, captured for display by dev tools.
+/// </summary>
+public record StageTraceReport
+{
+    /// <summary>Stage name: OnAttempted, OnStarted, OnTick, OnCompleted.</summary>
+    public required string StageName { get; init; }
+
+    /// <summary>Name of the graph that was executed.</summary>
+    public required string GraphName { get; init; }
+
+    /// <summary>Number of node execution steps taken during this stage.</summary>
+    public required int StepsExecuted { get; init; }
+
+    /// <summary>Per-node trace log entries from the interpreter.</summary>
+    public required List<string> TraceEntries { get; init; }
+
+    /// <summary>
+    /// Key-value snapshot of execution context: interaction metadata, flags, variables.
+    /// </summary>
+    public required Dictionary<string, string> ContextSnapshot { get; init; }
 }

@@ -1,4 +1,5 @@
 using System.Text;
+using AmiaReforged.PwEngine.Features.Glyph.Integration;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
@@ -24,12 +25,17 @@ public class InteractionDevCommand : IChatCommand
 {
     private readonly IInteractionSubsystem _interactions;
     private readonly RuntimeCharacterService _characters;
+    private readonly GlyphInteractionHookService? _glyphHook;
     private readonly bool _isEnabled;
 
-    public InteractionDevCommand(IInteractionSubsystem interactions, RuntimeCharacterService characters)
+    public InteractionDevCommand(
+        IInteractionSubsystem interactions,
+        RuntimeCharacterService characters,
+        GlyphInteractionHookService? glyphHook = null)
     {
         _interactions = interactions;
         _characters = characters;
+        _glyphHook = glyphHook;
         _isEnabled = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE") != "live";
     }
 
@@ -138,6 +144,7 @@ public class InteractionDevCommand : IChatCommand
         CommandResult result = await _interactions.PerformInteractionAsync(
             characterId, tag, targetId, areaResRef);
 
+        TraceStageReports(caller, characterId);
         TraceResult(caller, tag, characterId, result);
     }
 
@@ -158,6 +165,7 @@ public class InteractionDevCommand : IChatCommand
             CommandResult result = await _interactions.PerformInteractionAsync(
                 characterId, tag, targetId, areaResRef);
 
+            TraceStageReports(caller, characterId);
             TraceResult(caller, tag, characterId, result);
 
             if (!result.Success)
@@ -219,6 +227,55 @@ public class InteractionDevCommand : IChatCommand
         else
         {
             Trace(caller, "Session: ended (no active session).");
+        }
+    }
+
+    /// <summary>
+    /// Fetches any accumulated Glyph stage trace reports for the character and dumps them to chat.
+    /// Called after each <see cref="IInteractionSubsystem.PerformInteractionAsync"/> call
+    /// so the developer can see exactly what each pipeline stage did.
+    /// </summary>
+    private void TraceStageReports(NwPlayer caller, CharacterId characterId)
+    {
+        if (_glyphHook == null) return;
+
+        List<StageTraceReport> reports = _glyphHook.GetAndClearStageTraces(characterId.Value.ToString());
+        if (reports.Count == 0) return;
+
+        foreach (StageTraceReport report in reports)
+        {
+            Trace(caller, $"┌─ Glyph Stage: {report.StageName} ─ Graph: {report.GraphName}",
+                new Color(100, 200, 255)); // light blue header
+            Trace(caller, $"│  Steps executed: {report.StepsExecuted}");
+
+            // Trace log entries (per-node execution details)
+            if (report.TraceEntries.Count > 0)
+            {
+                Trace(caller, $"│  Trace log ({report.TraceEntries.Count} entries):");
+                foreach (string entry in report.TraceEntries)
+                {
+                    Trace(caller, $"│    {entry}");
+                }
+            }
+            else
+            {
+                Trace(caller, "│  Trace log: (empty)");
+            }
+
+            // Context snapshot: flags, interaction metadata, variables
+            if (report.ContextSnapshot.Count > 0)
+            {
+                Trace(caller, "│  Context:");
+                foreach (KeyValuePair<string, string> kvp in report.ContextSnapshot)
+                {
+                    Color entryColor = kvp.Key is "blocked" or "cancelled"
+                        ? ColorConstants.Orange
+                        : ColorConstants.Silver;
+                    Trace(caller, $"│    {kvp.Key} = {kvp.Value}", entryColor);
+                }
+            }
+
+            Trace(caller, "└──────────────────────────", new Color(100, 200, 255));
         }
     }
 
