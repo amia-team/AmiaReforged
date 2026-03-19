@@ -38,6 +38,13 @@ public interface IInteractionSubsystem
     /// Returns the tags of all registered interaction types.
     /// </summary>
     IReadOnlyCollection<string> GetRegisteredInteractionTypes();
+
+    /// <summary>
+    /// Returns a human-friendly display name for an interaction tag.
+    /// Prefers the <see cref="Interactions.InteractionDefinition.Name"/> from the definition repository;
+    /// falls back to humanizing the tag (capitalize, replace underscores with spaces).
+    /// </summary>
+    string GetInteractionDisplayName(string interactionTag);
 }
 
 /// <summary>Summary of an active interaction session for querying.</summary>

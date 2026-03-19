@@ -69,4 +69,23 @@ public sealed class InteractionSubsystem(
 
         return tags.ToList();
     }
+
+    /// <inheritdoc />
+    public string GetInteractionDisplayName(string interactionTag)
+    {
+        InteractionDefinition? definition = definitionRepository.Get(interactionTag);
+        if (definition is not null && !string.IsNullOrWhiteSpace(definition.Name))
+        {
+            return definition.Name;
+        }
+
+        // Fallback: humanize the tag
+        string display = interactionTag;
+        if (display.Length > 0)
+        {
+            display = char.ToUpper(display[0]) + display[1..];
+        }
+
+        return display.Replace('_', ' ');
+    }
 }

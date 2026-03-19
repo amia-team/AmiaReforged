@@ -65,7 +65,7 @@ public sealed class InteractionProgressPresenter : ScryPresenter<InteractionProg
     {
         _cancelled = false;
 
-        _window = new NuiWindow(View.RootLayout(), $"Interaction: {_interactionTag}")
+        _window = new NuiWindow(View.RootLayout(), "")
         {
             Geometry = new NuiRect(
                 -1f, -1f,
@@ -74,7 +74,8 @@ public sealed class InteractionProgressPresenter : ScryPresenter<InteractionProg
             Closable = false,
             Resizable = false,
             Collapsed = false,
-            Border = true
+            Transparent = true,
+            Border = false
         };
     }
 
@@ -121,6 +122,7 @@ public sealed class InteractionProgressPresenter : ScryPresenter<InteractionProg
         _ = NwTask.Run(async () =>
         {
             IInteractionSubsystem interactions = InteractionSubsystem!.Value;
+            string displayName = interactions.GetInteractionDisplayName(_interactionTag);
 
             for (int tick = 0; tick < MaxTicks; tick++)
             {
@@ -167,7 +169,7 @@ public sealed class InteractionProgressPresenter : ScryPresenter<InteractionProg
                     _token.SetBindValue(View.RoundsRemainingText, "");
 
                     _player.SendServerMessage(
-                        $"Interaction '{_interactionTag}' {message.ToLowerInvariant()}",
+                        $"{displayName} {message.ToLowerInvariant()}",
                         color);
 
                     await NwTask.Delay(TimeSpan.FromSeconds(AutoClosDelaySeconds));
@@ -176,24 +178,39 @@ public sealed class InteractionProgressPresenter : ScryPresenter<InteractionProg
                     return;
                 }
 
-                // ─── Update progress bar ───
+                // ─── Update progress bar per second within the round ───
                 InteractionInfo? info = interactions.GetActiveInteraction(_characterId);
                 if (info != null)
                 {
-                    float progress = info.RequiredRounds > 0
-                        ? info.Progress / (float)info.RequiredRounds
-                        : 0f;
+                    _token.SetBindValue(View.StatusText, $"{displayName}...");
+
+                    int totalSeconds = info.RequiredRounds * SecondsPerTick;
+                    int completedSeconds = info.Progress * SecondsPerTick;
                     int remaining = info.RequiredRounds - info.Progress;
 
-                    _token.SetBindValue(View.ProgressValue, Math.Clamp(progress, 0f, 1f));
-                    _token.SetBindValue(View.StatusText, FormatStatusText(info));
                     _token.SetBindValue(View.RoundsRemainingText,
                         remaining > 0 ? $"{remaining} round{(remaining != 1 ? "s" : "")} remaining" : "");
-                }
 
-                // ─── Wait for next tick (1 NWN round = 6 seconds) ───
-                await NwTask.Delay(TimeSpan.FromSeconds(SecondsPerTick));
-                await NwTask.SwitchToMainThread();
+                    // Advance the bar once per second for smooth visual feedback
+                    for (int sec = 0; sec < SecondsPerTick; sec++)
+                    {
+                        if (_cancelled || !_player.IsValid) return;
+
+                        float progress = totalSeconds > 0
+                            ? (completedSeconds + sec) / (float)totalSeconds
+                            : 0f;
+                        _token.SetBindValue(View.ProgressValue, Math.Clamp(progress, 0f, 1f));
+
+                        await NwTask.Delay(TimeSpan.FromSeconds(1));
+                        await NwTask.SwitchToMainThread();
+                    }
+                }
+                else
+                {
+                    // No active info yet — wait the full round
+                    await NwTask.Delay(TimeSpan.FromSeconds(SecondsPerTick));
+                    await NwTask.SwitchToMainThread();
+                }
             }
 
             // Safety limit
@@ -220,26 +237,11 @@ public sealed class InteractionProgressPresenter : ScryPresenter<InteractionProg
         _token.SetBindValue(View.RoundsRemainingText, message);
 
         _player.SendServerMessage(
-            $"Interaction '{_interactionTag}': {message}",
+            $"{label}: {message}",
             label == "Failed" ? ColorConstants.Red : ColorConstants.Orange);
 
         await NwTask.Delay(TimeSpan.FromSeconds(AutoClosDelaySeconds));
         await NwTask.SwitchToMainThread();
         if (!_cancelled) { RaiseCloseEvent(); Close(); }
-    }
-
-    private static string FormatStatusText(InteractionInfo info)
-    {
-        // Capitalize first letter of the tag for display
-        string display = info.InteractionTag;
-        if (display.Length > 0)
-        {
-            display = char.ToUpper(display[0]) + display[1..];
-        }
-
-        // Replace underscores with spaces for readability
-        display = display.Replace('_', ' ');
-
-        return $"{display}...";
     }
 }
