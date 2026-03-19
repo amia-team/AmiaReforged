@@ -1,9 +1,11 @@
 using AmiaReforged.Classes.Warlock;
 using Anvil.API;
 using Anvil.API.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Dark;
 
+[ServiceBinding(typeof(IInvocation))]
 public class DarkForesight : IInvocation
 {
     public string ImpactScript => "wlk_darksight";
