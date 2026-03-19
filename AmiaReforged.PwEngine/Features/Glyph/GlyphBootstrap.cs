@@ -107,6 +107,7 @@ public class GlyphBootstrap
         new GetSpawnGroupInfoExecutor(),
         new GetTriggeringPlayerExecutor(),
         new GetNearestObjectsByTypeExecutor(),
+        new GetObjectsOfTypeInAreaExecutor(),
         new GetTagExecutor(),
         new GetObjectResRefExecutor(),
         new GetDistanceBetweenExecutor(),
