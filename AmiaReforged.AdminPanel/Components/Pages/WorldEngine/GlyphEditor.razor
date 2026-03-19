@@ -365,16 +365,19 @@
                                 <button class="btn btn-sm p-0" style="color:var(--text-secondary);font-size:0.9rem;line-height:1" @onclick="() => _showContextPanel = false" title="Close">✕</button>
                             </div>
                             <div class="card-body p-0" style="max-height:600px;overflow-y:auto">
-                                @foreach (GlyphNodeCatalogEntryDto ctxNode in ContextCatalog)
+                                @if (_contextNodes.Count > 0)
                                 {
-                                    <div class="px-3 py-2 glyph-node-entry" style="border-bottom:1px solid var(--border-color);cursor:pointer"
-                                         draggable="true" ondragstart="event.dataTransfer.setData('application/glyph-node', '@ctxNode.TypeId')"
-                                         @onclick="() => AddNodeToGraph(ctxNode)" title="@ctxNode.Description">
-                                        <span class="badge me-1" style="background:@GetNodeColor(ctxNode.ColorClass)">@ctxNode.ColorClass</span>
-                                        <span style="color:var(--text-primary);font-size:0.85rem">@ctxNode.DisplayName</span>
-                                    </div>
+                                    @foreach (GlyphNodeCatalogEntryDto ctxNode in _contextNodes)
+                                    {
+                                        <div class="px-3 py-2 glyph-node-entry" style="border-bottom:1px solid var(--border-color);cursor:pointer"
+                                             draggable="true" ondragstart="event.dataTransfer.setData('application/glyph-node', '@ctxNode.TypeId')"
+                                             @onclick="() => AddNodeToGraph(ctxNode)" title="@ctxNode.Description">
+                                            <span class="badge me-1" style="background:@GetNodeColor(ctxNode.ColorClass)">@ctxNode.ColorClass</span>
+                                            <span style="color:var(--text-primary);font-size:0.85rem">@ctxNode.DisplayName</span>
+                                        </div>
+                                    }
                                 }
-                                @if (!ContextCatalog.Any())
+                                else
                                 {
                                     <p class="px-3 py-2 mb-0" style="color:var(--text-secondary);font-size:0.8rem">No context nodes available.</p>
                                 }
@@ -542,6 +545,7 @@
     // Context palette
     private string? _contextSourceTypeId;
     private bool _showContextPanel;
+    private List<GlyphNodeCatalogEntryDto> _contextNodes = [];
 
     // JS interop reference for cleanup
     private IJSObjectReference? _editorModule;
@@ -945,15 +949,24 @@
     // ==================== Property Editor ====================
 
     [JSInvokable]
-    public async Task OnShowContextNodes(string sourceTypeId)
+    public Task OnShowContextNodes(string sourceTypeId)
     {
-        _contextSourceTypeId = sourceTypeId;
-        _showContextPanel = true;
-        await InvokeAsync(StateHasChanged);
-    }
+        try
+        {
+            _contextSourceTypeId = sourceTypeId;
+            _contextNodes = _nodeCatalog
+                .Where(n => n.ContextSourceTypeId == _contextSourceTypeId)
+                .ToList();
+            _showContextPanel = true;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "[GlyphEditor] OnShowContextNodes failed for sourceTypeId={SourceTypeId}", sourceTypeId);
+        }
 
-    private IEnumerable<GlyphNodeCatalogEntryDto> ContextCatalog =>
-        _nodeCatalog.Where(n => n.ContextSourceTypeId == _contextSourceTypeId);
+        InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
+    }
 
     [JSInvokable]
     public Task OnNodeSelectionChanged(string? json)
