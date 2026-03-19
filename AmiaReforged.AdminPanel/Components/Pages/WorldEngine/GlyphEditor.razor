@@ -945,12 +945,11 @@
     // ==================== Property Editor ====================
 
     [JSInvokable]
-    public Task OnShowContextNodes(string sourceTypeId)
+    public async Task OnShowContextNodes(string sourceTypeId)
     {
         _contextSourceTypeId = sourceTypeId;
         _showContextPanel = true;
-        InvokeAsync(StateHasChanged);
-        return Task.CompletedTask;
+        await InvokeAsync(StateHasChanged);
     }
 
     private IEnumerable<GlyphNodeCatalogEntryDto> ContextCatalog =>
