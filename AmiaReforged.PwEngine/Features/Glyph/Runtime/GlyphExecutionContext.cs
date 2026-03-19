@@ -239,6 +239,13 @@ public class GlyphExecutionContext
     public Dictionary<string, object?> PinValueCache { get; set; } = new();
 
     /// <summary>
+    /// Reference to the active execution stack, set during <c>FollowExecChain</c>.
+    /// Used by the interpreter to record lazily-evaluated data nodes in loop frames
+    /// so their cached outputs can be invalidated on the next loop iteration.
+    /// </summary>
+    internal Stack<GlyphExecFrame>? ActiveStack { get; set; }
+
+    /// <summary>
     /// Cancellation token for cooperative cancellation (e.g., server shutdown).
     /// </summary>
     public CancellationToken CancellationToken { get; init; }

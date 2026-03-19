@@ -34,4 +34,12 @@ public class GlyphExecFrame
     /// is needed (the executor manages the iteration state).
     /// </summary>
     public bool IsLoop { get; init; }
+
+    /// <summary>
+    /// Tracks all node instance IDs that were executed (or lazily evaluated) inside the
+    /// current loop iteration's body. On each iteration advance, the interpreter clears
+    /// the <see cref="GlyphExecutionContext.PinValueCache"/> entries for these nodes so
+    /// that pure-function nodes are re-evaluated with fresh upstream values.
+    /// </summary>
+    public HashSet<Guid> LoopBodyNodeIds { get; } = [];
 }

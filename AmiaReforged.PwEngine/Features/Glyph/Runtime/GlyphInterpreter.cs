@@ -122,6 +122,7 @@ public class GlyphInterpreter
         GlyphExecutionContext context)
     {
         Stack<GlyphExecFrame> stack = new();
+        context.ActiveStack = stack;
         Guid currentNodeId = sourceNode.InstanceId;
         string currentPinId = execPinId;
 
@@ -235,8 +236,9 @@ public class GlyphInterpreter
             if (frame.IsLoop)
             {
                 // Re-execute the loop node to advance the iteration
-                // Clear cached outputs so the node produces fresh values for this iteration
+                // Clear cached outputs for the loop node and all nodes executed inside the body
                 ClearNodeOutputCache(frame.Node, context);
+                ClearLoopBodyCaches(frame, context);
 
                 GlyphNodeResult loopResult = await ExecuteNode(frame.Node, context);
 
@@ -301,6 +303,7 @@ public class GlyphInterpreter
 
                 // Clear cached outputs so downstream nodes don't see stale iteration values
                 ClearNodeOutputCache(frame.Node, context);
+                ClearLoopBodyCaches(frame, context);
 
                 Trace(context, $"Break: unwound to loop node {frame.Node.TypeId}, resuming via 'completed' pin.");
 
@@ -334,6 +337,46 @@ public class GlyphInterpreter
     }
 
     /// <summary>
+    /// Clears cached output values for all nodes that executed inside a loop body iteration.
+    /// Called on each iteration advance so pure-function data nodes are re-evaluated with
+    /// the new loop element rather than returning stale cached results from a prior iteration.
+    /// After clearing, resets the tracking set for the next iteration.
+    /// </summary>
+    private static void ClearLoopBodyCaches(GlyphExecFrame loopFrame, GlyphExecutionContext context)
+    {
+        foreach (Guid nodeId in loopFrame.LoopBodyNodeIds)
+        {
+            string prefix = $"{nodeId}:";
+            List<string> keysToRemove = context.PinValueCache.Keys
+                .Where(k => k.StartsWith(prefix, StringComparison.Ordinal))
+                .ToList();
+
+            foreach (string key in keysToRemove)
+            {
+                context.PinValueCache.Remove(key);
+            }
+        }
+
+        loopFrame.LoopBodyNodeIds.Clear();
+    }
+
+    /// <summary>
+    /// Records a node ID in the innermost loop frame's <see cref="GlyphExecFrame.LoopBodyNodeIds"/>
+    /// so its cached outputs can be invalidated on the next iteration.
+    /// </summary>
+    private static void RecordNodeInLoopFrame(Stack<GlyphExecFrame> stack, Guid nodeId)
+    {
+        foreach (GlyphExecFrame frame in stack)
+        {
+            if (frame.IsLoop)
+            {
+                frame.LoopBodyNodeIds.Add(nodeId);
+                return;
+            }
+        }
+    }
+
+    /// <summary>
     /// Executes a single node: finds its executor, resolves input data pins, and runs it.
     /// </summary>
     private async Task<GlyphNodeResult> ExecuteNode(
@@ -342,6 +385,13 @@ public class GlyphInterpreter
     {
         context.ExecutionStepCount++;
         Trace(context, $"Step {context.ExecutionStepCount}: Executing node '{node.TypeId}' ({node.InstanceId})");
+
+        // Record this node in the innermost loop frame so its cached outputs
+        // are invalidated when the loop advances to the next iteration.
+        if (context.ActiveStack != null)
+        {
+            RecordNodeInLoopFrame(context.ActiveStack, node.InstanceId);
+        }
 
         if (!_executors.TryGetValue(node.TypeId, out IGlyphNodeExecutor? executor))
         {
