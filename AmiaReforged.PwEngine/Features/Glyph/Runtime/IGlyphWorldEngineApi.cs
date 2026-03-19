@@ -3,10 +3,10 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime;
 
 /// <summary>
-/// Read-only facade that exposes World Engine industry and knowledge data to Glyph node executors.
+/// Facade that exposes World Engine data and operations to Glyph node executors.
 /// Set on <see cref="GlyphExecutionContext.WorldEngine"/> by the hook service that creates the context.
-/// Implementations wrap the industry/membership/knowledge repositories and services so that
-/// node executors remain stateless POCOs with no direct dependency injection.
+/// Implementations wrap the industry/membership/knowledge repositories and resource node services
+/// so that node executors remain stateless POCOs with no direct dependency injection.
 /// </summary>
 public interface IGlyphWorldEngineApi
 {
@@ -48,6 +48,24 @@ public interface IGlyphWorldEngineApi
     /// Returns a zeroed-out record if the character has no progression data.
     /// </summary>
     KnowledgeProgressionInfo GetKnowledgeProgression(Guid characterId);
+
+    // ── Resource Node Operations ──────────────────────────────────────────
+
+    /// <summary>
+    /// Spawns a single resource node inside a trigger zone, using the area's resource definitions
+    /// filtered by the trigger's <c>node_tags</c> local variable (comma-separated type names).
+    /// <para>
+    /// The method resolves the trigger from its UUID string, reads the type filter from the
+    /// trigger's local variables, looks up the <see cref="AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions.AreaDefinition"/>
+    /// for the given area ResRef, filters its definition tags by matching resource type, randomly
+    /// selects one definition, generates a walkable position inside the trigger, and creates + spawns
+    /// the node.
+    /// </para>
+    /// </summary>
+    /// <param name="triggerUuid">The UUID string of the NWN trigger to spawn within.</param>
+    /// <param name="areaResRef">The ResRef of the area, used to look up the AreaDefinition and its resource tags.</param>
+    /// <returns>A <see cref="SpawnResourceNodeResult"/> on success, or <c>null</c> if spawning failed (reason logged server-side).</returns>
+    SpawnResourceNodeResult? SpawnResourceNode(string triggerUuid, string areaResRef);
 }
 
 /// <summary>
@@ -59,3 +77,17 @@ public record IndustryMembershipInfo(string Tag, string Name, ProficiencyLevel L
 /// Lightweight DTO wrapping the character's knowledge point progression state.
 /// </summary>
 public record KnowledgeProgressionInfo(int TotalKp, int EconomyKp, int LevelUpKp, int AccumulatedProgressionPoints);
+
+/// <summary>
+/// Result DTO returned by <see cref="IGlyphWorldEngineApi.SpawnResourceNode"/> on success.
+/// Contains everything a downstream Glyph node might need to reference the spawned node.
+/// </summary>
+public record SpawnResourceNodeResult(
+    Guid NodeId,
+    string Name,
+    string DefinitionTag,
+    string QualityLabel,
+    int Uses,
+    float X,
+    float Y,
+    float Z);

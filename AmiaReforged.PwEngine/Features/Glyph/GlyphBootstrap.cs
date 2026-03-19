@@ -79,6 +79,7 @@ public class GlyphBootstrap
         new SetCreatureNameExecutor(),
         new HealCreatureExecutor(),
         new DamageCreatureExecutor(),
+        new SpawnResourceNodeExecutor(),
 
         // Constants
         new StringConstantExecutor(),
