@@ -1,10 +1,12 @@
 using System.Text;
 using AmiaReforged.PwEngine.Features.Glyph.Integration;
+using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.Nui;
 using Anvil.API;
 using Anvil.Services;
 using NLog;
@@ -19,6 +21,7 @@ namespace AmiaReforged.PwEngine.Features.Chat.Commands;
 ///   <item><c>./interaction list</c> — lists all registered interaction types</item>
 ///   <item><c>./interaction &lt;tag&gt;</c> — performs a tick of the named interaction on the caller</item>
 ///   <item><c>./interaction &lt;tag&gt; auto</c> — runs the interaction to completion (all rounds)</item>
+///   <item><c>./interaction &lt;tag&gt; ui</c> — opens a progress-bar popup (6 s / tick, auto-advances)</item>
 /// </list>
 /// </summary>
 [ServiceBinding(typeof(IChatCommand))]
@@ -29,16 +32,19 @@ public class InteractionDevCommand : IChatCommand
     private readonly IInteractionSubsystem _interactions;
     private readonly RuntimeCharacterService _characters;
     private readonly GlyphInteractionHookService? _glyphHook;
+    private readonly WindowDirector? _windowDirector;
     private readonly bool _isEnabled;
 
     public InteractionDevCommand(
         IInteractionSubsystem interactions,
         RuntimeCharacterService characters,
-        GlyphInteractionHookService? glyphHook = null)
+        GlyphInteractionHookService? glyphHook = null,
+        WindowDirector? windowDirector = null)
     {
         _interactions = interactions;
         _characters = characters;
         _glyphHook = glyphHook;
+        _windowDirector = windowDirector;
         _isEnabled = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE") != "live";
     }
 
@@ -69,6 +75,13 @@ public class InteractionDevCommand : IChatCommand
         }
 
         bool autoComplete = args.Length >= 2 && args[1].Equals("auto", StringComparison.OrdinalIgnoreCase);
+        bool useUi = args.Length >= 2 && args[1].Equals("ui", StringComparison.OrdinalIgnoreCase);
+
+        if (useUi)
+        {
+            OpenProgressPopup(caller, args[0]);
+            return;
+        }
 
         // Treat the first arg as an interaction tag.
         await PerformInteraction(caller, args[0], autoComplete);
@@ -292,8 +305,39 @@ public class InteractionDevCommand : IChatCommand
         }
     }
 
+    /// <summary>
+    /// Opens the interaction progress-bar popup, which will tick every 6 seconds and
+    /// auto-close when the interaction completes or fails.
+    /// </summary>
+    private void OpenProgressPopup(NwPlayer caller, string tag)
+    {
+        if (_windowDirector == null)
+        {
+            caller.SendServerMessage("WindowDirector is not available.", ColorConstants.Orange);
+            return;
+        }
+
+        NwCreature? creature = caller.LoginCreature;
+        if (creature is null) return;
+
+        if (!_characters.TryGetPlayerKey(caller, out Guid playerKey))
+        {
+            caller.SendServerMessage("Could not resolve your character ID.", ColorConstants.Red);
+            return;
+        }
+
+        CharacterId characterId = CharacterId.From(playerKey);
+        Guid targetId = creature.UUID;
+        string? areaResRef = creature.Area?.ResRef;
+
+        InteractionProgressView view = new(caller, tag, characterId, targetId, areaResRef);
+        _windowDirector.OpenWindow(view.Presenter);
+
+        caller.SendServerMessage($"Opened interaction progress popup for '{tag}'.", ColorConstants.Lime);
+    }
+
     private static void SendUsage(NwPlayer caller)
     {
-        caller.SendServerMessage("Usage: ./interaction list | ./interaction <tag> [auto]", ColorConstants.White);
+        caller.SendServerMessage("Usage: ./interaction list | ./interaction <tag> [auto|ui]", ColorConstants.White);
     }
 }

@@ -6,6 +6,7 @@ using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Events;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Flow;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
+using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Logic;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Math;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Traits;
 using Anvil.Services;
@@ -116,6 +117,7 @@ public class GlyphBootstrap
         new MathOpExecutor(),
         new BooleanOpExecutor(),
         new NotExecutor(),
+        new StringContainsExecutor(),
 
         // Traits
         new HasTraitExecutor(),
