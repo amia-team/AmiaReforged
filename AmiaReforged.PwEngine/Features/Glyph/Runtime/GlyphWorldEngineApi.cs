@@ -186,34 +186,35 @@ public class GlyphWorldEngineApi : IGlyphWorldEngineApi
     }
 
     /// <inheritdoc />
-    public SpawnResourceNodeResult? SpawnResourceNode(string triggerUuid, string areaResRef)
+    public SpawnResourceNodeResult? SpawnResourceNode(uint triggerHandle)
     {
         try
         {
-            // 1. Resolve trigger from UUID
-            if (string.IsNullOrWhiteSpace(triggerUuid))
-            {
-                Log.Warn("[GlyphWorldEngineApi] SpawnResourceNode: triggerUuid is null or empty.");
-                return null;
-            }
-
-            uint triggerHandle = NWScript.GetObjectByUUID(triggerUuid);
+            // 1. Resolve trigger from the object handle
             NwTrigger? trigger = triggerHandle.ToNwObject<NwTrigger>();
 
             if (trigger == null)
             {
-                Log.Warn("[GlyphWorldEngineApi] SpawnResourceNode: UUID '{Uuid}' did not resolve to a valid trigger.",
-                    triggerUuid);
+                Log.Warn("[GlyphWorldEngineApi] SpawnResourceNode: handle {Handle} did not resolve to a valid trigger.",
+                    triggerHandle);
                 return null;
             }
 
-            // 2. Read node_tags type filter from the trigger's local variable
+            // 2. Validate the trigger is a worldengine_node_region
+            if (!string.Equals(trigger.Tag, "worldengine_node_region", StringComparison.OrdinalIgnoreCase))
+            {
+                Log.Warn("[GlyphWorldEngineApi] SpawnResourceNode: trigger '{Tag}' is not tagged 'worldengine_node_region'.",
+                    trigger.Tag);
+                return null;
+            }
+
+            // 3. Read node_tags type filter from the trigger's local variable
             string nodeTypesStr = NWScript.GetLocalString(trigger, WorldConstants.LvarNodeTags);
 
             if (string.IsNullOrWhiteSpace(nodeTypesStr))
             {
-                Log.Warn("[GlyphWorldEngineApi] SpawnResourceNode: trigger '{Tag}' has no '{Lvar}' local variable.",
-                    trigger.Tag, WorldConstants.LvarNodeTags);
+                Log.Warn("[GlyphWorldEngineApi] SpawnResourceNode: trigger has no '{Lvar}' local variable.",
+                    WorldConstants.LvarNodeTags);
                 return null;
             }
 
@@ -226,17 +227,19 @@ public class GlyphWorldEngineApi : IGlyphWorldEngineApi
 
             if (typeFilters.Count == 0)
             {
-                Log.Warn("[GlyphWorldEngineApi] SpawnResourceNode: trigger '{Tag}' has empty node_tags.",
-                    trigger.Tag);
+                Log.Warn("[GlyphWorldEngineApi] SpawnResourceNode: trigger has empty node_tags.");
                 return null;
             }
 
-            // 3. Look up the AreaDefinition for the given area ResRef
-            if (string.IsNullOrWhiteSpace(areaResRef))
+            // 4. Derive area ResRef from the trigger's location
+            NwArea? nwArea = trigger.Area;
+            if (nwArea == null)
             {
-                Log.Warn("[GlyphWorldEngineApi] SpawnResourceNode: areaResRef is null or empty.");
+                Log.Warn("[GlyphWorldEngineApi] SpawnResourceNode: trigger has no area.");
                 return null;
             }
+
+            string areaResRef = nwArea.ResRef;
 
             AreaDefinition? area = FindAreaDefinition(areaResRef);
             if (area == null)
@@ -253,7 +256,7 @@ public class GlyphWorldEngineApi : IGlyphWorldEngineApi
                 return null;
             }
 
-            // 4. Filter area DefinitionTags by trigger's type filters (same logic as ProvisionAreaNodesCommandHandler)
+            // 5. Filter area DefinitionTags by trigger's type filters (same logic as ProvisionAreaNodesCommandHandler)
             List<ResourceNodeDefinition> matchingDefinitions = [];
             foreach (string definitionTag in area.DefinitionTags)
             {
@@ -275,14 +278,14 @@ public class GlyphWorldEngineApi : IGlyphWorldEngineApi
                 return null;
             }
 
-            // 5. Randomly select one definition
+            // 6. Randomly select one definition
             ResourceNodeDefinition selected = matchingDefinitions[Random.Shared.Next(matchingDefinitions.Count)];
 
-            // 6. Generate a spawn position inside the trigger
+            // 7. Generate a spawn position inside the trigger
             System.Numerics.Vector3 position = _triggerSpawnService.GetRandomPointInTrigger(trigger);
             float rotation = (float)(Random.Shared.NextDouble() * 360);
 
-            // 7. Create the node instance (persists to DB) and spawn the in-game placeable
+            // 8. Create the node instance (persists to DB) and spawn the in-game placeable
             ResourceNodeInstance node = _nodeService.CreateNewNode(area, selected, position, rotation);
             _nodeService.SpawnInstance(node);
 
@@ -304,8 +307,8 @@ public class GlyphWorldEngineApi : IGlyphWorldEngineApi
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "[GlyphWorldEngineApi] SpawnResourceNode failed for trigger '{Uuid}', area '{Area}'.",
-                triggerUuid, areaResRef);
+            Log.Error(ex, "[GlyphWorldEngineApi] SpawnResourceNode failed for trigger handle {Handle}.",
+                triggerHandle);
             return null;
         }
     }

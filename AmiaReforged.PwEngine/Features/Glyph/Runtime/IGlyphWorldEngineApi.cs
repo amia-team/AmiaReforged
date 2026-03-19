@@ -55,17 +55,18 @@ public interface IGlyphWorldEngineApi
     /// Spawns a single resource node inside a trigger zone, using the area's resource definitions
     /// filtered by the trigger's <c>node_tags</c> local variable (comma-separated type names).
     /// <para>
-    /// The method resolves the trigger from its UUID string, reads the type filter from the
-    /// trigger's local variables, looks up the <see cref="AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions.AreaDefinition"/>
-    /// for the given area ResRef, filters its definition tags by matching resource type, randomly
-    /// selects one definition, generates a walkable position inside the trigger, and creates + spawns
-    /// the node.
+    /// The method resolves the trigger from its NWN object handle, validates it is tagged
+    /// <c>worldengine_node_region</c>, reads the type filter from the trigger's local variables,
+    /// derives the area from the trigger's location, looks up the matching
+    /// <see cref="AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions.AreaDefinition"/>,
+    /// filters its definition tags by matching resource type, randomly selects one definition,
+    /// generates a walkable position inside the trigger, and creates + spawns the node.
     /// </para>
     /// </summary>
-    /// <param name="triggerUuid">The UUID string of the NWN trigger to spawn within.</param>
-    /// <param name="areaResRef">The ResRef of the area, used to look up the AreaDefinition and its resource tags.</param>
-    /// <returns>A <see cref="SpawnResourceNodeResult"/> on success, or <c>null</c> if spawning failed (reason logged server-side).</returns>
-    SpawnResourceNodeResult? SpawnResourceNode(string triggerUuid, string areaResRef);
+    /// <param name="triggerHandle">The raw NWN object handle of the trigger to spawn within.</param>
+    /// <returns>A <see cref="SpawnResourceNodeResult"/> on success, or <c>null</c> if spawning failed
+    /// (wrong tag, missing definitions, invalid trigger, etc. — reason logged server-side).</returns>
+    SpawnResourceNodeResult? SpawnResourceNode(uint triggerHandle);
 }
 
 /// <summary>

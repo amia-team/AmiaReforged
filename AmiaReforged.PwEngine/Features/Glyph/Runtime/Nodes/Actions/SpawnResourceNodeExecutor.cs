@@ -11,13 +11,14 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 /// resource nodes without hard-coding any assumptions about the interaction type.
 /// </para>
 /// <para>
-/// <b>Inputs:</b> a trigger UUID (String — wire from <c>target_id</c> on a stage node) and
-/// the area ResRef (String — wire from <c>area_resref</c>).<br/>
+/// <b>Input:</b> a trigger object (NwObject — wire from <c>target_id</c> or any other game object pin
+/// that references a <c>worldengine_node_region</c>-tagged trigger).<br/>
 /// <b>Outputs:</b> whether the spawn succeeded, plus full details about the created node.
 /// </para>
 /// <para>
-/// On failure (missing trigger, no matching definitions, etc.), the node sets <c>success</c> to
-/// <c>false</c> and logs the reason to the server — it never throws.
+/// If the provided object is not a valid <c>worldengine_node_region</c> trigger, or the area has
+/// no matching definitions, the node sets <c>success</c> to <c>false</c> — it never throws.
+/// The scripter decides what to do with the failure branch.
 /// </para>
 /// </summary>
 public class SpawnResourceNodeExecutor : IGlyphNodeExecutor
@@ -32,10 +33,7 @@ public class SpawnResourceNodeExecutor : IGlyphNodeExecutor
         Func<string, Task<object?>> resolveInput)
     {
         object? triggerValue = await resolveInput("trigger");
-        object? areaValue = await resolveInput("area_resref");
-
-        string triggerUuid = triggerValue?.ToString() ?? string.Empty;
-        string areaResRef = areaValue?.ToString() ?? string.Empty;
+        uint triggerHandle = Convert.ToUInt32(triggerValue ?? 0);
 
         Dictionary<string, object?> outputs = new()
         {
@@ -52,7 +50,7 @@ public class SpawnResourceNodeExecutor : IGlyphNodeExecutor
 
         if (context.WorldEngine != null)
         {
-            SpawnResourceNodeResult? result = context.WorldEngine.SpawnResourceNode(triggerUuid, areaResRef);
+            SpawnResourceNodeResult? result = context.WorldEngine.SpawnResourceNode(triggerHandle);
 
             if (result != null)
             {
@@ -80,10 +78,9 @@ public class SpawnResourceNodeExecutor : IGlyphNodeExecutor
         TypeId = NodeTypeId,
         DisplayName = "Spawn Resource Node",
         Category = "Actions",
-        Description = "Spawns a single resource node inside a trigger zone, pulling from the area's " +
-                      "resource definitions filtered by the trigger's node_tags. Logs failures to the " +
-                      "server without crashing. Suitable for prospecting, foraging, or any interaction " +
-                      "that needs to create context-relevant resource nodes.",
+        Description = "Spawns a single resource node inside a worldengine_node_region trigger, pulling " +
+                      "from the area's resource definitions filtered by the trigger's node_tags. If the " +
+                      "object is not a valid trigger or no matching definitions exist, success is false.",
         ColorClass = "node-action",
         Archetype = GlyphNodeArchetype.Action,
         ScriptCategory = GlyphScriptCategory.Interaction,
@@ -96,12 +93,7 @@ public class SpawnResourceNodeExecutor : IGlyphNodeExecutor
             },
             new GlyphPin
             {
-                Id = "trigger", Name = "Trigger (UUID)", DataType = GlyphDataType.String,
-                Direction = GlyphPinDirection.Input,
-            },
-            new GlyphPin
-            {
-                Id = "area_resref", Name = "Area ResRef", DataType = GlyphDataType.String,
+                Id = "trigger", Name = "Trigger", DataType = GlyphDataType.NwObject,
                 Direction = GlyphPinDirection.Input,
             },
         ],

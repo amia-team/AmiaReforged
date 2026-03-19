@@ -420,6 +420,6 @@ public class IndustryKnowledgeNodeTests
         public bool HasKnowledge(Guid characterId, string knowledgeTag) => HasKnowledgeResult;
         public bool HasUnlockedInteraction(Guid characterId, string interactionTag) => HasUnlockedInteractionResult;
         public KnowledgeProgressionInfo GetKnowledgeProgression(Guid characterId) => Progression;
-        public SpawnResourceNodeResult? SpawnResourceNode(string triggerUuid, string areaResRef) => null;
+        public SpawnResourceNodeResult? SpawnResourceNode(uint triggerHandle) => null;
     }
 }

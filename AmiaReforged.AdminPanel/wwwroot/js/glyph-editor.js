@@ -95,6 +95,8 @@ let connectingFrom = null; // { nodeId, pinId, pin, x, y }
 let mouseX = 0, mouseY = 0;
 let selectedNodeId = null;
 let hoveredPin = null;
+let hoveredEdge = null;   // Edge object currently under the cursor
+let contextMenuEl = null; // Floating context menu DOM element
 let blazorRef = null; // DotNet object reference for callbacks
 
 // ==================== Graph JSON Helpers ====================
@@ -466,13 +468,15 @@ function drawEdge(edge) {
     // Detect implicit conversion (different data types on an allowed connection)
     const isImplicitConversion = srcPin.DataType !== tgtPin.DataType;
 
+    const isHovered = hoveredEdge && hoveredEdge.id === edge.id;
+
     drawWire(
         srcNode.x + srcPin.nodeX, srcNode.y + srcPin.nodeY,
         tgtNode.x + tgtPin.nodeX, tgtNode.y + tgtPin.nodeY,
         srcPin.DataType || 'Exec',
-        isLoopBody ? LOOP_BODY_WIRE_COLOR : null,
-        isLoopBody ? 2.5 : null,
-        isImplicitConversion ? tgtPin.DataType : null
+        isHovered ? '#ffffff' : (isLoopBody ? LOOP_BODY_WIRE_COLOR : null),
+        isHovered ? 3.5 : (isLoopBody ? 2.5 : null),
+        isHovered ? null : (isImplicitConversion ? tgtPin.DataType : null)
     );
 }
 
@@ -572,6 +576,61 @@ function drawPipelineGuides() {
 }
 
 // ==================== Hit Testing ====================
+
+/**
+ * Evaluate a cubic bezier at parameter t.
+ */
+function bezierPoint(p0, p1, p2, p3, t) {
+    const u = 1 - t;
+    return u * u * u * p0 + 3 * u * u * t * p1 + 3 * u * t * t * p2 + t * t * t * p3;
+}
+
+/**
+ * Find the closest edge to a world-space point by sampling along each bezier curve.
+ * Returns { edge, dist } or null if nothing is within threshold.
+ */
+function hitTestEdge(wx, wy, threshold = 12) {
+    let closestEdge = null;
+    let closestDist = threshold;
+
+    for (const edge of edges) {
+        const srcNode = nodes.find(n => n.id === edge.srcNodeId);
+        const tgtNode = nodes.find(n => n.id === edge.tgtNodeId);
+        if (!srcNode || !tgtNode) continue;
+
+        const srcPin = srcNode.outputPins.find(p => p.Id === edge.srcPinId);
+        const tgtPin = tgtNode.inputPins.find(p => p.Id === edge.tgtPinId);
+        if (!srcPin || !tgtPin) continue;
+
+        const x1 = srcNode.x + srcPin.nodeX;
+        const y1 = srcNode.y + srcPin.nodeY;
+        const x2 = tgtNode.x + tgtPin.nodeX;
+        const y2 = tgtNode.y + tgtPin.nodeY;
+        const dx = Math.abs(x2 - x1) * 0.5;
+
+        // Control points of the cubic bezier (matches drawWire)
+        const cp1x = x1 + dx, cp1y = y1;
+        const cp2x = x2 - dx, cp2y = y2;
+
+        // Sample 20 points along the curve
+        const SAMPLES = 20;
+        let minD = Infinity;
+        for (let i = 0; i <= SAMPLES; i++) {
+            const t = i / SAMPLES;
+            const bx = bezierPoint(x1, cp1x, cp2x, x2, t);
+            const by = bezierPoint(y1, cp1y, cp2y, y2, t);
+            const d = Math.hypot(wx - bx, wy - by);
+            if (d < minD) minD = d;
+        }
+
+        if (minD < closestDist) {
+            closestDist = minD;
+            closestEdge = edge;
+        }
+    }
+
+    return closestEdge ? { edge: closestEdge, dist: closestDist } : null;
+}
 
 function screenToWorld(sx, sy) {
     const w = canvas.width;
@@ -679,8 +738,19 @@ function onMouseMove(e) {
     mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
     const wp = screenToWorld(mouseX, mouseY);
 
-    // Update hovered pin
+    // Update hovered pin and hovered edge
     hoveredPin = hitTestPin(wp.x, wp.y);
+    if (!hoveredPin && !connectingFrom) {
+        const edgeHit = hitTestEdge(wp.x, wp.y);
+        hoveredEdge = edgeHit ? edgeHit.edge : null;
+    } else {
+        hoveredEdge = null;
+    }
+
+    // Change cursor when hovering an edge
+    if (canvas) {
+        canvas.style.cursor = hoveredEdge ? 'pointer' : '';
+    }
 
     if (draggingNode) {
         draggingNode.x = wp.x - dragOffsetX;
@@ -795,41 +865,209 @@ function onKeyDown(e) {
     }
 }
 
+// ==================== Context Menu ====================
+
+/**
+ * Show a floating context menu at the given screen position.
+ * @param {number} clientX  Mouse clientX
+ * @param {number} clientY  Mouse clientY
+ * @param {{ label: string, icon?: string, danger?: boolean, action: () => void }[]} items
+ */
+function showContextMenu(clientX, clientY, items) {
+    hideContextMenu();
+    if (!items.length) return;
+
+    const menu = document.createElement('div');
+    menu.className = 'glyph-context-menu';
+    Object.assign(menu.style, {
+        position: 'fixed',
+        zIndex: '10000',
+        background: '#1e1e2e',
+        border: '1px solid #3a3a5c',
+        borderRadius: '6px',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+        padding: '4px 0',
+        minWidth: '180px',
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: '13px',
+        color: '#d4d4e8',
+        userSelect: 'none',
+    });
+
+    for (const item of items) {
+        if (item === 'separator') {
+            const sep = document.createElement('div');
+            Object.assign(sep.style, {
+                height: '1px',
+                background: '#3a3a5c',
+                margin: '4px 0',
+            });
+            menu.appendChild(sep);
+            continue;
+        }
+
+        const row = document.createElement('div');
+        Object.assign(row.style, {
+            padding: '6px 14px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: item.danger ? '#e74c3c' : '#d4d4e8',
+            transition: 'background 0.1s',
+        });
+        row.addEventListener('mouseenter', () => row.style.background = '#2a2a44');
+        row.addEventListener('mouseleave', () => row.style.background = 'transparent');
+        row.addEventListener('click', () => {
+            hideContextMenu();
+            item.action();
+        });
+
+        if (item.icon) {
+            const iconSpan = document.createElement('span');
+            iconSpan.textContent = item.icon;
+            iconSpan.style.width = '16px';
+            iconSpan.style.textAlign = 'center';
+            row.appendChild(iconSpan);
+        }
+
+        const label = document.createElement('span');
+        label.textContent = item.label;
+        row.appendChild(label);
+
+        menu.appendChild(row);
+    }
+
+    document.body.appendChild(menu);
+
+    // Position: ensure it stays within viewport
+    const menuRect = menu.getBoundingClientRect();
+    let left = clientX;
+    let top = clientY;
+    if (left + menuRect.width > window.innerWidth) left = window.innerWidth - menuRect.width - 4;
+    if (top + menuRect.height > window.innerHeight) top = window.innerHeight - menuRect.height - 4;
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+
+    contextMenuEl = menu;
+
+    // Dismiss on click-away or Escape (next tick to avoid immediate dismiss)
+    requestAnimationFrame(() => {
+        const dismiss = (evt) => {
+            if (!menu.contains(evt.target)) {
+                hideContextMenu();
+            }
+        };
+        const dismissKey = (evt) => {
+            if (evt.key === 'Escape') hideContextMenu();
+        };
+        document.addEventListener('mousedown', dismiss, { once: true, capture: true });
+        document.addEventListener('keydown', dismissKey, { once: true });
+        // Store for cleanup
+        menu._dismissHandlers = { dismiss, dismissKey };
+    });
+}
+
+function hideContextMenu() {
+    if (contextMenuEl) {
+        if (contextMenuEl._dismissHandlers) {
+            document.removeEventListener('mousedown', contextMenuEl._dismissHandlers.dismiss, { capture: true });
+            document.removeEventListener('keydown', contextMenuEl._dismissHandlers.dismissKey);
+        }
+        contextMenuEl.remove();
+        contextMenuEl = null;
+    }
+}
+
+/**
+ * Describe an edge's connection for display in the context menu.
+ */
+function describeEdge(edge) {
+    const srcNode = nodes.find(n => n.id === edge.srcNodeId);
+    const tgtNode = nodes.find(n => n.id === edge.tgtNodeId);
+    const srcName = srcNode?.def?.DisplayName || 'Unknown';
+    const tgtName = tgtNode?.def?.DisplayName || 'Unknown';
+    const srcPin = srcNode?.outputPins.find(p => p.Id === edge.srcPinId);
+    const tgtPin = tgtNode?.inputPins.find(p => p.Id === edge.tgtPinId);
+    return `${srcName}.${srcPin?.Name || '?'} → ${tgtName}.${tgtPin?.Name || '?'}`;
+}
+
 function onContextMenu(e) {
     e.preventDefault();
+    hideContextMenu();
 
     const rect = canvas.getBoundingClientRect();
     const sx = (e.clientX - rect.left) * (canvas.width / rect.width);
     const sy = (e.clientY - rect.top) * (canvas.height / rect.height);
     const wp = screenToWorld(sx, sy);
 
-    // Right-click on an edge? Find the closest edge and delete it
-    let closestEdge = null;
-    let closestDist = 20; // Threshold in world units
+    // 1. Right-click on a node?
+    const nodeHit = hitTestNode(wp.x, wp.y);
+    if (nodeHit) {
+        const items = [];
 
-    for (const edge of edges) {
-        const srcNode = nodes.find(n => n.id === edge.srcNodeId);
-        const tgtNode = nodes.find(n => n.id === edge.tgtNodeId);
-        if (!srcNode || !tgtNode) continue;
+        // Select the node
+        selectedNodeId = nodeHit.id;
+        notifySelectionChanged();
 
-        const srcPin = srcNode.outputPins.find(p => p.Id === edge.srcPinId);
-        const tgtPin = tgtNode.inputPins.find(p => p.Id === edge.tgtPinId);
-        if (!srcPin || !tgtPin) continue;
-
-        // Simplified distance check — midpoint of the bezier
-        const mx = (srcNode.x + srcPin.nodeX + tgtNode.x + tgtPin.nodeX) / 2;
-        const my = (srcNode.y + srcPin.nodeY + tgtNode.y + tgtPin.nodeY) / 2;
-        const dist = Math.hypot(wp.x - mx, wp.y - my);
-
-        if (dist < closestDist) {
-            closestDist = dist;
-            closestEdge = edge;
+        if (!isStageNode(nodeHit)) {
+            items.push({
+                label: 'Delete Node',
+                icon: '🗑',
+                danger: true,
+                action: () => {
+                    nodes = nodes.filter(n => n.id !== nodeHit.id);
+                    edges = edges.filter(e => e.srcNodeId !== nodeHit.id && e.tgtNodeId !== nodeHit.id);
+                    selectedNodeId = null;
+                    notifySelectionChanged();
+                },
+            });
         }
+
+        // Disconnect all edges on this node
+        const nodeEdgeCount = edges.filter(e => e.srcNodeId === nodeHit.id || e.tgtNodeId === nodeHit.id).length;
+        if (nodeEdgeCount > 0) {
+            items.push({
+                label: `Disconnect All (${nodeEdgeCount})`,
+                icon: '⛓',
+                action: () => {
+                    edges = edges.filter(e => e.srcNodeId !== nodeHit.id && e.tgtNodeId !== nodeHit.id);
+                },
+            });
+        }
+
+        if (items.length > 0) {
+            showContextMenu(e.clientX, e.clientY, items);
+        }
+        return;
     }
 
-    if (closestEdge) {
-        edges = edges.filter(e => e.id !== closestEdge.id);
+    // 2. Right-click near an edge?
+    const edgeHit = hitTestEdge(wp.x, wp.y);
+    if (edgeHit) {
+        const edge = edgeHit.edge;
+        const desc = describeEdge(edge);
+
+        showContextMenu(e.clientX, e.clientY, [
+            {
+                label: 'Remove Connection',
+                icon: '✂',
+                danger: true,
+                action: () => {
+                    edges = edges.filter(e => e.id !== edge.id);
+                },
+            },
+            'separator',
+            {
+                label: desc,
+                icon: '🔗',
+                action: () => {}, // Info-only, no-op
+            },
+        ]);
+        return;
     }
+
+    // 3. Right-click on empty canvas — no menu (browser default is suppressed)
 }
 
 // ==================== Selection Helpers ====================
@@ -1256,6 +1494,8 @@ export function resizeCanvasToSize(w, h) {
 }
 
 export function destroy() {
+    hideContextMenu();
+
     if (canvas) {
         canvas.removeEventListener('mousedown', onMouseDown);
         canvas.removeEventListener('mousemove', onMouseMove);
@@ -1277,4 +1517,5 @@ export function destroy() {
     nodes = [];
     edges = [];
     catalog = [];
+    hoveredEdge = null;
 }

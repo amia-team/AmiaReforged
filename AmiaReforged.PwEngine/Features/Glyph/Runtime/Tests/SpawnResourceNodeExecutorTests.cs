@@ -9,7 +9,7 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Tests;
 /// <summary>
 /// Tests for the SpawnResourceNode executor. Since the executor delegates all heavy logic
 /// to <see cref="IGlyphWorldEngineApi.SpawnResourceNode"/>, these tests verify:
-/// - Correct pin/definition shape
+/// - Correct pin/definition shape (NwObject trigger pin, no area_resref)
 /// - Graceful handling when WorldEngine is null
 /// - Graceful handling when SpawnResourceNode returns null (failure)
 /// - Correct unpacking of success results into output pins
@@ -60,13 +60,11 @@ public class SpawnResourceNodeExecutorTests
     {
         GlyphNodeDefinition def = _executor.CreateDefinition();
 
-        def.InputPins.Should().HaveCount(3);
+        def.InputPins.Should().HaveCount(2);
         def.InputPins[0].Id.Should().Be("exec_in");
         def.InputPins[0].DataType.Should().Be(GlyphDataType.Exec);
         def.InputPins[1].Id.Should().Be("trigger");
-        def.InputPins[1].DataType.Should().Be(GlyphDataType.String);
-        def.InputPins[2].Id.Should().Be("area_resref");
-        def.InputPins[2].DataType.Should().Be(GlyphDataType.String);
+        def.InputPins[1].DataType.Should().Be(GlyphDataType.NwObject);
     }
 
     [Test]
@@ -95,8 +93,7 @@ public class SpawnResourceNodeExecutorTests
         GlyphNodeResult result = await _executor.ExecuteAsync(node, context,
             pin => Task.FromResult<object?>(pin switch
             {
-                "trigger" => "some-uuid",
-                "area_resref" => "some_area",
+                "trigger" => (uint)12345,
                 _ => null,
             }));
 
@@ -116,8 +113,7 @@ public class SpawnResourceNodeExecutorTests
         GlyphNodeResult result = await _executor.ExecuteAsync(node, context,
             pin => Task.FromResult<object?>(pin switch
             {
-                "trigger" => "trigger-uuid",
-                "area_resref" => "test_area",
+                "trigger" => (uint)99999,
                 _ => null,
             }));
 
@@ -149,8 +145,7 @@ public class SpawnResourceNodeExecutorTests
         GlyphNodeResult result = await _executor.ExecuteAsync(node, context,
             pin => Task.FromResult<object?>(pin switch
             {
-                "trigger" => "trigger-uuid",
-                "area_resref" => "test_area",
+                "trigger" => (uint)42,
                 _ => null,
             }));
 
@@ -167,7 +162,7 @@ public class SpawnResourceNodeExecutorTests
     }
 
     [Test]
-    public async Task Passes_trigger_and_area_to_WorldEngine()
+    public async Task Passes_trigger_handle_to_WorldEngine()
     {
         StubWorldEngineApi stub = new()
         {
@@ -180,13 +175,11 @@ public class SpawnResourceNodeExecutorTests
         await _executor.ExecuteAsync(node, context,
             pin => Task.FromResult<object?>(pin switch
             {
-                "trigger" => "my-trigger-uuid",
-                "area_resref" => "my_area_resref",
+                "trigger" => (uint)7777,
                 _ => null,
             }));
 
-        stub.LastTriggerUuid.Should().Be("my-trigger-uuid");
-        stub.LastAreaResRef.Should().Be("my_area_resref");
+        stub.LastTriggerHandle.Should().Be((uint)7777);
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -196,13 +189,11 @@ public class SpawnResourceNodeExecutorTests
     private class StubWorldEngineApi : IGlyphWorldEngineApi
     {
         public SpawnResourceNodeResult? SpawnResult { get; init; }
-        public string? LastTriggerUuid { get; private set; }
-        public string? LastAreaResRef { get; private set; }
+        public uint? LastTriggerHandle { get; private set; }
 
-        public SpawnResourceNodeResult? SpawnResourceNode(string triggerUuid, string areaResRef)
+        public SpawnResourceNodeResult? SpawnResourceNode(uint triggerHandle)
         {
-            LastTriggerUuid = triggerUuid;
-            LastAreaResRef = areaResRef;
+            LastTriggerHandle = triggerHandle;
             return SpawnResult;
         }
 
