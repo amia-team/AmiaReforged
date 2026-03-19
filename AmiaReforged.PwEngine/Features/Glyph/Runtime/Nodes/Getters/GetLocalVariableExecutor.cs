@@ -24,12 +24,16 @@ public class GetLocalVariableExecutor : IGlyphNodeExecutor
 
         if (target == NWScript.OBJECT_INVALID || string.IsNullOrEmpty(varName))
         {
-            return GlyphNodeResult.Data(new Dictionary<string, object?>
+            return new GlyphNodeResult
             {
-                ["int_value"] = 0,
-                ["string_value"] = string.Empty,
-                ["float_value"] = 0.0f
-            });
+                NextExecPinId = "exec_out",
+                OutputValues = new Dictionary<string, object?>
+                {
+                    ["int_value"] = 0,
+                    ["string_value"] = string.Empty,
+                    ["float_value"] = 0.0f
+                }
+            };
         }
 
         int intVal = 0;
@@ -49,12 +53,16 @@ public class GetLocalVariableExecutor : IGlyphNodeExecutor
                 break;
         }
 
-        return GlyphNodeResult.Data(new Dictionary<string, object?>
+        return new GlyphNodeResult
         {
-            ["int_value"] = intVal,
-            ["string_value"] = strVal,
-            ["float_value"] = (double)floatVal
-        });
+            NextExecPinId = "exec_out",
+            OutputValues = new Dictionary<string, object?>
+            {
+                ["int_value"] = intVal,
+                ["string_value"] = strVal,
+                ["float_value"] = (double)floatVal
+            }
+        };
     }
 
     public GlyphNodeDefinition CreateDefinition() => new()
@@ -74,7 +82,7 @@ public class GetLocalVariableExecutor : IGlyphNodeExecutor
         ],
         OutputPins =
         [
-            new GlyphPin { Id = "exec_out", Name = "Done", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output },
+            new GlyphPin { Id = "exec_out", Name = "Then", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output },
             new GlyphPin { Id = "int_value", Name = "Int Value", DataType = GlyphDataType.Int, Direction = GlyphPinDirection.Output },
             new GlyphPin { Id = "string_value", Name = "String Value", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
             new GlyphPin { Id = "float_value", Name = "Float Value", DataType = GlyphDataType.Float, Direction = GlyphPinDirection.Output }
