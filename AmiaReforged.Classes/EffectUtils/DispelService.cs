@@ -408,10 +408,10 @@ public class DispelService
             return false;
         }
 
-        if (aoeObject.Creator == caster || DispelCheck(casterLevel, aoeObject.CasterLevel))
+        if (aoeObject.Creator == caster || DispelCheck(dispelCl: casterLevel, targetEffectCl: aoeObject.CasterLevel))
         {
             aoeObject.Destroy();
-            SendDispelFeedback(caster, aoeObject, aoeObject.Name, casterLevel);
+            SendDispelFeedback(caster, aoeObject, aoeObject.Spell?.Name.ToString() ?? "unknown spell", casterLevel);
             return true;
         }
 
