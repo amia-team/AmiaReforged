@@ -7,6 +7,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions;
 using Anvil.API;
 using Anvil.Services;
+using NLog;
 using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Features.Chat.Commands;
@@ -23,6 +24,8 @@ namespace AmiaReforged.PwEngine.Features.Chat.Commands;
 [ServiceBinding(typeof(IChatCommand))]
 public class InteractionDevCommand : IChatCommand
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
     private readonly IInteractionSubsystem _interactions;
     private readonly RuntimeCharacterService _characters;
     private readonly GlyphInteractionHookService? _glyphHook;
@@ -279,9 +282,14 @@ public class InteractionDevCommand : IChatCommand
         }
     }
 
-    private static void Trace(NwPlayer caller, string message, Color? color = null)
+    private void Trace(NwPlayer caller, string message, Color? color = null)
     {
         caller.SendServerMessage($"[TRACE] {message}", color ?? ColorConstants.Silver);
+
+        if (_isEnabled)
+        {
+            Log.Info("[InteractionTrace] {Message}", message);
+        }
     }
 
     private static void SendUsage(NwPlayer caller)
