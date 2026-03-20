@@ -1200,107 +1200,71 @@ function fitToView() {
 }
 
 /**
- * Auto-arranges nodes in a layered left-to-right layout.
- * Event nodes go in the first column, then a topological sort determines
- * subsequent columns based on edge connections.
+ * Auto-arranges nodes using a Sugiyama-style layered layout via dagre.
+ *
+ * Uses the dagre library (loaded globally from App.razor) which implements
+ * the full Sugiyama algorithm: rank assignment → crossing minimisation →
+ * coordinate assignment. This produces clean left-to-right layouts with
+ * minimal wire crossings and straight execution spines.
+ *
+ * Exec-flow edges are given higher weight so the main execution chain
+ * stays as straight as possible; data wires are allowed to bend more.
  */
 function autoArrange() {
     if (nodes.length === 0) return;
 
-    const hGap = 40;
-    const vGap = 16;
-
-    // Preserve stage node positions — they are fixed in the pipeline layout
-    const stagePositions = new Map();
-    for (const n of nodes) {
-        if (isStageNode(n)) stagePositions.set(n.id, { x: n.x, y: n.y });
+    // Guard: dagre must be loaded globally (via <script> in App.razor)
+    if (typeof dagre === 'undefined') {
+        console.warn('[Glyph] dagre is not loaded — falling back to no-op');
+        return;
     }
 
-    // Build adjacency: node id → set of downstream node ids
-    const downstream = new Map();
-    const upstream = new Map();
+    // --- Build the dagre graph ---
+    const g = new dagre.graphlib.Graph({ directed: true, multigraph: true });
+
+    g.setGraph({
+        rankdir:  'LR',              // left-to-right flow
+        nodesep:  20,                 // vertical gap between nodes in same rank
+        ranksep:  60,                 // horizontal gap between ranks
+        edgesep:  10,                 // gap between edges
+        marginx:  20,
+        marginy:  20,
+        acyclicer: 'greedy',          // break cycles (loop-back wires)
+        ranker:   'network-simplex'   // best-quality rank assignment
+    });
+
+    g.setDefaultEdgeLabel(() => ({}));
+
+    // Register every node with its measured dimensions
     for (const n of nodes) {
-        downstream.set(n.id, new Set());
-        upstream.set(n.id, new Set());
+        g.setNode(n.id, { width: n.width, height: n.height });
     }
+
+    // Register edges. Use multigraph name = edge id so multiple wires
+    // between the same pair of nodes are handled correctly.
+    // Give exec-flow edges higher weight to keep the execution spine straight.
     for (const e of edges) {
-        downstream.get(e.srcNodeId)?.add(e.tgtNodeId);
-        upstream.get(e.tgtNodeId)?.add(e.srcNodeId);
+        const srcNode = nodes.find(n => n.id === e.srcNodeId);
+        const srcPin  = srcNode?.outputPins.find(p => p.Id === e.srcPinId);
+        const isExec  = srcPin?.DataType === 'Exec';
+
+        g.setEdge(e.srcNodeId, e.tgtNodeId, {
+            weight: isExec ? 2 : 1,
+            minlen: 1
+        }, e.id);
     }
 
-    // Assign layers via longest-path from roots
-    const layer = new Map();
-    const visited = new Set();
+    // --- Run layout ---
+    dagre.layout(g);
 
-    function assignLayer(nodeId, depth) {
-        if (layer.has(nodeId) && layer.get(nodeId) >= depth) return;
-        layer.set(nodeId, depth);
-        for (const childId of downstream.get(nodeId) || []) {
-            assignLayer(childId, depth + 1);
-        }
-    }
-
-    // Roots = nodes with no upstream edges (or event nodes)
-    const roots = nodes.filter(n =>
-        (upstream.get(n.id)?.size ?? 0) === 0 ||
-        n.def.ColorClass?.toLowerCase() === 'event'
-    );
-
-    // If no clear roots, just use all nodes
-    const startNodes = roots.length > 0 ? roots : [nodes[0]];
-    for (const r of startNodes) {
-        assignLayer(r.id, 0);
-    }
-
-    // Any unassigned nodes get their own layer
+    // --- Apply positions back to our nodes ---
+    // dagre returns CENTER coordinates; we store top-left, so offset.
+    // Snap to GRID_SIZE for visual consistency.
     for (const n of nodes) {
-        if (!layer.has(n.id)) layer.set(n.id, 0);
-    }
-
-    // Group nodes by layer
-    const layers = new Map();
-    for (const n of nodes) {
-        const l = layer.get(n.id) || 0;
-        if (!layers.has(l)) layers.set(l, []);
-        layers.get(l).push(n);
-    }
-
-    // Position each layer, centered vertically around y=0
-    let xOffset = 0;
-    const sortedLayers = [...layers.keys()].sort((a, b) => a - b);
-
-    // First pass: compute total height per layer for centering
-    const layerHeights = new Map();
-    for (const l of sortedLayers) {
-        const layerNodes = layers.get(l);
-        let totalH = 0;
-        for (const n of layerNodes) {
-            totalH += n.height;
-        }
-        totalH += (layerNodes.length - 1) * vGap;
-        layerHeights.set(l, totalH);
-    }
-
-    for (const l of sortedLayers) {
-        const layerNodes = layers.get(l);
-        const totalH = layerHeights.get(l);
-        let maxWidth = 0;
-        let yOffset = -totalH / 2; // center vertically
-
-        for (const n of layerNodes) {
-            n.x = xOffset;
-            n.y = yOffset;
-            yOffset += n.height + vGap;
-            if (n.width > maxWidth) maxWidth = n.width;
-        }
-
-        xOffset += maxWidth + hGap;
-    }
-
-    // Restore stage node positions
-    for (const [id, pos] of stagePositions) {
-        const n = nodes.find(nd => nd.id === id);
-        if (n) { n.x = pos.x; n.y = pos.y; }
+        const laid = g.node(n.id);
+        if (!laid) continue;
+        n.x = Math.round((laid.x - laid.width  / 2) / GRID_SIZE) * GRID_SIZE;
+        n.y = Math.round((laid.y - laid.height / 2) / GRID_SIZE) * GRID_SIZE;
     }
 
     fitToView();
