@@ -144,6 +144,8 @@ public class GlyphBootstrap
         new SetStatusExecutor(),
         new SetMetadataExecutor(),
         new GetMetadataExecutor(),
+        new StoreSessionObjectExecutor(),
+        new RetrieveSessionObjectExecutor(),
         new SkillCheckExecutor(),
         new PlayVfxExecutor(),
         new SendMessageExecutor(),
