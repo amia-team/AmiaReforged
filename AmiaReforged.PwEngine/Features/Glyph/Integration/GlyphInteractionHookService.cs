@@ -79,7 +79,7 @@ public class GlyphInteractionHookService
         {
             if (binding.GlyphDefinition is not { IsActive: true })
             {
-                Log.Debug("[Glyph] Skipping binding {Id}: GlyphDefinition is null or inactive. " +
+                Log.Info("[Glyph] Skipping binding {Id}: GlyphDefinition is null or inactive. " +
                           "Tag='{Tag}', DefId={DefId}",
                     binding.Id, binding.InteractionTag, binding.GlyphDefinitionId);
                 continue;
@@ -88,7 +88,7 @@ public class GlyphInteractionHookService
             // Only cache InteractionPipeline definitions
             if (binding.GlyphDefinition.EventType != nameof(GlyphEventType.InteractionPipeline))
             {
-                Log.Debug("[Glyph] Skipping binding {Id}: EventType '{EventType}' is not InteractionPipeline.",
+                Log.Info("[Glyph] Skipping binding {Id}: EventType '{EventType}' is not InteractionPipeline.",
                     binding.Id, binding.GlyphDefinition.EventType);
                 continue;
             }
@@ -137,25 +137,25 @@ public class GlyphInteractionHookService
         string? proficiency,
         Dictionary<string, object>? metadata)
     {
-        Log.Debug("[Glyph] OnAttempted hook fired for interaction '{Tag}', character={CharId}, area={Area}",
+        Log.Info("[Glyph] OnAttempted hook fired for interaction '{Tag}', character={CharId}, area={Area}",
             interactionTag, characterId, areaResRef ?? "(null)");
 
         List<GlyphGraph> graphs = GetMatchingGraphs(interactionTag, areaResRef);
 
         if (graphs.Count == 0)
         {
-            Log.Debug("[Glyph] OnAttempted: no matching pipeline graphs for '{Tag}'. Cache has {Count} entries: [{Keys}]",
+            Log.Info("[Glyph] OnAttempted: no matching pipeline graphs for '{Tag}'. Cache has {Count} entries: [{Keys}]",
                 interactionTag, _cache.Count,
                 string.Join(", ", _cache.Keys));
             return (false, null);
         }
 
-        Log.Debug("[Glyph] OnAttempted: found {Count} matching pipeline graph(s) for '{Tag}'", graphs.Count, interactionTag);
+        Log.Info("[Glyph] OnAttempted: found {Count} matching pipeline graph(s) for '{Tag}'", graphs.Count, interactionTag);
 
         foreach (GlyphGraph graph in graphs)
         {
             uint creatureId = ResolveCreatureObjectId(characterId);
-            Log.Debug("[Glyph] OnAttempted: executing stage '{Stage}' of graph '{Name}', creature=0x{Creature:X}",
+            Log.Info("[Glyph] OnAttempted: executing stage '{Stage}' of graph '{Name}', creature=0x{Creature:X}",
                 InteractionAttemptedStageExecutor.NodeTypeId, graph.Name, creatureId);
 
             GlyphExecutionContext ctx = CreateInteractionContext(graph, interactionTag, characterId,
@@ -200,13 +200,13 @@ public class GlyphInteractionHookService
         string? proficiency,
         Dictionary<string, object>? metadata)
     {
-        Log.Debug("[Glyph] OnTick hook fired for interaction '{Tag}', tick {Progress}/{Total}",
+        Log.Info("[Glyph] OnTick hook fired for interaction '{Tag}', tick {Progress}/{Total}",
             interactionTag, progress, requiredRounds);
 
         List<GlyphGraph> graphs = GetMatchingGraphs(interactionTag, areaResRef);
         if (graphs.Count == 0) return (false, null);
 
-        Log.Debug("[Glyph] OnTick: found {Count} matching pipeline graph(s) for '{Tag}'", graphs.Count, interactionTag);
+        Log.Info("[Glyph] OnTick: found {Count} matching pipeline graph(s) for '{Tag}'", graphs.Count, interactionTag);
 
         // Check if OnInteractionTick has been suppressed by a prior stage
         InteractionSession? tickSession = Guid.TryParse(characterId, out Guid tickCharGuid)
@@ -260,7 +260,7 @@ public class GlyphInteractionHookService
     /// </summary>
     public async Task HandleAsync(InteractionStartedEvent @event, CancellationToken cancellationToken = default)
     {
-        Log.Debug("[Glyph] OnStarted event received for interaction '{Tag}', character={CharId}",
+        Log.Info("[Glyph] OnStarted event received for interaction '{Tag}', character={CharId}",
             @event.InteractionTag, @event.CharacterId);
 
         await SwitchToMainThreadSafe();
@@ -269,11 +269,11 @@ public class GlyphInteractionHookService
 
         if (graphs.Count == 0)
         {
-            Log.Debug("[Glyph] OnStarted: no matching pipeline graphs for '{Tag}'", @event.InteractionTag);
+            Log.Info("[Glyph] OnStarted: no matching pipeline graphs for '{Tag}'", @event.InteractionTag);
             return;
         }
 
-        Log.Debug("[Glyph] OnStarted: found {Count} matching pipeline graph(s) for '{Tag}'", graphs.Count, @event.InteractionTag);
+        Log.Info("[Glyph] OnStarted: found {Count} matching pipeline graph(s) for '{Tag}'", graphs.Count, @event.InteractionTag);
 
         // Check suppression
         InteractionSession? startedSession = _sessionManager.GetActiveSession(new CharacterId(@event.CharacterId));
@@ -286,7 +286,7 @@ public class GlyphInteractionHookService
         foreach (GlyphGraph graph in graphs)
         {
             uint creatureId = ResolveCreatureObjectId(@event.CharacterId.ToString());
-            Log.Debug("[Glyph] OnStarted: executing stage '{Stage}' of graph '{Name}', creature=0x{Creature:X}",
+            Log.Info("[Glyph] OnStarted: executing stage '{Stage}' of graph '{Name}', creature=0x{Creature:X}",
                 InteractionStartedStageExecutor.NodeTypeId, graph.Name, creatureId);
 
             GlyphExecutionContext ctx = CreateInteractionContext(graph,
@@ -323,7 +323,7 @@ public class GlyphInteractionHookService
     /// </summary>
     public async Task HandleAsync(InteractionCompletedEvent @event, CancellationToken cancellationToken = default)
     {
-        Log.Debug("[Glyph] OnCompleted event received for interaction '{Tag}', character={CharId}, success={Success}",
+        Log.Info("[Glyph] OnCompleted event received for interaction '{Tag}', character={CharId}, success={Success}",
             @event.InteractionTag, @event.CharacterId, @event.Success);
 
         await SwitchToMainThreadSafe();
@@ -332,13 +332,13 @@ public class GlyphInteractionHookService
 
         if (graphs.Count == 0)
         {
-            Log.Debug("[Glyph] OnCompleted: no matching pipeline graphs for '{Tag}'. Cache has {Count} entries: [{Keys}]",
+            Log.Info("[Glyph] OnCompleted: no matching pipeline graphs for '{Tag}'. Cache has {Count} entries: [{Keys}]",
                 @event.InteractionTag, _cache.Count,
                 string.Join(", ", _cache.Keys));
             return;
         }
 
-        Log.Debug("[Glyph] OnCompleted: found {Count} matching pipeline graph(s) for '{Tag}'", graphs.Count, @event.InteractionTag);
+        Log.Info("[Glyph] OnCompleted: found {Count} matching pipeline graph(s) for '{Tag}'", graphs.Count, @event.InteractionTag);
 
         // Check suppression
         InteractionSession? completedSession = _sessionManager.GetActiveSession(new CharacterId(@event.CharacterId));
@@ -351,7 +351,7 @@ public class GlyphInteractionHookService
         foreach (GlyphGraph graph in graphs)
         {
             uint creatureId = ResolveCreatureObjectId(@event.CharacterId.ToString());
-            Log.Debug("[Glyph] OnCompleted: executing stage '{Stage}' of graph '{Name}', creature=0x{Creature:X}",
+            Log.Info("[Glyph] OnCompleted: executing stage '{Stage}' of graph '{Name}', creature=0x{Creature:X}",
                 InteractionCompletedStageExecutor.NodeTypeId, graph.Name, creatureId);
 
             GlyphExecutionContext ctx = CreateInteractionContext(graph,
@@ -442,14 +442,14 @@ public class GlyphInteractionHookService
     {
         if (string.IsNullOrEmpty(characterId))
         {
-            Log.Debug("[Glyph] ResolveCreatureObjectId: characterId is null/empty, returning 0");
+            Log.Info("[Glyph] ResolveCreatureObjectId: characterId is null/empty, returning 0");
             return 0;
         }
 
         try
         {
             uint result = NWScript.GetObjectByUUID(characterId);
-            Log.Debug("[Glyph] ResolveCreatureObjectId: UUID '{CharId}' -> 0x{Result:X} (invalid={IsInvalid})",
+            Log.Info("[Glyph] ResolveCreatureObjectId: UUID '{CharId}' -> 0x{Result:X} (invalid={IsInvalid})",
                 characterId, result, result == NWScript.OBJECT_INVALID);
             return result;
         }
@@ -473,15 +473,15 @@ public class GlyphInteractionHookService
     {
         if (ctx.TraceLog.Count == 0)
         {
-            Log.Debug("[Glyph] {Hook} trace: (empty — no trace entries recorded)", hookName);
+            Log.Info("[Glyph] {Hook} trace: (empty — no trace entries recorded)", hookName);
             return;
         }
 
-        Log.Debug("[Glyph] {Hook} trace ({Count} entries) for graph '{Name}':",
+        Log.Info("[Glyph] {Hook} trace ({Count} entries) for graph '{Name}':",
             hookName, ctx.TraceLog.Count, ctx.Graph.Name);
         foreach (string entry in ctx.TraceLog)
         {
-            Log.Debug("[Glyph]   {Entry}", entry);
+            Log.Info("[Glyph]   {Entry}", entry);
         }
     }
 

@@ -27,13 +27,13 @@ public class SendFloatingTextExecutor : IGlyphNodeExecutor
         uint creature = Convert.ToUInt32(creatureValue);
         string message = messageValue?.ToString() ?? string.Empty;
 
-        Log.Debug("[Glyph] SendFloatingText: creature=0x{Creature:X}, message=\"{Message}\", valid={Valid}",
+        Log.Info("[Glyph] SendFloatingText: creature=0x{Creature:X}, message=\"{Message}\", valid={Valid}",
             creature, message, creature != NWScript.OBJECT_INVALID);
 
         if (creature != NWScript.OBJECT_INVALID && !string.IsNullOrEmpty(message))
         {
             NWScript.FloatingTextStringOnCreature(message, creature);
-            Log.Debug("[Glyph] SendFloatingText: called FloatingTextStringOnCreature successfully");
+            Log.Info("[Glyph] SendFloatingText: called FloatingTextStringOnCreature successfully");
         }
         else
         {

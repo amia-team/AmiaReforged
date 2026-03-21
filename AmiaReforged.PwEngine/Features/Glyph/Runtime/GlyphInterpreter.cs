@@ -43,7 +43,7 @@ public class GlyphInterpreter
             return false;
         }
 
-        Log.Debug("[Glyph] Found entry node '{TypeId}' ({Id}) for graph '{Name}'",
+        Log.Info("[Glyph] Found entry node '{TypeId}' ({Id}) for graph '{Name}'",
             entryNode.TypeId, entryNode.InstanceId, graph.Name);
 
         // Initialize graph variables from defaults
@@ -86,7 +86,7 @@ public class GlyphInterpreter
             return false;
         }
 
-        Log.Debug("[Glyph] Found stage node '{TypeId}' ({Id}) for graph '{Name}'",
+        Log.Info("[Glyph] Found stage node '{TypeId}' ({Id}) for graph '{Name}'",
             stageNode.TypeId, stageNode.InstanceId, graph.Name);
 
         // Set the current pipeline stage so stage-aware nodes (e.g., FailInteraction) know

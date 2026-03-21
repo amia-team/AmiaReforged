@@ -31,7 +31,7 @@ public class GlyphNodeDefinitionRegistry : IGlyphNodeDefinitionRegistry
             }
 
             _definitions[definition.TypeId] = definition;
-            Log.Debug("Registered Glyph node definition: {TypeId} ({DisplayName})",
+            Log.Info("Registered Glyph node definition: {TypeId} ({DisplayName})",
                 definition.TypeId, definition.DisplayName);
         }
     }
