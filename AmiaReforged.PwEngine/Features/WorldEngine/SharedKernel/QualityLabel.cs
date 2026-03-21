@@ -49,7 +49,7 @@ public static class QualityLabel
                 label = ToLogQualityLabel((int)quality);
                 break;
             case ItemForm.ResourcePlank:
-                label = ToLogQualityLabel((int)quality);
+                label = ToPlankQualityLabel((int)quality);
                 break;
             case ItemForm.ResourceBrick:
                 label = ToBrickQualityLabel((int)quality);

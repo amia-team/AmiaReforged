@@ -11,9 +11,6 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runti
 
 public class RuntimeInventoryPort(NwCreature creature) : IInventoryPort
 {
-    private const int MiscSmall2 = 119;
-    private const int MiscSmall3 = 120;
-
     public void AddItem(ItemDto item)
     {
         if (creature.Location is null) return;
@@ -54,12 +51,11 @@ public class RuntimeInventoryPort(NwCreature creature) : IInventoryPort
 
         NWScript.SetLocalString(gameItem, WorldConstants.MaterialLvar, materialNumbers);
 
-        if (item.BaseDefinition.BaseItemType
-            is NWScript.BASE_ITEM_MISCSMALL
-            or MiscSmall2
-            or MiscSmall3)
+        // Apply simple model appearance for any item whose blueprint declares ModelType 0
+        // (covers BASE_ITEM_MISCSMALL, MISCMEDIUM, MISCLARGE, MISCTHIN and all custom variants).
+        if (item.BaseDefinition.Appearance is { ModelType: 0, SimpleModelNumber: not null })
         {
-            gameItem.Appearance.SetSimpleModel((ushort)(item.BaseDefinition.Appearance.SimpleModelNumber ?? 1));
+            gameItem.Appearance.SetSimpleModel((ushort)item.BaseDefinition.Appearance.SimpleModelNumber.Value);
 
             NWScript.SetLocalInt(gameItem, WorldConstants.ItemVariableQuality, (int)item.Quality);
         }
