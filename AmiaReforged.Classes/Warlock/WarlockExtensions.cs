@@ -8,8 +8,6 @@ public static class WarlockExtensions
 {
     public const int WarlockId = 57;
 
-    public static readonly NwClass? WarlockClass = NwClass.FromClassId(WarlockId);
-
     private const int WordOfChangingId = 994;
 
     public const string EldritchBlastImpactScript = "wlk_el_blst";
@@ -55,7 +53,7 @@ public static class WarlockExtensions
         "wlkslaadgray"
     ];
 
-    private static bool IsPactSummon(this NwCreature targetCreature) => PactSummonResRefs.Contains(targetCreature.ResRef);
+    public static bool IsPactSummon(this NwCreature targetCreature) => PactSummonResRefs.Contains(targetCreature.ResRef);
 
     /// <summary>
     /// A custom spell resistance check for warlock invocations; should always be used in place of other checks.
@@ -91,4 +89,19 @@ public static class WarlockExtensions
     }
 
     public static string AddWarlockColor(this string message) => message.ColorString(ColorConstants.Magenta);
+
+    public static TimeSpan PactSummonDuration(int invocationCl) => NwTimeSpan.FromRounds(5 + invocationCl / 2);
+
+    private static TimeSpan PactSummonCooldown => NwTimeSpan.FromTurns(1);
+
+    public const string PactSummonCooldownTag = "wlk_summon_cd";
+
+    public static void ApplyPactCooldown(this NwCreature caster)
+    {
+        Effect effect = Effect.VisualEffect(VfxType.None);
+        effect.SubType = EffectSubType.Extraordinary;
+        effect.Tag = PactSummonCooldownTag;
+
+        caster.ApplyEffect(EffectDuration.Temporary, effect, PactSummonCooldown);
+    }
 }
