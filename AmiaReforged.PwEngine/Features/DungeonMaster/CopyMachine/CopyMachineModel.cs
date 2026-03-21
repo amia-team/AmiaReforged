@@ -10,6 +10,7 @@ internal sealed class CopyMachineModel
     private readonly NwPlayer _player;
 
     public NwObject? Source { get; private set; }
+    private bool _copyEquipmentEnabled = false;
 
     public delegate void SelectionChangedHandler();
 
@@ -61,6 +62,11 @@ internal sealed class CopyMachineModel
         Source = obj.TargetObject;
         _player.SendServerMessage($"Source set to: {Source.Name}", ColorConstants.Green);
         OnSelectionChanged?.Invoke();
+    }
+
+    public void SetCopyEquipmentFlag(bool enabled)
+    {
+        _copyEquipmentEnabled = enabled;
     }
 
     public void EnterCopyTargetingMode()
@@ -185,17 +191,27 @@ internal sealed class CopyMachineModel
         }
 
         NwObject target = obj.TargetObject;
+        string targetName = target.Name;
 
         if (Source is NwCreature sourceCreature && target is NwCreature targetCr)
         {
             CopyCreatureAppearance(sourceCreature, targetCr);
+
+            // If equipment copying is enabled, copy equipment after appearance
+            if (_copyEquipmentEnabled)
+            {
+                CopyCreatureEquipment(sourceCreature, targetCr);
+            }
         }
         else if (Source is NwPlaceable sourcePlc && target is NwPlaceable targetPlc)
         {
             CopyPlaceableAppearance(sourcePlc, targetPlc);
         }
 
-        _player.SendServerMessage($"Appearance copied from {Source.Name} to {target.Name}.", ColorConstants.Green);
+        _player.SendServerMessage($"Appearance copied from {Source.Name} to {targetName}.", ColorConstants.Green);
+
+        // Reset equipment flag after copying
+        _copyEquipmentEnabled = false;
     }
 
     // ───────────────────────────── Creature Copying ─────────────────────────────
@@ -474,7 +490,146 @@ internal sealed class CopyMachineModel
             target.VisualTransform.Translation = new System.Numerics.Vector3(t.X, t.Y, source.VisualTransform.Translation.Z);
         }
     }
+
+    /// <summary>
+    /// Copies creature equipment appearance (Armor, Cloak, Helmet, Main-Hand, Off-Hand).
+    /// For armor, skips the chest part if the base armor AC doesn't match.
+    /// </summary>
+    public void CopyCreatureEquipment(NwCreature source, NwCreature target)
+    {
+        if (source == null || target == null)
+        {
+            _player.SendServerMessage("Invalid source or target creature.", ColorConstants.Red);
+            return;
+        }
+
+        int copiedCount = 0;
+
+        // Copy Armor (with AC-aware copying)
+        NwItem? srcArmor = source.GetItemInSlot(InventorySlot.Chest);
+        NwItem? tgtArmor = target.GetItemInSlot(InventorySlot.Chest);
+        if (srcArmor != null && tgtArmor != null && srcArmor.BaseItem.ItemType == tgtArmor.BaseItem.ItemType)
+        {
+            CopyArmorAppearanceWithAcCheck(srcArmor, tgtArmor);
+            copiedCount++;
+        }
+
+        // Copy Cloak
+        CopyEquipmentSlot(source, target, InventorySlot.Cloak);
+        NwItem? tgtCloak = target.GetItemInSlot(InventorySlot.Cloak);
+        if (tgtCloak != null && source.GetItemInSlot(InventorySlot.Cloak) != null)
+            copiedCount++;
+
+        // Copy Helmet
+        CopyEquipmentSlot(source, target, InventorySlot.Head);
+        NwItem? tgtHelmet = target.GetItemInSlot(InventorySlot.Head);
+        if (tgtHelmet != null && source.GetItemInSlot(InventorySlot.Head) != null)
+            copiedCount++;
+
+        // Copy Main-Hand (Right Hand)
+        CopyEquipmentSlot(source, target, InventorySlot.RightHand);
+        NwItem? tgtMainHand = target.GetItemInSlot(InventorySlot.RightHand);
+        if (tgtMainHand != null && source.GetItemInSlot(InventorySlot.RightHand) != null)
+            copiedCount++;
+
+        // Copy Off-Hand (Left Hand)
+        CopyEquipmentSlot(source, target, InventorySlot.LeftHand);
+        NwItem? tgtOffHand = target.GetItemInSlot(InventorySlot.LeftHand);
+        if (tgtOffHand != null && source.GetItemInSlot(InventorySlot.LeftHand) != null)
+            copiedCount++;
+
+        if (copiedCount > 0)
+        {
+            _player.SendServerMessage($"Copied appearance of {copiedCount} equipment slot(s).", ColorConstants.Green);
+        }
+        else
+        {
+            _player.SendServerMessage("No compatible equipment to copy.", ColorConstants.Orange);
+        }
+    }
+
+    /// <summary>
+    /// Copies armor appearance but skips the chest part if the base armor AC doesn't match.
+    /// This allows copying armor appearances even when the base armor type differs.
+    /// </summary>
+    private static void CopyArmorAppearanceWithAcCheck(NwItem source, NwItem target)
+    {
+        // Get AC values from torso models
+        int? srcAc = GetArmorAcFromModel(source.Appearance.GetArmorModel(CreaturePart.Torso));
+        int? tgtAc = GetArmorAcFromModel(target.Appearance.GetArmorModel(CreaturePart.Torso));
+
+        if (srcAc.HasValue && tgtAc.HasValue && srcAc.Value != tgtAc.Value)
+        {
+            // AC mismatch: skip chest part, copy everything else
+            CopyArmorAppearanceExceptChest(source, target);
+        }
+        else
+        {
+            // AC match or can't determine: copy all armor
+            CopyArmorAppearance(source, target);
+        }
+    }
+
+    /// <summary>
+    /// Copies armor appearance for all parts except the torso/chest.
+    /// Used when armor base types don't match and we want to preserve the target's chest model.
+    /// </summary>
+    private static void CopyArmorAppearanceExceptChest(NwItem source, NwItem target)
+    {
+        // Copy all armor parts except Torso and Pelvis (which affect chest appearance)
+        CreaturePart[] nonChestParts =
+        [
+            CreaturePart.Head,
+            CreaturePart.Neck,
+            CreaturePart.LeftShoulder,
+            CreaturePart.RightShoulder,
+            CreaturePart.LeftBicep,
+            CreaturePart.RightBicep,
+            CreaturePart.LeftForearm,
+            CreaturePart.RightForearm,
+            CreaturePart.LeftHand,
+            CreaturePart.RightHand,
+            CreaturePart.LeftThigh,
+            CreaturePart.RightThigh,
+            CreaturePart.LeftShin,
+            CreaturePart.RightShin,
+            CreaturePart.LeftFoot,
+            CreaturePart.RightFoot,
+            CreaturePart.Belt
+        ];
+
+        foreach (CreaturePart part in nonChestParts)
+        {
+            ushort srcModel = source.Appearance.GetArmorModel(part);
+            if (target.Appearance.GetArmorModel(part) != srcModel)
+                target.Appearance.SetArmorModel(part, (byte)srcModel);
+        }
+
+        // Copy all armor colors
+        foreach (ItemAppearanceArmorColor color in Enum.GetValues<ItemAppearanceArmorColor>())
+        {
+            byte srcColor = source.Appearance.GetArmorColor(color);
+            if (target.Appearance.GetArmorColor(color) != srcColor)
+                target.Appearance.SetArmorColor(color, srcColor);
+        }
+    }
+
+    /// <summary>
+    /// Gets the AC value from an armor model number.
+    /// Returns null if the model is not recognized.
+    /// </summary>
+    private static int? GetArmorAcFromModel(ushort model)
+    {
+        // This is a simplified mapping. In a real implementation, you'd have a complete
+        // dictionary of model numbers to AC values. For now, we use a basic heuristic:
+        // Model 0 = Robe (AC 0), Models 1-3 = Light (AC 1), 4-6 = Medium (AC 2), 7+ = Heavy (AC 3+)
+
+        return model switch
+        {
+            0 => 0,
+            1 or 2 or 3 => 1,
+            4 or 5 or 6 => 2,
+            _ => 3
+        };
+    }
 }
-
-
-

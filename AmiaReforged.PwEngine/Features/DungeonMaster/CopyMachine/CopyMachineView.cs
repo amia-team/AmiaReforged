@@ -9,12 +9,15 @@ namespace AmiaReforged.PwEngine.Features.DungeonMaster.CopyMachine;
 public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
 {
     private const float WindowW = 350f;
-    private const float WindowH = 220f;
+    private const float WindowH = 280f;
 
     public readonly NuiBind<string> StatusText = new("cm_status");
+    public readonly NuiBind<bool> CopyEquipmentEnabled = new("cm_equipment_enabled");
+    public readonly NuiBind<bool> CopyEquipmentChecked = new("cm_equipment_checked");
 
-    public NuiButton SelectSourceButton = null!;
-    public NuiButton CopyToTargetButton = null!;
+    public NuiButtonImage SelectSourceButton = null!;
+    public NuiButtonImage CopyToTargetButton = null!;
+    public NuiCheck CopyEquipmentCheckbox = null!;
 
     public override CopyMachinePresenter Presenter { get; protected set; }
 
@@ -57,7 +60,8 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
                         new NuiLabel(StatusText)
                         {
                             VerticalAlign = NuiVAlign.Middle,
-                            HorizontalAlign = NuiHAlign.Center
+                            HorizontalAlign = NuiHAlign.Center,
+                            ForegroundColor = new Color(30, 20, 12)
                         }
                     ]
                 },
@@ -65,31 +69,58 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
                 // Spacer
                 new NuiSpacer { Height = 10f },
 
-                // Select Source button
+                // Select Source row with label, button, and equipment checkbox
                 new NuiRow
                 {
                     Height = 40f,
                     Children =
                     [
-                        new NuiButton("Select Object to Copy")
+                        new NuiLabel("Select Source:")
                         {
-                            Id = "btn_source"
-                        }.Assign(out SelectSourceButton)
+                            Width = 100f,
+                            VerticalAlign = NuiVAlign.Middle,
+                            HorizontalAlign = NuiHAlign.Right
+                        },
+                        new NuiSpacer { Width = 10f },
+                        new NuiButtonImage("nui_pick")
+                        {
+                            Id = "btn_source",
+                            Width = 40f,
+                            Height = 40f,
+                            Tooltip = "Select object whose appearance you want to copy."
+                        }.Assign(out SelectSourceButton),
+                        new NuiSpacer { Width = 15f },
+                        new NuiCheck("Copy equipment", CopyEquipmentChecked)
+                        {
+                            Height = 40f,
+                            Id = "chk_equipment",
+                            Enabled = CopyEquipmentEnabled
+                        }.Assign(out CopyEquipmentCheckbox)
                     ]
                 },
 
                 // Spacer
                 new NuiSpacer { Height = 10f },
 
-                // Copy to Target button
+                // Select Target row with label and button
                 new NuiRow
                 {
                     Height = 40f,
                     Children =
                     [
-                        new NuiButton("Select Object to Overwrite")
+                        new NuiLabel("Select Target:")
                         {
-                            Id = "btn_target"
+                            Width = 100f,
+                            VerticalAlign = NuiVAlign.Middle,
+                            HorizontalAlign = NuiHAlign.Right
+                        },
+                        new NuiSpacer { Width = 10f },
+                        new NuiButtonImage("nui_pick")
+                        {
+                            Id = "btn_target",
+                            Width = 40f,
+                            Height = 40f,
+                            Tooltip = "Select object to receive copied appearance. (Must be the same object type.)"
                         }.Assign(out CopyToTargetButton)
                     ]
                 }
