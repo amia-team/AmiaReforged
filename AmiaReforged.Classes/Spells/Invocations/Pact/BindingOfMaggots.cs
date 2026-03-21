@@ -1,29 +1,84 @@
 using AmiaReforged.Classes.EffectUtils;
-using static NWN.Core.NWScript;
+using AmiaReforged.Classes.Warlock;
+using Anvil.API;
+using Anvil.API.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Pact;
 
-public class BindingOfMaggots
+[ServiceBinding(typeof(IInvocation))]
+public class BindingOfMaggots(ScriptHandleFactory scriptHandleFactory) : IInvocation
 {
-    public void CastBindingOfMaggots(uint nwnObjectId)
+    private const string FiendSummonResRef = "wlkfiend";
+
+    public string ImpactScript => "wlk_bindingmag";
+    public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
-        if (NwEffects.IsPolymorphed(nwnObjectId))
+        if (castData.TargetLocation is not { } location) return;
+
+        int invocationDc = warlock.InvocationDc(invocationCl);
+
+        Effect paralysis = Effect.LinkEffects(
+            Effect.VisualEffect(VfxType.DurParalyzed),
+            Effect.Paralyze()
+        );
+
+        TimeSpan summonDuration = WarlockExtensions.PactSummonDuration(invocationCl);
+        int summonCount = 1 + invocationCl / 5;
+        VisualEffectTableEntry summonVfx = NwGameTables.VisualEffectTable.GetRow((int)VfxType.ImpDestruction);
+        Effect summonEffect = Effect.SummonCreature(FiendSummonResRef, summonVfx, unsummonVfx: summonVfx);
+        summonEffect.SubType = EffectSubType.Magical;
+
+        ScriptCallbackHandle onEnterMaggot = scriptHandleFactory.CreateUniqueHandler(info =>
+            BindWithMaggots(info, warlock, invocationCl, invocationDc, paralysis, castData.Spell,
+                location, summonCount, summonDuration, summonEffect));
+
+        PersistentVfxTableEntry persistentVfx = NwGameTables.PersistentEffectTable.GetRow((int)PersistentVfxType.PerGlyphOfWarding);
+        Effect bindingOfMaggots = Effect.AreaOfEffect(persistentVfx, onEnterMaggot);
+        bindingOfMaggots.SubType = EffectSubType.Magical;
+
+        TimeSpan duration = NwTimeSpan.FromTurns(1);
+
+        location.RemoveAoeSpell(warlock, castData.Spell, RadiusSize.Huge);
+        location.ApplyEffect(EffectDuration.Temporary, bindingOfMaggots, duration);
+    }
+
+    private static ScriptHandleResult BindWithMaggots(CallInfo info, NwCreature warlock, int invocationCl,
+        int invocationDc, Effect paralysis, NwSpell spell, Location location, int summonCount,
+        TimeSpan summonDuration, Effect summonEffect)
+    {
+        if (!info.TryGetEvent(out AreaOfEffectEvents.OnEnter? eventData)
+            || eventData.Entering is not NwCreature creature
+            || !creature.IsValidInvocationTarget(warlock, hurtSelf: false))
+            return ScriptHandleResult.Handled;
+
+        CreatureEvents.OnSpellCastAt.Signal(warlock, creature, spell);
+
+        if (warlock.InvocationResistCheck(creature, invocationCl))
+            return ScriptHandleResult.Handled;
+
+        SavingThrowResult willSave =
+            creature.RollSavingThrow(SavingThrow.Will, invocationDc, SavingThrowType.Spell, warlock);
+
+        if (willSave == SavingThrowResult.Success)
         {
-            SendMessageToPC(nwnObjectId, szMessage: "You cannot cast while polymorphed.");
-            return;
+            creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpWillSavingThrowUse));
+            return ScriptHandleResult.Handled;
         }
 
-        IntPtr binding = EffectAreaOfEffect(38, sOnEnterScript: "wlk_bindingent", sHeartbeatScript: "****",
-            sOnExitScript: "****"); // VFX_PER_GLYPH
-        IntPtr location = GetSpellTargetLocation();
-        float duration = TurnsToSeconds(1);
-        string plcTag = "circle" + GetSubString(GetName(nwnObjectId), 0, 2);
+        if (willSave == SavingThrowResult.Failure)
+        {
+            creature.ApplyEffect(EffectDuration.Temporary, paralysis, NwTimeSpan.FromRounds(1));
+        }
 
-        DestroyObject(GetObjectByTag(plcTag));
-        NwEffects.RemoveAoeWithTag(location, nwnObjectId, aoeTag: "VFX_PER_GLYPH", RADIUS_SIZE_COLOSSAL);
+        if (warlock.ActiveEffects.Any(e => e.Tag == WarlockExtensions.PactSummonCooldownTag))
+            return ScriptHandleResult.Handled;
 
-        CreateObject(OBJECT_TYPE_PLACEABLE, sTemplate: "amia_plc_req055", location, 0, plcTag);
-        DestroyObject(GetObjectByTag(plcTag), duration);
-        ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, binding, location, duration);
+        location.SummonMany(warlock, summonCount, RadiusSize.Medium, delayMin: 1f, delayMax: 2f, summonEffect,
+            summonDuration);
+
+        warlock.ApplyPactCooldown();
+
+        return ScriptHandleResult.Handled;
     }
 }
