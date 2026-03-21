@@ -197,6 +197,22 @@ public sealed class PerformInteractionCommandHandler(
         CancellationToken ct)
     {
         InteractionOutcome outcome = await handler.OnCompleteAsync(session, character, ct);
+
+        // Run Glyph OnCompleted stage synchronously BEFORE ending the session,
+        // so that pipeline scripts can access session data and traces are captured
+        // before the command returns (the async event bus would be too late).
+        if (glyphHook is not null)
+        {
+            glyphHook.RunOnInteractionCompleted(
+                session.InteractionTag,
+                session.CharacterId.Value.ToString(),
+                session.TargetId,
+                session.Id,
+                outcome.Success,
+                proficiency: null,
+                session.Metadata);
+        }
+
         sessionManager.EndSession(session.CharacterId);
 
         Log.Info("Completed '{Tag}' interaction session {SessionId}: {Success}",

@@ -253,6 +253,72 @@ public class GlyphInteractionHookService
         return (false, null);
     }
 
+    /// <summary>
+    /// Runs the Completed stage of pipeline graphs synchronously.
+    /// Called directly by <c>PerformInteractionCommandHandler.CompleteInteractionAsync</c>
+    /// so that traces are captured before the session is torn down and before the command returns.
+    /// </summary>
+    public void RunOnInteractionCompleted(
+        string interactionTag,
+        string characterId,
+        Guid targetId,
+        Guid sessionId,
+        bool success,
+        string? proficiency,
+        Dictionary<string, object>? metadata)
+    {
+        Log.Info("[Glyph] OnCompleted hook fired (sync) for interaction '{Tag}', character={CharId}, success={Success}",
+            interactionTag, characterId, success);
+
+        List<GlyphGraph> graphs = GetMatchingGraphs(interactionTag, areaResRef: null);
+        if (graphs.Count == 0)
+        {
+            Log.Info("[Glyph] OnCompleted: no matching pipeline graphs for '{Tag}'. Cache has {Count} entries: [{Keys}]",
+                interactionTag, _cache.Count,
+                string.Join(", ", _cache.Keys));
+            return;
+        }
+
+        Log.Info("[Glyph] OnCompleted: found {Count} matching pipeline graph(s) for '{Tag}'", graphs.Count, interactionTag);
+
+        // Check suppression
+        InteractionSession? completedSession = Guid.TryParse(characterId, out Guid charGuid)
+            ? _sessionManager.GetActiveSession(new CharacterId(charGuid))
+            : null;
+        if (completedSession?.SuppressedEventTypes.Contains(InteractionCompletedStageExecutor.NodeTypeId) == true)
+        {
+            Log.Info("[Glyph] Completed stage suppressed for '{Tag}' by prior script", interactionTag);
+            return;
+        }
+
+        foreach (GlyphGraph graph in graphs)
+        {
+            uint creatureId = ResolveCreatureObjectId(characterId);
+            Log.Info("[Glyph] OnCompleted: executing stage '{Stage}' of graph '{Name}', creature=0x{Creature:X}",
+                InteractionCompletedStageExecutor.NodeTypeId, graph.Name, creatureId);
+
+            GlyphExecutionContext ctx = CreateInteractionContext(graph,
+                interactionTag, characterId, targetId,
+                targetMode: null, areaResRef: null, proficiency, metadata,
+                creatureObjectId: creatureId);
+            ctx.Session = completedSession;
+            ctx.InteractionSessionId = sessionId;
+
+            try
+            {
+                _bootstrap.Interpreter.ExecuteStageAsync(ctx, InteractionCompletedStageExecutor.NodeTypeId)
+                    .GetAwaiter().GetResult();
+                DumpTraceLog(ctx, "OnCompleted");
+                CaptureStageTrace(ctx, "OnCompleted");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error executing Completed stage of pipeline '{Name}' for '{Tag}'.",
+                    graph.Name, interactionTag);
+            }
+        }
+    }
+
     // ==================== Async Event Handlers ====================
 
     /// <summary>
@@ -340,9 +406,17 @@ public class GlyphInteractionHookService
 
         Log.Info("[Glyph] OnCompleted: found {Count} matching pipeline graph(s) for '{Tag}'", graphs.Count, @event.InteractionTag);
 
-        // Check suppression
+        // The synchronous RunOnInteractionCompleted() already handled execution before the session
+        // was ended. By the time this async handler fires, the session is gone. Skip to avoid
+        // duplicate execution without session data.
         InteractionSession? completedSession = _sessionManager.GetActiveSession(new CharacterId(@event.CharacterId));
-        if (completedSession?.SuppressedEventTypes.Contains(InteractionCompletedStageExecutor.NodeTypeId) == true)
+        if (completedSession == null)
+        {
+            Log.Info("[Glyph] OnCompleted async handler: session already ended (sync path handled it). Skipping.");
+            return;
+        }
+
+        if (completedSession.SuppressedEventTypes.Contains(InteractionCompletedStageExecutor.NodeTypeId))
         {
             Log.Info("[Glyph] Completed stage suppressed for '{Tag}' by prior script", @event.InteractionTag);
             return;
