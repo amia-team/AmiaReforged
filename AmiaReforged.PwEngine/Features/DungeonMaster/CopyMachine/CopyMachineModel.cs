@@ -500,7 +500,7 @@ internal sealed class CopyMachineModel
     /// <summary>
     /// Copies creature equipment appearance (Armor, Cloak, Helmet, Main-Hand, Off-Hand).
     /// For armor, skips the chest part if the base armor AC doesn't match.
-    /// Re-equips items after copying to force visual appearance updates.
+    /// Unequips items first, copies appearance, then re-equips to ensure changes are applied correctly.
     /// </summary>
     public void CopyCreatureEquipment(NwCreature source, NwCreature target)
     {
@@ -510,67 +510,94 @@ internal sealed class CopyMachineModel
             return;
         }
 
+        // Dictionary to store items and their original slots
+        Dictionary<InventorySlot, NwItem> itemsToReequip = new();
+
+        // PHASE 1: Unequip all items first
+        InventorySlot[] equipmentSlots = [InventorySlot.Chest, InventorySlot.Cloak, InventorySlot.Head, InventorySlot.RightHand, InventorySlot.LeftHand];
+
+        foreach (InventorySlot slot in equipmentSlots)
+        {
+            NwItem? item = target.GetItemInSlot(slot);
+            if (item != null && item.IsValid)
+            {
+                itemsToReequip[slot] = item;
+                NWScript.AssignCommand(target, () => NWScript.ActionUnequipItem(item));
+            }
+        }
+
+        // Add a delay to ensure unequip completes before we copy appearance
+        NWScript.DelayCommand(0.3f, () => CopyEquipmentAppearancePhase2(source, target, itemsToReequip));
+
+        _player.SendServerMessage("Copying equipment appearance...", ColorConstants.Cyan);
+    }
+
+    /// <summary>
+    /// Phase 2 of equipment copying: copy appearance of unequipped items, then re-equip them.
+    /// </summary>
+    private void CopyEquipmentAppearancePhase2(NwCreature source, NwCreature target, Dictionary<InventorySlot, NwItem> itemsToReequip)
+    {
+        if (source == null || target == null || !target.IsValid)
+            return;
+
         int copiedCount = 0;
-        List<InventorySlot> modifiedSlots = new();
+
+        // PHASE 2: Copy appearance of unequipped items
 
         // Copy Armor (with AC-aware copying)
         NwItem? srcArmor = source.GetItemInSlot(InventorySlot.Chest);
-        NwItem? tgtArmor = target.GetItemInSlot(InventorySlot.Chest);
-        if (srcArmor != null && tgtArmor != null && srcArmor.BaseItem.ItemType == tgtArmor.BaseItem.ItemType)
+        if (itemsToReequip.TryGetValue(InventorySlot.Chest, out NwItem? tgtArmor) && srcArmor != null &&
+            tgtArmor.IsValid && srcArmor.BaseItem.ItemType == tgtArmor.BaseItem.ItemType)
         {
             CopyArmorAppearanceWithAcCheck(srcArmor, tgtArmor);
             copiedCount++;
-            modifiedSlots.Add(InventorySlot.Chest);
         }
 
         // Copy Cloak
-        CopyEquipmentSlot(source, target, InventorySlot.Cloak);
-        NwItem? tgtCloak = target.GetItemInSlot(InventorySlot.Cloak);
-        if (tgtCloak != null && source.GetItemInSlot(InventorySlot.Cloak) != null)
+        NwItem? srcCloak = source.GetItemInSlot(InventorySlot.Cloak);
+        if (itemsToReequip.TryGetValue(InventorySlot.Cloak, out NwItem? tgtCloak) && srcCloak != null &&
+            tgtCloak.IsValid && srcCloak.BaseItem.ItemType == tgtCloak.BaseItem.ItemType)
         {
+            CopySimpleItemAppearance(srcCloak, tgtCloak);
             copiedCount++;
-            modifiedSlots.Add(InventorySlot.Cloak);
         }
 
         // Copy Helmet
-        CopyEquipmentSlot(source, target, InventorySlot.Head);
-        NwItem? tgtHelmet = target.GetItemInSlot(InventorySlot.Head);
-        if (tgtHelmet != null && source.GetItemInSlot(InventorySlot.Head) != null)
+        NwItem? srcHelmet = source.GetItemInSlot(InventorySlot.Head);
+        if (itemsToReequip.TryGetValue(InventorySlot.Head, out NwItem? tgtHelmet) && srcHelmet != null &&
+            tgtHelmet.IsValid && srcHelmet.BaseItem.ItemType == tgtHelmet.BaseItem.ItemType)
         {
+            CopySimpleItemAppearance(srcHelmet, tgtHelmet);
             copiedCount++;
-            modifiedSlots.Add(InventorySlot.Head);
         }
 
         // Copy Main-Hand (Right Hand)
-        CopyEquipmentSlot(source, target, InventorySlot.RightHand);
-        NwItem? tgtMainHand = target.GetItemInSlot(InventorySlot.RightHand);
-        if (tgtMainHand != null && source.GetItemInSlot(InventorySlot.RightHand) != null)
+        NwItem? srcMainHand = source.GetItemInSlot(InventorySlot.RightHand);
+        if (itemsToReequip.TryGetValue(InventorySlot.RightHand, out NwItem? tgtMainHand) && srcMainHand != null &&
+            tgtMainHand.IsValid && srcMainHand.BaseItem.ItemType == tgtMainHand.BaseItem.ItemType)
         {
+            CopyWeaponAppearance(srcMainHand, tgtMainHand);
             copiedCount++;
-            modifiedSlots.Add(InventorySlot.RightHand);
         }
 
         // Copy Off-Hand (Left Hand)
-        CopyEquipmentSlot(source, target, InventorySlot.LeftHand);
-        NwItem? tgtOffHand = target.GetItemInSlot(InventorySlot.LeftHand);
-        if (tgtOffHand != null && source.GetItemInSlot(InventorySlot.LeftHand) != null)
+        NwItem? srcOffHand = source.GetItemInSlot(InventorySlot.LeftHand);
+        if (itemsToReequip.TryGetValue(InventorySlot.LeftHand, out NwItem? tgtOffHand) && srcOffHand != null &&
+            tgtOffHand.IsValid && srcOffHand.BaseItem.ItemType == tgtOffHand.BaseItem.ItemType)
         {
+            CopyWeaponAppearance(srcOffHand, tgtOffHand);
             copiedCount++;
-            modifiedSlots.Add(InventorySlot.LeftHand);
         }
 
-        // Re-equip modified items to force visual appearance updates
-        if (modifiedSlots.Count > 0)
+        // PHASE 3: Re-equip all items
+        foreach (var kvp in itemsToReequip)
         {
-            foreach (InventorySlot slot in modifiedSlots)
+            InventorySlot slot = kvp.Key;
+            NwItem item = kvp.Value;
+
+            if (item.IsValid)
             {
-                NwItem? item = target.GetItemInSlot(slot);
-                if (item != null && item.IsValid)
-                {
-                    // Use NWScript to unequip and re-equip to force appearance update
-                    NWScript.ActionUnequipItem(item);
-                    NWScript.ActionEquipItem(item, (int)slot);
-                }
+                NWScript.AssignCommand(target, () => NWScript.ActionEquipItem(item, (int)slot));
             }
         }
 
