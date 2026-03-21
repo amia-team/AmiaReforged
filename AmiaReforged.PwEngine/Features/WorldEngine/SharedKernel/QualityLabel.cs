@@ -111,8 +111,8 @@ public static class QualityLabel
     {
         NWScript.IP_CONST_QUALITY_VERY_POOR => "Warped",
         NWScript.IP_CONST_QUALITY_POOR => "Rough",
-        NWScript.IP_CONST_QUALITY_BELOW_AVERAGE => "Common",
-        NWScript.IP_CONST_QUALITY_ABOVE_AVERAGE => "Standard",
+        NWScript.IP_CONST_QUALITY_BELOW_AVERAGE => "Knotted",
+        NWScript.IP_CONST_QUALITY_ABOVE_AVERAGE => "Straight",
         NWScript.IP_CONST_QUALITY_GOOD => "Fine",
         NWScript.IP_CONST_QUALITY_VERY_GOOD => "Premium",
         NWScript.IP_CONST_QUALITY_EXCELLENT => "Select",
