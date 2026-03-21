@@ -53,7 +53,7 @@ public sealed class CopyMachinePresenter : ScryPresenter<CopyMachineView>
     {
         Token().SetBindValue(View.StatusText, _model.GetStatusText());
         Token().SetBindValue(View.CopyEquipmentChecked, false); // Reset checkbox when source changes
-        Token().SetBindValue(View.TypeTooltip, _model.GetTypeString());
+        Token().SetBindValue(View.TypeTooltip, "Object type: " + _model.GetTypeString());
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
@@ -76,6 +76,7 @@ public sealed class CopyMachinePresenter : ScryPresenter<CopyMachineView>
         {
             // Read checkbox state before entering copy mode
             bool isChecked = Token().GetBindValue(View.CopyEquipmentChecked);
+            _player.SendServerMessage($"Copy button clicked. Equipment checkbox state: {isChecked}", ColorConstants.Cyan);
             _model.SetCopyEquipmentFlag(isChecked);
             _model.EnterCopyTargetingMode();
         }
@@ -83,6 +84,7 @@ public sealed class CopyMachinePresenter : ScryPresenter<CopyMachineView>
         {
             // Handle checkbox click
             bool isChecked = Token().GetBindValue(View.CopyEquipmentChecked);
+            _player.SendServerMessage($"Equipment checkbox clicked. New state: {isChecked}", ColorConstants.Cyan);
             _model.SetCopyEquipmentFlag(isChecked);
         }
     }

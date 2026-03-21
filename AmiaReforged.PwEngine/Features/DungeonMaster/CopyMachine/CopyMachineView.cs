@@ -54,17 +54,15 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
                     ]
                 },
 
-                // Status label
+                // Status text box
                 new NuiRow
                 {
                     Children =
                     [
-                        new NuiLabel(StatusText)
+                        new NuiText(StatusText)
                         {
-                            Height = 40f,
-                            Width = 200,
-                            Tooltip = "Object type: " + TypeTooltip,
-                            VerticalAlign = NuiVAlign.Middle,
+                            Height = 50f,
+                            Width = 230f,
                             ForegroundColor = new Color(30, 20, 12)
                         }
                     ]

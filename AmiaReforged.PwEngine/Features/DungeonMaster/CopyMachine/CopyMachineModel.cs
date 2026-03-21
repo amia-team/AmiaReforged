@@ -73,6 +73,7 @@ internal sealed class CopyMachineModel
     public void SetCopyEquipmentFlag(bool enabled)
     {
         _copyEquipmentEnabled = enabled;
+        _player.SendServerMessage($"Equipment copying: {(enabled ? "ENABLED" : "DISABLED")}", ColorConstants.Cyan);
     }
 
     public void EnterCopyTargetingMode()
@@ -206,7 +207,12 @@ internal sealed class CopyMachineModel
             // If equipment copying is enabled AND source is a creature, copy equipment after appearance
             if (_copyEquipmentEnabled && Source is NwCreature)
             {
+                _player.SendServerMessage("Copying equipment...", ColorConstants.Cyan);
                 CopyCreatureEquipment(sourceCreature, targetCr);
+            }
+            else if (_copyEquipmentEnabled)
+            {
+                _player.SendServerMessage("Equipment copying enabled but source is not a creature.", ColorConstants.Orange);
             }
         }
         else if (Source is NwPlaceable sourcePlc && target is NwPlaceable targetPlc)
