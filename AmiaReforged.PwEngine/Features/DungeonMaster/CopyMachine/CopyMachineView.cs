@@ -54,13 +54,12 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
                 // Status label
                 new NuiRow
                 {
-                    Height = 40f,
+                    Width = 250,
                     Children =
                     [
                         new NuiLabel(StatusText)
                         {
                             VerticalAlign = NuiVAlign.Middle,
-                            HorizontalAlign = NuiHAlign.Center,
                             ForegroundColor = new Color(30, 20, 12)
                         }
                     ]
@@ -73,6 +72,7 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
                 new NuiRow
                 {
                     Height = 40f,
+                    Width = 250,
                     Children =
                     [
                         new NuiLabel("Select Source:")
@@ -106,6 +106,7 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
                 new NuiRow
                 {
                     Height = 40f,
+                    Width = 250,
                     Children =
                     [
                         new NuiLabel("Select Target:")
