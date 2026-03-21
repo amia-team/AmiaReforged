@@ -52,11 +52,8 @@ public sealed class CopyMachinePresenter : ScryPresenter<CopyMachineView>
     private void RefreshStatus()
     {
         Token().SetBindValue(View.StatusText, _model.GetStatusText());
-
-        // Enable the checkbox only if source is a creature
-        bool isSourceCreature = _model.Source is NwCreature;
-        Token().SetBindValue(View.CopyEquipmentEnabled, isSourceCreature);
         Token().SetBindValue(View.CopyEquipmentChecked, false); // Reset checkbox when source changes
+        Token().SetBindValue(View.TypeTooltip, _model.GetTypeString());
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)

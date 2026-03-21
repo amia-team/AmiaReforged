@@ -26,6 +26,13 @@ internal sealed class CopyMachineModel
         if (Source == null)
             return "No source selected.";
 
+        var type = GetTypeString();
+
+        return $"Source: {Source.Name} ({type})";
+    }
+
+    public string GetTypeString()
+    {
         string type = Source switch
         {
             NwCreature => "Creature",
@@ -33,8 +40,7 @@ internal sealed class CopyMachineModel
             NwItem => "Item",
             _ => "Object"
         };
-
-        return $"Source: {Source.Name} ({type})";
+        return type;
     }
 
     public void EnterSourceTargetingMode()
@@ -197,8 +203,8 @@ internal sealed class CopyMachineModel
         {
             CopyCreatureAppearance(sourceCreature, targetCr);
 
-            // If equipment copying is enabled, copy equipment after appearance
-            if (_copyEquipmentEnabled)
+            // If equipment copying is enabled AND source is a creature, copy equipment after appearance
+            if (_copyEquipmentEnabled && Source is NwCreature)
             {
                 CopyCreatureEquipment(sourceCreature, targetCr);
             }

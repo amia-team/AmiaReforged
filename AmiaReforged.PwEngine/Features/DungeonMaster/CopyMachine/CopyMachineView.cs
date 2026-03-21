@@ -12,6 +12,7 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
     private const float WindowH = 250f;
 
     public readonly NuiBind<string> StatusText = new("cm_status");
+    public readonly NuiBind<string> TypeTooltip = new("cm_type");
     public readonly NuiBind<bool> CopyEquipmentEnabled = new("cm_equipment_enabled");
     public readonly NuiBind<bool> CopyEquipmentChecked = new("cm_equipment_checked");
 
@@ -62,7 +63,7 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
                         {
                             Height = 40f,
                             Width = 200,
-                            Tooltip = StatusText,
+                            Tooltip = "Object type: " + TypeTooltip,
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
                         }
@@ -83,7 +84,7 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
                         },
-                        new NuiSpacer { Width = 10f },
+                        new NuiSpacer { Width = 5f },
                         new NuiButtonImage("nui_pick")
                         {
                             Id = "btn_source",
@@ -91,11 +92,11 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
                             Height = 40f,
                             Tooltip = "Select object whose appearance you want to copy."
                         }.Assign(out SelectSourceButton),
-                        new NuiSpacer { Width = 15f },
-                        new NuiCheck("Copy equipment", CopyEquipmentChecked)
+                        new NuiSpacer { Width = 10f },
+                        new NuiCheck("", CopyEquipmentChecked)
                         {
                             Id = "chk_equipment",
-                            Enabled = CopyEquipmentEnabled
+                            Tooltip = "Copy equipment appearances. (Creatures Only)",
                         }.Assign(out CopyEquipmentCheckbox)
                     ]
                 },
