@@ -37,8 +37,8 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
     {
         NuiColumn root = new()
         {
-            Width = 275,
-            Height = 150,
+            Width = WindowW,
+            Height = WindowH,
             Children =
             [
                 // Background layer
@@ -56,12 +56,11 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
                 // Status label
                 new NuiRow
                 {
-                    Height = 40f,
-                    Width = 250,
                     Children =
                     [
                         new NuiLabel(StatusText)
                         {
+                            Height = 40f,
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
                         }
@@ -74,8 +73,6 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
                 // Select Source row with label, button, and equipment checkbox
                 new NuiRow
                 {
-                    Height = 40f,
-                    Width = 250,
                     Children =
                     [
                         new NuiLabel("Select Source:")
@@ -106,8 +103,6 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
                 // Select Target row with label and button
                 new NuiRow
                 {
-                    Height = 40f,
-                    Width = 250,
                     Children =
                     [
                         new NuiLabel("Select Target:")
