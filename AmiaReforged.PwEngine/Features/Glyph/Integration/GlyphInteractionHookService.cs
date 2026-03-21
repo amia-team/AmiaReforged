@@ -126,9 +126,12 @@ public class GlyphInteractionHookService
 
     /// <summary>
     /// Runs the Attempted stage of pipeline graphs for the given interaction tag.
-    /// Returns whether the interaction should be blocked and an optional rejection message.
+    /// Returns whether the interaction should be blocked, an optional rejection message,
+    /// and any metadata captured by Glyph scripts (e.g., via Store Session Object).
+    /// The caller is responsible for merging <c>CapturedMetadata</c> into the
+    /// <see cref="InteractionSession.Metadata"/> after the session is created.
     /// </summary>
-    public (bool ShouldBlock, string? Message) RunOnInteractionAttempted(
+    public (bool ShouldBlock, string? Message, Dictionary<string, object>? CapturedMetadata) RunOnInteractionAttempted(
         string interactionTag,
         string characterId,
         Guid targetId,
@@ -147,10 +150,12 @@ public class GlyphInteractionHookService
             Log.Info("[Glyph] OnAttempted: no matching pipeline graphs for '{Tag}'. Cache has {Count} entries: [{Keys}]",
                 interactionTag, _cache.Count,
                 string.Join(", ", _cache.Keys));
-            return (false, null);
+            return (false, null, null);
         }
 
         Log.Info("[Glyph] OnAttempted: found {Count} matching pipeline graph(s) for '{Tag}'", graphs.Count, interactionTag);
+
+        Dictionary<string, object>? capturedMetadata = null;
 
         foreach (GlyphGraph graph in graphs)
         {
@@ -168,11 +173,24 @@ public class GlyphInteractionHookService
                 DumpTraceLog(ctx, "OnAttempted");
                 CaptureStageTrace(ctx, "OnAttempted");
 
+                // Collect any metadata written to the context during this stage.
+                // Since no session exists yet, StoreSessionObjectExecutor writes to
+                // ctx.InteractionMetadata. We accumulate it here so the caller can
+                // merge it into the session once it is created.
+                if (ctx.InteractionMetadata is { Count: > 0 })
+                {
+                    capturedMetadata ??= new Dictionary<string, object>();
+                    foreach (KeyValuePair<string, object> kvp in ctx.InteractionMetadata)
+                    {
+                        capturedMetadata[kvp.Key] = kvp.Value;
+                    }
+                }
+
                 if (ctx.ShouldBlockInteraction)
                 {
                     Log.Info("Glyph pipeline '{Name}' blocked interaction '{Tag}' for character {CharId}: {Message}",
                         graph.Name, interactionTag, characterId, ctx.BlockInteractionMessage);
-                    return (true, ctx.BlockInteractionMessage);
+                    return (true, ctx.BlockInteractionMessage, capturedMetadata);
                 }
             }
             catch (Exception ex)
@@ -182,7 +200,7 @@ public class GlyphInteractionHookService
             }
         }
 
-        return (false, null);
+        return (false, null, capturedMetadata);
     }
 
     /// <summary>

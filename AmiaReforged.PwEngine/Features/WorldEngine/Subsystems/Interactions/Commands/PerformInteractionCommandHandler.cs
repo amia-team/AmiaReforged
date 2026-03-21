@@ -145,18 +145,30 @@ public sealed class PerformInteractionCommandHandler(
         // Glyph OnAttempted hook — scripts can block the interaction before preconditions
         if (glyphHook is not null)
         {
-            (bool shouldBlock, string? blockMessage) = glyphHook.RunOnInteractionAttempted(
-                command.InteractionTag,
-                command.CharacterId.Value.ToString(),
-                command.TargetId,
-                handler.TargetMode.ToString(),
-                command.AreaResRef,
-                proficiency: null,
-                command.Metadata);
+            (bool shouldBlock, string? blockMessage, Dictionary<string, object>? glyphCapturedMetadata) =
+                glyphHook.RunOnInteractionAttempted(
+                    command.InteractionTag,
+                    command.CharacterId.Value.ToString(),
+                    command.TargetId,
+                    handler.TargetMode.ToString(),
+                    command.AreaResRef,
+                    proficiency: null,
+                    command.Metadata);
 
             if (shouldBlock)
             {
                 return CommandResult.Fail(blockMessage ?? "Interaction blocked by script");
+            }
+
+            // Merge any metadata that Glyph scripts stored during the Attempted stage
+            // (e.g., via Store Session Object) into the command metadata so it flows
+            // into the session when StartSession is called below.
+            if (glyphCapturedMetadata is { Count: > 0 })
+            {
+                command = command with
+                {
+                    Metadata = MergeMetadata(command.Metadata, glyphCapturedMetadata)
+                };
             }
         }
 
@@ -239,5 +251,26 @@ public sealed class PerformInteractionCommandHandler(
             ErrorMessage = outcome.Success ? null : outcome.Message,
             Data = data
         };
+    }
+
+    /// <summary>
+    /// Merges <paramref name="source"/> entries into <paramref name="target"/>, creating a
+    /// new dictionary when <paramref name="target"/> is <c>null</c>.
+    /// Source values overwrite existing keys in target (Glyph scripts win).
+    /// </summary>
+    private static Dictionary<string, object> MergeMetadata(
+        Dictionary<string, object>? target,
+        Dictionary<string, object> source)
+    {
+        Dictionary<string, object> result = target != null
+            ? new Dictionary<string, object>(target)
+            : new Dictionary<string, object>();
+
+        foreach (KeyValuePair<string, object> kvp in source)
+        {
+            result[kvp.Key] = kvp.Value;
+        }
+
+        return result;
     }
 }
