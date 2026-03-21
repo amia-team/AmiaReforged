@@ -34,6 +34,7 @@ public static class RecipeTemplateMapper
                 template.Products.Select(ToProductDto).ToList(), JsonOptions),
             CraftingTimeRounds = template.CraftingTimeRounds,
             ProgressionPointsAwarded = template.ProgressionPointsAwarded,
+            ProficiencyXpAwarded = template.ProficiencyXpAwarded,
             RequiredWorkstation = template.RequiredWorkstation?.Value,
             RequiredToolsJson = JsonSerializer.Serialize(
                 template.RequiredTools.Select(ToToolRequirementDto).ToList(), JsonOptions),
@@ -61,6 +62,7 @@ public static class RecipeTemplateMapper
             Products = productDtos.Select(FromProductDto).ToList(),
             CraftingTimeRounds = entity.CraftingTimeRounds,
             ProgressionPointsAwarded = entity.ProgressionPointsAwarded,
+            ProficiencyXpAwarded = entity.ProficiencyXpAwarded,
             RequiredWorkstation = !string.IsNullOrEmpty(entity.RequiredWorkstation)
                 ? new WorkstationTag(entity.RequiredWorkstation)
                 : null,
@@ -81,6 +83,7 @@ public static class RecipeTemplateMapper
             template.Products.Select(ToProductDto).ToList(), JsonOptions);
         entity.CraftingTimeRounds = template.CraftingTimeRounds;
         entity.ProgressionPointsAwarded = template.ProgressionPointsAwarded;
+        entity.ProficiencyXpAwarded = template.ProficiencyXpAwarded;
         entity.RequiredWorkstation = template.RequiredWorkstation?.Value;
         entity.RequiredToolsJson = JsonSerializer.Serialize(
             template.RequiredTools.Select(ToToolRequirementDto).ToList(), JsonOptions);

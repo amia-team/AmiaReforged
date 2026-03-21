@@ -64,6 +64,11 @@ public class RecipeTemplate
     public int ProgressionPointsAwarded { get; init; }
 
     /// <summary>
+    /// Proficiency XP awarded toward the industry proficiency level on successful crafting (inherited by expanded recipes).
+    /// </summary>
+    public int ProficiencyXpAwarded { get; init; }
+
+    /// <summary>
     /// The workstation type required (inherited by expanded recipes).
     /// Null means no workstation is required.
     /// </summary>

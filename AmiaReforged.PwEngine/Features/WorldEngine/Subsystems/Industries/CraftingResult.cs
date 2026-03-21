@@ -12,6 +12,7 @@ public class CraftingResult
     public List<Product> ProductsCreated { get; init; } = [];
     public List<Ingredient> IngredientsConsumed { get; init; } = [];
     public int ProgressionPointsAwarded { get; init; }
+    public int ProficiencyXpAwarded { get; init; }
     public CraftingFailureReason? FailureReason { get; init; }
 }
 

@@ -17,6 +17,8 @@ public class IndustryMembershipTests
     private const string NoviceKnowledge2 = "Novice2";
     private const string NoviceKnowledge3 = "Novice3";
     private const string NoviceKnowledge4 = "Novice4";
+    private const string NoviceKnowledge5 = "Novice5";
+    private const string NoviceKnowledge6 = "Novice6";
     private const string ApprenticeKnowledge = "Apprentice1";
     private IndustryMembershipService _sut = null!;
     private readonly Guid _characterGuid = Guid.NewGuid();
@@ -61,6 +63,22 @@ public class IndustryMembershipTests
                 {
                     Tag = NoviceKnowledge4,
                     Name = "Novice Knowledge 4",
+                    Level = ProficiencyLevel.Novice,
+                    PointCost = 1,
+                    Description = string.Empty
+                },
+                new Knowledge
+                {
+                    Tag = NoviceKnowledge5,
+                    Name = "Novice Knowledge 5",
+                    Level = ProficiencyLevel.Novice,
+                    PointCost = 1,
+                    Description = string.Empty
+                },
+                new Knowledge
+                {
+                    Tag = NoviceKnowledge6,
+                    Name = "Novice Knowledge 6",
                     Level = ProficiencyLevel.Novice,
                     PointCost = 1,
                     Description = string.Empty
@@ -146,6 +164,7 @@ public class IndustryMembershipTests
         {
             IndustryTag = new IndustryTag("test_industry"),
             Level = ProficiencyLevel.Novice,
+            ProficiencyXpLevel = 25,
             CharacterKnowledge = [],
             Id = Guid.NewGuid(),
             CharacterId = CharacterId.From(_characterGuid)
@@ -213,6 +232,7 @@ public class IndustryMembershipTests
         {
             IndustryTag = new IndustryTag("test_industry"),
             Level = ProficiencyLevel.Novice,
+            ProficiencyXpLevel = 25,
             CharacterKnowledge = [],
             Id = Guid.NewGuid(),
             CharacterId = CharacterId.From(_characterGuid)
@@ -221,16 +241,20 @@ public class IndustryMembershipTests
         _sut.AddMembership(membership);
 
         LearningResult noviceResult1 = _sut.LearnKnowledge(membership, NoviceKnowledge);
-
         LearningResult noviceResult2 = _sut.LearnKnowledge(membership, NoviceKnowledge2);
+        LearningResult noviceResult3 = _sut.LearnKnowledge(membership, NoviceKnowledge3);
+        LearningResult noviceResult4 = _sut.LearnKnowledge(membership, NoviceKnowledge4);
+        LearningResult noviceResult5 = _sut.LearnKnowledge(membership, NoviceKnowledge5);
 
         _sut.RankUp(membership);
 
         LearningResult apprenticeResult = _sut.LearnKnowledge(membership, ApprenticeKnowledge);
         Assert.That(noviceResult1, Is.EqualTo(LearningResult.Success));
         Assert.That(noviceResult2, Is.EqualTo(LearningResult.Success));
+        Assert.That(noviceResult3, Is.EqualTo(LearningResult.Success));
+        Assert.That(noviceResult4, Is.EqualTo(LearningResult.Success));
+        Assert.That(noviceResult5, Is.EqualTo(LearningResult.Success));
         Assert.That(apprenticeResult, Is.EqualTo(LearningResult.Success));
-
     }
 
     [Test]
@@ -240,6 +264,7 @@ public class IndustryMembershipTests
         {
             IndustryTag = new IndustryTag("test_industry"),
             Level = ProficiencyLevel.Novice,
+            ProficiencyXpLevel = 25,
             CharacterKnowledge = [],
             Id = Guid.NewGuid(),
             CharacterId = CharacterId.From(_characterGuid)
@@ -247,13 +272,12 @@ public class IndustryMembershipTests
 
         _sut.AddMembership(membership);
 
-        LearningResult result = _sut.LearnKnowledge(membership, NoviceKnowledge2);
-        Assert.That(result, Is.EqualTo(LearningResult.Success), "Since the character has the required rank, the character should have learned the knowledge");
-
-
-        LearningResult result2 = _sut.LearnKnowledge(membership, NoviceKnowledge);
-        Assert.That(result2, Is.EqualTo(LearningResult.Success), "Since the character has the required rank, the character should have learned the knowledge");
-
+        // Learn 5 novice knowledge items (required for Novice -> Apprentice rank-up)
+        _sut.LearnKnowledge(membership, NoviceKnowledge);
+        _sut.LearnKnowledge(membership, NoviceKnowledge2);
+        _sut.LearnKnowledge(membership, NoviceKnowledge3);
+        _sut.LearnKnowledge(membership, NoviceKnowledge4);
+        _sut.LearnKnowledge(membership, NoviceKnowledge5);
 
         RankUpResult success = _sut.RankUp(membership);
         IndustryMembership actual = _sut.GetMemberships(CharacterId.From(_characterGuid)).First();

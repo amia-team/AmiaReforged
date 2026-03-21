@@ -110,22 +110,25 @@ public class IndustryMembershipService(
 
     public RankUpResult RankUp(IndustryMembership membership)
     {
+        // Already at Grandmaster — can't rank up further
+        if (membership.Level >= ProficiencyLevel.Grandmaster)
+        {
+            return RankUpResult.AlreadyMaxedOut;
+        }
+
+        // Check proficiency XP level is at the tier ceiling
+        int requiredLevel = RankUpRequirements.RequiredLevelForRankUp(membership.Level);
+        if (membership.ProficiencyXpLevel < requiredLevel)
+        {
+            return RankUpResult.InsufficientProficiencyLevel;
+        }
+
+        // Check knowledge points invested in this industry
         List<CharacterKnowledge> knowledge =
             characterKnowledgeRepository.GetKnowledgeForIndustry(membership.IndustryTag, membership.CharacterId)
                 .Where(ck => ck.Definition.Level == membership.Level).ToList();
-        List<Knowledge>? currentRankKnowledge = industryRepository.Get(membership.IndustryTag)
-            ?.Knowledge
-            .Where(k => k.Level == membership.Level).ToList();
 
-        if (currentRankKnowledge is { Count: 0 } or null)
-        {
-            Log.Error(
-                $"Invalid industry configuration for {membership.IndustryTag} detected. Knowledge for each rank may not be empty!");
-            return RankUpResult.IndustryNotFound;
-        }
-
-        int requiredKnowledge = Math.Max(1, currentRankKnowledge.Count / 2);
-
+        int requiredKnowledge = RankUpRequirements.KnowledgePointsRequired(membership.Level);
         if (knowledge.Count < requiredKnowledge)
         {
             return RankUpResult.InsufficientKnowledge;

@@ -15,5 +15,15 @@ public class PersistentIndustryMembership
 
     public required ProficiencyLevel Level { get; set; }
 
+    /// <summary>
+    /// Accumulated proficiency XP toward the next proficiency level.
+    /// </summary>
+    public int ProficiencyXp { get; set; }
+
+    /// <summary>
+    /// Current numeric proficiency level (1–125). 0 = Layman.
+    /// </summary>
+    public int ProficiencyXpLevel { get; set; }
+
     public required List<PersistentCharacterKnowledge> Knowledge { get; set; }
 }

@@ -4,6 +4,7 @@ public enum RankUpResult
 {
     Success,
     InsufficientKnowledge,
+    InsufficientProficiencyLevel,
     AlreadyMaxedOut,
     IndustryNotFound
 }

@@ -52,6 +52,7 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
     private readonly ICharacterKnowledgeRepository _knowledgeRepository;
     private readonly ICraftingProcessor _craftingProcessor;
     private readonly IKnowledgeProgressionService _progressionService;
+    private readonly IProficiencyProgressionService _proficiencyService;
     private readonly RecipeTemplateExpander _templateExpander;
 
     public CraftItemHandler(
@@ -60,6 +61,7 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
         ICharacterKnowledgeRepository knowledgeRepository,
         ICraftingProcessor craftingProcessor,
         IKnowledgeProgressionService progressionService,
+        IProficiencyProgressionService proficiencyService,
         RecipeTemplateExpander templateExpander)
     {
         _industryRepository = industryRepository;
@@ -67,6 +69,7 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
         _knowledgeRepository = knowledgeRepository;
         _craftingProcessor = craftingProcessor;
         _progressionService = progressionService;
+        _proficiencyService = proficiencyService;
         _templateExpander = templateExpander;
     }
 
@@ -155,6 +158,27 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
             }
         }
 
+        // Award proficiency XP if successful
+        if (craftingResult.ProficiencyXpAwarded > 0)
+        {
+            ProficiencyXpResult proficiencyResult =
+                _proficiencyService.AwardProficiencyXp(membership, craftingResult.ProficiencyXpAwarded);
+
+            if (proficiencyResult.Success)
+            {
+                resultData["proficiencyXpLevel"] = proficiencyResult.NewLevel;
+                resultData["proficiencyXpRemaining"] = proficiencyResult.XpRemaining;
+                resultData["proficiencyXpRequired"] = proficiencyResult.XpRequired;
+                resultData["proficiencyLevelsGained"] = proficiencyResult.LevelsGained;
+                resultData["proficiencyAtTierCeiling"] = proficiencyResult.IsAtTierCeiling;
+
+                if (proficiencyResult.LevelsGained > 0)
+                {
+                    _membershipRepository.Update(membership);
+                }
+            }
+        }
+
         return CommandResult.Ok(resultData);
     }
 }
@@ -208,7 +232,8 @@ public class DefaultCraftingProcessor : ICraftingProcessor
             Message = "Crafting completed successfully",
             ProductsCreated = modifiedProducts,
             IngredientsConsumed = recipe.Ingredients.ToList(),
-            ProgressionPointsAwarded = recipe.ProgressionPointsAwarded
+            ProgressionPointsAwarded = recipe.ProgressionPointsAwarded,
+            ProficiencyXpAwarded = recipe.ProficiencyXpAwarded
         };
 
         return Task.FromResult(result);

@@ -55,6 +55,11 @@ public class Recipe
     public int ProgressionPointsAwarded { get; init; }
 
     /// <summary>
+    /// Proficiency XP awarded toward the industry proficiency level on successful crafting.
+    /// </summary>
+    public int ProficiencyXpAwarded { get; init; }
+
+    /// <summary>
     /// Optional: Additional metadata for industry-specific logic
     /// </summary>
     public Dictionary<string, object> Metadata { get; init; } = new();

@@ -21,7 +21,9 @@ public class IndustryMembershipMapper(PersistentKnowledgeMapper knowledgeMapper,
             Id = membership.Id,
             CharacterId = membership.CharacterId,
             IndustryTag = membership.IndustryTag,
-            Level = ProficiencyLevel.Novice,
+            Level = membership.Level,
+            ProficiencyXp = membership.ProficiencyXp,
+            ProficiencyXpLevel = membership.ProficiencyXpLevel,
             Knowledge = knowledge
         };
     }
@@ -44,7 +46,9 @@ public class IndustryMembershipMapper(PersistentKnowledgeMapper knowledgeMapper,
         {
             CharacterId = CharacterId.From(membership.CharacterId),
             IndustryTag = new IndustryTag(membership.IndustryTag),
-            Level = ProficiencyLevel.Novice,
+            Level = membership.Level,
+            ProficiencyXp = membership.ProficiencyXp,
+            ProficiencyXpLevel = membership.ProficiencyXpLevel,
             CharacterKnowledge = characterKnowledge
         };
     }

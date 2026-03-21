@@ -53,6 +53,11 @@ public class PersistedRecipeTemplate
     public int ProgressionPointsAwarded { get; set; }
 
     /// <summary>
+    /// Proficiency XP awarded toward the industry proficiency level on successful crafting.
+    /// </summary>
+    public int ProficiencyXpAwarded { get; set; }
+
+    /// <summary>
     /// Optional workstation tag required.
     /// </summary>
     public string? RequiredWorkstation { get; set; }

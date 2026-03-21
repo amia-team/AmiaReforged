@@ -301,6 +301,7 @@ public class IndustryRecipeDto
     public List<IndustryProductDto> Products { get; set; } = [];
     public int? CraftingTimeRounds { get; set; }
     public int ProgressionPointsAwarded { get; set; }
+    public int ProficiencyXpAwarded { get; set; }
     public string? RequiredWorkstation { get; set; }
     public List<ToolRequirementDto> RequiredTools { get; set; } = [];
 }
@@ -434,6 +435,7 @@ public class RecipeTemplateDefinitionDto
     public List<TemplateProductDto> Products { get; set; } = [];
     public int? CraftingTimeRounds { get; set; }
     public int ProgressionPointsAwarded { get; set; }
+    public int ProficiencyXpAwarded { get; set; }
     public string? RequiredWorkstation { get; set; }
     public List<ToolRequirementDto> RequiredTools { get; set; } = [];
 }
