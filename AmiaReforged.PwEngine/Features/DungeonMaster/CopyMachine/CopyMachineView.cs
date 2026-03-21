@@ -62,8 +62,7 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
                         new NuiText(StatusText)
                         {
                             Height = 50f,
-                            Width = 230f,
-                            ForegroundColor = new Color(30, 20, 12)
+                            Width = 230f
                         }
                     ]
                 },

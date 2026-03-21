@@ -10,7 +10,7 @@ internal sealed class CopyMachineModel
     private readonly NwPlayer _player;
 
     public NwObject? Source { get; private set; }
-    private bool _copyEquipmentEnabled = false;
+    private bool _copyEquipmentEnabled;
 
     public delegate void SelectionChangedHandler();
 
@@ -73,7 +73,6 @@ internal sealed class CopyMachineModel
     public void SetCopyEquipmentFlag(bool enabled)
     {
         _copyEquipmentEnabled = enabled;
-        _player.SendServerMessage($"Equipment copying: {(enabled ? "ENABLED" : "DISABLED")}", ColorConstants.Cyan);
     }
 
     public void EnterCopyTargetingMode()
@@ -207,12 +206,7 @@ internal sealed class CopyMachineModel
             // If equipment copying is enabled AND source is a creature, copy equipment after appearance
             if (_copyEquipmentEnabled && Source is NwCreature)
             {
-                _player.SendServerMessage("Copying equipment...", ColorConstants.Cyan);
                 CopyCreatureEquipment(sourceCreature, targetCr);
-            }
-            else if (_copyEquipmentEnabled)
-            {
-                _player.SendServerMessage("Equipment copying enabled but source is not a creature.", ColorConstants.Orange);
             }
         }
         else if (Source is NwPlaceable sourcePlc && target is NwPlaceable targetPlc)
@@ -506,6 +500,7 @@ internal sealed class CopyMachineModel
     /// <summary>
     /// Copies creature equipment appearance (Armor, Cloak, Helmet, Main-Hand, Off-Hand).
     /// For armor, skips the chest part if the base armor AC doesn't match.
+    /// Re-equips items after copying to force visual appearance updates.
     /// </summary>
     public void CopyCreatureEquipment(NwCreature source, NwCreature target)
     {
@@ -516,6 +511,7 @@ internal sealed class CopyMachineModel
         }
 
         int copiedCount = 0;
+        List<InventorySlot> modifiedSlots = new();
 
         // Copy Armor (with AC-aware copying)
         NwItem? srcArmor = source.GetItemInSlot(InventorySlot.Chest);
@@ -524,31 +520,59 @@ internal sealed class CopyMachineModel
         {
             CopyArmorAppearanceWithAcCheck(srcArmor, tgtArmor);
             copiedCount++;
+            modifiedSlots.Add(InventorySlot.Chest);
         }
 
         // Copy Cloak
         CopyEquipmentSlot(source, target, InventorySlot.Cloak);
         NwItem? tgtCloak = target.GetItemInSlot(InventorySlot.Cloak);
         if (tgtCloak != null && source.GetItemInSlot(InventorySlot.Cloak) != null)
+        {
             copiedCount++;
+            modifiedSlots.Add(InventorySlot.Cloak);
+        }
 
         // Copy Helmet
         CopyEquipmentSlot(source, target, InventorySlot.Head);
         NwItem? tgtHelmet = target.GetItemInSlot(InventorySlot.Head);
         if (tgtHelmet != null && source.GetItemInSlot(InventorySlot.Head) != null)
+        {
             copiedCount++;
+            modifiedSlots.Add(InventorySlot.Head);
+        }
 
         // Copy Main-Hand (Right Hand)
         CopyEquipmentSlot(source, target, InventorySlot.RightHand);
         NwItem? tgtMainHand = target.GetItemInSlot(InventorySlot.RightHand);
         if (tgtMainHand != null && source.GetItemInSlot(InventorySlot.RightHand) != null)
+        {
             copiedCount++;
+            modifiedSlots.Add(InventorySlot.RightHand);
+        }
 
         // Copy Off-Hand (Left Hand)
         CopyEquipmentSlot(source, target, InventorySlot.LeftHand);
         NwItem? tgtOffHand = target.GetItemInSlot(InventorySlot.LeftHand);
         if (tgtOffHand != null && source.GetItemInSlot(InventorySlot.LeftHand) != null)
+        {
             copiedCount++;
+            modifiedSlots.Add(InventorySlot.LeftHand);
+        }
+
+        // Re-equip modified items to force visual appearance updates
+        if (modifiedSlots.Count > 0)
+        {
+            foreach (InventorySlot slot in modifiedSlots)
+            {
+                NwItem? item = target.GetItemInSlot(slot);
+                if (item != null && item.IsValid)
+                {
+                    // Use NWScript to unequip and re-equip to force appearance update
+                    NWScript.ActionUnequipItem(item);
+                    NWScript.ActionEquipItem(item, (int)slot);
+                }
+            }
+        }
 
         if (copiedCount > 0)
         {
@@ -628,20 +652,49 @@ internal sealed class CopyMachineModel
 
     /// <summary>
     /// Gets the AC value from an armor model number.
+    /// Uses the complete mapping from CharacterCustomizationModel to ensure accuracy.
     /// Returns null if the model is not recognized.
     /// </summary>
     private static int? GetArmorAcFromModel(ushort model)
     {
-        // This is a simplified mapping. In a real implementation, you'd have a complete
-        // dictionary of model numbers to AC values. For now, we use a basic heuristic:
-        // Model 0 = Robe (AC 0), Models 1-3 = Light (AC 1), 4-6 = Medium (AC 2), 7+ = Heavy (AC 3+)
+        // AC 0 - Cloth
+        if (new[] { 0, 1, 3, 5, 6, 7, 8, 9, 12, 19, 39, 50, 66, 67, 73, 74, 150, 158, 199, 200, 210, 228, 239, 240, 251 }.Contains(model))
+            return 0;
 
-        return model switch
-        {
-            0 => 0,
-            1 or 2 or 3 => 1,
-            4 or 5 or 6 => 2,
-            _ => 3
-        };
+        // AC 1 - Padded
+        if (new[] { 20, 28, 40 }.Contains(model))
+            return 1;
+
+        // AC 2 - Hide
+        if (new[] { 10, 13, 16, 27, 41, 42, 49, 58, 75, 76, 77, 86, 91, 92 }.Contains(model))
+            return 2;
+
+        // AC 3 - Studded
+        if (new[] { 22, 29, 43, 44 }.Contains(model))
+            return 3;
+
+        // AC 4 - Scale
+        if (new[] { 4, 15, 18, 34, 35, 36, 38, 54, 55, 56, 59, 63, 64, 68, 69, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105 }.Contains(model))
+            return 4;
+
+        // AC 5 - Chain
+        if (new[] { 24, 25, 26, 31, 32, 204 }.Contains(model))
+            return 5;
+
+        // AC 6 - Banded
+        if (new[] { 11, 17, 30, 45, 48 }.Contains(model))
+            return 6;
+
+        // AC 7 - Half-plate
+        if (new[] { 33, 46, 47, 51, 52 }.Contains(model))
+            return 7;
+
+        // AC 8 - Full plate
+        if (new[] { 14, 21, 23, 37, 53, 57, 60, 61, 62, 65, 70, 71, 72, 90, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 186, 190, 209, 220, 221, 222, 223, 252, 253 }.Contains(model))
+            return 8;
+
+        // Unknown model
+        return null;
     }
 }
+
