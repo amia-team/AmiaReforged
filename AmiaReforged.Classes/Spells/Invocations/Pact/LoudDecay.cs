@@ -1,116 +1,101 @@
 using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Warlock;
 using Anvil.API;
-using static NWN.Core.NWScript;
+using Anvil.API.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Pact;
 
-public class LoudDecay
+[ServiceBinding(typeof(IInvocation))]
+public class LoudDecay : IInvocation
 {
-    public void CastLoudDecay(uint nwnObjectId)
+    private const VfxType FnfLoudDecay = (VfxType)2133;
+    private const VfxType ImpDestructLow = (VfxType)302;
+    private const string AberrationSummonResRef = "wlkaberrant";
+
+    public string ImpactScript => "wlk_louddecay";
+    public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
-        IntPtr location = GetSpellTargetLocation();
-        uint caster = nwnObjectId;
+        if (castData.TargetLocation is not { } location) return;
 
-        // Declaring variables for the damage part of the spell
-        int warlockLevels = GetLevelByClass(57, nwnObjectId);
-        IntPtr loudVfx = EffectVisualEffect(2133); // VFX_FNF_LOUD_DECAY
+        int dc = warlock.InvocationDc(invocationCl);
+        int damageDice = invocationCl / 2;
+        const int dieSides = 6;
 
-        // Declaring variables for the summon part of the spell
-        int summonCount = warlockLevels switch
+        Effect damageVfx = Effect.VisualEffect(VfxType.ImpSonic);
+        Effect healVfx = Effect.VisualEffect(VfxType.ImpHealingM);
+        Effect fortVfx = Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse);
+
+        location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(FnfLoudDecay));
+
+        foreach (NwCreature creature in location.GetObjectsInShapeByType<NwCreature>
+                     (Shape.Sphere, RadiusSize.Colossal, losCheck: false))
+        {
+            if (creature.ResRef == AberrationSummonResRef)
+            {
+                int healAmount = Random.Shared.Roll(dieSides, damageDice) / 2;
+                _ = HealSummon(warlock, creature, healVfx, healAmount);
+                continue;
+            }
+
+            if (!creature.IsValidInvocationTarget(warlock)) continue;
+
+            CreatureEvents.OnSpellCastAt.Signal(warlock, creature, castData.Spell);
+
+            if (warlock.InvocationResistCheck(creature, invocationCl)) continue;
+
+            int damageAmount = Random.Shared.Roll(dieSides, damageDice);
+
+            SavingThrowResult fortSave =
+                creature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Spell, warlock);
+
+            if (fortSave == SavingThrowResult.Success)
+            {
+                damageAmount /= 2;
+                creature.ApplyEffect(EffectDuration.Instant, fortVfx);
+            }
+
+            _ = ApplyDamage(warlock, creature, damageVfx, damageAmount);
+        }
+
+        if (warlock.ActiveEffects.Any(e => e.Tag == WarlockExtensions.PactSummonCooldownTag)) return;
+
+        int summonCount = invocationCl switch
         {
             >= 1 and < 15 => 1,
             >= 15 and < 30 => 2,
             >= 30 => 3,
             _ => 0
         };
-        float summonDuration = RoundsToSeconds(SummonUtility.PactSummonDuration(caster));
-        float summonCooldown = TurnsToSeconds(1);
-        IntPtr cooldownEffect = TagEffect(ExtraordinaryEffect(EffectVisualEffect(VFX_NONE)),
-            sNewTag: "wlk_summon_cd");
 
-        if (NwEffects.IsPolymorphed(nwnObjectId))
-        {
-            SendMessageToPC(nwnObjectId, szMessage: "You cannot cast while polymorphed.");
-            return;
-        }
+        TimeSpan summonDuration = WarlockExtensions.PactSummonDuration(invocationCl);
+        VisualEffectTableEntry summonVfx = NwGameTables.VisualEffectTable.GetRow((int)VfxType.FnfGasExplosionNature);
+        VisualEffectTableEntry unsummonVfx = NwGameTables.VisualEffectTable.GetRow((int)ImpDestructLow);
 
-        //---------------------------
-        // * HOSTILE SPELL EFFECT
-        //---------------------------
+        Effect summonEffect = Effect.SummonCreature(AberrationSummonResRef, summonVfx, unsummonVfx: unsummonVfx);
+        summonEffect.SubType = EffectSubType.Magical;
 
-        ApplyEffectAtLocation(DURATION_TYPE_INSTANT, loudVfx, location);
-        uint currentTarget = GetFirstObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_COLOSSAL, location);
+        location.SummonMany(warlock, summonCount, RadiusSize.Gargantuan, delayMin: 1f, delayMax: 2f, summonEffect,
+            summonDuration);
 
-        while (GetIsObjectValid(currentTarget) == TRUE)
-        {
-            if (NwEffects.IsValidSpellTarget(currentTarget, 2, caster))
-            {
-                int damage = d6(warlockLevels / 2);
-
-                if (GetResRef(currentTarget) == "wlkaberrant")
-                {
-                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectHeal(damage / 2), currentTarget);
-                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_HEAD_MIND), currentTarget);
-                    currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_COLOSSAL, location);
-                    continue;
-                }
-
-                SignalEvent(currentTarget, EventSpellCastAt(caster, 1008));
-
-                if (NwEffects.ResistSpell(caster, currentTarget))
-                {
-                    currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_COLOSSAL, location);
-                    continue;
-                }
-
-                bool passedFortSave = FortitudeSave(currentTarget, WarlockUtils.CalculateDc(caster),
-                    SAVING_THROW_TYPE_SONIC, caster) == TRUE;
-
-                if (passedFortSave) ApplyDelayedVfx(3f, currentTarget);
-
-                damage = passedFortSave ? damage / 2 : damage;
-                IntPtr loudDamage = NwEffects.LinkEffectList(new List<IntPtr>
-                {
-                    EffectDamage(damage, DAMAGE_TYPE_SONIC),
-                    EffectVisualEffect(VFX_IMP_SONIC)
-                });
-
-                ApplyDelayedDamage(3f, loudDamage, currentTarget);
-            }
-
-            currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_COLOSSAL, location);
-        }
-
-        //---------------------------
-        // * SUMMONING
-        //---------------------------
-
-        // If summonCooldown is off and spell has hit a valid target, summon; else don't summon
-        if (NwEffects.GetHasEffectByTag(effectTag: "wlk_summon_cd", caster) != FALSE) return;
-
-        NwCreature? warlock = caster.ToNwObject() as NwCreature;
-        if (warlock == null) return;
-
-        // Summon new
-        _ = SummonUtility.SummonMany(warlock, VFX_FNF_GAS_EXPLOSION_NATURE, VFX_FNF_GAS_EXPLOSION_NATURE, summonDuration, summonCount,
-            "wlkaberrant", location, 1f, 9f, 3f, 4f);
-
-        DelayCommand(4.1f, () => SummonUtility.SetSummonsFacing(summonCount, location));
-
-        // Apply cooldown
-        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
+        warlock.ApplyPactCooldown();
     }
 
-    private void ApplyDelayedDamage(float delay, IntPtr loudDamage, uint currentTarget)
+    private static async Task HealSummon(NwCreature warlock, NwCreature creature, Effect healVfx, int healAmount)
     {
-        DelayCommand(delay, () => ApplyEffectToObject(DURATION_TYPE_INSTANT, loudDamage, currentTarget));
+        await NwTask.Delay(SpellUtils.GetRandomDelay(1, 2));
+        await warlock.WaitForObjectContext();
+
+        creature.ApplyEffect(EffectDuration.Instant, healVfx);
+        creature.ApplyEffect(EffectDuration.Instant, Effect.Heal(healAmount));
     }
 
-    private void ApplyDelayedVfx(float delay, uint currentTarget)
+    private static async Task ApplyDamage(NwCreature warlock, NwCreature creature, Effect damageVfx, int damageAmount)
     {
-        DelayCommand(delay,
-            () => ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_FORTITUDE_SAVING_THROW_USE),
-                currentTarget));
+        await NwTask.Delay(TimeSpan.FromSeconds(3));
+        await warlock.WaitForObjectContext();
+
+        creature.ApplyEffect(EffectDuration.Instant, damageVfx);
+        creature.ApplyEffect(EffectDuration.Instant, Effect.Damage(damageAmount, DamageType.Sonic));
     }
 }
