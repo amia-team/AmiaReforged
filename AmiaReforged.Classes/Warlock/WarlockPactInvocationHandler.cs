@@ -15,13 +15,6 @@ public class WarlockPactInvocationHandler
         Log.Info(message: "Warlock Pact Invocation Script Handler initialized.");
     }
 
-    [ScriptHandler(scriptName: "wlk_louddecay")]
-    public void OnLoudDecay(CallInfo info)
-    {
-        LoudDecay script = new();
-        script.CastLoudDecay(info.ObjectSelf);
-    }
-
     [ScriptHandler(scriptName: "wlk_lightscall")]
     public void OnLightsCalling(CallInfo info)
     {
@@ -34,20 +27,6 @@ public class WarlockPactInvocationHandler
     {
         DancingPlague script = new();
         script.CastDancingPlague(info.ObjectSelf);
-    }
-
-    [ScriptHandler(scriptName: "wlk_bindingmag")]
-    public void OnBindingOfMaggots(CallInfo info)
-    {
-        BindingOfMaggots script = new();
-        script.CastBindingOfMaggots(info.ObjectSelf);
-    }
-
-    [ScriptHandler(scriptName: "wlk_bindingent")]
-    public void OnBindingOfMaggotsEnter(CallInfo info)
-    {
-        BindingOfMaggotsEnter script = new();
-        script.BindingOfMaggotsEnterEffects(info.ObjectSelf);
     }
 
     [ScriptHandler(scriptName: "wlk_primordial")]
