@@ -122,9 +122,9 @@ public static class QualityLabel
 
     private static string ToOreQualityLabel(int quality) => quality switch
     {
-        NWScript.IP_CONST_QUALITY_VERY_POOR => "Impure",
-        NWScript.IP_CONST_QUALITY_POOR => "Common",
-        NWScript.IP_CONST_QUALITY_BELOW_AVERAGE => "Fair",
+        NWScript.IP_CONST_QUALITY_VERY_POOR => "Marginal",
+        NWScript.IP_CONST_QUALITY_POOR => "Low-Grade",
+        NWScript.IP_CONST_QUALITY_BELOW_AVERAGE => "Substandard",
         NWScript.IP_CONST_QUALITY_ABOVE_AVERAGE => "Rich",
         NWScript.IP_CONST_QUALITY_GOOD => "Pure",
         NWScript.IP_CONST_QUALITY_VERY_GOOD => "Premium",
