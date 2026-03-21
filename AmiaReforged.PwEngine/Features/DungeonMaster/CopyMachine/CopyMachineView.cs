@@ -8,8 +8,8 @@ namespace AmiaReforged.PwEngine.Features.DungeonMaster.CopyMachine;
 
 public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
 {
-    private const float WindowW = 350f;
-    private const float WindowH = 280f;
+    private const float WindowW = 260f;
+    private const float WindowH = 150f;
 
     public readonly NuiBind<string> StatusText = new("cm_status");
     public readonly NuiBind<bool> CopyEquipmentEnabled = new("cm_equipment_enabled");
@@ -54,6 +54,7 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
                 // Status label
                 new NuiRow
                 {
+                    Height = 40f,
                     Width = 250,
                     Children =
                     [
@@ -78,8 +79,7 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
                         new NuiLabel("Select Source:")
                         {
                             Width = 100f,
-                            VerticalAlign = NuiVAlign.Middle,
-                            HorizontalAlign = NuiHAlign.Right
+                            VerticalAlign = NuiVAlign.Middle
                         },
                         new NuiSpacer { Width = 10f },
                         new NuiButtonImage("nui_pick")
@@ -92,7 +92,6 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
                         new NuiSpacer { Width = 15f },
                         new NuiCheck("Copy equipment", CopyEquipmentChecked)
                         {
-                            Height = 40f,
                             Id = "chk_equipment",
                             Enabled = CopyEquipmentEnabled
                         }.Assign(out CopyEquipmentCheckbox)
@@ -112,8 +111,7 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
                         new NuiLabel("Select Target:")
                         {
                             Width = 100f,
-                            VerticalAlign = NuiVAlign.Middle,
-                            HorizontalAlign = NuiHAlign.Right
+                            VerticalAlign = NuiVAlign.Middle
                         },
                         new NuiSpacer { Width = 10f },
                         new NuiButtonImage("nui_pick")
