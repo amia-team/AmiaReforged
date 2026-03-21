@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.Glyph.Integration;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
@@ -41,6 +42,7 @@ public sealed class InteractionProgressPresenter : ScryPresenter<InteractionProg
     private bool _cancelled;
 
     [Inject] private Lazy<IInteractionSubsystem>? InteractionSubsystem { get; init; }
+    [Inject] private GlyphInteractionHookService? GlyphHook { get; init; }
 
     public InteractionProgressPresenter(
         InteractionProgressView view,
@@ -146,6 +148,9 @@ public sealed class InteractionProgressPresenter : ScryPresenter<InteractionProg
                 await NwTask.SwitchToMainThread();
                 if (_cancelled || !_player.IsValid) return;
 
+                // ─── Dump Glyph stage traces to combat log ───
+                DumpStageTraces();
+
                 // ─── Handle result ───
                 if (!result.Success)
                 {
@@ -223,6 +228,54 @@ public sealed class InteractionProgressPresenter : ScryPresenter<InteractionProg
                 Close();
             }
         });
+    }
+
+    /// <summary>
+    /// Fetches accumulated Glyph stage traces for this character and sends them
+    /// to the player's combat log so they can see per-node execution details.
+    /// </summary>
+    private void DumpStageTraces()
+    {
+        if (GlyphHook == null) return;
+
+        List<StageTraceReport> reports = GlyphHook.GetAndClearStageTraces(_characterId.Value.ToString());
+        if (reports.Count == 0) return;
+
+        Color headerColor = new(100, 200, 255);
+        foreach (StageTraceReport report in reports)
+        {
+            _player.SendServerMessage(
+                $"[TRACE] ┌─ Glyph Stage: {report.StageName} ─ Graph: {report.GraphName}",
+                headerColor);
+            _player.SendServerMessage(
+                $"[TRACE] │  Steps executed: {report.StepsExecuted}",
+                ColorConstants.Silver);
+
+            if (report.TraceEntries.Count > 0)
+            {
+                _player.SendServerMessage(
+                    $"[TRACE] │  Trace log ({report.TraceEntries.Count} entries):",
+                    ColorConstants.Silver);
+                foreach (string entry in report.TraceEntries)
+                {
+                    _player.SendServerMessage($"[TRACE] │    {entry}", ColorConstants.Silver);
+                }
+            }
+
+            if (report.ContextSnapshot.Count > 0)
+            {
+                _player.SendServerMessage("[TRACE] │  Context:", ColorConstants.Silver);
+                foreach (KeyValuePair<string, string> kvp in report.ContextSnapshot)
+                {
+                    Color entryColor = kvp.Key is "blocked" or "cancelled"
+                        ? ColorConstants.Orange
+                        : ColorConstants.Silver;
+                    _player.SendServerMessage($"[TRACE] │    {kvp.Key} = {kvp.Value}", entryColor);
+                }
+            }
+
+            _player.SendServerMessage("[TRACE] └──────────────────────────", headerColor);
+        }
     }
 
     /// <summary>
