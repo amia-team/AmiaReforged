@@ -8,8 +8,8 @@ namespace AmiaReforged.PwEngine.Features.DungeonMaster.CopyMachine;
 
 public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
 {
-    private const float WindowW = 300f;
-    private const float WindowH = 175f;
+    private const float WindowW = 250f;
+    private const float WindowH = 250f;
 
     public readonly NuiBind<string> StatusText = new("cm_status");
     public readonly NuiBind<bool> CopyEquipmentEnabled = new("cm_equipment_enabled");
@@ -61,6 +61,8 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
                         new NuiLabel(StatusText)
                         {
                             Height = 40f,
+                            Width = 200,
+                            Tooltip = StatusText,
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
                         }
@@ -78,7 +80,8 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
                         new NuiLabel("Select Source:")
                         {
                             Width = 100f,
-                            VerticalAlign = NuiVAlign.Middle
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
                         },
                         new NuiSpacer { Width = 10f },
                         new NuiButtonImage("nui_pick")
@@ -108,7 +111,8 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
                         new NuiLabel("Select Target:")
                         {
                             Width = 100f,
-                            VerticalAlign = NuiVAlign.Middle
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
                         },
                         new NuiSpacer { Width = 10f },
                         new NuiButtonImage("nui_pick")
