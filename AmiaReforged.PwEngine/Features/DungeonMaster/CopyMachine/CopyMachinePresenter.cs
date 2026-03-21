@@ -28,7 +28,7 @@ public sealed class CopyMachinePresenter : ScryPresenter<CopyMachineView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(0f, 100f, 260f, 150f)
+            Geometry = new NuiRect(0f, 100f, 300f, 175f)
         };
     }
 

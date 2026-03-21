@@ -8,8 +8,8 @@ namespace AmiaReforged.PwEngine.Features.DungeonMaster.CopyMachine;
 
 public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
 {
-    private const float WindowW = 260f;
-    private const float WindowH = 150f;
+    private const float WindowW = 300f;
+    private const float WindowH = 175f;
 
     public readonly NuiBind<string> StatusText = new("cm_status");
     public readonly NuiBind<bool> CopyEquipmentEnabled = new("cm_equipment_enabled");
@@ -37,6 +37,8 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
     {
         NuiColumn root = new()
         {
+            Width = 275,
+            Height = 150,
             Children =
             [
                 // Background layer
