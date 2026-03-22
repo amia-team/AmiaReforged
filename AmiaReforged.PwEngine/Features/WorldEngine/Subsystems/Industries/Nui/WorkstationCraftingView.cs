@@ -267,10 +267,10 @@ public sealed class WorkstationCraftingView : ScryView<WorkstationCraftingPresen
     /// Builds the detail pane layout for a selected recipe with per-ingredient quality dropdowns.
     /// </summary>
     /// <param name="recipe">The selected recipe.</param>
-    /// <param name="ingredientSlots">Per-ingredient quality info: list of (tag, quantity, availableQualities).
+    /// <param name="ingredientSlots">Per-ingredient quality info: list of (tag, name, quantity, availableQualities).
     /// Each availableQualities is a sorted list of quality tiers found in inventory.</param>
     public NuiColumn BuildRecipeDetailLayout(Recipe recipe,
-        List<(string Tag, int Qty, List<int> AvailableQualities)> ingredientSlots)
+        List<(string Tag, string Name, int Qty, List<int> AvailableQualities)> ingredientSlots)
     {
         List<NuiElement> children =
         [
@@ -297,7 +297,7 @@ public sealed class WorkstationCraftingView : ScryView<WorkstationCraftingPresen
         // Per-ingredient rows with quality selection
         for (int i = 0; i < ingredientSlots.Count && i < MaxIngredientSlots; i++)
         {
-            (string tag, int qty, List<int> qualities) = ingredientSlots[i];
+            (string tag, string name, int qty, List<int> qualities) = ingredientSlots[i];
             Ingredient ingredient = recipe.Ingredients[i];
             string consumed = ingredient.IsConsumed ? "" : " (catalyst)";
 
@@ -312,7 +312,7 @@ public sealed class WorkstationCraftingView : ScryView<WorkstationCraftingPresen
                     Height = 28f,
                     Children =
                     [
-                        new NuiLabel($"  {qty}x {tag} — {qualLabel}{consumed}")
+                        new NuiLabel($"  {qty}x {name} — {qualLabel}{consumed}")
                         {
                             HorizontalAlign = NuiHAlign.Left,
                             VerticalAlign = NuiVAlign.Middle
@@ -328,7 +328,7 @@ public sealed class WorkstationCraftingView : ScryView<WorkstationCraftingPresen
                     Height = 32f,
                     Children =
                     [
-                        new NuiLabel($"  {qty}x {tag}{consumed}")
+                        new NuiLabel($"  {qty}x {name}{consumed}")
                         {
                             Width = 160f,
                             HorizontalAlign = NuiHAlign.Left,

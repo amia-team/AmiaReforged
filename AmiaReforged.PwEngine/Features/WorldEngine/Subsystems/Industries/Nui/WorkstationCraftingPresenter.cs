@@ -33,7 +33,7 @@ public sealed class WorkstationCraftingPresenter : ScryPresenter<WorkstationCraf
     private readonly Dictionary<int, int> _selectedQualities = new();
 
     /// <summary>Cached ingredient slot info for the current recipe selection.</summary>
-    private List<(string Tag, int Qty, List<int> AvailableQualities)> _ingredientSlots = [];
+    private List<(string Tag, string Name, int Qty, List<int> AvailableQualities)> _ingredientSlots = [];
 
     [Inject] private Lazy<IIndustrySubsystem>? IndustrySubsystem { get; init; }
     [Inject] private Lazy<RuntimeCharacterService>? CharacterService { get; init; }
@@ -227,10 +227,7 @@ public sealed class WorkstationCraftingPresenter : ScryPresenter<WorkstationCraf
     private static string FormatSubtitle(Recipe recipe)
     {
         int ingredientCount = recipe.Ingredients.Count;
-        string knowledge = recipe.RequiredKnowledge.Count > 0
-            ? string.Join(", ", recipe.RequiredKnowledge)
-            : "none";
-        return $"Knowledge: {knowledge} | {ingredientCount} ingredient{(ingredientCount != 1 ? "s" : "")}";
+        return $"{ingredientCount} ingredient{(ingredientCount != 1 ? "s" : "")}";
     }
 
     // --- Selection & Detail ---
@@ -455,27 +452,33 @@ public sealed class WorkstationCraftingPresenter : ScryPresenter<WorkstationCraf
 
     /// <summary>
     /// Scans the player's inventory to find distinct quality tiers available for each ingredient.
-    /// Returns per-ingredient slot info: (tag, required quantity, sorted list of available quality tiers).
+    /// Returns per-ingredient slot info: (tag, display name, required quantity, sorted list of available quality tiers).
     /// </summary>
-    private List<(string Tag, int Qty, List<int> AvailableQualities)> ScanIngredientQualities(Recipe recipe)
+    private List<(string Tag, string Name, int Qty, List<int> AvailableQualities)> ScanIngredientQualities(Recipe recipe)
     {
         NwCreature? creature = _player.LoginCreature;
         if (creature == null) return [];
 
-        List<(string Tag, int Qty, List<int> AvailableQualities)> result = [];
+        List<(string Tag, string Name, int Qty, List<int> AvailableQualities)> result = [];
 
         foreach (Ingredient ingredient in recipe.Ingredients)
         {
-            // Group matching items by quality tier, keeping only tiers with enough quantity
-            List<int> qualities = creature.Inventory.Items
+            List<NwItem> matchingItems = creature.Inventory.Items
                 .Where(item => item.Tag == ingredient.ItemTag)
+                .ToList();
+
+            // Use the first matching item's name, falling back to the tag
+            string displayName = matchingItems.Count > 0 ? matchingItems[0].Name : ingredient.ItemTag;
+
+            // Group matching items by quality tier, keeping only tiers with enough quantity
+            List<int> qualities = matchingItems
                 .GroupBy(item => item.GetObjectVariable<LocalVariableInt>("item_quality").Value)
                 .Where(g => g.Sum(item => item.StackSize) >= ingredient.Quantity.Value)
                 .Select(g => g.Key)
                 .OrderBy(q => q)
                 .ToList();
 
-            result.Add((ingredient.ItemTag, ingredient.Quantity.Value, qualities));
+            result.Add((ingredient.ItemTag, displayName, ingredient.Quantity.Value, qualities));
         }
 
         return result;
