@@ -9,5 +9,6 @@ public enum CodexTab
     Quests,
     Notes,
     Reputation,
-    Traits
+    Traits,
+    Economy
 }

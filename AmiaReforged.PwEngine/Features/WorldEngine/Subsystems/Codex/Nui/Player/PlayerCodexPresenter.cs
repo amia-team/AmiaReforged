@@ -1,8 +1,10 @@
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -24,6 +26,8 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
 
     // Injected services
     [Inject] private Lazy<CodexQueryService>? QueryService { get; init; }
+    [Inject] private Lazy<IIndustryMembershipService>? MembershipService { get; init; }
+    [Inject] private Lazy<IIndustryRepository>? IndustryRepository { get; init; }
 
     // State
     private CodexTab _activeTab = CodexTab.Knowledge;
@@ -32,6 +36,8 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
     private int _selectedIndex = -1;
     private List<ICodexDisplayItem> _currentEntries = new();
     private CharacterId? _characterId;
+    private List<IndustryMembership> _memberships = new();
+    private IndustryMembership? _activeMembership;
 
     public PlayerCodexPresenter(PlayerCodexView view, NwPlayer player)
     {
@@ -121,6 +127,9 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
             case "tab_traits":
                 SwitchTab(CodexTab.Traits);
                 break;
+            case "tab_economy":
+                SwitchTab(CodexTab.Economy);
+                break;
 
             case "btn_prev_page":
                 if (_currentPage > 0) { _currentPage--; RefreshEntryList(); }
@@ -163,9 +172,14 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
         _selectedIndex = -1;
 
         SwapCategorySidebar();
+        SwapEntryListPane();
         await LoadEntries();
         await NwTask.SwitchToMainThread();
         RefreshEntryList();
+
+        if (_activeTab == CodexTab.Economy)
+            RefreshProficiencyDisplay();
+
         SetDetailContent("Select an Entry", "Choose an entry from the list to view its details.");
     }
 
@@ -180,6 +194,10 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
         await LoadEntries();
         await NwTask.SwitchToMainThread();
         RefreshEntryList();
+
+        if (_activeTab == CodexTab.Economy)
+            RefreshProficiencyDisplay();
+
         SetDetailContent("Select an Entry", "Choose an entry from the list to view its details.");
     }
 
@@ -211,6 +229,9 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
                 break;
             case CodexTab.Traits:
                 _currentEntries = await LoadTraitEntries(cid);
+                break;
+            case CodexTab.Economy:
+                _currentEntries = LoadEconomyEntries(cid);
                 break;
         }
     }
@@ -283,6 +304,31 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
             entries = await QueryService!.Value.GetAllTraitsAsync(cid);
 
         return entries.Select(e => (ICodexDisplayItem)new TraitDisplayItem(e)).ToList();
+    }
+
+    private List<ICodexDisplayItem> LoadEconomyEntries(CharacterId cid)
+    {
+        if (MembershipService?.Value == null) return new List<ICodexDisplayItem>();
+
+        _memberships = MembershipService.Value.GetMemberships(cid);
+
+        List<CharacterKnowledge> knowledge;
+
+        if (_activeCategory == "all")
+        {
+            knowledge = _memberships.SelectMany(m => m.CharacterKnowledge).ToList();
+            _activeMembership = _memberships.FirstOrDefault();
+        }
+        else
+        {
+            IndustryMembership? match = _memberships.FirstOrDefault(
+                m => string.Equals(m.IndustryTag.Value, _activeCategory, StringComparison.OrdinalIgnoreCase));
+
+            _activeMembership = match;
+            knowledge = match?.CharacterKnowledge ?? new List<CharacterKnowledge>();
+        }
+
+        return knowledge.Select(ck => (ICodexDisplayItem)new KnowledgeDisplayItem(ck)).ToList();
     }
 
     // ──────────────────────── Entry list refresh ────────────────────────
@@ -384,6 +430,8 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
                 ("Curse", "curse"),
                 ("Blessing", "blessing")),
 
+            CodexTab.Economy => BuildEconomyCategoryColumn(),
+
             _ => BuildCategoryColumn(("All", "all"))
         };
 
@@ -418,6 +466,68 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
         children.Add(new NuiSpacer());
 
         return new NuiColumn { Children = children };
+    }
+
+    private NuiColumn BuildEconomyCategoryColumn()
+    {
+        if (_characterId == null || MembershipService?.Value == null)
+            return BuildCategoryColumn(("All", "all"));
+
+        _memberships = MembershipService.Value.GetMemberships(_characterId.Value);
+
+        List<(string Label, string Id)> categories = new() { ("All", "all") };
+
+        foreach (IndustryMembership m in _memberships)
+        {
+            string name = IndustryRepository?.Value?.GetByTag(m.IndustryTag)?.Name ?? m.IndustryTag.Value;
+            categories.Add((name, m.IndustryTag.Value));
+        }
+
+        return BuildCategoryColumn(categories.ToArray());
+    }
+
+    // ──────────────────────── Entry list pane swap ────────────────────────
+
+    private void SwapEntryListPane()
+    {
+        NuiColumn layout = _activeTab == CodexTab.Economy
+            ? View.BuildEconomyEntryList()
+            : View.BuildEntryListInner();
+
+        _token.SetGroupLayout(View.EntryListGroup, layout);
+    }
+
+    // ──────────────────────── Proficiency display ────────────────────────
+
+    private void RefreshProficiencyDisplay()
+    {
+        if (_activeMembership == null)
+        {
+            _token.SetBindValue(View.ProficiencyLevelText, "No Industry Selected");
+            _token.SetBindValue(View.ProficiencyProgressValue, 0f);
+            _token.SetBindValue(View.ProficiencyProgressLabel, "");
+            return;
+        }
+
+        IndustryMembership m = _activeMembership;
+        int level = m.ProficiencyXpLevel;
+        ProficiencyLevel tier = m.ProficiencyTier;
+
+        _token.SetBindValue(View.ProficiencyLevelText, $"{tier} (Lv. {level})");
+
+        int xpNeeded = ProficiencyXpCurve.XpForLevel(level);
+        if (xpNeeded <= 0 || level >= ProficiencyXpCurve.MaxLevel)
+        {
+            // Grandmaster / max level
+            _token.SetBindValue(View.ProficiencyProgressValue, 1f);
+            _token.SetBindValue(View.ProficiencyProgressLabel, "MAX");
+        }
+        else
+        {
+            float progress = Math.Clamp(m.ProficiencyXp / (float)xpNeeded, 0f, 1f);
+            _token.SetBindValue(View.ProficiencyProgressValue, progress);
+            _token.SetBindValue(View.ProficiencyProgressLabel, $"{m.ProficiencyXp} / {xpNeeded} XP");
+        }
     }
 
     // ──────────────────────── CharacterId resolution ────────────────────────

@@ -21,9 +21,17 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
     // --- Category sidebar group (swapped via SetGroupLayout per tab) ---
     public NuiGroup CategoryGroup = null!;
 
+    // --- Entry list group (swapped via SetGroupLayout for Economy tab) ---
+    public NuiGroup EntryListGroup = null!;
+
     // --- Detail pane binds (updated via SetBindValue — no SetGroupLayout needed) ---
     public readonly NuiBind<string> DetailTitle = new("codex_detail_title");
     public readonly NuiBind<string> DetailBody = new("codex_detail_body");
+
+    // --- Economy tab proficiency binds ---
+    public readonly NuiBind<string> ProficiencyLevelText = new("codex_prof_level");
+    public readonly NuiBind<float> ProficiencyProgressValue = new("codex_prof_progress");
+    public readonly NuiBind<string> ProficiencyProgressLabel = new("codex_prof_label");
 
     // --- Pagination binds ---
     public readonly NuiBind<string> PageInfo = new("codex_page_info");
@@ -81,14 +89,15 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
                             Border = true
                         }.Assign(out CategoryGroup),
 
-                        // Entry list
+                        // Entry list (swapped via SetGroupLayout for Economy tab)
                         new NuiGroup
                         {
+                            Id = "grp_entry_list",
                             Element = BuildEntryListInner(),
                             Width = 270f,
                             Scrollbars = NuiScrollbars.None,
                             Border = true
-                        },
+                        }.Assign(out EntryListGroup),
 
                         // Detail pane (static layout with bound content)
                         BuildDetailPane()
@@ -120,7 +129,8 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
                 new NuiButton("Quests") { Id = "tab_quests", Height = 35f },
                 new NuiButton("Notes") { Id = "tab_notes", Height = 35f },
                 new NuiButton("Reputation") { Id = "tab_reputation", Height = 35f },
-                new NuiButton("Traits") { Id = "tab_traits", Height = 35f }
+                new NuiButton("Traits") { Id = "tab_traits", Height = 35f },
+                new NuiButton("Economy") { Id = "tab_economy", Height = 35f }
             }
         };
     }
@@ -152,10 +162,77 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
         };
     }
 
-    private NuiColumn BuildEntryListInner()
+    /// <summary>
+    /// Standard entry list layout used by all tabs except Economy.
+    /// </summary>
+    public NuiColumn BuildEntryListInner()
     {
         List<NuiElement> children = new();
+        AddEntryRowsAndPagination(children);
+        return new NuiColumn { Children = children };
+    }
 
+    /// <summary>
+    /// Economy tab middle pane: proficiency info header + paginated knowledge entries.
+    /// </summary>
+    public NuiColumn BuildEconomyEntryList()
+    {
+        List<NuiElement> children = new()
+        {
+            // Proficiency level label (centered)
+            new NuiRow
+            {
+                Height = 30f,
+                Children = new List<NuiElement>
+                {
+                    new NuiSpacer(),
+                    new NuiLabel(ProficiencyLevelText)
+                    {
+                        HorizontalAlign = NuiHAlign.Center,
+                        VerticalAlign = NuiVAlign.Middle
+                    },
+                    new NuiSpacer()
+                }
+            },
+            // Progress bar
+            new NuiRow
+            {
+                Height = 28f,
+                Children = new List<NuiElement>
+                {
+                    new NuiSpacer { Width = 10f },
+                    new NuiProgress(ProficiencyProgressValue) { Height = 24f },
+                    new NuiSpacer { Width = 10f }
+                }
+            },
+            // XP label underneath progress bar
+            new NuiRow
+            {
+                Height = 22f,
+                Children = new List<NuiElement>
+                {
+                    new NuiSpacer(),
+                    new NuiLabel(ProficiencyProgressLabel)
+                    {
+                        HorizontalAlign = NuiHAlign.Center,
+                        VerticalAlign = NuiVAlign.Middle,
+                        ForegroundColor = new Color(160, 140, 100)
+                    },
+                    new NuiSpacer()
+                }
+            },
+            new NuiSpacer { Height = 6f }
+        };
+
+        AddEntryRowsAndPagination(children);
+        return new NuiColumn { Children = children };
+    }
+
+    /// <summary>
+    /// Shared helper: appends 8 entry rows + pagination controls to the given children list.
+    /// </summary>
+    private void AddEntryRowsAndPagination(List<NuiElement> children)
+    {
         // 8 entry rows
         for (int i = 0; i < EntriesPerPage; i++)
         {
@@ -227,7 +304,5 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
                 }
             }
         });
-
-        return new NuiColumn { Children = children };
     }
 }

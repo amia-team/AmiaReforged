@@ -1,5 +1,8 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Nui.Player;
 
 /// <summary>
@@ -160,4 +163,53 @@ public sealed class TraitDisplayItem : ICodexDisplayItem
     }
 
     public string Subtitle => _entry.Category.DisplayName();
+}
+
+public sealed class KnowledgeDisplayItem : ICodexDisplayItem
+{
+    private readonly CharacterKnowledge _ck;
+    private Knowledge Def => _ck.Definition;
+
+    public KnowledgeDisplayItem(CharacterKnowledge ck) => _ck = ck;
+
+    public string DisplayName => Def.Name;
+    public string DetailTitle => Def.Name;
+
+    public string DetailBody
+    {
+        get
+        {
+            string body = Def.Description;
+            body += $"\n\nRequired Tier: {Def.Level}";
+            body += $"\nPoint Cost: {Def.PointCost}";
+
+            if (!string.IsNullOrEmpty(Def.Branch))
+                body += $"\nBranch: {Def.Branch}";
+
+            if (Def.Prerequisites.Count > 0)
+            {
+                body += "\n\nPrerequisites:";
+                foreach (string prereq in Def.Prerequisites)
+                    body += $"\n  - {prereq}";
+            }
+
+            if (Def.CraftingModifiers.Count > 0)
+            {
+                body += "\n\nCrafting Modifiers:";
+                foreach (CraftingModifier mod in Def.CraftingModifiers)
+                    body += $"\n  - {mod.StepModified} ({mod.Scope}): {mod.Operation} {mod.Value:+0.##;-0.##}";
+            }
+
+            if (Def.HarvestEffects.Count > 0)
+            {
+                body += "\n\nHarvest Effects:";
+                foreach (KnowledgeHarvestEffect effect in Def.HarvestEffects)
+                    body += $"\n  - {effect.NodeTag}: {effect.StepModified} {effect.Operation} {effect.Value:+0.##;-0.##}";
+            }
+
+            return body;
+        }
+    }
+
+    public string Subtitle => Def.Level.ToString();
 }
