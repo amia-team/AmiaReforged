@@ -3,6 +3,8 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NLog;
+using NLog.Fluent;
 using NWN.Core;
 using NWN.Core.NWNX;
 using NWN.Native.API;
@@ -12,6 +14,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex;
 [ServiceBinding(typeof(CodexJournalService))]
 public class CodexJournalService
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly ICodexSubsystem _codex;
     private const string OpenJournalHandle = "open_codex";
     private const string CloseJournalHandle = "close_codex";
@@ -35,7 +38,20 @@ public class CodexJournalService
 
     private ScriptHandleResult HandleJournalOpen(CallInfo arg)
     {
-        if (NWScript.OBJECT_SELF.ToNwObject<NwCreature>() is not { } creature || !creature.IsPlayerControlled(out NwPlayer? player))
+        NwObject? gameObject = arg.ObjectSelf;
+
+        if (gameObject is null)
+        {
+            Log.Info("Creature somehow null????");
+        }
+
+        if (gameObject is not NwCreature creature)
+        {
+            Log.Info("Somehow, a non-creature opened the journal????");
+            return ScriptHandleResult.Handled;
+        }
+
+        if (!creature.IsPlayerControlled(out NwPlayer? player))
         {
             return ScriptHandleResult.Handled;
         }
@@ -58,11 +74,23 @@ public class CodexJournalService
 
     private ScriptHandleResult HandleJournalClose(CallInfo arg)
     {
-        if (NWScript.OBJECT_SELF.ToNwObject<NwCreature>() is not { } creature || !creature.IsPlayerControlled(out NwPlayer? player))
+        NwObject? gameObject = arg.ObjectSelf;
+
+        if (gameObject is null)
         {
+            Log.Info("Creature somehow null????");
+        }
+
+        if (gameObject is not NwCreature creature)
+        {
+            Log.Info("Somehow, a non-creature opened the journal????");
             return ScriptHandleResult.Handled;
         }
 
+        if (!creature.IsPlayerControlled(out NwPlayer? player))
+        {
+            return ScriptHandleResult.Handled;
+        }
 
         NwItem? pcKey = creature.Inventory.Items.FirstOrDefault(item => item.ResRef == "ds_pckey");
         if (pcKey is null)
