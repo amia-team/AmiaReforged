@@ -113,53 +113,56 @@ internal sealed class CopyMachineModel
         // Item source
         if (Source is NwItem sourceItem)
         {
-            // Item → Creature: clone into inventory (DM's own creature only)
-            if (obj.TargetObject is NwCreature targetCreature)
-            {
-                NwCreature? dmCreature = _player.LoginCreature ?? _player.ControlledCreature;
-                if (dmCreature == null || targetCreature != dmCreature)
-                {
-                    _player.SendServerMessage("You can only clone items into your own inventory.", ColorConstants.Red);
-                    return;
-                }
-
-                NwItem? copy = sourceItem.Clone(targetCreature);
-                if (copy == null)
-                {
-                    _player.SendServerMessage("Failed to copy the item.", ColorConstants.Red);
-                    return;
-                }
-
-                _player.SendServerMessage(
-                    $"Copied '{sourceItem.Name}' into your inventory.", ColorConstants.Green);
-                return;
-            }
-
-            // Item → Item: copy appearance
-            if (obj.TargetObject is NwItem targetItem)
-            {
-                if (sourceItem == targetItem)
-                {
-                    _player.SendServerMessage("Source and target are the same item.", ColorConstants.Red);
-                    return;
-                }
-
-                if (sourceItem.BaseItem.ItemType != targetItem.BaseItem.ItemType)
-                {
-                    _player.SendServerMessage(
-                        $"Base item type mismatch: source is {sourceItem.BaseItem.Name} but target is {targetItem.BaseItem.Name}.",
-                        ColorConstants.Red);
-                    return;
-                }
-
-                CopyItemAppearanceWithCopyItemAndModify(sourceItem, targetItem, _player);
-                _player.SendServerMessage(
-                    $"Appearance copied from '{sourceItem.Name}' to '{targetItem.Name}'.", ColorConstants.Green);
-                return;
-            }
-
-            _player.SendServerMessage("You must select an item or a creature.", ColorConstants.Red);
+            _player.SendServerMessage("Item copying is currently disabled. Coming in a future update!", ColorConstants.Orange);
             return;
+
+            // TODO: Item → Creature: clone into inventory (DM's own creature only)
+            // if (obj.TargetObject is NwCreature targetCreature)
+            // {
+            //     NwCreature? dmCreature = _player.LoginCreature ?? _player.ControlledCreature;
+            //     if (dmCreature == null || targetCreature != dmCreature)
+            //     {
+            //         _player.SendServerMessage("You can only clone items into your own inventory.", ColorConstants.Red);
+            //         return;
+            //     }
+            //
+            //     NwItem? copy = sourceItem.Clone(targetCreature);
+            //     if (copy == null)
+            //     {
+            //         _player.SendServerMessage("Failed to copy the item.", ColorConstants.Red);
+            //         return;
+            //     }
+            //
+            //     _player.SendServerMessage(
+            //         $"Copied '{sourceItem.Name}' into your inventory.", ColorConstants.Green);
+            //     return;
+            // }
+            //
+            // // Item → Item: copy appearance
+            // if (obj.TargetObject is NwItem targetItem)
+            // {
+            //     if (sourceItem == targetItem)
+            //     {
+            //         _player.SendServerMessage("Source and target are the same item.", ColorConstants.Red);
+            //         return;
+            //     }
+            //
+            //     if (sourceItem.BaseItem.ItemType != targetItem.BaseItem.ItemType)
+            //     {
+            //         _player.SendServerMessage(
+            //             $"Base item type mismatch: source is {sourceItem.BaseItem.Name} but target is {targetItem.BaseItem.Name}.",
+            //             ColorConstants.Red);
+            //         return;
+            //     }
+            //
+            //     CopyItemAppearanceWithCopyItemAndModify(sourceItem, targetItem, _player);
+            //     _player.SendServerMessage(
+            //         $"Appearance copied from '{sourceItem.Name}' to '{targetItem.Name}'.", ColorConstants.Green);
+            //     return;
+            // }
+            //
+            // _player.SendServerMessage("You must select an item or a creature.", ColorConstants.Red);
+            // return;
         }
 
         if (obj.TargetObject is not NwCreature and not NwPlaceable)
@@ -196,13 +199,16 @@ internal sealed class CopyMachineModel
         if (Source is NwCreature sourceCreature && target is NwCreature targetCr)
         {
             CopyCreatureAppearance(sourceCreature, targetCr);
+            _player.SendServerMessage($"Appearance copied from {Source.Name} to {targetName}.", ColorConstants.Green);
         }
         else if (Source is NwPlaceable sourcePlc && target is NwPlaceable targetPlc)
         {
-            CopyPlaceableAppearance(sourcePlc, targetPlc);
-        }
+            _player.SendServerMessage("Placeable copying is currently disabled. Coming in a future update!", ColorConstants.Orange);
+            return;
 
-        _player.SendServerMessage($"Appearance copied from {Source.Name} to {targetName}.", ColorConstants.Green);
+            // TODO: CopyPlaceableAppearance(sourcePlc, targetPlc);
+            // _player.SendServerMessage($"Appearance copied from {Source.Name} to {targetName}.", ColorConstants.Green);
+        }
     }
 
     // ───────────────────────────── Creature Copying ─────────────────────────────
