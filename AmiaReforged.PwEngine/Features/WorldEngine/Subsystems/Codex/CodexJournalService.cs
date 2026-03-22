@@ -8,6 +8,7 @@ using NLog.Fluent;
 using NWN.Core;
 using NWN.Core.NWNX;
 using NWN.Native.API;
+using JournalEntry = Anvil.API.JournalEntry;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex;
 
@@ -33,6 +34,20 @@ public class CodexJournalService
 
         handleFactory.RegisterScriptHandler(OpenJournalHandle, HandleJournalOpen);
         handleFactory.RegisterScriptHandler(CloseJournalHandle, HandleJournalClose);
+
+        NwModule.Instance.OnClientEnter += NotifyOfCodex;
+    }
+
+    private void NotifyOfCodex(ModuleEvents.OnClientEnter obj)
+    {
+        if (obj.Player.IsDM) return;
+
+        JournalEntry codexData = new JournalEntry
+        {
+            Name = "The Codex",
+            Text = "The Codex is your personal journal where you can track quests, lore, notes, and reputation. To open the Codex, simply open your journal when you receive your PC key. If you ever decide that this is not the behavior you wish, you can type ./codex no-journal into the talk channel and use ./codex to open the codex directly.",
+        };
+        obj.Player.AddCustomJournalEntry(codexData);
     }
 
 
