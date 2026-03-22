@@ -32,7 +32,7 @@ public class DamageBonusValidator : IValidationRule
         bool inChangelist = changelistProperties.Any(x =>
             x.BasePropertyType == ItemPropertyType.DamageBonus && x.State != ChangeListModel.ChangeState.Removed);
 
-        ValidationEnum result = alreadyExists && anyRemoved || inChangelist
+        ValidationEnum result = alreadyExists && !anyRemoved || inChangelist
             ? ValidationEnum.PropertyNeverStacks
             : ValidationEnum.Valid;
         string error = result == ValidationEnum.PropertyNeverStacks
