@@ -1,13 +1,33 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using Anvil.API;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
 
 /// <summary>
-/// Provides access to codex-related operations including knowledge management and lore.
+/// Provides access to codex-related operations including knowledge management, lore,
+/// and player Codex window lifecycle.
 /// </summary>
 public interface ICodexSubsystem
 {
+    // === Codex Window ===
+
+    /// <summary>
+    /// Opens the Codex window for the given player.
+    /// Enforces one-window-per-player — returns failure if already open.
+    /// </summary>
+    Task<CommandResult> OpenCodexAsync(NwPlayer player);
+
+    /// <summary>
+    /// Closes the Codex window for the given player (if open).
+    /// </summary>
+    Task<CommandResult> CloseCodexAsync(NwPlayer player);
+
+    /// <summary>
+    /// Returns true if the player's Codex window is currently open.
+    /// </summary>
+    bool IsCodexOpen(NwPlayer player);
+
     // === Knowledge Entries ===
 
     /// <summary>
