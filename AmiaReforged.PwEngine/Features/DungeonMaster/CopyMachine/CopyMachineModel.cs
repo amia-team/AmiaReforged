@@ -550,11 +550,19 @@ internal sealed class CopyMachineModel
         if (itemsToReequip.TryGetValue(InventorySlot.Chest, out NwItem? tgtArmor) && srcArmor != null &&
             tgtArmor.IsValid && srcArmor.BaseItem.ItemType == tgtArmor.BaseItem.ItemType)
         {
-            // Get AC values upfront before any modifications
-            int? srcAc = GetArmorAcFromModel(srcArmor.Appearance.GetArmorModel(CreaturePart.Torso));
-            int? tgtAc = GetArmorAcFromModel(tgtArmor.Appearance.GetArmorModel(CreaturePart.Torso));
+            _player.SendServerMessage($"[DEBUG-Armor] Starting armor copy", ColorConstants.Yellow);
+            _player.SendServerMessage($"[DEBUG-Armor] Source name: {srcArmor.Name}, Target name: {tgtArmor.Name}", ColorConstants.Yellow);
 
-            _player.SendServerMessage($"[DEBUG-Armor] Source AC: {srcAc}, Target AC: {tgtAc}", ColorConstants.Yellow);
+            // Get AC values upfront before any modifications
+            ushort srcTorsoModel = srcArmor.Appearance.GetArmorModel(CreaturePart.Torso);
+            ushort tgtTorsoModel = tgtArmor.Appearance.GetArmorModel(CreaturePart.Torso);
+
+            _player.SendServerMessage($"[DEBUG-Armor] Source torso model: {srcTorsoModel}, Target torso model: {tgtTorsoModel}", ColorConstants.Yellow);
+
+            int? srcAc = GetArmorAcFromModel(srcTorsoModel);
+            int? tgtAc = GetArmorAcFromModel(tgtTorsoModel);
+
+            _player.SendServerMessage($"[DEBUG-Armor] Source AC: {(srcAc.HasValue ? srcAc.Value.ToString() : "UNKNOWN")}, Target AC: {(tgtAc.HasValue ? tgtAc.Value.ToString() : "UNKNOWN")}", ColorConstants.Yellow);
 
             // Copy item name and description
             if (tgtArmor.Name != srcArmor.Name)
@@ -568,6 +576,7 @@ internal sealed class CopyMachineModel
             if (srcAc.HasValue && tgtAc.HasValue && srcAc.Value == tgtAc.Value)
             {
                 // AC matches - copy all armor parts via CopyItemAndModify
+                _player.SendServerMessage($"[DEBUG-Armor] AC MATCHES ({srcAc} == {tgtAc}), copying all parts including torso", ColorConstants.Yellow);
                 armorCopied = CopyArmorAppearanceViaModify(srcArmor, tgtArmor, true);
                 if (armorCopied)
                 {
@@ -579,6 +588,7 @@ internal sealed class CopyMachineModel
             else if (srcAc.HasValue && tgtAc.HasValue)
             {
                 // AC mismatch - copy everything except chest (Option A)
+                _player.SendServerMessage($"[DEBUG-Armor] AC MISMATCH ({srcAc} → {tgtAc}), copying non-torso only", ColorConstants.Yellow);
                 armorCopied = CopyArmorAppearanceViaModify(srcArmor, tgtArmor, false);
                 if (armorCopied)
                 {
@@ -590,7 +600,7 @@ internal sealed class CopyMachineModel
             else
             {
                 // Can't determine AC - copy non-torso parts only (Option A)
-                _player.SendServerMessage($"[DEBUG-Armor] AC unknown for one or both items, copying non-torso only", ColorConstants.Yellow);
+                _player.SendServerMessage($"[DEBUG-Armor] AC UNKNOWN, copying non-torso only (safeguard)", ColorConstants.Yellow);
                 armorCopied = CopyArmorAppearanceViaModify(srcArmor, tgtArmor, false);
                 if (armorCopied)
                 {
@@ -762,24 +772,29 @@ internal sealed class CopyMachineModel
         }
 
         // Copy all armor color channels
+        _player.SendServerMessage($"[DEBUG-Armor] Starting color copy...", ColorConstants.Yellow);
         foreach (ItemAppearanceArmorColor color in Enum.GetValues<ItemAppearanceArmorColor>())
         {
             byte srcColor = source.Appearance.GetArmorColor(color);
             byte currentColor = currentArmor.Appearance.GetArmorColor(color);
 
+            _player.SendServerMessage($"[DEBUG-Armor] {color} - Source: {srcColor}, Current: {currentColor}", ColorConstants.Yellow);
+
             if (srcColor != currentColor)
             {
                 int colorType = NWScript.ITEM_APPR_ARMOR_COLOR_LEATHER1 + (int)color;
+                _player.SendServerMessage($"[DEBUG-Armor] Calling CopyItemAndModify for {color} (colorType={colorType})", ColorConstants.Yellow);
+
                 uint copy = NWScript.CopyItemAndModify(currentArmor, NWScript.ITEM_APPR_TYPE_ARMOR_COLOR, colorType, srcColor, 1);
                 if (NWScript.GetIsObjectValid(copy) == 1)
                 {
                     NWScript.DestroyObject(currentArmor);
                     currentArmor = copy.ToNwObject<NwItem>()!;
-                    _player.SendServerMessage($"[DEBUG-Armor] Color channel {color} copied: {srcColor}", ColorConstants.Yellow);
+                    _player.SendServerMessage($"[DEBUG-Armor] ✓ {color} copied: {srcColor}", ColorConstants.Green);
                 }
                 else
                 {
-                    _player.SendServerMessage($"[DEBUG-Armor] FAILED to copy color {color}", ColorConstants.Red);
+                    _player.SendServerMessage($"[DEBUG-Armor] ✗ FAILED to copy {color} (colorType={colorType}) to {srcColor}", ColorConstants.Red);
                     return false;
                 }
             }
@@ -801,7 +816,9 @@ internal sealed class CopyMachineModel
     /// </summary>
     private bool CopySimpleItemAppearanceViaModify(NwItem source, NwItem target, NwCreature targetCreature)
     {
-        _player.SendServerMessage($"[DEBUG-SimpleItem] CopyItemAndModify starting", ColorConstants.Yellow);
+        string itemName = target.Name;
+        _player.SendServerMessage($"[DEBUG-{itemName}] CopyItemAndModify starting", ColorConstants.Yellow);
+        _player.SendServerMessage($"[DEBUG-{itemName}] Source: {source.Name}, Target: {target.Name}", ColorConstants.Yellow);
 
         NwItem currentItem = target;
 
@@ -809,41 +826,51 @@ internal sealed class CopyMachineModel
         ushort srcModel = source.Appearance.GetSimpleModel();
         ushort currentModel = currentItem.Appearance.GetSimpleModel();
 
+        _player.SendServerMessage($"[DEBUG-{itemName}] Simple model - Source: {srcModel}, Current: {currentModel}", ColorConstants.Yellow);
+
         if (srcModel != currentModel)
         {
+            _player.SendServerMessage($"[DEBUG-{itemName}] Calling CopyItemAndModify for simple model {srcModel}", ColorConstants.Yellow);
             uint copy = NWScript.CopyItemAndModify(currentItem, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, srcModel, 1);
+            _player.SendServerMessage($"[DEBUG-{itemName}] CopyItemAndModify returned: {copy} (valid={NWScript.GetIsObjectValid(copy)})", ColorConstants.Yellow);
+
             if (NWScript.GetIsObjectValid(copy) == 1)
             {
                 NWScript.DestroyObject(currentItem);
                 currentItem = copy.ToNwObject<NwItem>()!;
-                _player.SendServerMessage($"[DEBUG-SimpleItem] Simple model copied: {srcModel}", ColorConstants.Yellow);
+                _player.SendServerMessage($"[DEBUG-{itemName}] ✓ Simple model copied: {srcModel}", ColorConstants.Green);
             }
             else
             {
-                _player.SendServerMessage($"[DEBUG-SimpleItem] FAILED to copy simple model {srcModel}", ColorConstants.Red);
+                _player.SendServerMessage($"[DEBUG-{itemName}] ✗ FAILED to copy simple model {srcModel}", ColorConstants.Red);
                 return false;
             }
         }
 
         // Copy all armor color channels (used for tinting simple items)
+        _player.SendServerMessage($"[DEBUG-{itemName}] Starting color copy...", ColorConstants.Yellow);
         foreach (ItemAppearanceArmorColor color in Enum.GetValues<ItemAppearanceArmorColor>())
         {
             byte srcColor = source.Appearance.GetArmorColor(color);
             byte currentColor = currentItem.Appearance.GetArmorColor(color);
 
+            _player.SendServerMessage($"[DEBUG-{itemName}] {color} - Source: {srcColor}, Current: {currentColor}", ColorConstants.Yellow);
+
             if (srcColor != currentColor)
             {
                 int colorType = NWScript.ITEM_APPR_ARMOR_COLOR_LEATHER1 + (int)color;
+                _player.SendServerMessage($"[DEBUG-{itemName}] Calling CopyItemAndModify for {color} (colorType={colorType})", ColorConstants.Yellow);
+
                 uint copy = NWScript.CopyItemAndModify(currentItem, NWScript.ITEM_APPR_TYPE_ARMOR_COLOR, colorType, srcColor, 1);
                 if (NWScript.GetIsObjectValid(copy) == 1)
                 {
                     NWScript.DestroyObject(currentItem);
                     currentItem = copy.ToNwObject<NwItem>()!;
-                    _player.SendServerMessage($"[DEBUG-SimpleItem] Color channel {color} copied: {srcColor}", ColorConstants.Yellow);
+                    _player.SendServerMessage($"[DEBUG-{itemName}] ✓ {color} copied: {srcColor}", ColorConstants.Green);
                 }
                 else
                 {
-                    _player.SendServerMessage($"[DEBUG-SimpleItem] FAILED to copy color {color}", ColorConstants.Red);
+                    _player.SendServerMessage($"[DEBUG-{itemName}] ✗ FAILED to copy {color} (colorType={colorType}) to {srcColor}", ColorConstants.Red);
                     return false;
                 }
             }
@@ -852,6 +879,7 @@ internal sealed class CopyMachineModel
         // Update the target reference and copy properties/variables
         if (!currentItem.Equals(target))
         {
+            _player.SendServerMessage($"[DEBUG-{itemName}] Item reference changed, copying properties/variables", ColorConstants.Yellow);
             CopyItemPropertiesAndVariables(source, currentItem);
             target = currentItem;
         }
@@ -872,13 +900,26 @@ internal sealed class CopyMachineModel
             _ => slot.ToString()
         };
 
-        _player.SendServerMessage($"[DEBUG-{slotName}] Starting appearance/type copy (source={source.BaseItem.ItemType}, target={target.BaseItem.ItemType})", ColorConstants.Yellow);
+        _player.SendServerMessage($"[DEBUG-{slotName}] Starting appearance/type copy", ColorConstants.Yellow);
+        _player.SendServerMessage($"[DEBUG-{slotName}] Source: {source.Name} ({source.BaseItem.ItemType})", ColorConstants.Yellow);
+        _player.SendServerMessage($"[DEBUG-{slotName}] Target: {target.Name} ({target.BaseItem.ItemType})", ColorConstants.Yellow);
 
         // Check if base item types match
         if (source.BaseItem.ItemType != target.BaseItem.ItemType)
         {
-            _player.SendServerMessage($"[DEBUG-{slotName}] Base item type incompatible, cannot convert. Skipping.", ColorConstants.Yellow);
-            return $"{slotName}: base item type incompatible";
+            // Check if types are wield-compatible (e.g., Greatsword ↔ Halberd, Bow ↔ Crossbow)
+            int srcWield = GetWeaponWieldType(source.BaseItem.ItemType);
+            int tgtWield = GetWeaponWieldType(target.BaseItem.ItemType);
+
+            _player.SendServerMessage($"[DEBUG-{slotName}] Base types don't match (source={srcWield}, target={tgtWield})", ColorConstants.Yellow);
+
+            if (srcWield != tgtWield || srcWield < 0)
+            {
+                _player.SendServerMessage($"[DEBUG-{slotName}] Wield types incompatible, skipping", ColorConstants.Yellow);
+                return $"{slotName}: base item type incompatible";
+            }
+
+            _player.SendServerMessage($"[DEBUG-{slotName}] Wield types compatible, proceeding with appearance copy only", ColorConstants.Yellow);
         }
 
         // Now copy appearance using CopyItemAndModify
@@ -891,6 +932,8 @@ internal sealed class CopyMachineModel
             ushort srcModel = source.Appearance.GetSimpleModel();
             ushort currentModel = currentItem.Appearance.GetSimpleModel();
 
+            _player.SendServerMessage($"[DEBUG-{slotName}] Simple model - Source: {srcModel}, Current: {currentModel}", ColorConstants.Yellow);
+
             if (srcModel != currentModel)
             {
                 uint copy = NWScript.CopyItemAndModify(currentItem, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, srcModel, 1);
@@ -898,11 +941,11 @@ internal sealed class CopyMachineModel
                 {
                     NWScript.DestroyObject(currentItem);
                     currentItem = copy.ToNwObject<NwItem>()!;
-                    _player.SendServerMessage($"[DEBUG-{slotName}] Simple model copied: {srcModel}", ColorConstants.Yellow);
+                    _player.SendServerMessage($"[DEBUG-{slotName}] ✓ Simple model copied: {srcModel}", ColorConstants.Green);
                 }
                 else
                 {
-                    _player.SendServerMessage($"[DEBUG-{slotName}] FAILED to copy simple model {srcModel}", ColorConstants.Red);
+                    _player.SendServerMessage($"[DEBUG-{slotName}] ✗ FAILED to copy simple model {srcModel}", ColorConstants.Red);
                     return $"{slotName}: simple model copy failed";
                 }
             }
@@ -916,6 +959,8 @@ internal sealed class CopyMachineModel
                 ushort srcModel = source.Appearance.GetWeaponModel(part);
                 ushort currentModel = currentItem.Appearance.GetWeaponModel(part);
 
+                _player.SendServerMessage($"[DEBUG-{slotName}] {part} - Source: {srcModel}, Current: {currentModel}", ColorConstants.Yellow);
+
                 if (srcModel != currentModel)
                 {
                     uint copy = NWScript.CopyItemAndModify(currentItem, NWScript.ITEM_APPR_TYPE_WEAPON_MODEL, (int)part, srcModel, 1);
@@ -923,11 +968,11 @@ internal sealed class CopyMachineModel
                     {
                         NWScript.DestroyObject(currentItem);
                         currentItem = copy.ToNwObject<NwItem>()!;
-                        _player.SendServerMessage($"[DEBUG-{slotName}] {part} model copied: {srcModel}", ColorConstants.Yellow);
+                        _player.SendServerMessage($"[DEBUG-{slotName}] ✓ {part} model copied: {srcModel}", ColorConstants.Green);
                     }
                     else
                     {
-                        _player.SendServerMessage($"[DEBUG-{slotName}] FAILED to copy {part} model {srcModel}", ColorConstants.Red);
+                        _player.SendServerMessage($"[DEBUG-{slotName}] ✗ FAILED to copy {part} model {srcModel}", ColorConstants.Red);
                         return $"{slotName}: {part} model copy failed";
                     }
                 }
@@ -935,10 +980,13 @@ internal sealed class CopyMachineModel
         }
 
         // Copy weapon color channels
+        _player.SendServerMessage($"[DEBUG-{slotName}] Starting color copy...", ColorConstants.Yellow);
         foreach (ItemAppearanceArmorColor color in Enum.GetValues<ItemAppearanceArmorColor>())
         {
             byte srcColor = source.Appearance.GetArmorColor(color);
             byte currentColor = currentItem.Appearance.GetArmorColor(color);
+
+            _player.SendServerMessage($"[DEBUG-{slotName}] {color} - Source: {srcColor}, Current: {currentColor}", ColorConstants.Yellow);
 
             if (srcColor != currentColor)
             {
@@ -948,11 +996,11 @@ internal sealed class CopyMachineModel
                 {
                     NWScript.DestroyObject(currentItem);
                     currentItem = copy.ToNwObject<NwItem>()!;
-                    _player.SendServerMessage($"[DEBUG-{slotName}] Color {color} copied: {srcColor}", ColorConstants.Yellow);
+                    _player.SendServerMessage($"[DEBUG-{slotName}] ✓ Color {color} copied: {srcColor}", ColorConstants.Green);
                 }
                 else
                 {
-                    _player.SendServerMessage($"[DEBUG-{slotName}] FAILED to copy color {color}", ColorConstants.Red);
+                    _player.SendServerMessage($"[DEBUG-{slotName}] ✗ FAILED to copy color {color}", ColorConstants.Red);
                     return $"{slotName}: color copy failed";
                 }
             }
@@ -961,6 +1009,7 @@ internal sealed class CopyMachineModel
         // Update reference and copy properties/variables
         if (!currentItem.Equals(target))
         {
+            _player.SendServerMessage($"[DEBUG-{slotName}] Item reference changed, copying properties/variables", ColorConstants.Yellow);
             CopyItemPropertiesAndVariables(source, currentItem);
             target = currentItem;
         }
@@ -1063,6 +1112,49 @@ internal sealed class CopyMachineModel
 
         // Unknown model
         return null;
+    }
+
+    /// <summary>
+    /// Gets the wield type of a weapon for compatibility checking.
+    /// Based on CustomSummon's GetWeaponWieldType logic:
+    /// 0 = one-handed, 4 = two-handed, 5 = bow, 6 = crossbow, 8 = double-sided, 10 = dart/sling, 11 = shuriken/throwing axe
+    /// </summary>
+    private static int GetWeaponWieldType(BaseItemType baseItemType)
+    {
+        return baseItemType switch
+        {
+            // One-handed weapons (0)
+            BaseItemType.Longsword or BaseItemType.Shortsword or BaseItemType.Rapier or
+                BaseItemType.Scimitar or BaseItemType.Handaxe or BaseItemType.Battleaxe or
+                BaseItemType.LightHammer or BaseItemType.LightMace or BaseItemType.Morningstar or
+                BaseItemType.Club or BaseItemType.Dagger or BaseItemType.Kama or
+                BaseItemType.Kukri or BaseItemType.Sickle or BaseItemType.Warhammer or
+                BaseItemType.LightFlail or BaseItemType.Whip or BaseItemType.Trident or
+                BaseItemType.DwarvenWaraxe or BaseItemType.Bastardsword or BaseItemType.Katana or
+                BaseItemType.MagicStaff => 0,
+
+            // Two-handed weapons (4)
+            BaseItemType.Greatsword or BaseItemType.Greataxe or BaseItemType.Halberd or
+                BaseItemType.HeavyFlail or BaseItemType.Scythe or BaseItemType.ShortSpear or
+                BaseItemType.Quarterstaff => 4,
+
+            // Bows (5)
+            BaseItemType.Longbow or BaseItemType.Shortbow => 5,
+
+            // Crossbows (6)
+            BaseItemType.LightCrossbow or BaseItemType.HeavyCrossbow => 6,
+
+            // Double-sided weapons (8)
+            BaseItemType.Doubleaxe or BaseItemType.TwoBladedSword or BaseItemType.DireMace => 8,
+
+            // Thrown light (10)
+            BaseItemType.Dart or BaseItemType.Sling => 10,
+
+            // Thrown (11)
+            BaseItemType.Shuriken or BaseItemType.ThrowingAxe => 11,
+
+            _ => -1 // Unknown
+        };
     }
 }
 
