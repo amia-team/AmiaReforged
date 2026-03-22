@@ -78,6 +78,12 @@ export function init(instanceId, containerId, layoutConfigJson, blazorRef) {
         (container) => handleUnbind(inst, instanceId, container)
     );
 
+    // Auto-resize the layout when the container element changes size.
+    // GL defaults this to false for non-body containers, but Blazor
+    // renders asynchronously so the container may gain its final
+    // dimensions *after* loadLayout runs.
+    inst.layout.resizeWithContainerAutomatically = true;
+
     // Cache the root rect once before a batch of recting events
     inst.layout.beforeVirtualRectingEvent = () => {
         inst.glRootRect = glRootElement.getBoundingClientRect();
@@ -87,6 +93,16 @@ export function init(instanceId, containerId, layoutConfigJson, blazorRef) {
 
     const config = JSON.parse(layoutConfigJson);
     inst.layout.loadLayout(config);
+
+    // Force a size recalc once the browser has painted the final layout.
+    // This covers the common case where the Blazor-rendered container
+    // starts at 0-height and only reaches its real size after the first
+    // animation frame.
+    requestAnimationFrame(() => {
+        if (inst.layout) {
+            inst.layout.updateSizeFromContainer();
+        }
+    });
 }
 
 /**

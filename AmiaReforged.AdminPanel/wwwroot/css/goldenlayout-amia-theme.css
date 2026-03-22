@@ -599,8 +599,8 @@
 
 /* GL host container — fills remaining space */
 .we-editor__region-gl-host {
-    flex: 1;
-    min-height: 0;
+    position: absolute;
+    inset: 0;
     overflow: hidden;
 }
 
@@ -786,11 +786,9 @@
 
 /* GL host container — fills the layout area */
 .we-ie-gl-host {
-    flex: 1;
-    min-height: 0;
+    position: absolute;
+    inset: 0;
     overflow: hidden;
-    width: 100%;
-    height: 100%;
 }
 
 /* Loading overlay */
@@ -861,11 +859,9 @@
 
 /* GL host container — fills the layout area */
 .we-ce-gl-host {
-    flex: 1;
-    min-height: 0;
+    position: absolute;
+    inset: 0;
     overflow: hidden;
-    width: 100%;
-    height: 100%;
 }
 
 /* Loading overlay */

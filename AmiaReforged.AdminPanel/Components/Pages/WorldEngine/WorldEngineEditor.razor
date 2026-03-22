@@ -89,7 +89,22 @@
                         }
                         @if (EditorState.ActiveEntityType == WorldEngineEntityType.Codex && EditorState.SelectedEndpointId != null)
                         {
-                            <button class="btn btn-sm btn-primary" @onclick="() => OpenNewCodexEditor(CodexSubType.Lore)" title="Create new codex entry">+ New</button>
+                            <div class="dropdown" style="position:relative">
+                                <button class="btn btn-sm btn-primary" @onclick="() => _ceNewMenuOpen = !_ceNewMenuOpen" title="Create new codex entry">+ New ▾</button>
+                                @if (_ceNewMenuOpen)
+                                {
+                                    <div style="position:absolute;top:100%;right:0;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:4px;padding:4px 0;z-index:1060;min-width:130px;box-shadow:0 4px 12px rgba(0,0,0,0.4)">
+                                        <button style="display:block;width:100%;text-align:left;background:none;border:none;padding:5px 12px;font-size:0.82rem;color:var(--text-primary);cursor:pointer"
+                                                @onclick="() => { _ceNewMenuOpen = false; OpenNewCodexEditor(CodexSubType.Lore); }">
+                                            Lore Entry
+                                        </button>
+                                        <button style="display:block;width:100%;text-align:left;background:none;border:none;padding:5px 12px;font-size:0.82rem;color:var(--text-primary);cursor:pointer"
+                                                @onclick="() => { _ceNewMenuOpen = false; OpenNewCodexEditor(CodexSubType.Quest); }">
+                                            Quest
+                                        </button>
+                                    </div>
+                                }
+                            </div>
                         }
                         <button class="btn btn-sm btn-link" @onclick="() => _listPanelOpen = false" title="Close">
                             <span class="bi bi-x"></span>
@@ -1553,6 +1568,7 @@
     private CodexSubType _ceSubType = CodexSubType.Lore;
     private bool _ceIsCreating;
     private bool _ceIsSaving;
+    private bool _ceNewMenuOpen;
     private string? _ceError;
     private string? _ceSuccess;
 
