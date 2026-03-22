@@ -29,6 +29,12 @@ public sealed class WorkstationCraftingPresenter : ScryPresenter<WorkstationCraf
     private NuiWindow? _window;
     private WorkstationCraftingModel? _model;
 
+    /// <summary>Tracks selected quality tier per ingredient index for the current recipe.</summary>
+    private readonly Dictionary<int, int> _selectedQualities = new();
+
+    /// <summary>Cached ingredient slot info for the current recipe selection.</summary>
+    private List<(string Tag, int Qty, List<int> AvailableQualities)> _ingredientSlots = [];
+
     [Inject] private Lazy<IIndustrySubsystem>? IndustrySubsystem { get; init; }
     [Inject] private Lazy<RuntimeCharacterService>? CharacterService { get; init; }
     [Inject] private Lazy<ICharacterRepository>? CharacterRepository { get; init; }
@@ -121,6 +127,20 @@ public sealed class WorkstationCraftingPresenter : ScryPresenter<WorkstationCraf
             SetDetailContent("Select a Recipe", "Choose a recipe from the list to view its details.");
             _token.SetBindValue(View.ShowCraftButton, false);
             return;
+        }
+
+        // Handle ingredient quality combo selection changes
+        if (eventData.EventType == NuiEventType.Watch)
+        {
+            for (int i = 0; i < _ingredientSlots.Count && i < WorkstationCraftingView.MaxIngredientSlots; i++)
+            {
+                if (eventData.ElementId == View.IngredientQualitySelected[i].Key)
+                {
+                    int selected = _token.GetBindValue(View.IngredientQualitySelected[i]);
+                    _selectedQualities[i] = selected;
+                    return;
+                }
+            }
         }
 
         if (eventData.EventType != NuiEventType.Click) return;
@@ -237,12 +257,47 @@ public sealed class WorkstationCraftingPresenter : ScryPresenter<WorkstationCraf
             }
         }
 
-        string body = FormatRecipeDetail(recipe, modifiers);
+        // Scan inventory for per-ingredient quality tiers
+        _ingredientSlots = ScanIngredientQualities(recipe);
+        _selectedQualities.Clear();
+
+        // Build interactive detail layout with quality combos
+        NuiColumn detailLayout = View.BuildRecipeDetailLayout(recipe, _ingredientSlots);
+        _token.SetGroupLayout(View.DetailGroup, detailLayout);
+
+        // Set body text (without ingredients — shown as combos in layout)
+        string body = FormatRecipeBodyWithoutIngredients(recipe, modifiers);
         SetDetailContent(recipe.Name, body);
+
+        // Populate combo binds and default selections
+        for (int i = 0; i < _ingredientSlots.Count && i < WorkstationCraftingView.MaxIngredientSlots; i++)
+        {
+            List<int> qualities = _ingredientSlots[i].AvailableQualities;
+            if (qualities.Count <= 1)
+            {
+                // Single or no quality — store the default
+                _selectedQualities[i] = qualities.Count == 1 ? qualities[0] : CraftingQuality.Unknown;
+                continue;
+            }
+
+            // Populate combo entries
+            List<NuiComboEntry> entries = qualities
+                .Select(q => new NuiComboEntry(CraftingQuality.Label(q), q))
+                .ToList();
+            _token.SetBindValue(View.IngredientQualityOptions[i], entries);
+            _token.SetBindValue(View.IngredientQualitySelected[i], qualities[0]);
+            _token.SetBindWatch(View.IngredientQualitySelected[i], true);
+            _selectedQualities[i] = qualities[0];
+        }
+
         _token.SetBindValue(View.ShowCraftButton, true);
     }
 
-    private static string FormatRecipeDetail(Recipe recipe, AggregatedCraftingModifiers modifiers)
+    /// <summary>
+    /// Formats the recipe detail body text WITHOUT the ingredients section.
+    /// Ingredients are shown as interactive combo widgets in the detail pane layout.
+    /// </summary>
+    private static string FormatRecipeBodyWithoutIngredients(Recipe recipe, AggregatedCraftingModifiers modifiers)
     {
         List<string> sections = [];
 
@@ -254,18 +309,6 @@ public sealed class WorkstationCraftingPresenter : ScryPresenter<WorkstationCraf
         sections.Add($"Industry: {recipe.IndustryTag.Value}");
         if (recipe.RequiredKnowledge.Count > 0)
             sections.Add($"Required Knowledge: {string.Join(", ", recipe.RequiredKnowledge)}");
-
-        // Ingredients
-        if (recipe.Ingredients.Count > 0)
-        {
-            sections.Add("\n--- Ingredients ---");
-            foreach (Ingredient ingredient in recipe.Ingredients)
-            {
-                string consumed = ingredient.IsConsumed ? "" : " (not consumed)";
-                string quality = ingredient.MinQuality.HasValue ? $" [min quality: {ingredient.MinQuality}]" : "";
-                sections.Add($"  {ingredient.Quantity.Value}x {ingredient.ItemTag}{quality}{consumed}");
-            }
-        }
 
         // Products
         if (recipe.Products.Count > 0)
@@ -350,17 +393,25 @@ public sealed class WorkstationCraftingPresenter : ScryPresenter<WorkstationCraf
             }
         }
 
+        // Build selected qualities list in ingredient order
+        List<int> selectedQualities = [];
+        for (int i = 0; i < recipe.Ingredients.Count; i++)
+        {
+            selectedQualities.Add(_selectedQualities.GetValueOrDefault(i, CraftingQuality.Unknown));
+        }
+
         // Close the workstation recipe window
         RaiseCloseEvent();
         Close();
 
-        // Open the crafting progress window
-        CraftingProgressView progressView = new(_player, recipe, modifiers, characterId.Value);
+        // Open the crafting progress window with selected qualities
+        CraftingProgressView progressView = new(_player, recipe, modifiers, characterId.Value, selectedQualities);
         Director!.Value.OpenWindow(progressView.Presenter);
     }
 
     /// <summary>
-    /// Validates that the player has all required ingredients in their inventory.
+    /// Validates that the player has all required ingredients in their inventory,
+    /// filtered by the selected quality tier per ingredient.
     /// Returns null if validation passes, or an error message if it fails.
     /// </summary>
     private string? ValidateIngredients(Recipe recipe)
@@ -370,17 +421,22 @@ public sealed class WorkstationCraftingPresenter : ScryPresenter<WorkstationCraf
 
         List<string> missing = [];
 
-        foreach (Ingredient ingredient in recipe.Ingredients)
+        for (int i = 0; i < recipe.Ingredients.Count; i++)
         {
-            // Count how many matching items the player has
+            Ingredient ingredient = recipe.Ingredients[i];
+            int selectedQuality = _selectedQualities.GetValueOrDefault(i, CraftingQuality.Unknown);
+
+            // Count matching items with the selected quality tier
             int available = creature.Inventory.Items
-                .Where(item => item.Tag == ingredient.ItemTag)
+                .Where(item => item.Tag == ingredient.ItemTag &&
+                               item.GetObjectVariable<LocalVariableInt>("we_quality").Value == selectedQuality)
                 .Sum(item => item.StackSize);
 
             if (available < ingredient.Quantity.Value)
             {
                 int deficit = ingredient.Quantity.Value - available;
-                missing.Add($"{deficit}x {ingredient.ItemTag}");
+                string qualLabel = CraftingQuality.Label(selectedQuality);
+                missing.Add($"{deficit}x {ingredient.ItemTag} ({qualLabel})");
             }
         }
 
@@ -395,6 +451,34 @@ public sealed class WorkstationCraftingPresenter : ScryPresenter<WorkstationCraf
     {
         _token.SetBindValue(View.DetailTitle, title);
         _token.SetBindValue(View.DetailBody, body);
+    }
+
+    /// <summary>
+    /// Scans the player's inventory to find distinct quality tiers available for each ingredient.
+    /// Returns per-ingredient slot info: (tag, required quantity, sorted list of available quality tiers).
+    /// </summary>
+    private List<(string Tag, int Qty, List<int> AvailableQualities)> ScanIngredientQualities(Recipe recipe)
+    {
+        NwCreature? creature = _player.LoginCreature;
+        if (creature == null) return [];
+
+        List<(string Tag, int Qty, List<int> AvailableQualities)> result = [];
+
+        foreach (Ingredient ingredient in recipe.Ingredients)
+        {
+            // Group matching items by quality tier, keeping only tiers with enough quantity
+            List<int> qualities = creature.Inventory.Items
+                .Where(item => item.Tag == ingredient.ItemTag)
+                .GroupBy(item => item.GetObjectVariable<LocalVariableInt>("we_quality").Value)
+                .Where(g => g.Sum(item => item.StackSize) >= ingredient.Quantity.Value)
+                .Select(g => g.Key)
+                .OrderBy(q => q)
+                .ToList();
+
+            result.Add((ingredient.ItemTag, ingredient.Quantity.Value, qualities));
+        }
+
+        return result;
     }
 
     private CharacterId? ResolveCharacterId()

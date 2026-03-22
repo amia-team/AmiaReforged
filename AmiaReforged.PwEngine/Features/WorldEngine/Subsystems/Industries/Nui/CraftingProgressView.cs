@@ -27,9 +27,10 @@ public sealed class CraftingProgressView : ScryView<CraftingProgressPresenter>
         NwPlayer player,
         Recipe recipe,
         AggregatedCraftingModifiers modifiers,
-        CharacterId characterId)
+        CharacterId characterId,
+        List<int> selectedQualities)
     {
-        Presenter = new CraftingProgressPresenter(this, player, recipe, modifiers, characterId);
+        Presenter = new CraftingProgressPresenter(this, player, recipe, modifiers, characterId, selectedQualities);
         InjectionService injector = AnvilCore.GetService<InjectionService>()!;
         injector.Inject(Presenter);
     }

@@ -30,6 +30,7 @@ public sealed class CraftingProgressPresenter : ScryPresenter<CraftingProgressVi
     private readonly Recipe _recipe;
     private readonly AggregatedCraftingModifiers _modifiers;
     private readonly CharacterId _characterId;
+    private readonly List<int> _selectedQualities;
 
     private NuiWindowToken _token;
     private NuiWindow? _window;
@@ -46,13 +47,15 @@ public sealed class CraftingProgressPresenter : ScryPresenter<CraftingProgressVi
         NwPlayer player,
         Recipe recipe,
         AggregatedCraftingModifiers modifiers,
-        CharacterId characterId)
+        CharacterId characterId,
+        List<int> selectedQualities)
     {
         View = view;
         _player = player;
         _recipe = recipe;
         _modifiers = modifiers;
         _characterId = characterId;
+        _selectedQualities = selectedQualities;
     }
 
     public override CraftingProgressView View { get; }
@@ -226,30 +229,17 @@ public sealed class CraftingProgressPresenter : ScryPresenter<CraftingProgressVi
     // --- Ingredient Helpers ---
 
     /// <summary>
-    /// Collects quality values from inventory items matching each ingredient slot.
-    /// Returns null for ingredients that don't have a quality property.
+    /// Returns the selected quality tier per ingredient, as chosen by the player.
+    /// Falls back to 0 (Unknown) if no selection exists for a given index.
     /// </summary>
     private List<int?> CollectInputQualities()
     {
         List<int?> qualities = [];
-        NwCreature? creature = _player.LoginCreature;
-        if (creature == null) return qualities;
 
-        foreach (Ingredient ingredient in _recipe.Ingredients)
+        for (int i = 0; i < _recipe.Ingredients.Count; i++)
         {
-            NwItem? matchingItem = creature.Inventory.Items
-                .FirstOrDefault(item => item.Tag == ingredient.ItemTag);
-
-            if (matchingItem != null)
-            {
-                // Try to read quality from the item's local variable or item property
-                int qualityValue = matchingItem.GetObjectVariable<LocalVariableInt>("we_quality").Value;
-                qualities.Add(qualityValue > 0 ? qualityValue : null);
-            }
-            else
-            {
-                qualities.Add(null);
-            }
+            int quality = i < _selectedQualities.Count ? _selectedQualities[i] : CraftingQuality.Unknown;
+            qualities.Add(quality > 0 ? quality : null);
         }
 
         return qualities;
@@ -258,23 +248,27 @@ public sealed class CraftingProgressPresenter : ScryPresenter<CraftingProgressVi
     /// <summary>
     /// Consumes ingredients from the player's inventory based on the recipe requirements.
     /// Only consumes ingredients marked with <see cref="Ingredient.IsConsumed"/> = true.
+    /// Filters by the player-selected quality tier for each ingredient.
     /// </summary>
     private void ConsumeIngredients()
     {
         NwCreature? creature = _player.LoginCreature;
         if (creature == null) return;
 
-        foreach (Ingredient ingredient in _recipe.Ingredients)
+        for (int i = 0; i < _recipe.Ingredients.Count; i++)
         {
+            Ingredient ingredient = _recipe.Ingredients[i];
             if (!ingredient.IsConsumed) continue;
 
+            int selectedQuality = i < _selectedQualities.Count ? _selectedQualities[i] : CraftingQuality.Unknown;
             int remaining = ingredient.Quantity.Value;
 
-            // Find and consume matching items from inventory
+            // Find and consume matching items with the selected quality tier
             foreach (NwItem item in creature.Inventory.Items.ToList())
             {
                 if (remaining <= 0) break;
                 if (item.Tag != ingredient.ItemTag) continue;
+                if (item.GetObjectVariable<LocalVariableInt>("we_quality").Value != selectedQuality) continue;
 
                 if (item.StackSize <= remaining)
                 {

@@ -1,6 +1,7 @@
 using AmiaReforged.PwEngine.Features.WindowingSystem;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using Anvil;
 using Anvil.API;
 using Anvil.Services;
@@ -34,6 +35,14 @@ public sealed class WorkstationCraftingView : ScryView<WorkstationCraftingPresen
     public readonly NuiBind<string> DetailBody = new("wc_detail_body");
     public readonly NuiBind<bool> ShowCraftButton = new("wc_show_craft");
 
+    // --- Detail pane group (swapped via SetGroupLayout when recipe selected) ---
+    public NuiGroup DetailGroup = null!;
+
+    // --- Per-ingredient quality combo binds (pre-allocated for up to MaxIngredientSlots) ---
+    public const int MaxIngredientSlots = 6;
+    public readonly List<NuiBind<List<NuiComboEntry>>> IngredientQualityOptions = [];
+    public readonly List<NuiBind<int>> IngredientQualitySelected = [];
+
     public WorkstationCraftingView(NwPlayer player, WorkstationTag workstationTag, string workstationName)
     {
         for (int i = 0; i < EntriesPerPage; i++)
@@ -41,6 +50,12 @@ public sealed class WorkstationCraftingView : ScryView<WorkstationCraftingPresen
             EntryNames.Add(new NuiBind<string>($"wc_name_{i}"));
             EntrySubtitles.Add(new NuiBind<string>($"wc_sub_{i}"));
             EntryRowVisible.Add(new NuiBind<bool>($"wc_vis_{i}"));
+        }
+
+        for (int i = 0; i < MaxIngredientSlots; i++)
+        {
+            IngredientQualityOptions.Add(new NuiBind<List<NuiComboEntry>>($"wc_ing_opts_{i}"));
+            IngredientQualitySelected.Add(new NuiBind<int>($"wc_ing_sel_{i}"));
         }
 
         Presenter = new WorkstationCraftingPresenter(this, player, workstationTag, workstationName);
@@ -72,8 +87,9 @@ public sealed class WorkstationCraftingView : ScryView<WorkstationCraftingPresen
                             Scrollbars = NuiScrollbars.None,
                             Border = true
                         },
-                        // Right pane — detail
+                        // Right pane — detail (swapped via SetGroupLayout per recipe)
                         BuildDetailPane()
+                            .Assign(out DetailGroup)
                     ]
                 },
                 // Bottom bar
@@ -200,40 +216,156 @@ public sealed class WorkstationCraftingView : ScryView<WorkstationCraftingPresen
     {
         return new NuiGroup
         {
+            Id = "grp_detail",
             Width = 360f,
             Scrollbars = NuiScrollbars.Y,
             Border = true,
-            Element = new NuiColumn
-            {
-                Children =
-                [
-                    new NuiLabel(DetailTitle)
-                    {
-                        Height = 30f,
-                        HorizontalAlign = NuiHAlign.Center,
-                        VerticalAlign = NuiVAlign.Middle
-                    },
-                    new NuiSpacer { Height = 4f },
-                    new NuiText(DetailBody) { Scrollbars = NuiScrollbars.None },
-                    new NuiSpacer { Height = 8f },
-                    new NuiRow
-                    {
-                        Height = 36f,
-                        Children =
-                        [
-                            new NuiSpacer(),
-                            new NuiButton("Craft")
-                            {
-                                Id = "btn_craft",
-                                Width = 100f,
-                                Height = 32f,
-                                Visible = ShowCraftButton
-                            },
-                            new NuiSpacer()
-                        ]
-                    }
-                ]
-            }
+            Element = BuildDefaultDetailColumn()
         };
+    }
+
+    /// <summary>
+    /// Default detail pane content: title, body text, and craft button.
+    /// Used when no recipe is selected or when resetting.
+    /// </summary>
+    public NuiColumn BuildDefaultDetailColumn()
+    {
+        return new NuiColumn
+        {
+            Children =
+            [
+                new NuiLabel(DetailTitle)
+                {
+                    Height = 30f,
+                    HorizontalAlign = NuiHAlign.Center,
+                    VerticalAlign = NuiVAlign.Middle
+                },
+                new NuiSpacer { Height = 4f },
+                new NuiText(DetailBody) { Scrollbars = NuiScrollbars.None },
+                new NuiSpacer { Height = 8f },
+                new NuiRow
+                {
+                    Height = 36f,
+                    Children =
+                    [
+                        new NuiSpacer(),
+                        new NuiButton("Craft")
+                        {
+                            Id = "btn_craft",
+                            Width = 100f,
+                            Height = 32f,
+                            Visible = ShowCraftButton
+                        },
+                        new NuiSpacer()
+                    ]
+                }
+            ]
+        };
+    }
+
+    /// <summary>
+    /// Builds the detail pane layout for a selected recipe with per-ingredient quality dropdowns.
+    /// </summary>
+    /// <param name="recipe">The selected recipe.</param>
+    /// <param name="ingredientSlots">Per-ingredient quality info: list of (tag, quantity, availableQualities).
+    /// Each availableQualities is a sorted list of quality tiers found in inventory.</param>
+    public NuiColumn BuildRecipeDetailLayout(Recipe recipe,
+        List<(string Tag, int Qty, List<int> AvailableQualities)> ingredientSlots)
+    {
+        List<NuiElement> children =
+        [
+            // Title
+            new NuiLabel(DetailTitle)
+            {
+                Height = 30f,
+                HorizontalAlign = NuiHAlign.Center,
+                VerticalAlign = NuiVAlign.Middle
+            },
+            new NuiSpacer { Height = 4f },
+            // Body text (description, products, modifiers — everything except ingredients)
+            new NuiText(DetailBody) { Scrollbars = NuiScrollbars.None },
+            new NuiSpacer { Height = 6f },
+            // Ingredients header
+            new NuiLabel("--- Ingredients ---")
+            {
+                Height = 22f,
+                HorizontalAlign = NuiHAlign.Left,
+                VerticalAlign = NuiVAlign.Middle
+            }
+        ];
+
+        // Per-ingredient rows with quality selection
+        for (int i = 0; i < ingredientSlots.Count && i < MaxIngredientSlots; i++)
+        {
+            (string tag, int qty, List<int> qualities) = ingredientSlots[i];
+            Ingredient ingredient = recipe.Ingredients[i];
+            string consumed = ingredient.IsConsumed ? "" : " (catalyst)";
+
+            if (qualities.Count <= 1)
+            {
+                // Static text — one or zero qualities available
+                string qualLabel = qualities.Count == 1
+                    ? CraftingQuality.Label(qualities[0])
+                    : "None";
+                children.Add(new NuiRow
+                {
+                    Height = 28f,
+                    Children =
+                    [
+                        new NuiLabel($"  {qty}x {tag} — {qualLabel}{consumed}")
+                        {
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle
+                        }
+                    ]
+                });
+            }
+            else
+            {
+                // Combo row — multiple quality tiers available
+                children.Add(new NuiRow
+                {
+                    Height = 32f,
+                    Children =
+                    [
+                        new NuiLabel($"  {qty}x {tag}{consumed}")
+                        {
+                            Width = 160f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle
+                        },
+                        new NuiCombo
+                        {
+                            Id = $"wc_ing_sel_{i}",
+                            Entries = IngredientQualityOptions[i],
+                            Selected = IngredientQualitySelected[i],
+                            Width = 160f,
+                            Height = 28f
+                        }
+                    ]
+                });
+            }
+        }
+
+        // Spacer + Craft button
+        children.Add(new NuiSpacer { Height = 8f });
+        children.Add(new NuiRow
+        {
+            Height = 36f,
+            Children =
+            [
+                new NuiSpacer(),
+                new NuiButton("Craft")
+                {
+                    Id = "btn_craft",
+                    Width = 100f,
+                    Height = 32f,
+                    Visible = ShowCraftButton
+                },
+                new NuiSpacer()
+            ]
+        });
+
+        return new NuiColumn { Children = children };
     }
 }
