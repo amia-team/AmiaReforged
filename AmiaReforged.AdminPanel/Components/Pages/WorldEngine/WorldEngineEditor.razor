@@ -902,7 +902,7 @@
                                     <div style="display:flex;gap:8px;margin-bottom:8px">
                                         <div class="form-group" style="flex:1">
                                             <label style="font-size:0.8rem">Quest Giver</label>
-                                            <input class="form-control form-control-sm" @bind="_ceQuestItem.QuestGiver" placeholder="Optional NPC name" />
+                                            <input class="form-control form-control-sm" @bind="_ceQuestItem.QuestGiver" placeholder="NPC tag" />
                                         </div>
                                         <div class="form-group" style="flex:1">
                                             <label style="font-size:0.8rem">Location</label>
@@ -947,7 +947,7 @@
                                     <div class="we-entity-form">
                                         <div class="we-entity-form__field"><label>Quest ID</label><span>@_ceQuestItem.QuestId</span></div>
                                         <div class="we-entity-form__field"><label>Title</label><span>@_ceQuestItem.Title</span></div>
-                                        <div class="we-entity-form__field"><label>Quest Giver</label><span>@(_ceQuestItem.QuestGiver ?? "—")</span></div>
+                                        <div class="we-entity-form__field"><label>Quest Giver (tag)</label><span>@(_ceQuestItem.QuestGiver ?? "—")</span></div>
                                         <div class="we-entity-form__field"><label>Location</label><span>@(_ceQuestItem.Location ?? "—")</span></div>
                                         <div class="we-entity-form__field"><label>Keywords</label><span>@(_ceQuestItem.Keywords ?? "—")</span></div>
                                         <div class="we-entity-form__field"><label>Always Available</label><span>@(_ceQuestItem.IsAlwaysAvailable ? "Yes" : "No")</span></div>
