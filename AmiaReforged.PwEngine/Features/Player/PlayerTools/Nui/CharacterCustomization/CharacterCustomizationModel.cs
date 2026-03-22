@@ -781,20 +781,24 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
             return;
         }
 
-        if (targetAc.Value != currentAc.Value)
-        {
-            player.SendServerMessage($"Cannot copy appearance - AC mismatch. Current armor is AC {currentAc.Value}, target is AC {targetAc.Value}.", ColorConstants.Orange);
-            return;
-        }
+        bool mismatchAc = targetAc.Value != currentAc.Value;
 
         // Clone the target item and apply backup appearance
         NwItem clonedTarget = targetItem.Clone(creature);
 
         if (clonedTarget.IsValid)
         {
-            backupData.ApplyToItem(clonedTarget);
+            backupData.ApplyToItem(clonedTarget, skipTorso: mismatchAc);
             targetItem.Destroy();
-            player.SendServerMessage($"Copied appearance to {clonedTarget.Name}.", ColorConstants.Green);
+
+            if (mismatchAc)
+            {
+                player.SendServerMessage($"AC mismatch detected (current: AC {currentAc.Value}, target: AC {targetAc.Value}). Copied appearance to all parts except torso to preserve AC.", ColorConstants.Yellow);
+            }
+            else
+            {
+                player.SendServerMessage($"Copied appearance to {clonedTarget.Name}.", ColorConstants.Green);
+            }
         }
         else
         {
@@ -925,7 +929,7 @@ public class ArmorBackupData
         return data;
     }
 
-    public void ApplyToItem(NwItem armor)
+    public void ApplyToItem(NwItem armor, bool skipTorso = false)
     {
         if (!armor.IsValid) return;
 
@@ -936,6 +940,10 @@ public class ArmorBackupData
         {
             if (Enum.TryParse<CreaturePart>(kvp.Key, out CreaturePart part))
             {
+                // Skip torso if AC mismatch flag is set
+                if (skipTorso && part == CreaturePart.Torso)
+                    continue;
+
                 armor.Appearance.SetArmorModel(part, (byte)kvp.Value);
                 appliedModels++;
             }
@@ -945,6 +953,10 @@ public class ArmorBackupData
         {
             if (Enum.TryParse<CreaturePart>(partKvp.Key, out CreaturePart part))
             {
+                // Skip torso if AC mismatch flag is set
+                if (skipTorso && part == CreaturePart.Torso)
+                    continue;
+
                 foreach (KeyValuePair<string, int> colorKvp in partKvp.Value)
                 {
                     if (Enum.TryParse<ItemAppearanceArmorColor>(colorKvp.Key, out ItemAppearanceArmorColor channel))
