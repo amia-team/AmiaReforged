@@ -65,13 +65,9 @@ public class CodexJournalService
             return ScriptHandleResult.Handled;
         }
 
-        bool openCodexWithJournal = pcKey.GetObjectVariable<LocalVariableBool>(OpenCodexWithJournalVar).Value;
 
-        if (openCodexWithJournal)
-        {
-            Log.Info($"Opening codex for {player.PlayerName}");
-            _codex.OpenCodexAsync(player);
-        }
+        Log.Info($"Opening codex for {player.PlayerName}");
+        _codex.OpenCodexAsync(player);
 
         return ScriptHandleResult.Handled;
     }
@@ -102,12 +98,7 @@ public class CodexJournalService
             return ScriptHandleResult.Handled;
         }
 
-        bool openCodexWithJournal = pcKey.GetObjectVariable<LocalVariableBool>(OpenCodexWithJournalVar).Value;
-
-        if (openCodexWithJournal)
-        {
-            _codex.CloseCodexAsync(player);
-        }
+        _codex.CloseCodexAsync(player);
 
         return ScriptHandleResult.Handled;
     }
