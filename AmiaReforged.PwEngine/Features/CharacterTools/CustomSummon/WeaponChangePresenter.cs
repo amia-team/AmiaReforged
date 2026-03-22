@@ -157,6 +157,9 @@ public sealed class WeaponChangePresenter(
                 return;
             }
 
+            // Set the weapon to be non-droppable so it won't drop when the summoned creature dies
+            newWeapon.Droppable = false;
+
             // Copy properties from old weapon to new weapon
             int propertiesCopied = 0;
             foreach (ItemProperty prop in _currentWeapon.ItemProperties)
