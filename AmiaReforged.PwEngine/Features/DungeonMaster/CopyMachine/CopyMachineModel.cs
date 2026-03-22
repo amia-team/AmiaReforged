@@ -498,9 +498,9 @@ internal sealed class CopyMachineModel
     }
 
     /// <summary>
-    /// Copies creature equipment appearance (Armor, Cloak, Helmet, Main-Hand, Off-Hand).
-    /// For armor, skips the chest part if the base armor AC doesn't match.
-    /// Unequips items first, copies appearance, then re-equips to ensure changes are applied correctly.
+    /// Copies creature equipment appearance (Armor, Cloak, Helmet, Main-Hand, Off-Hand) using CopyItemAndModify.
+    /// For armor, skips the chest part if the base armor AC doesn't match (Option A).
+    /// Unequips items first, copies appearance via CopyItemAndModify, then re-equips to ensure changes are applied correctly.
     /// </summary>
     public void CopyCreatureEquipment(NwCreature source, NwCreature target)
     {
@@ -533,7 +533,7 @@ internal sealed class CopyMachineModel
     }
 
     /// <summary>
-    /// Phase 2 of equipment copying: copy appearance of unequipped items, then re-equip them.
+    /// Phase 2 of equipment copying: copy appearance of unequipped items using CopyItemAndModify, then re-equip them.
     /// </summary>
     private void CopyEquipmentAppearancePhase2(NwCreature source, NwCreature target, Dictionary<InventorySlot, NwItem> itemsToReequip)
     {
@@ -541,6 +541,7 @@ internal sealed class CopyMachineModel
             return;
 
         int copiedCount = 0;
+        var slotResults = new Dictionary<InventorySlot, string>();
 
         // PHASE 2: Copy appearance of unequipped items
 
@@ -553,31 +554,56 @@ internal sealed class CopyMachineModel
             int? srcAc = GetArmorAcFromModel(srcArmor.Appearance.GetArmorModel(CreaturePart.Torso));
             int? tgtAc = GetArmorAcFromModel(tgtArmor.Appearance.GetArmorModel(CreaturePart.Torso));
 
+            _player.SendServerMessage($"[DEBUG-Armor] Source AC: {srcAc}, Target AC: {tgtAc}", ColorConstants.Yellow);
+
             // Copy item name and description
             if (tgtArmor.Name != srcArmor.Name)
                 tgtArmor.Name = srcArmor.Name;
             if (tgtArmor.Description != srcArmor.Description)
                 tgtArmor.Description = srcArmor.Description;
 
-            // Only copy if AC values match, otherwise skip chest part
+            bool armorCopied = false;
+
+            // Only copy if AC values match, otherwise skip chest part (Option A)
             if (srcAc.HasValue && tgtAc.HasValue && srcAc.Value == tgtAc.Value)
             {
-                // AC matches - copy all armor parts
-                CopyArmorAppearance(srcArmor, tgtArmor);
+                // AC matches - copy all armor parts via CopyItemAndModify
+                armorCopied = CopyArmorAppearanceViaModify(srcArmor, tgtArmor, true);
+                if (armorCopied)
+                {
+                    itemsToReequip[InventorySlot.Chest] = tgtArmor;
+                    slotResults[InventorySlot.Chest] = "Armor copied (full appearance)";
+                    copiedCount++;
+                }
             }
             else if (srcAc.HasValue && tgtAc.HasValue)
             {
-                // AC mismatch - copy everything except chest
-                CopyArmorAppearanceExceptChest(srcArmor, tgtArmor);
+                // AC mismatch - copy everything except chest (Option A)
+                armorCopied = CopyArmorAppearanceViaModify(srcArmor, tgtArmor, false);
+                if (armorCopied)
+                {
+                    itemsToReequip[InventorySlot.Chest] = tgtArmor;
+                    slotResults[InventorySlot.Chest] = $"Armor copied (non-torso only, AC mismatch: {srcAc} → {tgtAc})";
+                    copiedCount++;
+                }
             }
             else
             {
-                // Can't determine AC - don't copy armor
-                _player.SendServerMessage($"Warning: Could not determine armor AC for comparison. Skipping armor copy.", ColorConstants.Orange);
-                return;
+                // Can't determine AC - copy non-torso parts only (Option A)
+                _player.SendServerMessage($"[DEBUG-Armor] AC unknown for one or both items, copying non-torso only", ColorConstants.Yellow);
+                armorCopied = CopyArmorAppearanceViaModify(srcArmor, tgtArmor, false);
+                if (armorCopied)
+                {
+                    itemsToReequip[InventorySlot.Chest] = tgtArmor;
+                    slotResults[InventorySlot.Chest] = "Armor copied (non-torso only, AC unknown)";
+                    copiedCount++;
+                }
             }
 
-            copiedCount++;
+            if (!armorCopied)
+            {
+                slotResults[InventorySlot.Chest] = "Armor copy failed";
+            }
         }
 
         // Copy Cloak
@@ -591,8 +617,16 @@ internal sealed class CopyMachineModel
             if (tgtCloak.Description != srcCloak.Description)
                 tgtCloak.Description = srcCloak.Description;
 
-            CopySimpleItemAppearance(srcCloak, tgtCloak);
-            copiedCount++;
+            if (CopySimpleItemAppearanceViaModify(srcCloak, tgtCloak, target))
+            {
+                itemsToReequip[InventorySlot.Cloak] = tgtCloak;
+                slotResults[InventorySlot.Cloak] = "Cloak copied";
+                copiedCount++;
+            }
+            else
+            {
+                slotResults[InventorySlot.Cloak] = "Cloak copy failed";
+            }
         }
 
         // Copy Helmet
@@ -606,14 +640,22 @@ internal sealed class CopyMachineModel
             if (tgtHelmet.Description != srcHelmet.Description)
                 tgtHelmet.Description = srcHelmet.Description;
 
-            CopySimpleItemAppearance(srcHelmet, tgtHelmet);
-            copiedCount++;
+            if (CopySimpleItemAppearanceViaModify(srcHelmet, tgtHelmet, target))
+            {
+                itemsToReequip[InventorySlot.Head] = tgtHelmet;
+                slotResults[InventorySlot.Head] = "Helmet copied";
+                copiedCount++;
+            }
+            else
+            {
+                slotResults[InventorySlot.Head] = "Helmet copy failed";
+            }
         }
 
         // Copy Main-Hand (Right Hand)
         NwItem? srcMainHand = source.GetItemInSlot(InventorySlot.RightHand);
         if (itemsToReequip.TryGetValue(InventorySlot.RightHand, out NwItem? tgtMainHand) && srcMainHand != null &&
-            tgtMainHand.IsValid && srcMainHand.BaseItem.ItemType == tgtMainHand.BaseItem.ItemType)
+            tgtMainHand.IsValid)
         {
             // Copy item name and description
             if (tgtMainHand.Name != srcMainHand.Name)
@@ -621,14 +663,16 @@ internal sealed class CopyMachineModel
             if (tgtMainHand.Description != srcMainHand.Description)
                 tgtMainHand.Description = srcMainHand.Description;
 
-            CopyWeaponAppearance(srcMainHand, tgtMainHand);
-            copiedCount++;
+            string mainHandResult = CopyWeaponAppearanceAndType(srcMainHand, tgtMainHand, target, InventorySlot.RightHand);
+            slotResults[InventorySlot.RightHand] = mainHandResult;
+            if (!mainHandResult.Contains("failed"))
+                copiedCount++;
         }
 
         // Copy Off-Hand (Left Hand)
         NwItem? srcOffHand = source.GetItemInSlot(InventorySlot.LeftHand);
         if (itemsToReequip.TryGetValue(InventorySlot.LeftHand, out NwItem? tgtOffHand) && srcOffHand != null &&
-            tgtOffHand.IsValid && srcOffHand.BaseItem.ItemType == tgtOffHand.BaseItem.ItemType)
+            tgtOffHand.IsValid)
         {
             // Copy item name and description
             if (tgtOffHand.Name != srcOffHand.Name)
@@ -636,8 +680,10 @@ internal sealed class CopyMachineModel
             if (tgtOffHand.Description != srcOffHand.Description)
                 tgtOffHand.Description = srcOffHand.Description;
 
-            CopyWeaponAppearance(srcOffHand, tgtOffHand);
-            copiedCount++;
+            string offHandResult = CopyWeaponAppearanceAndType(srcOffHand, tgtOffHand, target, InventorySlot.LeftHand);
+            slotResults[InventorySlot.LeftHand] = offHandResult;
+            if (!offHandResult.Contains("failed"))
+                copiedCount++;
         }
 
         // PHASE 3: Re-equip all items
@@ -652,6 +698,14 @@ internal sealed class CopyMachineModel
             }
         }
 
+        // Log all slot results
+        foreach (var kvp in slotResults)
+        {
+            InventorySlot slot = kvp.Key;
+            string result = kvp.Value;
+            _player.SendServerMessage($"[DEBUG-{slot}] {result}", ColorConstants.Yellow);
+        }
+
         if (copiedCount > 0)
         {
             _player.SendServerMessage($"Copied appearance of {copiedCount} equipment slot(s).", ColorConstants.Green);
@@ -663,69 +717,305 @@ internal sealed class CopyMachineModel
     }
 
     /// <summary>
-    /// Copies armor appearance but skips the chest part if the base armor AC doesn't match.
-    /// This allows copying armor appearances even when the base armor type differs.
+    /// Copies armor appearance using CopyItemAndModify for each part and color.
+    /// If includeTorso is false, skips torso part (used when AC doesn't match).
     /// </summary>
-    private static void CopyArmorAppearanceWithAcCheck(NwItem source, NwItem target)
+    private bool CopyArmorAppearanceViaModify(NwItem source, NwItem target, bool includeTorso)
     {
-        // Get AC values from torso models
-        int? srcAc = GetArmorAcFromModel(source.Appearance.GetArmorModel(CreaturePart.Torso));
-        int? tgtAc = GetArmorAcFromModel(target.Appearance.GetArmorModel(CreaturePart.Torso));
+        _player.SendServerMessage($"[DEBUG-Armor] CopyItemAndModify starting (includeTorso={includeTorso})", ColorConstants.Yellow);
 
-        if (srcAc.HasValue && tgtAc.HasValue && srcAc.Value != tgtAc.Value)
-        {
-            // AC mismatch: skip chest part, copy everything else
-            CopyArmorAppearanceExceptChest(source, target);
-        }
-        else
-        {
-            // AC match or can't determine: copy all armor
-            CopyArmorAppearance(source, target);
-        }
-    }
+        // Parts to copy (excluding torso if includeTorso is false)
+        CreaturePart[] partsToCopy = includeTorso
+            ? [CreaturePart.Head, CreaturePart.Neck, CreaturePart.LeftShoulder, CreaturePart.RightShoulder,
+               CreaturePart.LeftBicep, CreaturePart.RightBicep, CreaturePart.LeftForearm, CreaturePart.RightForearm,
+               CreaturePart.LeftHand, CreaturePart.RightHand, CreaturePart.Torso, CreaturePart.Belt,
+               CreaturePart.LeftThigh, CreaturePart.RightThigh, CreaturePart.LeftShin, CreaturePart.RightShin,
+               CreaturePart.LeftFoot, CreaturePart.RightFoot, CreaturePart.Pelvis]
+            : [CreaturePart.Head, CreaturePart.Neck, CreaturePart.LeftShoulder, CreaturePart.RightShoulder,
+               CreaturePart.LeftBicep, CreaturePart.RightBicep, CreaturePart.LeftForearm, CreaturePart.RightForearm,
+               CreaturePart.LeftHand, CreaturePart.RightHand, CreaturePart.Belt,
+               CreaturePart.LeftThigh, CreaturePart.RightThigh, CreaturePart.LeftShin, CreaturePart.RightShin,
+               CreaturePart.LeftFoot, CreaturePart.RightFoot];
 
-    /// <summary>
-    /// Copies armor appearance for all parts except the torso/chest.
-    /// Used when armor base types don't match and we want to preserve the target's chest model.
-    /// </summary>
-    private static void CopyArmorAppearanceExceptChest(NwItem source, NwItem target)
-    {
-        // Copy all armor parts except Torso and Pelvis (which affect chest appearance)
-        CreaturePart[] nonChestParts =
-        [
-            CreaturePart.Head,
-            CreaturePart.Neck,
-            CreaturePart.LeftShoulder,
-            CreaturePart.RightShoulder,
-            CreaturePart.LeftBicep,
-            CreaturePart.RightBicep,
-            CreaturePart.LeftForearm,
-            CreaturePart.RightForearm,
-            CreaturePart.LeftHand,
-            CreaturePart.RightHand,
-            CreaturePart.LeftThigh,
-            CreaturePart.RightThigh,
-            CreaturePart.LeftShin,
-            CreaturePart.RightShin,
-            CreaturePart.LeftFoot,
-            CreaturePart.RightFoot,
-            CreaturePart.Belt
-        ];
-
-        foreach (CreaturePart part in nonChestParts)
+        // Copy each armor model part via CopyItemAndModify
+        NwItem currentArmor = target;
+        foreach (CreaturePart part in partsToCopy)
         {
             ushort srcModel = source.Appearance.GetArmorModel(part);
-            if (target.Appearance.GetArmorModel(part) != srcModel)
-                target.Appearance.SetArmorModel(part, (byte)srcModel);
+            ushort currentModel = currentArmor.Appearance.GetArmorModel(part);
+
+            if (srcModel != currentModel)
+            {
+                uint copy = NWScript.CopyItemAndModify(currentArmor, NWScript.ITEM_APPR_TYPE_ARMOR_MODEL, (int)part, srcModel, 1);
+                if (NWScript.GetIsObjectValid(copy) == 1)
+                {
+                    NWScript.DestroyObject(currentArmor);
+                    currentArmor = copy.ToNwObject<NwItem>()!;
+                    _player.SendServerMessage($"[DEBUG-Armor] {part} model copied: {srcModel}", ColorConstants.Yellow);
+                }
+                else
+                {
+                    _player.SendServerMessage($"[DEBUG-Armor] FAILED to copy {part} model {srcModel}", ColorConstants.Red);
+                    return false;
+                }
+            }
         }
 
-        // Copy all armor colors
+        // Copy all armor color channels
         foreach (ItemAppearanceArmorColor color in Enum.GetValues<ItemAppearanceArmorColor>())
         {
             byte srcColor = source.Appearance.GetArmorColor(color);
-            if (target.Appearance.GetArmorColor(color) != srcColor)
-                target.Appearance.SetArmorColor(color, srcColor);
+            byte currentColor = currentArmor.Appearance.GetArmorColor(color);
+
+            if (srcColor != currentColor)
+            {
+                int colorType = NWScript.ITEM_APPR_ARMOR_COLOR_LEATHER1 + (int)color;
+                uint copy = NWScript.CopyItemAndModify(currentArmor, NWScript.ITEM_APPR_TYPE_ARMOR_COLOR, colorType, srcColor, 1);
+                if (NWScript.GetIsObjectValid(copy) == 1)
+                {
+                    NWScript.DestroyObject(currentArmor);
+                    currentArmor = copy.ToNwObject<NwItem>()!;
+                    _player.SendServerMessage($"[DEBUG-Armor] Color channel {color} copied: {srcColor}", ColorConstants.Yellow);
+                }
+                else
+                {
+                    _player.SendServerMessage($"[DEBUG-Armor] FAILED to copy color {color}", ColorConstants.Red);
+                    return false;
+                }
+            }
         }
+
+        // Update the target reference and copy properties/variables
+        if (!currentArmor.Equals(target))
+        {
+            CopyItemPropertiesAndVariables(source, currentArmor);
+            // Need to update target reference in the caller - for now we'll just update via reference
+            target = currentArmor;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Copies simple item appearance (helmet, cloak) using CopyItemAndModify for model and colors.
+    /// </summary>
+    private bool CopySimpleItemAppearanceViaModify(NwItem source, NwItem target, NwCreature targetCreature)
+    {
+        _player.SendServerMessage($"[DEBUG-SimpleItem] CopyItemAndModify starting", ColorConstants.Yellow);
+
+        NwItem currentItem = target;
+
+        // Copy simple model
+        ushort srcModel = source.Appearance.GetSimpleModel();
+        ushort currentModel = currentItem.Appearance.GetSimpleModel();
+
+        if (srcModel != currentModel)
+        {
+            uint copy = NWScript.CopyItemAndModify(currentItem, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, srcModel, 1);
+            if (NWScript.GetIsObjectValid(copy) == 1)
+            {
+                NWScript.DestroyObject(currentItem);
+                currentItem = copy.ToNwObject<NwItem>()!;
+                _player.SendServerMessage($"[DEBUG-SimpleItem] Simple model copied: {srcModel}", ColorConstants.Yellow);
+            }
+            else
+            {
+                _player.SendServerMessage($"[DEBUG-SimpleItem] FAILED to copy simple model {srcModel}", ColorConstants.Red);
+                return false;
+            }
+        }
+
+        // Copy all armor color channels (used for tinting simple items)
+        foreach (ItemAppearanceArmorColor color in Enum.GetValues<ItemAppearanceArmorColor>())
+        {
+            byte srcColor = source.Appearance.GetArmorColor(color);
+            byte currentColor = currentItem.Appearance.GetArmorColor(color);
+
+            if (srcColor != currentColor)
+            {
+                int colorType = NWScript.ITEM_APPR_ARMOR_COLOR_LEATHER1 + (int)color;
+                uint copy = NWScript.CopyItemAndModify(currentItem, NWScript.ITEM_APPR_TYPE_ARMOR_COLOR, colorType, srcColor, 1);
+                if (NWScript.GetIsObjectValid(copy) == 1)
+                {
+                    NWScript.DestroyObject(currentItem);
+                    currentItem = copy.ToNwObject<NwItem>()!;
+                    _player.SendServerMessage($"[DEBUG-SimpleItem] Color channel {color} copied: {srcColor}", ColorConstants.Yellow);
+                }
+                else
+                {
+                    _player.SendServerMessage($"[DEBUG-SimpleItem] FAILED to copy color {color}", ColorConstants.Red);
+                    return false;
+                }
+            }
+        }
+
+        // Update the target reference and copy properties/variables
+        if (!currentItem.Equals(target))
+        {
+            CopyItemPropertiesAndVariables(source, currentItem);
+            target = currentItem;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Copies weapon/shield appearance using CopyItemAndModify.
+    /// Returns a descriptive string for debugging.
+    /// </summary>
+    private string CopyWeaponAppearanceAndType(NwItem source, NwItem target, NwCreature targetCreature, InventorySlot slot)
+    {
+        string slotName = slot switch
+        {
+            InventorySlot.RightHand => "Main-Hand",
+            InventorySlot.LeftHand => "Off-Hand",
+            _ => slot.ToString()
+        };
+
+        _player.SendServerMessage($"[DEBUG-{slotName}] Starting appearance/type copy (source={source.BaseItem.ItemType}, target={target.BaseItem.ItemType})", ColorConstants.Yellow);
+
+        // Check if base item types match
+        if (source.BaseItem.ItemType != target.BaseItem.ItemType)
+        {
+            _player.SendServerMessage($"[DEBUG-{slotName}] Base item type incompatible, cannot convert. Skipping.", ColorConstants.Yellow);
+            return $"{slotName}: base item type incompatible";
+        }
+
+        // Now copy appearance using CopyItemAndModify
+        bool isSimple = source.BaseItem.ModelType == BaseItemModelType.Simple;
+        NwItem currentItem = target;
+
+        if (isSimple)
+        {
+            // Simple model weapon
+            ushort srcModel = source.Appearance.GetSimpleModel();
+            ushort currentModel = currentItem.Appearance.GetSimpleModel();
+
+            if (srcModel != currentModel)
+            {
+                uint copy = NWScript.CopyItemAndModify(currentItem, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, srcModel, 1);
+                if (NWScript.GetIsObjectValid(copy) == 1)
+                {
+                    NWScript.DestroyObject(currentItem);
+                    currentItem = copy.ToNwObject<NwItem>()!;
+                    _player.SendServerMessage($"[DEBUG-{slotName}] Simple model copied: {srcModel}", ColorConstants.Yellow);
+                }
+                else
+                {
+                    _player.SendServerMessage($"[DEBUG-{slotName}] FAILED to copy simple model {srcModel}", ColorConstants.Red);
+                    return $"{slotName}: simple model copy failed";
+                }
+            }
+        }
+        else
+        {
+            // Complex weapon - top, middle, bottom
+            ItemAppearanceWeaponModel[] parts = [ItemAppearanceWeaponModel.Top, ItemAppearanceWeaponModel.Middle, ItemAppearanceWeaponModel.Bottom];
+            foreach (ItemAppearanceWeaponModel part in parts)
+            {
+                ushort srcModel = source.Appearance.GetWeaponModel(part);
+                ushort currentModel = currentItem.Appearance.GetWeaponModel(part);
+
+                if (srcModel != currentModel)
+                {
+                    uint copy = NWScript.CopyItemAndModify(currentItem, NWScript.ITEM_APPR_TYPE_WEAPON_MODEL, (int)part, srcModel, 1);
+                    if (NWScript.GetIsObjectValid(copy) == 1)
+                    {
+                        NWScript.DestroyObject(currentItem);
+                        currentItem = copy.ToNwObject<NwItem>()!;
+                        _player.SendServerMessage($"[DEBUG-{slotName}] {part} model copied: {srcModel}", ColorConstants.Yellow);
+                    }
+                    else
+                    {
+                        _player.SendServerMessage($"[DEBUG-{slotName}] FAILED to copy {part} model {srcModel}", ColorConstants.Red);
+                        return $"{slotName}: {part} model copy failed";
+                    }
+                }
+            }
+        }
+
+        // Copy weapon color channels
+        foreach (ItemAppearanceArmorColor color in Enum.GetValues<ItemAppearanceArmorColor>())
+        {
+            byte srcColor = source.Appearance.GetArmorColor(color);
+            byte currentColor = currentItem.Appearance.GetArmorColor(color);
+
+            if (srcColor != currentColor)
+            {
+                int colorType = NWScript.ITEM_APPR_ARMOR_COLOR_LEATHER1 + (int)color;
+                uint copy = NWScript.CopyItemAndModify(currentItem, NWScript.ITEM_APPR_TYPE_ARMOR_COLOR, colorType, srcColor, 1);
+                if (NWScript.GetIsObjectValid(copy) == 1)
+                {
+                    NWScript.DestroyObject(currentItem);
+                    currentItem = copy.ToNwObject<NwItem>()!;
+                    _player.SendServerMessage($"[DEBUG-{slotName}] Color {color} copied: {srcColor}", ColorConstants.Yellow);
+                }
+                else
+                {
+                    _player.SendServerMessage($"[DEBUG-{slotName}] FAILED to copy color {color}", ColorConstants.Red);
+                    return $"{slotName}: color copy failed";
+                }
+            }
+        }
+
+        // Update reference and copy properties/variables
+        if (!currentItem.Equals(target))
+        {
+            CopyItemPropertiesAndVariables(source, currentItem);
+            target = currentItem;
+        }
+
+        return $"{slotName}: copied";
+    }
+
+    /// <summary>
+    /// Copies item properties and local variables from source to target.
+    /// Used to preserve enchantments and custom data when creating new items via CopyItemAndModify.
+    /// </summary>
+    private void CopyItemPropertiesAndVariables(NwItem source, NwItem target)
+    {
+        if (source == null || target == null) return;
+
+        _player.SendServerMessage($"[DEBUG] Copying properties and variables from {source.Name} to {target.Name}", ColorConstants.Yellow);
+
+        // Copy item properties
+        int propsCopied = 0;
+        foreach (ItemProperty prop in source.ItemProperties)
+        {
+            target.AddItemProperty(prop, EffectDuration.Permanent);
+            propsCopied++;
+        }
+
+        // Copy local variables
+        int varsCopied = 0;
+        foreach (ObjectVariable var in source.LocalVariables)
+        {
+            switch (var)
+            {
+                case LocalVariableInt li:
+                    target.GetObjectVariable<LocalVariableInt>(li.Name).Value = li.Value;
+                    varsCopied++;
+                    break;
+                case LocalVariableFloat lf:
+                    target.GetObjectVariable<LocalVariableFloat>(lf.Name).Value = lf.Value;
+                    varsCopied++;
+                    break;
+                case LocalVariableString ls:
+                    target.GetObjectVariable<LocalVariableString>(ls.Name).Value = ls.Value ?? string.Empty;
+                    varsCopied++;
+                    break;
+                case LocalVariableLocation lloc:
+                    target.GetObjectVariable<LocalVariableLocation>(lloc.Name).Value = lloc.Value;
+                    varsCopied++;
+                    break;
+                case LocalVariableObject<NwObject> lo:
+                    target.GetObjectVariable<LocalVariableObject<NwObject>>(lo.Name).Value = lo.Value;
+                    varsCopied++;
+                    break;
+            }
+        }
+
+        _player.SendServerMessage($"[DEBUG] Copied {propsCopied} properties, {varsCopied} variables", ColorConstants.Yellow);
     }
 
     /// <summary>
@@ -775,4 +1065,5 @@ internal sealed class CopyMachineModel
         return null;
     }
 }
+
 
