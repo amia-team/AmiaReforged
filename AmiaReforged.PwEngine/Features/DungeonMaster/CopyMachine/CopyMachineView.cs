@@ -9,7 +9,7 @@ namespace AmiaReforged.PwEngine.Features.DungeonMaster.CopyMachine;
 public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
 {
     private const float WindowW = 250f;
-    private const float WindowH = 250f;
+    private const float WindowH = 220f;
 
     public readonly NuiBind<string> StatusText = new("cm_status");
     public readonly NuiBind<string> TypeTooltip = new("cm_type");
@@ -88,13 +88,7 @@ public sealed class CopyMachineView : ScryView<CopyMachinePresenter>, IDmWindow
                             Width = 40f,
                             Height = 40f,
                             Tooltip = "Select object whose appearance you want to copy."
-                        }.Assign(out SelectSourceButton),
-                        new NuiSpacer { Width = 10f },
-                        new NuiCheck("", CopyEquipmentChecked)
-                        {
-                            Id = "chk_equipment",
-                            Tooltip = "Copy equipment appearances. (Creatures Only)",
-                        }.Assign(out CopyEquipmentCheckbox)
+                        }.Assign(out SelectSourceButton)
                     ]
                 },
 

@@ -28,7 +28,7 @@ public sealed class CopyMachinePresenter : ScryPresenter<CopyMachineView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(0f, 100f, 250f, 250f)
+            Geometry = new NuiRect(0f, 100f, 250f, 220f)
         };
     }
 
@@ -52,7 +52,6 @@ public sealed class CopyMachinePresenter : ScryPresenter<CopyMachineView>
     private void RefreshStatus()
     {
         Token().SetBindValue(View.StatusText, _model.GetStatusText());
-        Token().SetBindValue(View.CopyEquipmentChecked, false); // Reset checkbox when source changes
         Token().SetBindValue(View.TypeTooltip, "Object type: " + _model.GetTypeString());
     }
 
@@ -74,16 +73,7 @@ public sealed class CopyMachinePresenter : ScryPresenter<CopyMachineView>
         }
         else if (eventData.ElementId == View.CopyToTargetButton.Id)
         {
-            // Read checkbox state before entering copy mode
-            bool isChecked = Token().GetBindValue(View.CopyEquipmentChecked);
-            _model.SetCopyEquipmentFlag(isChecked);
-            _model.EnterCopyTargetingMode();
-        }
-        else if (eventData.ElementId == View.CopyEquipmentCheckbox.Id)
-        {
-            // Handle checkbox click
-            bool isChecked = Token().GetBindValue(View.CopyEquipmentChecked);
-            _model.SetCopyEquipmentFlag(isChecked);
+           _model.EnterCopyTargetingMode();
         }
     }
 
