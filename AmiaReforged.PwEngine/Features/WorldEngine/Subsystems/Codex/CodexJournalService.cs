@@ -81,6 +81,12 @@ public class CodexJournalService
 
 
         Log.Info($"Opening codex for {player.PlayerName}");
+
+        if (creature.GetObjectVariable<LocalVariableInt>("no_journal").Value == 1)
+        {
+            return ScriptHandleResult.Handled;
+        }
+
         _codex.OpenCodexAsync(player);
 
         return ScriptHandleResult.Handled;
@@ -108,6 +114,11 @@ public class CodexJournalService
 
         NwItem? pcKey = creature.Inventory.Items.FirstOrDefault(item => item.ResRef == "ds_pckey");
         if (pcKey is null)
+        {
+            return ScriptHandleResult.Handled;
+        }
+
+        if (creature.GetObjectVariable<LocalVariableInt>("no_journal").Value == 1)
         {
             return ScriptHandleResult.Handled;
         }

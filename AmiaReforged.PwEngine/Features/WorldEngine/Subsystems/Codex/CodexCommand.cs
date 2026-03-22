@@ -31,6 +31,28 @@ public class CodexCommand : IChatCommand
             return;
         }
 
+        // Toggle journal-linked codex off
+        if (args.Length > 0 && args[0].Equals("no-journal", StringComparison.OrdinalIgnoreCase))
+        {
+            NwCreature? creature = caller.LoginCreature;
+            if (creature == null) return;
+
+            creature.GetObjectVariable<LocalVariableInt>("no_journal").Value = 1;
+            caller.SendServerMessage("Codex will no longer open with the journal. Use ./codex to open it directly.", ColorConstants.Lime);
+            return;
+        }
+
+        // Toggle journal-linked codex on
+        if (args.Length > 0 && args[0].Equals("journal", StringComparison.OrdinalIgnoreCase))
+        {
+            NwCreature? creature = caller.LoginCreature;
+            if (creature == null) return;
+
+            creature.GetObjectVariable<LocalVariableInt>("no_journal").Value = 0;
+            caller.SendServerMessage("Codex will now open with the journal again.", ColorConstants.Lime);
+            return;
+        }
+
         CommandResult result = await _codex.OpenCodexAsync(caller);
         if (!result.Success)
         {
