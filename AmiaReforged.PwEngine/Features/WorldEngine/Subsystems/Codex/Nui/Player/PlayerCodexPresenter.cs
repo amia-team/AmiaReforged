@@ -205,13 +205,26 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
 
     private async Task LoadEntries()
     {
-        if (_characterId == null || QueryService?.Value == null)
+        if (_characterId == null)
         {
             _currentEntries = new List<ICodexDisplayItem>();
             return;
         }
 
         CharacterId cid = _characterId.Value;
+
+        // Economy tab uses MembershipService, not QueryService
+        if (_activeTab == CodexTab.Economy)
+        {
+            _currentEntries = LoadEconomyEntries(cid);
+            return;
+        }
+
+        if (QueryService?.Value == null)
+        {
+            _currentEntries = new List<ICodexDisplayItem>();
+            return;
+        }
 
         switch (_activeTab)
         {
@@ -229,9 +242,6 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
                 break;
             case CodexTab.Traits:
                 _currentEntries = await LoadTraitEntries(cid);
-                break;
-            case CodexTab.Economy:
-                _currentEntries = LoadEconomyEntries(cid);
                 break;
         }
     }
@@ -515,8 +525,9 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
 
         _token.SetBindValue(View.ProficiencyLevelText, $"{tier} (Lv. {level})");
 
-        int xpNeeded = ProficiencyXpCurve.XpForLevel(level);
-        if (xpNeeded <= 0 || level >= ProficiencyXpCurve.MaxLevel)
+        // XpForLevel(0) returns 0 — for Layman/level 0, show progress toward level 1
+        int xpNeeded = level < 1 ? ProficiencyXpCurve.XpForLevel(1) : ProficiencyXpCurve.XpForLevel(level);
+        if (level >= ProficiencyXpCurve.MaxLevel)
         {
             // Grandmaster / max level
             _token.SetBindValue(View.ProficiencyProgressValue, 1f);
