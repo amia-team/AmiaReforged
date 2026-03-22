@@ -549,7 +549,34 @@ internal sealed class CopyMachineModel
         if (itemsToReequip.TryGetValue(InventorySlot.Chest, out NwItem? tgtArmor) && srcArmor != null &&
             tgtArmor.IsValid && srcArmor.BaseItem.ItemType == tgtArmor.BaseItem.ItemType)
         {
-            CopyArmorAppearanceWithAcCheck(srcArmor, tgtArmor);
+            // Get AC values upfront before any modifications
+            int? srcAc = GetArmorAcFromModel(srcArmor.Appearance.GetArmorModel(CreaturePart.Torso));
+            int? tgtAc = GetArmorAcFromModel(tgtArmor.Appearance.GetArmorModel(CreaturePart.Torso));
+
+            // Copy item name and description
+            if (tgtArmor.Name != srcArmor.Name)
+                tgtArmor.Name = srcArmor.Name;
+            if (tgtArmor.Description != srcArmor.Description)
+                tgtArmor.Description = srcArmor.Description;
+
+            // Only copy if AC values match, otherwise skip chest part
+            if (srcAc.HasValue && tgtAc.HasValue && srcAc.Value == tgtAc.Value)
+            {
+                // AC matches - copy all armor parts
+                CopyArmorAppearance(srcArmor, tgtArmor);
+            }
+            else if (srcAc.HasValue && tgtAc.HasValue)
+            {
+                // AC mismatch - copy everything except chest
+                CopyArmorAppearanceExceptChest(srcArmor, tgtArmor);
+            }
+            else
+            {
+                // Can't determine AC - don't copy armor
+                _player.SendServerMessage($"Warning: Could not determine armor AC for comparison. Skipping armor copy.", ColorConstants.Orange);
+                return;
+            }
+
             copiedCount++;
         }
 
@@ -558,6 +585,12 @@ internal sealed class CopyMachineModel
         if (itemsToReequip.TryGetValue(InventorySlot.Cloak, out NwItem? tgtCloak) && srcCloak != null &&
             tgtCloak.IsValid && srcCloak.BaseItem.ItemType == tgtCloak.BaseItem.ItemType)
         {
+            // Copy item name and description
+            if (tgtCloak.Name != srcCloak.Name)
+                tgtCloak.Name = srcCloak.Name;
+            if (tgtCloak.Description != srcCloak.Description)
+                tgtCloak.Description = srcCloak.Description;
+
             CopySimpleItemAppearance(srcCloak, tgtCloak);
             copiedCount++;
         }
@@ -567,6 +600,12 @@ internal sealed class CopyMachineModel
         if (itemsToReequip.TryGetValue(InventorySlot.Head, out NwItem? tgtHelmet) && srcHelmet != null &&
             tgtHelmet.IsValid && srcHelmet.BaseItem.ItemType == tgtHelmet.BaseItem.ItemType)
         {
+            // Copy item name and description
+            if (tgtHelmet.Name != srcHelmet.Name)
+                tgtHelmet.Name = srcHelmet.Name;
+            if (tgtHelmet.Description != srcHelmet.Description)
+                tgtHelmet.Description = srcHelmet.Description;
+
             CopySimpleItemAppearance(srcHelmet, tgtHelmet);
             copiedCount++;
         }
@@ -576,6 +615,12 @@ internal sealed class CopyMachineModel
         if (itemsToReequip.TryGetValue(InventorySlot.RightHand, out NwItem? tgtMainHand) && srcMainHand != null &&
             tgtMainHand.IsValid && srcMainHand.BaseItem.ItemType == tgtMainHand.BaseItem.ItemType)
         {
+            // Copy item name and description
+            if (tgtMainHand.Name != srcMainHand.Name)
+                tgtMainHand.Name = srcMainHand.Name;
+            if (tgtMainHand.Description != srcMainHand.Description)
+                tgtMainHand.Description = srcMainHand.Description;
+
             CopyWeaponAppearance(srcMainHand, tgtMainHand);
             copiedCount++;
         }
@@ -585,6 +630,12 @@ internal sealed class CopyMachineModel
         if (itemsToReequip.TryGetValue(InventorySlot.LeftHand, out NwItem? tgtOffHand) && srcOffHand != null &&
             tgtOffHand.IsValid && srcOffHand.BaseItem.ItemType == tgtOffHand.BaseItem.ItemType)
         {
+            // Copy item name and description
+            if (tgtOffHand.Name != srcOffHand.Name)
+                tgtOffHand.Name = srcOffHand.Name;
+            if (tgtOffHand.Description != srcOffHand.Description)
+                tgtOffHand.Description = srcOffHand.Description;
+
             CopyWeaponAppearance(srcOffHand, tgtOffHand);
             copiedCount++;
         }
