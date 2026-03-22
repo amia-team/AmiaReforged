@@ -268,7 +268,7 @@ public sealed class CraftingProgressPresenter : ScryPresenter<CraftingProgressVi
             {
                 if (remaining <= 0) break;
                 if (item.Tag != ingredient.ItemTag) continue;
-                if (item.GetObjectVariable<LocalVariableInt>("we_quality").Value != selectedQuality) continue;
+                if (item.GetObjectVariable<LocalVariableInt>("item_quality").Value != selectedQuality) continue;
 
                 if (item.StackSize <= remaining)
                 {

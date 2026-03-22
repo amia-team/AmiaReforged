@@ -429,7 +429,7 @@ public sealed class WorkstationCraftingPresenter : ScryPresenter<WorkstationCraf
             // Count matching items with the selected quality tier
             int available = creature.Inventory.Items
                 .Where(item => item.Tag == ingredient.ItemTag &&
-                               item.GetObjectVariable<LocalVariableInt>("we_quality").Value == selectedQuality)
+                               item.GetObjectVariable<LocalVariableInt>("item_quality").Value == selectedQuality)
                 .Sum(item => item.StackSize);
 
             if (available < ingredient.Quantity.Value)
@@ -469,7 +469,7 @@ public sealed class WorkstationCraftingPresenter : ScryPresenter<WorkstationCraf
             // Group matching items by quality tier, keeping only tiers with enough quantity
             List<int> qualities = creature.Inventory.Items
                 .Where(item => item.Tag == ingredient.ItemTag)
-                .GroupBy(item => item.GetObjectVariable<LocalVariableInt>("we_quality").Value)
+                .GroupBy(item => item.GetObjectVariable<LocalVariableInt>("item_quality").Value)
                 .Where(g => g.Sum(item => item.StackSize) >= ingredient.Quantity.Value)
                 .Select(g => g.Key)
                 .OrderBy(q => q)
