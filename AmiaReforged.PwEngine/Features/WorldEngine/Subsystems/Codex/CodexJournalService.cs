@@ -43,8 +43,10 @@ public class CodexJournalService
         if (gameObject is null)
         {
             Log.Info("Creature somehow null????");
+            return ScriptHandleResult.Handled;
         }
 
+        NWScript.SpeakString("I am going insane!!!!");
         if (gameObject is not NwCreature creature)
         {
             Log.Info("Somehow, a non-creature opened the journal????");
