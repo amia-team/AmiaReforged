@@ -52,13 +52,11 @@ public sealed class CraftingProgressView : ScryView<CraftingProgressPresenter>
                     Height = 30f,
                     Children =
                     [
-                        new NuiSpacer(),
                         new NuiLabel(StatusText)
                         {
                             HorizontalAlign = NuiHAlign.Center,
                             VerticalAlign = NuiVAlign.Middle
-                        },
-                        new NuiSpacer()
+                        }
                     ]
                 },
 

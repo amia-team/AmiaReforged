@@ -132,10 +132,19 @@ public sealed class CraftingProgressPresenter : ScryPresenter<CraftingProgressVi
                 await NwTask.Delay(TimeSpan.FromSeconds(1));
                 await NwTask.SwitchToMainThread();
 
-                // Guard: player disconnected or window was closed
+                // Guard: player disconnected, window was closed, or player died
                 if (_cancelled || !_player.IsValid)
                 {
                     Log.Info("Crafting cancelled or player disconnected for recipe '{Recipe}'", _recipe.Name);
+                    return;
+                }
+
+                if (_player.LoginCreature is { IsDead: true })
+                {
+                    Log.Info("Player died during crafting of recipe '{Recipe}'", _recipe.Name);
+                    _player.SendServerMessage("Crafting failed — you died.", ColorConstants.Red);
+                    _cancelled = true;
+                    Close();
                     return;
                 }
 
