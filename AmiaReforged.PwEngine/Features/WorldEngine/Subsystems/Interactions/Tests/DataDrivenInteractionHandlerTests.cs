@@ -610,6 +610,8 @@ public class DataDrivenInteractionHandlerTests
         public List<Knowledge> AllKnowledge(Guid characterId) => [];
         public RankUpResult RankUp(Guid characterId, string industryTag) => RankUpResult.IndustryNotFound;
         public bool CanLearnKnowledge(Guid characterId, string knowledgeTag) => false;
+        public List<CharacterKnowledge> GetAllCharacterKnowledge(Guid characterId) => [];
+        public List<CharacterKnowledge> GetCharacterKnowledgeForIndustry(Guid characterId, string industryTag) => [];
     }
 
     #endregion

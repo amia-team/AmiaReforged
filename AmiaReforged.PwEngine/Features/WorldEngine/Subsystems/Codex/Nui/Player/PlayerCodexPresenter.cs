@@ -326,7 +326,7 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
 
         if (_activeCategory == "all")
         {
-            knowledge = _memberships.SelectMany(m => m.CharacterKnowledge).ToList();
+            knowledge = MembershipService.Value.GetAllCharacterKnowledge(cid);
             _activeMembership = _memberships.FirstOrDefault();
         }
         else
@@ -335,7 +335,9 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
                 m => string.Equals(m.IndustryTag.Value, _activeCategory, StringComparison.OrdinalIgnoreCase));
 
             _activeMembership = match;
-            knowledge = match?.CharacterKnowledge ?? new List<CharacterKnowledge>();
+            knowledge = match != null
+                ? MembershipService.Value.GetCharacterKnowledgeForIndustry(cid, _activeCategory)
+                : new List<CharacterKnowledge>();
         }
 
         return knowledge.Select(ck => (ICodexDisplayItem)new KnowledgeDisplayItem(ck)).ToList();

@@ -103,6 +103,19 @@ public class IndustryMembershipService(
 
     public List<Knowledge> AllKnowledge(Guid characterId) => characterKnowledgeRepository.GetAllKnowledge(characterId);
 
+    public List<CharacterKnowledge> GetAllCharacterKnowledge(Guid characterId)
+    {
+        // GetKnowledgeForIndustry currently loads all knowledge for the character regardless of tag
+        return characterKnowledgeRepository.GetKnowledgeForIndustry("", characterId);
+    }
+
+    public List<CharacterKnowledge> GetCharacterKnowledgeForIndustry(Guid characterId, string industryTag)
+    {
+        return characterKnowledgeRepository.GetKnowledgeForIndustry(industryTag, characterId)
+            .Where(ck => string.Equals(ck.IndustryTag, industryTag, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
     public List<IndustryMembership> GetMemberships(Guid characterGuid)
     {
         return membershipRepository.All(characterGuid);
