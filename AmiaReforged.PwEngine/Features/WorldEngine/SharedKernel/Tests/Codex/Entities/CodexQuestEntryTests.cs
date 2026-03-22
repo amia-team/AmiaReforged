@@ -51,19 +51,18 @@ public class CodexQuestEntryTests
             DateStarted = _testDate,
             QuestGiver = "Elder Marcus",
             Location = "Riverside Village",
-            Objectives = new List<string> { "Talk to Elder", "Investigate the barn" },
             Keywords = new List<Keyword> { new Keyword("village"), new Keyword("help") }
         };
 
         // Assert
         Assert.That(quest.QuestGiver, Is.EqualTo("Elder Marcus"));
         Assert.That(quest.Location, Is.EqualTo("Riverside Village"));
-        Assert.That(quest.Objectives, Has.Count.EqualTo(2));
+        Assert.That(quest.CurrentStageId, Is.EqualTo(0));
         Assert.That(quest.Keywords, Has.Count.EqualTo(2));
     }
 
     [Test]
-    public void Constructor_WithEmptyObjectives_CreatesEmptyList()
+    public void Constructor_DefaultCurrentStageId_IsZero()
     {
         // Arrange & Act
         CodexQuestEntry quest = new CodexQuestEntry
@@ -75,8 +74,7 @@ public class CodexQuestEntryTests
         };
 
         // Assert
-        Assert.That(quest.Objectives, Is.Not.Null);
-        Assert.That(quest.Objectives, Is.Empty);
+        Assert.That(quest.CurrentStageId, Is.EqualTo(0));
     }
 
     [Test]

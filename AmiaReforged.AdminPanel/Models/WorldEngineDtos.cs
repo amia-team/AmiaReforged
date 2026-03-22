@@ -207,16 +207,30 @@ public class LoreDefinitionDto
 
 // ==================== Codex Quest DTOs ====================
 
+public class QuestStageDto
+{
+    /// <summary>NWN-style numeric stage ID (e.g. 10, 20, 30). Gaps allowed for patching.</summary>
+    public int StageId { get; set; }
+
+    /// <summary>Journal text displayed to the player when this stage is reached.</summary>
+    public string JournalText { get; set; } = string.Empty;
+
+    /// <summary>If true, reaching this stage marks the quest as completed.</summary>
+    public bool IsCompletionStage { get; set; }
+
+    /// <summary>Optional hints revealed at this stage.</summary>
+    public List<string> Hints { get; set; } = [];
+}
+
 public class QuestDefinitionDto
 {
     public string QuestId { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-    public List<string> Objectives { get; set; } = [];
+    public List<QuestStageDto> Stages { get; set; } = [];
     public string? QuestGiver { get; set; }
     public string? Location { get; set; }
     public string? Keywords { get; set; }
-    public string? HintsJson { get; set; }
     public bool IsAlwaysAvailable { get; set; }
     public DateTime CreatedUtc { get; set; }
 }

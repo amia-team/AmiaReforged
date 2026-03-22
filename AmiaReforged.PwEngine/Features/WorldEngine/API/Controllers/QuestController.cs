@@ -151,11 +151,10 @@ public class QuestController
         // Update mutable fields — QuestId is immutable
         existing.Title = dto.Title;
         existing.Description = dto.Description;
-        existing.ObjectivesJson = SerializeObjectives(dto.Objectives);
+        existing.StagesJson = SerializeStages(dto.Stages);
         existing.QuestGiver = string.IsNullOrWhiteSpace(dto.QuestGiver) ? null : dto.QuestGiver.Trim();
         existing.Location = string.IsNullOrWhiteSpace(dto.Location) ? null : dto.Location.Trim();
         existing.Keywords = string.IsNullOrWhiteSpace(dto.Keywords) ? null : dto.Keywords.Trim();
-        existing.HintsJson = string.IsNullOrWhiteSpace(dto.HintsJson) ? null : dto.HintsJson;
         existing.IsAlwaysAvailable = dto.IsAlwaysAvailable;
 
         await context.SaveChangesAsync();
@@ -216,11 +215,10 @@ public class QuestController
             def.QuestId,
             def.Title,
             def.Description,
-            Objectives = DeserializeObjectives(def.ObjectivesJson),
+            Stages = DeserializeStages(def.StagesJson),
             def.QuestGiver,
             def.Location,
             def.Keywords,
-            def.HintsJson,
             def.IsAlwaysAvailable,
             def.CreatedUtc
         };
@@ -233,42 +231,48 @@ public class QuestController
             QuestId = dto.QuestId.Trim(),
             Title = dto.Title.Trim(),
             Description = dto.Description,
-            ObjectivesJson = SerializeObjectives(dto.Objectives),
+            StagesJson = SerializeStages(dto.Stages),
             QuestGiver = string.IsNullOrWhiteSpace(dto.QuestGiver) ? null : dto.QuestGiver.Trim(),
             Location = string.IsNullOrWhiteSpace(dto.Location) ? null : dto.Location.Trim(),
             Keywords = string.IsNullOrWhiteSpace(dto.Keywords) ? null : dto.Keywords.Trim(),
-            HintsJson = string.IsNullOrWhiteSpace(dto.HintsJson) ? null : dto.HintsJson,
             IsAlwaysAvailable = dto.IsAlwaysAvailable
         };
     }
 
-    private static List<string> DeserializeObjectives(string? json)
+    private static List<QuestStageJsonModel> DeserializeStages(string? json)
     {
         if (string.IsNullOrWhiteSpace(json) || json == "[]") return [];
-        try { return JsonSerializer.Deserialize<List<string>>(json, JsonOpts) ?? []; }
+        try { return JsonSerializer.Deserialize<List<QuestStageJsonModel>>(json, JsonOpts) ?? []; }
         catch { return []; }
     }
 
-    private static string SerializeObjectives(List<string>? objectives)
+    private static string SerializeStages(List<QuestStageJsonModel>? stages)
     {
-        if (objectives == null || objectives.Count == 0) return "[]";
-        return JsonSerializer.Serialize(objectives, JsonOpts);
+        if (stages == null || stages.Count == 0) return "[]";
+        return JsonSerializer.Serialize(stages, JsonOpts);
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    //  DTO
+    //  DTOs
     // ═══════════════════════════════════════════════════════════════════
+
+    private record QuestStageJsonModel
+    {
+        public int StageId { get; init; }
+        public string JournalText { get; init; } = string.Empty;
+        public bool IsCompletionStage { get; init; }
+        public List<string> Hints { get; init; } = [];
+    }
 
     private record QuestDefinitionDto
     {
         public string QuestId { get; init; } = string.Empty;
         public string Title { get; init; } = string.Empty;
         public string Description { get; init; } = string.Empty;
-        public List<string> Objectives { get; init; } = [];
+        public List<QuestStageJsonModel> Stages { get; init; } = [];
         public string? QuestGiver { get; init; }
         public string? Location { get; init; }
         public string? Keywords { get; init; }
-        public string? HintsJson { get; init; }
         public bool IsAlwaysAvailable { get; init; }
     }
 }

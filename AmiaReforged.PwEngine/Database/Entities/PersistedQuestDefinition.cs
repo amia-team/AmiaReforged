@@ -28,10 +28,12 @@ public class PersistedQuestDefinition
     public required string Description { get; set; }
 
     /// <summary>
-    /// JSON-serialized list of objective strings.
-    /// Stored as a JSON array, e.g. <c>["Find the artifact","Return to the NPC"]</c>.
+    /// JSON-serialized array of quest stage objects.
+    /// Each stage has a numeric stage ID, journal text, optional completion flag,
+    /// and per-stage hints. Stored as jsonb.
+    /// e.g. <c>[{"stageId":10,"journalText":"Find the artifact","isCompletionStage":false,"hints":[]}]</c>
     /// </summary>
-    public string ObjectivesJson { get; set; } = "[]";
+    public string StagesJson { get; set; } = "[]";
 
     /// <summary>
     /// Optional NPC who gives this quest.
@@ -50,12 +52,6 @@ public class PersistedQuestDefinition
     /// </summary>
     [MaxLength(1000)]
     public string? Keywords { get; set; }
-
-    /// <summary>
-    /// JSON blob for breadcrumb hints that can direct players.
-    /// e.g. <c>[{"text":"Speak to the old man","location":"tavern"}]</c>
-    /// </summary>
-    public string? HintsJson { get; set; }
 
     /// <summary>
     /// When <c>true</c>, this quest entry is visible to every player without

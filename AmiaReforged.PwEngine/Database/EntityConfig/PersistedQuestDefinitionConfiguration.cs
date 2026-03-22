@@ -30,8 +30,8 @@ public sealed class PersistedQuestDefinitionConfiguration : IEntityTypeConfigura
             .HasColumnName("description")
             .IsRequired();
 
-        builder.Property(d => d.ObjectivesJson)
-            .HasColumnName("objectives_json")
+        builder.Property(d => d.StagesJson)
+            .HasColumnName("stages_json")
             .HasColumnType("jsonb")
             .HasDefaultValue("[]");
 
@@ -46,10 +46,6 @@ public sealed class PersistedQuestDefinitionConfiguration : IEntityTypeConfigura
         builder.Property(d => d.Keywords)
             .HasColumnName("keywords")
             .HasMaxLength(1000);
-
-        builder.Property(d => d.HintsJson)
-            .HasColumnName("hints_json")
-            .HasColumnType("jsonb");
 
         builder.Property(d => d.IsAlwaysAvailable)
             .HasColumnName("is_always_available")

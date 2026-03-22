@@ -61,12 +61,8 @@ public sealed class QuestDisplayItem : ICodexDisplayItem
                 body = $"Quest Giver: {_entry.QuestGiver}\n\n{body}";
             if (!string.IsNullOrEmpty(_entry.Location))
                 body += $"\n\nLocation: {_entry.Location}";
-            if (_entry.Objectives.Count > 0)
-            {
-                body += "\n\nObjectives:";
-                foreach (string obj in _entry.Objectives)
-                    body += $"\n  - {obj}";
-            }
+            if (_entry.CurrentStageId > 0)
+                body += $"\n\nCurrent Stage: {_entry.CurrentStageId}";
             if (_entry.DateCompleted.HasValue)
                 body += $"\n\nCompleted: {_entry.DateCompleted.Value:yyyy-MM-dd}";
             return body;

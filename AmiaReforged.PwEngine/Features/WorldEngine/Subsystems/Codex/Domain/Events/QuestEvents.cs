@@ -37,3 +37,11 @@ public sealed record QuestAbandonedEvent(
     DateTime OccurredAt,
     QuestId QuestId
 ) : CodexDomainEvent(CharacterId, OccurredAt);
+
+public sealed record QuestStageAdvancedEvent(
+    CharacterId CharacterId,
+    DateTime OccurredAt,
+    QuestId QuestId,
+    int FromStage,
+    int ToStage
+) : CodexDomainEvent(CharacterId, OccurredAt);

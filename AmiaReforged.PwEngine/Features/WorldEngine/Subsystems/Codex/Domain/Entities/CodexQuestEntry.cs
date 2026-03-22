@@ -30,9 +30,10 @@ public class CodexQuestEntry
     public QuestState State { get; internal set; } = QuestState.Discovered;
 
     /// <summary>
-    /// List of objectives for this quest (can be empty)
+    /// The numeric stage ID the player has reached (0 = not started/no stage set).
+    /// Mirrors the NWN journal stage system — quest definitions assign IDs like 10, 20, 30.
     /// </summary>
-    public List<string> Objectives { get; init; } = new();
+    public int CurrentStageId { get; private set; }
 
     /// <summary>
     /// When the quest was first discovered/started
@@ -110,5 +111,25 @@ public class CodexQuestEntry
                (QuestGiver?.Contains(lowerSearch, StringComparison.OrdinalIgnoreCase) ?? false) ||
                (Location?.Contains(lowerSearch, StringComparison.OrdinalIgnoreCase) ?? false) ||
                Keywords.Any(k => k.Matches(searchTerm));
+    }
+
+    /// <summary>
+    /// Advances the quest to the given stage ID.
+    /// Stage must be greater than the current stage (no going backwards).
+    /// </summary>
+    public void AdvanceToStage(int stageId)
+    {
+        if (State is QuestState.Completed or QuestState.Failed or QuestState.Abandoned)
+            throw new InvalidOperationException($"Cannot advance stage on quest in state {State}");
+
+        if (stageId <= CurrentStageId)
+            throw new InvalidOperationException(
+                $"Cannot advance to stage {stageId} — current stage is {CurrentStageId}");
+
+        CurrentStageId = stageId;
+
+        // Automatically move to InProgress if still in Discovered state
+        if (State == QuestState.Discovered)
+            State = QuestState.InProgress;
     }
 }

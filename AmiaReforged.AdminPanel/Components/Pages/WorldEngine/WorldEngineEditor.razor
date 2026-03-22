@@ -818,24 +818,87 @@
                                         <label style="font-size:0.8rem">Description</label>
                                         <textarea class="form-control form-control-sm" rows="4" @bind="_ceQuestItem.Description" placeholder="Quest description..."></textarea>
                                     </div>
-                                    <div class="form-group" style="margin-bottom:8px">
-                                        <label style="font-size:0.8rem">Objectives</label>
-                                        @for (int i = 0; i < _ceQuestItem.Objectives.Count; i++)
+
+                                    @* ── Quest Stages ── *@
+                                    <div style="margin-bottom:8px">
+                                        <label style="font-size:0.8rem;font-weight:600">Stages</label>
+                                        @if (_ceQuestItem.Stages.Count == 0)
                                         {
-                                            int idx = i;
-                                            <div style="display:flex;gap:4px;margin-bottom:4px">
-                                                <input class="form-control form-control-sm" style="flex:1"
-                                                       value="@_ceQuestItem.Objectives[idx]"
-                                                       @onchange="e => _ceQuestItem.Objectives[idx] = e.Value?.ToString() ?? string.Empty" />
-                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => _ceQuestItem.Objectives.RemoveAt(idx)">×</button>
+                                            <div style="padding:8px;color:var(--text-secondary);font-size:0.8rem;text-align:center;border:1px dashed var(--border-subtle);border-radius:4px;margin-top:4px">
+                                                No stages defined. Add a stage to begin.
                                             </div>
                                         }
-                                        <div style="display:flex;gap:4px">
-                                            <input class="form-control form-control-sm" style="flex:1" placeholder="Add objective…"
-                                                   @bind="_ceNewObjective" />
-                                            <button class="btn btn-sm btn-outline-primary" @onclick="CeAddObjective">+</button>
+                                        else
+                                        {
+                                            @foreach (QuestStageDto stage in _ceQuestItem.Stages.OrderBy(s => s.StageId))
+                                            {
+                                                int sid = stage.StageId;
+                                                bool isExpanded = _ceExpandedStageIds.Contains(sid);
+                                                <div style="border:1px solid var(--border-subtle);border-radius:4px;margin-top:4px;overflow:hidden">
+                                                    @* Stage header *@
+                                                    <div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--bg-input);cursor:pointer"
+                                                         @onclick="() => CeToggleStageExpand(sid)">
+                                                        <span style="font-size:0.75rem;font-weight:700;color:var(--accent, #c9a84c);min-width:60px">Stage @sid</span>
+                                                        @if (stage.IsCompletionStage)
+                                                        {
+                                                            <span class="badge" style="background:var(--success, #2ecc71);font-size:0.65rem;padding:1px 5px">Closes Quest</span>
+                                                        }
+                                                        <span style="flex:1;font-size:0.78rem;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                                                            @(string.IsNullOrWhiteSpace(stage.JournalText) ? "(no text)" : stage.JournalText.Length > 60 ? stage.JournalText[..60] + "…" : stage.JournalText)
+                                                        </span>
+                                                        <span style="font-size:0.7rem;color:var(--text-secondary)">@(stage.Hints.Count > 0 ? $"{stage.Hints.Count} hint(s)" : "")</span>
+                                                        <span style="font-size:0.7rem">@(isExpanded ? "▲" : "▼")</span>
+                                                        <button class="btn btn-sm btn-outline-danger" style="font-size:0.65rem;padding:0 5px;line-height:1.4"
+                                                                @onclick="() => CeRemoveStage(sid)" @onclick:stopPropagation="true">×</button>
+                                                    </div>
+                                                    @* Stage body (expanded) *@
+                                                    @if (isExpanded)
+                                                    {
+                                                        <div style="padding:8px;display:flex;flex-direction:column;gap:6px">
+                                                            <div class="form-group">
+                                                                <label style="font-size:0.75rem">Journal Text</label>
+                                                                <textarea class="form-control form-control-sm" rows="3"
+                                                                          value="@stage.JournalText"
+                                                                          @onchange="e => stage.JournalText = e.Value?.ToString() ?? string.Empty"
+                                                                          placeholder="Text shown in the player's journal at this stage…"></textarea>
+                                                            </div>
+                                                            <div class="form-check">
+                                                                <input type="checkbox" class="form-check-input" id="ceStageComplete_@sid"
+                                                                       checked="@stage.IsCompletionStage"
+                                                                       @onchange="e => stage.IsCompletionStage = (bool)(e.Value ?? false)" />
+                                                                <label class="form-check-label" for="ceStageComplete_@sid" style="font-size:0.78rem">Completion Stage (closes quest)</label>
+                                                            </div>
+                                                            <div>
+                                                                <label style="font-size:0.75rem;font-weight:600">Hints (@stage.Hints.Count)</label>
+                                                                @for (int hi = 0; hi < stage.Hints.Count; hi++)
+                                                                {
+                                                                    int hIdx = hi;
+                                                                    <div style="display:flex;gap:4px;margin-top:3px">
+                                                                        <input class="form-control form-control-sm" style="flex:1;font-size:0.78rem"
+                                                                               value="@stage.Hints[hIdx]"
+                                                                               @onchange="e => stage.Hints[hIdx] = e.Value?.ToString() ?? string.Empty" />
+                                                                        <button class="btn btn-sm btn-outline-danger" style="font-size:0.65rem;padding:0 5px"
+                                                                                @onclick="() => CeRemoveHintFromStage(sid, hIdx)">×</button>
+                                                                    </div>
+                                                                }
+                                                                <button class="btn btn-sm btn-outline-secondary" style="font-size:0.72rem;margin-top:4px"
+                                                                        @onclick="() => CeAddHintToStage(sid)">+ Hint</button>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                        }
+                                        @* Add stage row *@
+                                        <div style="display:flex;gap:4px;margin-top:6px;align-items:end">
+                                            <div style="flex:0 0 80px">
+                                                <label style="font-size:0.72rem">Stage ID</label>
+                                                <input type="number" class="form-control form-control-sm" @bind="_ceNewStageId" min="1" style="font-size:0.8rem" />
+                                            </div>
+                                            <button class="btn btn-sm btn-outline-primary" style="height:31px" @onclick="CeAddStage">+ Stage</button>
                                         </div>
                                     </div>
+
                                     <div style="display:flex;gap:8px;margin-bottom:8px">
                                         <div class="form-group" style="flex:1">
                                             <label style="font-size:0.8rem">Quest Giver</label>
@@ -849,10 +912,6 @@
                                     <div class="form-group" style="margin-bottom:8px">
                                         <label style="font-size:0.8rem">Keywords</label>
                                         <input class="form-control form-control-sm" @bind="_ceQuestItem.Keywords" placeholder="Comma-separated keywords" />
-                                    </div>
-                                    <div class="form-group" style="margin-bottom:8px">
-                                        <label style="font-size:0.8rem">Hints (JSON)</label>
-                                        <textarea class="form-control form-control-sm" rows="3" @bind="_ceQuestItem.HintsJson" placeholder='[{"text":"Speak to the old man","location":"tavern"}]'></textarea>
                                     </div>
                                     <div class="form-check" style="margin-bottom:8px">
                                         <input type="checkbox" class="form-check-input" id="ceQuestAlwaysAvailable" @bind="_ceQuestItem.IsAlwaysAvailable" />
@@ -892,29 +951,44 @@
                                         <div class="we-entity-form__field"><label>Location</label><span>@(_ceQuestItem.Location ?? "—")</span></div>
                                         <div class="we-entity-form__field"><label>Keywords</label><span>@(_ceQuestItem.Keywords ?? "—")</span></div>
                                         <div class="we-entity-form__field"><label>Always Available</label><span>@(_ceQuestItem.IsAlwaysAvailable ? "Yes" : "No")</span></div>
-                                        @if (_ceQuestItem.Objectives.Count > 0)
+                                        @if (_ceQuestItem.Stages.Count > 0)
                                         {
                                             <div style="margin-top:8px">
-                                                <label style="font-size:0.8rem;font-weight:600">Objectives</label>
-                                                <ol style="margin:4px 0;padding-left:20px;font-size:0.82rem">
-                                                    @foreach (string obj in _ceQuestItem.Objectives)
-                                                    {
-                                                        <li>@obj</li>
-                                                    }
-                                                </ol>
+                                                <label style="font-size:0.8rem;font-weight:600">Stages (@_ceQuestItem.Stages.Count)</label>
+                                                @foreach (QuestStageDto stg in _ceQuestItem.Stages.OrderBy(s => s.StageId))
+                                                {
+                                                    <div style="margin-top:6px;padding:6px 8px;border:1px solid var(--border-subtle);border-radius:4px">
+                                                        <div style="display:flex;align-items:center;gap:6px">
+                                                            <span style="font-weight:700;font-size:0.8rem;color:var(--accent, #c9a84c)">Stage @stg.StageId</span>
+                                                            @if (stg.IsCompletionStage)
+                                                            {
+                                                                <span class="badge" style="background:var(--success, #2ecc71);font-size:0.6rem;padding:1px 4px">Closes Quest</span>
+                                                            }
+                                                        </div>
+                                                        @if (!string.IsNullOrWhiteSpace(stg.JournalText))
+                                                        {
+                                                            <div style="font-size:0.8rem;white-space:pre-wrap;margin-top:3px">@stg.JournalText</div>
+                                                        }
+                                                        @if (stg.Hints.Count > 0)
+                                                        {
+                                                            <div style="margin-top:4px">
+                                                                <small style="color:var(--text-secondary);font-size:0.72rem;font-weight:600">Hints:</small>
+                                                                <ul style="margin:2px 0 0 0;padding-left:16px;font-size:0.78rem">
+                                                                    @foreach (string h in stg.Hints)
+                                                                    {
+                                                                        <li>@h</li>
+                                                                    }
+                                                                </ul>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
                                             </div>
                                         }
                                         @if (!string.IsNullOrEmpty(_ceQuestItem.Description))
                                         {
                                             <div style="margin-top:8px;padding:8px;background:var(--bg-input);border-radius:4px;font-size:0.82rem;white-space:pre-wrap;max-height:400px;overflow-y:auto">
                                                 @_ceQuestItem.Description
-                                            </div>
-                                        }
-                                        @if (!string.IsNullOrEmpty(_ceQuestItem.HintsJson))
-                                        {
-                                            <div style="margin-top:8px">
-                                                <label style="font-size:0.8rem;font-weight:600">Hints</label>
-                                                <pre style="background:var(--bg-input);padding:8px;border-radius:4px;font-size:0.75rem;max-height:200px;overflow-y:auto">@_ceQuestItem.HintsJson</pre>
                                             </div>
                                         }
                                     </div>
@@ -1577,7 +1651,8 @@
 
     // Quest edit state
     private QuestDefinitionDto _ceQuestItem = new();
-    private string _ceNewObjective = "";
+    private int _ceNewStageId = 10;
+    private readonly HashSet<int> _ceExpandedStageIds = [];
 
     // View menu
     private bool _ceShowViewMenu;
@@ -3834,7 +3909,7 @@
         _ceIsCreating = true;
         _ceSubType = subType;
         _ceLoreItem = new LoreDefinitionDto();
-        _ceQuestItem = new QuestDefinitionDto { Objectives = [] };
+        _ceQuestItem = new QuestDefinitionDto { Stages = [] };
         StateHasChanged();
 
         try
@@ -4120,7 +4195,7 @@
 
             _ceIsCreating = true;
             _ceLoreItem = new LoreDefinitionDto();
-            _ceQuestItem = new QuestDefinitionDto { Objectives = [] };
+            _ceQuestItem = new QuestDefinitionDto { Stages = [] };
             await CeLoadList();
             await LoadEntityList(reset: true);
         }
@@ -4238,16 +4313,47 @@
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    //  Codex Editor — Helpers
+    //  Codex Editor — Stage Helpers
     // ═══════════════════════════════════════════════════════════════════
 
-    private void CeAddObjective()
+    private void CeAddStage()
     {
-        if (!string.IsNullOrWhiteSpace(_ceNewObjective))
+        if (_ceQuestItem.Stages.Any(s => s.StageId == _ceNewStageId)) return;
+        _ceQuestItem.Stages.Add(new QuestStageDto
         {
-            _ceQuestItem.Objectives.Add(_ceNewObjective.Trim());
-            _ceNewObjective = "";
-        }
+            StageId = _ceNewStageId,
+            JournalText = "",
+            IsCompletionStage = false,
+            Hints = []
+        });
+        _ceExpandedStageIds.Add(_ceNewStageId);
+        // Suggest next stage id: last + 10
+        _ceNewStageId = _ceQuestItem.Stages.Max(s => s.StageId) + 10;
+    }
+
+    private void CeRemoveStage(int stageId)
+    {
+        _ceQuestItem.Stages.RemoveAll(s => s.StageId == stageId);
+        _ceExpandedStageIds.Remove(stageId);
+    }
+
+    private void CeToggleStageExpand(int stageId)
+    {
+        if (!_ceExpandedStageIds.Add(stageId))
+            _ceExpandedStageIds.Remove(stageId);
+    }
+
+    private void CeAddHintToStage(int stageId)
+    {
+        var stage = _ceQuestItem.Stages.FirstOrDefault(s => s.StageId == stageId);
+        stage?.Hints.Add("");
+    }
+
+    private void CeRemoveHintFromStage(int stageId, int hintIndex)
+    {
+        var stage = _ceQuestItem.Stages.FirstOrDefault(s => s.StageId == stageId);
+        if (stage != null && hintIndex >= 0 && hintIndex < stage.Hints.Count)
+            stage.Hints.RemoveAt(hintIndex);
     }
 
     private static string CeGetLoreCategoryName(int category) => category switch
