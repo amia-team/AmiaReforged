@@ -527,7 +527,7 @@ internal sealed class CopyMachineModel
         }
 
         // Add a delay to ensure unequip completes before we copy appearance
-        NWScript.DelayCommand(0.3f, () => CopyEquipmentAppearancePhase2(source, target, itemsToReequip));
+        NWScript.DelayCommand(0.3f, async () => await CopyEquipmentAppearancePhase2(source, target, itemsToReequip));
 
         _player.SendServerMessage("Copying equipment appearance...", ColorConstants.Cyan);
     }
@@ -535,7 +535,7 @@ internal sealed class CopyMachineModel
     /// <summary>
     /// Phase 2 of equipment copying: copy appearance of unequipped items using CopyItemAndModify, then re-equip them.
     /// </summary>
-    private void CopyEquipmentAppearancePhase2(NwCreature source, NwCreature target, Dictionary<InventorySlot, NwItem> itemsToReequip)
+    private async Task CopyEquipmentAppearancePhase2(NwCreature source, NwCreature target, Dictionary<InventorySlot, NwItem> itemsToReequip)
     {
         if (source == null || target == null || !target.IsValid)
             return;
@@ -564,11 +564,12 @@ internal sealed class CopyMachineModel
 
             _player.SendServerMessage($"[DEBUG-Armor] Source AC: {(srcAc.HasValue ? srcAc.Value.ToString() : "UNKNOWN")}, Target AC: {(tgtAc.HasValue ? tgtAc.Value.ToString() : "UNKNOWN")}", ColorConstants.Yellow);
 
-            // Copy item name and description
-            if (tgtArmor.Name != srcArmor.Name)
-                tgtArmor.Name = srcArmor.Name;
-            if (tgtArmor.Description != srcArmor.Description)
-                tgtArmor.Description = srcArmor.Description;
+            // Copy item name and description from source to target
+            // TODO: Uncomment when bugs are fixed
+            // if (tgtArmor.Name != srcArmor.Name)
+            //     tgtArmor.Name = srcArmor.Name;
+            // if (tgtArmor.Description != srcArmor.Description)
+            //     tgtArmor.Description = srcArmor.Description;
 
             bool armorCopied = false;
 
@@ -621,11 +622,12 @@ internal sealed class CopyMachineModel
         if (itemsToReequip.TryGetValue(InventorySlot.Cloak, out NwItem? tgtCloak) && srcCloak != null &&
             tgtCloak.IsValid && srcCloak.BaseItem.ItemType == tgtCloak.BaseItem.ItemType)
         {
-            // Copy item name and description
-            if (tgtCloak.Name != srcCloak.Name)
-                tgtCloak.Name = srcCloak.Name;
-            if (tgtCloak.Description != srcCloak.Description)
-                tgtCloak.Description = srcCloak.Description;
+            // Copy item name and description from source to target
+            // TODO: Uncomment when bugs are fixed
+            // if (tgtCloak.Name != srcCloak.Name)
+            //     tgtCloak.Name = srcCloak.Name;
+            // if (tgtCloak.Description != srcCloak.Description)
+            //     tgtCloak.Description = srcCloak.Description;
 
             if (CopySimpleItemAppearanceViaModify(srcCloak, tgtCloak, target))
             {
@@ -644,11 +646,12 @@ internal sealed class CopyMachineModel
         if (itemsToReequip.TryGetValue(InventorySlot.Head, out NwItem? tgtHelmet) && srcHelmet != null &&
             tgtHelmet.IsValid && srcHelmet.BaseItem.ItemType == tgtHelmet.BaseItem.ItemType)
         {
-            // Copy item name and description
-            if (tgtHelmet.Name != srcHelmet.Name)
-                tgtHelmet.Name = srcHelmet.Name;
-            if (tgtHelmet.Description != srcHelmet.Description)
-                tgtHelmet.Description = srcHelmet.Description;
+            // Copy item name and description from source to target
+            // TODO: Uncomment when bugs are fixed
+            // if (tgtHelmet.Name != srcHelmet.Name)
+            //     tgtHelmet.Name = srcHelmet.Name;
+            // if (tgtHelmet.Description != srcHelmet.Description)
+            //     tgtHelmet.Description = srcHelmet.Description;
 
             if (CopySimpleItemAppearanceViaModify(srcHelmet, tgtHelmet, target))
             {
@@ -667,16 +670,24 @@ internal sealed class CopyMachineModel
         if (itemsToReequip.TryGetValue(InventorySlot.RightHand, out NwItem? tgtMainHand) && srcMainHand != null &&
             tgtMainHand.IsValid)
         {
-            // Copy item name and description
-            if (tgtMainHand.Name != srcMainHand.Name)
-                tgtMainHand.Name = srcMainHand.Name;
-            if (tgtMainHand.Description != srcMainHand.Description)
-                tgtMainHand.Description = srcMainHand.Description;
+            // Copy item name and description from source to target
+            // TODO: Uncomment when bugs are fixed
+            // if (tgtMainHand.Name != srcMainHand.Name)
+            //     tgtMainHand.Name = srcMainHand.Name;
+            // if (tgtMainHand.Description != srcMainHand.Description)
+            //     tgtMainHand.Description = srcMainHand.Description;
 
-            string mainHandResult = CopyWeaponAppearanceAndType(srcMainHand, tgtMainHand, target, InventorySlot.RightHand);
+            // Handle weapon copying with potential base-type conversion
+            string mainHandResult = await CopyWeaponWithBaseTypeConversion(srcMainHand, tgtMainHand, target, InventorySlot.RightHand);
             slotResults[InventorySlot.RightHand] = mainHandResult;
             if (!mainHandResult.Contains("failed"))
+            {
+                // Update the reference if it changed
+                NwItem? updated = target.GetItemInSlot(InventorySlot.RightHand);
+                if (updated != null && updated.IsValid)
+                    itemsToReequip[InventorySlot.RightHand] = updated;
                 copiedCount++;
+            }
         }
 
         // Copy Off-Hand (Left Hand)
@@ -684,16 +695,24 @@ internal sealed class CopyMachineModel
         if (itemsToReequip.TryGetValue(InventorySlot.LeftHand, out NwItem? tgtOffHand) && srcOffHand != null &&
             tgtOffHand.IsValid)
         {
-            // Copy item name and description
-            if (tgtOffHand.Name != srcOffHand.Name)
-                tgtOffHand.Name = srcOffHand.Name;
-            if (tgtOffHand.Description != srcOffHand.Description)
-                tgtOffHand.Description = srcOffHand.Description;
+            // Copy item name and description from source to target
+            // TODO: Uncomment when bugs are fixed
+            // if (tgtOffHand.Name != srcOffHand.Name)
+            //     tgtOffHand.Name = srcOffHand.Name;
+            // if (tgtOffHand.Description != srcOffHand.Description)
+            //     tgtOffHand.Description = srcOffHand.Description;
 
-            string offHandResult = CopyWeaponAppearanceAndType(srcOffHand, tgtOffHand, target, InventorySlot.LeftHand);
+            // Handle weapon copying with potential base-type conversion
+            string offHandResult = await CopyWeaponWithBaseTypeConversion(srcOffHand, tgtOffHand, target, InventorySlot.LeftHand);
             slotResults[InventorySlot.LeftHand] = offHandResult;
             if (!offHandResult.Contains("failed"))
+            {
+                // Update the reference if it changed
+                NwItem? updated = target.GetItemInSlot(InventorySlot.LeftHand);
+                if (updated != null && updated.IsValid)
+                    itemsToReequip[InventorySlot.LeftHand] = updated;
                 copiedCount++;
+            }
         }
 
         // PHASE 3: Re-equip all items
@@ -888,10 +907,11 @@ internal sealed class CopyMachineModel
     }
 
     /// <summary>
-    /// Copies weapon/shield appearance using CopyItemAndModify.
+    /// Copies weapon appearance and optionally converts base item type if wield types match.
+    /// If types differ but wield types match, creates a new weapon of source type.
     /// Returns a descriptive string for debugging.
     /// </summary>
-    private string CopyWeaponAppearanceAndType(NwItem source, NwItem target, NwCreature targetCreature, InventorySlot slot)
+    private async Task<string> CopyWeaponWithBaseTypeConversion(NwItem source, NwItem target, NwCreature targetCreature, InventorySlot slot)
     {
         string slotName = slot switch
         {
@@ -904,14 +924,17 @@ internal sealed class CopyMachineModel
         _player.SendServerMessage($"[DEBUG-{slotName}] Source: {source.Name} ({source.BaseItem.ItemType})", ColorConstants.Yellow);
         _player.SendServerMessage($"[DEBUG-{slotName}] Target: {target.Name} ({target.BaseItem.ItemType})", ColorConstants.Yellow);
 
+        NwItem workingItem = target;
+
         // Check if base item types match
         if (source.BaseItem.ItemType != target.BaseItem.ItemType)
         {
-            // Check if types are wield-compatible (e.g., Greatsword ↔ Halberd, Bow ↔ Crossbow)
+            // Check if types are wield-compatible (e.g., Greatsword ↔ Halberd)
             int srcWield = GetWeaponWieldType(source.BaseItem.ItemType);
             int tgtWield = GetWeaponWieldType(target.BaseItem.ItemType);
 
-            _player.SendServerMessage($"[DEBUG-{slotName}] Base types don't match (source={srcWield}, target={tgtWield})", ColorConstants.Yellow);
+            _player.SendServerMessage($"[DEBUG-{slotName}] Base types don't match (source={source.BaseItem.ItemType}, target={target.BaseItem.ItemType})", ColorConstants.Yellow);
+            _player.SendServerMessage($"[DEBUG-{slotName}] Wield types: source={srcWield}, target={tgtWield}", ColorConstants.Yellow);
 
             if (srcWield != tgtWield || srcWield < 0)
             {
@@ -919,12 +942,26 @@ internal sealed class CopyMachineModel
                 return $"{slotName}: base item type incompatible";
             }
 
-            _player.SendServerMessage($"[DEBUG-{slotName}] Wield types compatible, proceeding with appearance copy only", ColorConstants.Yellow);
+            // Wield types match - convert target to source's base type
+            _player.SendServerMessage($"[DEBUG-{slotName}] Wield types compatible, converting base type", ColorConstants.Yellow);
+            string result = await ConvertWeaponBaseType(source, target, targetCreature, slotName, slot);
+            if (result.Contains("failed"))
+                return result;
+
+            // Get the newly created weapon
+            workingItem = targetCreature.GetItemInSlot(slot);
+            if (workingItem == null || !workingItem.IsValid)
+            {
+                _player.SendServerMessage($"[DEBUG-{slotName}] Failed to retrieve converted weapon", ColorConstants.Red);
+                return $"{slotName}: conversion failed";
+            }
+
+            _player.SendServerMessage($"[DEBUG-{slotName}] Base type conversion successful, now copying appearance", ColorConstants.Yellow);
         }
 
         // Now copy appearance using CopyItemAndModify
         bool isSimple = source.BaseItem.ModelType == BaseItemModelType.Simple;
-        NwItem currentItem = target;
+        NwItem currentItem = workingItem;
 
         if (isSimple)
         {
@@ -1007,14 +1044,100 @@ internal sealed class CopyMachineModel
         }
 
         // Update reference and copy properties/variables
-        if (!currentItem.Equals(target))
+        if (!currentItem.Equals(workingItem))
         {
             _player.SendServerMessage($"[DEBUG-{slotName}] Item reference changed, copying properties/variables", ColorConstants.Yellow);
             CopyItemPropertiesAndVariables(source, currentItem);
-            target = currentItem;
         }
 
         return $"{slotName}: copied";
+    }
+
+    /// <summary>
+    /// Converts a weapon's base item type to match source when wield types are compatible.
+    /// Creates a new weapon blueprint, copies properties, unequips old, destroys old, equips new.
+    /// </summary>
+    private async Task<string> ConvertWeaponBaseType(NwItem source, NwItem target, NwCreature targetCreature, string slotName, InventorySlot slot)
+    {
+        string sourceType = source.BaseItem.ItemType.ToString();
+        string targetType = target.BaseItem.ItemType.ToString();
+
+        _player.SendServerMessage($"[DEBUG-{slotName}] Converting from {targetType} to {sourceType}", ColorConstants.Yellow);
+
+        // Get the blueprint resref for the source weapon type
+        string weaponResref = GetWeaponResref(source.BaseItem.ItemType);
+        if (string.IsNullOrEmpty(weaponResref))
+        {
+            _player.SendServerMessage($"[DEBUG-{slotName}] No blueprint resref found for {sourceType}", ColorConstants.Red);
+            return $"{slotName}: conversion failed (no blueprint)";
+        }
+
+        _player.SendServerMessage($"[DEBUG-{slotName}] Creating weapon with resref: {weaponResref}", ColorConstants.Yellow);
+
+        // Create new weapon asynchronously
+        NwItem? newWeapon = await NwItem.Create(weaponResref, targetCreature, 1, "");
+        if (newWeapon == null || !newWeapon.IsValid)
+        {
+            _player.SendServerMessage($"[DEBUG-{slotName}] Failed to create new weapon", ColorConstants.Red);
+            return $"{slotName}: conversion failed (create)";
+        }
+
+        _player.SendServerMessage($"[DEBUG-{slotName}] New weapon created, copying properties/variables", ColorConstants.Yellow);
+
+        // Copy name and description from target (which came from source)
+        // TODO: Uncomment when bugs are fixed
+        // newWeapon.Name = target.Name;
+        // newWeapon.Description = target.Description;
+
+        // Copy all properties from source
+        int propsCopied = 0;
+        foreach (ItemProperty prop in source.ItemProperties)
+        {
+            newWeapon.AddItemProperty(prop, EffectDuration.Permanent);
+            propsCopied++;
+        }
+
+        // Copy all variables from source
+        int varsCopied = 0;
+        foreach (ObjectVariable var in source.LocalVariables)
+        {
+            switch (var)
+            {
+                case LocalVariableInt li:
+                    newWeapon.GetObjectVariable<LocalVariableInt>(li.Name).Value = li.Value;
+                    varsCopied++;
+                    break;
+                case LocalVariableFloat lf:
+                    newWeapon.GetObjectVariable<LocalVariableFloat>(lf.Name).Value = lf.Value;
+                    varsCopied++;
+                    break;
+                case LocalVariableString ls:
+                    newWeapon.GetObjectVariable<LocalVariableString>(ls.Name).Value = ls.Value ?? string.Empty;
+                    varsCopied++;
+                    break;
+                case LocalVariableLocation lloc:
+                    newWeapon.GetObjectVariable<LocalVariableLocation>(lloc.Name).Value = lloc.Value;
+                    varsCopied++;
+                    break;
+                case LocalVariableObject<NwObject> lo:
+                    newWeapon.GetObjectVariable<LocalVariableObject<NwObject>>(lo.Name).Value = lo.Value;
+                    varsCopied++;
+                    break;
+            }
+        }
+
+        _player.SendServerMessage($"[DEBUG-{slotName}] Copied {propsCopied} properties, {varsCopied} variables", ColorConstants.Yellow);
+
+        // Unequip and destroy the old weapon
+        targetCreature.RunUnequip(target);
+        target.Destroy();
+
+        _player.SendServerMessage($"[DEBUG-{slotName}] Old weapon unequipped and destroyed, equipping new weapon", ColorConstants.Yellow);
+
+        // Equip the new weapon
+        targetCreature.RunEquip(newWeapon, slot);
+
+        return "conversion_success";
     }
 
     /// <summary>
@@ -1112,6 +1235,71 @@ internal sealed class CopyMachineModel
 
         // Unknown model
         return null;
+    }
+
+    /// <summary>
+    /// Gets the weapon blueprint resref for a given base item type.
+    /// Used for safe base-type conversion when wield types are compatible.
+    /// Ported from CustomSummon.WeaponChangePresenter.
+    /// </summary>
+    private string GetWeaponResref(BaseItemType weaponType)
+    {
+        return weaponType switch
+        {
+            // One-handed weapons
+            BaseItemType.Longsword => "js_bla_wels",
+            BaseItemType.Shortsword => "js_bla_wess",
+            BaseItemType.Rapier => "js_bla_wera",
+            BaseItemType.Scimitar => "js_bla_wesc",
+            BaseItemType.Handaxe => "js_bla_weha",
+            BaseItemType.Battleaxe => "js_bla_weba",
+            BaseItemType.LightHammer => "js_bla_welh",
+            BaseItemType.LightMace => "js_bla_wema",
+            BaseItemType.Morningstar => "js_bla_wemo",
+            BaseItemType.Club => "js_bla_wecl",
+            BaseItemType.Dagger => "js_bla_weda",
+            BaseItemType.Kama => "js_bla_wekm",
+            BaseItemType.Kukri => "js_bla_weku",
+            BaseItemType.Sickle => "js_bla_wesi",
+            BaseItemType.Warhammer => "js_bla_wewa",
+            BaseItemType.LightFlail => "js_bla_welf",
+            BaseItemType.Whip => "js_bla_wewh",
+            BaseItemType.Trident => "js_bla_wetr",
+            BaseItemType.DwarvenWaraxe => "js_bla_wedw",
+            BaseItemType.Bastardsword => "js_bla_webs",
+            BaseItemType.Katana => "js_bla_weka",
+            BaseItemType.MagicStaff => "js_bla_wems",
+
+            // Two-handed weapons
+            BaseItemType.Greatsword => "js_bla_wegs",
+            BaseItemType.Greataxe => "js_bla_wega",
+            BaseItemType.Halberd => "js_bla_wehb",
+            BaseItemType.HeavyFlail => "js_bla_wehf",
+            BaseItemType.Scythe => "js_bla_wesy",
+            BaseItemType.Quarterstaff => "js_bla_wequ",
+            BaseItemType.ShortSpear => "js_bla_wesp",
+
+            // Bows
+            BaseItemType.Longbow => "js_arch_bow",
+            BaseItemType.Shortbow => "js_arch_sbow",
+
+            // Crossbows
+            BaseItemType.LightCrossbow => "js_arch_lbow",
+            BaseItemType.HeavyCrossbow => "js_arch_cbow",
+
+            // Double-sided
+            BaseItemType.Doubleaxe => "js_bla_wedb",
+            BaseItemType.TwoBladedSword => "js_bla_we2b",
+            BaseItemType.DireMace => "js_bla_wedm",
+
+            // Thrown
+            BaseItemType.Dart => "js_arch_dart",
+            BaseItemType.Sling => "js_arch_sling",
+            BaseItemType.Shuriken => "js_arch_shrk",
+            BaseItemType.ThrowingAxe => "js_arch_thax",
+
+            _ => string.Empty
+        };
     }
 
     /// <summary>
