@@ -35,8 +35,7 @@ public class CodexJournalService
 
     private ScriptHandleResult HandleJournalOpen(CallInfo arg)
     {
-        if (NWScript.StringToObject(EventsPlugin.GetEventData("CREATURE")).ToNwObject<NwCreature>() is not NwCreature
-                creature || !creature.IsPlayerControlled(out NwPlayer? player))
+        if (NWScript.OBJECT_SELF.ToNwObject<NwCreature>() is not { } creature || !creature.IsPlayerControlled(out NwPlayer? player))
         {
             return ScriptHandleResult.Handled;
         }
@@ -59,11 +58,11 @@ public class CodexJournalService
 
     private ScriptHandleResult HandleJournalClose(CallInfo arg)
     {
-        if (NWScript.StringToObject(EventsPlugin.GetEventData("CREATURE")).ToNwObject<NwCreature>() is not NwCreature
-                creature || !creature.IsPlayerControlled(out NwPlayer? player))
+        if (NWScript.OBJECT_SELF.ToNwObject<NwCreature>() is not { } creature || !creature.IsPlayerControlled(out NwPlayer? player))
         {
             return ScriptHandleResult.Handled;
         }
+
 
         NwItem? pcKey = creature.Inventory.Items.FirstOrDefault(item => item.ResRef == "ds_pckey");
         if (pcKey is null)
