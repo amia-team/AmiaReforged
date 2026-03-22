@@ -122,6 +122,7 @@ public class PwEngineContext : DbContext
     public DbSet<PersistedCodexNote> CodexNotes { get; set; } = null!;
     public DbSet<PersistedLoreDefinition> CodexLoreDefinitions { get; set; } = null!;
     public DbSet<PersistedLoreUnlock> CodexLoreUnlocks { get; set; } = null!;
+    public DbSet<PersistedQuestDefinition> CodexQuestDefinitions { get; set; } = null!;
 
     // === Trait Definitions ===
 
