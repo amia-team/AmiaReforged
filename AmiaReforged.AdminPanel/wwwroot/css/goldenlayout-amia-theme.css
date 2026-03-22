@@ -823,6 +823,7 @@
 /* Toolbar */
 .we-ce-toolbar {
     display: flex;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 10px;
     padding: 6px 14px;
@@ -831,6 +832,9 @@
     flex-shrink: 0;
     height: 42px;
     min-height: 42px;
+    max-height: 42px;
+    overflow: hidden;
+    width: 100%;
 }
 
 .we-ce-toolbar__title {

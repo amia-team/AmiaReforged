@@ -1585,7 +1585,7 @@
     private static readonly Dictionary<string, string> _cePanelTitles = new()
     {
         ["ce-list"] = "Entity List",
-        ["ce-form"] = "Editor",
+        ["ce-form"] = "Data Editor Panel",
         ["ce-preview"] = "Preview",
     };
 
@@ -3969,23 +3969,31 @@
                     new
                     {
                         type = "component",
-                        componentType = "ce-list",
-                        title = "Entity List",
-                        size = "20%",
-                    },
-                    new
-                    {
-                        type = "component",
                         componentType = "ce-form",
-                        title = "Editor",
-                        size = "50%",
+                        title = "Data Editor Panel",
+                        size = "60%",
                     },
                     new
                     {
-                        type = "component",
-                        componentType = "ce-preview",
-                        title = "Preview",
-                        size = "30%",
+                        type = "column",
+                        size = "40%",
+                        content = new object[]
+                        {
+                            new
+                            {
+                                type = "component",
+                                componentType = "ce-preview",
+                                title = "Preview",
+                                size = "50%",
+                            },
+                            new
+                            {
+                                type = "component",
+                                componentType = "ce-list",
+                                title = "Entity List",
+                                size = "50%",
+                            },
+                        },
                     },
                 },
             },
