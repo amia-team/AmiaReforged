@@ -205,6 +205,22 @@ public class LoreDefinitionDto
     public DateTime CreatedUtc { get; set; }
 }
 
+// ==================== Codex Quest DTOs ====================
+
+public class QuestDefinitionDto
+{
+    public string QuestId { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public List<string> Objectives { get; set; } = [];
+    public string? QuestGiver { get; set; }
+    public string? Location { get; set; }
+    public string? Keywords { get; set; }
+    public string? HintsJson { get; set; }
+    public bool IsAlwaysAvailable { get; set; }
+    public DateTime CreatedUtc { get; set; }
+}
+
 // ==================== Trait Definition DTOs ====================
 
 public class TraitDefinitionDto

@@ -13,6 +13,7 @@
 @inject RegionApiService RegionApi
 @inject AreaGraphApiService AreaGraphApi
 @inject LoreApiService LoreApi
+@inject QuestApiService QuestApi
 @inject TraitApiService TraitApi
 @inject GlyphApiService GlyphApi
 @inject IndustryApiService IndustryApi
@@ -85,6 +86,10 @@
                         @if (EditorState.ActiveEntityType == WorldEngineEntityType.Interactions && EditorState.SelectedEndpointId != null)
                         {
                             <button class="btn btn-sm btn-primary" @onclick="OpenNewInteractionEditor" title="Create new interaction">+ New</button>
+                        }
+                        @if (EditorState.ActiveEntityType == WorldEngineEntityType.Codex && EditorState.SelectedEndpointId != null)
+                        {
+                            <button class="btn btn-sm btn-primary" @onclick="() => OpenNewCodexEditor(CodexSubType.Lore)" title="Create new codex entry">+ New</button>
                         }
                         <button class="btn btn-sm btn-link" @onclick="() => _listPanelOpen = false" title="Close">
                             <span class="bi bi-x"></span>
@@ -602,6 +607,306 @@
                         </div>
                     </div>
                     </div> @* end we-ie-layout-area *@
+                </div>
+            }
+            else if (_codexEditorOpen)
+            {
+                @* ══════ Codex Editor GL Mode ══════ *@
+                <div class="we-editor__codex-editor-wrap">
+                    @* ── Toolbar ── *@
+                    <div class="we-ce-toolbar">
+                        <h5 class="we-ce-toolbar__title">
+                            @if (_ceIsCreating)
+                            {
+                                @($"New {_ceSubType}")
+                            }
+                            else
+                            {
+                                @(_ceSubType == CodexSubType.Lore ? _ceLoreItem.Title : _ceQuestItem.Title)
+                            }
+                        </h5>
+                        <span class="badge" style="background:var(--bg-input);color:var(--text-secondary);font-size:0.75rem;font-weight:normal">
+                            @(_ceSubType == CodexSubType.Lore ? "Lore" : "Quest")
+                        </span>
+                        <div class="we-ce-toolbar__divider"></div>
+                        @* View menu *@
+                        <div class="dropdown" style="position:relative">
+                            <button class="btn btn-sm btn-outline-secondary" style="font-size:0.72rem;padding:2px 8px" @onclick="CeToggleViewMenu">View ▾</button>
+                            @if (_ceShowViewMenu)
+                            {
+                                <div style="position:absolute;top:100%;right:0;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:4px;padding:4px 0;z-index:1060;min-width:160px;box-shadow:0 4px 12px rgba(0,0,0,0.4)">
+                                    @foreach (KeyValuePair<string, string> kv in _cePanelTitles)
+                                    {
+                                        bool isOpen = _ceOpenPanels.Contains(kv.Key);
+                                        <button style="display:block;width:100%;text-align:left;background:none;border:none;padding:4px 12px;font-size:0.8rem;color:var(--text-primary);cursor:pointer"
+                                                @onclick="() => CeTogglePanel(kv.Key)" disabled="@isOpen">
+                                            @(isOpen ? "✓ " : "  ")@kv.Value
+                                        </button>
+                                    }
+                                    <div style="border-top:1px solid var(--border-subtle);margin:4px 0"></div>
+                                    <button style="display:block;width:100%;text-align:left;background:none;border:none;padding:4px 12px;font-size:0.8rem;color:var(--text-secondary);cursor:pointer"
+                                            @onclick="CeResetLayout">
+                                        Reset Layout
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                        <div style="flex:1"></div>
+                        @if (!string.IsNullOrEmpty(_ceError))
+                        {
+                            <span style="color:var(--danger);font-size:0.8rem;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="@_ceError">⚠ @_ceError</span>
+                        }
+                        @if (!string.IsNullOrEmpty(_ceSuccess))
+                        {
+                            <span style="color:var(--success, #2ecc71);font-size:0.8rem">✓ @_ceSuccess</span>
+                        }
+                        <button class="btn btn-sm btn-secondary" @onclick="CeCancel">Cancel</button>
+                        <button class="btn btn-sm btn-primary" @onclick="CeSave" disabled="@_ceIsSaving">
+                            @(_ceIsSaving ? "Saving…" : "Save")
+                        </button>
+                    </div>
+
+                    @if (_codexEditorLoading)
+                    {
+                        <div class="we-ce-loading-overlay">
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                            <span>Loading codex editor…</span>
+                        </div>
+                    }
+                    else if (_codexEditorError != null)
+                    {
+                        <div class="we-editor__tab-error">
+                            <span class="bi bi-exclamation-triangle me-1"></span> @_codexEditorError
+                        </div>
+                    }
+
+                    @* ── Layout area: position:relative wrapper for GL + panels ── *@
+                    <div class="we-ce-layout-area">
+                        @* GL container *@
+                        <div id="we-codex-gl-container" class="we-ce-gl-host"></div>
+
+                        @* ── Pre-rendered Panel: Entity List ── *@
+                        <div id="bl-panel-ce-list" class="we-editor__gl-panel" style="display:none">
+                            <div style="background:var(--bg-card);height:100%;display:flex;flex-direction:column">
+                                <div style="padding:8px 12px;border-bottom:1px solid var(--border-subtle);flex-shrink:0;display:flex;gap:6px;align-items:center">
+                                    <select class="form-control form-control-sm" style="font-size:0.8rem;flex:0 0 auto;width:auto"
+                                            @bind="_ceSubType" @bind:after="CeOnSubTypeChanged">
+                                        <option value="@CodexSubType.Lore">Lore</option>
+                                        <option value="@CodexSubType.Quest">Quests</option>
+                                    </select>
+                                    <input type="text" class="form-control form-control-sm" placeholder="Search..."
+                                           @bind="_ceListSearch" @bind:event="oninput" @bind:after="CeSearchChanged"
+                                           style="font-size:0.8rem;flex:1" />
+                                </div>
+                                <div style="flex:1;overflow-y:auto">
+                                    @if (_ceListLoading)
+                                    {
+                                        <div style="padding:12px;text-align:center;color:var(--text-secondary)">
+                                            <span class="spinner-border spinner-border-sm me-1"></span> Loading…
+                                        </div>
+                                    }
+                                    else if (_ceListItems.Count == 0)
+                                    {
+                                        <div style="padding:12px;color:var(--text-secondary);font-size:0.8rem;text-align:center">
+                                            No entries found.
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        @foreach (CeListEntry entry in _ceListItems)
+                                        {
+                                            <div style="padding:6px 12px;border-bottom:1px solid var(--border-subtle);cursor:pointer;font-size:0.82rem"
+                                                 class="@(entry.IsSelected ? "bg-primary bg-opacity-25" : "")"
+                                                 @onclick="() => CeSelectListItem(entry)">
+                                                <span style="color:var(--text-primary)">@entry.Title</span>
+                                                @if (!string.IsNullOrEmpty(entry.SubLabel))
+                                                {
+                                                    <br/><small style="color:var(--text-secondary)">@entry.SubLabel</small>
+                                                }
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        @* ── Pre-rendered Panel: Form / Editor ── *@
+                        <div id="bl-panel-ce-form" class="we-editor__gl-panel" style="display:none">
+                            <div style="background:var(--bg-card);padding:12px;min-height:100%;overflow-y:auto">
+                                @if (_ceSubType == CodexSubType.Lore)
+                                {
+                                    @* Lore form *@
+                                    <h5 style="margin:0 0 10px 0;font-size:0.9rem">Lore Entry</h5>
+
+                                    <div class="form-group" style="margin-bottom:8px">
+                                        <label style="font-size:0.8rem">Lore ID</label>
+                                        <input class="form-control form-control-sm" @bind="_ceLoreItem.LoreId" disabled="@(!_ceIsCreating)" placeholder="e.g. lore_ancient_ruins" />
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:8px">
+                                        <label style="font-size:0.8rem">Title</label>
+                                        <input class="form-control form-control-sm" @bind="_ceLoreItem.Title" placeholder="e.g. The Ancient Ruins" />
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:8px">
+                                        <label style="font-size:0.8rem">Content</label>
+                                        <textarea class="form-control form-control-sm" rows="8" @bind="_ceLoreItem.Content" placeholder="Lore content..."></textarea>
+                                    </div>
+                                    <div style="display:flex;gap:8px;margin-bottom:8px">
+                                        <div class="form-group" style="flex:1">
+                                            <label style="font-size:0.8rem">Category</label>
+                                            <select class="form-control form-control-sm" @bind="_ceLoreItem.Category">
+                                                <option value="0">General</option>
+                                                <option value="1">History</option>
+                                                <option value="2">Geography</option>
+                                                <option value="3">Religion</option>
+                                                <option value="4">Arcana</option>
+                                                <option value="5">Nature</option>
+                                                <option value="6">Faction</option>
+                                                <option value="7">Character</option>
+                                                <option value="8">Item</option>
+                                                <option value="9">Quest</option>
+                                                <option value="10">Miscellaneous</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group" style="flex:1">
+                                            <label style="font-size:0.8rem">Tier</label>
+                                            <select class="form-control form-control-sm" @bind="_ceLoreItem.Tier">
+                                                <option value="0">Common</option>
+                                                <option value="1">Uncommon</option>
+                                                <option value="2">Rare</option>
+                                                <option value="3">Legendary</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:8px">
+                                        <label style="font-size:0.8rem">Keywords</label>
+                                        <input class="form-control form-control-sm" @bind="_ceLoreItem.Keywords" placeholder="Comma-separated keywords" />
+                                    </div>
+                                    <div class="form-check" style="margin-bottom:8px">
+                                        <input type="checkbox" class="form-check-input" id="ceLoreAlwaysAvailable" @bind="_ceLoreItem.IsAlwaysAvailable" />
+                                        <label class="form-check-label" for="ceLoreAlwaysAvailable" style="font-size:0.8rem">Always Available</label>
+                                    </div>
+                                }
+                                else
+                                {
+                                    @* Quest form *@
+                                    <h5 style="margin:0 0 10px 0;font-size:0.9rem">Quest Entry</h5>
+
+                                    <div class="form-group" style="margin-bottom:8px">
+                                        <label style="font-size:0.8rem">Quest ID</label>
+                                        <input class="form-control form-control-sm" @bind="_ceQuestItem.QuestId" disabled="@(!_ceIsCreating)" placeholder="e.g. quest_lost_artifact" />
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:8px">
+                                        <label style="font-size:0.8rem">Title</label>
+                                        <input class="form-control form-control-sm" @bind="_ceQuestItem.Title" placeholder="e.g. The Lost Artifact" />
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:8px">
+                                        <label style="font-size:0.8rem">Description</label>
+                                        <textarea class="form-control form-control-sm" rows="4" @bind="_ceQuestItem.Description" placeholder="Quest description..."></textarea>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:8px">
+                                        <label style="font-size:0.8rem">Objectives</label>
+                                        @for (int i = 0; i < _ceQuestItem.Objectives.Count; i++)
+                                        {
+                                            int idx = i;
+                                            <div style="display:flex;gap:4px;margin-bottom:4px">
+                                                <input class="form-control form-control-sm" style="flex:1"
+                                                       value="@_ceQuestItem.Objectives[idx]"
+                                                       @onchange="e => _ceQuestItem.Objectives[idx] = e.Value?.ToString() ?? string.Empty" />
+                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => _ceQuestItem.Objectives.RemoveAt(idx)">×</button>
+                                            </div>
+                                        }
+                                        <div style="display:flex;gap:4px">
+                                            <input class="form-control form-control-sm" style="flex:1" placeholder="Add objective…"
+                                                   @bind="_ceNewObjective" />
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="CeAddObjective">+</button>
+                                        </div>
+                                    </div>
+                                    <div style="display:flex;gap:8px;margin-bottom:8px">
+                                        <div class="form-group" style="flex:1">
+                                            <label style="font-size:0.8rem">Quest Giver</label>
+                                            <input class="form-control form-control-sm" @bind="_ceQuestItem.QuestGiver" placeholder="Optional NPC name" />
+                                        </div>
+                                        <div class="form-group" style="flex:1">
+                                            <label style="font-size:0.8rem">Location</label>
+                                            <input class="form-control form-control-sm" @bind="_ceQuestItem.Location" placeholder="Optional location" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:8px">
+                                        <label style="font-size:0.8rem">Keywords</label>
+                                        <input class="form-control form-control-sm" @bind="_ceQuestItem.Keywords" placeholder="Comma-separated keywords" />
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:8px">
+                                        <label style="font-size:0.8rem">Hints (JSON)</label>
+                                        <textarea class="form-control form-control-sm" rows="3" @bind="_ceQuestItem.HintsJson" placeholder='[{"text":"Speak to the old man","location":"tavern"}]'></textarea>
+                                    </div>
+                                    <div class="form-check" style="margin-bottom:8px">
+                                        <input type="checkbox" class="form-check-input" id="ceQuestAlwaysAvailable" @bind="_ceQuestItem.IsAlwaysAvailable" />
+                                        <label class="form-check-label" for="ceQuestAlwaysAvailable" style="font-size:0.8rem">Always Available</label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        @* ── Pre-rendered Panel: Preview ── *@
+                        <div id="bl-panel-ce-preview" class="we-editor__gl-panel" style="display:none">
+                            <div style="background:var(--bg-card);padding:12px;min-height:100%;overflow-y:auto">
+                                <h5 style="margin:0 0 10px 0;font-size:0.9rem">Preview</h5>
+                                @if (_ceSubType == CodexSubType.Lore)
+                                {
+                                    <div class="we-entity-form">
+                                        <div class="we-entity-form__field"><label>Lore ID</label><span>@_ceLoreItem.LoreId</span></div>
+                                        <div class="we-entity-form__field"><label>Title</label><span>@_ceLoreItem.Title</span></div>
+                                        <div class="we-entity-form__field"><label>Category</label><span>@CeGetLoreCategoryName(_ceLoreItem.Category)</span></div>
+                                        <div class="we-entity-form__field"><label>Tier</label><span>@CeGetLoreTierName(_ceLoreItem.Tier)</span></div>
+                                        <div class="we-entity-form__field"><label>Keywords</label><span>@(_ceLoreItem.Keywords ?? "—")</span></div>
+                                        <div class="we-entity-form__field"><label>Always Available</label><span>@(_ceLoreItem.IsAlwaysAvailable ? "Yes" : "No")</span></div>
+                                        @if (!string.IsNullOrEmpty(_ceLoreItem.Content))
+                                        {
+                                            <div style="margin-top:8px;padding:8px;background:var(--bg-input);border-radius:4px;font-size:0.82rem;white-space:pre-wrap;max-height:400px;overflow-y:auto">
+                                                @_ceLoreItem.Content
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="we-entity-form">
+                                        <div class="we-entity-form__field"><label>Quest ID</label><span>@_ceQuestItem.QuestId</span></div>
+                                        <div class="we-entity-form__field"><label>Title</label><span>@_ceQuestItem.Title</span></div>
+                                        <div class="we-entity-form__field"><label>Quest Giver</label><span>@(_ceQuestItem.QuestGiver ?? "—")</span></div>
+                                        <div class="we-entity-form__field"><label>Location</label><span>@(_ceQuestItem.Location ?? "—")</span></div>
+                                        <div class="we-entity-form__field"><label>Keywords</label><span>@(_ceQuestItem.Keywords ?? "—")</span></div>
+                                        <div class="we-entity-form__field"><label>Always Available</label><span>@(_ceQuestItem.IsAlwaysAvailable ? "Yes" : "No")</span></div>
+                                        @if (_ceQuestItem.Objectives.Count > 0)
+                                        {
+                                            <div style="margin-top:8px">
+                                                <label style="font-size:0.8rem;font-weight:600">Objectives</label>
+                                                <ol style="margin:4px 0;padding-left:20px;font-size:0.82rem">
+                                                    @foreach (string obj in _ceQuestItem.Objectives)
+                                                    {
+                                                        <li>@obj</li>
+                                                    }
+                                                </ol>
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrEmpty(_ceQuestItem.Description))
+                                        {
+                                            <div style="margin-top:8px;padding:8px;background:var(--bg-input);border-radius:4px;font-size:0.82rem;white-space:pre-wrap;max-height:400px;overflow-y:auto">
+                                                @_ceQuestItem.Description
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrEmpty(_ceQuestItem.HintsJson))
+                                        {
+                                            <div style="margin-top:8px">
+                                                <label style="font-size:0.8rem;font-weight:600">Hints</label>
+                                                <pre style="background:var(--bg-input);padding:8px;border-radius:4px;font-size:0.75rem;max-height:200px;overflow-y:auto">@_ceQuestItem.HintsJson</pre>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div> @* end we-ce-layout-area *@
                 </div>
             }
             else if (_regionGraphOpen)
@@ -1235,6 +1540,58 @@
         public string CurrentValue { get; set; } = "";
     }
 
+    // ═══════════════════════════════════════════════════════════════════
+    //  Codex Editor state
+    // ═══════════════════════════════════════════════════════════════════
+    private const string CodexGlInstanceId = "we-codex-editor";
+    private bool _codexEditorOpen;
+    private bool _codexEditorLoading;
+    private string? _codexEditorError;
+
+    // What sub-type is being edited
+    private enum CodexSubType { Lore, Quest }
+    private CodexSubType _ceSubType = CodexSubType.Lore;
+    private bool _ceIsCreating;
+    private bool _ceIsSaving;
+    private string? _ceError;
+    private string? _ceSuccess;
+
+    // Lore edit state
+    private LoreDefinitionDto _ceLoreItem = new();
+
+    // Quest edit state
+    private QuestDefinitionDto _ceQuestItem = new();
+    private string _ceNewObjective = "";
+
+    // View menu
+    private bool _ceShowViewMenu;
+    private readonly HashSet<string> _ceOpenPanels = ["ce-list", "ce-form", "ce-preview"];
+    private static readonly Dictionary<string, string> _cePanelTitles = new()
+    {
+        ["ce-list"] = "Entity List",
+        ["ce-form"] = "Editor",
+        ["ce-preview"] = "Preview",
+    };
+
+    // GL bridge refs (reuse bridge module from IE if available, otherwise load our own)
+    private IJSObjectReference? _ceBridgeModule;
+    private DotNetObjectReference<WorldEngineEditor>? _ceDotNetRef;
+
+    // Inner list state for the Codex entity list panel
+    private string _ceListSearch = "";
+    private bool _ceListLoading;
+    private List<CeListEntry> _ceListItems = [];
+    private CancellationTokenSource? _ceSearchCts;
+
+    private sealed class CeListEntry
+    {
+        public string Id { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string? SubLabel { get; set; }
+        public CodexSubType SubType { get; set; }
+        public bool IsSelected { get; set; }
+    }
+
     protected override async Task OnInitializedAsync()
     {
         _endpoints = (await EndpointService.GetEnabledEndpointsAsync()).ToList();
@@ -1265,6 +1622,7 @@
         RegionApi.SelectEndpoint(eid);
         AreaGraphApi.SelectEndpoint(eid);
         LoreApi.SelectEndpoint(eid);
+        QuestApi.SelectEndpoint(eid);
         TraitApi.SelectEndpoint(eid);
         GlyphApi.SelectEndpoint(eid);
         IndustryApi.SelectEndpoint(eid);
@@ -1296,6 +1654,12 @@
         if (_interactionEditorOpen && entityType != WorldEngineEntityType.Interactions)
         {
             await CloseInteractionEditor();
+        }
+
+        // Close codex editor if switching away from Codex
+        if (_codexEditorOpen && entityType != WorldEngineEntityType.Codex)
+        {
+            await CloseCodexEditor();
         }
 
         if (EditorState.ActiveEntityType == entityType)
@@ -1380,7 +1744,7 @@
                 WorldEngineEntityType.ResourceNodes => await LoadResourceNodes(search),
                 WorldEngineEntityType.Regions => await LoadRegions(search),
                 WorldEngineEntityType.AreaGraph => await LoadAreaGraph(),
-                WorldEngineEntityType.Lore => await LoadLore(search),
+                WorldEngineEntityType.Codex => await LoadCodex(search),
                 WorldEngineEntityType.Traits => await LoadTraits(search),
                 WorldEngineEntityType.Glyphs => await LoadGlyphs(),
                 WorldEngineEntityType.Industries => await LoadIndustries(search),
@@ -1443,11 +1807,22 @@
         return all.Select(n => new EntityListItem(n.ResRef, n.Name ?? n.ResRef, WorldEngineEntityType.AreaGraph)).ToList();
     }
 
-    private async Task<List<EntityListItem>> LoadLore(string? search)
+    private async Task<List<EntityListItem>> LoadCodex(string? search)
     {
-        PagedResult<LoreDefinitionDto> result = await LoreApi.GetAllAsync(search, page: _listPage, pageSize: ListPageSize);
-        _listHasMore = _listPage * ListPageSize < result.TotalCount;
-        return result.Items.Select(i => new EntityListItem(i.LoreId, i.Title, WorldEngineEntityType.Lore)).ToList();
+        // Load both lore and quest entries, combine into one list
+        Task<PagedResult<LoreDefinitionDto>> loreTask = LoreApi.GetAllAsync(search, page: _listPage, pageSize: ListPageSize);
+        Task<PagedResult<QuestDefinitionDto>> questTask = QuestApi.GetAllAsync(search, page: _listPage, pageSize: ListPageSize);
+        await Task.WhenAll(loreTask, questTask);
+
+        PagedResult<LoreDefinitionDto> loreResult = await loreTask;
+        PagedResult<QuestDefinitionDto> questResult = await questTask;
+
+        _listHasMore = (_listPage * ListPageSize < loreResult.TotalCount) || (_listPage * ListPageSize < questResult.TotalCount);
+
+        List<EntityListItem> items = [];
+        items.AddRange(loreResult.Items.Select(i => new EntityListItem(i.LoreId, $"[Lore] {i.Title}", WorldEngineEntityType.Codex)));
+        items.AddRange(questResult.Items.Select(i => new EntityListItem(i.QuestId, $"[Quest] {i.Title}", WorldEngineEntityType.Codex)));
+        return items;
     }
 
     private async Task<List<EntityListItem>> LoadTraits(string? search)
@@ -1504,6 +1879,12 @@
         {
             await OpenInteractionEditor(item.Key);
         }
+        else if (item.EntityType == WorldEngineEntityType.Codex)
+        {
+            // Determine sub-type from display name prefix
+            CodexSubType subType = item.DisplayName.StartsWith("[Quest]") ? CodexSubType.Quest : CodexSubType.Lore;
+            await OpenCodexEditor(item.Key, subType);
+        }
         else
         {
             EditorTab tab = EditorState.OpenTab(item.EntityType, item.DisplayName, item.Key);
@@ -1543,7 +1924,7 @@
                 WorldEngineEntityType.Items => await ItemApi.GetByTagAsync(tab.EntityKey),
                 WorldEngineEntityType.ResourceNodes => await ResourceNodeApi.GetByTagAsync(tab.EntityKey),
                 WorldEngineEntityType.Regions => await RegionApi.GetByTagAsync(tab.EntityKey),
-                WorldEngineEntityType.Lore => await LoreApi.GetByIdAsync(tab.EntityKey),
+                WorldEngineEntityType.Codex => null, // Codex items open in the full Codex editor
                 WorldEngineEntityType.Traits => await TraitApi.GetByTagAsync(tab.EntityKey),
                 WorldEngineEntityType.Glyphs => await GlyphApi.GetDefinitionAsync(Guid.Parse(tab.EntityKey)),
                 WorldEngineEntityType.Industries => await IndustryApi.GetByTagAsync(tab.EntityKey),
@@ -1595,9 +1976,6 @@
                 break;
             case WorldEngineEntityType.Regions when data is RegionDefinitionDto region:
                 RenderRegionEditor(builder, region);
-                break;
-            case WorldEngineEntityType.Lore when data is LoreDefinitionDto lore:
-                RenderLoreEditor(builder, lore);
                 break;
             case WorldEngineEntityType.Traits when data is TraitDefinitionDto trait:
                 RenderTraitEditor(builder, trait);
@@ -1664,27 +2042,6 @@
         {
             AddField(b, ref s, "Default Chaos", $"D:{dto.DefaultChaos.Danger} C:{dto.DefaultChaos.Corruption} N:{dto.DefaultChaos.Density} M:{dto.DefaultChaos.Mutation}");
         }
-        b.CloseElement();
-    }
-
-    // ── Lore ────────────────────────────────────────────────────────
-    private static void RenderLoreEditor(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b, LoreDefinitionDto dto)
-    {
-        int s = 0;
-        b.OpenElement(s++, "div"); b.AddAttribute(s++, "class", "we-entity-form");
-        AddField(b, ref s, "Lore ID", dto.LoreId);
-        AddField(b, ref s, "Title", dto.Title);
-        AddField(b, ref s, "Category", dto.CategoryName ?? dto.Category.ToString());
-        AddField(b, ref s, "Tier", dto.Tier.ToString());
-        AddField(b, ref s, "Keywords", dto.Keywords);
-        AddField(b, ref s, "Always Available", dto.IsAlwaysAvailable ? "Yes" : "No");
-        AddField(b, ref s, "Created", dto.CreatedUtc.ToString("yyyy-MM-dd"));
-        // Content preview
-        b.OpenElement(s++, "div"); b.AddAttribute(s++, "class", "we-entity-form__field");
-        b.OpenElement(s++, "label"); b.AddContent(s++, "Content"); b.CloseElement();
-        b.OpenElement(s++, "div"); b.AddAttribute(s++, "class", "we-entity-form__content-preview");
-        b.AddContent(s++, dto.Content.Length > 500 ? dto.Content[..500] + "…" : dto.Content);
-        b.CloseElement(); b.CloseElement();
         b.CloseElement();
     }
 
@@ -1786,7 +2143,7 @@
         WorldEngineEntityType.ResourceNodes => "bi-tree",
         WorldEngineEntityType.Regions => "bi-map",
         WorldEngineEntityType.AreaGraph => "bi-diagram-3",
-        WorldEngineEntityType.Lore => "bi-book",
+        WorldEngineEntityType.Codex => "bi-journal-code",
         WorldEngineEntityType.Traits => "bi-person-badge",
         WorldEngineEntityType.Glyphs => "bi-code",
         WorldEngineEntityType.Industries => "bi-gear",
@@ -1801,7 +2158,7 @@
         WorldEngineEntityType.ResourceNodes => "Resource Nodes",
         WorldEngineEntityType.Regions => "Regions",
         WorldEngineEntityType.AreaGraph => "Area Graph",
-        WorldEngineEntityType.Lore => "Codex Lore",
+        WorldEngineEntityType.Codex => "Codex",
         WorldEngineEntityType.Traits => "Traits",
         WorldEngineEntityType.Glyphs => "Glyph Scripts",
         WorldEngineEntityType.Industries => "Industries",
@@ -1856,6 +2213,23 @@
             try { if (_ieScriptEditorModule != null) await _ieScriptEditorModule.DisposeAsync(); } catch { }
         }
         _ieDotNetRef?.Dispose();
+
+        // Destroy codex editor if open
+        if (_codexEditorOpen)
+        {
+            try
+            {
+                if (_ceBridgeModule != null)
+                {
+                    await _ceBridgeModule.InvokeVoidAsync("destroy", CodexGlInstanceId);
+                    await _ceBridgeModule.DisposeAsync();
+                }
+            }
+            catch { }
+        }
+        _ceDotNetRef?.Dispose();
+        _ceSearchCts?.Cancel();
+        _ceSearchCts?.Dispose();
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -2036,6 +2410,11 @@
         if (instanceId == InteractionGlInstanceId)
         {
             _ieOpenPanels.Remove(componentType);
+            InvokeAsync(StateHasChanged);
+        }
+        else if (instanceId == CodexGlInstanceId)
+        {
+            _ceOpenPanels.Remove(componentType);
             InvokeAsync(StateHasChanged);
         }
         return Task.CompletedTask;
@@ -3421,5 +3800,454 @@
         "math" => "#f39c12",
         "logic" => "#1abc9c",
         _ => "#7f8c8d"
+    };
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Codex Editor — Lifecycle
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task OpenNewCodexEditor(CodexSubType subType)
+    {
+        if (_codexEditorOpen) await CloseCodexEditor();
+
+        _codexEditorOpen = true;
+        _codexEditorLoading = true;
+        _codexEditorError = null;
+        _ceError = null;
+        _ceSuccess = null;
+        _ceIsCreating = true;
+        _ceSubType = subType;
+        _ceLoreItem = new LoreDefinitionDto();
+        _ceQuestItem = new QuestDefinitionDto { Objectives = [] };
+        StateHasChanged();
+
+        try
+        {
+            await CeLoadList();
+            StateHasChanged();
+            await Task.Delay(50); // Let DOM render GL host + panel divs
+
+            await CeInitLayout();
+
+            _codexEditorLoading = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to open new codex editor");
+            _codexEditorError = $"Failed to load: {ex.Message}";
+            _codexEditorLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OpenCodexEditor(string entityId, CodexSubType subType)
+    {
+        if (_codexEditorOpen) await CloseCodexEditor();
+
+        _codexEditorOpen = true;
+        _codexEditorLoading = true;
+        _codexEditorError = null;
+        _ceError = null;
+        _ceSuccess = null;
+        _ceIsCreating = false;
+        _ceSubType = subType;
+        StateHasChanged();
+
+        try
+        {
+            if (subType == CodexSubType.Lore)
+            {
+                LoreDefinitionDto? loaded = await LoreApi.GetByIdAsync(entityId);
+                if (loaded == null)
+                {
+                    _codexEditorError = $"Lore entry '{entityId}' not found.";
+                    _codexEditorLoading = false;
+                    StateHasChanged();
+                    return;
+                }
+                _ceLoreItem = loaded;
+            }
+            else
+            {
+                QuestDefinitionDto? loaded = await QuestApi.GetByIdAsync(entityId);
+                if (loaded == null)
+                {
+                    _codexEditorError = $"Quest entry '{entityId}' not found.";
+                    _codexEditorLoading = false;
+                    StateHasChanged();
+                    return;
+                }
+                _ceQuestItem = loaded;
+            }
+
+            await CeLoadList();
+            StateHasChanged();
+            await Task.Delay(50);
+
+            await CeInitLayout();
+
+            _codexEditorLoading = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to open codex editor for {Id}", entityId);
+            _codexEditorError = $"Failed to load: {ex.Message}";
+            _codexEditorLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CloseCodexEditor()
+    {
+        try
+        {
+            if (_ceBridgeModule != null)
+            {
+                await _ceBridgeModule.InvokeVoidAsync("destroy", CodexGlInstanceId);
+            }
+        }
+        catch (Exception ex) { Logger.LogWarning(ex, "Error destroying Codex GL layout"); }
+
+        _codexEditorOpen = false;
+        _codexEditorLoading = false;
+        _codexEditorError = null;
+        _ceError = null;
+        _ceSuccess = null;
+        _ceShowViewMenu = false;
+        _ceListItems = [];
+        StateHasChanged();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Codex Editor — GL Layout
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task CeInitLayout()
+    {
+        try
+        {
+            _ceBridgeModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/golden-layout-bridge.js");
+            _ceDotNetRef ??= DotNetObjectReference.Create(this);
+
+            string layoutConfig = CeBuildDefaultLayoutConfig();
+            await _ceBridgeModule.InvokeVoidAsync("init", CodexGlInstanceId, "we-codex-gl-container", layoutConfig, _ceDotNetRef);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to initialize Codex GL layout");
+            _codexEditorError = "Layout initialization failed. Try closing and reopening.";
+        }
+    }
+
+    private static string CeBuildDefaultLayoutConfig()
+    {
+        var config = new
+        {
+            root = new
+            {
+                type = "row",
+                content = new object[]
+                {
+                    new
+                    {
+                        type = "component",
+                        componentType = "ce-list",
+                        title = "Entity List",
+                        size = "20%",
+                    },
+                    new
+                    {
+                        type = "component",
+                        componentType = "ce-form",
+                        title = "Editor",
+                        size = "50%",
+                    },
+                    new
+                    {
+                        type = "component",
+                        componentType = "ce-preview",
+                        title = "Preview",
+                        size = "30%",
+                    },
+                },
+            },
+        };
+        return JsonSerializer.Serialize(config);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Codex Editor — View Menu & Panel Toggles
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void CeToggleViewMenu() => _ceShowViewMenu = !_ceShowViewMenu;
+
+    private async Task CeTogglePanel(string panelKey)
+    {
+        _ceShowViewMenu = false;
+        if (_ceOpenPanels.Contains(panelKey)) return;
+        _ceOpenPanels.Add(panelKey);
+
+        if (_ceBridgeModule != null)
+        {
+            try
+            {
+                string title = _cePanelTitles.GetValueOrDefault(panelKey, panelKey);
+                await _ceBridgeModule.InvokeVoidAsync("addPanel", CodexGlInstanceId, panelKey, title);
+            }
+            catch (Exception ex) { Logger.LogWarning(ex, "Failed to add CE panel {Panel}", panelKey); }
+        }
+        StateHasChanged();
+    }
+
+    private async Task CeResetLayout()
+    {
+        _ceShowViewMenu = false;
+        _ceOpenPanels.Clear();
+        foreach (string key in _cePanelTitles.Keys) _ceOpenPanels.Add(key);
+
+        if (_ceBridgeModule != null)
+        {
+            try
+            {
+                string layoutConfig = CeBuildDefaultLayoutConfig();
+                await _ceBridgeModule.InvokeVoidAsync("loadLayout", CodexGlInstanceId, layoutConfig);
+            }
+            catch (Exception ex) { Logger.LogWarning(ex, "Failed to reset CE layout"); }
+        }
+        StateHasChanged();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Codex Editor — Save / Cancel
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task CeSave()
+    {
+        _ceIsSaving = true;
+        _ceError = null;
+        _ceSuccess = null;
+        StateHasChanged();
+
+        try
+        {
+            if (_ceSubType == CodexSubType.Lore)
+            {
+                if (_ceIsCreating)
+                    await LoreApi.CreateAsync(_ceLoreItem);
+                else
+                    await LoreApi.UpdateAsync(_ceLoreItem.LoreId, _ceLoreItem);
+                _ceSuccess = _ceIsCreating ? "Lore entry created." : "Lore entry updated.";
+            }
+            else
+            {
+                if (_ceIsCreating)
+                    await QuestApi.CreateAsync(_ceQuestItem);
+                else
+                    await QuestApi.UpdateAsync(_ceQuestItem.QuestId, _ceQuestItem);
+                _ceSuccess = _ceIsCreating ? "Quest entry created." : "Quest entry updated.";
+            }
+
+            _ceIsCreating = false;
+            await CeLoadList();
+
+            // Refresh the main entity list too
+            await LoadEntityList(reset: true);
+        }
+        catch (Exception ex)
+        {
+            _ceError = ex.Message;
+            Logger.LogError(ex, "Failed to save codex entry");
+        }
+        finally
+        {
+            _ceIsSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CeCancel()
+    {
+        await CloseCodexEditor();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Codex Editor — Delete
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task CeDelete()
+    {
+        _ceError = null;
+        _ceSuccess = null;
+
+        try
+        {
+            if (_ceSubType == CodexSubType.Lore)
+            {
+                await LoreApi.DeleteAsync(_ceLoreItem.LoreId);
+                _ceSuccess = "Lore entry deleted.";
+            }
+            else
+            {
+                await QuestApi.DeleteAsync(_ceQuestItem.QuestId);
+                _ceSuccess = "Quest entry deleted.";
+            }
+
+            _ceIsCreating = true;
+            _ceLoreItem = new LoreDefinitionDto();
+            _ceQuestItem = new QuestDefinitionDto { Objectives = [] };
+            await CeLoadList();
+            await LoadEntityList(reset: true);
+        }
+        catch (Exception ex)
+        {
+            _ceError = ex.Message;
+            Logger.LogError(ex, "Failed to delete codex entry");
+        }
+        finally { StateHasChanged(); }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Codex Editor — Entity List (inner panel)
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task CeLoadList()
+    {
+        _ceListLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            string? search = string.IsNullOrWhiteSpace(_ceListSearch) ? null : _ceListSearch.Trim();
+            _ceListItems = [];
+
+            if (_ceSubType == CodexSubType.Lore)
+            {
+                PagedResult<LoreDefinitionDto> result = await LoreApi.GetAllAsync(search, page: 1, pageSize: 200);
+                _ceListItems = result.Items.Select(i => new CeListEntry
+                {
+                    Id = i.LoreId, Title = i.Title,
+                    SubLabel = i.CategoryName ?? $"Category {i.Category}",
+                    SubType = CodexSubType.Lore,
+                }).ToList();
+            }
+            else
+            {
+                PagedResult<QuestDefinitionDto> result = await QuestApi.GetAllAsync(search, page: 1, pageSize: 200);
+                _ceListItems = result.Items.Select(i => new CeListEntry
+                {
+                    Id = i.QuestId, Title = i.Title,
+                    SubLabel = i.QuestGiver ?? i.Location,
+                    SubType = CodexSubType.Quest,
+                }).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load codex entity list");
+        }
+        finally
+        {
+            _ceListLoading = false;
+        }
+    }
+
+    private void CeSearchChanged()
+    {
+        _ceSearchCts?.Cancel();
+        _ceSearchCts = new CancellationTokenSource();
+        CancellationToken ct = _ceSearchCts.Token;
+
+        _ = InvokeAsync(async () =>
+        {
+            try
+            {
+                await Task.Delay(300, ct);
+                if (!ct.IsCancellationRequested)
+                {
+                    await CeLoadList();
+                    StateHasChanged();
+                }
+            }
+            catch (TaskCanceledException) { }
+        });
+    }
+
+    private async Task CeOnSubTypeChanged()
+    {
+        _ceListSearch = "";
+        await CeLoadList();
+        StateHasChanged();
+    }
+
+    private async Task CeSelectListItem(CeListEntry entry)
+    {
+        // Deselect all
+        foreach (CeListEntry item in _ceListItems) item.IsSelected = false;
+        entry.IsSelected = true;
+
+        _ceIsCreating = false;
+        _ceError = null;
+        _ceSuccess = null;
+
+        try
+        {
+            if (entry.SubType == CodexSubType.Lore)
+            {
+                _ceSubType = CodexSubType.Lore;
+                LoreDefinitionDto? loaded = await LoreApi.GetByIdAsync(entry.Id);
+                if (loaded != null) _ceLoreItem = loaded;
+            }
+            else
+            {
+                _ceSubType = CodexSubType.Quest;
+                QuestDefinitionDto? loaded = await QuestApi.GetByIdAsync(entry.Id);
+                if (loaded != null) _ceQuestItem = loaded;
+            }
+        }
+        catch (Exception ex)
+        {
+            _ceError = $"Failed to load: {ex.Message}";
+        }
+        StateHasChanged();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Codex Editor — Helpers
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void CeAddObjective()
+    {
+        if (!string.IsNullOrWhiteSpace(_ceNewObjective))
+        {
+            _ceQuestItem.Objectives.Add(_ceNewObjective.Trim());
+            _ceNewObjective = "";
+        }
+    }
+
+    private static string CeGetLoreCategoryName(int category) => category switch
+    {
+        0 => "General",
+        1 => "History",
+        2 => "Geography",
+        3 => "Religion",
+        4 => "Arcana",
+        5 => "Nature",
+        6 => "Faction",
+        7 => "Character",
+        8 => "Item",
+        9 => "Quest",
+        10 => "Miscellaneous",
+        _ => $"Unknown ({category})"
+    };
+
+    private static string CeGetLoreTierName(int tier) => tier switch
+    {
+        0 => "Common",
+        1 => "Uncommon",
+        2 => "Rare",
+        3 => "Legendary",
+        _ => $"Unknown ({tier})"
     };
 }

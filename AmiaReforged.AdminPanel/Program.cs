@@ -62,6 +62,7 @@ public class Program
             builder.Services.AddScoped<RegionApiService>();
             builder.Services.AddScoped<AreaGraphApiService>();
             builder.Services.AddScoped<LoreApiService>();
+            builder.Services.AddScoped<QuestApiService>();
             builder.Services.AddScoped<TraitApiService>();
             builder.Services.AddScoped<GlyphApiService>();
             builder.Services.AddScoped<IndustryApiService>();

@@ -9,7 +9,7 @@ public enum WorldEngineEntityType
     ResourceNodes,
     Regions,
     AreaGraph,
-    Lore,
+    Codex,
     Traits,
     Glyphs,
     Industries,

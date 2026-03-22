@@ -810,3 +810,73 @@
 .glyph-node-entry:hover {
     background: rgba(255, 255, 255, 0.05);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Codex Editor — Full panel takeover (mirrors Interaction Editor)
+   ═══════════════════════════════════════════════════════════════ */
+
+.we-editor__codex-editor-wrap {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Toolbar */
+.we-ce-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 14px;
+    background: var(--bg-card, #1e1b16);
+    border-bottom: 1px solid var(--border-subtle, #3e3a30);
+    flex-shrink: 0;
+    height: 42px;
+    min-height: 42px;
+}
+
+.we-ce-toolbar__title {
+    margin: 0;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+}
+
+.we-ce-toolbar__divider {
+    width: 1px;
+    height: 20px;
+    background: var(--border-subtle, #3e3a30);
+    flex-shrink: 0;
+}
+
+/* Layout area — positioned wrapper for GL root + panels */
+.we-ce-layout-area {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* GL host container — fills the layout area */
+.we-ce-gl-host {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+}
+
+/* Loading overlay */
+.we-ce-loading-overlay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    color: var(--text-secondary, #a09882);
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    background: rgba(26, 24, 19, 0.8);
+}
