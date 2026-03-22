@@ -59,6 +59,7 @@ public class CodexJournalService
         NwItem? pcKey = creature.Inventory.Items.FirstOrDefault(item => item.ResRef == "ds_pckey");
         if (pcKey is null)
         {
+            Log.Info("Player doesn't have a pcKey");
             return ScriptHandleResult.Handled;
         }
 
@@ -66,6 +67,7 @@ public class CodexJournalService
 
         if (openCodexWithJournal)
         {
+            Log.Info($"Opening codex for {player.PlayerName}");
             _codex.OpenCodexAsync(player);
         }
 
