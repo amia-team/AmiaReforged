@@ -145,7 +145,7 @@ public sealed class DivineSpellCache
 
         // Iterate through all rows in domains.2da
         // Row number = Domain ID
-        for (int domainId = 0; domainId < 100; domainId++) // Check up to 100 domains to be safe
+        for (int domainId = 0; domainId < domainsTable.RowCount; domainId++)
         {
             string? label = domainsTable.GetString(domainId, "Label");
 
