@@ -3,6 +3,8 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueOb
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
 
+// ReSharper disable MemberCanBePrivate.Global
+
 /// <summary>
 /// Entity representing a quest entry in a player's codex.
 /// Tracks quest state, objectives, and progression.
@@ -61,11 +63,17 @@ public class CodexQuestEntry
     public List<Keyword> Keywords { get; init; } = new();
 
     /// <summary>
-    /// Ordered groups of objectives that define what the player must accomplish.
-    /// Each group has a <see cref="Enums.CompletionMode"/> governing when it is satisfied.
-    /// Empty for quests that don't use the objective system (legacy stage-only quests).
+    /// Ordered stages that define the quest's structure.
+    /// Each stage owns its own objective groups, hints, journal text, and rewards.
+    /// Empty for legacy quests that don't use the stage system.
     /// </summary>
-    public List<QuestObjectiveGroup> ObjectiveGroups { get; init; } = new();
+    public List<QuestStage> Stages { get; init; } = new();
+
+    /// <summary>
+    /// Reward granted when the quest reaches a terminal completion state,
+    /// in addition to any per-stage rewards already collected.
+    /// </summary>
+    public RewardMix CompletionReward { get; init; } = RewardMix.Empty;
 
     /// <summary>
     /// Updates the quest state to completed

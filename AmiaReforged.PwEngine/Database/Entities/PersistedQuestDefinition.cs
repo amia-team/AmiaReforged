@@ -54,6 +54,13 @@ public class PersistedQuestDefinition
     public string? Keywords { get; set; }
 
     /// <summary>
+    /// JSON-serialized reward mix granted when the entire quest is completed.
+    /// Stored as jsonb.
+    /// e.g. <c>{"xp":500,"gold":1000,"knowledgePoints":3,"proficiencies":[{"industryTag":"alchemy","proficiencyXp":50}]}</c>
+    /// </summary>
+    public string CompletionRewardJson { get; set; } = "{}";
+
+    /// <summary>
     /// When <c>true</c>, this quest entry is visible to every player without
     /// requiring an unlock / trigger.
     /// </summary>

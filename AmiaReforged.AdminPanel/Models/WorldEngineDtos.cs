@@ -220,6 +220,72 @@ public class QuestStageDto
 
     /// <summary>Optional hints revealed at this stage.</summary>
     public List<string> Hints { get; set; } = [];
+
+    /// <summary>Objective groups that must be satisfied to advance past this stage.</summary>
+    public List<ObjectiveGroupDto> ObjectiveGroups { get; set; } = [];
+
+    /// <summary>Rewards granted when this stage is completed.</summary>
+    public RewardMixDto? Rewards { get; set; }
+}
+
+public class ObjectiveGroupDto
+{
+    /// <summary>Display name for this group (e.g. "Find the stolen artifacts").</summary>
+    public string DisplayName { get; set; } = string.Empty;
+
+    /// <summary>How objectives in this group must be satisfied: All, Any, or Sequence.</summary>
+    public string CompletionMode { get; set; } = "All";
+
+    /// <summary>The objectives in this group.</summary>
+    public List<ObjectiveDefinitionDto> Objectives { get; set; } = [];
+}
+
+public class ObjectiveDefinitionDto
+{
+    /// <summary>Unique objective identifier (auto-generated if empty on create).</summary>
+    public string ObjectiveId { get; set; } = string.Empty;
+
+    /// <summary>Evaluator type tag: kill, collect, reach_location, dialog_choice, investigate, escort, composite.</summary>
+    public string TypeTag { get; set; } = string.Empty;
+
+    /// <summary>Player-visible description (e.g. "Kill 5 goblins").</summary>
+    public string DisplayText { get; set; } = string.Empty;
+
+    /// <summary>Tag of the target entity this objective watches for.</summary>
+    public string? TargetTag { get; set; }
+
+    /// <summary>Number of target events required (for counter-based objectives).</summary>
+    public int RequiredCount { get; set; } = 1;
+
+    /// <summary>Evaluator-specific configuration (clue graph, state machine, waypoints, etc.).</summary>
+    public Dictionary<string, object>? Config { get; set; }
+}
+
+public class RewardMixDto
+{
+    /// <summary>Experience points awarded.</summary>
+    public int Xp { get; set; }
+
+    /// <summary>Gold pieces awarded.</summary>
+    public int Gold { get; set; }
+
+    /// <summary>Knowledge points awarded.</summary>
+    public int KnowledgePoints { get; set; }
+
+    /// <summary>Per-industry proficiency XP grants.</summary>
+    public List<ProficiencyRewardDto> Proficiencies { get; set; } = [];
+
+    /// <summary>True when all reward values are zero/empty.</summary>
+    public bool IsEmpty => Xp == 0 && Gold == 0 && KnowledgePoints == 0 && Proficiencies.Count == 0;
+}
+
+public class ProficiencyRewardDto
+{
+    /// <summary>Tag of the industry (e.g. "alchemy", "smithing").</summary>
+    public string IndustryTag { get; set; } = string.Empty;
+
+    /// <summary>Amount of proficiency XP to award.</summary>
+    public int ProficiencyXp { get; set; }
 }
 
 public class QuestDefinitionDto
@@ -228,6 +294,7 @@ public class QuestDefinitionDto
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public List<QuestStageDto> Stages { get; set; } = [];
+    public RewardMixDto? CompletionReward { get; set; }
     public string? QuestGiver { get; set; }
     public string? Location { get; set; }
     public string? Keywords { get; set; }

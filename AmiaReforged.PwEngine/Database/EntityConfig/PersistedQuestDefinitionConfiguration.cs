@@ -35,6 +35,11 @@ public sealed class PersistedQuestDefinitionConfiguration : IEntityTypeConfigura
             .HasColumnType("jsonb")
             .HasDefaultValue("[]");
 
+        builder.Property(d => d.CompletionRewardJson)
+            .HasColumnName("completion_reward_json")
+            .HasColumnType("jsonb")
+            .HasDefaultValue("{}");
+
         builder.Property(d => d.QuestGiver)
             .HasColumnName("quest_giver")
             .HasMaxLength(200);

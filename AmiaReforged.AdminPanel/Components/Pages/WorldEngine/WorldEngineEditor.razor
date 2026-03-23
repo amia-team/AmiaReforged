@@ -884,6 +884,275 @@
                                                                 <button class="btn btn-sm btn-outline-secondary" style="font-size:0.72rem;margin-top:4px"
                                                                         @onclick="() => CeAddHintToStage(sid)">+ Hint</button>
                                                             </div>
+
+                                                            @* ── Objective Groups ── *@
+                                                            <div style="margin-top:6px">
+                                                                <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+                                                                    <label style="font-size:0.75rem;font-weight:600;margin:0">Objective Groups (@stage.ObjectiveGroups.Count)</label>
+                                                                    <button class="btn btn-sm btn-outline-primary" style="font-size:0.65rem;padding:0 6px;line-height:1.6"
+                                                                            @onclick="() => CeAddObjectiveGroup(sid)">+ Group</button>
+                                                                </div>
+                                                                @if (stage.ObjectiveGroups.Count == 0)
+                                                                {
+                                                                    <div style="padding:6px;color:var(--text-secondary);font-size:0.75rem;text-align:center;border:1px dashed var(--border-subtle);border-radius:4px">
+                                                                        No objectives. Stage advances on narrative triggers only.
+                                                                    </div>
+                                                                }
+                                                                @for (int gi = 0; gi < stage.ObjectiveGroups.Count; gi++)
+                                                                {
+                                                                    int groupIdx = gi;
+                                                                    ObjectiveGroupDto grp = stage.ObjectiveGroups[gi];
+                                                                    string grpKey = $"{sid}_{gi}";
+                                                                    bool grpExpanded = _ceExpandedGroupKeys.Contains(grpKey);
+                                                                    <div style="border:1px solid var(--border-subtle);border-radius:4px;margin-top:4px;background:var(--bg-card)">
+                                                                        <div style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:rgba(201,168,76,0.08);cursor:pointer"
+                                                                             @onclick="() => CeToggleGroupExpand(grpKey)">
+                                                                            <span style="font-size:0.72rem;font-weight:600;color:var(--accent,#c9a84c)">Group @(gi + 1)</span>
+                                                                            <span style="flex:1;font-size:0.72rem;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                                                                                @(string.IsNullOrWhiteSpace(grp.DisplayName) ? "(unnamed)" : grp.DisplayName) — @grp.CompletionMode
+                                                                            </span>
+                                                                            <span style="font-size:0.68rem;color:var(--text-secondary)">@grp.Objectives.Count obj</span>
+                                                                            <span style="font-size:0.68rem">@(grpExpanded ? "▲" : "▼")</span>
+                                                                            <button class="btn btn-sm btn-outline-danger" style="font-size:0.6rem;padding:0 4px;line-height:1.3"
+                                                                                    @onclick="() => CeRemoveObjectiveGroup(sid, groupIdx)" @onclick:stopPropagation="true">×</button>
+                                                                        </div>
+                                                                        @if (grpExpanded)
+                                                                        {
+                                                                            <div style="padding:6px 8px;display:flex;flex-direction:column;gap:5px">
+                                                                                <div style="display:flex;gap:6px">
+                                                                                    <div class="form-group" style="flex:1">
+                                                                                        <label style="font-size:0.7rem">Group Name</label>
+                                                                                        <input class="form-control form-control-sm" style="font-size:0.78rem"
+                                                                                               value="@grp.DisplayName"
+                                                                                               @onchange="e => grp.DisplayName = e.Value?.ToString() ?? string.Empty"
+                                                                                               placeholder="e.g. Find the stolen artifacts" />
+                                                                                    </div>
+                                                                                    <div class="form-group" style="flex:0 0 120px">
+                                                                                        <label style="font-size:0.7rem">Completion Mode</label>
+                                                                                        <select class="form-select form-select-sm" style="font-size:0.78rem"
+                                                                                                value="@grp.CompletionMode"
+                                                                                                @onchange="@(e => grp.CompletionMode = e.Value?.ToString() ?? "All")">
+                                                                                            <option value="All">All</option>
+                                                                                            <option value="Any">Any</option>
+                                                                                            <option value="Sequence">Sequence</option>
+                                                                                        </select>
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                @* ── Objectives list ── *@
+                                                                                <div>
+                                                                                    <label style="font-size:0.7rem;font-weight:600">Objectives (@grp.Objectives.Count)</label>
+                                                                                    @for (int oi = 0; oi < grp.Objectives.Count; oi++)
+                                                                                    {
+                                                                                        int objIdx = oi;
+                                                                                        ObjectiveDefinitionDto obj = grp.Objectives[oi];
+                                                                                        string objKey = $"{grpKey}_{oi}";
+                                                                                        bool objExpanded = _ceExpandedObjectiveKeys.Contains(objKey);
+                                                                                        <div style="border:1px solid var(--border-subtle);border-radius:3px;margin-top:3px;background:var(--bg-input)">
+                                                                                            <div style="display:flex;align-items:center;gap:4px;padding:3px 6px;cursor:pointer"
+                                                                                                 @onclick="() => CeToggleObjectiveExpand(objKey)">
+                                                                                                <span class="badge" style="background:var(--accent,#c9a84c);font-size:0.6rem;padding:1px 4px">@obj.TypeTag</span>
+                                                                                                <span style="flex:1;font-size:0.72rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                                                                                                    @(string.IsNullOrWhiteSpace(obj.DisplayText) ? "(no text)" : obj.DisplayText)
+                                                                                                </span>
+                                                                                                @if (obj.RequiredCount > 1)
+                                                                                                {
+                                                                                                    <span style="font-size:0.65rem;color:var(--text-secondary)">×@obj.RequiredCount</span>
+                                                                                                }
+                                                                                                <span style="font-size:0.65rem">@(objExpanded ? "▲" : "▼")</span>
+                                                                                                <button class="btn btn-sm btn-outline-danger" style="font-size:0.55rem;padding:0 3px;line-height:1.2"
+                                                                                                        @onclick="() => CeRemoveObjective(sid, groupIdx, objIdx)" @onclick:stopPropagation="true">×</button>
+                                                                                            </div>
+                                                                                            @if (objExpanded)
+                                                                                            {
+                                                                                                <div style="padding:5px 6px;display:flex;flex-direction:column;gap:4px">
+                                                                                                    <div style="display:flex;gap:4px">
+                                                                                                        <div class="form-group" style="flex:0 0 130px">
+                                                                                                            <label style="font-size:0.68rem">Type</label>
+                                                                                                            <select class="form-select form-select-sm" style="font-size:0.75rem"
+                                                                                                                    value="@obj.TypeTag"
+                                                                                                                    @onchange="@(e => obj.TypeTag = e.Value?.ToString() ?? "kill")">
+                                                                                                                <option value="kill">Kill</option>
+                                                                                                                <option value="collect">Collect</option>
+                                                                                                                <option value="reach_location">Reach Location</option>
+                                                                                                                <option value="dialog_choice">Dialog Choice</option>
+                                                                                                                <option value="investigate">Investigate</option>
+                                                                                                                <option value="escort">Escort</option>
+                                                                                                                <option value="composite">Composite</option>
+                                                                                                            </select>
+                                                                                                        </div>
+                                                                                                        <div class="form-group" style="flex:1">
+                                                                                                            <label style="font-size:0.68rem">Display Text</label>
+                                                                                                            <input class="form-control form-control-sm" style="font-size:0.75rem"
+                                                                                                                   value="@obj.DisplayText"
+                                                                                                                   @onchange="e => obj.DisplayText = e.Value?.ToString() ?? string.Empty"
+                                                                                                                   placeholder="e.g. Kill 5 goblins" />
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                    <div style="display:flex;gap:4px">
+                                                                                                        <div class="form-group" style="flex:1">
+                                                                                                            <label style="font-size:0.68rem">Target Tag</label>
+                                                                                                            <input class="form-control form-control-sm" style="font-size:0.75rem"
+                                                                                                                   value="@obj.TargetTag"
+                                                                                                                   @onchange="e => obj.TargetTag = e.Value?.ToString()"
+                                                                                                                   placeholder="e.g. goblin, lost_ring" />
+                                                                                                        </div>
+                                                                                                        <div class="form-group" style="flex:0 0 80px">
+                                                                                                            <label style="font-size:0.68rem">Count</label>
+                                                                                                            <input type="number" class="form-control form-control-sm" style="font-size:0.75rem"
+                                                                                                                   value="@obj.RequiredCount" min="1"
+                                                                                                                   @onchange="e => obj.RequiredCount = int.TryParse(e.Value?.ToString(), out var rc) ? Math.Max(1, rc) : 1" />
+                                                                                                        </div>
+                                                                                                    </div>
+
+                                                                                                    @* ── Type-specific config ── *@
+                                                                                                    @if (obj.TypeTag == "investigate")
+                                                                                                    {
+                                                                                                        string investigateMode = CeGetConfigString(obj, "mode", "clue_graph");
+                                                                                                        var capturedObj1 = obj;
+                                                                                                        <div style="display:flex;gap:4px;align-items:end">
+                                                                                                            <div class="form-group" style="flex:0 0 140px">
+                                                                                                                <label style="font-size:0.68rem">Investigate Mode</label>
+                                                                                                                <select class="form-select form-select-sm" style="font-size:0.75rem"
+                                                                                                                        value="@investigateMode"
+                                                                                                                        @onchange="@(e => { var v = e.Value?.ToString(); CeSetConfig(capturedObj1, "mode", string.IsNullOrEmpty(v) ? "clue_graph" : v); })">
+                                                                                                                    <option value="clue_graph">Clue Graph</option>
+                                                                                                                    <option value="state_machine">State Machine</option>
+                                                                                                                </select>
+                                                                                                            </div>
+                                                                                                            <button class="btn btn-sm btn-outline-warning" style="font-size:0.68rem;height:31px"
+                                                                                                                    @onclick="() => CeOpenGraphEditor(sid, groupIdx, objIdx, investigateMode)">
+                                                                                                                Open @(investigateMode == "clue_graph" ? "Clue Graph" : "State Machine") Editor
+                                                                                                            </button>
+                                                                                                        </div>
+                                                                                                    }
+                                                                                                    else if (obj.TypeTag == "escort")
+                                                                                                    {
+                                                                                                        var capturedObj2 = obj;
+                                                                                                        <div style="display:flex;gap:4px">
+                                                                                                            <div class="form-group" style="flex:1">
+                                                                                                                <label style="font-size:0.68rem">Destination Waypoint</label>
+                                                                                                                <input class="form-control form-control-sm" style="font-size:0.75rem"
+                                                                                                                       value="@(CeGetConfigString(capturedObj2, "destination_waypoint", ""))"
+                                                                                                                       @onchange="@(e => CeSetConfig(capturedObj2, "destination_waypoint", e.Value?.ToString() ?? string.Empty))"
+                                                                                                                       placeholder="waypoint_tag" />
+                                                                                                            </div>
+                                                                                                            <div class="form-group" style="flex:0 0 100px">
+                                                                                                                <label style="font-size:0.68rem">Fail on Death</label>
+                                                                                                                <select class="form-select form-select-sm" style="font-size:0.75rem"
+                                                                                                                        value="@(CeGetConfigString(capturedObj2, "fail_on_death", "true"))"
+                                                                                                                        @onchange="@(e => CeSetConfig(capturedObj2, "fail_on_death", e.Value?.ToString() ?? "true"))">
+                                                                                                                    <option value="true">Yes</option>
+                                                                                                                    <option value="false">No</option>
+                                                                                                                </select>
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    }
+                                                                                                    else if (obj.TypeTag == "dialog_choice")
+                                                                                                    {
+                                                                                                        var capturedObj3 = obj;
+                                                                                                        <div class="form-group">
+                                                                                                            <label style="font-size:0.68rem">Expected Choice (optional)</label>
+                                                                                                            <input class="form-control form-control-sm" style="font-size:0.75rem"
+                                                                                                                   value="@(CeGetConfigString(capturedObj3, "expected_choice", ""))"
+                                                                                                                   @onchange="@(e => CeSetConfig(capturedObj3, "expected_choice", e.Value?.ToString() ?? string.Empty))"
+                                                                                                                   placeholder="dialog_node_id or leave empty" />
+                                                                                                        </div>
+                                                                                                    }
+                                                                                                    else if (obj.TypeTag == "collect")
+                                                                                                    {
+                                                                                                        var capturedObj4 = obj;
+                                                                                                        <div class="form-check">
+                                                                                                            <input type="checkbox" class="form-check-input" id="ceObjTrackLoss_@objKey"
+                                                                                                                   checked="@(CeGetConfigString(capturedObj4, "track_loss", "false") == "true")"
+                                                                                                                   @onchange="@(e => CeSetConfig(capturedObj4, "track_loss", ((bool)(e.Value ?? false)) ? "true" : "false"))" />
+                                                                                                            <label class="form-check-label" for="ceObjTrackLoss_@objKey" style="font-size:0.72rem">Track item loss (decrements count)</label>
+                                                                                                        </div>
+                                                                                                    }
+                                                                                                </div>
+                                                                                            }
+                                                                                        </div>
+                                                                                    }
+                                                                                    <div style="margin-top:4px">
+                                                                                        <button class="btn btn-sm btn-outline-secondary" style="font-size:0.68rem"
+                                                                                                @onclick="() => CeAddObjective(sid, groupIdx)">+ Objective</button>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        }
+                                                                    </div>
+                                                                }
+                                                            </div>
+
+                                                            @* ── Stage Rewards ── *@
+                                                            <div style="margin-top:6px">
+                                                                @{ RewardMixDto stageReward = stage.Rewards ??= new RewardMixDto(); }
+                                                                <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;cursor:pointer"
+                                                                     @onclick="() => CeToggleStageRewardExpand(sid)">
+                                                                    <label style="font-size:0.75rem;font-weight:600;margin:0;cursor:pointer">Stage Rewards</label>
+                                                                    @if (!stageReward.IsEmpty)
+                                                                    {
+                                                                        <span class="badge" style="background:var(--accent,#c9a84c);font-size:0.6rem;padding:1px 4px">configured</span>
+                                                                    }
+                                                                    <span style="font-size:0.68rem">@(_ceExpandedStageRewardIds.Contains(sid) ? "▲" : "▼")</span>
+                                                                </div>
+                                                                @if (_ceExpandedStageRewardIds.Contains(sid))
+                                                                {
+                                                                    <div style="border:1px solid var(--border-subtle);border-radius:4px;padding:6px 8px;background:var(--bg-card)">
+                                                                        <div style="display:flex;gap:6px;margin-bottom:4px">
+                                                                            <div class="form-group" style="flex:1">
+                                                                                <label style="font-size:0.68rem">XP</label>
+                                                                                <input type="number" class="form-control form-control-sm" style="font-size:0.75rem" min="0"
+                                                                                       value="@stageReward.Xp"
+                                                                                       @onchange="e => stageReward.Xp = int.TryParse(e.Value?.ToString(), out var v) ? Math.Max(0, v) : 0" />
+                                                                            </div>
+                                                                            <div class="form-group" style="flex:1">
+                                                                                <label style="font-size:0.68rem">Gold</label>
+                                                                                <input type="number" class="form-control form-control-sm" style="font-size:0.75rem" min="0"
+                                                                                       value="@stageReward.Gold"
+                                                                                       @onchange="e => stageReward.Gold = int.TryParse(e.Value?.ToString(), out var v) ? Math.Max(0, v) : 0" />
+                                                                            </div>
+                                                                            <div class="form-group" style="flex:1">
+                                                                                <label style="font-size:0.68rem">Knowledge Pts</label>
+                                                                                <input type="number" class="form-control form-control-sm" style="font-size:0.75rem" min="0"
+                                                                                       value="@stageReward.KnowledgePoints"
+                                                                                       @onchange="e => stageReward.KnowledgePoints = int.TryParse(e.Value?.ToString(), out var v) ? Math.Max(0, v) : 0" />
+                                                                            </div>
+                                                                        </div>
+                                                                        <div>
+                                                                            <label style="font-size:0.68rem;font-weight:600">Proficiency Grants (@stageReward.Proficiencies.Count)</label>
+                                                                            @for (int pi = 0; pi < stageReward.Proficiencies.Count; pi++)
+                                                                            {
+                                                                                int profIdx = pi;
+                                                                                ProficiencyRewardDto prof = stageReward.Proficiencies[pi];
+                                                                                <div style="display:flex;gap:4px;margin-top:3px;align-items:end">
+                                                                                    <div class="form-group" style="flex:1">
+                                                                                        <select class="form-select form-select-sm" style="font-size:0.72rem"
+                                                                                                value="@prof.IndustryTag"
+                                                                                                @onchange="e => prof.IndustryTag = e.Value?.ToString() ?? string.Empty">
+                                                                                            <option value="">-- Select Industry --</option>
+                                                                                            @foreach (var ind in _ceIndustries)
+                                                                                            {
+                                                                                                <option value="@ind.Tag">@ind.Name (@ind.Tag)</option>
+                                                                                            }
+                                                                                        </select>
+                                                                                    </div>
+                                                                                    <div class="form-group" style="flex:0 0 70px">
+                                                                                        <input type="number" class="form-control form-control-sm" style="font-size:0.72rem" min="0"
+                                                                                               value="@prof.ProficiencyXp"
+                                                                                               @onchange="e => prof.ProficiencyXp = int.TryParse(e.Value?.ToString(), out var v) ? Math.Max(0, v) : 0"
+                                                                                               placeholder="XP" />
+                                                                                    </div>
+                                                                                    <button class="btn btn-sm btn-outline-danger" style="font-size:0.6rem;padding:0 4px;line-height:1.3"
+                                                                                            @onclick="() => stageReward.Proficiencies.RemoveAt(profIdx)">×</button>
+                                                                                </div>
+                                                                            }
+                                                                            <button class="btn btn-sm btn-outline-secondary" style="font-size:0.68rem;margin-top:4px"
+                                                                                    @onclick="() => stageReward.Proficiencies.Add(new ProficiencyRewardDto())">+ Proficiency</button>
+                                                                        </div>
+                                                                    </div>
+                                                                }
+                                                            </div>
                                                         </div>
                                                     }
                                                 </div>
@@ -897,6 +1166,79 @@
                                             </div>
                                             <button class="btn btn-sm btn-outline-primary" style="height:31px" @onclick="CeAddStage">+ Stage</button>
                                         </div>
+                                    </div>
+
+                                    @* ── Quest Completion Reward ── *@
+                                    <div style="margin-bottom:8px">
+                                        @{ RewardMixDto completionReward = _ceQuestItem.CompletionReward ??= new RewardMixDto(); }
+                                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;cursor:pointer"
+                                             @onclick="() => _ceCompletionRewardExpanded = !_ceCompletionRewardExpanded">
+                                            <label style="font-size:0.8rem;font-weight:600;margin:0;cursor:pointer">Quest Completion Reward</label>
+                                            @if (!completionReward.IsEmpty)
+                                            {
+                                                <span class="badge" style="background:var(--success,#2ecc71);font-size:0.65rem;padding:1px 5px">configured</span>
+                                            }
+                                            <span style="font-size:0.7rem">@(_ceCompletionRewardExpanded ? "▲" : "▼")</span>
+                                        </div>
+                                        @if (_ceCompletionRewardExpanded)
+                                        {
+                                            <div style="border:1px solid var(--border-subtle);border-radius:4px;padding:8px;background:var(--bg-card)">
+                                                <small style="display:block;color:var(--text-secondary);font-size:0.72rem;margin-bottom:6px">
+                                                    Awarded when the entire quest reaches a completion stage, in addition to any per-stage rewards.
+                                                </small>
+                                                <div style="display:flex;gap:6px;margin-bottom:4px">
+                                                    <div class="form-group" style="flex:1">
+                                                        <label style="font-size:0.68rem">XP</label>
+                                                        <input type="number" class="form-control form-control-sm" style="font-size:0.75rem" min="0"
+                                                               value="@completionReward.Xp"
+                                                               @onchange="e => completionReward.Xp = int.TryParse(e.Value?.ToString(), out var v) ? Math.Max(0, v) : 0" />
+                                                    </div>
+                                                    <div class="form-group" style="flex:1">
+                                                        <label style="font-size:0.68rem">Gold</label>
+                                                        <input type="number" class="form-control form-control-sm" style="font-size:0.75rem" min="0"
+                                                               value="@completionReward.Gold"
+                                                               @onchange="e => completionReward.Gold = int.TryParse(e.Value?.ToString(), out var v) ? Math.Max(0, v) : 0" />
+                                                    </div>
+                                                    <div class="form-group" style="flex:1">
+                                                        <label style="font-size:0.68rem">Knowledge Pts</label>
+                                                        <input type="number" class="form-control form-control-sm" style="font-size:0.75rem" min="0"
+                                                               value="@completionReward.KnowledgePoints"
+                                                               @onchange="e => completionReward.KnowledgePoints = int.TryParse(e.Value?.ToString(), out var v) ? Math.Max(0, v) : 0" />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label style="font-size:0.68rem;font-weight:600">Proficiency Grants (@completionReward.Proficiencies.Count)</label>
+                                                    @for (int cpi = 0; cpi < completionReward.Proficiencies.Count; cpi++)
+                                                    {
+                                                        int cpIdx = cpi;
+                                                        ProficiencyRewardDto cProf = completionReward.Proficiencies[cpi];
+                                                        <div style="display:flex;gap:4px;margin-top:3px;align-items:end">
+                                                            <div class="form-group" style="flex:1">
+                                                                <select class="form-select form-select-sm" style="font-size:0.72rem"
+                                                                        value="@cProf.IndustryTag"
+                                                                        @onchange="e => cProf.IndustryTag = e.Value?.ToString() ?? string.Empty">
+                                                                    <option value="">-- Select Industry --</option>
+                                                                    @foreach (var ind in _ceIndustries)
+                                                                    {
+                                                                        <option value="@ind.Tag">@ind.Name (@ind.Tag)</option>
+                                                                    }
+                                                                </select>
+                                                            </div>
+                                                            <div class="form-group" style="flex:0 0 70px">
+                                                                <input type="number" class="form-control form-control-sm" style="font-size:0.72rem" min="0"
+                                                                       value="@cProf.ProficiencyXp"
+                                                                       @onchange="e => cProf.ProficiencyXp = int.TryParse(e.Value?.ToString(), out var v) ? Math.Max(0, v) : 0"
+                                                                       placeholder="XP" />
+                                                            </div>
+                                                            <button class="btn btn-sm btn-outline-danger" style="font-size:0.6rem;padding:0 4px;line-height:1.3"
+                                                                    @onclick="() => completionReward.Proficiencies.RemoveAt(cpIdx)">×</button>
+                                                        </div>
+                                                    }
+                                                    <button class="btn btn-sm btn-outline-secondary" style="font-size:0.68rem;margin-top:4px"
+                                                            @onclick="() => completionReward.Proficiencies.Add(new ProficiencyRewardDto())">+ Proficiency</button>
+                                                </div>
+                                            </div>
+                                        }
                                     </div>
 
                                     <div style="display:flex;gap:8px;margin-bottom:8px">
@@ -996,6 +1338,112 @@
                             </div>
                         </div>
                     </div> @* end we-ce-layout-area *@
+
+                @* ── Graph Editor Overlay (ClueGraph / StateMachine) ── *@
+                @if (_ceGraphEditorOpen)
+                {
+                    ObjectiveDefinitionDto? graphObj = CeGetGraphEditorObjective();
+                    <div style="position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.85);display:flex;flex-direction:column">
+                        @* Toolbar *@
+                        <div style="display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--bg-card);border-bottom:1px solid var(--border-subtle)">
+                            <span style="font-weight:700;font-size:0.9rem;color:var(--accent,#c9a84c)">
+                                @(_ceGraphEditorMode == "clue_graph" ? "Clue Graph Editor" : "State Machine Editor")
+                            </span>
+                            @if (graphObj != null)
+                            {
+                                <span style="font-size:0.78rem;color:var(--text-secondary)">— @graphObj.DisplayText</span>
+                            }
+                            <span style="flex:1"></span>
+                            <button class="btn btn-sm btn-outline-secondary" style="font-size:0.75rem"
+                                    @onclick="CeCloseGraphEditor">Done</button>
+                        </div>
+                        @* Body — Canvas + Sidebar *@
+                        <div style="flex:1;display:flex;overflow:hidden">
+                            @* Canvas *@
+                            <div style="flex:1;position:relative">
+                                <div id="ce-graph-canvas" style="width:100%;height:100%"></div>
+                            </div>
+                            @* Sidebar property panel *@
+                            <div style="width:280px;background:var(--bg-card);border-left:1px solid var(--border-subtle);overflow-y:auto;padding:12px">
+                                @if (_ceGraphEditorMode == "clue_graph")
+                                {
+                                    <h6 style="font-size:0.82rem;margin:0 0 8px 0">Clue Graph Properties</h6>
+                                    <p style="font-size:0.72rem;color:var(--text-secondary)">
+                                        Click nodes to select clues. Click edges to select deductions.
+                                        Double-click canvas to add a clue. Right-click for context menu.
+                                    </p>
+                                    <div id="ce-graph-sidebar-clue" style="display:none">
+                                        <div class="form-group" style="margin-bottom:6px">
+                                            <label style="font-size:0.7rem">Clue Name</label>
+                                            <input class="form-control form-control-sm" id="ce-graph-clue-name" style="font-size:0.78rem" />
+                                        </div>
+                                        <div class="form-group" style="margin-bottom:6px">
+                                            <label style="font-size:0.7rem">Trigger Tag</label>
+                                            <input class="form-control form-control-sm" id="ce-graph-clue-trigger" style="font-size:0.78rem" />
+                                        </div>
+                                    </div>
+                                    <div id="ce-graph-sidebar-deduction" style="display:none">
+                                        <div class="form-group" style="margin-bottom:6px">
+                                            <label style="font-size:0.7rem">Required Clues</label>
+                                            <div id="ce-graph-deduction-required" style="font-size:0.75rem"></div>
+                                        </div>
+                                        <div class="form-group" style="margin-bottom:6px">
+                                            <label style="font-size:0.7rem">Unlocks Clues</label>
+                                            <div id="ce-graph-deduction-unlocks" style="font-size:0.75rem"></div>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <h6 style="font-size:0.82rem;margin:0 0 8px 0">State Machine Properties</h6>
+                                    <p style="font-size:0.72rem;color:var(--text-secondary)">
+                                        Drag to move states. Drag from a state edge to create a transition.
+                                        Double-click canvas to add a state. Right-click → set initial/terminal.
+                                    </p>
+                                    <div id="ce-graph-sidebar-state" style="display:none">
+                                        <div class="form-group" style="margin-bottom:6px">
+                                            <label style="font-size:0.7rem">State ID</label>
+                                            <input class="form-control form-control-sm" id="ce-graph-state-id" style="font-size:0.78rem" />
+                                        </div>
+                                        <div class="form-group" style="margin-bottom:6px">
+                                            <label style="font-size:0.7rem">Description</label>
+                                            <textarea class="form-control form-control-sm" rows="2" id="ce-graph-state-desc" style="font-size:0.78rem"></textarea>
+                                        </div>
+                                        <div class="form-check" style="margin-bottom:4px">
+                                            <input type="checkbox" class="form-check-input" id="ce-graph-state-terminal-success" />
+                                            <label class="form-check-label" for="ce-graph-state-terminal-success" style="font-size:0.72rem">Terminal Success</label>
+                                        </div>
+                                        <div class="form-check" style="margin-bottom:4px">
+                                            <input type="checkbox" class="form-check-input" id="ce-graph-state-terminal-failure" />
+                                            <label class="form-check-label" for="ce-graph-state-terminal-failure" style="font-size:0.72rem">Terminal Failure</label>
+                                        </div>
+                                    </div>
+                                    <div id="ce-graph-sidebar-transition" style="display:none">
+                                        <div class="form-group" style="margin-bottom:6px">
+                                            <label style="font-size:0.7rem">Signal Type</label>
+                                            <select class="form-select form-select-sm" id="ce-graph-trans-signal" style="font-size:0.78rem">
+                                                <option value="creature_killed">Creature Killed</option>
+                                                <option value="item_acquired">Item Acquired</option>
+                                                <option value="item_lost">Item Lost</option>
+                                                <option value="area_entered">Area Entered</option>
+                                                <option value="area_exited">Area Exited</option>
+                                                <option value="dialog_choice">Dialog Choice</option>
+                                                <option value="clue_found">Clue Found</option>
+                                                <option value="npc_status_changed">NPC Status Changed</option>
+                                                <option value="waypoint_reached">Waypoint Reached</option>
+                                                <option value="custom">Custom</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group" style="margin-bottom:6px">
+                                            <label style="font-size:0.7rem">Target Tag</label>
+                                            <input class="form-control form-control-sm" id="ce-graph-trans-target" style="font-size:0.78rem" />
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
                 </div>
             }
             else if (_regionGraphOpen)
@@ -1653,6 +2101,19 @@
     private QuestDefinitionDto _ceQuestItem = new();
     private int _ceNewStageId = 10;
     private readonly HashSet<int> _ceExpandedStageIds = [];
+    private readonly HashSet<string> _ceExpandedGroupKeys = [];
+    private readonly HashSet<string> _ceExpandedObjectiveKeys = [];
+    private readonly HashSet<int> _ceExpandedStageRewardIds = [];
+    private bool _ceCompletionRewardExpanded;
+    private List<IndustryDefinitionDto> _ceIndustries = [];
+    private bool _ceIndustriesLoaded;
+
+    // Graph editor overlay state
+    private bool _ceGraphEditorOpen;
+    private string _ceGraphEditorMode = "clue_graph"; // "clue_graph" | "state_machine"
+    private int _ceGraphEditorStageId;
+    private int _ceGraphEditorGroupIdx;
+    private int _ceGraphEditorObjIdx;
 
     // View menu
     private bool _ceShowViewMenu;
@@ -3915,6 +4376,7 @@
         try
         {
             await CeLoadList();
+            if (subType == CodexSubType.Quest) await CeEnsureIndustriesLoaded();
             StateHasChanged();
             await Task.Delay(50); // Let DOM render GL host + panel divs
 
@@ -4303,6 +4765,7 @@
                 _ceSubType = CodexSubType.Quest;
                 QuestDefinitionDto? loaded = await QuestApi.GetByIdAsync(entry.Id);
                 if (loaded != null) _ceQuestItem = loaded;
+                await CeEnsureIndustriesLoaded();
             }
         }
         catch (Exception ex)
@@ -4380,4 +4843,229 @@
         3 => "Legendary",
         _ => $"Unknown ({tier})"
     };
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Codex Editor — Objective Group Helpers
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void CeAddObjectiveGroup(int stageId)
+    {
+        QuestStageDto? stage = _ceQuestItem.Stages.FirstOrDefault(s => s.StageId == stageId);
+        if (stage == null) return;
+        stage.ObjectiveGroups.Add(new ObjectiveGroupDto
+        {
+            DisplayName = "",
+            CompletionMode = "All",
+            Objectives = []
+        });
+        string grpKey = $"{stageId}_{stage.ObjectiveGroups.Count - 1}";
+        _ceExpandedGroupKeys.Add(grpKey);
+    }
+
+    private void CeRemoveObjectiveGroup(int stageId, int groupIdx)
+    {
+        QuestStageDto? stage = _ceQuestItem.Stages.FirstOrDefault(s => s.StageId == stageId);
+        if (stage != null && groupIdx >= 0 && groupIdx < stage.ObjectiveGroups.Count)
+            stage.ObjectiveGroups.RemoveAt(groupIdx);
+    }
+
+    private void CeToggleGroupExpand(string grpKey)
+    {
+        if (!_ceExpandedGroupKeys.Add(grpKey))
+            _ceExpandedGroupKeys.Remove(grpKey);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Codex Editor — Objective Helpers
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void CeAddObjective(int stageId, int groupIdx)
+    {
+        QuestStageDto? stage = _ceQuestItem.Stages.FirstOrDefault(s => s.StageId == stageId);
+        if (stage == null || groupIdx < 0 || groupIdx >= stage.ObjectiveGroups.Count) return;
+
+        ObjectiveGroupDto grp = stage.ObjectiveGroups[groupIdx];
+        grp.Objectives.Add(new ObjectiveDefinitionDto
+        {
+            ObjectiveId = Guid.NewGuid().ToString("N")[..12],
+            TypeTag = "kill",
+            DisplayText = "",
+            RequiredCount = 1
+        });
+        string objKey = $"{stageId}_{groupIdx}_{grp.Objectives.Count - 1}";
+        _ceExpandedObjectiveKeys.Add(objKey);
+    }
+
+    private void CeRemoveObjective(int stageId, int groupIdx, int objIdx)
+    {
+        QuestStageDto? stage = _ceQuestItem.Stages.FirstOrDefault(s => s.StageId == stageId);
+        if (stage == null || groupIdx < 0 || groupIdx >= stage.ObjectiveGroups.Count) return;
+
+        ObjectiveGroupDto grp = stage.ObjectiveGroups[groupIdx];
+        if (objIdx >= 0 && objIdx < grp.Objectives.Count)
+            grp.Objectives.RemoveAt(objIdx);
+    }
+
+    private void CeToggleObjectiveExpand(string objKey)
+    {
+        if (!_ceExpandedObjectiveKeys.Add(objKey))
+            _ceExpandedObjectiveKeys.Remove(objKey);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Codex Editor — Config Helpers
+    // ═══════════════════════════════════════════════════════════════════
+
+    private static string CeGetConfigString(ObjectiveDefinitionDto obj, string key, string fallback)
+    {
+        if (obj.Config != null && obj.Config.TryGetValue(key, out object? val) && val != null)
+            return val.ToString() ?? fallback;
+        return fallback;
+    }
+
+    private static void CeSetConfig(ObjectiveDefinitionDto obj, string key, string value)
+    {
+        obj.Config ??= new Dictionary<string, object>();
+        obj.Config[key] = value;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Codex Editor — Reward Helpers
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void CeToggleStageRewardExpand(int stageId)
+    {
+        if (!_ceExpandedStageRewardIds.Add(stageId))
+            _ceExpandedStageRewardIds.Remove(stageId);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Codex Editor — Industry Cache
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task CeEnsureIndustriesLoaded()
+    {
+        if (_ceIndustriesLoaded) return;
+        try
+        {
+            PagedResult<IndustryDefinitionDto> result = await IndustryApi.GetAllAsync(pageSize: 500);
+            _ceIndustries = result.Items?.ToList() ?? [];
+            _ceIndustriesLoaded = true;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load industries for reward dropdown");
+            _ceIndustries = [];
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Codex Editor — Graph Editor
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task CeOpenGraphEditor(int stageId, int groupIdx, int objIdx, string mode)
+    {
+        _ceGraphEditorStageId = stageId;
+        _ceGraphEditorGroupIdx = groupIdx;
+        _ceGraphEditorObjIdx = objIdx;
+        _ceGraphEditorMode = mode;
+        _ceGraphEditorOpen = true;
+        StateHasChanged();
+
+        // Give Blazor a tick to render the overlay DOM
+        await Task.Delay(50);
+
+        _ceDotNetRef ??= DotNetObjectReference.Create(this);
+
+        ObjectiveDefinitionDto? obj = CeGetGraphEditorObjective();
+        string existingJson = obj != null ? CeGetConfigString(obj, "graph_json", "{}") : "{}";
+
+        if (mode == "clue_graph")
+        {
+            await JS.InvokeVoidAsync("clueGraphEditor.init", "ce-graph-canvas", existingJson, _ceDotNetRef);
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("stateMachineEditor.init", "ce-graph-canvas", existingJson, _ceDotNetRef);
+        }
+    }
+
+    private async Task CeCloseGraphEditor()
+    {
+        // Save the graph JSON back into the objective's config before closing
+        try
+        {
+            string json;
+            if (_ceGraphEditorMode == "clue_graph")
+            {
+                json = await JS.InvokeAsync<string>("clueGraphEditor.getGraphJson");
+                await JS.InvokeVoidAsync("clueGraphEditor.destroy");
+            }
+            else
+            {
+                json = await JS.InvokeAsync<string>("stateMachineEditor.getGraphJson");
+                await JS.InvokeVoidAsync("stateMachineEditor.destroy");
+            }
+
+            ObjectiveDefinitionDto? obj = CeGetGraphEditorObjective();
+            if (obj != null && !string.IsNullOrWhiteSpace(json))
+            {
+                CeSetConfig(obj, "graph_json", json);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to save graph editor data");
+        }
+
+        _ceGraphEditorOpen = false;
+    }
+
+    [JSInvokable]
+    public void OnGraphChanged(string graphJson)
+    {
+        // Live-update the objective config as the user edits the graph
+        ObjectiveDefinitionDto? obj = CeGetGraphEditorObjective();
+        if (obj != null)
+        {
+            CeSetConfig(obj, "graph_json", graphJson);
+        }
+    }
+
+    [JSInvokable]
+    public void OnClueSelected(string clueJson)
+    {
+        // Sidebar selection is handled entirely in JS; no Blazor action needed
+    }
+
+    [JSInvokable]
+    public void OnDeductionSelected(string deductionJson)
+    {
+    }
+
+    [JSInvokable]
+    public void OnStateSelected(string stateJson)
+    {
+    }
+
+    [JSInvokable]
+    public void OnTransitionSelected(string transitionJson)
+    {
+    }
+
+    [JSInvokable]
+    public void OnSelectionCleared(string _)
+    {
+    }
+
+    private ObjectiveDefinitionDto? CeGetGraphEditorObjective()
+    {
+        QuestStageDto? stage = _ceQuestItem.Stages.FirstOrDefault(s => s.StageId == _ceGraphEditorStageId);
+        if (stage == null || _ceGraphEditorGroupIdx < 0 || _ceGraphEditorGroupIdx >= stage.ObjectiveGroups.Count)
+            return null;
+        ObjectiveGroupDto grp = stage.ObjectiveGroups[_ceGraphEditorGroupIdx];
+        if (_ceGraphEditorObjIdx < 0 || _ceGraphEditorObjIdx >= grp.Objectives.Count)
+            return null;
+        return grp.Objectives[_ceGraphEditorObjIdx];
+    }
 }
