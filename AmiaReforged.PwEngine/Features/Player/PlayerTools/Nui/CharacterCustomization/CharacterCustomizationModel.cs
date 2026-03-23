@@ -791,6 +791,11 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
             backupData.ApplyToItem(clonedTarget, skipTorso: mismatchAc);
             targetItem.Destroy();
 
+            // Equip and immediately unequip the cloned item to commit the appearance changes
+            // This ensures colors and models are properly saved to the item object
+            creature.RunEquip(clonedTarget, InventorySlot.Chest);
+            creature.RunUnequip(clonedTarget);
+
             if (mismatchAc)
             {
                 player.SendServerMessage($"AC mismatch detected (current: AC {currentAc.Value}, target: AC {targetAc.Value}). Copied appearance to all parts except torso to preserve AC.", ColorConstants.Yellow);
