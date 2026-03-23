@@ -8,18 +8,45 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Nui;
 
 /// <summary>
 /// NUI view for the in-game NPC conversation window.
-/// Layout: NPC portrait + text panel (top), choice buttons (middle), goodbye/more (bottom).
-/// Matches the mockup with paginated NPC text and configurable player responses.
+/// Layout (top-to-bottom):
+///   • NPC portrait (left) + scrollable NPC text panel (right)
+///   • Text pagination controls (only when text overflows)
+///   • Player response choice buttons (paginated, up to 5 visible)
+///   • Footer: Goodbye (left) / More (right, when choices overflow)
+///
+/// All element sizes are divided by a GUI-scale factor so the window
+/// appears at a consistent physical size regardless of the player's
+/// NWN GUI-scale setting.
 /// </summary>
 public sealed class ConversationView : ScryView<ConversationPresenter>
 {
-    public const float WindowW = 520f;
-    public const float WindowH = 480f;
+    // ── Base dimensions at 100 % GUI scale ──
+    public const float BaseWindowW = 700f;
+    public const float BaseWindowH = 560f;
+    public const float BaseWindowX = 60f;
+    public const float BaseWindowY = 80f;
 
-    public const float PortraitW = 128f;
-    public const float PortraitH = 160f;
+    private const float BasePortraitW = 128f;
+    private const float BasePortraitH = 160f;
+    private const float BasePortraitPad = 10f;
+
+    private const float BaseTextPanelH = 200f;
+
+    private const float BaseButtonH = 36f;
+    private const float BaseRowH = 42f;
+    private const float BasePaginationH = 32f;
+    private const float BaseSpacing = 8f;
+    private const float BaseGoodbyeW = 140f;
+    private const float BaseMoreW = 110f;
+    private const float BasePagBtnW = 34f;
+    private const float BasePagLabelW = 70f;
 
     public const int MaxVisibleChoices = 5;
+
+    // ── Computed scaled sizes (set before RootLayout is called) ──
+    private float _sf = 1f; // scale factor
+
+    private float S(float baseVal) => baseVal / _sf;
 
     // ── NPC portrait and text binds ──
     public readonly NuiBind<string> NpcPortrait = new("conv_portrait");
@@ -29,6 +56,7 @@ public sealed class ConversationView : ScryView<ConversationPresenter>
     public readonly NuiBind<string> TextPageInfo = new("conv_text_page_info");
     public readonly NuiBind<bool> ShowPrevTextPage = new("conv_show_prev_text");
     public readonly NuiBind<bool> ShowNextTextPage = new("conv_show_next_text");
+    public readonly NuiBind<bool> ShowTextPagination = new("conv_show_text_pag");
 
     // ── Choice button binds (fixed 5 slots) ──
     public readonly List<NuiBind<string>> ChoiceTexts = [];
@@ -43,7 +71,6 @@ public sealed class ConversationView : ScryView<ConversationPresenter>
 
     public ConversationView(NwPlayer player, DialogueService dialogueService)
     {
-        // Initialize per-slot binds
         for (int i = 0; i < MaxVisibleChoices; i++)
         {
             ChoiceTexts.Add(new NuiBind<string>($"conv_choice_{i}"));
@@ -58,104 +85,116 @@ public sealed class ConversationView : ScryView<ConversationPresenter>
 
     public override ConversationPresenter Presenter { get; protected set; }
 
+    /// <summary>
+    /// Sets the GUI-scale factor. Call before <see cref="RootLayout"/>.
+    /// </summary>
+    public void SetScaleFactor(float scaleFactor)
+    {
+        _sf = scaleFactor > 0f ? scaleFactor : 1f;
+    }
+
     public override NuiLayout RootLayout()
     {
         return new NuiColumn
         {
             Children =
             [
-                // ── Top section: Portrait + NPC text ──
+                // ── Top section: Portrait + NPC text side-by-side ──
                 new NuiRow
                 {
-                    Height = PortraitH + 20f,
+                    Height = S(BaseTextPanelH + BasePortraitPad),
                     Children =
                     [
-                        // NPC Portrait (left)
+                        // NPC Portrait (left, fixed width)
                         new NuiGroup
                         {
-                            Width = PortraitW + 8f,
-                            Height = PortraitH + 8f,
+                            Width = S(BasePortraitW + BasePortraitPad),
+                            Height = S(BasePortraitH + BasePortraitPad),
                             Border = true,
                             Scrollbars = NuiScrollbars.None,
                             Element = new NuiImage(NpcPortrait)
                             {
                                 ImageAspect = NuiAspect.ExactScaled,
-                                Width = PortraitW,
-                                Height = PortraitH
+                                Width = S(BasePortraitW),
+                                Height = S(BasePortraitH)
                             }
                         },
 
-                        // NPC text panel (right)
+                        // Spacer between portrait and text
+                        new NuiSpacer { Width = S(BaseSpacing) },
+
+                        // NPC text panel (fills remaining width, scrollable)
                         new NuiGroup
                         {
                             Border = true,
                             Scrollbars = NuiScrollbars.Y,
-                            Element = new NuiColumn
+                            Element = new NuiText(NpcText)
                             {
-                                Children =
-                                [
-                                    new NuiText(NpcText)
-                                    {
-                                        Scrollbars = NuiScrollbars.None
-                                    }
-                                ]
+                                Scrollbars = NuiScrollbars.None
                             }
                         }
                     ]
                 },
 
-                // ── Text pagination row ──
+                // ── Text pagination row (hidden when single page) ──
                 new NuiRow
                 {
-                    Height = 30f,
+                    Height = S(BasePaginationH),
+                    Visible = ShowTextPagination,
                     Children =
                     [
                         new NuiSpacer(),
                         new NuiButton("<")
                         {
                             Id = "btn_prev_text",
-                            Width = 30f,
-                            Height = 26f,
+                            Width = S(BasePagBtnW),
+                            Height = S(BasePaginationH - 4f),
                             Enabled = ShowPrevTextPage
                         },
                         new NuiLabel(TextPageInfo)
                         {
-                            Width = 60f,
+                            Width = S(BasePagLabelW),
                             HorizontalAlign = NuiHAlign.Center,
                             VerticalAlign = NuiVAlign.Middle
                         },
                         new NuiButton(">")
                         {
                             Id = "btn_next_text",
-                            Width = 30f,
-                            Height = 26f,
+                            Width = S(BasePagBtnW),
+                            Height = S(BasePaginationH - 4f),
                             Enabled = ShowNextTextPage
                         },
                         new NuiSpacer()
                     ]
                 },
 
+                // Spacing
+                new NuiSpacer { Height = S(BaseSpacing) },
+
                 // ── Choice buttons ──
                 BuildChoiceSection(),
 
-                // ── Bottom bar: Goodbye + More ──
+                // Flex spacer pushes footer to the bottom
+                new NuiSpacer(),
+
+                // ── Footer: Goodbye + More ──
                 new NuiRow
                 {
-                    Height = 36f,
+                    Height = S(BaseRowH),
                     Children =
                     [
                         new NuiButton(GoodbyeText)
                         {
                             Id = "btn_goodbye",
-                            Width = 120f,
-                            Height = 32f
+                            Width = S(BaseGoodbyeW),
+                            Height = S(BaseButtonH)
                         },
                         new NuiSpacer(),
                         new NuiButton(MoreButtonText)
                         {
                             Id = "btn_more",
-                            Width = 80f,
-                            Height = 32f,
+                            Width = S(BaseMoreW),
+                            Height = S(BaseButtonH),
                             Visible = ShowMoreButton
                         }
                     ]
@@ -172,20 +211,14 @@ public sealed class ConversationView : ScryView<ConversationPresenter>
         {
             children.Add(new NuiRow
             {
-                Height = 36f,
+                Height = S(BaseRowH),
                 Visible = ChoiceVisible[i],
                 Children =
                 [
                     new NuiButton(ChoiceTexts[i])
                     {
                         Id = $"btn_choice_{i}",
-                        Height = 32f
-                    },
-                    new NuiButton(">")
-                    {
-                        Id = $"btn_choice_go_{i}",
-                        Width = 30f,
-                        Height = 32f
+                        Height = S(BaseButtonH)
                     }
                 ]
             });

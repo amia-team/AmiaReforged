@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.WindowingSystem;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Application;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Domain.Conditions;
@@ -23,11 +24,14 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
     private NuiWindowToken _token;
     private NuiWindow? _window;
 
+    private float _scaleFactor = 1f;
+
     // Cached visible choices for the current node
     private List<DialogueChoice> _visibleChoices = [];
     private int _choicePage; // For paginating choices when >5
 
     [Inject] private Lazy<DialogueConditionRegistry>? ConditionRegistry { get; init; }
+    [Inject] private DevicePropertyService DevicePropertyService { get; init; } = null!;
 
     public ConversationPresenter(ConversationView view, NwPlayer player, DialogueService dialogueService)
     {
@@ -45,12 +49,23 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
 
     public override void InitBefore()
     {
+        // Calculate GUI-scale factor and pass it to the view before layout is built
+        int guiScalePercent = DevicePropertyService.GetGuiScale(_player);
+        _scaleFactor = guiScalePercent / 100f;
+        if (_scaleFactor <= 0f) _scaleFactor = 1f;
+
+        View.SetScaleFactor(_scaleFactor);
+
         DialogueSession? session = _dialogueService.GetActiveSession(_player);
         string title = session != null ? session.GetNpcName() : "Conversation";
 
         _window = new NuiWindow(View.RootLayout(), title)
         {
-            Geometry = new NuiRect(40f, 40f, ConversationView.WindowW, ConversationView.WindowH),
+            Geometry = new NuiRect(
+                ConversationView.BaseWindowX / _scaleFactor,
+                ConversationView.BaseWindowY / _scaleFactor,
+                ConversationView.BaseWindowW / _scaleFactor,
+                ConversationView.BaseWindowH / _scaleFactor),
             Resizable = true,
             Closable = true
         };
@@ -141,12 +156,10 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
                 return;
         }
 
-        // Choice buttons: btn_choice_0..4 or btn_choice_go_0..4
-        if (elementId.StartsWith("btn_choice_go_") || elementId.StartsWith("btn_choice_"))
+        // Choice buttons: btn_choice_0..4
+        if (elementId.StartsWith("btn_choice_"))
         {
-            string indexStr = elementId.StartsWith("btn_choice_go_")
-                ? elementId["btn_choice_go_".Length..]
-                : elementId["btn_choice_".Length..];
+            string indexStr = elementId["btn_choice_".Length..];
 
             if (int.TryParse(indexStr, out int slotIndex))
             {
@@ -208,7 +221,10 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
 
         _token.SetBindValue(View.NpcText, text);
 
-        if (totalPages > 1)
+        bool multiPage = totalPages > 1;
+        _token.SetBindValue(View.ShowTextPagination, multiPage);
+
+        if (multiPage)
         {
             _token.SetBindValue(View.TextPageInfo, $"{session.TextPage + 1}/{totalPages}");
         }

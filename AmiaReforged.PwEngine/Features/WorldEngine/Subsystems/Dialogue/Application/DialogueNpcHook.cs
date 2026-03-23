@@ -1,7 +1,11 @@
+using AmiaReforged.PwEngine.Database;
+using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Domain.ValueObjects;
+using Anvil;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using Microsoft.EntityFrameworkCore;
 using NLog;
 using NWN.Core;
 
@@ -46,8 +50,8 @@ public sealed class DialogueNpcHook
 
     public DialogueNpcHook()
     {
-        // Initial scan: hook all creatures that already have the local variable set
-        // and rebuild the ownership registry from live game state.
+        // Hook any NPCs that already have the local variable set (e.g. from a previous
+        // server session where the variable was stamped at runtime but persisted in save).
         List<NwCreature> dialogueNpcs = NwObject.FindObjectsOfType<NwCreature>()
             .Where(c => !string.IsNullOrEmpty(
                 c.GetObjectVariable<LocalVariableString>(DialogueTreeVarName).Value))
@@ -58,7 +62,6 @@ public sealed class DialogueNpcHook
             string treeId = npc.GetObjectVariable<LocalVariableString>(DialogueTreeVarName).Value;
             if (!string.IsNullOrEmpty(treeId))
             {
-                // Populate registry — if multiple NPCs have the same tree, the tag is the same
                 lock (_registryLock)
                 {
                     _treeToTag[treeId] = npc.Tag;
@@ -70,6 +73,55 @@ public sealed class DialogueNpcHook
         Log.Info(
             "DialogueNpcHook registered — {NpcCount} dialogue-enabled NPCs found at startup, {TreeCount} trees in registry",
             dialogueNpcs.Count, _treeToTag.Count);
+
+        // Subscribe to module load to register NPCs from the database.
+        // At module load time, all areas/creatures are fully spawned and the DB is reachable.
+        NwModule.Instance.OnModuleLoad += HandleModuleLoad;
+    }
+
+    /// <summary>
+    /// On module load, queries the database for all dialogue trees with a speaker tag
+    /// and registers matching NPCs. This ensures NPCs are wired up on boot without
+    /// requiring a manual re-save from the admin panel.
+    /// </summary>
+    private void HandleModuleLoad(ModuleEvents.OnModuleLoad _)
+    {
+        try
+        {
+            PwContextFactory? factory = AnvilCore.GetService<PwContextFactory>();
+            if (factory == null)
+            {
+                Log.Warn("DialogueNpcHook: PwContextFactory not available at module load — skipping DB registration");
+                return;
+            }
+
+            using PwEngineContext context = factory.CreateDbContext();
+            List<PersistedDialogueTree> trees = context.DialogueTrees
+                .Where(t => t.SpeakerTag != null && t.SpeakerTag != "")
+                .Select(t => new PersistedDialogueTree
+                {
+                    DialogueTreeId = t.DialogueTreeId,
+                    Title = t.Title,
+                    SpeakerTag = t.SpeakerTag
+                })
+                .ToList();
+
+            int totalRegistered = 0;
+            foreach (PersistedDialogueTree tree in trees)
+            {
+                if (string.IsNullOrWhiteSpace(tree.SpeakerTag)) continue;
+                int count = RegisterNpcsForTree(tree.SpeakerTag, tree.DialogueTreeId);
+                totalRegistered += count;
+            }
+
+            Log.Info(
+                "DialogueNpcHook: module load registration complete — {TreeCount} trees, {NpcCount} NPCs registered",
+                trees.Count, totalRegistered);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "DialogueNpcHook: failed to register dialogue NPCs from database at module load");
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════
