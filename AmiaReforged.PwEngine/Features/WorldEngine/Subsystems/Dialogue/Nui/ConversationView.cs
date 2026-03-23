@@ -31,6 +31,7 @@ public sealed class ConversationView : ScryView<ConversationPresenter>
     private const float BasePortraitPad = 10f;
 
     private const float BaseTextPanelH = 200f;
+    private const float BaseTextPanelW = 500f;
 
     private const float BaseButtonH = 36f;
     private const float BaseRowH = 42f;
@@ -103,6 +104,7 @@ public sealed class ConversationView : ScryView<ConversationPresenter>
                 new NuiRow
                 {
                     Height = S(BaseTextPanelH + BasePortraitPad),
+                    Width = S(BaseTextPanelW + BasePortraitPad),
                     Children =
                     [
                         // NPC Portrait (left, fixed width)
