@@ -343,6 +343,11 @@ public sealed class DialogueNpcHook
             return;
         }
 
+        // Capture NWN object strings before the await — after the async call completes we may
+        // resume on a thread-pool thread where NWN object property access is unsafe.
+        string playerName = player.PlayerName;
+        string npcName = npc.Name;
+
         // Start the dialogue
         DialogueTreeId treeId = new(dialogueTreeId);
         bool started = await DialogueService.Value.StartDialogueAsync(player, npc, treeId, characterId);
@@ -350,7 +355,7 @@ public sealed class DialogueNpcHook
         if (!started)
         {
             Log.Warn("Failed to start dialogue '{TreeId}' for {Player} with {Npc}",
-                dialogueTreeId, player.PlayerName, npc.Name);
+                dialogueTreeId, playerName, npcName);
         }
     }
 

@@ -51,6 +51,11 @@ public sealed class DialogueService
         }
 
         DialogueTree? tree = await Repository.Value.GetByIdAsync(treeId);
+
+        // DB call above completes on a thread-pool thread — switch back to the main
+        // NWN server thread before touching any game objects.
+        await NwTask.SwitchToMainThread();
+
         if (tree == null)
         {
             Log.Warn("Dialogue tree '{TreeId}' not found", treeId.Value);
@@ -113,6 +118,9 @@ public sealed class DialogueService
         List<DialogueChoice> visibleChoices =
             await session.GetVisibleChoicesAsync(ConditionRegistry.Value);
 
+        // Condition evaluation may involve async work — ensure we're back on the main thread.
+        await NwTask.SwitchToMainThread();
+
         if (choiceIndex < 0 || choiceIndex >= visibleChoices.Count)
         {
             Log.Warn("Invalid choice index {Index} (available: {Count})", choiceIndex, visibleChoices.Count);
@@ -144,6 +152,7 @@ public sealed class DialogueService
 
         // Execute the new node's actions
         await ExecuteNodeActions(session);
+        await NwTask.SwitchToMainThread();
 
         // Publish node entered event
         await PublishEventAsync(new DialogueNodeEnteredEvent
@@ -161,6 +170,7 @@ public sealed class DialogueService
             if (newNode != null)
             {
                 await ExecuteNodeActions(session);
+                await NwTask.SwitchToMainThread();
             }
         }
 
@@ -247,6 +257,10 @@ public sealed class DialogueService
             };
 
             CommandResult result = await WorldEngine.Value.ExecuteAsync(command);
+
+            // Command handlers may do async DB/network work — get back on the main thread.
+            await NwTask.SwitchToMainThread();
+
             if (!result.Success)
             {
                 Log.Warn("Dialogue action {ActionType} failed: {Error}", action.ActionType, result.ErrorMessage);
