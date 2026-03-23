@@ -1,0 +1,716 @@
+@* 
+    DialogueTreeEditor.razor
+    A tree/outline editor for creating and editing dialogue trees.
+    Shown inline in the WorldEngineEditor when the Dialogues entity type is selected.
+*@
+
+@using AmiaReforged.AdminPanel.Models
+@using AmiaReforged.AdminPanel.Services
+@inject DialogueApiService Api
+
+<div class="dialogue-editor d-flex flex-column h-100">
+    @* ═══════════════════════ Toolbar ═══════════════════════ *@
+    <div class="dialogue-toolbar d-flex align-items-center gap-2 p-2 border-bottom bg-dark">
+        @if (_editItem != null)
+        {
+            <button class="btn btn-sm btn-outline-secondary" @onclick="BackToList" title="Back to list">
+                <i class="bi bi-arrow-left"></i>
+            </button>
+            <span class="text-light fw-semibold text-truncate" style="max-width:300px;">
+                @(_isCreating ? "New Dialogue Tree" : _editItem.Title)
+            </span>
+            <div class="ms-auto d-flex gap-1">
+                <button class="btn btn-sm btn-success" @onclick="SaveAsync" disabled="@_isSaving">
+                    <i class="bi bi-check-lg me-1"></i>@(_isSaving ? "Saving…" : "Save")
+                </button>
+                <button class="btn btn-sm btn-outline-danger" @onclick="BackToList" disabled="@_isSaving">
+                    Cancel
+                </button>
+            </div>
+        }
+        else
+        {
+            <span class="text-light fw-semibold">Dialogue Trees</span>
+            <div class="ms-auto">
+                <button class="btn btn-sm btn-primary" @onclick="CreateNew">
+                    <i class="bi bi-plus-lg me-1"></i>New
+                </button>
+            </div>
+        }
+    </div>
+
+    @* ═══════════════════════ Error banner ═══════════════════════ *@
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible m-2 py-1 px-2 small" role="alert">
+            @_errorMessage
+            <button type="button" class="btn-close btn-close-white py-1" @onclick="() => _errorMessage = null"></button>
+        </div>
+    }
+
+    @* ═══════════════════════ List view ═══════════════════════ *@
+    @if (_editItem == null)
+    {
+        <div class="flex-grow-1 overflow-auto p-2">
+            @if (_isLoading)
+            {
+                <div class="text-center text-muted py-4"><i class="bi bi-arrow-repeat spin"></i> Loading…</div>
+            }
+            else if (_dialogueList.Count == 0)
+            {
+                <div class="text-center text-muted py-4">No dialogue trees found.</div>
+            }
+            else
+            {
+                <div class="list-group list-group-flush">
+                    @foreach (DialogueTreeDto item in _dialogueList)
+                    {
+                        <button class="list-group-item list-group-item-action bg-dark text-light border-secondary d-flex justify-content-between align-items-center"
+                                @onclick="() => OpenEdit(item)">
+                            <div>
+                                <div class="fw-semibold">@item.Title</div>
+                                <small class="text-muted">@item.DialogueTreeId — @(item.Nodes.Count) nodes</small>
+                            </div>
+                            <div class="d-flex gap-1">
+                                <button class="btn btn-sm btn-outline-danger" @onclick:stopPropagation="true"
+                                        @onclick="() => DeleteAsync(item)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </button>
+                    }
+                </div>
+            }
+        </div>
+    }
+
+    @* ═══════════════════════ Edit view ═══════════════════════ *@
+    @if (_editItem != null)
+    {
+        <div class="flex-grow-1 overflow-auto">
+            <div class="row g-0 h-100">
+                @* LEFT: Node tree outline *@
+                <div class="col-4 border-end overflow-auto" style="max-height:100%;">
+                    <div class="p-2">
+                        <div class="d-flex align-items-center mb-2">
+                            <strong class="text-light small">Nodes</strong>
+                            <button class="btn btn-sm btn-outline-primary ms-auto" @onclick="AddRootNode"
+                                    title="Add node">
+                                <i class="bi bi-plus"></i>
+                            </button>
+                        </div>
+                        @if (_editItem.Nodes.Count == 0)
+                        {
+                            <div class="text-muted small py-2 text-center">No nodes. Click + to add one.</div>
+                        }
+                        else
+                        {
+                            @* Render root-level nodes (no parent) *@
+                            @foreach (DialogueNodeDto node in GetRootNodes())
+                            {
+                                <div>@RenderNodeTree(node, 0)</div>
+                            }
+                        }
+                    </div>
+                </div>
+
+                @* RIGHT: Detail panels *@
+                <div class="col-8 overflow-auto" style="max-height:100%;">
+                    <div class="p-3">
+                        @* === Tree header fields === *@
+                        <fieldset class="mb-3 p-2 border border-secondary rounded">
+                            <legend class="small text-muted px-1" style="width:auto">Tree Properties</legend>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label small text-muted mb-0">ID</label>
+                                    <input class="form-control form-control-sm bg-dark text-light border-secondary"
+                                           @bind="_editItem.DialogueTreeId" disabled="@(!_isCreating)" />
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small text-muted mb-0">Speaker Tag</label>
+                                    <input class="form-control form-control-sm bg-dark text-light border-secondary"
+                                           @bind="_editItem.SpeakerTag" placeholder="npc_tag" />
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small text-muted mb-0">Title</label>
+                                    <input class="form-control form-control-sm bg-dark text-light border-secondary"
+                                           @bind="_editItem.Title" />
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small text-muted mb-0">Description</label>
+                                    <textarea class="form-control form-control-sm bg-dark text-light border-secondary"
+                                              rows="2" @bind="_editItem.Description"></textarea>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        @* === Selected node editor === *@
+                        @if (_selectedNode != null)
+                        {
+                            <fieldset class="mb-3 p-2 border border-primary rounded">
+                                <legend class="small text-primary px-1" style="width:auto">
+                                    Node: @_selectedNode.Id.Substring(0, Math.Min(8, _selectedNode.Id.Length))…
+                                </legend>
+
+                                @* Node basic fields *@
+                                <div class="row g-2 mb-2">
+                                    <div class="col-4">
+                                        <label class="form-label small text-muted mb-0">Type</label>
+                                        <select class="form-select form-select-sm bg-dark text-light border-secondary"
+                                                @bind="_selectedNode.Type">
+                                            <option value="Root">Root</option>
+                                            <option value="NpcText">NpcText</option>
+                                            <option value="Action">Action</option>
+                                            <option value="End">End</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label small text-muted mb-0">Sort Order</label>
+                                        <input type="number"
+                                               class="form-control form-control-sm bg-dark text-light border-secondary"
+                                               @bind="_selectedNode.SortOrder" />
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label small text-muted mb-0">Speaker Override</label>
+                                        <input class="form-control form-control-sm bg-dark text-light border-secondary"
+                                               @bind="_selectedNode.SpeakerTag" placeholder="(tree default)" />
+                                    </div>
+                                </div>
+
+                                @* Node text *@
+                                <div class="mb-2">
+                                    <label class="form-label small text-muted mb-0">NPC Text</label>
+                                    <textarea class="form-control form-control-sm bg-dark text-light border-secondary"
+                                              rows="3" @bind="_selectedNode.Text"></textarea>
+                                </div>
+
+                                @* Actions *@
+                                <div class="mb-2">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <span class="small text-muted">Actions</span>
+                                        <button class="btn btn-sm btn-outline-secondary ms-auto py-0 px-1"
+                                                @onclick="() => AddAction(_selectedNode)">
+                                            <i class="bi bi-plus"></i>
+                                        </button>
+                                    </div>
+                                    @foreach (DialogueActionDto action in _selectedNode.Actions)
+                                    {
+                                        <div class="d-flex gap-1 mb-1 align-items-start">
+                                            <select class="form-select form-select-sm bg-dark text-light border-secondary"
+                                                    style="width:130px" @bind="action.ActionType">
+                                                @foreach (string at in ActionTypes)
+                                                {
+                                                    <option value="@at">@at</option>
+                                                }
+                                            </select>
+                                            <input class="form-control form-control-sm bg-dark text-light border-secondary flex-grow-1"
+                                                   placeholder="params (key=val, …)"
+                                                   value="@FormatParams(action.Parameters)"
+                                                   @onchange="e => ParseParams(action.Parameters, e.Value?.ToString())" />
+                                            <button class="btn btn-sm btn-outline-danger py-0 px-1"
+                                                    @onclick="() => _selectedNode.Actions.Remove(action)">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+
+                                @* Choices (player responses) *@
+                                <div class="mb-2">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <span class="small text-muted">Player Choices</span>
+                                        <button class="btn btn-sm btn-outline-secondary ms-auto py-0 px-1"
+                                                @onclick="() => AddChoice(_selectedNode)">
+                                            <i class="bi bi-plus"></i>
+                                        </button>
+                                    </div>
+                                    @foreach (DialogueChoiceDto choice in _selectedNode.Choices)
+                                    {
+                                        <div class="card bg-dark border-secondary mb-1">
+                                            <div class="card-body p-2">
+                                                <div class="d-flex gap-1 mb-1 align-items-start">
+                                                    <input class="form-control form-control-sm bg-dark text-light border-secondary flex-grow-1"
+                                                           placeholder="Response text"
+                                                           @bind="choice.ResponseText" />
+                                                    <button class="btn btn-sm btn-outline-danger py-0 px-1"
+                                                            @onclick="() => _selectedNode.Choices.Remove(choice)">
+                                                        <i class="bi bi-x"></i>
+                                                    </button>
+                                                </div>
+                                                <div class="d-flex gap-1 align-items-center">
+                                                    <label class="small text-muted mb-0" style="white-space:nowrap">→ Target:</label>
+                                                    <select class="form-select form-select-sm bg-dark text-light border-secondary"
+                                                            @bind="choice.TargetNodeId">
+                                                        <option value="">(none)</option>
+                                                        @foreach (DialogueNodeDto n in _editItem!.Nodes.Where(n => n.Id != _selectedNode.Id))
+                                                        {
+                                                            <option value="@n.Id">
+                                                                @NodeLabel(n)
+                                                            </option>
+                                                        }
+                                                    </select>
+                                                </div>
+
+                                                @* Choice conditions *@
+                                                <div class="mt-1">
+                                                    <div class="d-flex align-items-center">
+                                                        <span class="small text-muted">Conditions</span>
+                                                        <button class="btn btn-sm btn-outline-secondary ms-auto py-0 px-1"
+                                                                @onclick="() => AddCondition(choice)">
+                                                            <i class="bi bi-plus" style="font-size:0.7em"></i>
+                                                        </button>
+                                                    </div>
+                                                    @foreach (DialogueConditionDto cond in choice.Conditions)
+                                                    {
+                                                        <div class="d-flex gap-1 mt-1 align-items-start">
+                                                            <select class="form-select form-select-sm bg-dark text-light border-secondary"
+                                                                    style="width:120px" @bind="cond.Type">
+                                                                @foreach (string ct in ConditionTypes)
+                                                                {
+                                                                    <option value="@ct">@ct</option>
+                                                                }
+                                                            </select>
+                                                            <input class="form-control form-control-sm bg-dark text-light border-secondary flex-grow-1"
+                                                                   placeholder="params (key=val, …)"
+                                                                   value="@FormatParams(cond.Parameters)"
+                                                                   @onchange="e => ParseParams(cond.Parameters, e.Value?.ToString())" />
+                                                            <button class="btn btn-sm btn-outline-danger py-0 px-1"
+                                                                    @onclick="() => choice.Conditions.Remove(cond)">
+                                                                <i class="bi bi-x"></i>
+                                                            </button>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+
+                                @* Node management buttons *@
+                                <div class="d-flex gap-1 mt-2">
+                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => AddChildNode(_selectedNode)">
+                                        <i class="bi bi-diagram-3 me-1"></i>Add Child
+                                    </button>
+                                    @if (_editItem!.RootNodeId != _selectedNode.Id)
+                                    {
+                                        <button class="btn btn-sm btn-outline-warning" @onclick="() => SetAsRoot(_selectedNode)">
+                                            <i class="bi bi-star me-1"></i>Set as Root
+                                        </button>
+                                    }
+                                    <button class="btn btn-sm btn-outline-danger ms-auto"
+                                            @onclick="() => RemoveNode(_selectedNode)">
+                                        <i class="bi bi-trash me-1"></i>Delete Node
+                                    </button>
+                                </div>
+                            </fieldset>
+                        }
+                        else
+                        {
+                            <div class="text-muted text-center py-4">
+                                Select a node from the tree to edit its properties.
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    // ═══════════════════════ State ═══════════════════════
+
+    private List<DialogueTreeDto> _dialogueList = [];
+    private DialogueTreeDto? _editItem;
+    private DialogueNodeDto? _selectedNode;
+    private bool _isCreating;
+    private bool _isLoading;
+    private bool _isSaving;
+    private string? _errorMessage;
+
+    private static readonly string[] ActionTypes =
+    [
+        "StartQuest", "CompleteQuest", "GiveItem", "TakeItem",
+        "ChangeReputation", "GrantKnowledge", "SetLocalVariable",
+        "GiveGold", "TakeGold", "Custom"
+    ];
+
+    private static readonly string[] ConditionTypes =
+    [
+        "HasItem", "QuestState", "ReputationAbove", "ReputationBelow",
+        "HasKnowledge", "LocalVariable", "Custom"
+    ];
+
+    // ═══════════════════════ Public API ═══════════════════════
+
+    /// <summary>Called by parent when the Dialogues entity type is selected.</summary>
+    public async Task LoadListAsync()
+    {
+        _editItem = null;
+        _selectedNode = null;
+        _errorMessage = null;
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            PagedResult<DialogueTreeDto> result = await Api.GetAllAsync();
+            _dialogueList = result.Items?.ToList() ?? [];
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to load dialogue trees: {ex.Message}";
+            _dialogueList = [];
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>Push endpoint selection into the API service.</summary>
+    public void SelectEndpoint(Guid? endpointId)
+    {
+        Api.SelectEndpoint(endpointId);
+    }
+
+    // ═══════════════════════ List actions ═══════════════════════
+
+    private void CreateNew()
+    {
+        _editItem = new DialogueTreeDto
+        {
+            DialogueTreeId = "",
+            Title = "New Dialogue",
+            Description = ""
+        };
+        _isCreating = true;
+        _selectedNode = null;
+        _errorMessage = null;
+        StateHasChanged();
+    }
+
+    private async Task OpenEdit(DialogueTreeDto item)
+    {
+        try
+        {
+            DialogueTreeDto? full = await Api.GetByIdAsync(item.DialogueTreeId);
+            if (full == null)
+            {
+                _errorMessage = "Could not load dialogue tree.";
+                return;
+            }
+
+            _editItem = full;
+            _isCreating = false;
+            _selectedNode = null;
+            _errorMessage = null;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to load: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteAsync(DialogueTreeDto item)
+    {
+        try
+        {
+            await Api.DeleteAsync(item.DialogueTreeId);
+            _dialogueList.Remove(item);
+            if (_editItem?.DialogueTreeId == item.DialogueTreeId)
+            {
+                _editItem = null;
+                _selectedNode = null;
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Delete failed: {ex.Message}";
+        }
+    }
+
+    private void BackToList()
+    {
+        _editItem = null;
+        _selectedNode = null;
+        _isCreating = false;
+        _errorMessage = null;
+        StateHasChanged();
+    }
+
+    // ═══════════════════════ Save ═══════════════════════
+
+    private async Task SaveAsync()
+    {
+        if (_editItem == null) return;
+
+        _isSaving = true;
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            if (_isCreating)
+            {
+                DialogueTreeDto? created = await Api.CreateAsync(_editItem);
+                if (created != null)
+                {
+                    _dialogueList.Add(created);
+                    _editItem = created;
+                    _isCreating = false;
+                }
+            }
+            else
+            {
+                DialogueTreeDto? updated = await Api.UpdateAsync(_editItem.DialogueTreeId, _editItem);
+                if (updated != null)
+                {
+                    int idx = _dialogueList.FindIndex(d => d.DialogueTreeId == updated.DialogueTreeId);
+                    if (idx >= 0) _dialogueList[idx] = updated;
+                    _editItem = updated;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Save failed: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    // ═══════════════════════ Node tree helpers ═══════════════════════
+
+    private List<DialogueNodeDto> GetRootNodes()
+    {
+        return _editItem!.Nodes
+            .Where(n => string.IsNullOrEmpty(n.ParentNodeId))
+            .OrderBy(n => n.SortOrder)
+            .ToList();
+    }
+
+    private List<DialogueNodeDto> GetChildren(string parentId)
+    {
+        return _editItem!.Nodes
+            .Where(n => n.ParentNodeId == parentId)
+            .OrderBy(n => n.SortOrder)
+            .ToList();
+    }
+
+    private RenderFragment RenderNodeTree(DialogueNodeDto node, int depth) => builder =>
+    {
+        bool isSelected = _selectedNode?.Id == node.Id;
+        bool isRoot = _editItem?.RootNodeId == node.Id;
+        List<DialogueNodeDto> children = GetChildren(node.Id);
+
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "style", $"padding-left:{depth * 16}px");
+
+        // Node row
+        builder.OpenElement(2, "div");
+        builder.AddAttribute(3, "class",
+            $"d-flex align-items-center py-1 px-1 rounded cursor-pointer small {(isSelected ? "bg-primary bg-opacity-25 text-light" : "text-light")}");
+        builder.AddAttribute(4, "onclick", EventCallback.Factory.Create(this, () => SelectNode(node)));
+
+        // Icon
+        builder.OpenElement(5, "i");
+        builder.AddAttribute(6, "class", $"bi {GetNodeIcon(node.Type)} me-1 {(isRoot ? "text-warning" : "text-muted")}");
+        builder.CloseElement(); // i
+
+        // Label
+        builder.OpenElement(7, "span");
+        builder.AddAttribute(8, "class", "text-truncate");
+        builder.AddAttribute(9, "style", "max-width:180px");
+        builder.AddContent(10, NodeLabel(node));
+        builder.CloseElement(); // span
+
+        if (isRoot)
+        {
+            builder.OpenElement(11, "span");
+            builder.AddAttribute(12, "class", "badge bg-warning text-dark ms-1");
+            builder.AddAttribute(13, "style", "font-size:0.6em");
+            builder.AddContent(14, "ROOT");
+            builder.CloseElement(); // span
+        }
+
+        builder.CloseElement(); // row div
+
+        // Children
+        foreach (DialogueNodeDto child in children)
+        {
+            builder.AddContent(15, RenderNodeTree(child, depth + 1));
+        }
+
+        builder.CloseElement(); // outer div
+    };
+
+    private void SelectNode(DialogueNodeDto node)
+    {
+        _selectedNode = node;
+        StateHasChanged();
+    }
+
+    private void AddRootNode()
+    {
+        DialogueNodeDto node = CreateNode("NpcText");
+
+        if (_editItem!.Nodes.Count == 0)
+        {
+            node.Type = "Root";
+            _editItem.RootNodeId = node.Id;
+        }
+
+        _editItem.Nodes.Add(node);
+        _selectedNode = node;
+        StateHasChanged();
+    }
+
+    private void AddChildNode(DialogueNodeDto parent)
+    {
+        DialogueNodeDto node = CreateNode("NpcText");
+        node.ParentNodeId = parent.Id;
+        _editItem!.Nodes.Add(node);
+
+        // Auto-add a choice on the parent pointing to this new child
+        parent.Choices.Add(new DialogueChoiceDto
+        {
+            TargetNodeId = node.Id,
+            ResponseText = "(new response)",
+            SortOrder = parent.Choices.Count
+        });
+
+        _selectedNode = node;
+        StateHasChanged();
+    }
+
+    private void RemoveNode(DialogueNodeDto node)
+    {
+        // Remove children recursively
+        List<DialogueNodeDto> children = GetChildren(node.Id);
+        foreach (DialogueNodeDto child in children)
+        {
+            RemoveNode(child);
+        }
+
+        // Remove any choices pointing to this node
+        foreach (DialogueNodeDto n in _editItem!.Nodes)
+        {
+            n.Choices.RemoveAll(c => c.TargetNodeId == node.Id);
+        }
+
+        _editItem.Nodes.Remove(node);
+
+        if (_editItem.RootNodeId == node.Id)
+            _editItem.RootNodeId = null;
+        if (_selectedNode?.Id == node.Id)
+            _selectedNode = null;
+
+        StateHasChanged();
+    }
+
+    private void SetAsRoot(DialogueNodeDto node)
+    {
+        _editItem!.RootNodeId = node.Id;
+        node.Type = "Root";
+        StateHasChanged();
+    }
+
+    // ═══════════════════════ Choice / Action / Condition helpers ═══════════════════════
+
+    private void AddChoice(DialogueNodeDto node)
+    {
+        node.Choices.Add(new DialogueChoiceDto
+        {
+            ResponseText = "",
+            SortOrder = node.Choices.Count
+        });
+        StateHasChanged();
+    }
+
+    private void AddAction(DialogueNodeDto node)
+    {
+        node.Actions.Add(new DialogueActionDto
+        {
+            ActionType = "Custom",
+            ExecutionOrder = node.Actions.Count
+        });
+        StateHasChanged();
+    }
+
+    private void AddCondition(DialogueChoiceDto choice)
+    {
+        choice.Conditions.Add(new DialogueConditionDto { Type = "HasItem" });
+        StateHasChanged();
+    }
+
+    // ═══════════════════════ Utility ═══════════════════════
+
+    private static DialogueNodeDto CreateNode(string type)
+    {
+        return new DialogueNodeDto
+        {
+            Id = Guid.NewGuid().ToString(),
+            Type = type,
+            Text = "",
+            SortOrder = 0
+        };
+    }
+
+    private static string NodeLabel(DialogueNodeDto node)
+    {
+        if (!string.IsNullOrWhiteSpace(node.Text))
+        {
+            string preview = node.Text.Length > 30 ? node.Text[..30] + "…" : node.Text;
+            return $"[{node.Type}] {preview}";
+        }
+
+        return $"[{node.Type}] {node.Id[..Math.Min(8, node.Id.Length)]}";
+    }
+
+    private static string GetNodeIcon(string type) => type switch
+    {
+        "Root" => "bi-play-circle",
+        "NpcText" => "bi-chat-left-text",
+        "Action" => "bi-lightning",
+        "End" => "bi-stop-circle",
+        _ => "bi-circle"
+    };
+
+    private static string FormatParams(Dictionary<string, string> parameters)
+    {
+        if (parameters.Count == 0) return "";
+        return string.Join(", ", parameters.Select(kv => $"{kv.Key}={kv.Value}"));
+    }
+
+    private static void ParseParams(Dictionary<string, string> target, string? input)
+    {
+        target.Clear();
+        if (string.IsNullOrWhiteSpace(input)) return;
+
+        foreach (string pair in input.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            int eq = pair.IndexOf('=');
+            if (eq > 0)
+            {
+                string key = pair[..eq].Trim();
+                string val = pair[(eq + 1)..].Trim();
+                target[key] = val;
+            }
+        }
+    }
+}
+
+<style>
+    .dialogue-editor .cursor-pointer { cursor: pointer; }
+    .dialogue-editor .cursor-pointer:hover { background-color: rgba(255,255,255,0.05); }
+    .dialogue-editor .spin { animation: spin 1s linear infinite; }
+    @@keyframes spin { to { transform: rotate(360deg); } }
+</style>

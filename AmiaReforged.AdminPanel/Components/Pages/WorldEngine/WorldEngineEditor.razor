@@ -19,6 +19,7 @@
 @inject IndustryApiService IndustryApi
 @inject InteractionApiService InteractionApi
 @inject CoinhouseApiService CoinhouseApi
+@inject DialogueApiService DialogueApi
 @inject ILogger<WorldEngineEditor> Logger
 @inject IJSRuntime JS
 @rendermode InteractiveServer
@@ -1858,6 +1859,11 @@
                     </div>
                 </div>
             }
+            else if (EditorState.ActiveEntityType == WorldEngineEntityType.Dialogues)
+            {
+                @* ══════ Dialogue Tree Editor ══════ *@
+                <DialogueTreeEditor @ref="_dialogueEditor" />
+            }
             else
             {
             @* ══════ Normal Tab Mode ══════ *@
@@ -2085,6 +2091,9 @@
     private bool _codexEditorLoading;
     private string? _codexEditorError;
 
+    // ── Dialogue editor state ──
+    private DialogueTreeEditor? _dialogueEditor;
+
     // What sub-type is being edited
     private enum CodexSubType { Lore, Quest }
     private CodexSubType _ceSubType = CodexSubType.Lore;
@@ -2180,6 +2189,8 @@
         IndustryApi.SelectEndpoint(eid);
         InteractionApi.SelectEndpoint(eid);
         CoinhouseApi.SelectEndpoint(eid);
+        DialogueApi.SelectEndpoint(eid);
+        _dialogueEditor?.SelectEndpoint(eid);
 
         // Reload the current entity list
         _ = InvokeAsync(async () =>
@@ -2231,6 +2242,14 @@
         {
             _listSearch = "";
             await LoadEntityList(reset: true);
+
+            // Auto-load dialogue editor when Dialogues type is selected
+            if (EditorState.ActiveEntityType == WorldEngineEntityType.Dialogues && _dialogueEditor != null)
+            {
+                _dialogueEditor.SelectEndpoint(EditorState.SelectedEndpointId);
+                await _dialogueEditor.LoadListAsync();
+            }
+
             StateHasChanged();
         });
     }
@@ -2302,6 +2321,7 @@
                 WorldEngineEntityType.Industries => await LoadIndustries(search),
                 WorldEngineEntityType.Interactions => await LoadInteractions(search),
                 WorldEngineEntityType.Coinhouses => await LoadCoinhouses(search),
+                WorldEngineEntityType.Dialogues => await LoadDialogues(search),
                 _ => [],
             };
 
@@ -2415,6 +2435,13 @@
         PagedResult<CoinhouseDto> result = await CoinhouseApi.GetAllAsync(search, _listPage, ListPageSize);
         _listHasMore = _listPage * ListPageSize < result.TotalCount;
         return result.Items.Select(i => new EntityListItem(i.Tag, i.Tag, WorldEngineEntityType.Coinhouses)).ToList();
+    }
+
+    private async Task<List<EntityListItem>> LoadDialogues(string? search)
+    {
+        PagedResult<DialogueTreeDto> result = await DialogueApi.GetAllAsync(search, _listPage, ListPageSize);
+        _listHasMore = _listPage * ListPageSize < result.TotalCount;
+        return result.Items.Select(i => new EntityListItem(i.DialogueTreeId, i.Title, WorldEngineEntityType.Dialogues)).ToList();
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -2701,6 +2728,7 @@
         WorldEngineEntityType.Industries => "bi-gear",
         WorldEngineEntityType.Interactions => "bi-lightning",
         WorldEngineEntityType.Coinhouses => "bi-bank",
+        WorldEngineEntityType.Dialogues => "bi-chat-dots",
         _ => "bi-question-circle",
     };
 
@@ -2716,6 +2744,7 @@
         WorldEngineEntityType.Industries => "Industries",
         WorldEngineEntityType.Interactions => "Interactions",
         WorldEngineEntityType.Coinhouses => "Coinhouses",
+        WorldEngineEntityType.Dialogues => "Dialogues",
         _ => type.ToString(),
     };
 

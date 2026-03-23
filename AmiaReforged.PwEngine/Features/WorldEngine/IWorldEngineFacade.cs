@@ -75,6 +75,11 @@ public interface IWorldEngineFacade
     /// </summary>
     IInteractionSubsystem Interactions { get; }
 
+    /// <summary>
+    /// Access to dialogue/conversation operations (NPC dialogue trees, runtime conversations)
+    /// </summary>
+    IDialogueSubsystem Dialogue { get; }
+
     // === Centralized Command/Query Dispatch ===
 
     /// <summary>

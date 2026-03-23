@@ -124,6 +124,10 @@ public class PwEngineContext : DbContext
     public DbSet<PersistedLoreUnlock> CodexLoreUnlocks { get; set; } = null!;
     public DbSet<PersistedQuestDefinition> CodexQuestDefinitions { get; set; } = null!;
 
+    // === Dialogue ===
+
+    public DbSet<PersistedDialogueTree> DialogueTrees { get; set; } = null!;
+
     // === Trait Definitions ===
 
     public DbSet<PersistedTraitDefinition> TraitDefinitions { get; set; } = null!;
@@ -240,6 +244,9 @@ public class PwEngineContext : DbContext
         modelBuilder.ApplyConfiguration(new PersistedCodexNoteConfiguration());
         modelBuilder.ApplyConfiguration(new PersistedLoreDefinitionConfiguration());
         modelBuilder.ApplyConfiguration(new PersistedLoreUnlockConfiguration());
+
+        // Dialogue
+        modelBuilder.ApplyConfiguration(new DialogueTreeConfiguration());
 
         // Trait Definitions
         modelBuilder.ApplyConfiguration(new PersistedTraitDefinitionConfiguration());

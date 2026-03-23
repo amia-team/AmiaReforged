@@ -15,4 +15,5 @@ public enum WorldEngineEntityType
     Industries,
     Interactions,
     Coinhouses,
+    Dialogues,
 }

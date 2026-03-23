@@ -72,6 +72,7 @@ public class Program
             builder.Services.AddScoped<InteractionApiService>();
             builder.Services.AddScoped<RecipeTemplateApiService>();
             builder.Services.AddScoped<DependencyGraphApiService>();
+            builder.Services.AddScoped<DialogueApiService>();
 
             // World Engine Editor state (one per circuit)
             builder.Services.AddScoped<WorldEngineEditorState>();
