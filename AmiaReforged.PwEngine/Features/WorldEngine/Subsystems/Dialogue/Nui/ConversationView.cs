@@ -214,6 +214,7 @@ public sealed class ConversationView : ScryView<ConversationPresenter>
             children.Add(new NuiRow
             {
                 Height = S(BaseRowH),
+                Width = S(BaseRowH * 2),
                 Visible = ChoiceVisible[i],
                 Children =
                 [
