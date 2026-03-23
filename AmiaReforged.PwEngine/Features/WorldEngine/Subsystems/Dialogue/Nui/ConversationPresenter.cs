@@ -99,8 +99,6 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
     {
         try { _token.Close(); }
         catch { /* ignore if already closed */ }
-
-        RaiseCloseEvent();
     }
 
     // ──────────────────── Click Routing ────────────────────
@@ -161,13 +159,11 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
                     {
                         _choicePage = 0;
 
-                        // Check if session ended
+                        // If the dialogue ended, AdvanceDialogueAsync already called
+                        // EndDialogue → WindowDirector.CloseWindow → Close(). No need
+                        // to close again here. Just refresh if still active.
                         DialogueSession? session = _dialogueService.GetActiveSession(_player);
-                        if (session == null || session.IsEnded)
-                        {
-                            Close();
-                        }
-                        else
+                        if (session != null && !session.IsEnded)
                         {
                             await NwTask.SwitchToMainThread();
                             RefreshView();
@@ -199,7 +195,7 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
         string portraitResRef = session.GetPortraitResRef();
         // NWN portraits: the resref is stored without size suffix; large portrait = resref + "l"
         // For NuiImage, use the portrait resref directly
-        _token.SetBindValue(View.NpcPortrait, portraitResRef);
+        _token.SetBindValue(View.NpcPortrait, portraitResRef + "l");
     }
 
     private void RefreshTextPanel()
