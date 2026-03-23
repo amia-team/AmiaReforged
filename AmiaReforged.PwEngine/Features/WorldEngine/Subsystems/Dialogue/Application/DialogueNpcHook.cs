@@ -1,5 +1,3 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Domain.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Domain.ValueObjects;
 using Anvil.API;
 using Anvil.API.Events;
@@ -12,7 +10,15 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Applica
 /// <summary>
 /// Hooks into NPC conversation events to detect dialogue-enabled NPCs
 /// and launch the custom NUI conversation window instead of the default NWN dialogue.
-/// Finds all NPCs with the "we_dialogue_tree" local variable and subscribes to their OnConversation event.
+///
+/// Maintains an internal registry of <c>dialogueTreeId → speakerTag</c> ownership so that
+/// tag reassignment is safe: only NPCs whose local variable still matches the tree being
+/// unregistered are affected, preventing accidental removal of hooks owned by a different tree.
+///
+/// Supports dynamic registration: when a dialogue tree is created/updated/deleted via the
+/// admin panel API, call <see cref="RegisterNpcsForTreeAsync"/>,
+/// <see cref="UnregisterNpcsForTreeAsync"/>, or <see cref="UpdateNpcRegistrationAsync"/>
+/// to hot-wire NPCs without a server restart.
 /// </summary>
 [ServiceBinding(typeof(DialogueNpcHook))]
 public sealed class DialogueNpcHook
@@ -25,11 +31,23 @@ public sealed class DialogueNpcHook
     /// </summary>
     public const string DialogueTreeVarName = "we_dialogue_tree";
 
+    /// <summary>Tracks which creatures already have the hook registered to avoid double-subscribe.</summary>
+    private readonly HashSet<NwCreature> _hookedCreatures = new();
+    private readonly object _hookLock = new();
+
+    /// <summary>
+    /// Ownership registry: maps each <c>dialogueTreeId</c> to the <c>speakerTag</c> it currently
+    /// claims. Used to safely unregister without clobbering NPCs owned by a different tree.
+    /// </summary>
+    private readonly Dictionary<string, string> _treeToTag = new(StringComparer.OrdinalIgnoreCase);
+    private readonly object _registryLock = new();
+
     [Inject] private Lazy<DialogueService>? DialogueService { get; init; }
 
     public DialogueNpcHook()
     {
-        // Find all creatures in the module that have the dialogue tree variable set
+        // Initial scan: hook all creatures that already have the local variable set
+        // and rebuild the ownership registry from live game state.
         List<NwCreature> dialogueNpcs = NwObject.FindObjectsOfType<NwCreature>()
             .Where(c => !string.IsNullOrEmpty(
                 c.GetObjectVariable<LocalVariableString>(DialogueTreeVarName).Value))
@@ -37,13 +55,256 @@ public sealed class DialogueNpcHook
 
         foreach (NwCreature npc in dialogueNpcs)
         {
-            npc.OnConversation += OnNpcConversation;
-            Log.Info("DialogueNpcHook: registered conversation hook for NPC '{Name}' (tag={Tag})",
-                npc.Name, npc.Tag);
+            string treeId = npc.GetObjectVariable<LocalVariableString>(DialogueTreeVarName).Value;
+            if (!string.IsNullOrEmpty(treeId))
+            {
+                // Populate registry — if multiple NPCs have the same tree, the tag is the same
+                lock (_registryLock)
+                {
+                    _treeToTag[treeId] = npc.Tag;
+                }
+            }
+            HookCreature(npc);
         }
 
-        Log.Info("DialogueNpcHook registered — {Count} dialogue-enabled NPCs found", dialogueNpcs.Count);
+        Log.Info(
+            "DialogueNpcHook registered — {NpcCount} dialogue-enabled NPCs found at startup, {TreeCount} trees in registry",
+            dialogueNpcs.Count, _treeToTag.Count);
     }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Dynamic registration API (called from controllers / services)
+    // ═══════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Finds all creatures with the given <paramref name="speakerTag"/>, sets the
+    /// <c>we_dialogue_tree</c> local variable, and registers the conversation hook.
+    /// Also records the tree→tag ownership in the internal registry.
+    /// Must be called from the main server thread.
+    /// </summary>
+    /// <param name="speakerTag">The NPC creature tag to match.</param>
+    /// <param name="dialogueTreeId">The dialogue tree ID to assign.</param>
+    /// <returns>Number of NPCs registered.</returns>
+    public int RegisterNpcsForTree(string speakerTag, string dialogueTreeId)
+    {
+        if (string.IsNullOrWhiteSpace(speakerTag) || string.IsNullOrWhiteSpace(dialogueTreeId))
+            return 0;
+
+        // Record ownership
+        lock (_registryLock)
+        {
+            _treeToTag[dialogueTreeId] = speakerTag;
+        }
+
+        List<NwCreature> matchingNpcs = NwObject.FindObjectsWithTag<NwCreature>(speakerTag).ToList();
+        int registered = 0;
+
+        foreach (NwCreature npc in matchingNpcs)
+        {
+            npc.GetObjectVariable<LocalVariableString>(DialogueTreeVarName).Value = dialogueTreeId;
+            HookCreature(npc);
+            registered++;
+        }
+
+        Log.Info("DialogueNpcHook: registered {Count} NPCs with tag '{Tag}' → tree '{TreeId}'",
+            registered, speakerTag, dialogueTreeId);
+
+        return registered;
+    }
+
+    /// <summary>
+    /// Async wrapper for <see cref="RegisterNpcsForTree"/> that switches to the main thread first.
+    /// Safe to call from API controller context.
+    /// </summary>
+    public async Task<int> RegisterNpcsForTreeAsync(string speakerTag, string dialogueTreeId)
+    {
+        await NwTask.SwitchToMainThread();
+        return RegisterNpcsForTree(speakerTag, dialogueTreeId);
+    }
+
+    /// <summary>
+    /// Unregisters NPCs for a specific dialogue tree. Looks up the speaker tag from the
+    /// internal registry and only clears the local variable / unhooks creatures whose
+    /// <c>we_dialogue_tree</c> value still matches <paramref name="dialogueTreeId"/>.
+    /// This ensures that if the tag was already reassigned to a different tree, those NPCs
+    /// are left untouched.
+    /// Must be called from the main server thread.
+    /// </summary>
+    /// <param name="dialogueTreeId">The dialogue tree ID to unregister.</param>
+    /// <returns>Number of NPCs unregistered.</returns>
+    public int UnregisterNpcsForTree(string dialogueTreeId)
+    {
+        if (string.IsNullOrWhiteSpace(dialogueTreeId))
+            return 0;
+
+        string? speakerTag;
+        lock (_registryLock)
+        {
+            if (!_treeToTag.TryGetValue(dialogueTreeId, out speakerTag))
+            {
+                Log.Debug("DialogueNpcHook: no registry entry for tree '{TreeId}' — nothing to unregister",
+                    dialogueTreeId);
+                return 0;
+            }
+            _treeToTag.Remove(dialogueTreeId);
+        }
+
+        if (string.IsNullOrWhiteSpace(speakerTag))
+            return 0;
+
+        // Check if any other tree still claims this same tag
+        bool tagStillOwnedByOtherTree;
+        lock (_registryLock)
+        {
+            tagStillOwnedByOtherTree = _treeToTag.ContainsValue(speakerTag);
+        }
+
+        List<NwCreature> matchingNpcs = NwObject.FindObjectsWithTag<NwCreature>(speakerTag).ToList();
+        int unregistered = 0;
+
+        foreach (NwCreature npc in matchingNpcs)
+        {
+            string? currentTreeId = npc.GetObjectVariable<LocalVariableString>(DialogueTreeVarName).Value;
+
+            // Only clear NPCs that still belong to this tree — don't clobber another tree's NPCs
+            if (currentTreeId != dialogueTreeId) continue;
+
+            npc.GetObjectVariable<LocalVariableString>(DialogueTreeVarName).Delete();
+
+            // Only unhook the event if no other tree is using this tag
+            // (if another tree owns the tag, it will re-stamp the var on its next register)
+            if (!tagStillOwnedByOtherTree)
+            {
+                UnhookCreature(npc);
+            }
+
+            unregistered++;
+        }
+
+        Log.Info(
+            "DialogueNpcHook: unregistered {Count} NPCs (tag '{Tag}') for tree '{TreeId}'{Shared}",
+            unregistered, speakerTag, dialogueTreeId,
+            tagStillOwnedByOtherTree ? " — tag still claimed by another tree, hooks kept" : "");
+
+        return unregistered;
+    }
+
+    /// <summary>
+    /// Async wrapper for <see cref="UnregisterNpcsForTree(string)"/> that switches to the main thread first.
+    /// Safe to call from API controller context.
+    /// </summary>
+    /// <param name="dialogueTreeId">The dialogue tree ID to unregister.</param>
+    public async Task<int> UnregisterNpcsForTreeAsync(string dialogueTreeId)
+    {
+        await NwTask.SwitchToMainThread();
+        return UnregisterNpcsForTree(dialogueTreeId);
+    }
+
+    /// <summary>
+    /// Handles a speaker tag change for a specific dialogue tree. Unregisters the old tag
+    /// (tree-aware, only affecting NPCs still owned by this tree) and registers the new tag.
+    /// Safe to call from API controller context.
+    /// </summary>
+    /// <param name="dialogueTreeId">The dialogue tree being updated.</param>
+    /// <param name="newSpeakerTag">The new speaker tag (may be null to clear).</param>
+    /// <returns>Tuple of (NPCs unregistered from old tag, NPCs registered on new tag).</returns>
+    public async Task<(int unregistered, int registered)> UpdateNpcRegistrationAsync(
+        string dialogueTreeId, string? newSpeakerTag)
+    {
+        await NwTask.SwitchToMainThread();
+
+        // Look up the old tag from the registry before unregistering
+        string? oldSpeakerTag;
+        lock (_registryLock)
+        {
+            _treeToTag.TryGetValue(dialogueTreeId, out oldSpeakerTag);
+        }
+
+        int unregistered = 0;
+        int registered = 0;
+
+        // Unregister old tag if it changed or the new tag is being cleared
+        bool tagChanged = !string.Equals(oldSpeakerTag, newSpeakerTag, StringComparison.OrdinalIgnoreCase);
+        if (tagChanged && !string.IsNullOrWhiteSpace(oldSpeakerTag))
+        {
+            unregistered = UnregisterNpcsForTree(dialogueTreeId);
+        }
+
+        // Register new tag (also handles same-tag refresh — re-stamps the local var)
+        if (!string.IsNullOrWhiteSpace(newSpeakerTag))
+        {
+            registered = RegisterNpcsForTree(newSpeakerTag, dialogueTreeId);
+        }
+
+        if (tagChanged)
+        {
+            Log.Info(
+                "DialogueNpcHook: tag change for tree '{TreeId}': '{OldTag}' → '{NewTag}' " +
+                "(unregistered {Unregistered}, registered {Registered})",
+                dialogueTreeId, oldSpeakerTag ?? "(none)", newSpeakerTag ?? "(none)",
+                unregistered, registered);
+        }
+
+        return (unregistered, registered);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Registry inspection (for diagnostics / testing)
+    // ═══════════════════════════════════════════════════════════════════
+
+    /// <summary>Returns the speaker tag currently registered for the given tree, or null.</summary>
+    public string? GetRegisteredTag(string dialogueTreeId)
+    {
+        lock (_registryLock)
+        {
+            return _treeToTag.GetValueOrDefault(dialogueTreeId);
+        }
+    }
+
+    /// <summary>Returns a snapshot of all tree→tag registrations.</summary>
+    public IReadOnlyDictionary<string, string> GetRegistrySnapshot()
+    {
+        lock (_registryLock)
+        {
+            return new Dictionary<string, string>(_treeToTag, StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    /// <summary>Returns the number of currently hooked creatures.</summary>
+    public int HookedCreatureCount
+    {
+        get { lock (_hookLock) { return _hookedCreatures.Count; } }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Internal hook management
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void HookCreature(NwCreature npc)
+    {
+        lock (_hookLock)
+        {
+            if (!_hookedCreatures.Add(npc)) return; // already hooked
+        }
+
+        npc.OnConversation += OnNpcConversation;
+        Log.Debug("DialogueNpcHook: hooked NPC '{Name}' (tag={Tag})", npc.Name, npc.Tag);
+    }
+
+    private void UnhookCreature(NwCreature npc)
+    {
+        lock (_hookLock)
+        {
+            if (!_hookedCreatures.Remove(npc)) return; // wasn't hooked
+        }
+
+        npc.OnConversation -= OnNpcConversation;
+        Log.Debug("DialogueNpcHook: unhooked NPC '{Name}' (tag={Tag})", npc.Name, npc.Tag);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Conversation event handler
+    // ═══════════════════════════════════════════════════════════════════
 
     private async void OnNpcConversation(CreatureEvents.OnConversation eventData)
     {
