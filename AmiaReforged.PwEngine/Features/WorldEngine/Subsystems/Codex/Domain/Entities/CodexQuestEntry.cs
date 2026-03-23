@@ -61,6 +61,13 @@ public class CodexQuestEntry
     public List<Keyword> Keywords { get; init; } = new();
 
     /// <summary>
+    /// Ordered groups of objectives that define what the player must accomplish.
+    /// Each group has a <see cref="Enums.CompletionMode"/> governing when it is satisfied.
+    /// Empty for quests that don't use the objective system (legacy stage-only quests).
+    /// </summary>
+    public List<QuestObjectiveGroup> ObjectiveGroups { get; init; } = new();
+
+    /// <summary>
     /// Updates the quest state to completed
     /// </summary>
     public void MarkCompleted(DateTime completedAt)
