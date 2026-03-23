@@ -4,6 +4,7 @@ pipeline{
     parameters {
         booleanParam(name: 'DeployTest', defaultValue: true, description: 'Deploy to test server')
         booleanParam(name: 'DeployLive', defaultValue: false, description: 'Deploy to live server')
+        booleanParam(name: 'RestartServer', defaultValue: true, description: 'Stop and restart the server around deploys (disable for hot-reload sessions)')
     }
 
     stages {
@@ -60,10 +61,16 @@ pipeline{
                     }
                 }
                 echo 'Deploying....'
-				sh 'chmod +x stop-test.sh'
-				withEnv(["AMIA_SERVER_DIR=${env.TEST_SERVER_BASE}/..".toString()]) {
-				    sh 'bash stop-test.sh'
-				}
+                script {
+                    if (params.RestartServer) {
+                        sh 'chmod +x stop-test.sh'
+                        withEnv(["AMIA_SERVER_DIR=${env.TEST_SERVER_BASE}/..".toString()]) {
+                            sh 'bash stop-test.sh'
+                        }
+                    } else {
+                        echo 'Skipping server stop (RestartServer is false)'
+                    }
+                }
 
                 sh "dotnet publish AmiaReforged.Core --output ${env.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.Core/"
                 sh "dotnet publish AmiaReforged.System --output ${env.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.System/"
@@ -72,10 +79,16 @@ pipeline{
                 sh "dotnet publish AmiaReforged.DMS --output ${env.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.DMS/"
                 sh "dotnet publish AmiaReforged.PwEngine --output ${env.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.PwEngine/"
 
-				sh 'chmod +x start-test.sh'
-				withEnv(["AMIA_SERVER_DIR=${env.TEST_SERVER_BASE}/..".toString()]) {
-				    sh 'bash start-test.sh'
-				}
+                script {
+                    if (params.RestartServer) {
+                        sh 'chmod +x start-test.sh'
+                        withEnv(["AMIA_SERVER_DIR=${env.TEST_SERVER_BASE}/..".toString()]) {
+                            sh 'bash start-test.sh'
+                        }
+                    } else {
+                        echo 'Skipping server start (RestartServer is false)'
+                    }
+                }
             }
         }
 		stage('Deploy Live') {
@@ -91,10 +104,16 @@ pipeline{
                     }
                 }
                 echo 'Deploying....'
-				sh 'chmod +x stop-live.sh'
-				withEnv(["AMIA_SERVER_DIR=${env.LIVE_SERVER_BASE}/..".toString()]) {
-				    sh 'bash stop-live.sh'
-				}
+                script {
+                    if (params.RestartServer) {
+                        sh 'chmod +x stop-live.sh'
+                        withEnv(["AMIA_SERVER_DIR=${env.LIVE_SERVER_BASE}/..".toString()]) {
+                            sh 'bash stop-live.sh'
+                        }
+                    } else {
+                        echo 'Skipping server stop (RestartServer is false)'
+                    }
+                }
 
                 sh "dotnet publish AmiaReforged.Core --output ${env.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.Core/"
                 sh "dotnet publish AmiaReforged.System --output ${env.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.System/"
@@ -103,10 +122,16 @@ pipeline{
                 sh "dotnet publish AmiaReforged.DMS --output ${env.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.DMS/"
                 sh "dotnet publish AmiaReforged.PwEngine --output ${env.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.PwEngine/"
 
-				sh 'chmod +x start-live.sh'
-				withEnv(["AMIA_SERVER_DIR=${env.LIVE_SERVER_BASE}/..".toString()]) {
-				    sh 'bash start-live.sh'
-				}
+                script {
+                    if (params.RestartServer) {
+                        sh 'chmod +x start-live.sh'
+                        withEnv(["AMIA_SERVER_DIR=${env.LIVE_SERVER_BASE}/..".toString()]) {
+                            sh 'bash start-live.sh'
+                        }
+                    } else {
+                        echo 'Skipping server start (RestartServer is false)'
+                    }
+                }
             }
         }
     }
