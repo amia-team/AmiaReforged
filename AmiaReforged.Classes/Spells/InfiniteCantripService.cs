@@ -28,6 +28,8 @@ public class InfiniteCantripService
         // Get the actual spell level (use MasterSpell if available, as spells can have different levels per class)
         byte spellLevel = obj.Spell.MasterSpell?.InnateSpellLevel ?? obj.Spell.InnateSpellLevel;
 
+
+
         // Always restore level 0 spells (cantrips)
         if (spellLevel == 0)
         {
@@ -40,10 +42,19 @@ public class InfiniteCantripService
             return;
         }
 
-        // For level 1 spells, check if effective caster level is >= 20
+        // For level 1 spells, check if the CASTING CLASS's effective caster level is >= 20.
+        // This matters for Blackguard (own spellbook CL = BG level, 1:1) vs. its stacking
+        // contribution to Cleric/Druid/Ranger (class level - 5).
         if (spellLevel == 1)
         {
-            int effectiveCasterLevel = EffectiveCasterLevelCalculator.GetHighestEffectiveCasterLevel(player.LoginCreature);
+            NwCreature creature = player.LoginCreature;
+
+            // Determine which class is actually casting this spell
+            if (obj.ClassIndex < 0 || obj.ClassIndex >= creature.Classes.Count) return;
+            ClassType castingClass = creature.Classes[obj.ClassIndex].Class.ClassType;
+
+            int effectiveCasterLevel =
+                EffectiveCasterLevelCalculator.GetEffectiveCasterLevelForClass(creature, castingClass);
 
             if (effectiveCasterLevel >= 20)
             {

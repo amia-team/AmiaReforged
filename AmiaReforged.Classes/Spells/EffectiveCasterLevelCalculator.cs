@@ -36,6 +36,14 @@ public static class EffectiveCasterLevelCalculator
         ClassType.Assassin  // Treated as base for PM/AA (doesn't get modified itself)
     };
 
+    // Prestige classes that have their OWN spellbook (CL = their own class level, 1:1).
+    // These are also in PrestigeClassesWithCLBonus because they stack onto other base classes,
+    // but they independently need their own spellbook CL tracked.
+    private static readonly HashSet<ClassType> PrestigeClassesWithOwnSpellbook = new()
+    {
+        ClassType.Blackguard
+    };
+
     // Mapping of prestige classes to their valid base caster classes
     private static readonly Dictionary<ClassType, HashSet<ClassType>> PrestigeToBaseCasterMap = new()
     {
@@ -165,6 +173,17 @@ public static class EffectiveCasterLevelCalculator
         foreach (KeyValuePair<ClassType, int> kvp in classLevels)
         {
             if (TrueBaseCasterClasses.Contains(kvp.Key) && !result.ContainsKey(kvp.Key))
+            {
+                result[kvp.Key] = kvp.Value;
+            }
+        }
+
+        // Include prestige classes that have their own spellbook at their raw class level.
+        // e.g. Blackguard's own spellbook CL = Blackguard class level (1:1), independent of
+        // the stacking bonus it provides to Cleric/Druid/Ranger.
+        foreach (KeyValuePair<ClassType, int> kvp in classLevels)
+        {
+            if (PrestigeClassesWithOwnSpellbook.Contains(kvp.Key) && !result.ContainsKey(kvp.Key))
             {
                 result[kvp.Key] = kvp.Value;
             }

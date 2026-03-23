@@ -83,7 +83,8 @@ public class CasterLevelOverrideService
     private void DoCasterLevelOverride(NwCreature casterCreature)
     {
         // Use the shared calculator to get all effective caster levels
-        Dictionary<ClassType, int> effectiveLevels = EffectiveCasterLevelCalculator.CalculateAllEffectiveCasterLevels(casterCreature);
+        Dictionary<ClassType, int> effectiveLevels =
+            EffectiveCasterLevelCalculator.CalculateAllEffectiveCasterLevels(casterCreature);
 
         // Build a map of actual class levels for comparison
         Dictionary<ClassType, int> actualLevels = new();
@@ -106,7 +107,8 @@ public class CasterLevelOverrideService
             {
                 int finalCasterLevel = Math.Max(1, effectiveLevel);
 
-                Log.Info($"{casterCreature.Name}: Setting caster level override for {targetClass} = {finalCasterLevel} (actual {actualLevel})");
+                Log.Info(
+                    $"{casterCreature.Name}: Setting caster level override for {targetClass} = {finalCasterLevel} (actual {actualLevel})");
 
                 CreaturePlugin.SetCasterLevelOverride(casterCreature, (int)targetClass, finalCasterLevel);
             }
@@ -127,7 +129,8 @@ public class CasterLevelOverrideService
             // NWN will automatically remove it if they delevel below this level
             int currentLevel = casterCreature.Level;
             CreaturePlugin.AddFeatByLevel(casterCreature, EpicCasterFeatId, currentLevel);
-            Log.Info($"{casterCreature.Name}: Added Epic Caster feat (ID {EpicCasterFeatId}) at level {currentLevel} (CL >= 20)");
+            Log.Info(
+                $"{casterCreature.Name}: Added Epic Caster feat (ID {EpicCasterFeatId}) at level {currentLevel} (CL >= 20)");
         }
 
         _casterLevelOverridesApplied[casterCreature] = true;
