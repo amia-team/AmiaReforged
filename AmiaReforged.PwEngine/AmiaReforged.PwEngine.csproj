@@ -32,7 +32,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="Features\Codex\" />
         <Folder Include="Features\WorldEngine\Subsystems\Harvesting\Tests\" />
         <Folder Include="Migrations\" />
         <Folder Include="Features\MiniGame\LiarsDice\Nui\" />
