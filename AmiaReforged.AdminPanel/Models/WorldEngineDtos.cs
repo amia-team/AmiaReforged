@@ -218,11 +218,21 @@ public class QuestStageDto
     /// <summary>If true, reaching this stage marks the quest as completed.</summary>
     public bool IsCompletionStage { get; set; }
 
+    private List<string>? _hints;
     /// <summary>Optional hints revealed at this stage.</summary>
-    public List<string> Hints { get; set; } = [];
+    public List<string> Hints
+    {
+        get => _hints ??= [];
+        set => _hints = value ?? [];
+    }
 
+    private List<ObjectiveGroupDto>? _objectiveGroups;
     /// <summary>Objective groups that must be satisfied to advance past this stage.</summary>
-    public List<ObjectiveGroupDto> ObjectiveGroups { get; set; } = [];
+    public List<ObjectiveGroupDto> ObjectiveGroups
+    {
+        get => _objectiveGroups ??= [];
+        set => _objectiveGroups = value ?? [];
+    }
 
     /// <summary>Rewards granted when this stage is completed.</summary>
     public RewardMixDto? Rewards { get; set; }
@@ -233,11 +243,17 @@ public class ObjectiveGroupDto
     /// <summary>Display name for this group (e.g. "Find the stolen artifacts").</summary>
     public string DisplayName { get; set; } = string.Empty;
 
+
     /// <summary>How objectives in this group must be satisfied: All, Any, or Sequence.</summary>
     public string CompletionMode { get; set; } = "All";
 
     /// <summary>The objectives in this group.</summary>
-    public List<ObjectiveDefinitionDto> Objectives { get; set; } = [];
+    private List<ObjectiveDefinitionDto>? _objectives;
+    public List<ObjectiveDefinitionDto> Objectives
+    {
+        get => _objectives ??= [];
+        set => _objectives = value ?? [];
+    }
 }
 
 public class ObjectiveDefinitionDto
@@ -258,7 +274,12 @@ public class ObjectiveDefinitionDto
     public int RequiredCount { get; set; } = 1;
 
     /// <summary>Evaluator-specific configuration (clue graph, state machine, waypoints, etc.).</summary>
-    public Dictionary<string, object>? Config { get; set; }
+    private Dictionary<string, object>? _config;
+    public Dictionary<string, object> Config
+    {
+        get => _config ??= new();
+        set => _config = value ?? new();
+    }
 }
 
 public class RewardMixDto
@@ -273,7 +294,12 @@ public class RewardMixDto
     public int KnowledgePoints { get; set; }
 
     /// <summary>Per-industry proficiency XP grants.</summary>
-    public List<ProficiencyRewardDto> Proficiencies { get; set; } = [];
+    private List<ProficiencyRewardDto>? _proficiencies;
+    public List<ProficiencyRewardDto> Proficiencies
+    {
+        get => _proficiencies ??= [];
+        set => _proficiencies = value ?? [];
+    }
 
     /// <summary>True when all reward values are zero/empty.</summary>
     public bool IsEmpty => Xp == 0 && Gold == 0 && KnowledgePoints == 0 && Proficiencies.Count == 0;
@@ -293,7 +319,13 @@ public class QuestDefinitionDto
     public string QuestId { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-    public List<QuestStageDto> Stages { get; set; } = [];
+
+    private List<QuestStageDto>? _stages;
+    public List<QuestStageDto> Stages
+    {
+        get => _stages ??= [];
+        set => _stages = value ?? [];
+    }
     public RewardMixDto? CompletionReward { get; set; }
     public string? QuestGiver { get; set; }
     public string? Location { get; set; }
