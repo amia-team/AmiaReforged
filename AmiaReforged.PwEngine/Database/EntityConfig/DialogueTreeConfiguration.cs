@@ -49,10 +49,6 @@ public sealed class DialogueTreeConfiguration : IEntityTypeConfiguration<Persist
         builder.Property(d => d.UpdatedUtc)
             .HasColumnName("updated_utc");
 
-        builder.Property(d => d.RowVersion)
-            .HasColumnName("row_version")
-            .IsRowVersion();
-
         // Index on speaker_tag for NPC lookup
         builder.HasIndex(d => d.SpeakerTag)
             .HasDatabaseName("ix_dialogue_trees_speaker_tag");

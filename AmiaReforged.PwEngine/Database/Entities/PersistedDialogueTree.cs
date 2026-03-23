@@ -56,9 +56,4 @@ public class PersistedDialogueTree
     /// </summary>
     public DateTime? UpdatedUtc { get; set; }
 
-    /// <summary>
-    /// Concurrency token for optimistic concurrency control.
-    /// </summary>
-    [Timestamp]
-    public uint RowVersion { get; set; }
 }
