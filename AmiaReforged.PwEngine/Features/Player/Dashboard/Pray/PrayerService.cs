@@ -1862,12 +1862,10 @@ public class PrayerService
                 break;
 
             case "rillifane rallathil":
-                float rillifaneDuration = 300.0f + (divineLevel * 20.0f);
                 ApplyPrayerEffectsToPCs(creature, Effect.VisualEffect(VfxType.ImpHeadNature), divineLevel, fullDuration: false);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Hide!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SkillIncrease(Skill.Lore!, 5), divineLevel);
                 ApplyPrayerEffectsToPCs(creature, Effect.SavingThrowIncrease(SavingThrow.All, 3, SavingThrowType.Law), divineLevel);
-                ApplyTemporaryAppearanceAndScale(creature, player, rillifaneDuration, 2000, 0.5f);
                 player?.SendServerMessage(" - +3 Saves vs. Law", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +5 Hide", ColorConstants.Cyan);
                 player?.SendServerMessage(" - +5 Lore", ColorConstants.Cyan);
@@ -3715,7 +3713,7 @@ public class PrayerService
         }
 
         // Check party members' associates
-        if (player?.LoginCreature != null)
+        if (player.LoginCreature != null)
         {
             foreach (NwPlayer partyMember in player.PartyMembers)
             {
@@ -3737,11 +3735,11 @@ public class PrayerService
 
         if (animalsBuffed > 0)
         {
-            player?.SendServerMessage($" - Boosted {animalsBuffed} Animal associate(s) with +{amount} Physical Damage", ColorConstants.Cyan);
+            player.SendServerMessage($" - Boosted {animalsBuffed} Animal associate(s) with +{amount} Physical Damage", ColorConstants.Cyan);
         }
         else
         {
-            player?.SendServerMessage(" - No Animal associates found to boost", ColorConstants.Orange);
+            player.SendServerMessage(" - No Animal associates found to boost", ColorConstants.Orange);
         }
     }
 
@@ -4241,7 +4239,7 @@ public class PrayerService
     /// </summary>
     private void ApplyTemporaryScale(NwCreature creature, NwPlayer? player, float duration, float newScale)
     {
-        NwItem? pcKey = creature.FindItemWithTag("ds_pckey");
+        NwItem? pcKey = creature.Inventory.Items.FirstOrDefault(item => item.ResRef == "ds_pckey");
         if (pcKey == null)
         {
             player?.SendServerMessage(" - Unable to change Scale: PC Key not found.", ColorConstants.Orange);
@@ -4282,7 +4280,7 @@ public class PrayerService
     /// </summary>
     private void ApplyTemporaryPhenotype(NwCreature creature, NwPlayer? player, float duration, int newPhenotype)
     {
-        NwItem? pcKey = creature.FindItemWithTag("ds_pckey");
+        NwItem? pcKey = creature.Inventory.Items.FirstOrDefault(item => item.ResRef == "ds_pckey");
         if (pcKey == null)
         {
             player?.SendServerMessage(" - Unable to change phenotype: PC Key not found.", ColorConstants.Orange);
@@ -4306,46 +4304,6 @@ public class PrayerService
                 int savedPhenotype = NWScript.GetLocalInt(pcKey, "PrayerOriginalPhenotype");
                 NWScript.SetPhenoType(savedPhenotype, creature);
                 NWScript.DeleteLocalInt(pcKey, "PrayerOriginalPhenotype");
-            }
-        });
-    }
-
-    /// <summary>
-    /// Applies a temporary appearance and scale change to the creature.
-    /// Saves original appearance and scale to PC Key and restores them when prayer expires.
-    /// </summary>
-    private void ApplyTemporaryAppearanceAndScale(NwCreature creature, NwPlayer? player, float duration, int newAppearance, float newScale)
-    {
-        NwItem? pcKey = creature.FindItemWithTag("ds_pckey");
-        if (pcKey == null)
-        {
-            player?.SendServerMessage(" - Unable to change appearance: PC Key not found.", ColorConstants.Orange);
-            return;
-        }
-
-        // Get and save original appearance and scale
-        int originalAppearance = NWScript.GetAppearanceType(creature);
-        float originalScale = NWScript.GetObjectVisualTransform(creature, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE);
-        NWScript.SetLocalInt(pcKey, "PrayerOriginalAppearance", originalAppearance);
-        NWScript.SetLocalFloat(pcKey, "PrayerOriginalScale", originalScale);
-
-        // Set new appearance and scale
-        NWScript.SetCreatureAppearanceType(creature, newAppearance);
-        NWScript.SetObjectVisualTransform(creature, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, newScale);
-        player?.SendServerMessage(" - Appearance Transformed!", ColorConstants.Cyan);
-
-        // Schedule restoration
-        _ = NwTask.Run(async () =>
-        {
-            await NwTask.Delay(TimeSpan.FromSeconds(duration));
-            if (creature.IsValid && pcKey.IsValid)
-            {
-                int savedAppearance = NWScript.GetLocalInt(pcKey, "PrayerOriginalAppearance");
-                float savedScale = NWScript.GetLocalFloat(pcKey, "PrayerOriginalScale");
-                NWScript.SetCreatureAppearanceType(creature, savedAppearance);
-                NWScript.SetObjectVisualTransform(creature, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, savedScale > 0 ? savedScale : 1.0f);
-                NWScript.DeleteLocalInt(pcKey, "PrayerOriginalAppearance");
-                NWScript.DeleteLocalFloat(pcKey, "PrayerOriginalScale");
             }
         });
     }
@@ -4594,7 +4552,7 @@ public class PrayerService
     private void ApplyTemporaryWings(NwCreature creature, NwPlayer? player, float duration, int wingType)
     {
         // Find the PC key to store the original wing type
-        NwItem? pcKey = creature.FindItemWithTag("ds_pckey");
+        NwItem? pcKey = creature.Inventory.Items.FirstOrDefault(item => item.ResRef == "ds_pckey");
         if (pcKey == null)
         {
             player?.SendServerMessage(" - Unable to grant wings: PC Key not found.", ColorConstants.Orange);
