@@ -81,6 +81,9 @@ public sealed class DialogueService
         // Open the NUI window
         OpenConversationWindow(session);
 
+        // NPC speaks the root node text aloud
+        SpeakNodeText(session);
+
         // Publish event
         await PublishEventAsync(new DialogueStartedEvent
         {
@@ -131,6 +134,9 @@ public sealed class DialogueService
         DialogueNode? fromNode = session.GetCurrentNode();
         DialogueNodeId fromNodeId = session.CurrentNodeId;
 
+        // Player character speaks the chosen response aloud
+        SpeakChoiceText(session, choice);
+
         // Advance to the target node
         DialogueNode? newNode = session.SelectChoice(choice);
         if (newNode == null)
@@ -161,6 +167,9 @@ public sealed class DialogueService
             NodeId = choice.TargetNodeId,
             CharacterId = session.CharacterId
         });
+
+        // NPC speaks the new node's text aloud
+        SpeakNodeText(session);
 
         // If the new node is an Action type with no text, auto-advance through it
         while (newNode != null && newNode.Type == DialogueNodeType.Action && newNode.Choices.Count == 1)
@@ -297,5 +306,31 @@ public sealed class DialogueService
         {
             Log.Warn(ex, "Error publishing dialogue event {EventType}", typeof(TEvent).Name);
         }
+    }
+
+    /// <summary>
+    /// Makes the NPC speak the current node's text aloud via SpeakString.
+    /// Only speaks for nodes that have displayable text (Root, NpcText, End with text).
+    /// </summary>
+    private static void SpeakNodeText(DialogueSession session)
+    {
+        DialogueNode? node = session.GetCurrentNode();
+        if (node == null || string.IsNullOrWhiteSpace(node.Text)) return;
+
+        if (node.Type is DialogueNodeType.Root or DialogueNodeType.NpcText or DialogueNodeType.End)
+        {
+            session.Npc.SpeakString(node.Text);
+        }
+    }
+
+    /// <summary>
+    /// Makes the player character speak the selected choice text aloud via SpeakString.
+    /// </summary>
+    private static void SpeakChoiceText(DialogueSession session, DialogueChoice choice)
+    {
+        if (string.IsNullOrWhiteSpace(choice.ResponseText)) return;
+
+        NwCreature? pc = session.Player.LoginCreature;
+        pc?.SpeakString(choice.ResponseText);
     }
 }
