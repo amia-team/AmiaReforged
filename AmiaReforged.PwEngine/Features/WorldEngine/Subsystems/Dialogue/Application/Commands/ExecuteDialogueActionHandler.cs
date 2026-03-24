@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Domain.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Domain.Enums;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
@@ -13,9 +14,20 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Applica
 /// World Engine subsystem based on the action type.
 /// </summary>
 [ServiceBinding(typeof(ICommandHandlerMarker))]
+[ServiceBinding(typeof(ExecuteDialogueActionHandler))]
 public sealed class ExecuteDialogueActionHandler : ICommandHandler<ExecuteDialogueActionCommand>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
+    /// <summary>
+    /// Cached store references keyed by NPC ObjectId.
+    /// Stores the resref, tag, and NwStore reference so repeated opens skip the
+    /// <c>GetNearestObjectsByType</c> scan and avoid re-creating the store object.
+    /// Cleared when a dialogue tree is updated or deleted via the admin panel.
+    /// </summary>
+    private readonly ConcurrentDictionary<uint, CachedStore> _storeCache = new();
+
+    private sealed record CachedStore(string ResRef, string Tag, NwStore Store);
 
     [Inject] private Lazy<IWorldEngineFacade>? WorldEngine { get; init; }
 
@@ -192,7 +204,18 @@ public sealed class ExecuteDialogueActionHandler : ICommandHandler<ExecuteDialog
         int markUp = int.TryParse(action.GetParam("bonusMarkUp") ?? "0", out int mu) ? mu : 0;
         int markDown = int.TryParse(action.GetParam("bonusMarkDown") ?? "0", out int md) ? md : 0;
 
-        // Reuse an already-spawned store near the NPC if one exists with the matching tag.
+        // Check the cache first — if we have a valid, matching store for this NPC, reuse it.
+        if (_storeCache.TryGetValue(npc.ObjectId, out CachedStore? cached)
+            && cached.ResRef == storeResRef
+            && string.Equals(cached.Tag, storeTag, StringComparison.OrdinalIgnoreCase)
+            && cached.Store.IsValid)
+        {
+            NWScript.OpenStore(cached.Store, creature, markUp, markDown);
+            Log.Info("Dialogue action: Opened cached store '{StoreTag}' for {Player}", storeTag, creature.Name);
+            return CommandResult.Ok();
+        }
+
+        // Cache miss or stale — look for an already-spawned store near the NPC.
         NwStore? store = npc.GetNearestObjectsByType<NwStore>()
             .FirstOrDefault(s => string.Equals(s.Tag, storeTag, StringComparison.OrdinalIgnoreCase));
 
@@ -210,9 +233,26 @@ public sealed class ExecuteDialogueActionHandler : ICommandHandler<ExecuteDialog
                 storeTag, storeResRef, npc.Name);
         }
 
+        // Cache the store for future opens.
+        _storeCache[npc.ObjectId] = new CachedStore(storeResRef, storeTag, store);
+
         NWScript.OpenStore(store, creature, markUp, markDown);
         Log.Info("Dialogue action: Opened store '{StoreTag}' for {Player}", storeTag, creature.Name);
         return CommandResult.Ok();
+    }
+
+    /// <summary>
+    /// Clears the cached store references. Called when a dialogue tree is updated or deleted
+    /// so that changed store resrefs/tags are picked up on next open.
+    /// </summary>
+    public void InvalidateStoreCache()
+    {
+        int count = _storeCache.Count;
+        _storeCache.Clear();
+        if (count > 0)
+        {
+            Log.Info("Dialogue store cache invalidated ({Count} entries cleared)", count);
+        }
     }
 
     private CommandResult HandleCustom(DialogueAction action)
