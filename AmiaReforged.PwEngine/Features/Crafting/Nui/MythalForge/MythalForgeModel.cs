@@ -389,11 +389,37 @@ public class MythalForgeModel
         int goldCost = ChangeListModel.TotalGpCost();
         _player.LoginCreature?.TakeGold(goldCost);
 
+        // Unequip the item if it's currently equipped to prevent item level restrictions
+        // from soft-locking the character.
+        UnequipIfEquipped();
+
         Effect explosion = Effect.VisualEffect(VfxType.FnfElectricExplosion);
 
         _player.LoginCreature?.ApplyEffect(EffectDuration.Instant, explosion);
 
         MythalCategoryModel.DestroyMythals(_player);
+    }
+
+    /// <summary>
+    /// Unequips the item from the player's creature if it is currently equipped in any inventory slot.
+    /// This prevents item level restrictions introduced by newly applied properties from
+    /// soft-locking the character.
+    /// </summary>
+    private void UnequipIfEquipped()
+    {
+        NwCreature? creature = _player.LoginCreature;
+        if (creature == null) return;
+
+        foreach (InventorySlot slot in Enum.GetValues<InventorySlot>())
+        {
+            if (creature.GetItemInSlot(slot) != Item) continue;
+
+            creature.RunUnequip(Item);
+            _player.SendServerMessage(
+                "Your item has been unequipped to prevent level restriction issues. You may re-equip it if you meet the requirements.",
+                ColorConstants.Orange);
+            return;
+        }
     }
 
     /// <summary>
