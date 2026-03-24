@@ -30,7 +30,8 @@ public class SpellLearningService
     private static readonly HashSet<ClassType> SpontaneousCasterClasses = new()
     {
         ClassType.Sorcerer,
-        ClassType.Bard
+        ClassType.Bard,
+        ClassType.Assassin
     };
 
 
@@ -106,9 +107,12 @@ public class SpellLearningService
         Dictionary<int, int> shouldHave = new();
         for (int i = 0; i <= 9; i++)
         {
-            int count = baseClass == ClassType.Sorcerer
-                ? SpellProgressionData.GetSorcererSpellsKnown(effectiveCasterLevel, i)
-                : SpellProgressionData.GetBardSpellsKnown(effectiveCasterLevel, i);
+            int count = baseClass switch
+            {
+                ClassType.Sorcerer => SpellProgressionData.GetSorcererSpellsKnown(effectiveCasterLevel, i),
+                ClassType.Assassin => SpellProgressionData.GetAssassinSpellsKnown(effectiveCasterLevel, i),
+                _ => SpellProgressionData.GetBardSpellsKnown(effectiveCasterLevel, i)
+            };
             if (count > 0) shouldHave[i] = count;
         }
         int totalShould = shouldHave.Values.Sum();

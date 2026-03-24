@@ -129,6 +129,35 @@ public static class SpellProgressionData
     }
 
     /// <summary>
+    /// Gets the number of spells known for Bard at a given caster level and spell level.
+    /// Based on cls_spkn_assassin.2da
+    /// </summary>
+    public static int GetAssassinSpellsKnown(int casterLevel, int spellLevel)
+    {
+        return (spellLevel, casterLevel) switch
+        {
+            // Level 1
+            (1, >= 4) => 4,
+            (1, >= 2) => 3,
+            (1, >= 1) => 2,
+
+            // Level 2
+            (2, >= 6) => 4,
+            (2, >= 4) => 3,
+
+            // Level 3
+            (3, >= 8) => 4,
+            (3, >= 7) => 3,
+
+            // Level 4
+            (4, >= 10) => 4,
+            (4, >= 9) => 3,
+
+            _ => 0
+        };
+    }
+
+    /// <summary>
     /// Gets the number of NEW spells to learn when advancing from one caster level to another.
     /// </summary>
     public static Dictionary<int, int> GetNewSpellsToLearn(ClassType classType, int oldLevel, int newLevel)
@@ -137,13 +166,19 @@ public static class SpellProgressionData
 
         for (int spellLevel = 0; spellLevel <= 9; spellLevel++)
         {
-            int oldCount = classType == ClassType.Sorcerer
-                ? GetSorcererSpellsKnown(oldLevel, spellLevel)
-                : GetBardSpellsKnown(oldLevel, spellLevel);
+            int oldCount = classType switch
+            {
+                ClassType.Sorcerer => GetSorcererSpellsKnown(oldLevel, spellLevel),
+                ClassType.Assassin => GetAssassinSpellsKnown(oldLevel, spellLevel),
+                _ => GetBardSpellsKnown(oldLevel, spellLevel)
+            };
 
-            int newCount = classType == ClassType.Sorcerer
-                ? GetSorcererSpellsKnown(newLevel, spellLevel)
-                : GetBardSpellsKnown(newLevel, spellLevel);
+            int newCount = classType switch
+            {
+                ClassType.Sorcerer => GetSorcererSpellsKnown(newLevel, spellLevel),
+                ClassType.Assassin => GetAssassinSpellsKnown(newLevel, spellLevel),
+                _ => GetBardSpellsKnown(newLevel, spellLevel)
+            };
 
             int difference = newCount - oldCount;
             if (difference > 0)
@@ -172,6 +207,17 @@ public static class SpellProgressionData
                 4 => 10,
                 5 => 13,
                 6 => 16,
+                _ => 99
+            };
+        }
+        if (classType == ClassType.Assassin)
+        {
+            return spellLevel switch
+            {
+                1 => 1,
+                2 => 4,
+                3 => 7,
+                4 => 9,
                 _ => 99
             };
         }
@@ -205,9 +251,12 @@ public static class SpellProgressionData
 
         for (int spellLevel = 0; spellLevel <= 9; spellLevel++)
         {
-            int shouldKnow = classType == ClassType.Sorcerer
-                ? GetSorcererSpellsKnown(targetCasterLevel, spellLevel)
-                : GetBardSpellsKnown(targetCasterLevel, spellLevel);
+            int shouldKnow = classType switch
+            {
+                ClassType.Sorcerer => GetSorcererSpellsKnown(targetCasterLevel, spellLevel),
+                ClassType.Assassin => GetAssassinSpellsKnown(targetCasterLevel, spellLevel),
+                _ => GetBardSpellsKnown(targetCasterLevel, spellLevel)
+            };
 
             int currentlyKnow = currentSpellsKnown.GetValueOrDefault(spellLevel, 0);
 
