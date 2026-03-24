@@ -26,11 +26,8 @@ public sealed class AmiaDialogueService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    private static readonly TimeSpan NpcSpeakDelay = TimeSpan.FromMilliseconds(200);
-
     private readonly Dictionary<NwPlayer, DialogueSession> _activeSessions = new();
     private readonly Dictionary<NwCreature, NwPlayer> _busyNpcs = new();
-    private readonly Dictionary<NwPlayer, CancellationTokenSource> _pendingSpeakCts = new();
 
     [Inject] private Lazy<IDialogueTreeRepository>? Repository { get; init; }
     [Inject] private Lazy<DialogueConditionRegistry>? ConditionRegistry { get; init; }
@@ -173,8 +170,8 @@ public sealed class AmiaDialogueService
             CharacterId = session.CharacterId
         });
 
-        // NPC speaks the new node's text aloud after a short delay
-        ScheduleNpcSpeak(session);
+        // NPC speaks the new node's text aloud
+        SpeakNodeText(session);
 
         // If the new node is an Action type with no text, auto-advance through it
         while (newNode != null && newNode.Type == DialogueNodeType.Action && newNode.Choices.Count == 1)
@@ -209,7 +206,6 @@ public sealed class AmiaDialogueService
         session.End();
         _activeSessions.Remove(player);
         _busyNpcs.Remove(session.Npc);
-        CancelPendingSpeak(player);
 
         // Close the NUI window
         if (WindowDirector?.Value != null)
@@ -350,52 +346,5 @@ public sealed class AmiaDialogueService
 
         NwCreature? pc = session.Player.LoginCreature;
         pc?.SpeakString(choice.ResponseText);
-    }
-
-    /// <summary>
-    /// Schedules the NPC to speak the current node's text after a short delay.
-    /// Cancels any previously pending speak for this player.
-    /// </summary>
-    private void ScheduleNpcSpeak(DialogueSession session)
-    {
-        CancelPendingSpeak(session.Player);
-
-        CancellationTokenSource cts = new();
-        _pendingSpeakCts[session.Player] = cts;
-
-        // Fire-and-forget; cancellation is handled via the token
-        _ = DelayedSpeakAsync(session, cts.Token);
-    }
-
-    /// <summary>
-    /// Waits for <see cref="NpcSpeakDelay"/> then makes the NPC speak on the main thread.
-    /// </summary>
-    private static async Task DelayedSpeakAsync(DialogueSession session, CancellationToken ct)
-    {
-        try
-        {
-            await NwTask.Delay(NpcSpeakDelay);
-            if (ct.IsCancellationRequested) return;
-
-            await NwTask.SwitchToMainThread();
-            if (ct.IsCancellationRequested) return;
-
-            SpeakNodeText(session);
-        }
-        catch (TaskCanceledException)
-        {
-            // Expected when dialogue ends or player picks quickly
-        }
-    }
-
-    /// <summary>
-    /// Cancels and disposes any pending delayed speak for the given player.
-    /// </summary>
-    private void CancelPendingSpeak(NwPlayer player)
-    {
-        if (!_pendingSpeakCts.Remove(player, out CancellationTokenSource? cts)) return;
-
-        cts.Cancel();
-        cts.Dispose();
     }
 }
