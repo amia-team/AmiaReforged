@@ -204,7 +204,7 @@
                                                 }
                                             </select>
                                             <input class="form-control form-control-sm bg-dark text-light border-secondary flex-grow-1"
-                                                   placeholder="params (key=val, …)"
+                                                   placeholder="@GetActionPlaceholder(action.ActionType)"
                                                    value="@FormatParams(action.Parameters)"
                                                    @onchange="e => ParseParams(action.Parameters, e.Value?.ToString())" />
                                             <button class="btn btn-sm btn-outline-danger py-0 px-1"
@@ -473,6 +473,13 @@
                     int idx = _dialogueList.FindIndex(d => d.DialogueTreeId == updated.DialogueTreeId);
                     if (idx >= 0) _dialogueList[idx] = updated;
                     _editItem = updated;
+
+                    // Re-sync _selectedNode to the matching node from the new edit item
+                    if (_selectedNode != null)
+                    {
+                        _selectedNode = _editItem.Nodes
+                            .FirstOrDefault(n => n.Id == _selectedNode.Id);
+                    }
                 }
             }
         }
@@ -682,6 +689,22 @@
         "Action" => "bi-lightning",
         "End" => "bi-stop-circle",
         _ => "bi-circle"
+    };
+
+    private static string GetActionPlaceholder(string actionType) => actionType switch
+    {
+        "StartQuest" => "questId=my_quest_id",
+        "CompleteQuest" => "questId=my_quest_id",
+        "GiveItem" => "itemTag=my_item, quantity=1",
+        "TakeItem" => "itemTag=my_item, quantity=1",
+        "ChangeReputation" => "factionId=my_faction, amount=10",
+        "GrantKnowledge" => "loreId=my_lore_id",
+        "SetLocalVariable" => "variableName=my_var, value=1, target=npc",
+        "GiveGold" => "amount=100",
+        "TakeGold" => "amount=100",
+        "OpenShop" => "storeResRef=my_store, storeTag=my_store",
+        "Custom" => "commandType=my_command, key=val, …",
+        _ => "key=val, …"
     };
 
     private static string FormatParams(Dictionary<string, string> parameters)
