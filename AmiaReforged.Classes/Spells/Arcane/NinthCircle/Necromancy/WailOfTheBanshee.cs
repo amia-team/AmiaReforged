@@ -91,28 +91,32 @@ public class WailOfTheBanshee(DeathSpellService deathSpellService) : ISpell
         deathSpellService.ApplyDeathSpellDamage(caster, target);
     }
 
-    private static List<NwCreature> GetTargetsByDistance(SpellEvents.OnSpellCast eventData, NwCreature caster, int maxTargets)
+    private static List<NwCreature> GetTargetsByDistance(SpellEvents.OnSpellCast eventData, NwCreature caster,
+        int maxTargets)
     {
-        if (eventData.TargetLocation is not {} targetLocation) return [];
-        List<(NwCreature creature, float distance)> targetsWithDistance = [];
+        if (eventData.TargetLocation is not { } targetLocation) return [];
+        List<(NwCreature creature, float distance)> targetsByDistance = [];
 
-        // Get creatures and their distance from target location within colossal area that are hostile and not dead
-        targetsWithDistance
-            .AddRange(from creature in targetLocation
-                    .GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal, false)
-            where caster.IsReactionTypeHostile(creature) && !creature.IsDead
-            let distance = Vector3.Distance(targetLocation.Position, creature.Position)
-            select (creature, distance));
+        targetsByDistance.AddRange(
+            targetLocation
+                .GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal, false)
+                .Where(creature => caster.IsReactionTypeHostile(creature) && !creature.IsDead)
+                .Select(creature => (
+                    creature,
+                    distance: Vector3.Distance(targetLocation.Position, creature.Position)
+                ))
+        );
 
         // Sort by distance and take up to maxTargets
-        return targetsWithDistance
+        return targetsByDistance
             .OrderBy(t => t.distance)
             .Take(maxTargets)
             .Select(t => t.creature)
             .ToList();
     }
 
-    private static async Task ApplyDeathEffect(NwCreature caster, NwCreature target, int dc, Effect deathVfx, Effect death)
+    private static async Task ApplyDeathEffect(NwCreature caster, NwCreature target, int dc, Effect deathVfx,
+        Effect death)
     {
         TimeSpan delay = SpellUtils.GetRandomDelay(3.0, 4.0);
         await NwTask.Delay(delay);
