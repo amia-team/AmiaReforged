@@ -52,6 +52,14 @@ public enum DialogueActionType
     TakeGold,
 
     /// <summary>
+    /// Open a store for the player. Creates the store from a resref at the NPC's location,
+    /// or reuses an already-spawned store nearby.
+    /// Parameters: storeResRef (required), storeTag (optional — defaults to storeResRef),
+    /// bonusMarkUp (optional, default 0), bonusMarkDown (optional, default 0).
+    /// </summary>
+    OpenShop,
+
+    /// <summary>
     /// Custom action dispatched to a named command handler. Parameters: commandType, plus additional key-value pairs.
     /// </summary>
     Custom

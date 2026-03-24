@@ -70,7 +70,7 @@ public sealed class ConversationView : ScryView<ConversationPresenter>
     // ── Goodbye button ──
     public readonly NuiBind<string> GoodbyeText = new("conv_goodbye_text");
 
-    public ConversationView(NwPlayer player, DialogueService dialogueService)
+    public ConversationView(NwPlayer player, AmiaDialogueService amiaDialogueService)
     {
         for (int i = 0; i < MaxVisibleChoices; i++)
         {
@@ -78,7 +78,7 @@ public sealed class ConversationView : ScryView<ConversationPresenter>
             ChoiceVisible.Add(new NuiBind<bool>($"conv_choice_vis_{i}"));
         }
 
-        Presenter = new ConversationPresenter(this, player, dialogueService);
+        Presenter = new ConversationPresenter(this, player, amiaDialogueService);
 
         InjectionService injector = AnvilCore.GetService<InjectionService>()!;
         injector.Inject(Presenter);

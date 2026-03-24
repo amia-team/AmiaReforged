@@ -21,8 +21,8 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Applica
 /// Core service managing active dialogue sessions.
 /// Orchestrates starting/advancing/ending conversations and bridges domain events.
 /// </summary>
-[ServiceBinding(typeof(DialogueService))]
-public sealed class DialogueService
+[ServiceBinding(typeof(AmiaDialogueService))]
+public sealed class AmiaDialogueService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 

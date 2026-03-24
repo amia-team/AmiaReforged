@@ -46,7 +46,7 @@ public sealed class DialogueNpcHook
     private readonly Dictionary<string, string> _treeToTag = new(StringComparer.OrdinalIgnoreCase);
     private readonly object _registryLock = new();
 
-    [Inject] private Lazy<DialogueService>? DialogueService { get; init; }
+    [Inject] private Lazy<AmiaDialogueService>? DialogueService { get; init; }
 
     public DialogueNpcHook()
     {

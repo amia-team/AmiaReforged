@@ -20,7 +20,7 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     private readonly NwPlayer _player;
-    private readonly DialogueService _dialogueService;
+    private readonly AmiaDialogueService _amiaDialogueService;
     private NuiWindowToken _token;
     private NuiWindow? _window;
 
@@ -33,11 +33,11 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
     [Inject] private Lazy<DialogueConditionRegistry>? ConditionRegistry { get; init; }
     [Inject] private DevicePropertyService DevicePropertyService { get; init; } = null!;
 
-    public ConversationPresenter(ConversationView view, NwPlayer player, DialogueService dialogueService)
+    public ConversationPresenter(ConversationView view, NwPlayer player, AmiaDialogueService amiaDialogueService)
     {
         View = view;
         _player = player;
-        _dialogueService = dialogueService;
+        _amiaDialogueService = amiaDialogueService;
     }
 
     public override ConversationView View { get; }
@@ -56,7 +56,7 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
 
         View.SetScaleFactor(_scaleFactor);
 
-        DialogueSession? session = _dialogueService.GetActiveSession(_player);
+        DialogueSession? session = _amiaDialogueService.GetActiveSession(_player);
         string title = session != null ? session.GetNpcName() : "Conversation";
 
         _window = new NuiWindow(View.RootLayout(), title)
@@ -100,7 +100,7 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
                 await HandleClick(eventData.ElementId);
                 break;
             case NuiEventType.Close:
-                _dialogueService.EndDialogue(_player, "window_closed");
+                _amiaDialogueService.EndDialogue(_player, "window_closed");
                 break;
         }
     }
@@ -123,12 +123,12 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
         switch (elementId)
         {
             case "btn_goodbye":
-                _dialogueService.EndDialogue(_player, "goodbye");
+                _amiaDialogueService.EndDialogue(_player, "goodbye");
                 return;
 
             case "btn_prev_text":
             {
-                DialogueSession? s = _dialogueService.GetActiveSession(_player);
+                DialogueSession? s = _amiaDialogueService.GetActiveSession(_player);
                 if (s != null && s.HasPreviousTextPage())
                 {
                     s.TextPage--;
@@ -140,7 +140,7 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
 
             case "btn_next_text":
             {
-                DialogueSession? s = _dialogueService.GetActiveSession(_player);
+                DialogueSession? s = _amiaDialogueService.GetActiveSession(_player);
                 if (s != null && s.HasNextTextPage())
                 {
                     s.TextPage++;
@@ -167,7 +167,7 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
 
                 if (absoluteIndex >= 0 && absoluteIndex < _visibleChoices.Count)
                 {
-                    bool success = await _dialogueService.AdvanceDialogueAsync(_player, absoluteIndex);
+                    bool success = await _amiaDialogueService.AdvanceDialogueAsync(_player, absoluteIndex);
                     if (success)
                     {
                         _choicePage = 0;
@@ -175,7 +175,7 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
                         // If the dialogue ended, AdvanceDialogueAsync already called
                         // EndDialogue → WindowDirector.CloseWindow → Close(). No need
                         // to close again here. Just refresh if still active.
-                        DialogueSession? session = _dialogueService.GetActiveSession(_player);
+                        DialogueSession? session = _amiaDialogueService.GetActiveSession(_player);
                         if (session != null && !session.IsEnded)
                         {
                             await NwTask.SwitchToMainThread();
@@ -191,7 +191,7 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
 
     private async void RefreshView()
     {
-        DialogueSession? session = _dialogueService.GetActiveSession(_player);
+        DialogueSession? session = _amiaDialogueService.GetActiveSession(_player);
         if (session == null)
         {
             Close();
@@ -213,7 +213,7 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
 
     private void RefreshTextPanel()
     {
-        DialogueSession? session = _dialogueService.GetActiveSession(_player);
+        DialogueSession? session = _amiaDialogueService.GetActiveSession(_player);
         if (session == null) return;
 
         string text = session.GetCurrentTextPage();
@@ -239,7 +239,7 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
 
     private async Task RefreshChoicesAsync()
     {
-        DialogueSession? session = _dialogueService.GetActiveSession(_player);
+        DialogueSession? session = _amiaDialogueService.GetActiveSession(_player);
         if (session == null) return;
 
         if (ConditionRegistry?.Value == null)

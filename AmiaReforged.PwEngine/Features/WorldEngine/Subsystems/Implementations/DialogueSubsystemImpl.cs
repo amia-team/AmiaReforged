@@ -12,7 +12,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Implementations;
 [ServiceBinding(typeof(IDialogueSubsystem))]
 public sealed class DialogueSubsystemImpl : IDialogueSubsystem
 {
-    [Inject] private Lazy<DialogueService>? DialogueService { get; init; }
+    [Inject] private Lazy<AmiaDialogueService>? DialogueService { get; init; }
 
     public async Task<bool> StartDialogueAsync(NwPlayer player, NwCreature npc, DialogueTreeId treeId,
         Guid characterId)

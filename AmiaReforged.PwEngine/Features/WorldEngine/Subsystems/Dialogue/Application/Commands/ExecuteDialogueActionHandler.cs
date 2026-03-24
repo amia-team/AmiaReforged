@@ -4,6 +4,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using Anvil.API;
 using Anvil.Services;
 using NLog;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Application.Commands;
 
@@ -41,6 +42,7 @@ public sealed class ExecuteDialogueActionHandler : ICommandHandler<ExecuteDialog
                 DialogueActionType.GrantKnowledge => await HandleGrantKnowledge(action, command.CharacterId),
                 DialogueActionType.SetLocalVariable => HandleSetLocalVariable(action, creature, command.Npc),
                 DialogueActionType.ChangeReputation => HandleChangeReputation(action),
+                DialogueActionType.OpenShop => HandleOpenShop(action, creature, command.Npc),
                 DialogueActionType.Custom => HandleCustom(action),
                 _ => CommandResult.Fail($"Unknown dialogue action type: {action.ActionType}")
             };
@@ -181,6 +183,36 @@ public sealed class ExecuteDialogueActionHandler : ICommandHandler<ExecuteDialog
         Log.Info("Dialogue action: Change reputation with '{FactionId}' by {Amount}", factionId, amount);
         // TODO: Dispatch to reputation system when implemented
         return CommandResult.OkWith("factionId", factionId);
+    }
+
+    private CommandResult HandleOpenShop(DialogueAction action, NwCreature creature, NwCreature npc)
+    {
+        string storeResRef = action.GetRequiredParam("storeResRef");
+        string storeTag = action.GetParam("storeTag") ?? storeResRef;
+        int markUp = int.TryParse(action.GetParam("bonusMarkUp") ?? "0", out int mu) ? mu : 0;
+        int markDown = int.TryParse(action.GetParam("bonusMarkDown") ?? "0", out int md) ? md : 0;
+
+        // Reuse an already-spawned store near the NPC if one exists with the matching tag.
+        NwStore? store = npc.GetNearestObjectsByType<NwStore>()
+            .FirstOrDefault(s => string.Equals(s.Tag, storeTag, StringComparison.OrdinalIgnoreCase));
+
+        if (store == null)
+        {
+            if (npc.Location == null)
+                return CommandResult.Fail("NPC has no valid location to spawn store");
+
+            store = NwStore.Create(storeResRef, npc.Location);
+            if (store == null)
+                return CommandResult.Fail($"Failed to create store from resref '{storeResRef}'");
+
+            store.Tag = storeTag;
+            Log.Info("Dialogue action: Created store '{StoreTag}' from resref '{ResRef}' at {Npc}",
+                storeTag, storeResRef, npc.Name);
+        }
+
+        NWScript.OpenStore(store, creature, markUp, markDown);
+        Log.Info("Dialogue action: Opened store '{StoreTag}' for {Player}", storeTag, creature.Name);
+        return CommandResult.Ok();
     }
 
     private CommandResult HandleCustom(DialogueAction action)
