@@ -214,13 +214,14 @@ public sealed class ConversationView : ScryView<ConversationPresenter>
             children.Add(new NuiRow
             {
                 Height = S(BaseRowH),
-                Width = S(BaseTextPanelW),
+                Width = S(BaseTextPanelW + BasePortraitPad),
                 Visible = ChoiceVisible[i],
                 Children =
                 [
                     new NuiButton(ChoiceTexts[i])
                     {
                         Id = $"btn_choice_{i}",
+                        Width = S(BaseTextPanelW),
                         Height = S(BaseButtonH)
                     }
                 ]
@@ -229,7 +230,7 @@ public sealed class ConversationView : ScryView<ConversationPresenter>
 
         return new NuiColumn
         {
-            Width = S(BaseTextPanelW + BasePortraitPad),
+            // Width = S(BaseTextPanelW + BasePortraitPad),
             Children = children
         };
     }
