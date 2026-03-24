@@ -18,7 +18,9 @@ public class WorldEngineHttpServer : IDisposable
     private readonly CancellationTokenSource _cts;
     private readonly string _apiKey;
     private readonly IServiceProvider? _serviceProvider;
-    private bool _isRunning;
+    private volatile bool _isRunning;
+    private volatile bool _stopping;
+    private Task? _listenTask;
 
     public WorldEngineHttpServer(
         IApiRouter router,
@@ -56,7 +58,7 @@ public class WorldEngineHttpServer : IDisposable
                 string.Join(", ", _listener.Prefixes));
 
             // Start listening loop in background
-            Task.Run(ListenAsync, _cts.Token);
+            _listenTask = Task.Run(ListenAsync);
         }
         catch (Exception ex)
         {
@@ -69,7 +71,7 @@ public class WorldEngineHttpServer : IDisposable
     {
         _logger.Info("HTTP listener loop started");
 
-        while (!_cts.Token.IsCancellationRequested && _listener.IsListening)
+        while (!_stopping && _listener.IsListening)
         {
             try
             {
@@ -78,12 +80,17 @@ public class WorldEngineHttpServer : IDisposable
                 // Handle each request in a separate task (non-blocking)
                 _ = Task.Run(() => HandleRequestAsync(context), _cts.Token);
             }
-            catch (HttpListenerException) when (_cts.Token.IsCancellationRequested)
+            catch (ObjectDisposedException)
+            {
+                // Expected during shutdown — listener or CTS was disposed
+                break;
+            }
+            catch (HttpListenerException) when (_stopping)
             {
                 // Expected during shutdown
                 break;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!_stopping)
             {
                 _logger.Error(ex, "Error accepting HTTP request");
             }
@@ -188,6 +195,7 @@ public class WorldEngineHttpServer : IDisposable
 
         _logger.Info("Stopping WorldEngine HTTP API...");
 
+        _stopping = true;
         _cts.Cancel();
         _listener.Stop();
         _isRunning = false;
@@ -198,6 +206,17 @@ public class WorldEngineHttpServer : IDisposable
     public void Dispose()
     {
         Stop();
+
+        // Wait for the listen loop to exit before disposing resources
+        try
+        {
+            _listenTask?.Wait(TimeSpan.FromSeconds(5));
+        }
+        catch (AggregateException)
+        {
+            // Swallow — any exceptions from the listen task are already logged
+        }
+
         _listener.Close();
         _cts.Dispose();
     }
