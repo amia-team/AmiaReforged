@@ -67,7 +67,7 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
                 ConversationView.BaseWindowW / _scaleFactor,
                 ConversationView.BaseWindowH / _scaleFactor),
             Resizable = true,
-            Closable = true
+            Closable = false
         };
     }
 

@@ -27,6 +27,7 @@ public sealed class DialogueService
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     private readonly Dictionary<NwPlayer, DialogueSession> _activeSessions = new();
+    private readonly Dictionary<NwCreature, NwPlayer> _busyNpcs = new();
 
     [Inject] private Lazy<IDialogueTreeRepository>? Repository { get; init; }
     [Inject] private Lazy<DialogueConditionRegistry>? ConditionRegistry { get; init; }
@@ -74,6 +75,7 @@ public sealed class DialogueService
 
         DialogueSession session = new(tree, player, characterId, npc);
         _activeSessions[player] = session;
+        _busyNpcs[npc] = player;
 
         // Fire node-enter actions for the root node
         await ExecuteNodeActions(session);
@@ -203,6 +205,7 @@ public sealed class DialogueService
 
         session.End();
         _activeSessions.Remove(player);
+        _busyNpcs.Remove(session.Npc);
 
         // Close the NUI window
         if (WindowDirector?.Value != null)
@@ -232,6 +235,17 @@ public sealed class DialogueService
     /// Checks if a player has an active dialogue session.
     /// </summary>
     public bool HasActiveSession(NwPlayer player) => _activeSessions.ContainsKey(player);
+
+    /// <summary>
+    /// Checks if an NPC creature is currently in a conversation with any player.
+    /// </summary>
+    public bool IsNpcBusy(NwCreature npc) => _busyNpcs.ContainsKey(npc);
+
+    /// <summary>
+    /// Gets the player currently talking to the given NPC, if any.
+    /// </summary>
+    public NwPlayer? GetPlayerTalkingTo(NwCreature npc) =>
+        _busyNpcs.TryGetValue(npc, out NwPlayer? player) ? player : null;
 
     /// <summary>
     /// Gets all dialogue trees available for an NPC by its speaker tag.

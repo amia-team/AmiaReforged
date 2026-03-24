@@ -387,6 +387,15 @@ public sealed class DialogueNpcHook
             return;
         }
 
+        // NPC already talking to someone else?
+        if (DialogueService.Value.IsNpcBusy(npc))
+        {
+            NwPlayer? talkingTo = DialogueService.Value.GetPlayerTalkingTo(npc);
+            string otherName = talkingTo?.LoginCreature?.Name ?? "someone";
+            player.SendServerMessage($"{npc.Name} is already speaking with {otherName}.", ColorConstants.Orange);
+            return;
+        }
+
         // Resolve character ID
         Guid characterId = ResolveCharacterId(player);
         if (characterId == Guid.Empty)
