@@ -782,84 +782,29 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
 
         bool mismatchAc = targetAc.Value != currentAc.Value;
 
-        // Clone the target item and apply backup appearance (models only)
+        // Apply backup appearance to the target item BEFORE cloning
+        // This is critical: armor piece colors must be set before cloning to persist
+        backupData.ApplyToItem(targetItem, skipTorso: mismatchAc);
+
+        // Now clone the item with the appearance changes applied
         NwItem clonedTarget = targetItem.Clone(creature);
 
-        if (!clonedTarget.IsValid)
+        if (clonedTarget.IsValid)
         {
-            player.SendServerMessage("Failed to copy appearance.", ColorConstants.Red);
-            return;
-        }
+            targetItem.Destroy();
 
-        // Apply armor models from backup
-        foreach (KeyValuePair<string, int> kvp in backupData.ArmorModels)
-        {
-            if (Enum.TryParse(kvp.Key, out CreaturePart part))
-            {
-                // Skip torso if AC mismatch flag is set
-                if (mismatchAc && part == CreaturePart.Torso)
-                    continue;
-
-                clonedTarget.Appearance.SetArmorModel(part, (byte)kvp.Value);
-            }
-        }
-
-        // Destroy the original target item
-        targetItem.Destroy();
-
-        // Apply colors using CopyItemAndModify (same approach as helmet/cloak)
-        // This properly commits color changes to the item object
-        NwItem? currentCopy = clonedTarget;
-
-        CreaturePart[] allParts =
-        [
-            CreaturePart.RightFoot, CreaturePart.LeftFoot, CreaturePart.RightShin, CreaturePart.LeftShin,
-            CreaturePart.RightThigh, CreaturePart.LeftThigh, CreaturePart.Pelvis, CreaturePart.Torso,
-            CreaturePart.Belt, CreaturePart.Neck, CreaturePart.RightForearm, CreaturePart.LeftForearm,
-            CreaturePart.RightBicep, CreaturePart.LeftBicep, CreaturePart.RightShoulder, CreaturePart.LeftShoulder,
-            CreaturePart.RightHand, CreaturePart.LeftHand, CreaturePart.Robe
-        ];
-
-        // Apply colors for each armor part and color channel
-        foreach (CreaturePart part in allParts)
-        {
-            // Skip torso if AC mismatch
-            if (mismatchAc && part == CreaturePart.Torso)
-                continue;
-
-            if (backupData.ArmorColors.TryGetValue(part.ToString(), out Dictionary<string, int>? partColors))
-            {
-                for (int i = 0; i < 6; i++)
-                {
-                    string channelName = ((ItemAppearanceArmorColor)i).ToString();
-                    if (partColors.TryGetValue(channelName, out int colorValue))
-                    {
-                        int colorType = NWScript.ITEM_APPR_ARMOR_COLOR_LEATHER1 + i;
-                        uint colorCopy = NWScript.CopyItemAndModify(currentCopy, NWScript.ITEM_APPR_TYPE_ARMOR_COLOR, colorType, colorValue, 1);
-                        if (NWScript.GetIsObjectValid(colorCopy) == 1)
-                        {
-                            if (currentCopy != null && currentCopy.IsValid) NWScript.DestroyObject(currentCopy);
-                            currentCopy = colorCopy.ToNwObject<NwItem>();
-                        }
-                    }
-                }
-            }
-        }
-
-        if (currentCopy != null && currentCopy.IsValid)
-        {
             if (mismatchAc)
             {
                 player.SendServerMessage($"AC mismatch detected (current: AC {currentAc.Value}, target: AC {targetAc.Value}). Copied appearance to all parts except torso to preserve AC.", ColorConstants.Yellow);
             }
             else
             {
-                player.SendServerMessage($"Copied appearance to {currentCopy.Name}.", ColorConstants.Green);
+                player.SendServerMessage($"Copied appearance to {clonedTarget.Name}.", ColorConstants.Green);
             }
         }
         else
         {
-            player.SendServerMessage("Failed to apply colors to armor.", ColorConstants.Red);
+            player.SendServerMessage("Failed to copy appearance.", ColorConstants.Red);
         }
     }
 
