@@ -99,13 +99,12 @@ public sealed class DivineSpellCache
                 try
                 {
                     // GetSpellLevelForClass returns 255 if the spell is not available for this class
-#pragma warning disable CS0618 // Type or member is obsolete
-                    byte spellLevel = spell.GetSpellLevelForClass(nwClass);
-#pragma warning restore CS0618 // Type or member is obsolete
+                    int? spellLevel = spell.GetSpellLevelByClass(nwClass);
+                    if (!spellLevel.HasValue) continue;
 
                     if (spellLevel != 255 && spellLevel <= 9)
                     {
-                        _classSpells[classType][spellLevel].Add(spell.Id);
+                        _classSpells[classType][spellLevel.Value].Add(spell.Id);
                         totalSpellsCached++;
                     }
                 }

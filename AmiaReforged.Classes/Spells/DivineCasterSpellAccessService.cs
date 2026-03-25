@@ -68,16 +68,35 @@ public class DivineCasterSpellAccessService
     private void OnLevelUp(OnLevelUp obj)
     {
         if (!obj.Creature.IsPlayerControlled(out _)) return;
-        ProcessCreatureSpellAccess(obj.Creature, isLogin: false);
+
+        NwCreature creature = obj.Creature;
+        NwTask.Run(async () =>
+        {
+            await NwTask.Delay(TimeSpan.FromMilliseconds(500));
+            await NwTask.SwitchToMainThread();
+
+            if (creature.IsValid)
+            {
+                ProcessCreatureSpellAccess(creature, isLogin: false);
+            }
+        });
     }
 
     private void OnLevelDown(OnLevelDown obj)
     {
         if (!obj.Creature.IsPlayerControlled(out _)) return;
-        // On level down, we don't add new spells, but NWN should naturally remove
-        // spells granted at higher levels through AddKnownSpell/AddFeatByLevel mechanism
-        // We just need to recalculate in case they still qualify for some spells
-        ProcessCreatureSpellAccess(obj.Creature, isLogin: false);
+
+        NwCreature creature = obj.Creature;
+        NwTask.Run(async () =>
+        {
+            await NwTask.Delay(TimeSpan.FromMilliseconds(500));
+            await NwTask.SwitchToMainThread();
+
+            if (creature.IsValid)
+            {
+                ProcessCreatureSpellAccess(creature, isLogin: false);
+            }
+        });
     }
 
     private void ProcessCreatureSpellAccess(NwCreature creature, bool isLogin)
