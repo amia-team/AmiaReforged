@@ -103,9 +103,24 @@ public class DivineCasterSpellAccessService
     private void ProcessCreatureSpellAccess(NwCreature creature, bool isLogin)
     {
         Log.Info($"Processing divine spell access for {creature.Name} (isLogin={isLogin})");
+        bool isPlayer = creature.IsPlayerControlled(out NwPlayer? player);
+
+        if (isPlayer)
+        {
+            player?.SendServerMessage($"[DEBUG] Starting divine spell access processing (isLogin={isLogin})", ColorConstants.Yellow);
+        }
 
         // Get effective caster levels for all classes
         Dictionary<ClassType, int> effectiveLevels = EffectiveCasterLevelCalculator.CalculateAllEffectiveCasterLevels(creature);
+
+        if (isPlayer)
+        {
+            player?.SendServerMessage($"[DEBUG] Calculated {effectiveLevels.Count} effective caster level(s)", ColorConstants.Yellow);
+            foreach (var kvp in effectiveLevels)
+            {
+                player?.SendServerMessage($"[DEBUG]   {kvp.Key}: CL {kvp.Value}", ColorConstants.Yellow);
+            }
+        }
 
         int totalSpellsGranted = 0;
 
@@ -114,15 +129,27 @@ public class DivineCasterSpellAccessService
         {
             CreatureClassInfo? classInfo = creature.GetClassInfo(classType);
             if (classInfo == null || classInfo.Level == 0)
+            {
+                Log.Debug($"  {classType}: Not found or level 0, skipping");
                 continue;
+            }
 
             int actualLevel = classInfo.Level;
             int effectiveLevel = effectiveLevels.TryGetValue(classType, out int el) ? el : actualLevel;
+
+            if (isPlayer)
+            {
+                player?.SendServerMessage($"[DEBUG] {classType}: Actual {actualLevel}, Effective {effectiveLevel}", ColorConstants.Yellow);
+            }
 
             // Only process if effective level is higher than actual level
             if (effectiveLevel <= actualLevel)
             {
                 Log.Debug($"  {classType}: Effective CL ({effectiveLevel}) <= Actual Level ({actualLevel}), no bonus spells needed");
+                if (isPlayer)
+                {
+                    player?.SendServerMessage($"[DEBUG]   -> No boost needed (effective <= actual)", ColorConstants.Yellow);
+                }
                 continue;
             }
 
@@ -132,9 +159,18 @@ public class DivineCasterSpellAccessService
             int actualMaxCircle = DivineSpellProgressionData.GetMaxSpellCircleForCasterLevel(classType, actualLevel);
             int effectiveMaxCircle = DivineSpellProgressionData.GetMaxSpellCircleForCasterLevel(classType, effectiveLevel);
 
+            if (isPlayer)
+            {
+                player?.SendServerMessage($"[DEBUG]   Actual max circle: {actualMaxCircle}, Effective max circle: {effectiveMaxCircle}", ColorConstants.Yellow);
+            }
+
             if (effectiveMaxCircle <= actualMaxCircle)
             {
                 Log.Debug($"    Max circle unchanged ({actualMaxCircle}), no new spells to grant");
+                if (isPlayer)
+                {
+                    player?.SendServerMessage($"[DEBUG]   -> Max circle unchanged, skipping", ColorConstants.Yellow);
+                }
                 continue;
             }
 
@@ -146,24 +182,47 @@ public class DivineCasterSpellAccessService
                 : actualMaxCircle + 1;
 
             Log.Info($"    Granting access to circles {startCircle}-{effectiveMaxCircle} (was {actualMaxCircle}, now {effectiveMaxCircle})");
+            if (isPlayer)
+            {
+                player?.SendServerMessage($"[DEBUG]   -> Granting circles {startCircle}-{effectiveMaxCircle}", ColorConstants.Cyan);
+            }
 
             // Grant class spells for newly accessible circles
             int granted = GrantClassSpells(creature, classType, classInfo.Class.Id, startCircle, effectiveMaxCircle);
             totalSpellsGranted += granted;
 
+            if (isPlayer)
+            {
+                player?.SendServerMessage($"[DEBUG]   -> Granted {granted} class spells", ColorConstants.Cyan);
+            }
+
             // For Clerics, also grant domain spells
             if (classType == ClassType.Cleric)
             {
-                totalSpellsGranted += GrantDomainSpells(creature, classInfo.Class.Id, startCircle, effectiveMaxCircle);
+                int domainGranted = GrantDomainSpells(creature, classInfo.Class.Id, startCircle, effectiveMaxCircle);
+                totalSpellsGranted += domainGranted;
+                if (isPlayer)
+                {
+                    player?.SendServerMessage($"[DEBUG]   -> Granted {domainGranted} domain spells", ColorConstants.Cyan);
+                }
             }
         }
 
-        // Send feedback to player
-        if (totalSpellsGranted > 0 && creature.IsPlayerControlled(out NwPlayer? player))
+        if (isPlayer)
         {
-            player.SendServerMessage(
+            player?.SendServerMessage($"[DEBUG] Processing complete. Total spells granted: {totalSpellsGranted}", ColorConstants.Yellow);
+        }
+
+        // Send feedback to player
+        if (totalSpellsGranted > 0 && isPlayer)
+        {
+            player?.SendServerMessage(
                 $"Prestige divine casting: {totalSpellsGranted} spell(s) added to your spellbook.",
                 ColorConstants.Cyan);
+        }
+        else if (totalSpellsGranted == 0 && isPlayer)
+        {
+            player?.SendServerMessage($"[DEBUG] No spells granted during this processing.", ColorConstants.Orange);
         }
     }
 
@@ -180,12 +239,25 @@ public class DivineCasterSpellAccessService
         if (classType is not (ClassType.Ranger or ClassType.Paladin))
             return;
 
+        bool isPlayer = creature.IsPlayerControlled(out NwPlayer? player);
+
         // Get effective caster level for this class
         int effectiveLevel = EffectiveCasterLevelCalculator.GetEffectiveCasterLevelForClass(creature, classType);
+
+        if (isPlayer)
+        {
+            player?.SendServerMessage($"[DEBUG] EnsureSpellStructuresExist: {classType} circles {fromCircle}-{toCircle}", ColorConstants.Yellow);
+        }
 
         for (int spellLevel = fromCircle; spellLevel <= toCircle; spellLevel++)
         {
             int currentMaxSlots = CreaturePlugin.GetMaxSpellSlots(creature, classId, spellLevel);
+
+            if (isPlayer)
+            {
+                player?.SendServerMessage($"[DEBUG]   Level {spellLevel}: current max slots = {currentMaxSlots}", ColorConstants.Yellow);
+            }
+
             if (currentMaxSlots <= 0)
             {
                 // To initialize spell structures for partial casters, we set remaining slots to 1.
@@ -193,7 +265,17 @@ public class DivineCasterSpellAccessService
                 // for AddKnownSpell to work. The actual spell slots will be properly managed by
                 // PrestigeSpellSlotService through item properties on the creature hide.
                 CreaturePlugin.SetRemainingSpellSlots(creature, classId, spellLevel, 1);
+
+                if (isPlayer)
+                {
+                    player?.SendServerMessage($"[DEBUG]   Level {spellLevel}: INITIALIZED (set remaining=1)", ColorConstants.Cyan);
+                }
+
                 Log.Info($"      Initialized {classType} spell level {spellLevel} structure (CL {effectiveLevel})");
+            }
+            else if (isPlayer)
+            {
+                player?.SendServerMessage($"[DEBUG]   Level {spellLevel}: already has structure", ColorConstants.Yellow);
             }
         }
     }
@@ -202,6 +284,12 @@ public class DivineCasterSpellAccessService
     {
         NwItem? pcKey = GetPcKey(creature);
         int spellsGranted = 0;
+        bool isPlayer = creature.IsPlayerControlled(out NwPlayer? player);
+
+        if (isPlayer)
+        {
+            player?.SendServerMessage($"[DEBUG] GrantClassSpells: {classType} circles {fromCircle}-{toCircle}", ColorConstants.Yellow);
+        }
 
         // Ensure spell data structures exist for partial casters before adding spells
         EnsureSpellStructuresExist(creature, classType, classId, fromCircle, toCircle);
@@ -210,18 +298,39 @@ public class DivineCasterSpellAccessService
         {
             IReadOnlyList<int> spells = _spellCache.GetSpellsForClass(classType, spellLevel);
 
+            if (isPlayer)
+            {
+                player?.SendServerMessage($"[DEBUG]   Level {spellLevel}: {spells.Count} spells in cache", ColorConstants.Yellow);
+            }
+
             if (spells.Count == 0)
             {
                 Log.Warn($"      No spells found in cache for {classType} level {spellLevel}");
+                if (isPlayer)
+                {
+                    player?.SendServerMessage($"[DEBUG]   Level {spellLevel}: No spells in cache!", ColorConstants.Orange);
+                }
+                continue;
             }
 
             foreach (int spellId in spells)
             {
                 // Check if creature already knows this spell
                 if (CreatureKnowsSpell(creature, classId, spellLevel, spellId))
+                {
+                    if (isPlayer)
+                    {
+                        player?.SendServerMessage($"[DEBUG]   Spell {spellId}: already known, skipping", ColorConstants.Yellow);
+                    }
                     continue;
+                }
 
                 // Add the spell
+                if (isPlayer)
+                {
+                    player?.SendServerMessage($"[DEBUG]   Spell {spellId}: adding...", ColorConstants.Cyan);
+                }
+
                 CreaturePlugin.AddKnownSpell(creature, classId, spellLevel, spellId);
                 spellsGranted++;
 
@@ -239,6 +348,14 @@ public class DivineCasterSpellAccessService
         if (spellsGranted > 0)
         {
             Log.Info($"    Granted {spellsGranted} {classType} spells for circles {fromCircle}-{toCircle}");
+            if (isPlayer)
+            {
+                player?.SendServerMessage($"[DEBUG] GrantClassSpells: Total granted = {spellsGranted}", ColorConstants.Cyan);
+            }
+        }
+        else if (isPlayer)
+        {
+            player?.SendServerMessage($"[DEBUG] GrantClassSpells: No spells granted!", ColorConstants.Orange);
         }
 
         return spellsGranted;
@@ -250,9 +367,20 @@ public class DivineCasterSpellAccessService
         int domain1 = NWScript.GetDomain(creature);
         int domain2 = NWScript.GetDomain(creature, 2);
 
+        bool isPlayer = creature.IsPlayerControlled(out NwPlayer? player);
+
+        if (isPlayer)
+        {
+            player?.SendServerMessage($"[DEBUG] GrantDomainSpells: Domain1={domain1}, Domain2={domain2}", ColorConstants.Yellow);
+        }
+
         if (domain1 <= 0 && domain2 <= 0)
         {
             Log.Debug($"    No domains found for Cleric");
+            if (isPlayer)
+            {
+                player?.SendServerMessage($"[DEBUG] No domains found, skipping domain spells", ColorConstants.Yellow);
+            }
             return 0;
         }
 
@@ -267,18 +395,45 @@ public class DivineCasterSpellAccessService
 
             string domainName = _spellCache.GetDomainName(domainId);
 
+            if (isPlayer)
+            {
+                player?.SendServerMessage($"[DEBUG] Processing domain {domainId} ({domainName})", ColorConstants.Yellow);
+            }
+
             for (int spellLevel = fromCircle; spellLevel <= toCircle; spellLevel++)
             {
                 int spellId = _spellCache.GetDomainSpell(domainId, spellLevel);
 
                 if (spellId < 0) // No spell for this domain/level
+                {
+                    if (isPlayer)
+                    {
+                        player?.SendServerMessage($"[DEBUG]   Level {spellLevel}: No spell (spellId={spellId})", ColorConstants.Yellow);
+                    }
                     continue;
+                }
+
+                if (isPlayer)
+                {
+                    player?.SendServerMessage($"[DEBUG]   Level {spellLevel}: spellId={spellId}", ColorConstants.Yellow);
+                }
 
                 // Check if creature already knows this spell
                 if (CreatureKnowsSpell(creature, clericClassId, spellLevel, spellId))
+                {
+                    if (isPlayer)
+                    {
+                        player?.SendServerMessage($"[DEBUG]   Level {spellLevel}: already known, skipping", ColorConstants.Yellow);
+                    }
                     continue;
+                }
 
                 // Add the spell
+                if (isPlayer)
+                {
+                    player?.SendServerMessage($"[DEBUG]   Level {spellLevel}: adding...", ColorConstants.Cyan);
+                }
+
                 CreaturePlugin.AddKnownSpell(creature, clericClassId, spellLevel, spellId);
                 domainSpellsGranted++;
 
@@ -296,6 +451,14 @@ public class DivineCasterSpellAccessService
         if (domainSpellsGranted > 0)
         {
             Log.Info($"    Granted {domainSpellsGranted} domain spells for circles {fromCircle}-{toCircle}");
+            if (isPlayer)
+            {
+                player?.SendServerMessage($"[DEBUG] GrantDomainSpells: Total granted = {domainSpellsGranted}", ColorConstants.Cyan);
+            }
+        }
+        else if (isPlayer)
+        {
+            player?.SendServerMessage($"[DEBUG] GrantDomainSpells: No domain spells granted!", ColorConstants.Orange);
         }
 
         return domainSpellsGranted;
