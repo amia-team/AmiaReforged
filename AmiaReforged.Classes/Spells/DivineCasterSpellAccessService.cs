@@ -37,192 +37,331 @@ public class DivineCasterSpellAccessService
 
     public DivineCasterSpellAccessService(DivineSpellCache spellCache, EventService eventService)
     {
-        _spellCache = spellCache;
+        try
+        {
+            Log.Info("=== INITIALIZING DivineCasterSpellAccessService ===");
+            Log.Info("Service instantiation detected - this appears in logs IMMEDIATELY");
+            _spellCache = spellCache;
 
-        // Subscribe to events
-        NwModule.Instance.OnClientEnter += OnClientEnter;
-        eventService.SubscribeAll<OnLevelUp, OnLevelUp.Factory>(OnLevelUp, EventCallbackType.After);
-        eventService.SubscribeAll<OnLevelDown, OnLevelDown.Factory>(OnLevelDown, EventCallbackType.After);
+            // Subscribe to events
+            Log.Info("Subscribing to OnClientEnter event...");
+            NwModule.Instance.OnClientEnter += OnClientEnter;
+            Log.Info("✓ OnClientEnter subscribed");
 
-        Log.Info("Divine Caster Spell Access Service initialized.");
+            Log.Info("Subscribing to OnLevelUp event...");
+            eventService.SubscribeAll<OnLevelUp, OnLevelUp.Factory>(OnLevelUp, EventCallbackType.After);
+            Log.Info("✓ OnLevelUp subscribed");
+
+            Log.Info("Subscribing to OnLevelDown event...");
+            eventService.SubscribeAll<OnLevelDown, OnLevelDown.Factory>(OnLevelDown, EventCallbackType.After);
+            Log.Info("✓ OnLevelDown subscribed");
+
+            Log.Info("=== DivineCasterSpellAccessService initialized successfully ===");
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"FAILED to initialize DivineCasterSpellAccessService: {ex.Message}");
+            Log.Error($"Stack trace: {ex.StackTrace}");
+            throw;
+        }
     }
 
     private void OnClientEnter(ModuleEvents.OnClientEnter obj)
     {
-        if (obj.Player.IsDM) return;
-        if (obj.Player.LoginCreature == null) return;
-
-        // Longer delay to ensure character is fully loaded AND PrestigeSpellSlotService
-        // has equipped the creature hide (which creates spell slot structures).
-        NwTask.Run(async () =>
+        try
         {
-            await NwTask.Delay(TimeSpan.FromSeconds(3));
-            await NwTask.SwitchToMainThread();
+            Log.Info($"=== OnClientEnter fired for player (IsDM={obj.Player.IsDM}) ===");
 
-            if (obj.Player.LoginCreature?.IsValid == true)
+            if (obj.Player.IsDM)
             {
-                ProcessCreatureSpellAccess(obj.Player.LoginCreature, isLogin: true);
+                Log.Info($"Player is DM, skipping spell access processing");
+                return;
             }
-        });
+
+            if (obj.Player.LoginCreature == null)
+            {
+                Log.Warn($"LoginCreature is null for player");
+                return;
+            }
+
+            Log.Info($"Scheduling spell access processing with 3s delay for {obj.Player.LoginCreature.Name}...");
+
+            // Longer delay to ensure character is fully loaded AND PrestigeSpellSlotService
+            // has equipped the creature hide (which creates spell slot structures).
+            NwTask.Run(async () =>
+            {
+                try
+                {
+                    Log.Info($"Async task started, waiting 3 seconds...");
+                    await NwTask.Delay(TimeSpan.FromSeconds(3));
+                    Log.Info($"3 second delay complete, switching to main thread...");
+                    await NwTask.SwitchToMainThread();
+                    Log.Info($"Main thread acquired, checking if creature is valid...");
+
+                    if (obj.Player.LoginCreature?.IsValid == true)
+                    {
+                        Log.Info($"Creature is valid, calling ProcessCreatureSpellAccess...");
+                        ProcessCreatureSpellAccess(obj.Player.LoginCreature, isLogin: true);
+                    }
+                    else
+                    {
+                        Log.Warn($"Creature is no longer valid or is null after delay");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"Exception in OnClientEnter async task: {ex.Message}");
+                    Log.Error($"Stack trace: {ex.StackTrace}");
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Exception in OnClientEnter: {ex.Message}");
+            Log.Error($"Stack trace: {ex.StackTrace}");
+        }
     }
 
     private void OnLevelUp(OnLevelUp obj)
     {
-        if (!obj.Creature.IsPlayerControlled(out _)) return;
-
-        NwCreature creature = obj.Creature;
-        NwTask.Run(async () =>
+        try
         {
-            await NwTask.Delay(TimeSpan.FromSeconds(3));
-            await NwTask.SwitchToMainThread();
+            Log.Info($"=== OnLevelUp fired for {obj.Creature.Name} ===");
 
-            if (creature.IsValid)
+            if (!obj.Creature.IsPlayerControlled(out _))
             {
-                ProcessCreatureSpellAccess(creature, isLogin: false);
+                Log.Info($"Creature is not player controlled, skipping");
+                return;
             }
-        });
+
+            Log.Info($"Scheduling spell access processing with 3s delay for {obj.Creature.Name} (level up)...");
+
+            NwCreature creature = obj.Creature;
+            NwTask.Run(async () =>
+            {
+                try
+                {
+                    Log.Info($"LevelUp async task started, waiting 3 seconds...");
+                    await NwTask.Delay(TimeSpan.FromSeconds(3));
+                    Log.Info($"3 second delay complete, switching to main thread...");
+                    await NwTask.SwitchToMainThread();
+                    Log.Info($"Main thread acquired, checking if creature is valid...");
+
+                    if (creature.IsValid)
+                    {
+                        Log.Info($"Creature is valid, calling ProcessCreatureSpellAccess...");
+                        ProcessCreatureSpellAccess(creature, isLogin: false);
+                    }
+                    else
+                    {
+                        Log.Warn($"Creature is no longer valid after delay");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"Exception in OnLevelUp async task: {ex.Message}");
+                    Log.Error($"Stack trace: {ex.StackTrace}");
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Exception in OnLevelUp: {ex.Message}");
+            Log.Error($"Stack trace: {ex.StackTrace}");
+        }
     }
 
     private void OnLevelDown(OnLevelDown obj)
     {
-        if (!obj.Creature.IsPlayerControlled(out _)) return;
-
-        NwCreature creature = obj.Creature;
-        NwTask.Run(async () =>
+        try
         {
-            await NwTask.Delay(TimeSpan.FromSeconds(3));
-            await NwTask.SwitchToMainThread();
+            Log.Info($"=== OnLevelDown fired for {obj.Creature.Name} ===");
 
-            if (creature.IsValid)
+            if (!obj.Creature.IsPlayerControlled(out _))
             {
-                ProcessCreatureSpellAccess(creature, isLogin: false);
+                Log.Info($"Creature is not player controlled, skipping");
+                return;
             }
-        });
+
+            Log.Info($"Scheduling spell access processing with 3s delay for {obj.Creature.Name} (level down)...");
+
+            NwCreature creature = obj.Creature;
+            NwTask.Run(async () =>
+            {
+                try
+                {
+                    Log.Info($"LevelDown async task started, waiting 3 seconds...");
+                    await NwTask.Delay(TimeSpan.FromSeconds(3));
+                    Log.Info($"3 second delay complete, switching to main thread...");
+                    await NwTask.SwitchToMainThread();
+                    Log.Info($"Main thread acquired, checking if creature is valid...");
+
+                    if (creature.IsValid)
+                    {
+                        Log.Info($"Creature is valid, calling ProcessCreatureSpellAccess...");
+                        ProcessCreatureSpellAccess(creature, isLogin: false);
+                    }
+                    else
+                    {
+                        Log.Warn($"Creature is no longer valid after delay");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"Exception in OnLevelDown async task: {ex.Message}");
+                    Log.Error($"Stack trace: {ex.StackTrace}");
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Exception in OnLevelDown: {ex.Message}");
+            Log.Error($"Stack trace: {ex.StackTrace}");
+        }
     }
 
     private void ProcessCreatureSpellAccess(NwCreature creature, bool isLogin)
     {
-        Log.Info($"Processing divine spell access for {creature.Name} (isLogin={isLogin})");
-        bool isPlayer = creature.IsPlayerControlled(out NwPlayer? player);
-
-        if (isPlayer)
+        try
         {
-            player?.SendServerMessage($"[DEBUG] Starting divine spell access processing (isLogin={isLogin})", ColorConstants.Yellow);
-        }
+            Log.Info($"=== ProcessCreatureSpellAccess START for {creature.Name} (isLogin={isLogin}) ===");
+            bool isPlayer = creature.IsPlayerControlled(out NwPlayer? player);
 
-        // Get effective caster levels for all classes
-        Dictionary<ClassType, int> effectiveLevels = EffectiveCasterLevelCalculator.CalculateAllEffectiveCasterLevels(creature);
-
-        if (isPlayer)
-        {
-            player?.SendServerMessage($"[DEBUG] Calculated {effectiveLevels.Count} effective caster level(s)", ColorConstants.Yellow);
-            foreach (var kvp in effectiveLevels)
-            {
-                player?.SendServerMessage($"[DEBUG]   {kvp.Key}: CL {kvp.Value}", ColorConstants.Yellow);
-            }
-        }
-
-        int totalSpellsGranted = 0;
-
-        // Process each divine caster class the creature has
-        foreach (ClassType classType in DivineCasterClasses)
-        {
-            CreatureClassInfo? classInfo = creature.GetClassInfo(classType);
-            if (classInfo == null || classInfo.Level == 0)
-            {
-                Log.Debug($"  {classType}: Not found or level 0, skipping");
-                continue;
-            }
-
-            int actualLevel = classInfo.Level;
-            int effectiveLevel = effectiveLevels.TryGetValue(classType, out int el) ? el : actualLevel;
+            Log.Info($"Is player controlled: {isPlayer}");
 
             if (isPlayer)
             {
-                player?.SendServerMessage($"[DEBUG] {classType}: Actual {actualLevel}, Effective {effectiveLevel}", ColorConstants.Yellow);
+                player?.SendServerMessage($"[DEBUG] Starting divine spell access processing (isLogin={isLogin})", ColorConstants.Yellow);
             }
 
-            // Only process if effective level is higher than actual level
-            if (effectiveLevel <= actualLevel)
+            // Get effective caster levels for all classes
+            Log.Info($"Calling EffectiveCasterLevelCalculator...");
+            Dictionary<ClassType, int> effectiveLevels = EffectiveCasterLevelCalculator.CalculateAllEffectiveCasterLevels(creature);
+            Log.Info($"Effective caster levels calculated: {effectiveLevels.Count} classes");
+
+            if (isPlayer)
             {
-                Log.Debug($"  {classType}: Effective CL ({effectiveLevel}) <= Actual Level ({actualLevel}), no bonus spells needed");
-                if (isPlayer)
+                player?.SendServerMessage($"[DEBUG] Calculated {effectiveLevels.Count} effective caster level(s)", ColorConstants.Yellow);
+                foreach (var kvp in effectiveLevels)
                 {
-                    player?.SendServerMessage($"[DEBUG]   -> No boost needed (effective <= actual)", ColorConstants.Yellow);
-                }
-                continue;
-            }
-
-            Log.Info($"  {classType}: Actual Level {actualLevel}, Effective CL {effectiveLevel}");
-
-            // Calculate spell circle access
-            int actualMaxCircle = DivineSpellProgressionData.GetMaxSpellCircleForCasterLevel(classType, actualLevel);
-            int effectiveMaxCircle = DivineSpellProgressionData.GetMaxSpellCircleForCasterLevel(classType, effectiveLevel);
-
-            if (isPlayer)
-            {
-                player?.SendServerMessage($"[DEBUG]   Actual max circle: {actualMaxCircle}, Effective max circle: {effectiveMaxCircle}", ColorConstants.Yellow);
-            }
-
-            if (effectiveMaxCircle <= actualMaxCircle)
-            {
-                Log.Debug($"    Max circle unchanged ({actualMaxCircle}), no new spells to grant");
-                if (isPlayer)
-                {
-                    player?.SendServerMessage($"[DEBUG]   -> Max circle unchanged, skipping", ColorConstants.Yellow);
-                }
-                continue;
-            }
-
-            // For partial casters (Ranger/Paladin) under level 4, we need to grant spells starting from circle 1
-            // because the engine hasn't created spell structures for them yet.
-            // For other casters, we only grant newly accessible circles.
-            int startCircle = (classType is ClassType.Ranger or ClassType.Paladin && actualMaxCircle == 0)
-                ? 1
-                : actualMaxCircle + 1;
-
-            Log.Info($"    Granting access to circles {startCircle}-{effectiveMaxCircle} (was {actualMaxCircle}, now {effectiveMaxCircle})");
-            if (isPlayer)
-            {
-                player?.SendServerMessage($"[DEBUG]   -> Granting circles {startCircle}-{effectiveMaxCircle}", ColorConstants.Cyan);
-            }
-
-            // Grant class spells for newly accessible circles
-            int granted = GrantClassSpells(creature, classType, classInfo.Class.Id, startCircle, effectiveMaxCircle);
-            totalSpellsGranted += granted;
-
-            if (isPlayer)
-            {
-                player?.SendServerMessage($"[DEBUG]   -> Granted {granted} class spells", ColorConstants.Cyan);
-            }
-
-            // For Clerics, also grant domain spells
-            if (classType == ClassType.Cleric)
-            {
-                int domainGranted = GrantDomainSpells(creature, classInfo.Class.Id, startCircle, effectiveMaxCircle);
-                totalSpellsGranted += domainGranted;
-                if (isPlayer)
-                {
-                    player?.SendServerMessage($"[DEBUG]   -> Granted {domainGranted} domain spells", ColorConstants.Cyan);
+                    player?.SendServerMessage($"[DEBUG]   {kvp.Key}: CL {kvp.Value}", ColorConstants.Yellow);
                 }
             }
-        }
 
-        if (isPlayer)
-        {
-            player?.SendServerMessage($"[DEBUG] Processing complete. Total spells granted: {totalSpellsGranted}", ColorConstants.Yellow);
-        }
+            int totalSpellsGranted = 0;
 
-        // Send feedback to player
-        if (totalSpellsGranted > 0 && isPlayer)
-        {
-            player?.SendServerMessage(
-                $"Prestige divine casting: {totalSpellsGranted} spell(s) added to your spellbook.",
-                ColorConstants.Cyan);
+            // Process each divine caster class the creature has
+            foreach (ClassType classType in DivineCasterClasses)
+            {
+                CreatureClassInfo? classInfo = creature.GetClassInfo(classType);
+                if (classInfo == null || classInfo.Level == 0)
+                {
+                    Log.Debug($"  {classType}: Not found or level 0, skipping");
+                    continue;
+                }
+
+                int actualLevel = classInfo.Level;
+                int effectiveLevel = effectiveLevels.TryGetValue(classType, out int el) ? el : actualLevel;
+
+                if (isPlayer)
+                {
+                    player?.SendServerMessage($"[DEBUG] {classType}: Actual {actualLevel}, Effective {effectiveLevel}", ColorConstants.Yellow);
+                }
+
+                // Only process if effective level is higher than actual level
+                if (effectiveLevel <= actualLevel)
+                {
+                    Log.Debug($"  {classType}: Effective CL ({effectiveLevel}) <= Actual Level ({actualLevel}), no bonus spells needed");
+                    if (isPlayer)
+                    {
+                        player?.SendServerMessage($"[DEBUG]   -> No boost needed (effective <= actual)", ColorConstants.Yellow);
+                    }
+                    continue;
+                }
+
+                Log.Info($"  {classType}: Actual Level {actualLevel}, Effective CL {effectiveLevel}");
+
+                // Calculate spell circle access
+                int actualMaxCircle = DivineSpellProgressionData.GetMaxSpellCircleForCasterLevel(classType, actualLevel);
+                int effectiveMaxCircle = DivineSpellProgressionData.GetMaxSpellCircleForCasterLevel(classType, effectiveLevel);
+
+                if (isPlayer)
+                {
+                    player?.SendServerMessage($"[DEBUG]   Actual max circle: {actualMaxCircle}, Effective max circle: {effectiveMaxCircle}", ColorConstants.Yellow);
+                }
+
+                if (effectiveMaxCircle <= actualMaxCircle)
+                {
+                    Log.Debug($"    Max circle unchanged ({actualMaxCircle}), no new spells to grant");
+                    if (isPlayer)
+                    {
+                        player?.SendServerMessage($"[DEBUG]   -> Max circle unchanged, skipping", ColorConstants.Yellow);
+                    }
+                    continue;
+                }
+
+                // For partial casters (Ranger/Paladin) under level 4, we need to grant spells starting from circle 1
+                // because the engine hasn't created spell structures for them yet.
+                // For other casters, we only grant newly accessible circles.
+                int startCircle = (classType is ClassType.Ranger or ClassType.Paladin && actualMaxCircle == 0)
+                    ? 1
+                    : actualMaxCircle + 1;
+
+                Log.Info($"    Granting access to circles {startCircle}-{effectiveMaxCircle} (was {actualMaxCircle}, now {effectiveMaxCircle})");
+                if (isPlayer)
+                {
+                    player?.SendServerMessage($"[DEBUG]   -> Granting circles {startCircle}-{effectiveMaxCircle}", ColorConstants.Cyan);
+                }
+
+                // Grant class spells for newly accessible circles
+                int granted = GrantClassSpells(creature, classType, classInfo.Class.Id, startCircle, effectiveMaxCircle);
+                totalSpellsGranted += granted;
+
+                if (isPlayer)
+                {
+                    player?.SendServerMessage($"[DEBUG]   -> Granted {granted} class spells", ColorConstants.Cyan);
+                }
+
+                // For Clerics, also grant domain spells
+                if (classType == ClassType.Cleric)
+                {
+                    int domainGranted = GrantDomainSpells(creature, classInfo.Class.Id, startCircle, effectiveMaxCircle);
+                    totalSpellsGranted += domainGranted;
+                    if (isPlayer)
+                    {
+                        player?.SendServerMessage($"[DEBUG]   -> Granted {domainGranted} domain spells", ColorConstants.Cyan);
+                    }
+                }
+            }
+
+            if (isPlayer)
+            {
+                player?.SendServerMessage($"[DEBUG] Processing complete. Total spells granted: {totalSpellsGranted}", ColorConstants.Yellow);
+            }
+
+            // Send feedback to player
+            if (totalSpellsGranted > 0 && isPlayer)
+            {
+                player?.SendServerMessage(
+                    $"Prestige divine casting: {totalSpellsGranted} spell(s) added to your spellbook.",
+                    ColorConstants.Cyan);
+            }
+            else if (totalSpellsGranted == 0 && isPlayer)
+            {
+                player?.SendServerMessage($"[DEBUG] No spells granted during this processing.", ColorConstants.Orange);
+            }
+
+            Log.Info($"=== ProcessCreatureSpellAccess END for {creature.Name} - Total spells granted: {totalSpellsGranted} ===");
         }
-        else if (totalSpellsGranted == 0 && isPlayer)
+        catch (Exception ex)
         {
-            player?.SendServerMessage($"[DEBUG] No spells granted during this processing.", ColorConstants.Orange);
+            Log.Error($"Exception in ProcessCreatureSpellAccess: {ex.Message}");
+            Log.Error($"Stack trace: {ex.StackTrace}");
+
+            if (creature.IsPlayerControlled(out NwPlayer? player))
+            {
+                player.SendServerMessage($"[ERROR] Divine spell processing failed: {ex.Message}", ColorConstants.Red);
+            }
         }
     }
 
