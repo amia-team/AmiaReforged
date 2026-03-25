@@ -9,15 +9,9 @@ pipeline{
         stage('Deploy Dev') {
             steps {
                 echo 'Deploying to dev server....'
-                script {
-                    if (params.RestartServer) {
-                        sh 'chmod +x stop-dev.sh'
-                        withEnv(["AMIA_SERVER_DIR=${DEV_SERVER_BASE}/..".toString()]) {
-                            sh 'bash stop-dev.sh'
-                        }
-                    } else {
-                        echo 'Skipping server stop (RestartServer is false)'
-                    }
+                sh 'chmod +x stop-dev.sh'
+                withEnv(["AMIA_SERVER_DIR=${DEV_SERVER_BASE}/..".toString()]) {
+                    sh 'bash stop-dev.sh'
                 }
 
                 sh "dotnet publish AmiaReforged.Core --output ${DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.Core/"
@@ -27,15 +21,9 @@ pipeline{
                 sh "dotnet publish AmiaReforged.DMS --output ${DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.DMS/"
                 sh "dotnet publish AmiaReforged.PwEngine --output ${DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.PwEngine/"
 
-                script {
-                    if (params.RestartServer) {
-                        sh 'chmod +x start-dev.sh'
-                        withEnv(["AMIA_SERVER_DIR=${DEV_SERVER_BASE}/..".toString()]) {
-                            sh 'bash start-dev.sh'
-                        }
-                    } else {
-                        echo 'Skipping server start (RestartServer is false)'
-                    }
+                sh 'chmod +x start-dev.sh'
+                withEnv(["AMIA_SERVER_DIR=${DEV_SERVER_BASE}/..".toString()]) {
+                    sh 'bash start-dev.sh'
                 }
             }
         }
