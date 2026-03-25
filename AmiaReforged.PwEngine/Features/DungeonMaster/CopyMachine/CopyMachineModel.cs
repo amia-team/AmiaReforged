@@ -504,6 +504,15 @@ internal sealed class CopyMachineModel
         foreach (ItemAppearanceArmorColor color in Enum.GetValues<ItemAppearanceArmorColor>())
         {
             byte srcColor = source.Appearance.GetArmorColor(color);
+
+            // If GetArmorColor returns 255 (unset), fall back to NWScript API
+            // This handles armor that hasn't been customized
+            if (srcColor == 255)
+            {
+                int channelIndex = (int)color;
+                srcColor = (byte)NWScript.GetItemAppearance(source, NWScript.ITEM_APPR_TYPE_ARMOR_COLOR, NWScript.ITEM_APPR_ARMOR_COLOR_LEATHER1 + channelIndex);
+            }
+
             if (target.Appearance.GetArmorColor(color) != srcColor)
                 target.Appearance.SetArmorColor(color, srcColor);
         }
