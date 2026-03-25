@@ -263,9 +263,11 @@ public class DivineCasterSpellAccessService
                 int actualLevel = classInfo.Level;
                 int effectiveLevel = effectiveLevels.TryGetValue(classType, out int el) ? el : actualLevel;
 
+                Log.Info($"  Found {classType}: Actual={actualLevel}, Effective={effectiveLevel}, ClassId={classInfo.Class.Id}, ClassName={classInfo.Class.Name}");
+
                 if (isPlayer)
                 {
-                    player?.SendServerMessage($"[DEBUG] {classType}: Actual {actualLevel}, Effective {effectiveLevel}", ColorConstants.Yellow);
+                    player?.SendServerMessage($"[DEBUG] {classType}: Actual {actualLevel}, Effective {effectiveLevel} (ID={classInfo.Class.Id})", ColorConstants.Yellow);
                 }
 
                 // Only process if effective level is higher than actual level
@@ -425,9 +427,11 @@ public class DivineCasterSpellAccessService
         int spellsGranted = 0;
         bool isPlayer = creature.IsPlayerControlled(out NwPlayer? player);
 
+        Log.Info($"    GrantClassSpells START: {classType}, classId={classId}, circles {fromCircle}-{toCircle}");
+
         if (isPlayer)
         {
-            player?.SendServerMessage($"[DEBUG] GrantClassSpells: {classType} circles {fromCircle}-{toCircle}", ColorConstants.Yellow);
+            player?.SendServerMessage($"[DEBUG] GrantClassSpells START: {classType} circles {fromCircle}-{toCircle}", ColorConstants.Yellow);
         }
 
         // Ensure spell data structures exist for partial casters before adding spells
@@ -436,6 +440,8 @@ public class DivineCasterSpellAccessService
         for (int spellLevel = fromCircle; spellLevel <= toCircle; spellLevel++)
         {
             IReadOnlyList<int> spells = _spellCache.GetSpellsForClass(classType, spellLevel);
+
+            Log.Info($"      Level {spellLevel}: {spells.Count} spells in cache");
 
             if (isPlayer)
             {
@@ -452,26 +458,32 @@ public class DivineCasterSpellAccessService
                 continue;
             }
 
+            int levelSpellsGranted = 0;
             foreach (int spellId in spells)
             {
                 // Check if creature already knows this spell
                 if (CreatureKnowsSpell(creature, classId, spellLevel, spellId))
                 {
-                    if (isPlayer)
-                    {
-                        player?.SendServerMessage($"[DEBUG]   Spell {spellId}: already known, skipping", ColorConstants.Yellow);
-                    }
+                    Log.Debug($"        Spell {spellId}: already known");
                     continue;
                 }
 
-                // Add the spell
-                if (isPlayer)
-                {
-                    player?.SendServerMessage($"[DEBUG]   Spell {spellId}: adding...", ColorConstants.Cyan);
-                }
+                // CRITICAL: Log BEFORE adding spell
+                Log.Info($"        About to add spell {spellId} (Level {spellLevel}) to {classType} (classId={classId})");
 
+                // Add the spell
                 CreaturePlugin.AddKnownSpell(creature, classId, spellLevel, spellId);
                 spellsGranted++;
+                levelSpellsGranted++;
+
+                // CRITICAL: Verify spell was actually added
+                bool stillKnown = CreatureKnowsSpell(creature, classId, spellLevel, spellId);
+                Log.Info($"        After adding: CreatureKnowsSpell returned {stillKnown}");
+
+                if (isPlayer && levelSpellsGranted <= 3) // Only show first 3 per level
+                {
+                    player?.SendServerMessage($"[DEBUG]   Spell {spellId}: added (verified={stillKnown})", ColorConstants.Cyan);
+                }
 
                 // Store on pcKey for persistence
                 if (pcKey != null)
@@ -482,7 +494,11 @@ public class DivineCasterSpellAccessService
 
                 Log.Debug($"      Added spell {spellId} (Level {spellLevel}) to {classType} spellbook");
             }
+
+            Log.Info($"      Level {spellLevel}: {levelSpellsGranted}/{spells.Count} spells granted");
         }
+
+        Log.Info($"    GrantClassSpells END: Total granted = {spellsGranted} from {fromCircle}-{toCircle}");
 
         if (spellsGranted > 0)
         {
