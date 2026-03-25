@@ -6,7 +6,7 @@ pipeline{
     }
 
     stages {
-        stage('Build BackupService Docker Image') {
+    stage('Build BackupService Docker Image') {
             when {
                 changeset "AmiaReforged.BackupService/**"
             }
@@ -54,12 +54,12 @@ pipeline{
                     sh 'bash stop-dev.sh'
                 }
 
-                sh "dotnet publish AmiaReforged.Core --output ${DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.Core/"
-                sh "dotnet publish AmiaReforged.System --output ${DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.System/"
-                sh "dotnet publish AmiaReforged.Classes --output ${DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.Classes/"
-                sh "dotnet publish AmiaReforged.Races --output ${DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.Races/"
-                sh "dotnet publish AmiaReforged.DMS --output ${DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.DMS/"
-                sh "dotnet publish AmiaReforged.PwEngine --output ${DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.PwEngine/"
+                sh "dotnet publish AmiaReforged.Core --output ${DEV_SERVER_BASE}/dev_server/anvil/Plugins/AmiaReforged.Core/"
+                sh "dotnet publish AmiaReforged.System --output ${DEV_SERVER_BASE}/dev_server/anvil/Plugins/AmiaReforged.System/"
+                sh "dotnet publish AmiaReforged.Classes --output ${DEV_SERVER_BASE}/dev_server/anvil/Plugins/AmiaReforged.Classes/"
+                sh "dotnet publish AmiaReforged.Races --output ${DEV_SERVER_BASE}/dev_server/anvil/Plugins/AmiaReforged.Races/"
+                sh "dotnet publish AmiaReforged.DMS --output ${DEV_SERVER_BASE}/dev_server/anvil/Plugins/AmiaReforged.DMS/"
+                sh "dotnet publish AmiaReforged.PwEngine --output ${DEV_SERVER_BASE}/dev_server/anvil/Plugins/AmiaReforged.PwEngine/"
 
                 sh 'chmod +x start-dev.sh'
                 withEnv(["AMIA_SERVER_DIR=${DEV_SERVER_BASE}/..".toString()]) {
