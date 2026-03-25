@@ -52,10 +52,11 @@ public class DivineCasterSpellAccessService
         if (obj.Player.IsDM) return;
         if (obj.Player.LoginCreature == null) return;
 
-        // Small delay to ensure character is fully loaded
+        // Longer delay to ensure character is fully loaded AND PrestigeSpellSlotService
+        // has equipped the creature hide (which creates spell slot structures).
         NwTask.Run(async () =>
         {
-            await NwTask.Delay(TimeSpan.FromMilliseconds(500));
+            await NwTask.Delay(TimeSpan.FromSeconds(3));
             await NwTask.SwitchToMainThread();
 
             if (obj.Player.LoginCreature?.IsValid == true)
@@ -72,7 +73,7 @@ public class DivineCasterSpellAccessService
         NwCreature creature = obj.Creature;
         NwTask.Run(async () =>
         {
-            await NwTask.Delay(TimeSpan.FromMilliseconds(500));
+            await NwTask.Delay(TimeSpan.FromSeconds(3));
             await NwTask.SwitchToMainThread();
 
             if (creature.IsValid)
@@ -89,7 +90,7 @@ public class DivineCasterSpellAccessService
         NwCreature creature = obj.Creature;
         NwTask.Run(async () =>
         {
-            await NwTask.Delay(TimeSpan.FromMilliseconds(500));
+            await NwTask.Delay(TimeSpan.FromSeconds(3));
             await NwTask.SwitchToMainThread();
 
             if (creature.IsValid)
@@ -105,6 +106,8 @@ public class DivineCasterSpellAccessService
 
         // Get effective caster levels for all classes
         Dictionary<ClassType, int> effectiveLevels = EffectiveCasterLevelCalculator.CalculateAllEffectiveCasterLevels(creature);
+
+        int totalSpellsGranted = 0;
 
         // Process each divine caster class the creature has
         foreach (ClassType classType in DivineCasterClasses)
@@ -135,27 +138,82 @@ public class DivineCasterSpellAccessService
                 continue;
             }
 
-            Log.Info($"    Granting access to circles {actualMaxCircle + 1}-{effectiveMaxCircle} (was {actualMaxCircle}, now {effectiveMaxCircle})");
+            // For partial casters (Ranger/Paladin) under level 4, we need to grant spells starting from circle 1
+            // because the engine hasn't created spell structures for them yet.
+            // For other casters, we only grant newly accessible circles.
+            int startCircle = (classType is ClassType.Ranger or ClassType.Paladin && actualMaxCircle == 0)
+                ? 1
+                : actualMaxCircle + 1;
+
+            Log.Info($"    Granting access to circles {startCircle}-{effectiveMaxCircle} (was {actualMaxCircle}, now {effectiveMaxCircle})");
 
             // Grant class spells for newly accessible circles
-            GrantClassSpells(creature, classType, classInfo.Class.Id, actualMaxCircle + 1, effectiveMaxCircle);
+            int granted = GrantClassSpells(creature, classType, classInfo.Class.Id, startCircle, effectiveMaxCircle);
+            totalSpellsGranted += granted;
 
             // For Clerics, also grant domain spells
             if (classType == ClassType.Cleric)
             {
-                GrantDomainSpells(creature, classInfo.Class.Id, actualMaxCircle + 1, effectiveMaxCircle);
+                totalSpellsGranted += GrantDomainSpells(creature, classInfo.Class.Id, startCircle, effectiveMaxCircle);
+            }
+        }
+
+        // Send feedback to player
+        if (totalSpellsGranted > 0 && creature.IsPlayerControlled(out NwPlayer? player))
+        {
+            player.SendServerMessage(
+                $"Prestige divine casting: {totalSpellsGranted} spell(s) added to your spellbook.",
+                ColorConstants.Cyan);
+        }
+    }
+
+    /// <summary>
+    /// For partial divine casters (Ranger/Paladin), the NWN engine only creates internal spell
+    /// data structures for circles the character naturally has access to based on actual class level.
+    /// Full casters (Cleric/Druid) get structures for all 9 circles even at level 1.
+    /// Without the structures, AddKnownSpell silently fails. This method forces the engine to
+    /// create them by setting remaining spell slots at each level we need, which triggers the
+    /// engine to initialize the underlying data structures.
+    /// </summary>
+    private void EnsureSpellStructuresExist(NwCreature creature, ClassType classType, int classId, int fromCircle, int toCircle)
+    {
+        if (classType is not (ClassType.Ranger or ClassType.Paladin))
+            return;
+
+        // Get effective caster level for this class
+        int effectiveLevel = EffectiveCasterLevelCalculator.GetEffectiveCasterLevelForClass(creature, classType);
+
+        for (int spellLevel = fromCircle; spellLevel <= toCircle; spellLevel++)
+        {
+            int currentMaxSlots = CreaturePlugin.GetMaxSpellSlots(creature, classId, spellLevel);
+            if (currentMaxSlots <= 0)
+            {
+                // To initialize spell structures for partial casters, we set remaining slots to 1.
+                // This triggers the NWN engine to create the internal spell data structures needed
+                // for AddKnownSpell to work. The actual spell slots will be properly managed by
+                // PrestigeSpellSlotService through item properties on the creature hide.
+                CreaturePlugin.SetRemainingSpellSlots(creature, classId, spellLevel, 1);
+                Log.Info($"      Initialized {classType} spell level {spellLevel} structure (CL {effectiveLevel})");
             }
         }
     }
 
-    private void GrantClassSpells(NwCreature creature, ClassType classType, int classId, int fromCircle, int toCircle)
+    private int GrantClassSpells(NwCreature creature, ClassType classType, int classId, int fromCircle, int toCircle)
     {
         NwItem? pcKey = GetPcKey(creature);
         int spellsGranted = 0;
 
+        // Ensure spell data structures exist for partial casters before adding spells
+        EnsureSpellStructuresExist(creature, classType, classId, fromCircle, toCircle);
+
         for (int spellLevel = fromCircle; spellLevel <= toCircle; spellLevel++)
         {
             IReadOnlyList<int> spells = _spellCache.GetSpellsForClass(classType, spellLevel);
+
+            if (spells.Count == 0)
+            {
+                Log.Warn($"      No spells found in cache for {classType} level {spellLevel}");
+            }
 
             foreach (int spellId in spells)
             {
@@ -182,9 +240,11 @@ public class DivineCasterSpellAccessService
         {
             Log.Info($"    Granted {spellsGranted} {classType} spells for circles {fromCircle}-{toCircle}");
         }
+
+        return spellsGranted;
     }
 
-    private void GrantDomainSpells(NwCreature creature, int clericClassId, int fromCircle, int toCircle)
+    private int GrantDomainSpells(NwCreature creature, int clericClassId, int fromCircle, int toCircle)
     {
         // Get creature's domains
         int domain1 = NWScript.GetDomain(creature);
@@ -193,7 +253,7 @@ public class DivineCasterSpellAccessService
         if (domain1 <= 0 && domain2 <= 0)
         {
             Log.Debug($"    No domains found for Cleric");
-            return;
+            return 0;
         }
 
         NwItem? pcKey = GetPcKey(creature);
@@ -237,6 +297,8 @@ public class DivineCasterSpellAccessService
         {
             Log.Info($"    Granted {domainSpellsGranted} domain spells for circles {fromCircle}-{toCircle}");
         }
+
+        return domainSpellsGranted;
     }
 
     private bool CreatureKnowsSpell(NwCreature creature, int classId, int spellLevel, int spellId)
