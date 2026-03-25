@@ -63,6 +63,7 @@ public class AiTalentService
     /// <summary>
     /// Attempts to use a special attack feat (random selection).
     /// Port of DoSpecialAttack() from ds_ai_include.nss lines 743-760.
+    /// Includes Sap (d12=8) which was missing from the original C# implementation.
     /// </summary>
     public bool TrySpecialAttack(NwCreature creature, NwGameObject? target)
     {
@@ -70,10 +71,23 @@ public class AiTalentService
         if (target == null) return false;
 
         int roll = Random.Shared.Next(1, 13); // d12
-        if (roll < 9) return false; // 67% chance to not use special attack
+        if (roll < 8) return false; // 58% chance to not use special attack
+
+        // Check for dragon special ability (F_SPECIAL flag, d12 > 10)
+        if (roll > 10)
+        {
+            int specialFlag = creature.GetObjectVariable<LocalVariableInt>("ds_ai_special").Value;
+            if (specialFlag != 0)
+            {
+                // Dragon wing buffet — handled by executing ds_ai2_special script
+                // Return false here to let the caller handle it via script execution
+                return false;
+            }
+        }
 
         Feat? feat = roll switch
         {
+            8 => Feat.Sap,
             9 => Feat.Knockdown,
             10 => Feat.CalledShot,
             11 => Feat.Disarm,

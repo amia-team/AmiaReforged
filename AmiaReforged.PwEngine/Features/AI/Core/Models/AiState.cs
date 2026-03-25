@@ -1,3 +1,4 @@
+using System.Numerics;
 using Anvil.API;
 
 namespace AmiaReforged.PwEngine.Features.AI.Core.Models;
@@ -24,9 +25,16 @@ public class AiState
     public NwCreature? LastDamager { get; set; }
 
     /// <summary>
-    /// Archetype ID assigned to this creature ("melee", "caster", "hybrid").
+    /// Archetype ID assigned to this creature ("melee", "caster", "ranged", "sneak", "hips").
     /// </summary>
     public string? ArchetypeId { get; set; }
+
+    /// <summary>
+    /// Numeric archetype value (1-10) for combat weighting.
+    /// 1-3 = martial bias, 4-6 = hybrid, 7-10 = caster bias.
+    /// Used for flee bias modifiers and spell selection.
+    /// </summary>
+    public int ArchetypeValue { get; set; }
 
     /// <summary>
     /// Last spell cast by this creature (prevents immediate re-casting of buffs).
@@ -37,6 +45,24 @@ public class AiState
     /// Whether feat buffs have been applied on spawn (one-time).
     /// </summary>
     public bool HasFeatBuffed { get; set; }
+
+    /// <summary>
+    /// Whether this creature has healed during the current fight (one heal per fight).
+    /// Ports legacy L_HEALED flag from ds_ai_include.nss.
+    /// </summary>
+    public bool HasHealed { get; set; }
+
+    /// <summary>
+    /// Last position recorded for path-blocking detection.
+    /// If a melee creature hasn't moved between rounds, it may be stuck.
+    /// </summary>
+    public Vector3? LastPosition { get; set; }
+
+    /// <summary>
+    /// The target that was being pursued when last position was recorded.
+    /// Used with LastPosition to detect pathing stalls.
+    /// </summary>
+    public NwGameObject? LastPathTarget { get; set; }
 
     /// <summary>
     /// Number of consecutive inactive heartbeats (for sleep mode).
