@@ -941,7 +941,17 @@ public class ArmorBackupData
             Dictionary<string, int> partColors = new Dictionary<string, int>();
             foreach (ItemAppearanceArmorColor channel in colorChannels)
             {
-                partColors[channel.ToString()] = armor.Appearance.GetArmorPieceColor(part, channel);
+                int colorValue = armor.Appearance.GetArmorPieceColor(part, channel);
+
+                // If GetArmorPieceColor returns 255 (unset), fall back to NWScript API
+                // This handles armor that hasn't been customized with SetArmorPieceColor
+                if (colorValue == 255)
+                {
+                    int channelIndex = (int)channel;
+                    colorValue = NWScript.GetItemAppearance(armor, NWScript.ITEM_APPR_TYPE_ARMOR_COLOR, NWScript.ITEM_APPR_ARMOR_COLOR_LEATHER1 + channelIndex);
+                }
+
+                partColors[channel.ToString()] = colorValue;
             }
 
             data.ArmorColors[part.ToString()] = partColors;
