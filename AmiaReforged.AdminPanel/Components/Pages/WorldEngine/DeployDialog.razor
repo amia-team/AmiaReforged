@@ -1,0 +1,228 @@
+@using AmiaReforged.AdminPanel.Models
+@using AmiaReforged.AdminPanel.Services
+
+@if (Visible)
+{
+    <div class="deploy-dialog__backdrop" @onclick="Cancel">
+        <div class="deploy-dialog" @onclick:stopPropagation="true">
+            <div class="deploy-dialog__header">
+                <span class="bi bi-cloud-upload me-2"></span>
+                Deploy to Environment
+            </div>
+
+            <div class="deploy-dialog__body">
+                @if (_result != null)
+                {
+                    @* ── Results view ─────────────────────────────────── *@
+                    <div class="deploy-dialog__results">
+                        @if (_result.OverallSuccess)
+                        {
+                            <div class="deploy-dialog__result-banner deploy-dialog__result-banner--success">
+                                <span class="bi bi-check-circle-fill me-2"></span>
+                                Deployed successfully — @_result.TotalDeployed entity(ies) imported.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="deploy-dialog__result-banner deploy-dialog__result-banner--error">
+                                <span class="bi bi-exclamation-triangle-fill me-2"></span>
+                                Deploy completed with errors.
+                            </div>
+                        }
+
+                        @if (_result.Errors.Count > 0)
+                        {
+                            <div class="deploy-dialog__section">
+                                <strong>Errors:</strong>
+                                <ul class="deploy-dialog__error-list">
+                                    @foreach (string err in _result.Errors)
+                                    {
+                                        <li>@err</li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+
+                        @if (_result.EntityResult != null)
+                        {
+                            <div class="deploy-dialog__section">
+                                <strong>@EntityType:</strong>
+                                @_result.EntityResult.Succeeded succeeded, @_result.EntityResult.Failed failed
+                                @if (_result.EntityResult.Errors.Count > 0)
+                                {
+                                    <ul class="deploy-dialog__error-list">
+                                        @foreach (string err in _result.EntityResult.Errors)
+                                        {
+                                            <li>@err</li>
+                                        }
+                                    </ul>
+                                }
+                            </div>
+                        }
+
+                        @foreach (var (depType, depResult) in _result.DependencyResults)
+                        {
+                            <div class="deploy-dialog__section">
+                                <strong>@depType:</strong>
+                                @depResult.Succeeded succeeded, @depResult.Failed failed
+                                @if (depResult.Errors.Count > 0)
+                                {
+                                    <ul class="deploy-dialog__error-list">
+                                        @foreach (string err in depResult.Errors)
+                                        {
+                                            <li>@err</li>
+                                        }
+                                    </ul>
+                                }
+                            </div>
+                        }
+
+                        <div class="deploy-dialog__actions">
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="Cancel">Close</button>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    @* ── Configuration view ───────────────────────────── *@
+                    <div class="deploy-dialog__field">
+                        <label>Source Environment</label>
+                        <span class="deploy-dialog__value">@SourceEndpointName</span>
+                    </div>
+
+                    <div class="deploy-dialog__field">
+                        <label>Entity</label>
+                        <span class="deploy-dialog__value">
+                            <span class="deploy-dialog__entity-type">@EntityType</span>
+                            <span class="deploy-dialog__entity-key">@EntityKey</span>
+                        </span>
+                    </div>
+
+                    <div class="deploy-dialog__field">
+                        <label>Target Environment</label>
+                        <select class="form-control form-control-sm"
+                                value="@(_selectedTargetId?.ToString() ?? "")"
+                                @onchange="OnTargetChanged">
+                            <option value="">— Select target —</option>
+                            @foreach (WorldEngineEndpoint ep in AvailableTargets)
+                            {
+                                <option value="@ep.Id">@ep.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="deploy-dialog__field">
+                        <label>Dependencies</label>
+                        <ul class="deploy-dialog__dep-list">
+                            @foreach (string dep in _dependencyDescriptions)
+                            {
+                                <li>@dep</li>
+                            }
+                        </ul>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(_error))
+                    {
+                        <div class="deploy-dialog__inline-error">
+                            <span class="bi bi-exclamation-triangle me-1"></span> @_error
+                        </div>
+                    }
+
+                    <div class="deploy-dialog__actions">
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="Cancel" disabled="@_deploying">Cancel</button>
+                        <button class="btn btn-sm btn-warning" @onclick="ConfirmDeploy"
+                                disabled="@(_selectedTargetId == null || _deploying)">
+                            @if (_deploying)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                                <text>Deploying…</text>
+                            }
+                            else
+                            {
+                                <span class="bi bi-cloud-upload me-1"></span>
+                                <text>Deploy</text>
+                            }
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public Guid? SourceEndpointId { get; set; }
+    [Parameter] public string SourceEndpointName { get; set; } = "";
+    [Parameter] public WorldEngineEntityType EntityType { get; set; }
+    [Parameter] public string EntityKey { get; set; } = "";
+    [Parameter] public List<WorldEngineEndpoint> Endpoints { get; set; } = [];
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    [Inject] private DeploymentService DeployService { get; set; } = default!;
+
+    private Guid? _selectedTargetId;
+    private bool _deploying;
+    private string? _error;
+    private DeployResult? _result;
+    private List<string> _dependencyDescriptions = [];
+
+    /// <summary>Endpoints excluding the current source.</summary>
+    private IEnumerable<WorldEngineEndpoint> AvailableTargets =>
+        Endpoints.Where(ep => ep.Id != SourceEndpointId);
+
+    protected override void OnParametersSet()
+    {
+        if (Visible)
+        {
+            _dependencyDescriptions = DeploymentService.GetDependencyDescription(EntityType);
+            // Reset state when opened
+            _result = null;
+            _error = null;
+            _deploying = false;
+        }
+    }
+
+    private void OnTargetChanged(ChangeEventArgs e)
+    {
+        string? val = e.Value?.ToString();
+        _selectedTargetId = Guid.TryParse(val, out Guid id) ? id : null;
+        _error = null;
+    }
+
+    private async Task ConfirmDeploy()
+    {
+        if (SourceEndpointId == null || _selectedTargetId == null) return;
+
+        _deploying = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            _result = await DeployService.DeployEntityAsync(
+                SourceEndpointId.Value,
+                _selectedTargetId.Value,
+                EntityType,
+                EntityKey);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Deploy failed: {ex.Message}";
+        }
+        finally
+        {
+            _deploying = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task Cancel()
+    {
+        _selectedTargetId = null;
+        _result = null;
+        _error = null;
+        _deploying = false;
+        await OnClose.InvokeAsync();
+    }
+}

@@ -20,6 +20,7 @@
 @inject InteractionApiService InteractionApi
 @inject CoinhouseApiService CoinhouseApi
 @inject DialogueApiService DialogueApi
+@inject DeploymentService DeployService
 @inject ILogger<WorldEngineEditor> Logger
 @inject IJSRuntime JS
 @rendermode InteractiveServer
@@ -61,7 +62,24 @@
         }
 
         <div class="we-editor__toolbar-spacer"></div>
+
+        @* Deploy button — right-aligned after spacer *@
+        <button class="we-editor__toolbar-deploy-btn"
+                title="Deploy active entity to another environment"
+                disabled="@(!_canDeploy)"
+                @onclick="OpenDeployDialog">
+            <span class="bi bi-cloud-upload me-1"></span> Deploy
+        </button>
     </div>
+
+    @* ── Deploy dialog (modal overlay) ────────────────────────────── *@
+    <DeployDialog Visible="@_showDeployDialog"
+                  SourceEndpointId="@EditorState.SelectedEndpointId"
+                  SourceEndpointName="@_deploySourceName"
+                  EntityType="@_deployEntityType"
+                  EntityKey="@_deployEntityKey"
+                  Endpoints="@_endpoints"
+                  OnClose="CloseDeployDialog" />
 
     <div class="we-editor__body">
         @* ── Activity bar ────────────────────────────────────────── *@
@@ -1931,6 +1949,17 @@
     private List<WorldEngineEndpoint> _endpoints = [];
     private bool _listPanelOpen = true;
 
+    // ── Deploy dialog state ────────────────────────────────────────
+    private bool _showDeployDialog;
+    private string _deploySourceName = "";
+    private WorldEngineEntityType _deployEntityType;
+    private string _deployEntityKey = "";
+
+    private bool _canDeploy =>
+        EditorState.SelectedEndpointId != null
+        && EditorState.ActiveTab is { EntityKey: not null } tab
+        && DeploymentService.SupportedEntityTypes.Contains(tab.EntityType);
+
     // ── Entity list state ───────────────────────────────────────────
     private List<EntityListItem> _listItems = [];
     private bool _listLoading;
@@ -2199,6 +2228,28 @@
             await LoadEntityList(reset: true);
             StateHasChanged();
         });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Deploy dialog
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void OpenDeployDialog()
+    {
+        if (!_canDeploy) return;
+
+        EditorTab tab = EditorState.ActiveTab!;
+        _deployEntityType = tab.EntityType;
+        _deployEntityKey = tab.EntityKey!;
+        _deploySourceName = _endpoints
+            .FirstOrDefault(ep => ep.Id == EditorState.SelectedEndpointId)?.Name ?? "Unknown";
+        _showDeployDialog = true;
+    }
+
+    private void CloseDeployDialog()
+    {
+        _showDeployDialog = false;
+        StateHasChanged();
     }
 
     // ═══════════════════════════════════════════════════════════════════
