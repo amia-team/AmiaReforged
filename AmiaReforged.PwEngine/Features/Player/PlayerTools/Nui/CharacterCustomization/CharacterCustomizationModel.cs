@@ -758,6 +758,9 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
             return;
         }
 
+        // DEBUG: Show what we're copying from and to
+        player.SendServerMessage($"DEBUG COPY: Copying from backup ({backupData.ArmorName}) to target ({targetItem.Name})", ColorConstants.Cyan);
+
         // Get the AC value of the current armor to prevent AC changes
         if (_currentArmor == null || !_currentArmor.IsValid)
         {
@@ -786,12 +789,37 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
         // This is critical: armor piece colors must be set before cloning to persist
         backupData.ApplyToItem(targetItem, skipTorso: mismatchAc);
 
-        // Now clone the item with the appearance changes applied
+        // For items in inventory (not equipped), we need to force serialization
+        // Equip then immediately unequip to commit the appearance changes
+        bool wasEquipped = false;
+        InventorySlot? originalSlot = null;
+
+        // Check if target armor is already equipped
+        if (creature.GetItemInSlot(InventorySlot.Chest) == targetItem)
+        {
+            wasEquipped = true;
+            originalSlot = InventorySlot.Chest;
+            creature.RunUnequip(targetItem);
+        }
+        else
+        {
+            // Item is in inventory - equip then unequip to serialize changes
+            creature.RunEquip(targetItem, InventorySlot.Chest);
+            creature.RunUnequip(targetItem);
+        }
+
+        // Now clone the item with the appearance changes serialized
         NwItem clonedTarget = targetItem.Clone(creature);
 
         if (clonedTarget.IsValid)
         {
             targetItem.Destroy();
+
+            // Re-equip if it was originally equipped
+            if (wasEquipped && originalSlot.HasValue)
+            {
+                creature.RunEquip(clonedTarget, originalSlot.Value);
+            }
 
             if (mismatchAc)
             {
@@ -814,6 +842,13 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
 
         ArmorBackupData? backupData = ArmorBackupData.FromItem(_currentArmor);
         if (backupData == null) return;
+
+        // DEBUG: Log sample color values being captured
+        player.SendServerMessage($"DEBUG SAVE: Capturing from {_currentArmor.Name} (ResRef: {_currentArmor.ResRef})", ColorConstants.Cyan);
+        if (backupData.ArmorColors.TryGetValue(CreaturePart.Torso.ToString(), out var torsoColors))
+        {
+            player.SendServerMessage($"DEBUG SAVE: Torso Leather1={torsoColors[ItemAppearanceArmorColor.Leather1.ToString()]}, Cloth1={torsoColors[ItemAppearanceArmorColor.Cloth1.ToString()]}", ColorConstants.Cyan);
+        }
 
         string json = JsonConvert.SerializeObject(backupData);
 
@@ -849,7 +884,19 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
 
         try
         {
-            return JsonConvert.DeserializeObject<ArmorBackupData>(json);
+            ArmorBackupData? backupData = JsonConvert.DeserializeObject<ArmorBackupData>(json);
+
+            // DEBUG: Log what was loaded
+            if (backupData != null)
+            {
+                player.SendServerMessage($"DEBUG LOAD: Loaded backup of {backupData.ArmorName} (ResRef: {backupData.ArmorResRef})", ColorConstants.Cyan);
+                if (backupData.ArmorColors.TryGetValue(CreaturePart.Torso.ToString(), out var torsoColors))
+                {
+                    player.SendServerMessage($"DEBUG LOAD: Torso Leather1={torsoColors[ItemAppearanceArmorColor.Leather1.ToString()]}, Cloth1={torsoColors[ItemAppearanceArmorColor.Cloth1.ToString()]}", ColorConstants.Cyan);
+                }
+            }
+
+            return backupData;
         }
         catch
         {
@@ -965,6 +1012,12 @@ public class ArmorBackupData
                     {
                         armor.Appearance.SetArmorPieceColor(part, channel, (byte)colorKvp.Value);
                         appliedColors++;
+
+                        // DEBUG: Log first part's color values
+                        if (appliedColors == 1 && armor.RootPossessor != null)
+                        {
+                            NWScript.SendMessageToPC(armor.RootPossessor, $"DEBUG APPLY: First color - {part} {channel}={colorKvp.Value}");
+                        }
                     }
                 }
             }
@@ -972,7 +1025,7 @@ public class ArmorBackupData
 
         if (armor.RootPossessor != null)
         {
-            NWScript.SendMessageToPC(armor.RootPossessor, $"DEBUG: Applied {appliedModels} models and {appliedColors} colors");
+            NWScript.SendMessageToPC(armor.RootPossessor, $"DEBUG APPLY: Applied {appliedModels} models and {appliedColors} colors to {armor.Name}");
         }
     }
 }
