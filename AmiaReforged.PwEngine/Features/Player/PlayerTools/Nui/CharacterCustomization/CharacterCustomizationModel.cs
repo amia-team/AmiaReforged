@@ -785,41 +785,13 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
 
         bool mismatchAc = targetAc.Value != currentAc.Value;
 
-        // Apply backup appearance to the target item BEFORE cloning
-        // This is critical: armor piece colors must be set before cloning to persist
-        backupData.ApplyToItem(targetItem, skipTorso: mismatchAc);
-
-        // For items in inventory (not equipped), we need to force serialization
-        // Equip then immediately unequip to commit the appearance changes
-        bool wasEquipped = false;
-        InventorySlot? originalSlot = null;
-
-        // Check if target armor is already equipped
-        if (creature.GetItemInSlot(InventorySlot.Chest) == targetItem)
-        {
-            wasEquipped = true;
-            originalSlot = InventorySlot.Chest;
-            creature.RunUnequip(targetItem);
-        }
-        else
-        {
-            // Item is in inventory - equip then unequip to serialize changes
-            creature.RunEquip(targetItem, InventorySlot.Chest);
-            creature.RunUnequip(targetItem);
-        }
-
-        // Now clone the item with the appearance changes serialized
+        // Clone the target item and apply backup appearance
         NwItem clonedTarget = targetItem.Clone(creature);
 
         if (clonedTarget.IsValid)
         {
+            backupData.ApplyToItem(clonedTarget, skipTorso: mismatchAc);
             targetItem.Destroy();
-
-            // Re-equip if it was originally equipped
-            if (wasEquipped && originalSlot.HasValue)
-            {
-                creature.RunEquip(clonedTarget, originalSlot.Value);
-            }
 
             if (mismatchAc)
             {
