@@ -347,6 +347,12 @@ public class DivineCasterSpellAccessService
                 player?.SendServerMessage(
                     $"Prestige divine casting: {totalSpellsGranted} spell(s) added to your spellbook.",
                     ColorConstants.Cyan);
+                player?.SendServerMessage(
+                    $"Use the 'Prestige Divine Spellbook' window to memorize spells to your spell slots.",
+                    ColorConstants.Yellow);
+                player?.SendServerMessage(
+                    $"Command: /prestige_spellbook",
+                    ColorConstants.Yellow);
             }
             else if (totalSpellsGranted == 0 && isPlayer)
             {
@@ -503,9 +509,13 @@ public class DivineCasterSpellAccessService
         if (spellsGranted > 0)
         {
             Log.Info($"    Granted {spellsGranted} {classType} spells for circles {fromCircle}-{toCircle}");
+            Log.Info($"    IMPORTANT: Spells are added to character's known spells, but NWN UI may filter display based on base class level.");
+            Log.Info($"    To see low-level partial caster spells, try: Opening character sheet > Spells > switching to spell level manually");
+
             if (isPlayer)
             {
                 player?.SendServerMessage($"[DEBUG] GrantClassSpells: Total granted = {spellsGranted}", ColorConstants.Cyan);
+                player?.SendServerMessage($"[DEBUG] Note: If spells don't show, try closing/reopening character sheet", ColorConstants.Yellow);
             }
         }
         else if (isPlayer)
