@@ -1,0 +1,48 @@
+pipeline{
+    agent any
+
+    environment {
+        DEV_SERVER_BASE = "${env.DEV_SERVER_BASE ?: '/storage/amiadev'}"
+    }
+
+    stages {
+        stage('Deploy Dev') {
+            steps {
+                echo 'Deploying to dev server....'
+                script {
+                    if (params.RestartServer) {
+                        sh 'chmod +x stop-dev.sh'
+                        withEnv(["AMIA_SERVER_DIR=${DEV_SERVER_BASE}/..".toString()]) {
+                            sh 'bash stop-dev.sh'
+                        }
+                    } else {
+                        echo 'Skipping server stop (RestartServer is false)'
+                    }
+                }
+
+                sh "dotnet publish AmiaReforged.Core --output ${DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.Core/"
+                sh "dotnet publish AmiaReforged.System --output ${DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.System/"
+                sh "dotnet publish AmiaReforged.Classes --output ${DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.Classes/"
+                sh "dotnet publish AmiaReforged.Races --output ${DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.Races/"
+                sh "dotnet publish AmiaReforged.DMS --output ${DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.DMS/"
+                sh "dotnet publish AmiaReforged.PwEngine --output ${DEV_SERVER_BASE}/anvil/Plugins/AmiaReforged.PwEngine/"
+
+                script {
+                    if (params.RestartServer) {
+                        sh 'chmod +x start-dev.sh'
+                        withEnv(["AMIA_SERVER_DIR=${DEV_SERVER_BASE}/..".toString()]) {
+                            sh 'bash start-dev.sh'
+                        }
+                    } else {
+                        echo 'Skipping server start (RestartServer is false)'
+                    }
+                }
+            }
+        }
+    }
+    post {
+        success {
+            echo 'Build success'
+        }
+    }
+}
