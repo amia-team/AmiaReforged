@@ -42,7 +42,11 @@ public sealed class PrestigeDivineSpellbookPresenter : ScryPresenter<PrestigeDiv
         _spellCache = new DivineSpellCache();
     }
 
-    public override NuiWindowToken Token() => NuiWindowToken.Invalid;
+    private NuiWindowToken? _token;
+
+    // ...existing code...
+
+    public override NuiWindowToken Token() => _token ?? NuiWindowToken.Invalid;
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
     {
@@ -81,9 +85,25 @@ public sealed class PrestigeDivineSpellbookPresenter : ScryPresenter<PrestigeDiv
     {
         Log.Info($"Creating Prestige Divine Spellbook window for {_creature.Name} - {_classType}");
 
-        // Note: At this point, the window layout is being created but we don't have a token yet.
-        // The NuiBind values will be displayed with their default/constructed values.
-        // We update them through HandleButtonClick and other event handlers.
+        // Create the NUI window
+        NuiWindow window = new NuiWindow(View.RootLayout(), $"Prestige Divine Spellbook - {_classType}")
+        {
+            Geometry = new NuiRect(100f, 100f, 900f, 600f),
+            Resizable = true,
+            Closable = true
+        };
+
+        // Create the window and get the token
+        if (_player.TryCreateNuiWindow(window, out NuiWindowToken token))
+        {
+            _token = token;
+            Log.Info($"✓ NUI window created successfully for {_creature.Name}");
+        }
+        else
+        {
+            Log.Error($"Failed to create NUI window for {_creature.Name}");
+            _player.SendServerMessage("Error creating spellbook window", ColorConstants.Red);
+        }
     }
 
     private void LoadAvailableSpells(int effectiveLevel)
