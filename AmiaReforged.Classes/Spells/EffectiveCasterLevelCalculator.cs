@@ -66,7 +66,7 @@ public static class EffectiveCasterLevelCalculator
         {
             ClassType.DivineChampion,
             // Divine Champion can stack onto true divine base classes, OR onto Blackguard if no true base exists
-            new HashSet<ClassType> { ClassType.Cleric, ClassType.Paladin, ClassType.Druid, ClassType.Blackguard }
+            new HashSet<ClassType> { ClassType.Cleric, ClassType.Paladin, ClassType.Druid, ClassType.Ranger, ClassType.Blackguard }
         }
     };
 
