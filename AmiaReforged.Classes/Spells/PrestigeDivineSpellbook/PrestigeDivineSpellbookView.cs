@@ -9,6 +9,8 @@ namespace AmiaReforged.Classes.Spells.PrestigeDivineSpellbook;
 /// </summary>
 public sealed class PrestigeDivineSpellbookView : ScryView<PrestigeDivineSpellbookPresenter>
 {
+    private const int MaxSpellsPerLevel = 20;  // Maximum spells to display per level
+
     // Header and instructions
     public readonly NuiBind<string> HeaderText = new("header_text");
     public readonly NuiBind<string> InstructionText = new("instruction_text");
@@ -28,19 +30,27 @@ public sealed class PrestigeDivineSpellbookView : ScryView<PrestigeDivineSpellbo
     public readonly NuiBind<string> SpellLevelButtonText4 = new("spell_level_button_text_4");
     public readonly NuiBind<bool> SpellLevelButtonEnabled4 = new("spell_level_button_enabled_4");
 
-    // Spell list display
+    // Spell list display - array binds for each spell
     public readonly NuiBind<int> SpellListCount = new("spell_list_count");
-    public readonly NuiBind<string> SpellButtonText = new("spell_button_text");
-    public readonly NuiBind<string> SpellStatusText = new("spell_status_text");
-    public readonly NuiBind<string> SpellTooltip = new("spell_tooltip");
-    public readonly NuiBind<Color> SpellButtonColor = new("spell_button_color");
-    public readonly NuiBind<bool> SpellEnabled = new("spell_enabled");
+    public readonly List<NuiBind<string>> SpellNames = [];
+    public readonly List<NuiBind<string>> SpellStatus = [];  // "✓" or ""
+    public readonly List<NuiBind<string>> SpellButtonColor = [];
+    public readonly List<NuiBind<bool>> SpellVisible = [];
 
     // Slots info display
     public readonly NuiBind<string> SlotsInfoText = new("slots_info_text");
 
     public PrestigeDivineSpellbookView(NwPlayer player, ClassType classType, NwCreature creature)
     {
+        // Initialize the array binds
+        for (int i = 0; i < MaxSpellsPerLevel; i++)
+        {
+            SpellNames.Add(new NuiBind<string>($"spell_name_{i}"));
+            SpellStatus.Add(new NuiBind<string>($"spell_status_{i}"));
+            SpellButtonColor.Add(new NuiBind<string>($"spell_color_{i}"));
+            SpellVisible.Add(new NuiBind<bool>($"spell_visible_{i}"));
+        }
+
         Presenter = new PrestigeDivineSpellbookPresenter(this, player, classType, creature);
     }
 
@@ -48,32 +58,6 @@ public sealed class PrestigeDivineSpellbookView : ScryView<PrestigeDivineSpellbo
 
     public override NuiLayout RootLayout()
     {
-        // Spell list template
-        List<NuiListTemplateCell> spellTemplate = new()
-        {
-            new(new NuiButton(SpellButtonText)
-            {
-                Id = "spell_button",
-                Tooltip = SpellTooltip,
-                Enabled = SpellEnabled,
-                Height = 40f,
-                ForegroundColor = SpellButtonColor
-            })
-            {
-                Width = 275f,
-                VariableSize = false
-            },
-            new(new NuiLabel(SpellStatusText)
-            {
-                HorizontalAlign = NuiHAlign.Center,
-                VerticalAlign = NuiVAlign.Middle
-            })
-            {
-                Width = 110f,
-                VariableSize = false
-            }
-        };
-
         NuiColumn mainColumn = new()
         {
             Children = new List<NuiElement>
@@ -145,10 +129,9 @@ public sealed class PrestigeDivineSpellbookView : ScryView<PrestigeDivineSpellbo
                     Height = 20f,
                     HorizontalAlign = NuiHAlign.Center
                 },
-                new NuiList(spellTemplate, SpellListCount)
+                new NuiColumn
                 {
-                    Height = 300f,
-                    RowHeight = 40f
+                    Children = BuildSpellListElements()
                 },
                 new NuiRow
                 {
@@ -168,6 +151,38 @@ public sealed class PrestigeDivineSpellbookView : ScryView<PrestigeDivineSpellbo
         };
 
         return mainColumn;
+    }
+
+    private List<NuiElement> BuildSpellListElements()
+    {
+        List<NuiElement> elements = new();
+
+        for (int i = 0; i < MaxSpellsPerLevel; i++)
+        {
+            elements.Add(new NuiRow
+            {
+                Height = 30f,
+                Children = new List<NuiElement>
+                {
+                    new NuiButton(SpellNames[i])
+                    {
+                        Id = $"spell_button_{i}",
+                        Width = 275f,
+                        ForegroundColor = ColorConstants.White
+                    },
+                    new NuiLabel(SpellStatus[i])
+                    {
+                        HorizontalAlign = NuiHAlign.Center,
+                        VerticalAlign = NuiVAlign.Middle,
+                        Width = 50f
+                    },
+                    new NuiSpacer { Width = 10f }
+                },
+                Visible = SpellVisible[i]
+            });
+        }
+
+        return elements;
     }
 }
 

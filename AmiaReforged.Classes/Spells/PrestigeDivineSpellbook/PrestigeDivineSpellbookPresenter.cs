@@ -98,12 +98,106 @@ public sealed class PrestigeDivineSpellbookPresenter : ScryPresenter<PrestigeDiv
         {
             _token = token;
             Log.Info($"✓ NUI window created successfully for {_creature.Name}");
+            UpdateView();
         }
         else
         {
             Log.Error($"Failed to create NUI window for {_creature.Name}");
             _player.SendServerMessage("Error creating spellbook window", ColorConstants.Red);
         }
+    }
+
+    public override void UpdateView()
+    {
+        if (_token == null || _token.Value == NuiWindowToken.Invalid)
+        {
+            Log.Warn("UpdateView called but window token is invalid");
+            return;
+        }
+
+        int effectiveLevel = EffectiveCasterLevelCalculator.GetEffectiveCasterLevelForClass(_creature, _classType);
+        int maxCircle = DivineSpellProgressionData.GetMaxSpellCircleForCasterLevel(_classType, effectiveLevel);
+
+        // Set header and instruction text
+        var token = _token.Value;
+        token.SetBindValue(View.HeaderText, $"Prestige Divine Spellbook");
+        token.SetBindValue(View.InstructionText, "Select spells to memorize to your available spell slots");
+        token.SetBindValue(View.ClassNameText, $"Class: {_classType}");
+        token.SetBindValue(View.CasterLevelText, $"Caster Level: {effectiveLevel} (Base: {_classInfo.Level})");
+
+        // Set spell level button states
+        for (int level = 1; level <= 4; level++)
+        {
+            bool isAvailable = level <= maxCircle;
+            bool isSelected = level == _currentSpellLevel;
+
+            var buttonTextBind = level switch
+            {
+                1 => View.SpellLevelButtonText1,
+                2 => View.SpellLevelButtonText2,
+                3 => View.SpellLevelButtonText3,
+                4 => View.SpellLevelButtonText4,
+                _ => null
+            };
+
+            var enableBind = level switch
+            {
+                1 => View.SpellLevelButtonEnabled1,
+                2 => View.SpellLevelButtonEnabled2,
+                3 => View.SpellLevelButtonEnabled3,
+                4 => View.SpellLevelButtonEnabled4,
+                _ => null
+            };
+
+            if (buttonTextBind != null && enableBind != null)
+            {
+                string buttonText = $"Level {level}{(isSelected ? " ✓" : "")}";
+                token.SetBindValue(buttonTextBind, buttonText);
+                token.SetBindValue(enableBind, isAvailable);
+            }
+        }
+
+        // Update spell list
+        RefreshSpellList();
+        UpdateSpellListDisplay(token);
+
+        // Update slots info
+        UpdateSlotsInfo();
+        UpdateSlotsDisplay(token);
+    }
+
+    private void UpdateSpellListDisplay(NuiWindowToken token)
+    {
+        // Set visibility and values for each spell in the list
+        for (int i = 0; i < View.SpellNames.Count; i++)
+        {
+            if (i < _currentLevelSpells.Count)
+            {
+                var (spellId, name) = _currentLevelSpells[i];
+                bool isMemoized = _memorizedSpellIds.TryGetValue(_currentSpellLevel, out var mems) && mems.Contains(spellId);
+
+                token.SetBindValue(View.SpellNames[i], name);
+                token.SetBindValue(View.SpellStatus[i], isMemoized ? "✓" : "");
+                token.SetBindValue(View.SpellButtonColor[i], isMemoized ? "00FFFF" : "FFFFFF");  // Cyan if memorized, white otherwise
+                token.SetBindValue(View.SpellVisible[i], true);
+            }
+            else
+            {
+                // Hide unused rows
+                token.SetBindValue(View.SpellVisible[i], false);
+            }
+        }
+
+        Log.Debug($"Updated spell list display for level {_currentSpellLevel}: {_currentLevelSpells.Count} spells");
+    }
+
+    private void UpdateSlotsDisplay(NuiWindowToken token)
+    {
+        int maxSlots = CreaturePlugin.GetMaxSpellSlots(_creature, _classInfo.Class.Id, _currentSpellLevel);
+        int memorized = _memorizedSpellIds.TryGetValue(_currentSpellLevel, out var mems) ? mems.Count : 0;
+        token.SetBindValue(View.SlotsInfoText, $"Spells Memorized: {memorized} / {maxSlots}");
+
+        Log.Debug($"Updated slots display for level {_currentSpellLevel}: {memorized} / {maxSlots}");
     }
 
     private void LoadAvailableSpells(int effectiveLevel)
@@ -171,16 +265,16 @@ public sealed class PrestigeDivineSpellbookPresenter : ScryPresenter<PrestigeDiv
             if (int.TryParse(levelStr, out int level))
             {
                 _currentSpellLevel = level;
-                RefreshSpellList();
-                UpdateSlotsInfo();
+                UpdateView();  // Refresh entire display when changing spell levels
             }
         }
-        else if (eventData.ElementId == "spell_button")
+        else if (eventData.ElementId.StartsWith("spell_button_"))
         {
-            int rowIndex = eventData.ArrayIndex;
-            if (rowIndex >= 0 && rowIndex < _currentLevelSpells.Count)
+            string indexStr = eventData.ElementId.Replace("spell_button_", "");
+            if (int.TryParse(indexStr, out int rowIndex) && rowIndex >= 0 && rowIndex < _currentLevelSpells.Count)
             {
                 HandleSpellClick(_currentLevelSpells[rowIndex]);
+                UpdateView();  // Refresh display after changing spell selection
             }
         }
         else if (eventData.ElementId == "confirm_button")
@@ -202,6 +296,7 @@ public sealed class PrestigeDivineSpellbookPresenter : ScryPresenter<PrestigeDiv
                 CreaturePlugin.RemoveKnownSpell(_creature, _classInfo.Class.Id, _currentSpellLevel, spell.spellId);
                 memorized.Remove(spell.spellId);
                 Log.Info($"Removed spell {spell.name} from {_creature.Name}'s {_classType} memorization");
+                _player.SendServerMessage($"Removed: {spell.name}", ColorConstants.Orange);
             }
             catch (Exception ex)
             {
@@ -217,6 +312,7 @@ public sealed class PrestigeDivineSpellbookPresenter : ScryPresenter<PrestigeDiv
                 CreaturePlugin.AddKnownSpell(_creature, _classInfo.Class.Id, _currentSpellLevel, spell.spellId);
                 memorized.Add(spell.spellId);
                 Log.Info($"Added spell {spell.name} to {_creature.Name}'s {_classType} memorization");
+                _player.SendServerMessage($"Added: {spell.name}", ColorConstants.Cyan);
             }
             catch (Exception ex)
             {
@@ -224,9 +320,6 @@ public sealed class PrestigeDivineSpellbookPresenter : ScryPresenter<PrestigeDiv
                 _player.SendServerMessage($"Error adding spell: {ex.Message}", ColorConstants.Red);
             }
         }
-
-        UpdateSlotsInfo();
-        RefreshSpellList();
     }
 
     private string GetSpellName(int spellId)

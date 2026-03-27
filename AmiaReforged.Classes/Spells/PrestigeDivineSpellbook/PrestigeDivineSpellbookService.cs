@@ -1,4 +1,5 @@
-﻿using Anvil.API;
+﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using Anvil.API;
 using Anvil.Services;
 using NLog;
 
@@ -14,7 +15,12 @@ public class PrestigeDivineSpellbookService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    private readonly Dictionary<(Guid playerId, ClassType classType), PrestigeDivineSpellbookView> _openWindows = new();
+    private readonly WindowDirector _windowDirector;
+
+    public PrestigeDivineSpellbookService(WindowDirector windowDirector)
+    {
+        _windowDirector = windowDirector;
+    }
 
     /// <summary>
     /// Opens the Prestige Divine Spellbook window for a player to memorize spells.
@@ -33,67 +39,21 @@ public class PrestigeDivineSpellbookService
             return;
         }
 
-        var key = (player.LoginCreature.UUID, classType);
-
-        // Close existing window if open
-        if (_openWindows.TryGetValue(key, out var existingView))
-        {
-            _openWindows.Remove(key);
-        }
-
         try
         {
             var view = new PrestigeDivineSpellbookView(player, classType, player.LoginCreature);
-            _openWindows[key] = view;
+            var presenter = view.Presenter;
 
-            Log.Info($"Opened Prestige Divine Spellbook for {player.LoginCreature.Name} ({classType})");
-            player.SendServerMessage($"Prestige Divine Spellbook - {classType}", ColorConstants.Cyan);
+            Log.Info($"Opening Prestige Divine Spellbook for {player.LoginCreature.Name} ({classType})");
+            _windowDirector.OpenWindow(presenter);
+
+            Log.Info($"✓ Opened Prestige Divine Spellbook for {player.LoginCreature.Name} ({classType})");
         }
         catch (Exception ex)
         {
             Log.Error($"Failed to open Prestige Divine Spellbook: {ex.Message}");
             Log.Error($"Stack trace: {ex.StackTrace}");
             player.SendServerMessage($"Error opening spellbook: {ex.Message}", ColorConstants.Red);
-        }
-    }
-
-    /// <summary>
-    /// Closes the spellbook window for a player.
-    /// </summary>
-    public void CloseSpellbook(NwPlayer player, ClassType classType)
-    {
-        var key = (player.LoginCreature?.UUID ?? Guid.Empty, classType);
-
-        if (_openWindows.TryGetValue(key, out var view))
-        {
-            _openWindows.Remove(key);
-            Log.Info($"Closed Prestige Divine Spellbook for {player.LoginCreature?.Name ?? "unknown"} ({classType})");
-        }
-    }
-
-    /// <summary>
-    /// Closes all open spellbook windows for a player.
-    /// </summary>
-    public void CloseAllSpellbooks(NwPlayer player)
-    {
-        if (player.LoginCreature == null) return;
-
-        var playerId = player.LoginCreature.UUID;
-        var keysToRemove = _openWindows.Keys
-            .Where(k => k.playerId == playerId)
-            .ToList();
-
-        foreach (var key in keysToRemove)
-        {
-            if (_openWindows.TryGetValue(key, out var view))
-            {
-                _openWindows.Remove(key);
-            }
-        }
-
-        if (keysToRemove.Count > 0)
-        {
-            Log.Info($"Closed {keysToRemove.Count} Prestige Divine Spellbook window(s) for {player.LoginCreature.Name}");
         }
     }
 }
