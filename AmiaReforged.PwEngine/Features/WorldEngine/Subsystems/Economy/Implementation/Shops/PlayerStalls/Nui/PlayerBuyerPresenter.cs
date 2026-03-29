@@ -1,5 +1,6 @@
 using System.Globalization;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using static AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops.PlayerStalls.NwnColorTagHelper;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -341,7 +342,7 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
         Token().SetBindValue(View.PreviewPlaceholderVisible, false);
 
         // Set preview content
-        Token().SetBindValue(View.PreviewItemName, product.DisplayName);
+        Token().SetBindValue(View.PreviewItemName, StripColorTags(product.DisplayName));
         Token().SetBindValue(View.PreviewItemCost,
             string.Format(CultureInfo.InvariantCulture, "Unit Price: {0}", FormatPrice(product.Price)));
 
@@ -526,9 +527,9 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
         if (!string.IsNullOrEmpty(_searchTerm))
         {
             filtered = filtered.Where(p =>
-                p.DisplayName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                StripColorTags(p.DisplayName).Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
                 (!string.IsNullOrEmpty(p.OriginalName) &&
-                 p.OriginalName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                 StripColorTags(p.OriginalName).Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)) ||
                 (!string.IsNullOrEmpty(p.Tooltip) &&
                  p.Tooltip.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)));
         }
@@ -580,13 +581,13 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
                 !string.Equals(product.OriginalName, product.DisplayName, StringComparison.OrdinalIgnoreCase))
             {
                 originalNameSuffix =
-                    string.Format(CultureInfo.InvariantCulture, " (Originally: {0})", product.OriginalName);
+                    string.Format(CultureInfo.InvariantCulture, " (Originally: {0})", StripColorTags(product.OriginalName));
             }
 
             string entry = string.Format(
                 CultureInfo.InvariantCulture,
                 "{0} - {1}{2}{3}",
-                product.DisplayName,
+                StripColorTags(product.DisplayName),
                 FormatPrice(product.Price),
                 statusSuffix,
                 originalNameSuffix);

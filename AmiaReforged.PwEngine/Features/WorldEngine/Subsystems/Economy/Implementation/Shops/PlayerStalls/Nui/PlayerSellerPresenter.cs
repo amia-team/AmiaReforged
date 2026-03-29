@@ -5,6 +5,7 @@ using AmiaReforged.PwEngine.Features.WindowingSystem.Scry.GenericWindows;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Time;
+using static AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops.PlayerStalls.NwnColorTagHelper;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -633,7 +634,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
             return;
         }
 
-        Token().SetBindValue(View.SelectedProductName, product.DisplayName);
+        Token().SetBindValue(View.SelectedProductName, StripColorTags(product.DisplayName));
         Token().SetBindValue(View.SelectedProductQuantity, FormatQuantity(product));
         Token().SetBindValue(View.SelectedProductStatus, FormatStatus(product));
         Token().SetBindValue(View.SelectedProductPrice, FormatCurrentPrice(product.Price));
@@ -974,7 +975,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         }
         else
         {
-            Token().SetBindValue(View.InventorySelectedName, item.DisplayName);
+            Token().SetBindValue(View.InventorySelectedName, StripColorTags(item.DisplayName));
             Token().SetBindValue(View.InventorySelectedResRef,
                 string.Format(CultureInfo.InvariantCulture, "ResRef: {0}", item.ResRef));
             Token().SetBindValue(View.InventorySelectedQuantity, item.IsStackable
@@ -1374,7 +1375,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
             ? string.Format(CultureInfo.InvariantCulture, "(x{0:n0})", Math.Max(1, item.Quantity))
             : "(x1)";
 
-        return string.Format(CultureInfo.InvariantCulture, "{0} {1}", item.DisplayName, quantity);
+        return string.Format(CultureInfo.InvariantCulture, "{0} {1}", StripColorTags(item.DisplayName), quantity);
     }
 
     private static string FormatInventoryTooltip(PlayerStallSellerInventoryItemView item)
@@ -1506,7 +1507,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         return string.Format(
             CultureInfo.InvariantCulture,
             "{0} - {1} {2}",
-            product.DisplayName,
+            StripColorTags(product.DisplayName),
             price,
             status);
     }
