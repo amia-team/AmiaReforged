@@ -616,14 +616,6 @@ public class DivineCasterSpellAccessService
         if (domainSpellsGranted > 0)
         {
             Log.Info($"    Granted {domainSpellsGranted} domain spells for circles {fromCircle}-{toCircle}");
-            if (isPlayer)
-            {
-                player?.SendServerMessage($"[DEBUG] GrantDomainSpells: Total granted = {domainSpellsGranted}", ColorConstants.Cyan);
-            }
-        }
-        else if (isPlayer)
-        {
-            player?.SendServerMessage($"[DEBUG] GrantDomainSpells: No domain spells granted!", ColorConstants.Orange);
         }
 
         return domainSpellsGranted;
