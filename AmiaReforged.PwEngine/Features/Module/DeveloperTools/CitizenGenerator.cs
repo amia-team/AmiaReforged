@@ -10,14 +10,21 @@ namespace AmiaReforged.PwEngine.Features.Module.DeveloperTools;
 /// Handles the "jes_randomname" script for creature spawn customization.
 ///
 /// Local Variable System for Race Control:
-/// - To ALLOW a specific race: Set "allow" to racial type ID AND set "allow_set" to 1
-/// - To BAN a specific race: Set "ban" to racial type ID AND set "ban_set" to 1
-/// - To BAN multiple races: Set "ban_count" to number of bans, then set "ban_1", "ban_1_set", "ban_2", "ban_2_set", etc.
-/// - To set a DEFAULT race: Set "default" to racial type ID AND set "default_set" to 1
 ///
-/// Racial Type IDs: Dwarf=0, Elf=1, Gnome=2, Halfling=3, Half-Elf=4, Half-Orc=5, Human=6, Drow=33
+/// ALLOW (Restrict to specific races):
+/// - New system: Set "allow_count" to number of allowed races, set "allow_1_set" to 1, then set "allow_1", "allow_2", etc. (race indices 0-7)
+/// - Fallback: Set "allow" to race INDEX (0-7) AND set "allow_set" to 1 (for backwards compatibility / single race)
 ///
-/// The "_set" variables are required because 0 (Dwarf) is a valid racial type but also the default return value
+/// BAN (Exclude specific races):
+/// - New system: Set "ban_1_set" to 1, set "ban_count" to number of races to ban, then set "ban_1", "ban_2", etc. (race indices 0-7)
+/// - Fallback: Set "ban" to race INDEX (0-7) AND set "ban_set" to 1 (for backwards compatibility / single race)
+///
+/// DEFAULT (Fallback race if no allowed races found):
+/// - Set "default" to race INDEX (0-7) AND set "default_set" to 1
+///
+/// Race Indices: 0=Dwarf, 1=Elf, 2=Gnome, 3=Halfling, 4=Half-Elf, 5=Half-Orc, 6=Human, 7=Drow
+///
+/// The "_set" variables are required because 0 (Dwarf) is a valid value but also the default return value
 /// of GetLocalInt when a variable doesn't exist. This prevents ambiguity.
 /// </summary>
 [ServiceBinding(typeof(CitizenGenerator))]
@@ -260,15 +267,30 @@ public class CitizenGenerator
 
     private int GetRandomRace(NwCreature npc)
     {
-        // Check if there's a single allowed race
+        // Check if there's a set of allowed races (allow_count with allow_1_set)
+        int allowCount = NWScript.GetLocalInt(npc, "allow_count");
+        int hasAllowSet = NWScript.GetLocalInt(npc, "allow_1_set");
+        if (allowCount > 0 && hasAllowSet == 1)
+        {
+            // New system: randomly pick from the list of allowed races
+            int[] allowedRaces = new int[allowCount];
+            for (int i = 0; i < allowCount; i++)
+            {
+                allowedRaces[i] = NWScript.GetLocalInt(npc, $"allow_{i + 1}");
+            }
+            return allowedRaces[Random.Next(allowCount)];
+        }
+
+        // Fallback: check if there's a single allowed race
         // Use -1 as "not set" so that 0 (dwarf) can be a valid value
         int allowedRace = NWScript.GetLocalInt(npc, "allow");
         if (allowedRace >= 0) // 0 or higher means a race is set (dwarf is 0)
         {
-            int hasAllowSet = NWScript.GetLocalInt(npc, "allow_set");
+            hasAllowSet = NWScript.GetLocalInt(npc, "allow_set");
             if (hasAllowSet == 1) // Explicitly check if the variable was intentionally set
             {
-                return GetRaceIndex(allowedRace);
+                // "allow" contains a race INDEX (0-7), return it directly
+                return allowedRace;
             }
         }
 
@@ -293,7 +315,7 @@ public class CitizenGenerator
         int hasDefaultSet = NWScript.GetLocalInt(npc, "default_set");
         if (defaultRace >= 0 && hasDefaultSet == 1)
         {
-            return GetRaceIndex(defaultRace);
+            return defaultRace;
         }
 
         // Fall back to human
@@ -302,27 +324,39 @@ public class CitizenGenerator
 
     private bool IsRaceAllowed(NwCreature npc, int racialTypeId)
     {
-        // Check for single ban
-        // Use ban_set to distinguish between "not set" and "set to dwarf (0)"
-        int bannedRace = NWScript.GetLocalInt(npc, "ban");
-        int hasBanSet = NWScript.GetLocalInt(npc, "ban_set");
-        if (hasBanSet == 1 && bannedRace == racialTypeId)
+        // Check if the new ban system is active (ban_count with ban_1_set)
+        int hasBanSet = NWScript.GetLocalInt(npc, "ban_1_set");
+        if (hasBanSet == 1)
         {
-            return false;
+            // Get the number of races to ban
+            int banCount = NWScript.GetLocalInt(npc, "ban_count");
+            if (banCount > 0 && banCount <= 8) // Up to 8 possible races to ban
+            {
+                // Check each banned race
+                for (int i = 1; i <= banCount; i++)
+                {
+                    int bannedRaceIndex = NWScript.GetLocalInt(npc, $"ban_{i}");
+                    // "ban_{i}" contains a race INDEX (0-7), convert it to racial type ID for comparison
+                    int bannedRaceId = GetRacialTypeId(bannedRaceIndex);
+                    if (bannedRaceId == racialTypeId)
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
 
-        // Check for multiple bans
-        int banCount = NWScript.GetLocalInt(npc, "ban_count");
-        if (banCount > 0 && banCount < 8) // Updated to 8 races
+        // Fallback: check if there's a single banned race
+        int bannedRace = NWScript.GetLocalInt(npc, "ban");
+        int hasSingleBanSet = NWScript.GetLocalInt(npc, "ban_set");
+        if (hasSingleBanSet == 1)
         {
-            for (int i = 1; i <= banCount; i++)
+            // "ban" contains a race INDEX (0-7), convert it to racial type ID for comparison
+            int bannedRaceId = GetRacialTypeId(bannedRace);
+            if (bannedRaceId == racialTypeId)
             {
-                int bannedRaceId = NWScript.GetLocalInt(npc, $"ban_{i}");
-                int hasBanSetI = NWScript.GetLocalInt(npc, $"ban_{i}_set");
-                if (hasBanSetI == 1 && bannedRaceId == racialTypeId)
-                {
-                    return false;
-                }
+                return false;
             }
         }
 
