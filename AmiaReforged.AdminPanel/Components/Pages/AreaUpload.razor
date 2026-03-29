@@ -9,166 +9,164 @@
 <PageTitle>Area Upload</PageTitle>
 
 <div class="encounters-page">
-    <section>
-        <div class="dashboard-header d-flex justify-content-between align-items-center mb-3">
-            <h3 class="mb-0"><span class="bi bi-upload me-2"></span>Area Upload</h3>
+    <div class="dashboard-header d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0"><span class="bi bi-upload me-2"></span>Area Upload</h3>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger" role="alert">
+            @_error
+            <button type="button" class="btn-close btn-close-white float-end" @onclick="() => _error = null"></button>
         </div>
+    }
 
-        @if (!string.IsNullOrEmpty(_error))
-        {
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                @_error
-                <button type="button" class="btn-close" @onclick="() => _error = null"></button>
-            </div>
-        }
+    @if (!string.IsNullOrEmpty(_success))
+    {
+        <div class="alert alert-success" role="alert">
+            @_success
+            <button type="button" class="btn-close btn-close-white float-end" @onclick="() => _success = null"></button>
+        </div>
+    }
 
-        @if (!string.IsNullOrEmpty(_success))
-        {
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                @_success
-                <button type="button" class="btn-close" @onclick="() => _success = null"></button>
-            </div>
-        }
-
-        @if (_targets.Count == 0)
-        {
-            <div class="alert alert-warning">
-                <strong>No upload targets configured.</strong>
-                <p class="mb-0 mt-1">
-                    Set <code>AREA_UPLOAD_PATH_*</code> environment variables to define upload destinations.
-                    <br />
-                    Format: <code>AREA_UPLOAD_PATH_DEV=Development=/nwn/dev/areas</code>
-                </p>
-            </div>
-        }
-        else
-        {
-            <div class="card">
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Upload Target</label>
-                            <select class="form-select" @bind="_selectedTarget" disabled="@_isUploading">
-                                <option value="">— Select a destination —</option>
-                                @foreach (AreaUploadTarget target in _targets)
-                                {
-                                    <option value="@target.Name">@target.Name (@target.Path)</option>
-                                }
-                            </select>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Files (.are, .git, .gic)</label>
-                            <InputFile OnChange="OnFilesSelected"
-                                       accept=".are,.git,.gic"
-                                       multiple
-                                       class="form-control"
-                                       disabled="@_isUploading" />
-                        </div>
-                    </div>
-
-                    @if (_selectedFiles.Count > 0)
-                    {
-                        <div class="mt-3">
-                            <h6>Selected Files (@_selectedFiles.Count)</h6>
-                            <ul class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
-                                @foreach (IBrowserFile file in _selectedFiles)
-                                {
-                                    <li class="list-group-item py-1 d-flex justify-content-between align-items-center">
-                                        <span>
-                                            <span class="bi bi-file-earmark me-1"></span>@file.Name
-                                        </span>
-                                        <span class="badge bg-secondary">@FormatSize(file.Size)</span>
-                                    </li>
-                                }
-                            </ul>
-                        </div>
-                    }
-
-                    <div class="mt-3">
-                        <button class="btn btn-primary"
-                                @onclick="UploadFiles"
-                                disabled="@(!CanUpload())">
-                            @if (_isUploading)
-                            {
-                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                                <span>Uploading...</span>
-                            }
-                            else
-                            {
-                                <span class="bi bi-cloud-upload me-1"></span>
-                                <span>Upload</span>
-                            }
-                        </button>
-
-                        @if (_selectedFiles.Count > 0 && !_isUploading)
+    @if (_targets.Count == 0)
+    {
+        <div class="section" style="border-left: 3px solid var(--warning);">
+            <strong style="color: var(--warning);">No upload targets configured.</strong>
+            <p class="mb-0 mt-1" style="color: var(--text-secondary);">
+                Set <code style="color: var(--accent);">AREA_UPLOAD_PATH_*</code> environment variables to define upload destinations.
+                <br />
+                Format: <code style="color: var(--accent);">AREA_UPLOAD_PATH_DEV=Development=/nwn/dev/areas</code>
+            </p>
+        </div>
+    }
+    else
+    {
+        <div class="section">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label" style="color: var(--text-secondary); font-weight: 500;">Upload Target</label>
+                    <select class="form-select" @bind="_selectedTarget" disabled="@_isUploading">
+                        <option value="">— Select a destination —</option>
+                        @foreach (AreaUploadTarget target in _targets)
                         {
-                            <button class="btn btn-outline-secondary ms-2" @onclick="ClearSelection">
-                                Clear
-                            </button>
+                            <option value="@target.Name">@target.Name (@target.Path)</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label" style="color: var(--text-secondary); font-weight: 500;">Files (.are, .git, .gic)</label>
+                    <InputFile OnChange="OnFilesSelected"
+                               accept=".are,.git,.gic"
+                               multiple
+                               class="form-control"
+                               disabled="@_isUploading" />
+                </div>
+            </div>
+
+            @if (_selectedFiles.Count > 0)
+            {
+                <div class="mt-3">
+                    <h6 style="color: var(--accent); font-size: 0.85rem; text-transform: uppercase;">Selected Files (@_selectedFiles.Count)</h6>
+                    <div style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: 6px;">
+                        @foreach (IBrowserFile file in _selectedFiles)
+                        {
+                            <div style="padding: 6px 12px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: var(--text-primary);">
+                                    <span class="bi bi-file-earmark me-1" style="color: var(--text-secondary);"></span>@file.Name
+                                </span>
+                                <span style="color: var(--text-secondary); font-size: 0.8rem;">@FormatSize(file.Size)</span>
+                            </div>
                         }
                     </div>
                 </div>
-            </div>
-
-            @if (_lastResult is not null)
-            {
-                <div class="card mt-3">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            Upload Results — @_lastResult.TargetName
-                            @if (_lastResult.AllSucceeded)
-                            {
-                                <span class="badge bg-success ms-2">All Succeeded</span>
-                            }
-                            else if (_lastResult.SuccessCount > 0)
-                            {
-                                <span class="badge bg-warning ms-2">Partial</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-danger ms-2">Failed</span>
-                            }
-                        </h5>
-                    </div>
-                    <div class="card-body p-0">
-                        <table class="table table-sm mb-0">
-                            <thead>
-                            <tr>
-                                <th>File</th>
-                                <th style="width: 100px;">Status</th>
-                                <th>Details</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            @foreach (FileUploadResult fileResult in _lastResult.FileResults)
-                            {
-                                <tr class="@(fileResult.Success ? "" : "table-danger")">
-                                    <td>@fileResult.FileName</td>
-                                    <td>
-                                        @if (fileResult.Success)
-                                        {
-                                            <span class="badge bg-success">OK</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-danger">Failed</span>
-                                        }
-                                    </td>
-                                    <td class="text-muted small">@(fileResult.Error ?? "—")</td>
-                                </tr>
-                            }
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="card-footer text-muted small">
-                        @_lastResult.SuccessCount succeeded, @_lastResult.FailureCount failed
-                        — uploaded to @_lastResult.TargetPath
-                    </div>
-                </div>
             }
+
+            <div class="mt-3">
+                <button class="btn btn-primary"
+                        @onclick="UploadFiles"
+                        disabled="@(!CanUpload())">
+                    @if (_isUploading)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                        <span>Uploading...</span>
+                    }
+                    else
+                    {
+                        <span class="bi bi-cloud-upload me-1"></span>
+                        <span>Upload</span>
+                    }
+                </button>
+
+                @if (_selectedFiles.Count > 0 && !_isUploading)
+                {
+                    <button class="btn btn-outline-primary ms-2" @onclick="ClearSelection">
+                        Clear
+                    </button>
+                }
+            </div>
+        </div>
+
+        @if (_lastResult is not null)
+        {
+            <div class="section" style="padding: 0;">
+                <div style="padding: 15px 20px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; gap: 10px;">
+                    <h5 style="margin: 0; color: var(--text-primary);">
+                        Upload Results — @_lastResult.TargetName
+                    </h5>
+                    @if (_lastResult.AllSucceeded)
+                    {
+                        <span class="state-badge running">All Succeeded</span>
+                    }
+                    else if (_lastResult.SuccessCount > 0)
+                    {
+                        <span class="state-badge paused">Partial</span>
+                    }
+                    else
+                    {
+                        <span class="state-badge stopped">Failed</span>
+                    }
+                </div>
+                <table class="table mb-0">
+                    <thead>
+                    <tr>
+                        <th>File</th>
+                        <th style="width: 100px;">Status</th>
+                        <th>Details</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (FileUploadResult fileResult in _lastResult.FileResults)
+                    {
+                        <tr style="@(fileResult.Success ? "" : "border-left: 3px solid var(--danger);")">
+                            <td>@fileResult.FileName</td>
+                            <td>
+                                @if (fileResult.Success)
+                                {
+                                    <span style="color: var(--success);">
+                                        <span class="bi bi-check-circle me-1"></span>OK
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span style="color: var(--danger);">
+                                        <span class="bi bi-x-circle me-1"></span>Failed
+                                    </span>
+                                }
+                            </td>
+                            <td style="color: var(--text-secondary);">@(fileResult.Error ?? "—")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+                <div style="padding: 10px 20px; border-top: 1px solid var(--border-subtle); color: var(--text-secondary); font-size: 0.85rem;">
+                    @_lastResult.SuccessCount succeeded, @_lastResult.FailureCount failed
+                    — uploaded to @_lastResult.TargetPath
+                </div>
+            </div>
         }
-    </section>
+    }
 </div>
 
 @code {
