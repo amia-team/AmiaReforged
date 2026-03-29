@@ -255,7 +255,7 @@ public class PrestigeSpellSlotService
             }
 
             // Add this prestige class's bonus to the selected base class
-            int modifier = _prestigeClassModifiers[prcType](prcLevel);
+            int modifier = _prestigeClassModifiers[prcType](prcLevel - 5);
 
             if (baseClassBonuses.ContainsKey(selectedBaseForThisPrc.Value))
             {
