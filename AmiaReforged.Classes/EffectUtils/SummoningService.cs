@@ -10,6 +10,12 @@ public static class SummoningService
     public static void SummonMany(this Location location, NwCreature caster, int count,
         float radius, float delayMin, float delayMax, Effect summonEffect, TimeSpan summonDuration)
     {
+        // Before moving on with the multi summon logic, make sure previous summons are removed
+        foreach (NwCreature summon in caster.Associates.Where(a => a.AssociateType == AssociateType.Summoned))
+        {
+            summon.Unsummon();
+        }
+
         FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 1, caster);
 
         for (int i = 0; i < count; i++)
