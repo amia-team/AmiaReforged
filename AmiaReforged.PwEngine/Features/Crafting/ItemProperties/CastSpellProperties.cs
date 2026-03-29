@@ -818,7 +818,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(11,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Bless (2) Unlimited",
+                GuiLabel = "Bless (2) Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -926,7 +926,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(45,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Clairaudience/Clairvoyance (15) Unlimited",
+                GuiLabel = "Clairaudience/Clairvoyance (15) Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -1052,7 +1052,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(68,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Cure Minor Wounds (1) Unlimited",
+                GuiLabel = "Cure Minor Wounds (1) Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -1088,7 +1088,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(76,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Daze (1) Unlimited",
+                GuiLabel = "Daze (1) Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -1223,7 +1223,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(102,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Entangle (5) Unlimited",
+                GuiLabel = "Entangle (5) Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -1232,7 +1232,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(103,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Fear (5) Unlimited",
+                GuiLabel = "Fear (5) Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -1439,7 +1439,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(147,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Identify (3) Unlimited",
+                GuiLabel = "Identify (3) Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -1574,7 +1574,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(163,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Light (5) Unlimited",
+                GuiLabel = "Light (5) Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -1817,7 +1817,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(228,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Ray of Frost (1) Unlimited",
+                GuiLabel = "Ray of Frost (1) Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -1960,8 +1960,8 @@ public class CastSpellProperties
             new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(249,
-                    IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
-                GuiLabel = "Silence (3) 2/Day",
+                    IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
+                GuiLabel = "Silence (3) 3/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2033,7 +2033,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(263,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Summon Creature I (5) Unlimited",
+                GuiLabel = "Summon Creature I (5) Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2159,7 +2159,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(278,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Virtue (1) Unlimited",
+                GuiLabel = "Virtue (1) Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2375,7 +2375,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(347,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Flare (1) Unlimited",
+                GuiLabel = "Flare (1) Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2438,7 +2438,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(355,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Acid Splash (1) Unlimited",
+                GuiLabel = "Acid Splash (1) Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2483,7 +2483,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(362,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Inflict Minor Wounds (1) Unlimited",
+                GuiLabel = "Inflict Minor Wounds (1) Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2546,7 +2546,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(370,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Electric Jolt (1) Unlimited",
+                GuiLabel = "Electric Jolt (1) Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2681,7 +2681,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(387,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Expeditious Retreat (5) Unlimited",
+                GuiLabel = "Expeditious Retreat (5) Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2699,7 +2699,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(389,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Displacement (9) Unlimited",
+                GuiLabel = "Displacement (9) Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2725,8 +2725,8 @@ public class CastSpellProperties
             new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(400,
-                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
-                GuiLabel = "Dragon Breath: Acid (10) 1/Day",
+                    IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
+                GuiLabel = "Dragon Breath: Acid 2/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2734,8 +2734,8 @@ public class CastSpellProperties
             new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(401,
-                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
-                GuiLabel = "Dragon Breath: Cold (10) 1/Day",
+                    IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
+                GuiLabel = "Dragon Breath: Cold 2/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2743,8 +2743,8 @@ public class CastSpellProperties
             new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(402,
-                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
-                GuiLabel = "Dragon Breath: Fear (10) 1/Day",
+                    IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
+                GuiLabel = "Dragon Breath: Fear 2/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2752,8 +2752,8 @@ public class CastSpellProperties
             new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(403,
-                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
-                GuiLabel = "Dragon Breath: Fire (10) 1/Day",
+                    IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
+                GuiLabel = "Dragon Breath: Fire 2/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2761,8 +2761,8 @@ public class CastSpellProperties
             new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(404,
-                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
-                GuiLabel = "Dragon Breath: Gas (10) 1/Day",
+                    IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
+                GuiLabel = "Dragon Breath: Gas 2/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2770,8 +2770,8 @@ public class CastSpellProperties
             new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(405,
-                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
-                GuiLabel = "Dragon Breath: Lightning (10) 1/Day",
+                    IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
+                GuiLabel = "Dragon Breath: Lightning 2/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2779,8 +2779,8 @@ public class CastSpellProperties
             new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(406,
-                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
-                GuiLabel = "Dragon Breath: Paralyze (10) 1/Day",
+                    IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
+                GuiLabel = "Dragon Breath: Paralyze 2/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2788,8 +2788,8 @@ public class CastSpellProperties
             new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(407,
-                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
-                GuiLabel = "Dragon Breath: Sleep (10) 1/Day",
+                    IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
+                GuiLabel = "Dragon Breath: Sleep 2/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2797,8 +2797,8 @@ public class CastSpellProperties
             new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(408,
-                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
-                GuiLabel = "Dragon Breath: Slow (10) 1/Day",
+                    IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
+                GuiLabel = "Dragon Breath: Slow 2/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2806,8 +2806,8 @@ public class CastSpellProperties
             new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(409,
-                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
-                GuiLabel = "Dragon Breath: Weaken (10) 1/Day",
+                    IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
+                GuiLabel = "Dragon Breath: Weaken 2/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2825,7 +2825,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(418,
                     IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
-                GuiLabel = "Summon Elemental: Air (5) 2/Day",
+                GuiLabel = "Summon Elemental: Air 2/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2834,7 +2834,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(419,
                     IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
-                GuiLabel = "Summon Elemental: Water (6) 2/Day",
+                GuiLabel = "Summon Elemental: Water 2/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2843,7 +2843,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(420,
                     IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
-                GuiLabel = "Summon Elemental: Earth (7) 2/Day",
+                GuiLabel = "Summon Elemental: Earth 2/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2852,7 +2852,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(421,
                     IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
-                GuiLabel = "Summon Elemental: Fire (8) 2/Day",
+                GuiLabel = "Summon Elemental: Fire 2/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2861,7 +2861,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(439,
                     IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
-                GuiLabel = "Manticore Spikes (1) 2/Day",
+                GuiLabel = "Manticore Spikes 2/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -2870,7 +2870,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(439,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Manticore Spikes (1) Unlimited",
+                GuiLabel = "Manticore Spikes Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3158,7 +3158,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(579,
                     IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
-                GuiLabel = "Hurl Rock (1) 3/Day",
+                GuiLabel = "Hurl Rocks 3/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3167,7 +3167,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(579,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Hurl Rock (1) Unlimited",
+                GuiLabel = "Hurl Rocks Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3176,7 +3176,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(580,
                     IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
-                GuiLabel = "Gaze: Dominate (1) 3/Day",
+                GuiLabel = "Gaze: Dominate 3/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3185,7 +3185,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(581,
                     IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
-                GuiLabel = "Pulse: Fire (1) 2/Day",
+                GuiLabel = "Pulse: Fire 2/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3194,7 +3194,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(582,
                     IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
-                GuiLabel = "Pulse: Lightning (1) 2/Day",
+                GuiLabel = "Pulse: Lightning 2/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3203,7 +3203,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(583,
                     IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
-                GuiLabel = "Pulse: Cold (1) 2/Day",
+                GuiLabel = "Pulse: Cold 2/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3212,7 +3212,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(584,
                     IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
-                GuiLabel = "Pulse: Negative (1) 2/Day",
+                GuiLabel = "Pulse: Negative 2/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3221,7 +3221,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(585,
                     IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
-                GuiLabel = "Pulse: Holy (1) 1/Day",
+                GuiLabel = "Pulse: Holy 1/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3230,7 +3230,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(586,
                     IP_CONST_CASTSPELL_NUMUSES_5_USES_PER_DAY)!,
-                GuiLabel = "Pulse: Poison (1) 5/Day",
+                GuiLabel = "Pulse: Poison 5/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3239,7 +3239,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(587,
                     IP_CONST_CASTSPELL_NUMUSES_5_USES_PER_DAY)!,
-                GuiLabel = "Pulse: Disease (1) 5/Day",
+                GuiLabel = "Pulse: Disease 5/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3248,7 +3248,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(588,
                     IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
-                GuiLabel = "Howl: Fear (1) 3/Day",
+                GuiLabel = "Howl: Fear 3/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3257,7 +3257,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(589,
                     IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
-                GuiLabel = "Howl: Doom (1) 3/Day",
+                GuiLabel = "Howl: Doom 3/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3266,7 +3266,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(590,
                     IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
-                GuiLabel = "Bolt: Acid (1) 3/Day",
+                GuiLabel = "Bolt: Acid 3/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3275,7 +3275,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(590,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Bolt: Acid (1) Unlimited",
+                GuiLabel = "Bolt: Acid Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3284,7 +3284,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(591,
                     IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
-                GuiLabel = "Bolt: Cold (1) 3/Day",
+                GuiLabel = "Bolt: Cold 3/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3293,7 +3293,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(591,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Bolt: Cold (1) Unlimited",
+                GuiLabel = "Bolt: Cold Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3302,7 +3302,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(592,
                     IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
-                GuiLabel = "Bolt: Fire (1) 3/Day",
+                GuiLabel = "Bolt: Fire 3/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3311,7 +3311,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(592,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Bolt: Fire (1) Unlimited",
+                GuiLabel = "Bolt: Fire Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3320,7 +3320,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(593,
                     IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
-                GuiLabel = "Bolt: Lightning (1) 3/Day",
+                GuiLabel = "Bolt: Lightning 3/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3329,7 +3329,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(593,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Bolt: Lightning (1) Unlimited",
+                GuiLabel = "Bolt: Lightning Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3347,7 +3347,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(594,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Bolt: Shards (1) Unlimited",
+                GuiLabel = "Bolt: Shards Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3356,7 +3356,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(595,
                     IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
-                GuiLabel = "Howl: Sonic (1) 3/Day",
+                GuiLabel = "Howl: Sonic 3/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3365,7 +3365,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(596,
                     IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
-                GuiLabel = "Howl: Confuse (1) 3/Day",
+                GuiLabel = "Howl: Confuse 3/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3374,7 +3374,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(597,
                     IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
-                GuiLabel = "Howl: Daze (1) 3/Day",
+                GuiLabel = "Howl: Daze 3/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3383,7 +3383,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(598,
                     IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
-                GuiLabel = "Howl: Paralysis (1) 3/Day",
+                GuiLabel = "Howl: Paralysis 3/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3392,7 +3392,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(599,
                     IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
-                GuiLabel = "Howl: Stun (1) 3/Day",
+                GuiLabel = "Howl: Stun 3/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3401,7 +3401,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(600,
                     IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
-                GuiLabel = "Gaze: Confusion (1) 3/Day",
+                GuiLabel = "Gaze: Confusion 3/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3410,7 +3410,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(601,
                     IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
-                GuiLabel = "Gaze: Daze (1) 3/Day",
+                GuiLabel = "Gaze: Daze 3/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3419,7 +3419,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(602,
                     IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
-                GuiLabel = "Gaze: Doom (1) 3/Day",
+                GuiLabel = "Gaze: Doom 3/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3428,7 +3428,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(603,
                     IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
-                GuiLabel = "Gaze: Fear (1) 3/Day",
+                GuiLabel = "Gaze: Fear 3/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3437,7 +3437,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(604,
                     IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
-                GuiLabel = "Bolt: Disease (1) 3/Day",
+                GuiLabel = "Bolt: Disease 3/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3446,7 +3446,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(605,
                     IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
-                GuiLabel = "Bolt: Poison (1) 3/Day",
+                GuiLabel = "Bolt: Poison 3/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3455,7 +3455,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(606,
                     IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
-                GuiLabel = "Ray: Frost (1) 3/Day",
+                GuiLabel = "Ray: Frost 3/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3464,7 +3464,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(606,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Ray: Frost (1) Unlimited",
+                GuiLabel = "Ray: Frost Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3473,7 +3473,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(607,
                     IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
-                GuiLabel = "Ray: Flame (1) 3/Day",
+                GuiLabel = "Ray: Flame 3/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3482,7 +3482,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(607,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Ray: Flame (1) Unlimited",
+                GuiLabel = "Ray: Flame Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3491,7 +3491,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(608,
                     IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
-                GuiLabel = "Ray: Inflict Wounds (1) 3/Day",
+                GuiLabel = "Ray: Inflict Wounds 3/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3500,7 +3500,7 @@ public class CastSpellProperties
             {
                 ItemProperty = ItemPropertyCastSpell(608,
                     IP_CONST_CASTSPELL_NUMUSES_UNLIMITED_USE)!,
-                GuiLabel = "Ray: Inflict Wounds (1) Unlimited",
+                GuiLabel = "Ray: Inflict Wounds Unlimited/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
@@ -3508,8 +3508,8 @@ public class CastSpellProperties
             new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(609,
-                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
-                GuiLabel = "Dragon Breath: Negative (10) 1/Day",
+                    IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
+                GuiLabel = "Dragon Breath: Negative 2/Day",
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Wondrous,
                 GoldCost = 1000
