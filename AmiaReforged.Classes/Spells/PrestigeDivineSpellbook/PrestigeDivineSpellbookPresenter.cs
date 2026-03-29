@@ -59,8 +59,6 @@ public sealed class PrestigeDivineSpellbookPresenter : ScryPresenter<PrestigeDiv
     public override void InitBefore()
     {
         // Called before window creation - initialize all data structures
-        Log.Info($"Initializing Prestige Divine Spellbook for {_creature.Name} - {_classType}");
-
         int effectiveLevel = EffectiveCasterLevelCalculator.GetEffectiveCasterLevelForClass(_creature, _classType);
 
         // Load all available spells for this class
@@ -83,8 +81,6 @@ public sealed class PrestigeDivineSpellbookPresenter : ScryPresenter<PrestigeDiv
 
     public override void Create()
     {
-        Log.Info($"Creating Prestige Divine Spellbook window for {_creature.Name} - {_classType}");
-
         // Create the NUI window
         NuiWindow window = new NuiWindow(View.RootLayout(), $"Prestige Divine Spellbook - {_classType}")
         {
@@ -97,13 +93,7 @@ public sealed class PrestigeDivineSpellbookPresenter : ScryPresenter<PrestigeDiv
         if (_player.TryCreateNuiWindow(window, out NuiWindowToken token))
         {
             _token = token;
-            Log.Info($"✓ NUI window created successfully for {_creature.Name}");
             UpdateView();
-        }
-        else
-        {
-            Log.Error($"Failed to create NUI window for {_creature.Name}");
-            _player.SendServerMessage("Error creating spellbook window", ColorConstants.Red);
         }
     }
 
@@ -111,7 +101,6 @@ public sealed class PrestigeDivineSpellbookPresenter : ScryPresenter<PrestigeDiv
     {
         if (_token == null || _token.Value == NuiWindowToken.Invalid)
         {
-            Log.Warn("UpdateView called but window token is invalid");
             return;
         }
 
@@ -162,7 +151,6 @@ public sealed class PrestigeDivineSpellbookPresenter : ScryPresenter<PrestigeDiv
         UpdateSpellListDisplay(token);
 
         // Update slots info
-        UpdateSlotsInfo();
         UpdateSlotsDisplay(token);
     }
 
@@ -178,7 +166,7 @@ public sealed class PrestigeDivineSpellbookPresenter : ScryPresenter<PrestigeDiv
 
                 token.SetBindValue(View.SpellNames[i], name);
                 token.SetBindValue(View.SpellStatus[i], isMemoized ? "✓" : "");
-                token.SetBindValue(View.SpellButtonColor[i], isMemoized ? "00FFFF" : "FFFFFF");  // Cyan if memorized, white otherwise
+                token.SetBindValue(View.SpellButtonColor[i], isMemoized ? "00FFFF" : "FFFFFF");
                 token.SetBindValue(View.SpellVisible[i], true);
             }
             else
@@ -187,8 +175,6 @@ public sealed class PrestigeDivineSpellbookPresenter : ScryPresenter<PrestigeDiv
                 token.SetBindValue(View.SpellVisible[i], false);
             }
         }
-
-        Log.Debug($"Updated spell list display for level {_currentSpellLevel}: {_currentLevelSpells.Count} spells");
     }
 
     private void UpdateSlotsDisplay(NuiWindowToken token)
@@ -196,8 +182,6 @@ public sealed class PrestigeDivineSpellbookPresenter : ScryPresenter<PrestigeDiv
         int maxSlots = CreaturePlugin.GetMaxSpellSlots(_creature, _classInfo.Class.Id, _currentSpellLevel);
         int memorized = _memorizedSpellIds.TryGetValue(_currentSpellLevel, out var mems) ? mems.Count : 0;
         token.SetBindValue(View.SlotsInfoText, $"Spells Memorized: {memorized} / {maxSlots}");
-
-        Log.Debug($"Updated slots display for level {_currentSpellLevel}: {memorized} / {maxSlots}");
     }
 
     private void LoadAvailableSpells(int effectiveLevel)
@@ -211,8 +195,6 @@ public sealed class PrestigeDivineSpellbookPresenter : ScryPresenter<PrestigeDiv
             var spells = _spellCache.GetSpellsForClass(_classType, level);
             _availableSpells[level] = spells.Select(id => (id, GetSpellName(id))).ToList();
         }
-
-        Log.Info($"Loaded {_availableSpells.Sum(x => x.Value.Count)} available spells for {_classType}");
     }
 
     private void LoadMemorizedSpells()
@@ -232,8 +214,6 @@ public sealed class PrestigeDivineSpellbookPresenter : ScryPresenter<PrestigeDiv
                 }
             }
         }
-
-        Log.Info($"Loaded memorized spells for {_classType}");
     }
 
     private void RefreshSpellList()
@@ -257,15 +237,13 @@ public sealed class PrestigeDivineSpellbookPresenter : ScryPresenter<PrestigeDiv
 
     private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
-        Log.Debug($"Button clicked: {eventData.ElementId}");
-
         if (eventData.ElementId.StartsWith("spell_level_button_"))
         {
             string levelStr = eventData.ElementId.Replace("spell_level_button_", "");
             if (int.TryParse(levelStr, out int level))
             {
                 _currentSpellLevel = level;
-                UpdateView();  // Refresh entire display when changing spell levels
+                UpdateView();
             }
         }
         else if (eventData.ElementId.StartsWith("spell_button_"))
@@ -274,7 +252,7 @@ public sealed class PrestigeDivineSpellbookPresenter : ScryPresenter<PrestigeDiv
             if (int.TryParse(indexStr, out int rowIndex) && rowIndex >= 0 && rowIndex < _currentLevelSpells.Count)
             {
                 HandleSpellClick(_currentLevelSpells[rowIndex]);
-                UpdateView();  // Refresh display after changing spell selection
+                UpdateView();
             }
         }
         else if (eventData.ElementId == "confirm_button")
@@ -290,34 +268,26 @@ public sealed class PrestigeDivineSpellbookPresenter : ScryPresenter<PrestigeDiv
 
         if (alreadyMemorized)
         {
-            // Remove the spell
             try
             {
                 CreaturePlugin.RemoveKnownSpell(_creature, _classInfo.Class.Id, _currentSpellLevel, spell.spellId);
                 memorized.Remove(spell.spellId);
-                Log.Info($"Removed spell {spell.name} from {_creature.Name}'s {_classType} memorization");
-                _player.SendServerMessage($"Removed: {spell.name}", ColorConstants.Orange);
             }
             catch (Exception ex)
             {
                 Log.Error($"Error removing spell: {ex.Message}");
-                _player.SendServerMessage($"Error removing spell: {ex.Message}", ColorConstants.Red);
             }
         }
         else
         {
-            // Add the spell
             try
             {
                 CreaturePlugin.AddKnownSpell(_creature, _classInfo.Class.Id, _currentSpellLevel, spell.spellId);
                 memorized.Add(spell.spellId);
-                Log.Info($"Added spell {spell.name} to {_creature.Name}'s {_classType} memorization");
-                _player.SendServerMessage($"Added: {spell.name}", ColorConstants.Cyan);
             }
             catch (Exception ex)
             {
                 Log.Error($"Error adding spell: {ex.Message}");
-                _player.SendServerMessage($"Error adding spell: {ex.Message}", ColorConstants.Red);
             }
         }
     }
@@ -336,8 +306,7 @@ public sealed class PrestigeDivineSpellbookPresenter : ScryPresenter<PrestigeDiv
 
     public override void Close()
     {
-        Log.Info($"Closing Prestige Divine Spellbook for {_creature.Name}");
-        _player.SendServerMessage("Spellbook closed. Your selections have been saved.", ColorConstants.Cyan);
+        // Window closed
     }
 }
 

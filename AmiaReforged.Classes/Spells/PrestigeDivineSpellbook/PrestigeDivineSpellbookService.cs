@@ -24,9 +24,14 @@ public class PrestigeDivineSpellbookService
 
     /// <summary>
     /// Opens the Prestige Divine Spellbook window for a player to memorize spells.
+    /// TEMPORARILY DISABLED - Window needs further development
     /// </summary>
     public void OpenSpellbook(NwPlayer player, ClassType classType)
     {
+        // DISABLED: This feature is still in development
+        return;
+
+        /*
         if (player.LoginCreature == null)
         {
             Log.Warn($"Cannot open spellbook: player has no login creature");
@@ -44,10 +49,7 @@ public class PrestigeDivineSpellbookService
             var view = new PrestigeDivineSpellbookView(player, classType, player.LoginCreature);
             var presenter = view.Presenter;
 
-            Log.Info($"Opening Prestige Divine Spellbook for {player.LoginCreature.Name} ({classType})");
             _windowDirector.OpenWindow(presenter);
-
-            Log.Info($"✓ Opened Prestige Divine Spellbook for {player.LoginCreature.Name} ({classType})");
         }
         catch (Exception ex)
         {
@@ -55,6 +57,7 @@ public class PrestigeDivineSpellbookService
             Log.Error($"Stack trace: {ex.StackTrace}");
             player.SendServerMessage($"Error opening spellbook: {ex.Message}", ColorConstants.Red);
         }
+        */
     }
 }
 
