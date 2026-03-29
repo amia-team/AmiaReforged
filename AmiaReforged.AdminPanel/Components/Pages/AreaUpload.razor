@@ -1,0 +1,267 @@
+@page "/area-upload"
+@using AmiaReforged.AdminPanel.Configuration
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject AreaUploadService UploadService
+@inject ILogger<AreaUpload> Logger
+@rendermode InteractiveServer
+
+<PageTitle>Area Upload</PageTitle>
+
+<div class="encounters-page">
+    <section>
+        <div class="dashboard-header d-flex justify-content-between align-items-center mb-3">
+            <h3 class="mb-0"><span class="bi bi-upload me-2"></span>Area Upload</h3>
+        </div>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @_error
+                <button type="button" class="btn-close" @onclick="() => _error = null"></button>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(_success))
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @_success
+                <button type="button" class="btn-close" @onclick="() => _success = null"></button>
+            </div>
+        }
+
+        @if (_targets.Count == 0)
+        {
+            <div class="alert alert-warning">
+                <strong>No upload targets configured.</strong>
+                <p class="mb-0 mt-1">
+                    Set <code>AREA_UPLOAD_PATH_*</code> environment variables to define upload destinations.
+                    <br />
+                    Format: <code>AREA_UPLOAD_PATH_DEV=Development=/nwn/dev/areas</code>
+                </p>
+            </div>
+        }
+        else
+        {
+            <div class="card">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Upload Target</label>
+                            <select class="form-select" @bind="_selectedTarget" disabled="@_isUploading">
+                                <option value="">— Select a destination —</option>
+                                @foreach (AreaUploadTarget target in _targets)
+                                {
+                                    <option value="@target.Name">@target.Name (@target.Path)</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Files (.are, .git, .gic)</label>
+                            <InputFile OnChange="OnFilesSelected"
+                                       accept=".are,.git,.gic"
+                                       multiple
+                                       class="form-control"
+                                       disabled="@_isUploading" />
+                        </div>
+                    </div>
+
+                    @if (_selectedFiles.Count > 0)
+                    {
+                        <div class="mt-3">
+                            <h6>Selected Files (@_selectedFiles.Count)</h6>
+                            <ul class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
+                                @foreach (IBrowserFile file in _selectedFiles)
+                                {
+                                    <li class="list-group-item py-1 d-flex justify-content-between align-items-center">
+                                        <span>
+                                            <span class="bi bi-file-earmark me-1"></span>@file.Name
+                                        </span>
+                                        <span class="badge bg-secondary">@FormatSize(file.Size)</span>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    }
+
+                    <div class="mt-3">
+                        <button class="btn btn-primary"
+                                @onclick="UploadFiles"
+                                disabled="@(!CanUpload())">
+                            @if (_isUploading)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                <span>Uploading...</span>
+                            }
+                            else
+                            {
+                                <span class="bi bi-cloud-upload me-1"></span>
+                                <span>Upload</span>
+                            }
+                        </button>
+
+                        @if (_selectedFiles.Count > 0 && !_isUploading)
+                        {
+                            <button class="btn btn-outline-secondary ms-2" @onclick="ClearSelection">
+                                Clear
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @if (_lastResult is not null)
+            {
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            Upload Results — @_lastResult.TargetName
+                            @if (_lastResult.AllSucceeded)
+                            {
+                                <span class="badge bg-success ms-2">All Succeeded</span>
+                            }
+                            else if (_lastResult.SuccessCount > 0)
+                            {
+                                <span class="badge bg-warning ms-2">Partial</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger ms-2">Failed</span>
+                            }
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                            <tr>
+                                <th>File</th>
+                                <th style="width: 100px;">Status</th>
+                                <th>Details</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (FileUploadResult fileResult in _lastResult.FileResults)
+                            {
+                                <tr class="@(fileResult.Success ? "" : "table-danger")">
+                                    <td>@fileResult.FileName</td>
+                                    <td>
+                                        @if (fileResult.Success)
+                                        {
+                                            <span class="badge bg-success">OK</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">Failed</span>
+                                        }
+                                    </td>
+                                    <td class="text-muted small">@(fileResult.Error ?? "—")</td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer text-muted small">
+                        @_lastResult.SuccessCount succeeded, @_lastResult.FailureCount failed
+                        — uploaded to @_lastResult.TargetPath
+                    </div>
+                </div>
+            }
+        }
+    </section>
+</div>
+
+@code {
+    private IReadOnlyList<AreaUploadTarget> _targets = Array.Empty<AreaUploadTarget>();
+    private string _selectedTarget = string.Empty;
+    private List<IBrowserFile> _selectedFiles = new();
+    private bool _isUploading;
+    private string? _error;
+    private string? _success;
+    private AreaUploadResult? _lastResult;
+
+    private bool CanUpload()
+    {
+        return !_isUploading
+            && !string.IsNullOrEmpty(_selectedTarget)
+            && _selectedFiles.Count > 0;
+    }
+
+    protected override void OnInitialized()
+    {
+        _targets = UploadService.GetTargets();
+    }
+
+    private void OnFilesSelected(InputFileChangeEventArgs e)
+    {
+        _error = null;
+        _success = null;
+        _lastResult = null;
+
+        try
+        {
+            _selectedFiles = e.GetMultipleFiles(200).ToList();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to read selected files: {ex.Message}";
+            _selectedFiles.Clear();
+        }
+    }
+
+    private async Task UploadFiles()
+    {
+        if (!CanUpload()) return;
+
+        _isUploading = true;
+        _error = null;
+        _success = null;
+        _lastResult = null;
+        StateHasChanged();
+
+        try
+        {
+            _lastResult = await UploadService.UploadFilesAsync(_selectedTarget, _selectedFiles);
+
+            if (_lastResult.AllSucceeded)
+            {
+                _success = $"Successfully uploaded {_lastResult.SuccessCount} file(s) to {_lastResult.TargetName}.";
+            }
+            else if (_lastResult.SuccessCount > 0)
+            {
+                _error = $"{_lastResult.FailureCount} file(s) failed. {_lastResult.SuccessCount} file(s) succeeded.";
+            }
+            else
+            {
+                _error = $"All {_lastResult.FailureCount} file(s) failed to upload.";
+            }
+
+            _selectedFiles.Clear();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Unexpected error during area upload");
+            _error = $"Unexpected error: {ex.Message}";
+        }
+        finally
+        {
+            _isUploading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ClearSelection()
+    {
+        _selectedFiles.Clear();
+        _lastResult = null;
+        _error = null;
+        _success = null;
+    }
+
+    private static string FormatSize(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes / (1024.0 * 1024.0):F1} MB";
+    }
+}

@@ -21,6 +21,12 @@
         </div>
 
         <div class="nav-item px-3">
+            <NavLink class="nav-link" href="area-upload">
+                <span class="bi bi-upload" aria-hidden="true"></span> Area Upload
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
             <a class="nav-link" href="javascript:void(0)" @onclick="ToggleWorldEngine" @onclick:preventDefault>
                 <span class="bi bi-globe2" aria-hidden="true"></span> World Engine
                 <span class="float-end">@(_worldEngineExpanded ? "▾" : "▸")</span>

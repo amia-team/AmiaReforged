@@ -48,6 +48,30 @@ public class Program
             adminConfig.DiscordWebhookUrl = Environment.GetEnvironmentVariable("DISCORD_WEBHOOK_URL") ?? adminConfig.DiscordWebhookUrl;
             adminConfig.DockerSocketPath = Environment.GetEnvironmentVariable("DOCKER_SOCKET") ?? adminConfig.DockerSocketPath;
 
+            // Parse AREA_UPLOAD_PATH_* env vars (format: "DisplayName=/absolute/path")
+            foreach (System.Collections.DictionaryEntry entry in Environment.GetEnvironmentVariables())
+            {
+                string key = entry.Key?.ToString() ?? string.Empty;
+                if (!key.StartsWith("AREA_UPLOAD_PATH_", StringComparison.OrdinalIgnoreCase)) continue;
+
+                string value = entry.Value?.ToString() ?? string.Empty;
+                int separatorIndex = value.IndexOf('=');
+                if (separatorIndex <= 0 || separatorIndex >= value.Length - 1)
+                {
+                    Log.Warning("Ignoring malformed {Key}: expected format 'DisplayName=/absolute/path'", key);
+                    continue;
+                }
+
+                string name = value[..separatorIndex].Trim();
+                string path = value[(separatorIndex + 1)..].Trim();
+
+                if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(path))
+                {
+                    adminConfig.AreaUploadTargets.Add(new AreaUploadTarget(name, path));
+                    Log.Information("Registered area upload target '{Name}' -> {Path}", name, path);
+                }
+            }
+
             builder.Services.AddSingleton(adminConfig);
 
             // WorldEngine API — a bare named HttpClient (base address set per-request from the endpoint service)
@@ -74,6 +98,7 @@ public class Program
             builder.Services.AddScoped<DependencyGraphApiService>();
             builder.Services.AddScoped<DialogueApiService>();
             builder.Services.AddScoped<DeploymentService>();
+            builder.Services.AddScoped<AreaUploadService>();
 
             // World Engine Editor state (one per circuit)
             builder.Services.AddScoped<WorldEngineEditorState>();

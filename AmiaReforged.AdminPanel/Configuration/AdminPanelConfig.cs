@@ -1,6 +1,12 @@
 namespace AmiaReforged.AdminPanel.Configuration;
 
 /// <summary>
+/// A named server directory that area files can be uploaded to.
+/// Configured via AREA_UPLOAD_PATH_* environment variables using the format "DisplayName=/absolute/path".
+/// </summary>
+public sealed record AreaUploadTarget(string Name, string Path);
+
+/// <summary>
 /// Configuration settings for the Admin Panel.
 /// </summary>
 public class AdminPanelConfig
@@ -54,4 +60,10 @@ public class AdminPanelConfig
     /// Cooldown period (in seconds) before allowing another auto-restart of the same container.
     /// </summary>
     public int AutoRestartCooldownSeconds { get; set; } = 60;
+
+    /// <summary>
+    /// Named server directories that area files (.are, .git, .gic) can be uploaded to.
+    /// Populated from AREA_UPLOAD_PATH_* environment variables.
+    /// </summary>
+    public List<AreaUploadTarget> AreaUploadTargets { get; set; } = new();
 }
