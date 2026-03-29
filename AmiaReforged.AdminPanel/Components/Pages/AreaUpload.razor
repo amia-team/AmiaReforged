@@ -151,7 +151,12 @@
                                 <th>Name</th>
                                 <th style="width: 100px; text-align: right;">Size</th>
                                 <th style="width: 170px;">Modified</th>
-                                <th style="width: 110px; text-align: center;">Reload</th>
+                                <th style="width: 110px; text-align: center;">Reload
+                                    @if (_selectedEndpoint == null)
+                                    {
+                                        <div style="font-weight: normal; font-size: 0.7rem; color: var(--warning);">(no server)</div>
+                                    }
+                                </th>
                             </tr>
                             </thead>
                             <tbody>
@@ -323,6 +328,13 @@
             {
                 _selectedEndpoint = null;
                 ReloadService.SelectEndpoint(null);
+            }
+
+            // Auto-select the first endpoint so reload buttons work immediately
+            if (_selectedEndpoint == null && _endpoints.Count > 0)
+            {
+                _selectedEndpoint = _endpoints[0];
+                ReloadService.SelectEndpoint(_selectedEndpoint.Id);
             }
         }
         catch (Exception ex)
