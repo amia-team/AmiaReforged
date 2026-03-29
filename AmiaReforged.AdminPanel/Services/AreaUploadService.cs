@@ -22,6 +22,11 @@ public sealed record AreaUploadResult(
 }
 
 /// <summary>
+/// A single entry in a directory listing.
+/// </summary>
+public sealed record DirectoryEntry(string Name, long Size, DateTime LastModified, bool IsDirectory);
+
+/// <summary>
 /// Handles uploading area files (.are, .git, .gic) to pre-configured server directories.
 /// Upload targets are defined in configuration via AREA_UPLOAD_PATH_* environment variables.
 /// Only configured paths are writable — no user-supplied paths reach the filesystem.
@@ -51,6 +56,52 @@ public sealed class AreaUploadService
     /// Returns the list of configured upload targets.
     /// </summary>
     public IReadOnlyList<AreaUploadTarget> GetTargets() => _config.AreaUploadTargets;
+
+    /// <summary>
+    /// Lists the contents of the directory for the given target name.
+    /// Returns an empty list if the target doesn't exist or the directory is missing.
+    /// </summary>
+    public IReadOnlyList<DirectoryEntry> ListTargetContents(string targetName)
+    {
+        AreaUploadTarget? target = _config.AreaUploadTargets.FirstOrDefault(
+            t => string.Equals(t.Name, targetName, StringComparison.Ordinal));
+
+        if (target is null)
+        {
+            _logger.LogWarning("Directory listing requested for unknown target: {TargetName}", targetName);
+            return Array.Empty<DirectoryEntry>();
+        }
+
+        if (!Directory.Exists(target.Path))
+        {
+            _logger.LogInformation("Target directory does not exist yet: {Path}", target.Path);
+            return Array.Empty<DirectoryEntry>();
+        }
+
+        try
+        {
+            List<DirectoryEntry> entries = new();
+
+            foreach (string dir in Directory.GetDirectories(target.Path))
+            {
+                DirectoryInfo di = new(dir);
+                entries.Add(new DirectoryEntry(di.Name, 0, di.LastWriteTime, true));
+            }
+
+            foreach (string file in Directory.GetFiles(target.Path))
+            {
+                FileInfo fi = new(file);
+                entries.Add(new DirectoryEntry(fi.Name, fi.Length, fi.LastWriteTime, false));
+            }
+
+            return entries.OrderBy(e => !e.IsDirectory).ThenBy(e => e.Name, StringComparer.OrdinalIgnoreCase).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to list directory contents for target '{TargetName}' at {Path}", targetName, target.Path);
+            return Array.Empty<DirectoryEntry>();
+        }
+    }
 
     /// <summary>
     /// Uploads the given files to the directory associated with the named target.

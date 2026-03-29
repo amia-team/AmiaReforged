@@ -46,7 +46,7 @@
             <div class="row g-3">
                 <div class="col-md-6">
                     <label class="form-label" style="color: var(--text-secondary); font-weight: 500;">Upload Target</label>
-                    <select class="form-select" @bind="_selectedTarget" disabled="@_isUploading">
+                    <select class="form-select" value="@_selectedTarget" @onchange="OnTargetChanged" disabled="@_isUploading">
                         <option value="">— Select a destination —</option>
                         @foreach (AreaUploadTarget target in _targets)
                         {
@@ -107,6 +107,59 @@
                 }
             </div>
         </div>
+
+        @if (!string.IsNullOrEmpty(_selectedTarget) && _directoryEntries is not null)
+        {
+            <div class="section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h6 style="color: var(--accent); font-size: 0.85rem; text-transform: uppercase; margin: 0;">
+                        <span class="bi bi-folder2-open me-1"></span>Directory Contents (@_directoryEntries.Count)
+                    </h6>
+                    <button class="btn btn-sm btn-outline-primary" @onclick="RefreshDirectoryListing" disabled="@_isUploading">
+                        <span class="bi bi-arrow-clockwise me-1"></span>Refresh
+                    </button>
+                </div>
+
+                @if (_directoryEntries.Count == 0)
+                {
+                    <div style="color: var(--text-secondary); font-style: italic; padding: 8px 0;">Directory is empty or does not exist yet.</div>
+                }
+                else
+                {
+                    <div style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: 6px;">
+                        <table class="table mb-0" style="font-size: 0.9rem;">
+                            <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th style="width: 100px; text-align: right;">Size</th>
+                                <th style="width: 170px;">Modified</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (DirectoryEntry entry in _directoryEntries)
+                            {
+                                <tr>
+                                    <td>
+                                        @if (entry.IsDirectory)
+                                        {
+                                            <span class="bi bi-folder-fill me-1" style="color: var(--accent);"></span>
+                                        }
+                                        else
+                                        {
+                                            <span class="bi bi-file-earmark me-1" style="color: var(--text-secondary);"></span>
+                                        }
+                                        @entry.Name
+                                    </td>
+                                    <td style="text-align: right; color: var(--text-secondary);">@(entry.IsDirectory ? "—" : FormatSize(entry.Size))</td>
+                                    <td style="color: var(--text-secondary);">@entry.LastModified.ToString("yyyy-MM-dd HH:mm")</td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        }
 
         @if (_lastResult is not null)
         {
@@ -177,6 +230,7 @@
     private string? _error;
     private string? _success;
     private AreaUploadResult? _lastResult;
+    private IReadOnlyList<DirectoryEntry>? _directoryEntries;
 
     private bool CanUpload()
     {
@@ -188,6 +242,23 @@
     protected override void OnInitialized()
     {
         _targets = UploadService.GetTargets();
+    }
+
+    private void OnTargetChanged(ChangeEventArgs e)
+    {
+        _selectedTarget = e.Value?.ToString() ?? string.Empty;
+        RefreshDirectoryListing();
+    }
+
+    private void RefreshDirectoryListing()
+    {
+        if (string.IsNullOrEmpty(_selectedTarget))
+        {
+            _directoryEntries = null;
+            return;
+        }
+
+        _directoryEntries = UploadService.ListTargetContents(_selectedTarget);
     }
 
     private void OnFilesSelected(InputFileChangeEventArgs e)
@@ -244,6 +315,7 @@
         finally
         {
             _isUploading = false;
+            RefreshDirectoryListing();
             StateHasChanged();
         }
     }
