@@ -1,8 +1,11 @@
 @page "/area-upload"
 @using AmiaReforged.AdminPanel.Configuration
+@using AmiaReforged.AdminPanel.Models
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inject AreaUploadService UploadService
+@inject AreaReloadApiService ReloadService
+@inject IWorldEngineEndpointService EndpointService
 @inject ILogger<AreaUpload> Logger
 @rendermode InteractiveServer
 
@@ -11,6 +14,21 @@
 <div class="encounters-page">
     <div class="dashboard-header d-flex justify-content-between align-items-center mb-3">
         <h3 class="mb-0"><span class="bi bi-upload me-2"></span>Area Upload</h3>
+        <div class="d-flex align-items-center gap-2">
+            @if (_endpoints.Count > 0)
+            {
+                <div class="instance-selector">
+                    <label class="instance-label">Server:</label>
+                    <select class="form-control form-control-sm" value="@(_selectedEndpoint?.Id.ToString() ?? "")" @onchange="OnEndpointChanged">
+                        <option value="">— Select —</option>
+                        @foreach (WorldEngineEndpoint ep in _endpoints)
+                        {
+                            <option value="@ep.Id">@ep.Name</option>
+                        }
+                    </select>
+                </div>
+            }
+        </div>
     </div>
 
     @if (!string.IsNullOrEmpty(_error))
@@ -133,6 +151,7 @@
                                 <th>Name</th>
                                 <th style="width: 100px; text-align: right;">Size</th>
                                 <th style="width: 170px;">Modified</th>
+                                <th style="width: 110px; text-align: center;">Reload</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -152,11 +171,53 @@
                                     </td>
                                     <td style="text-align: right; color: var(--text-secondary);">@(entry.IsDirectory ? "—" : FormatSize(entry.Size))</td>
                                     <td style="color: var(--text-secondary);">@entry.LastModified.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td style="text-align: center;">
+                                        @if (!entry.IsDirectory && entry.Name.EndsWith(".are", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            string resref = Path.GetFileNameWithoutExtension(entry.Name);
+                                            bool isReloading = _reloadingResref == resref;
+                                            <button class="btn btn-sm btn-outline-primary"
+                                                    @onclick="() => ReloadArea(resref)"
+                                                    disabled="@(isReloading || _selectedEndpoint == null)"
+                                                    title="@(_selectedEndpoint == null ? "Select a server first" : $"Reload {resref}")">
+                                                @if (isReloading)
+                                                {
+                                                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="bi bi-arrow-repeat"></span>
+                                                }
+                                            </button>
+                                        }
+                                    </td>
                                 </tr>
                             }
                             </tbody>
                         </table>
                     </div>
+                }
+            </div>
+        }
+
+        @if (_reloadResult is not null)
+        {
+            <div class="section" style="border-left: 3px solid @(_reloadResult.Success ? "var(--success)" : "var(--danger)");">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    @if (_reloadResult.Success)
+                    {
+                        <span class="bi bi-check-circle" style="color: var(--success); font-size: 1.1rem;"></span>
+                    }
+                    else
+                    {
+                        <span class="bi bi-x-circle" style="color: var(--danger); font-size: 1.1rem;"></span>
+                    }
+                    <span style="color: var(--text-primary); font-weight: 500;">@_reloadResult.Message</span>
+                    <button type="button" class="btn-close btn-close-white ms-auto" style="font-size: 0.65rem;" @onclick="() => _reloadResult = null"></button>
+                </div>
+                @if (!string.IsNullOrEmpty(_reloadResult.Detail))
+                {
+                    <div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">@_reloadResult.Detail</div>
                 }
             </div>
         }
@@ -232,6 +293,12 @@
     private AreaUploadResult? _lastResult;
     private IReadOnlyList<DirectoryEntry>? _directoryEntries;
 
+    // Reload state
+    private List<WorldEngineEndpoint> _endpoints = [];
+    private WorldEngineEndpoint? _selectedEndpoint;
+    private string? _reloadingResref;
+    private AreaReloadResult? _reloadResult;
+
     private bool CanUpload()
     {
         return !_isUploading
@@ -239,9 +306,69 @@
             && _selectedFiles.Count > 0;
     }
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         _targets = UploadService.GetTargets();
+        await RefreshEndpoints();
+    }
+
+    private async Task RefreshEndpoints()
+    {
+        try
+        {
+            IReadOnlyList<WorldEngineEndpoint> all = await EndpointService.GetAllEndpointsAsync();
+            _endpoints = all.Where(e => e.IsEnabled).ToList();
+
+            if (_selectedEndpoint != null && !_endpoints.Any(e => e.Id == _selectedEndpoint.Id))
+            {
+                _selectedEndpoint = null;
+                ReloadService.SelectEndpoint(null);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load WorldEngine endpoints");
+        }
+    }
+
+    private void OnEndpointChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out Guid id))
+        {
+            _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
+            ReloadService.SelectEndpoint(id);
+        }
+        else
+        {
+            _selectedEndpoint = null;
+            ReloadService.SelectEndpoint(null);
+        }
+
+        _reloadResult = null;
+    }
+
+    private async Task ReloadArea(string resref)
+    {
+        if (_selectedEndpoint == null || string.IsNullOrWhiteSpace(resref)) return;
+
+        _reloadingResref = resref;
+        _reloadResult = null;
+        StateHasChanged();
+
+        try
+        {
+            _reloadResult = await ReloadService.ReloadAreaAsync(resref);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to reload area '{Resref}'", resref);
+            _reloadResult = new AreaReloadResult(false, "Unexpected error", ex.Message);
+        }
+        finally
+        {
+            _reloadingResref = null;
+            StateHasChanged();
+        }
     }
 
     private void OnTargetChanged(ChangeEventArgs e)

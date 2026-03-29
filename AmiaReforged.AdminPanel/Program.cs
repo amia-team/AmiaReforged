@@ -99,6 +99,7 @@ public class Program
             builder.Services.AddScoped<DialogueApiService>();
             builder.Services.AddScoped<DeploymentService>();
             builder.Services.AddScoped<AreaUploadService>();
+            builder.Services.AddScoped<AreaReloadApiService>();
 
             // World Engine Editor state (one per circuit)
             builder.Services.AddScoped<WorldEngineEditorState>();
