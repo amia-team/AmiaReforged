@@ -10,6 +10,7 @@ namespace AmiaReforged.Classes.Spells.Invocations.Pact;
 public class BindingOfMaggots(ScriptHandleFactory scriptHandleFactory) : IInvocation
 {
     private const string FiendSummonResRef = "wlkfiend";
+    private const int VfxPerEvilSymbolId = 60;
 
     public string ImpactScript => "wlk_bindingmag";
     public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
@@ -33,13 +34,13 @@ public class BindingOfMaggots(ScriptHandleFactory scriptHandleFactory) : IInvoca
             BindWithMaggots(info, warlock, invocationCl, invocationDc, paralysis, castData.Spell,
                 location, summonCount, summonDuration, summonEffect));
 
-        PersistentVfxTableEntry persistentVfx = NwGameTables.PersistentEffectTable.GetRow((int)PersistentVfxType.PerGlyphOfWarding);
+        PersistentVfxTableEntry persistentVfx = NwGameTables.PersistentEffectTable.GetRow(VfxPerEvilSymbolId);
         Effect bindingOfMaggots = Effect.AreaOfEffect(persistentVfx, onEnterMaggot);
         bindingOfMaggots.SubType = EffectSubType.Magical;
 
         TimeSpan duration = NwTimeSpan.FromTurns(1);
 
-        location.RemoveAoeSpell(warlock, castData.Spell, RadiusSize.Huge);
+        location.RemoveAoeSpell(warlock, castData.Spell, RadiusSize.Large);
         location.ApplyEffect(EffectDuration.Temporary, bindingOfMaggots, duration);
     }
 
