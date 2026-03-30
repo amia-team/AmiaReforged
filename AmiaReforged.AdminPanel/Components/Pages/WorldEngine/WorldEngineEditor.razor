@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using AmiaReforged.AdminPanel.Models
 @using AmiaReforged.AdminPanel.Services
+@using System.IO.Compression
 @using System.Text.Json
 @using System.Text.Json.Serialization
 @attribute [Authorize]
@@ -1518,6 +1519,13 @@
                                 </select>
                                 <button class="btn btn-sm btn-secondary" @onclick="RgApplyLayout" title="Re-layout">Re-Layout</button>
                             </div>
+                            <div class="we-rg-toolbar__divider"></div>
+                            <div class="we-rg-toolbar__group">
+                                <button class="btn btn-sm btn-info" @onclick="() => _rgShowImportModal = true" title="Import region definitions">Import</button>
+                                <button class="btn btn-sm btn-success" @onclick="RgExportRegions" disabled="@_rgIsExporting" title="Export region definitions">
+                                    @(_rgIsExporting ? "…" : "Export")
+                                </button>
+                            </div>
                             <div style="flex:1"></div>
                             @if (_rgRegionColors.Count > 0)
                             {
@@ -1945,6 +1953,50 @@
     </div>
 </div>
 
+@* ===== Region Import Modal ===== *@
+@if (_rgShowImportModal)
+{
+    <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1040" @onclick="RgCloseImportModal">
+    <div @onclick:stopPropagation="true" style="max-width:600px;max-height:80vh;overflow-y:auto;margin:10vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+        <h2>Import Region Definitions</h2>
+        <p style="color:var(--text-secondary);font-size:0.9rem">
+            Upload or paste JSON containing region definitions.
+        </p>
+        <div class="form-group" style="margin-top:15px">
+            <label>Upload JSON / ZIP</label>
+            <InputFile OnChange="RgOnImportFileSelected" accept=".json,.zip" multiple class="form-control" />
+        </div>
+        <div class="form-group" style="margin-top:10px">
+            <label>Or paste JSON</label>
+            <textarea class="form-control" rows="8" @bind="_rgImportJson"
+                      placeholder='[{"Tag":"my_region","Name":"My Region","Areas":[...]}]'
+                      style="font-family:monospace;font-size:0.85rem"></textarea>
+        </div>
+        @if (_rgImportResult != null)
+        {
+            <div class="alert @(_rgImportResult.Failed > 0 ? "alert-warning" : "alert-success")" style="margin-top:15px">
+                <strong>Import:</strong> @_rgImportResult.Succeeded ok, @_rgImportResult.Failed failed of @_rgImportResult.Total.
+                @if (_rgImportResult.Errors.Count > 0)
+                {
+                    <ul style="margin-top:8px;margin-bottom:0">
+                        @foreach (string err in _rgImportResult.Errors.Take(10))
+                        {
+                            <li style="font-size:0.85rem">@err</li>
+                        }
+                    </ul>
+                }
+            </div>
+        }
+        <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+            <button class="btn btn-secondary" @onclick="RgCloseImportModal">Close</button>
+            <button class="btn btn-primary" @onclick="RgRunImport" disabled="@(_rgIsSaving || string.IsNullOrWhiteSpace(_rgImportJson))">
+                @(_rgIsSaving ? "Importing…" : "Import")
+            </button>
+        </div>
+    </div>
+    </div>
+}
+
 @code {
     private List<WorldEngineEndpoint> _endpoints = [];
     private bool _listPanelOpen = true;
@@ -2017,6 +2069,13 @@
     // Region graph toolbar state
     private string _rgGraphSearchQuery = "";
     private string _rgSelectedLayout = "cose";
+
+    // Region import/export state
+    private bool _rgShowImportModal;
+    private string _rgImportJson = "";
+    private ImportResult? _rgImportResult;
+    private List<JsonElement> _rgImportedRegions = [];
+    private bool _rgIsExporting;
 
     // GL bridge refs
     private IJSObjectReference? _regionBridgeModule;
@@ -3542,6 +3601,108 @@
         }
         catch (Exception ex) { _rgError = ex.Message; Logger.LogError(ex, "Failed to delete region"); }
         finally { _rgIsSaving = false; StateHasChanged(); }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Region Graph — Export / Import
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task RgExportRegions()
+    {
+        _rgIsExporting = true;
+        _rgError = null;
+        StateHasChanged();
+        try
+        {
+            string json = await RegionApi.ExportJsonAsync(_listSearch);
+            string fileName = $"regions-export-{DateTime.UtcNow:yyyyMMdd-HHmmss}.json";
+            byte[] bytes = System.Text.Encoding.UTF8.GetBytes(json);
+            string base64 = Convert.ToBase64String(bytes);
+            await JS.InvokeVoidAsync("adminPanelDownloadFile", fileName, base64);
+            _rgSuccess = "Export downloaded.";
+        }
+        catch (Exception ex) { _rgError = ex.Message; Logger.LogError(ex, "Region export failed"); }
+        finally { _rgIsExporting = false; StateHasChanged(); }
+    }
+
+    private async Task RgOnImportFileSelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            foreach (IBrowserFile file in e.GetMultipleFiles(100))
+            {
+                if (file.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                    await RgProcessZipRegions(file);
+                else
+                    await RgProcessJsonFileRegions(file);
+            }
+            _rgImportJson = JsonSerializer.Serialize(_rgImportedRegions);
+            _rgImportResult = null;
+            _rgSuccess = $"Loaded {_rgImportedRegions.Count} region(s). Click Import to apply.";
+            StateHasChanged();
+        }
+        catch (Exception ex) { _rgError = $"Failed to read file(s): {ex.Message}"; }
+    }
+
+    private async Task RgProcessJsonFileRegions(IBrowserFile file)
+    {
+        using StreamReader reader = new StreamReader(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
+        RgParseJsonRegions(await reader.ReadToEndAsync());
+    }
+
+    private async Task RgProcessZipRegions(IBrowserFile file)
+    {
+        using MemoryStream ms = new MemoryStream();
+        await file.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024).CopyToAsync(ms);
+        ms.Position = 0;
+        using ZipArchive archive = new ZipArchive(ms, ZipArchiveMode.Read);
+        foreach (ZipArchiveEntry entry in archive.Entries)
+        {
+            if (!entry.FullName.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) continue;
+            using Stream entryStream = entry.Open();
+            using StreamReader reader = new StreamReader(entryStream);
+            RgParseJsonRegions(await reader.ReadToEndAsync());
+        }
+    }
+
+    private void RgParseJsonRegions(string content)
+    {
+        using JsonDocument doc = JsonDocument.Parse(content);
+        if (doc.RootElement.ValueKind == JsonValueKind.Array)
+        {
+            foreach (JsonElement item in doc.RootElement.EnumerateArray())
+                _rgImportedRegions.Add(item.Clone());
+        }
+        else if (doc.RootElement.ValueKind == JsonValueKind.Object)
+        {
+            _rgImportedRegions.Add(doc.RootElement.Clone());
+        }
+    }
+
+    private async Task RgRunImport()
+    {
+        if (string.IsNullOrWhiteSpace(_rgImportJson)) return;
+        _rgIsSaving = true;
+        _rgError = null;
+        try
+        {
+            _rgImportResult = await RegionApi.ImportJsonAsync(_rgImportJson);
+            if (_rgImportResult is { Failed: 0 })
+                _rgSuccess = $"Successfully imported {_rgImportResult.Succeeded} regions.";
+            await RgRefreshRegions();
+            RgBuildRegionColors();
+            if (_regionGraphData != null) await RgUpdateGraphRegionData();
+        }
+        catch (Exception ex) { _rgError = ex.Message; Logger.LogError(ex, "Region import failed"); }
+        finally { _rgIsSaving = false; StateHasChanged(); }
+    }
+
+    private void RgCloseImportModal()
+    {
+        _rgShowImportModal = false;
+        _rgImportJson = "";
+        _rgImportResult = null;
+        _rgImportedRegions.Clear();
     }
 
     // ═══════════════════════════════════════════════════════════════════
