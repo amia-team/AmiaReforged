@@ -67,7 +67,8 @@ public class ChillingTentacles(ScriptHandleFactory scriptHandleFactory) : IInvoc
     private static ScriptHandleResult OnTentacleStrike(CallInfo info, NwCreature warlock, int invocationCl, int dc,
         Effect paralyze)
     {
-        if (info.ObjectSelf is not NwCreature creature) return ScriptHandleResult.Handled;
+        if (info.ObjectSelf is not NwCreature creature || !creature.IsValidInvocationTarget(warlock))
+            return ScriptHandleResult.Handled;
 
         int tentacleCount = Random.Shared.Roll(4);
 
