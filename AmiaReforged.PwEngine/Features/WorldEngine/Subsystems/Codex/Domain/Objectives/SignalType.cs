@@ -16,4 +16,9 @@ public static class SignalType
     public const string NpcStatusChanged = "npc_status_changed";
     public const string WaypointReached = "waypoint_reached";
     public const string Custom = "custom";
+
+    /// <summary>
+    /// Periodic tick signal used by the deadline expiration system.
+    /// </summary>
+    public const string TimerTick = "timer_tick";
 }

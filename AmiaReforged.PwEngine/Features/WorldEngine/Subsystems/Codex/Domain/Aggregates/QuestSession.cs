@@ -1,6 +1,5 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Objectives;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
@@ -29,6 +28,18 @@ public class QuestSession
     /// <summary>When this session was created.</summary>
     public DateTime CreatedAt { get; }
 
+    /// <summary>
+    /// Wall-clock deadline (UTC) by which this quest must be completed.
+    /// Null means no time limit.
+    /// </summary>
+    public DateTime? Deadline { get; }
+
+    /// <summary>
+    /// All characters participating in this session (the primary claimant + shared party members).
+    /// For non-shared quests, this contains only the primary character.
+    /// </summary>
+    public List<CharacterId> PartyMembers { get; } = [];
+
     /// <summary>Read-only view of all objective states.</summary>
     public IReadOnlyDictionary<ObjectiveId, ObjectiveState> ObjectiveStates => _objectiveStates;
 
@@ -43,13 +54,21 @@ public class QuestSession
         CharacterId characterId,
         List<QuestObjectiveGroup> groups,
         IObjectiveEvaluatorRegistry evaluatorRegistry,
-        DateTime createdAt)
+        DateTime createdAt,
+        DateTime? deadline = null,
+        List<CharacterId>? partyMembers = null)
     {
         QuestId = questId;
         CharacterId = characterId;
         _groups = groups;
         _evaluatorRegistry = evaluatorRegistry;
         CreatedAt = createdAt;
+        Deadline = deadline;
+        PartyMembers = partyMembers ?? [characterId];
+
+        // Ensure the primary character is always in the party
+        if (!PartyMembers.Contains(characterId))
+            PartyMembers.Insert(0, characterId);
 
         InitializeObjectiveStates();
     }
@@ -61,6 +80,15 @@ public class QuestSession
     {
         List<CodexDomainEvent> events = [];
         DateTime now = DateTime.UtcNow;
+
+        // Check deadline before processing any objectives
+        if (Deadline.HasValue && now >= Deadline.Value)
+        {
+            events.Add(new QuestExpiredEvent(
+                CharacterId, now, QuestId,
+                Enums.ExpiryBehavior.Fail)); // Default; actual behavior resolved by the application layer
+            return events;
+        }
 
         for (int groupIndex = 0; groupIndex < _groups.Count; groupIndex++)
         {

@@ -28,5 +28,11 @@ public enum QuestState
     /// <summary>
     /// Quest was abandoned by the player.
     /// </summary>
-    Abandoned = 4
+    Abandoned = 4,
+
+    /// <summary>
+    /// Quest expired because its time limit elapsed.
+    /// Distinct from <see cref="Failed"/> to allow separate handling of time-based termination.
+    /// </summary>
+    Expired = 5
 }

@@ -148,6 +148,72 @@ public class PlayerCodex
     /// </summary>
     public bool HasQuest(QuestId questId) => _quests.ContainsKey(questId);
 
+    /// <summary>
+    /// Marks a quest as expired due to its time limit elapsing.
+    /// Behavior depends on the quest's <see cref="ExpiryBehavior"/>:
+    /// Fail → transitions to Failed; Remove → removes from codex; Cooldown → transitions to Expired.
+    /// </summary>
+    public void RecordQuestExpired(QuestId questId, ExpiryBehavior behavior, DateTime occurredAt)
+    {
+        if (!_quests.TryGetValue(questId, out CodexQuestEntry? quest))
+            throw new InvalidOperationException($"Quest {questId.Value} not found in codex");
+
+        switch (behavior)
+        {
+            case ExpiryBehavior.Fail:
+                quest.MarkFailed(occurredAt);
+                break;
+            case ExpiryBehavior.Remove:
+                _quests.Remove(questId);
+                break;
+            case ExpiryBehavior.Cooldown:
+                quest.MarkExpired(occurredAt);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(behavior), behavior, "Unknown expiry behavior");
+        }
+
+        LastUpdated = occurredAt;
+    }
+
+    /// <summary>
+    /// Increments the completion count on a dynamic quest entry.
+    /// Called after a repeatable quest is completed.
+    /// </summary>
+    public void IncrementQuestCompletionCount(QuestId questId, DateTime occurredAt)
+    {
+        if (!_quests.TryGetValue(questId, out CodexQuestEntry? quest))
+            throw new InvalidOperationException($"Quest {questId.Value} not found in codex");
+
+        quest.IncrementCompletionCount();
+        LastUpdated = occurredAt;
+    }
+
+    /// <summary>
+    /// Resets a dynamic quest back to Discovered state for re-acceptance.
+    /// Used by the dynamic quest system for repeatable quests.
+    /// </summary>
+    public void ResetQuestForReplay(QuestId questId, DateTime occurredAt)
+    {
+        if (!_quests.TryGetValue(questId, out CodexQuestEntry? quest))
+            throw new InvalidOperationException($"Quest {questId.Value} not found in codex");
+
+        quest.ResetForReplay(occurredAt);
+        LastUpdated = occurredAt;
+    }
+
+    /// <summary>
+    /// Removes a quest entirely from the codex.
+    /// Used when a dynamic quest expires with <see cref="ExpiryBehavior.Remove"/> behavior,
+    /// or when a claim is dropped before starting.
+    /// </summary>
+    public bool RemoveQuest(QuestId questId, DateTime occurredAt)
+    {
+        bool removed = _quests.Remove(questId);
+        if (removed) LastUpdated = occurredAt;
+        return removed;
+    }
+
     #endregion
 
     #region Lore Commands

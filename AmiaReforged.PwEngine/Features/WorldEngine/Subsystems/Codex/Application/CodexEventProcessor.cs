@@ -180,6 +180,37 @@ public class CodexEventProcessor
                 codex.RecordTraitAcquired(traitEntry, tae.OccurredAt);
                 break;
 
+            // --- Dynamic quest events ---
+
+            case QuestClaimedEvent qcle:
+                CodexQuestEntry claimedQuest = new()
+                {
+                    QuestId = qcle.QuestId,
+                    Title = qcle.Title,
+                    Description = qcle.Description,
+                    DateStarted = qcle.OccurredAt,
+                    SourceTemplateId = qcle.TemplateId,
+                    Deadline = qcle.Deadline,
+                    Keywords = new List<Keyword>()
+                };
+                codex.RecordQuestStarted(claimedQuest, qcle.OccurredAt);
+                break;
+
+            case QuestExpiredEvent qee:
+                codex.RecordQuestExpired(qee.QuestId, qee.ExpiryBehavior, qee.OccurredAt);
+                break;
+
+            case QuestUnclaimedEvent que:
+                codex.RemoveQuest(que.QuestId, que.OccurredAt);
+                break;
+
+            case QuestSharedEvent:
+                // Sharing is handled at the session level by QuestSessionManager.
+                // The codex event is recorded for audit/display purposes but does not
+                // mutate the PlayerCodex aggregate — the invitee's codex entry is
+                // created via a separate QuestClaimedEvent.
+                break;
+
             default:
                 throw new NotSupportedException($"Event type {domainEvent.GetType().Name} is not supported");
         }

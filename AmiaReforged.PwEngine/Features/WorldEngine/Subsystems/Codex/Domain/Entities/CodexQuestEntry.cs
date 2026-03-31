@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
 
@@ -75,12 +76,45 @@ public class CodexQuestEntry
     /// </summary>
     public RewardMix CompletionReward { get; init; } = RewardMix.Empty;
 
+    #region Dynamic Quest Fields
+
+    /// <summary>
+    /// Links this quest back to the dynamic quest template it was created from.
+    /// Null for static (hand-crafted) quests.
+    /// </summary>
+    public TemplateId? SourceTemplateId { get; init; }
+
+    /// <summary>
+    /// Wall-clock deadline (UTC) by which this quest must be completed.
+    /// Null means no time limit. Set when a dynamic quest is claimed.
+    /// </summary>
+    public DateTime? Deadline { get; init; }
+
+    /// <summary>
+    /// What happens when the <see cref="Deadline"/> elapses.
+    /// Only meaningful for dynamic quests with a time limit.
+    /// </summary>
+    public ExpiryBehavior? ExpiryBehavior { get; init; }
+
+    /// <summary>
+    /// How many times this character has completed this quest.
+    /// Used for repeatable dynamic quests to enforce <c>MaxCompletionsPerCharacter</c>.
+    /// </summary>
+    public int CompletionCount { get; internal set; }
+
+    /// <summary>
+    /// Whether this quest originated from the dynamic quest system.
+    /// </summary>
+    public bool IsDynamic => SourceTemplateId.HasValue;
+
+    #endregion
+
     /// <summary>
     /// Updates the quest state to completed
     /// </summary>
     public void MarkCompleted(DateTime completedAt)
     {
-        if (State is QuestState.Completed or QuestState.Failed or QuestState.Abandoned)
+        if (State is QuestState.Completed or QuestState.Failed or QuestState.Abandoned or QuestState.Expired)
             throw new InvalidOperationException($"Cannot complete quest in state {State}");
 
         State = QuestState.Completed;
@@ -92,7 +126,7 @@ public class CodexQuestEntry
     /// </summary>
     public void MarkFailed(DateTime failedAt)
     {
-        if (State is QuestState.Completed or QuestState.Failed or QuestState.Abandoned)
+        if (State is QuestState.Completed or QuestState.Failed or QuestState.Abandoned or QuestState.Expired)
             throw new InvalidOperationException($"Cannot fail quest in state {State}");
 
         State = QuestState.Failed;
@@ -104,11 +138,43 @@ public class CodexQuestEntry
     /// </summary>
     public void MarkAbandoned(DateTime abandonedAt)
     {
-        if (State is QuestState.Completed or QuestState.Failed or QuestState.Abandoned)
+        if (State is QuestState.Completed or QuestState.Failed or QuestState.Abandoned or QuestState.Expired)
             throw new InvalidOperationException($"Cannot abandon quest in state {State}");
 
         State = QuestState.Abandoned;
         DateCompleted = abandonedAt;
+    }
+
+    /// <summary>
+    /// Marks the quest as expired due to its time limit elapsing.
+    /// The actual effect depends on the <see cref="ExpiryBehavior"/>.
+    /// </summary>
+    public void MarkExpired(DateTime expiredAt)
+    {
+        if (State is QuestState.Completed or QuestState.Failed or QuestState.Abandoned or QuestState.Expired)
+            throw new InvalidOperationException($"Cannot expire quest in state {State}");
+
+        State = QuestState.Expired;
+        DateCompleted = expiredAt;
+    }
+
+    /// <summary>
+    /// Increments the completion count for repeatable dynamic quests.
+    /// </summary>
+    internal void IncrementCompletionCount() => CompletionCount++;
+
+    /// <summary>
+    /// Resets a dynamic quest back to Discovered state for re-acceptance.
+    /// Only valid for quests in terminal states (Completed, Failed, Expired, Abandoned).
+    /// </summary>
+    public void ResetForReplay(DateTime resetAt)
+    {
+        if (State is QuestState.Discovered or QuestState.InProgress)
+            throw new InvalidOperationException($"Cannot reset quest in state {State} — it must be in a terminal state");
+
+        State = QuestState.Discovered;
+        DateCompleted = null;
+        CurrentStageId = 0;
     }
 
     /// <summary>
@@ -134,7 +200,7 @@ public class CodexQuestEntry
     /// </summary>
     public void AdvanceToStage(int stageId)
     {
-        if (State is QuestState.Completed or QuestState.Failed or QuestState.Abandoned)
+        if (State is QuestState.Completed or QuestState.Failed or QuestState.Abandoned or QuestState.Expired)
             throw new InvalidOperationException($"Cannot advance stage on quest in state {State}");
 
         if (stageId <= CurrentStageId)
