@@ -54,22 +54,14 @@ public class DispelService
 
         // Apply CL cap based on dispel type
         int clCap = GetCasterLevelCap(dispelType);
-        int effectiveCl = Math.Min(casterLevel, clCap);
+        int dispelCl = Math.Min(casterLevel, clCap);
 
         // Calculate feat bonuses (+2 per abjuration focus feat)
         int featBonus = GetAbjurationFocusBonus(caster);
-        effectiveCl += featBonus;
-
-        // PvP detection
-        bool isPvP = IsPvPDispel(caster, target);
-
-        // Bonus system setup
-        BonusConfiguration bonusConfig = GetBonusConfiguration(dispelType, isPvP);
-        int bonusCounter = bonusConfig.BonusCounter;
-        bool canGetBonus = !bonusConfig.IsDisqualified && CheckDispelCooldown(target);
+        dispelCl += featBonus;
 
         int dispelledCount = 0;
-        HashSet<int> processedSpells = new();
+        HashSet<int> processedSpells = [];
 
         // Iterate through all effects on target
         IntPtr currentEffect = GetFirstEffect(targetOid);
@@ -78,23 +70,8 @@ public class DispelService
             int spellId = GetEffectSpellId(currentEffect);
 
             // Only process magical effects with valid spell IDs that we haven't processed yet
-            if (spellId > -1 && GetEffectSubType(currentEffect) == SUBTYPE_MAGICAL && !processedSpells.Contains(spellId))
+            if (spellId > -1 && GetEffectSubType(currentEffect) == SUBTYPE_MAGICAL && processedSpells.Add(spellId))
             {
-                processedSpells.Add(spellId);
-
-                // Calculate multiplier from bonus system
-                int multiplier = 1;
-                if (canGetBonus && bonusCounter > 0)
-                {
-                    multiplier = CalculateBonusMultiplier(bonusConfig, isPvP, caster, target);
-                    if (multiplier > 1)
-                    {
-                        bonusCounter--;
-                    }
-                }
-
-                int dispelCl = (effectiveCl * multiplier);
-
                 // Perform dispel check
                 if (TryDispelSpell(caster, target, spellId, dispelCl))
                 {
@@ -173,22 +150,6 @@ public class DispelService
         : 0;
 
     /// <summary>
-    /// Determines if this is a PvP dispel scenario.
-    /// </summary>
-    private static bool IsPvPDispel(NwCreature caster, NwGameObject target)
-    {
-        bool casterIsPlayer = caster.IsPlayerControlled || caster.IsPossessedFamiliar;
-
-        if (target is NwCreature targetCreature)
-        {
-            bool targetIsPlayer = targetCreature.IsPlayerControlled || targetCreature.IsPossessedFamiliar;
-            return casterIsPlayer && targetIsPlayer;
-        }
-
-        return false;
-    }
-
-    /// <summary>
     /// Checks if the target is hostile to the caster.
     /// </summary>
     private static bool IsHostileTarget(NwGameObject target, NwCreature caster)
@@ -198,98 +159,6 @@ public class DispelService
             return caster.IsReactionTypeHostile(targetCreature);
         }
         return false;
-    }
-
-    /// <summary>
-    /// Configuration for the bonus dispel system.
-    /// </summary>
-    private record BonusConfiguration(int BonusMod, int BonusCounter, bool IsDisqualified);
-
-    /// <summary>
-    /// Gets bonus configuration based on dispel type and PvP status.
-    /// </summary>
-    private static BonusConfiguration GetBonusConfiguration(DispelType dispelType, bool isPvP)
-    {
-        BonusConfiguration config = dispelType switch
-        {
-            DispelType.LesserDispel => new BonusConfiguration(25, 1, false),
-            DispelType.DispelMagic => new BonusConfiguration(50, 2, false),
-            DispelType.GreaterDispelling => new BonusConfiguration(100, 3, false),
-            DispelType.MordenkainensDisjunction => new BonusConfiguration(0, 0, true),
-            _ => new BonusConfiguration(50, 2, false)
-        };
-
-        // PvP always gets full bonus chance
-        if (isPvP)
-        {
-            return config with { BonusMod = 100 };
-        }
-
-        return config;
-    }
-
-    /// <summary>
-    /// Checks dispel cooldown and updates timer if needed.
-    /// </summary>
-    private static bool CheckDispelCooldown(NwGameObject target)
-    {
-        uint targetOid = target.ObjectId;
-        int lastDispelTime = GetLocalInt(targetOid, DispelTimerVar);
-        int currentTime = (int)(DateTimeOffset.Now.ToUnixTimeSeconds() % int.MaxValue);
-
-        if (lastDispelTime > 0)
-        {
-            if (lastDispelTime + DispelCooldownSeconds < currentTime)
-            {
-                SetLocalInt(targetOid, DispelTimerVar, currentTime);
-                return true;
-            }
-            return false;
-        }
-
-        SetLocalInt(targetOid, DispelTimerVar, currentTime);
-        return true;
-    }
-
-    /// <summary>
-    /// Calculates the bonus multiplier for a dispel check.
-    /// </summary>
-    private static int CalculateBonusMultiplier(BonusConfiguration config, bool isPvP, NwCreature caster, NwGameObject target)
-    {
-        const int occurrencePercent = 10;
-        const int pvpPenalty = 25;
-
-        int bonusRoll = Random(100);
-        int randomCheck = Random(100);
-
-        if (config.BonusMod < bonusRoll || occurrencePercent < randomCheck)
-        {
-            return 1;
-        }
-
-        // Calculate caster benefit based on level difference
-        int casterBenefit = 0;
-        if (target is NwCreature targetCreature)
-        {
-            int levelDiff = caster.Level - targetCreature.Level;
-            casterBenefit = Math.Clamp(levelDiff, 0, 5);
-        }
-
-        int bonusDiceRoll = bonusRoll - casterBenefit;
-
-        if (isPvP)
-        {
-            bonusDiceRoll -= pvpPenalty;
-            if (bonusDiceRoll <= 0) bonusDiceRoll = 1;
-        }
-
-        return bonusDiceRoll switch
-        {
-            >= 1 and <= 5 => 4,
-            >= 6 and <= 20 => 3,
-            >= 21 and <= 50 => 2,
-            _ => 1
-        };
     }
 
     /// <summary>
