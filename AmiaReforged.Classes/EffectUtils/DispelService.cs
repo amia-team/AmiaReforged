@@ -57,7 +57,7 @@ public class DispelService
         int effectiveCl = Math.Min(casterLevel, clCap);
 
         // Calculate feat bonuses (+2 per abjuration focus feat)
-        int featBonus = CalculateFeatBonus(caster);
+        int featBonus = GetAbjurationFocusBonus(caster);
         effectiveCl += featBonus;
 
         // PvP detection
@@ -164,21 +164,13 @@ public class DispelService
     };
 
     /// <summary>
-    /// Calculates feat bonus for abjuration focus (+2 per tier).
+    /// Gets feat bonus for abjuration focus (+2 per tier).
     /// </summary>
-    private static int CalculateFeatBonus(NwCreature caster)
-    {
-        int bonus = 0;
-
-        if (caster.KnowsFeat(NwFeat.FromFeatId(35)!)) // Spell Focus: Abjuration
-            bonus += 2;
-        if (caster.KnowsFeat(NwFeat.FromFeatId(393)!)) // Greater Spell Focus: Abjuration
-            bonus += 2;
-        if (caster.KnowsFeat(NwFeat.FromFeatId(610)!)) // Epic Spell Focus: Abjuration
-            bonus += 2;
-
-        return bonus;
-    }
+    private static int GetAbjurationFocusBonus(NwCreature caster) =>
+        caster.KnowsFeat(NwFeat.FromFeatType(Feat.EpicSpellFocusAbjuration)!) ? 6
+        : caster.KnowsFeat(NwFeat.FromFeatType(Feat.GreaterSpellFocusAbjuration)!) ? 4
+        : caster.KnowsFeat(NwFeat.FromFeatType(Feat.SpellFocusAbjuration)!) ? 2
+        : 0;
 
     /// <summary>
     /// Determines if this is a PvP dispel scenario.
