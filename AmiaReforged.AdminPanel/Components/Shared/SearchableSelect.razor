@@ -1,0 +1,228 @@
+@* 
+    SearchableSelect.razor
+    A reusable typeahead/autocomplete component for searching and selecting from 
+    API-backed data sources. Renders a text input with a dropdown of search results.
+*@
+
+@typeparam TItem
+
+<div class="searchable-select position-relative" @onfocusout="HandleFocusOut" tabindex="-1">
+    <div class="input-group input-group-sm">
+        <input type="text"
+               class="form-control form-control-sm bg-dark text-light border-secondary"
+               placeholder="@Placeholder"
+               value="@_searchText"
+               @oninput="OnSearchInput"
+               @onfocus="OnFocus"
+               @onkeydown="OnKeyDown" />
+        @if (!string.IsNullOrEmpty(Value))
+        {
+            <button class="btn btn-sm btn-outline-secondary" type="button"
+                    @onclick="ClearSelection" title="Clear">
+                <i class="bi bi-x"></i>
+            </button>
+        }
+    </div>
+
+    @if (_isOpen && _results.Count > 0)
+    {
+        <div class="searchable-select__dropdown">
+            @for (int i = 0; i < _results.Count; i++)
+            {
+                TItem item = _results[i];
+                int idx = i;
+                <div class="searchable-select__item @(idx == _highlightIndex ? "highlighted" : "")"
+                     @onclick="() => SelectItem(item)"
+                     @onmouseenter="() => _highlightIndex = idx">
+                    @(DisplayFunc?.Invoke(item) ?? item?.ToString())
+                </div>
+            }
+        </div>
+    }
+    else if (_isOpen && _hasSearched && _results.Count == 0 && !string.IsNullOrWhiteSpace(_searchText))
+    {
+        <div class="searchable-select__dropdown">
+            <div class="searchable-select__item text-muted fst-italic">No results found</div>
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>Async search function: takes a search string, returns matching items.</summary>
+    [Parameter] public Func<string, Task<IEnumerable<TItem>>>? SearchFunc { get; set; }
+
+    /// <summary>Extracts a display string from an item (shown in the dropdown and input).</summary>
+    [Parameter] public Func<TItem, string>? DisplayFunc { get; set; }
+
+    /// <summary>Extracts the bound value string from an item (written to Value).</summary>
+    [Parameter] public Func<TItem, string>? ValueFunc { get; set; }
+
+    /// <summary>The currently selected value (two-way bindable).</summary>
+    [Parameter] public string Value { get; set; } = string.Empty;
+
+    /// <summary>Callback when value changes.</summary>
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+
+    /// <summary>Input placeholder text.</summary>
+    [Parameter] public string Placeholder { get; set; } = "Search…";
+
+    /// <summary>Optional: display text for the current value when the component loads.
+    /// If set, this is shown in the input when Value is populated but no search has been done yet.</summary>
+    [Parameter] public string? DisplayText { get; set; }
+
+    private string _searchText = string.Empty;
+    private List<TItem> _results = [];
+    private bool _isOpen;
+    private bool _hasSearched;
+    private int _highlightIndex = -1;
+    private CancellationTokenSource? _debounceCts;
+    private string? _lastBoundValue;
+
+    protected override void OnParametersSet()
+    {
+        // If the bound value changed externally, update display text
+        if (Value != _lastBoundValue)
+        {
+            _lastBoundValue = Value;
+            if (!string.IsNullOrEmpty(Value))
+            {
+                _searchText = DisplayText ?? Value;
+            }
+            else
+            {
+                _searchText = string.Empty;
+            }
+        }
+    }
+
+    private async Task OnSearchInput(ChangeEventArgs e)
+    {
+        _searchText = e.Value?.ToString() ?? string.Empty;
+        _highlightIndex = -1;
+
+        // If user clears the text, also clear the value
+        if (string.IsNullOrWhiteSpace(_searchText))
+        {
+            await SetValue(string.Empty);
+            _results.Clear();
+            _hasSearched = false;
+            _isOpen = false;
+            return;
+        }
+
+        // Debounce: cancel previous search, wait 300ms
+        _debounceCts?.Cancel();
+        _debounceCts = new CancellationTokenSource();
+        CancellationToken token = _debounceCts.Token;
+
+        try
+        {
+            await Task.Delay(300, token);
+            if (token.IsCancellationRequested) return;
+            await PerformSearch(_searchText);
+        }
+        catch (TaskCanceledException)
+        {
+            // Debounce cancelled — expected
+        }
+    }
+
+    private async Task PerformSearch(string query)
+    {
+        if (SearchFunc == null) return;
+
+        try
+        {
+            IEnumerable<TItem> items = await SearchFunc(query);
+            _results = items.ToList();
+        }
+        catch
+        {
+            _results = [];
+        }
+
+        _hasSearched = true;
+        _isOpen = true;
+        StateHasChanged();
+    }
+
+    private void OnFocus()
+    {
+        if (_results.Count > 0)
+        {
+            _isOpen = true;
+        }
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (!_isOpen || _results.Count == 0)
+        {
+            if (e.Key == "ArrowDown" && !string.IsNullOrWhiteSpace(_searchText))
+            {
+                await PerformSearch(_searchText);
+            }
+            return;
+        }
+
+        switch (e.Key)
+        {
+            case "ArrowDown":
+                _highlightIndex = Math.Min(_highlightIndex + 1, _results.Count - 1);
+                break;
+            case "ArrowUp":
+                _highlightIndex = Math.Max(_highlightIndex - 1, 0);
+                break;
+            case "Enter":
+                if (_highlightIndex >= 0 && _highlightIndex < _results.Count)
+                {
+                    await SelectItemInternal(_results[_highlightIndex]);
+                }
+                break;
+            case "Escape":
+                _isOpen = false;
+                break;
+        }
+    }
+
+    private async Task SelectItem(TItem item)
+    {
+        await SelectItemInternal(item);
+    }
+
+    private async Task SelectItemInternal(TItem item)
+    {
+        if (ValueFunc == null || DisplayFunc == null) return;
+
+        string value = ValueFunc(item);
+        _searchText = DisplayFunc(item);
+        _isOpen = false;
+        _highlightIndex = -1;
+        await SetValue(value);
+    }
+
+    private async Task ClearSelection()
+    {
+        _searchText = string.Empty;
+        _results.Clear();
+        _isOpen = false;
+        _hasSearched = false;
+        _highlightIndex = -1;
+        await SetValue(string.Empty);
+    }
+
+    private async Task SetValue(string newValue)
+    {
+        Value = newValue;
+        _lastBoundValue = newValue;
+        await ValueChanged.InvokeAsync(newValue);
+    }
+
+    private async Task HandleFocusOut()
+    {
+        // Small delay to allow click events on dropdown items to fire
+        await Task.Delay(200);
+        _isOpen = false;
+        StateHasChanged();
+    }
+}

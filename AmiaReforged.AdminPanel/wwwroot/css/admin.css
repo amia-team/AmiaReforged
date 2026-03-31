@@ -1778,3 +1778,65 @@ a:hover {
     color: var(--text-secondary);
     font-style: italic;
 }
+
+/* ========== SearchableSelect Typeahead ========== */
+
+.searchable-select {
+    flex-grow: 1;
+}
+
+.searchable-select:focus-within {
+    outline: none;
+}
+
+.searchable-select__dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1050;
+    max-height: 220px;
+    overflow-y: auto;
+    background: var(--bg-input, #33302a);
+    border: 1px solid var(--border-subtle, #3e3a30);
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.searchable-select__item {
+    padding: 5px 10px;
+    font-size: 0.82rem;
+    color: var(--text-primary, #d0ccc2);
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.searchable-select__item:hover,
+.searchable-select__item.highlighted {
+    background: var(--accent, #c9a84c);
+    color: var(--bg-dark, #1c1b19);
+}
+
+.searchable-select__item.text-muted {
+    cursor: default;
+}
+
+.searchable-select__item.text-muted:hover {
+    background: transparent;
+    color: var(--text-secondary);
+}
+
+/* ========== Condition & Action Editors ========== */
+
+.condition-editor,
+.action-editor {
+    min-height: 30px;
+}
+
+.condition-editor .searchable-select,
+.action-editor .searchable-select {
+    min-width: 0;
+}

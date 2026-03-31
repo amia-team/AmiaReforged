@@ -21,6 +21,7 @@
 @inject InteractionApiService InteractionApi
 @inject CoinhouseApiService CoinhouseApi
 @inject DialogueApiService DialogueApi
+@inject OrganizationApiService OrganizationApi
 @inject DeploymentService DeployService
 @inject ILogger<WorldEngineEditor> Logger
 @inject IJSRuntime JS
@@ -2278,6 +2279,7 @@
         InteractionApi.SelectEndpoint(eid);
         CoinhouseApi.SelectEndpoint(eid);
         DialogueApi.SelectEndpoint(eid);
+        OrganizationApi.SelectEndpoint(eid);
         _dialogueEditor?.SelectEndpoint(eid);
 
         // Reload the current entity list

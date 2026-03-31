@@ -1,0 +1,327 @@
+@*
+    ActionEditor.razor
+    Renders a type-aware parameter editor for a DialogueActionDto.
+    Each action type gets specific controls (searchable dropdowns, selects, number inputs)
+    instead of a raw key=val text field.
+*@
+
+@using AmiaReforged.AdminPanel.Models
+@using AmiaReforged.AdminPanel.Services
+@using AmiaReforged.AdminPanel.Components.Shared
+@inject QuestApiService QuestApi
+@inject LoreApiService LoreApi
+@inject ItemApiService ItemApi
+@inject OrganizationApiService OrgApi
+
+<div class="d-flex gap-1 align-items-start action-editor">
+    @* Action type dropdown *@
+    <select class="form-select form-select-sm bg-dark text-light border-secondary"
+            style="width:150px; flex-shrink:0;" value="@Action.ActionType"
+            @onchange="OnTypeChanged">
+        @foreach (string at in ActionTypes)
+        {
+            <option value="@at">@at</option>
+        }
+    </select>
+
+    @* Type-specific parameter controls *@
+    <div class="d-flex gap-1 flex-grow-1 flex-wrap align-items-start">
+        @switch (Action.ActionType)
+        {
+            case "StartQuest":
+            case "CompleteQuest":
+                <div class="flex-grow-1" style="min-width:140px">
+                    <SearchableSelect TItem="QuestDefinitionDto"
+                                      SearchFunc="SearchQuests"
+                                      DisplayFunc="@(q => $"{q.Title} ({q.QuestId})")"
+                                      ValueFunc="@(q => q.QuestId)"
+                                      Value="@(GetParam("questId"))"
+                                      ValueChanged="@(v => SetParam("questId", v))"
+                                      DisplayText="@(GetParam("questId"))"
+                                      Placeholder="Search quests…" />
+                </div>
+                break;
+
+            case "GiveItem":
+            case "TakeItem":
+                <div class="flex-grow-1" style="min-width:140px">
+                    <SearchableSelect TItem="ItemBlueprintDto"
+                                      SearchFunc="SearchItems"
+                                      DisplayFunc="@(i => $"{i.Name} ({i.ItemTag})")"
+                                      ValueFunc="@(i => i.ItemTag)"
+                                      Value="@(GetParam("itemTag"))"
+                                      ValueChanged="@(v => SetParam("itemTag", v))"
+                                      DisplayText="@(GetParam("itemTag"))"
+                                      Placeholder="Search items…" />
+                </div>
+                <input type="number"
+                       class="form-control form-control-sm bg-dark text-light border-secondary"
+                       style="width:75px"
+                       placeholder="Qty"
+                       min="1"
+                       value="@(GetParam("quantity", "1"))"
+                       @onchange="@((ChangeEventArgs e) => SetParam("quantity", e.Value?.ToString() ?? "1"))" />
+                break;
+
+            case "ChangeReputation":
+                <div class="flex-grow-1" style="min-width:140px">
+                    <SearchableSelect TItem="OrganizationDto"
+                                      SearchFunc="SearchOrganizations"
+                                      DisplayFunc="@(o => o.Name)"
+                                      ValueFunc="@(o => o.Id.ToString())"
+                                      Value="@(GetParam("factionId"))"
+                                      ValueChanged="@(v => SetParam("factionId", v))"
+                                      DisplayText="@(GetParam("factionId"))"
+                                      Placeholder="Search factions…" />
+                </div>
+                <input type="number"
+                       class="form-control form-control-sm bg-dark text-light border-secondary"
+                       style="width:80px"
+                       placeholder="Amount"
+                       value="@(GetParam("amount", "0"))"
+                       @onchange="@((ChangeEventArgs e) => SetParam("amount", e.Value?.ToString() ?? "0"))" />
+                break;
+
+            case "GrantKnowledge":
+                <div class="flex-grow-1" style="min-width:140px">
+                    <SearchableSelect TItem="LoreDefinitionDto"
+                                      SearchFunc="SearchLore"
+                                      DisplayFunc="@(l => $"{l.Title} ({l.LoreId})")"
+                                      ValueFunc="@(l => l.LoreId)"
+                                      Value="@(GetParam("loreId"))"
+                                      ValueChanged="@(v => SetParam("loreId", v))"
+                                      DisplayText="@(GetParam("loreId"))"
+                                      Placeholder="Search lore…" />
+                </div>
+                break;
+
+            case "SetLocalVariable":
+                <input class="form-control form-control-sm bg-dark text-light border-secondary flex-grow-1"
+                       style="min-width:100px"
+                       placeholder="Variable name"
+                       value="@(GetParam("variableName"))"
+                       @onchange="@((ChangeEventArgs e) => SetParam("variableName", e.Value?.ToString() ?? ""))" />
+                <input class="form-control form-control-sm bg-dark text-light border-secondary"
+                       style="width:80px"
+                       placeholder="Value"
+                       value="@(GetParam("value"))"
+                       @onchange="@((ChangeEventArgs e) => SetParam("value", e.Value?.ToString() ?? ""))" />
+                <select class="form-select form-select-sm bg-dark text-light border-secondary"
+                        style="width:90px"
+                        value="@(GetParam("target", "npc"))"
+                        @onchange="@((ChangeEventArgs e) => SetParam("target", e.Value?.ToString() ?? "npc"))">
+                    <option value="npc">NPC</option>
+                    <option value="player">Player</option>
+                </select>
+                break;
+
+            case "GiveGold":
+            case "TakeGold":
+                <input type="number"
+                       class="form-control form-control-sm bg-dark text-light border-secondary"
+                       style="width:100px"
+                       placeholder="Amount"
+                       min="0"
+                       value="@(GetParam("amount", "0"))"
+                       @onchange="@((ChangeEventArgs e) => SetParam("amount", e.Value?.ToString() ?? "0"))" />
+                break;
+
+            case "OpenShop":
+                <input class="form-control form-control-sm bg-dark text-light border-secondary flex-grow-1"
+                       style="min-width:100px"
+                       placeholder="Store ResRef"
+                       value="@(GetParam("storeResRef"))"
+                       @onchange="@((ChangeEventArgs e) => SetParam("storeResRef", e.Value?.ToString() ?? ""))" />
+                <input class="form-control form-control-sm bg-dark text-light border-secondary"
+                       style="width:100px"
+                       placeholder="Store Tag"
+                       value="@(GetParam("storeTag"))"
+                       @onchange="@((ChangeEventArgs e) => SetParam("storeTag", e.Value?.ToString() ?? ""))" />
+                <input type="number"
+                       class="form-control form-control-sm bg-dark text-light border-secondary"
+                       style="width:75px"
+                       placeholder="Mark↑"
+                       title="Bonus mark-up percentage"
+                       value="@(GetParam("bonusMarkUp", "0"))"
+                       @onchange="@((ChangeEventArgs e) => SetParam("bonusMarkUp", e.Value?.ToString() ?? "0"))" />
+                <input type="number"
+                       class="form-control form-control-sm bg-dark text-light border-secondary"
+                       style="width:75px"
+                       placeholder="Mark↓"
+                       title="Bonus mark-down percentage"
+                       value="@(GetParam("bonusMarkDown", "0"))"
+                       @onchange="@((ChangeEventArgs e) => SetParam("bonusMarkDown", e.Value?.ToString() ?? "0"))" />
+                break;
+
+            case "Custom":
+                <input class="form-control form-control-sm bg-dark text-light border-secondary"
+                       style="width:130px"
+                       placeholder="Command type"
+                       value="@(GetParam("commandType"))"
+                       @onchange="@((ChangeEventArgs e) => SetParam("commandType", e.Value?.ToString() ?? ""))" />
+                <input class="form-control form-control-sm bg-dark text-light border-secondary flex-grow-1"
+                       placeholder="extra key=val, …"
+                       value="@(FormatExtraParams("commandType"))"
+                       @onchange="@((ChangeEventArgs e) => ParseExtraParams(e.Value?.ToString(), "commandType"))" />
+                break;
+
+            default:
+                <input class="form-control form-control-sm bg-dark text-light border-secondary flex-grow-1"
+                       placeholder="params (key=val, …)"
+                       value="@FormatAllParams()"
+                       @onchange="@((ChangeEventArgs e) => ParseAllParams(e.Value?.ToString()))" />
+                break;
+        }
+    </div>
+
+    @* Remove button *@
+    <button class="btn btn-sm btn-outline-danger py-0 px-1" style="flex-shrink:0"
+            @onclick="OnRemove">
+        <i class="bi bi-x"></i>
+    </button>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public DialogueActionDto Action { get; set; } = default!;
+    [Parameter] public EventCallback OnRemove { get; set; }
+
+    private static readonly string[] ActionTypes =
+    [
+        "StartQuest", "CompleteQuest", "GiveItem", "TakeItem",
+        "ChangeReputation", "GrantKnowledge", "SetLocalVariable",
+        "GiveGold", "TakeGold", "OpenShop", "Custom"
+    ];
+
+    // ═══════════════════ Parameter Helpers ═══════════════════
+
+    private string GetParam(string key, string defaultValue = "")
+    {
+        return Action.Parameters.TryGetValue(key, out string? val) ? val : defaultValue;
+    }
+
+    private void SetParam(string key, string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            Action.Parameters.Remove(key);
+        else
+            Action.Parameters[key] = value;
+    }
+
+    private void OnTypeChanged(ChangeEventArgs e)
+    {
+        string newType = e.Value?.ToString() ?? "Custom";
+        if (newType == Action.ActionType) return;
+
+        Action.ActionType = newType;
+        Action.Parameters.Clear();
+
+        // Set sensible defaults for the new type
+        switch (newType)
+        {
+            case "GiveItem":
+            case "TakeItem":
+                Action.Parameters["quantity"] = "1";
+                break;
+            case "ChangeReputation":
+                Action.Parameters["amount"] = "10";
+                break;
+            case "GiveGold":
+            case "TakeGold":
+                Action.Parameters["amount"] = "100";
+                break;
+            case "SetLocalVariable":
+                Action.Parameters["target"] = "npc";
+                break;
+            case "OpenShop":
+                Action.Parameters["bonusMarkUp"] = "0";
+                Action.Parameters["bonusMarkDown"] = "0";
+                break;
+        }
+    }
+
+    // ═══════════════════ Search Functions ═══════════════════
+
+    private async Task<IEnumerable<QuestDefinitionDto>> SearchQuests(string query)
+    {
+        PagedResult<QuestDefinitionDto> result = await QuestApi.GetAllAsync(query, pageSize: 20);
+        return result.Items ?? [];
+    }
+
+    private async Task<IEnumerable<ItemBlueprintDto>> SearchItems(string query)
+    {
+        PagedResult<ItemBlueprintDto> result = await ItemApi.GetAllAsync(query, pageSize: 20);
+        return result.Items ?? [];
+    }
+
+    private async Task<IEnumerable<LoreDefinitionDto>> SearchLore(string query)
+    {
+        PagedResult<LoreDefinitionDto> result = await LoreApi.GetAllAsync(query, pageSize: 20);
+        return result.Items ?? [];
+    }
+
+    private async Task<IEnumerable<OrganizationDto>> SearchOrganizations(string query)
+    {
+        PagedResult<OrganizationDto> result = await OrgApi.GetAllAsync(query, pageSize: 20);
+        return result.Items ?? [];
+    }
+
+    // ═══════════════════ Param Formatting (for Custom/fallback) ═══════════════════
+
+    private string FormatExtraParams(params string[] excludeKeys)
+    {
+        HashSet<string> exclude = new(excludeKeys);
+        IEnumerable<KeyValuePair<string, string>> extra = Action.Parameters.Where(kv => !exclude.Contains(kv.Key));
+        return string.Join(", ", extra.Select(kv => $"{kv.Key}={kv.Value}"));
+    }
+
+    private void ParseExtraParams(string? input, params string[] preserveKeys)
+    {
+        Dictionary<string, string> preserved = new();
+        foreach (string key in preserveKeys)
+        {
+            if (Action.Parameters.TryGetValue(key, out string? val))
+                preserved[key] = val;
+        }
+
+        Action.Parameters.Clear();
+        foreach (KeyValuePair<string, string> kv in preserved)
+        {
+            Action.Parameters[kv.Key] = kv.Value;
+        }
+
+        if (string.IsNullOrWhiteSpace(input)) return;
+        foreach (string pair in input.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            int eq = pair.IndexOf('=');
+            if (eq > 0)
+            {
+                string key = pair[..eq].Trim();
+                string val = pair[(eq + 1)..].Trim();
+                if (!preserved.ContainsKey(key))
+                    Action.Parameters[key] = val;
+            }
+        }
+    }
+
+    private string FormatAllParams()
+    {
+        if (Action.Parameters.Count == 0) return "";
+        return string.Join(", ", Action.Parameters.Select(kv => $"{kv.Key}={kv.Value}"));
+    }
+
+    private void ParseAllParams(string? input)
+    {
+        Action.Parameters.Clear();
+        if (string.IsNullOrWhiteSpace(input)) return;
+        foreach (string pair in input.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            int eq = pair.IndexOf('=');
+            if (eq > 0)
+            {
+                string key = pair[..eq].Trim();
+                string val = pair[(eq + 1)..].Trim();
+                Action.Parameters[key] = val;
+            }
+        }
+    }
+}

@@ -6,6 +6,7 @@
 
 @using AmiaReforged.AdminPanel.Models
 @using AmiaReforged.AdminPanel.Services
+@using AmiaReforged.AdminPanel.Components.Shared
 @inject DialogueApiService Api
 
 <div class="dialogue-editor d-flex flex-column h-100">
@@ -195,22 +196,9 @@
                                     </div>
                                     @foreach (DialogueActionDto action in _selectedNode.Actions)
                                     {
-                                        <div class="d-flex gap-1 mb-1 align-items-start">
-                                            <select class="form-select form-select-sm bg-dark text-light border-secondary"
-                                                    style="width:130px" @bind="action.ActionType">
-                                                @foreach (string at in ActionTypes)
-                                                {
-                                                    <option value="@at">@at</option>
-                                                }
-                                            </select>
-                                            <input class="form-control form-control-sm bg-dark text-light border-secondary flex-grow-1"
-                                                   placeholder="@GetActionPlaceholder(action.ActionType)"
-                                                   value="@FormatParams(action.Parameters)"
-                                                   @onchange="e => ParseParams(action.Parameters, e.Value?.ToString())" />
-                                            <button class="btn btn-sm btn-outline-danger py-0 px-1"
-                                                    @onclick="() => _selectedNode.Actions.Remove(action)">
-                                                <i class="bi bi-x"></i>
-                                            </button>
+                                        <div class="mb-1">
+                                            <ActionEditor Action="action"
+                                                          OnRemove="() => _selectedNode.Actions.Remove(action)" />
                                         </div>
                                     }
                                 </div>
@@ -262,22 +250,9 @@
                                                     </div>
                                                     @foreach (DialogueConditionDto cond in choice.Conditions)
                                                     {
-                                                        <div class="d-flex gap-1 mt-1 align-items-start">
-                                                            <select class="form-select form-select-sm bg-dark text-light border-secondary"
-                                                                    style="width:120px" @bind="cond.Type">
-                                                                @foreach (string ct in ConditionTypes)
-                                                                {
-                                                                    <option value="@ct">@ct</option>
-                                                                }
-                                                            </select>
-                                                            <input class="form-control form-control-sm bg-dark text-light border-secondary flex-grow-1"
-                                                                   placeholder="params (key=val, …)"
-                                                                   value="@FormatParams(cond.Parameters)"
-                                                                   @onchange="e => ParseParams(cond.Parameters, e.Value?.ToString())" />
-                                                            <button class="btn btn-sm btn-outline-danger py-0 px-1"
-                                                                    @onclick="() => choice.Conditions.Remove(cond)">
-                                                                <i class="bi bi-x"></i>
-                                                            </button>
+                                                        <div class="mt-1">
+                                                            <ConditionEditor Condition="cond"
+                                                                             OnRemove="() => choice.Conditions.Remove(cond)" />
                                                         </div>
                                                     }
                                                 </div>
@@ -328,18 +303,7 @@
     private bool _isSaving;
     private string? _errorMessage;
 
-    private static readonly string[] ActionTypes =
-    [
-        "StartQuest", "CompleteQuest", "GiveItem", "TakeItem",
-        "ChangeReputation", "GrantKnowledge", "SetLocalVariable",
-        "GiveGold", "TakeGold", "OpenShop", "Custom"
-    ];
 
-    private static readonly string[] ConditionTypes =
-    [
-        "HasItem", "QuestState", "ReputationAbove", "ReputationBelow",
-        "HasKnowledge", "LocalVariable", "Custom"
-    ];
 
     // ═══════════════════════ Public API ═══════════════════════
 
@@ -691,44 +655,7 @@
         _ => "bi-circle"
     };
 
-    private static string GetActionPlaceholder(string actionType) => actionType switch
-    {
-        "StartQuest" => "questId=my_quest_id",
-        "CompleteQuest" => "questId=my_quest_id",
-        "GiveItem" => "itemTag=my_item, quantity=1",
-        "TakeItem" => "itemTag=my_item, quantity=1",
-        "ChangeReputation" => "factionId=my_faction, amount=10",
-        "GrantKnowledge" => "loreId=my_lore_id",
-        "SetLocalVariable" => "variableName=my_var, value=1, target=npc",
-        "GiveGold" => "amount=100",
-        "TakeGold" => "amount=100",
-        "OpenShop" => "storeResRef=my_store, storeTag=my_store",
-        "Custom" => "commandType=my_command, key=val, …",
-        _ => "key=val, …"
-    };
 
-    private static string FormatParams(Dictionary<string, string> parameters)
-    {
-        if (parameters.Count == 0) return "";
-        return string.Join(", ", parameters.Select(kv => $"{kv.Key}={kv.Value}"));
-    }
-
-    private static void ParseParams(Dictionary<string, string> target, string? input)
-    {
-        target.Clear();
-        if (string.IsNullOrWhiteSpace(input)) return;
-
-        foreach (string pair in input.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-        {
-            int eq = pair.IndexOf('=');
-            if (eq > 0)
-            {
-                string key = pair[..eq].Trim();
-                string val = pair[(eq + 1)..].Trim();
-                target[key] = val;
-            }
-        }
-    }
 }
 
 <style>
