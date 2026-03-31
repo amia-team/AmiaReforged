@@ -1,4 +1,6 @@
+using AmiaReforged.Classes.Spells;
 using Anvil.API;
+using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core;
 using static NWN.Core.NWScript;
@@ -43,13 +45,13 @@ public class DispelService
         uint targetOid = target.ObjectId;
 
         // Signal spell cast event
-        if (IsHostileTarget(target, caster))
+        if (target is NwCreature targetCreature && caster.IsReactionTypeHostile(targetCreature))
         {
-            SignalEvent(targetOid, EventSpellCastAt(casterOid, (int)dispelType));
+            SpellUtils.SignalSpell(caster, targetCreature, NwSpell.FromSpellId((int)dispelType)!, harmful: true);;
         }
         else
         {
-            SignalEvent(targetOid, EventSpellCastAt(casterOid, (int)dispelType, FALSE));
+            SpellUtils.SignalSpell(caster, target, NwSpell.FromSpellId((int)dispelType)!, harmful: false);
         }
 
         // Apply CL cap based on dispel type
@@ -149,17 +151,6 @@ public class DispelService
         : caster.KnowsFeat(NwFeat.FromFeatType(Feat.SpellFocusAbjuration)!) ? 2
         : 0;
 
-    /// <summary>
-    /// Checks if the target is hostile to the caster.
-    /// </summary>
-    private static bool IsHostileTarget(NwGameObject target, NwCreature caster)
-    {
-        if (target is NwCreature targetCreature)
-        {
-            return caster.IsReactionTypeHostile(targetCreature);
-        }
-        return false;
-    }
 
     /// <summary>
     /// Gets the display name for a spell.
