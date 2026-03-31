@@ -158,6 +158,7 @@ public class DispelService
         DispelType.LesserDispel => 5,
         DispelType.DispelMagic => 10,
         DispelType.GreaterDispelling => 15,
+        DispelType.DevourMagic => 20,
         DispelType.MordenkainensDisjunction => 40,
         _ => 10
     };
