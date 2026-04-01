@@ -1,5 +1,4 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
-using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Aggregates;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
@@ -8,7 +7,6 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Objectives;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Repositories;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Domain.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Domain.ValueObjects;
 using Anvil.API;
 using Anvil.API.Events;
@@ -39,8 +37,7 @@ public sealed class QuestObjectiveResolutionService
         RuntimeCharacterService characters,
         QuestSessionManager sessionManager,
         CodexEventProcessor eventProcessor,
-        IPlayerCodexRepository codexRepository,
-        IEventBus eventBus)
+        IPlayerCodexRepository codexRepository)
     {
         _characters = characters;
         _sessionManager = sessionManager;
@@ -54,14 +51,6 @@ public sealed class QuestObjectiveResolutionService
         // to guarantee the character key is registered before session initialization.
         characters.CharacterReady += OnCharacterReady;
         characters.CharacterLeaving += OnCharacterLeaving;
-
-        // Subscribe to dialogue domain events so "speak to NPC" objectives resolve
-        // when the conversation enters the target node.
-        eventBus.Subscribe<DialogueNodeEnteredEvent>((evt, _) =>
-        {
-            ProcessDialogueNodeEntered(CharacterId.From(evt.CharacterId), evt.NodeId);
-            return Task.CompletedTask;
-        });
     }
 
     private void OnAcquireItem(ModuleEvents.OnAcquireItem obj)
