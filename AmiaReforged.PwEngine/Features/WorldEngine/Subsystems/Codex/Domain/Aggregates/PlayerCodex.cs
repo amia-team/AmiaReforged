@@ -149,6 +149,20 @@ public class PlayerCodex
     public bool HasQuest(QuestId questId) => _quests.ContainsKey(questId);
 
     /// <summary>
+    /// Advances an existing quest to the given stage.
+    /// If the quest is not yet in the codex, it must be added first via
+    /// <see cref="RecordQuestStarted"/> or <see cref="RecordQuestDiscovered"/>.
+    /// </summary>
+    public void AdvanceQuestStage(QuestId questId, int stageId, DateTime occurredAt)
+    {
+        if (!_quests.TryGetValue(questId, out CodexQuestEntry? quest))
+            throw new InvalidOperationException($"Quest {questId.Value} not found in codex");
+
+        quest.AdvanceToStage(stageId);
+        LastUpdated = occurredAt;
+    }
+
+    /// <summary>
     /// Marks a quest as expired due to its time limit elapsing.
     /// Behavior depends on the quest's <see cref="ExpiryBehavior"/>:
     /// Fail → transitions to Failed; Remove → removes from codex; Cooldown → transitions to Expired.

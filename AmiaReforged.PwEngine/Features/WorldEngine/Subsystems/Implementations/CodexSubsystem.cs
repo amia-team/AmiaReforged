@@ -4,6 +4,8 @@ using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Aggregates;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Repositories;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
@@ -299,6 +301,87 @@ public sealed class CodexSubsystem : ICodexSubsystem
             Log.Error(ex, "Failed to delete knowledge entry {EntryId}", entryId);
             return CommandResult.Fail($"Database error: {ex.Message}");
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Quest Stage Management
+    // ═══════════════════════════════════════════════════════════════════
+
+    public async Task<CommandResult> SetQuestStageAsync(
+        CharacterId characterId,
+        string questId,
+        int stageId,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            QuestId qid = (QuestId)questId;
+            DateTime now = DateTime.UtcNow;
+
+            // Load the player's codex (or create one if it doesn't exist)
+            PlayerCodex? codex = await _codexRepository.LoadAsync(characterId);
+            if (codex == null)
+            {
+                codex = new PlayerCodex(characterId, now);
+            }
+
+            if (codex.HasQuest(qid))
+            {
+                // Quest already in codex — advance to the requested stage
+                codex.AdvanceQuestStage(qid, stageId, now);
+            }
+            else
+            {
+                // Quest not in codex — look up the definition and add it
+                using PwEngineContext ctx = _contextFactory.CreateDbContext();
+                PersistedQuestDefinition? definition = await ctx.CodexQuestDefinitions
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(d => d.QuestId == questId, ct);
+
+                if (definition == null)
+                    return CommandResult.Fail($"Quest definition '{questId}' not found");
+
+                // Build a new codex entry from the definition
+                CodexQuestEntry entry = new()
+                {
+                    QuestId = qid,
+                    Title = definition.Title,
+                    Description = definition.Description,
+                    DateStarted = now,
+                    QuestGiver = definition.QuestGiver,
+                    Location = definition.Location,
+                    Keywords = ParseKeywords(definition.Keywords)
+                };
+
+                // Add to codex in InProgress state, then advance to the requested stage
+                codex.RecordQuestStarted(entry, now);
+                codex.AdvanceQuestStage(qid, stageId, now);
+            }
+
+            await _codexRepository.SaveAsync(codex);
+            Log.Info("SetQuestStage: quest '{QuestId}' → stage {StageId} for character {CharacterId}",
+                questId, stageId, characterId);
+            return CommandResult.OkWith("questId", questId);
+        }
+        catch (InvalidOperationException ex)
+        {
+            Log.Warn(ex, "SetQuestStage domain error for quest '{QuestId}'", questId);
+            return CommandResult.Fail(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "SetQuestStage failed for quest '{QuestId}' character {CharacterId}", questId, characterId);
+            return CommandResult.Fail($"Database error: {ex.Message}");
+        }
+    }
+
+    private static List<Keyword> ParseKeywords(string? keywords)
+    {
+        if (string.IsNullOrWhiteSpace(keywords)) return [];
+        return keywords
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(k => new Keyword(k))
+            .ToList();
     }
 
     // ═══════════════════════════════════════════════════════════════════

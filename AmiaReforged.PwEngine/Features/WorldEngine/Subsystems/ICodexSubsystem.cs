@@ -96,6 +96,19 @@ public interface ICodexSubsystem
     Task<CommandResult> DeleteKnowledgeEntryAsync(
         string entryId,
         CancellationToken ct = default);
+
+    // === Quest Stage Management ===
+
+    /// <summary>
+    /// Advances a quest to the given stage for a character.
+    /// If the quest is not yet in the character's codex, it is automatically
+    /// added from the quest definition and set to that stage.
+    /// </summary>
+    Task<CommandResult> SetQuestStageAsync(
+        CharacterId characterId,
+        string questId,
+        int stageId,
+        CancellationToken ct = default);
 }
 
 /// <summary>

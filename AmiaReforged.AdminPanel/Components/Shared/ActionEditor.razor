@@ -42,6 +42,45 @@
                 </div>
                 break;
 
+            case "SetQuestStage":
+                <div class="flex-grow-1" style="min-width:140px">
+                    <SearchableSelect TItem="QuestDefinitionDto"
+                                      SearchFunc="SearchQuests"
+                                      DisplayFunc="@(q => $"{q.Title} ({q.QuestId})")"
+                                      ValueFunc="@(q => q.QuestId)"
+                                      Value="@(GetParam("questId"))"
+                                      ValueChanged="OnQuestSelectedForStage"
+                                      DisplayText="@(GetParam("questId"))"
+                                      Placeholder="Search quests…" />
+                </div>
+                @if (_stagesForSelectedQuest.Count > 0)
+                {
+                    <select class="form-select form-select-sm bg-dark text-light border-secondary"
+                            style="width:200px"
+                            value="@(GetParam("stageId"))"
+                            @onchange="@((ChangeEventArgs e) => SetParam("stageId", e.Value?.ToString() ?? ""))">
+                        <option value="">Select stage…</option>
+                        @foreach (QuestStageDto stage in _stagesForSelectedQuest)
+                        {
+                            string label = stage.IsCompletionStage
+                                ? $"Stage {stage.StageId} — {Truncate(stage.JournalText, 40)} ★"
+                                : $"Stage {stage.StageId} — {Truncate(stage.JournalText, 40)}";
+                            <option value="@stage.StageId">@label</option>
+                        }
+                    </select>
+                }
+                else
+                {
+                    <input type="number"
+                           class="form-control form-control-sm bg-dark text-light border-secondary"
+                           style="width:100px"
+                           placeholder="Stage ID"
+                           min="1"
+                           value="@(GetParam("stageId"))"
+                           @onchange="@((ChangeEventArgs e) => SetParam("stageId", e.Value?.ToString() ?? ""))" />
+                }
+                break;
+
             case "GiveItem":
             case "TakeItem":
                 <div class="flex-grow-1" style="min-width:140px">
@@ -187,7 +226,7 @@
 
     private static readonly string[] ActionTypes =
     [
-        "StartQuest", "CompleteQuest", "GiveItem", "TakeItem",
+        "StartQuest", "CompleteQuest", "SetQuestStage", "GiveItem", "TakeItem",
         "ChangeReputation", "GrantKnowledge", "SetLocalVariable",
         "GiveGold", "TakeGold", "OpenShop", "Custom"
     ];
@@ -225,6 +264,9 @@
             case "ChangeReputation":
                 Action.Parameters["amount"] = "10";
                 break;
+            case "SetQuestStage":
+                _stagesForSelectedQuest.Clear();
+                break;
             case "GiveGold":
             case "TakeGold":
                 Action.Parameters["amount"] = "100";
@@ -237,6 +279,45 @@
                 Action.Parameters["bonusMarkDown"] = "0";
                 break;
         }
+    }
+
+    // ═══════════════════ Quest Stage Support ═══════════════════
+
+    private List<QuestStageDto> _stagesForSelectedQuest = [];
+
+    /// <summary>
+    /// Called when a quest is selected in SetQuestStage mode.
+    /// Stores the questId and loads the quest's stages for the stage picker.
+    /// </summary>
+    private async void OnQuestSelectedForStage(string questId)
+    {
+        SetParam("questId", questId);
+        SetParam("stageId", ""); // reset stage selection
+        _stagesForSelectedQuest.Clear();
+
+        if (!string.IsNullOrEmpty(questId))
+        {
+            try
+            {
+                QuestDefinitionDto? quest = await QuestApi.GetByIdAsync(questId);
+                if (quest?.Stages != null)
+                {
+                    _stagesForSelectedQuest = quest.Stages.OrderBy(s => s.StageId).ToList();
+                }
+            }
+            catch
+            {
+                // If the lookup fails, the user can still type a stage ID manually
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    private static string Truncate(string? text, int maxLength)
+    {
+        if (string.IsNullOrEmpty(text)) return "(no text)";
+        return text.Length <= maxLength ? text : text[..maxLength] + "…";
     }
 
     // ═══════════════════ Search Functions ═══════════════════

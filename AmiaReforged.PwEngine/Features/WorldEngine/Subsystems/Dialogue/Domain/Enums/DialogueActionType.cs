@@ -62,5 +62,12 @@ public enum DialogueActionType
     /// <summary>
     /// Custom action dispatched to a named command handler. Parameters: commandType, plus additional key-value pairs.
     /// </summary>
-    Custom
+    Custom,
+
+    /// <summary>
+    /// Advances a quest to a specific stage. If the quest is not yet in the player's codex,
+    /// it is automatically added (from the quest definition) and set to the given stage.
+    /// Parameters: questId, stageId.
+    /// </summary>
+    SetQuestStage
 }

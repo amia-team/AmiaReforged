@@ -56,6 +56,7 @@ public sealed class ExecuteDialogueActionHandler : ICommandHandler<ExecuteDialog
                 DialogueActionType.ChangeReputation => HandleChangeReputation(action),
                 DialogueActionType.OpenShop => HandleOpenShop(action, creature, command.Npc),
                 DialogueActionType.Custom => HandleCustom(action),
+                DialogueActionType.SetQuestStage => await HandleSetQuestStage(action, command.CharacterId),
                 _ => CommandResult.Fail($"Unknown dialogue action type: {action.ActionType}")
             };
         }
@@ -261,5 +262,28 @@ public sealed class ExecuteDialogueActionHandler : ICommandHandler<ExecuteDialog
         Log.Info("Dialogue action: Custom command '{CommandType}'", commandType);
         // TODO: Route to named command handler via CommandDispatcher
         return CommandResult.OkWith("commandType", commandType);
+    }
+
+    private async Task<CommandResult> HandleSetQuestStage(DialogueAction action, Guid characterId)
+    {
+        string questId = action.GetRequiredParam("questId");
+        string stageIdStr = action.GetRequiredParam("stageId");
+
+        if (!int.TryParse(stageIdStr, out int stageId) || stageId <= 0)
+            return CommandResult.Fail($"Invalid stageId '{stageIdStr}' — must be a positive integer");
+
+        if (WorldEngine?.Value?.Codex == null)
+            return CommandResult.Fail("Codex subsystem not available");
+
+        CommandResult result = await WorldEngine.Value.Codex.SetQuestStageAsync(
+            SharedKernel.CharacterId.From(characterId), questId, stageId);
+
+        if (result.Success)
+        {
+            Log.Info("Dialogue action: Set quest '{QuestId}' to stage {StageId} for character {CharacterId}",
+                questId, stageId, characterId);
+        }
+
+        return result;
     }
 }
