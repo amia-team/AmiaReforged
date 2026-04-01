@@ -169,6 +169,11 @@ public sealed class EfDialogueTreeRepository : IDialogueTreeRepository
             Text = n.Text,
             SortOrder = n.SortOrder,
             ParentNodeId = n.ParentNodeId?.Value,
+            Conditions = n.Conditions.Select(cond => new ConditionJsonModel
+            {
+                Type = cond.Type,
+                Parameters = cond.Parameters
+            }).ToList(),
             Choices = n.Choices.Select(c => new ChoiceJsonModel
             {
                 TargetNodeId = c.TargetNodeId.Value,
@@ -209,6 +214,11 @@ public sealed class EfDialogueTreeRepository : IDialogueTreeRepository
                 Text = m.Text ?? string.Empty,
                 SortOrder = m.SortOrder,
                 ParentNodeId = m.ParentNodeId.HasValue ? new DialogueNodeId(m.ParentNodeId.Value) : null,
+                Conditions = m.Conditions.Select(cond => new DialogueCondition
+                {
+                    Type = cond.Type,
+                    Parameters = cond.Parameters ?? new Dictionary<string, string>()
+                }).ToList(),
                 Choices = m.Choices.Select(c => new DialogueChoice
                 {
                     TargetNodeId = new DialogueNodeId(c.TargetNodeId),
@@ -254,6 +264,7 @@ public sealed class EfDialogueTreeRepository : IDialogueTreeRepository
         public string? Text { get; init; }
         public int SortOrder { get; init; }
         public Guid? ParentNodeId { get; init; }
+        public List<ConditionJsonModel> Conditions { get; init; } = [];
         public List<ChoiceJsonModel> Choices { get; init; } = [];
         public List<ActionJsonModel> Actions { get; init; } = [];
     }

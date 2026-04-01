@@ -49,13 +49,14 @@ public sealed class DialogueSession
     /// </summary>
     public bool IsEnded { get; private set; }
 
-    public DialogueSession(DialogueTree tree, NwPlayer player, Guid characterId, NwCreature npc)
+    public DialogueSession(DialogueTree tree, NwPlayer player, Guid characterId, NwCreature npc,
+        DialogueNodeId? resolvedRootId = null)
     {
         Tree = tree;
         Player = player;
         CharacterId = characterId;
         Npc = npc;
-        CurrentNodeId = tree.RootNodeId;
+        CurrentNodeId = resolvedRootId ?? tree.RootNodeId;
     }
 
     /// <summary>

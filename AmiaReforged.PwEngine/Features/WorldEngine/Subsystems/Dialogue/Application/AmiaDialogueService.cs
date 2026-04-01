@@ -73,7 +73,10 @@ public sealed class AmiaDialogueService
             return false;
         }
 
-        DialogueSession session = new(tree, player, characterId, npc);
+        // Resolve which root node to use based on conditions
+        DialogueNodeId resolvedRoot = await ResolveRootNodeAsync(tree, player, characterId);
+
+        DialogueSession session = new(tree, player, characterId, npc, resolvedRoot);
         _activeSessions[player] = session;
         _busyNpcs[npc] = player;
 
@@ -257,6 +260,44 @@ public sealed class AmiaDialogueService
     }
 
     // ──────────────────── Internal ────────────────────
+
+    /// <summary>
+    /// Evaluates all Root-type nodes in sort order and returns the first whose conditions pass.
+    /// Falls back to the tree's default <see cref="DialogueTree.RootNodeId"/> if no conditional root matches.
+    /// </summary>
+    private async Task<DialogueNodeId> ResolveRootNodeAsync(DialogueTree tree, NwPlayer player, Guid characterId)
+    {
+        List<DialogueNode> candidates = tree.GetRootCandidates();
+
+        // Single root or no condition registry — use the default
+        if (candidates.Count <= 1 || ConditionRegistry?.Value == null)
+            return tree.RootNodeId;
+
+        foreach (DialogueNode candidate in candidates)
+        {
+            // A root with no conditions is an unconditional fallback — evaluate it last by sort order
+            if (candidate.Conditions.Count == 0)
+            {
+                // Keep going; we'll hit this one naturally when it's its turn in sort order
+                // but if we're here, it means this is its turn — select it
+                return candidate.Id;
+            }
+
+            bool conditionsMet = await ConditionRegistry.Value.EvaluateAllAsync(
+                candidate.Conditions, player, characterId);
+
+            if (conditionsMet)
+            {
+                Log.Info("Resolved conditional root node '{NodeId}' for tree '{TreeId}'",
+                    candidate.Id, tree.Id.Value);
+                return candidate.Id;
+            }
+        }
+
+        // All conditional roots failed — fall back to the tree's default RootNodeId
+        Log.Info("No conditional root matched for tree '{TreeId}', using default root", tree.Id.Value);
+        return tree.RootNodeId;
+    }
 
     private async Task ExecuteNodeActions(DialogueSession session)
     {

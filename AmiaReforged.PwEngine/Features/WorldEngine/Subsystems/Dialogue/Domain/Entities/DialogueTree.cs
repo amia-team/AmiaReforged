@@ -59,9 +59,19 @@ public sealed class DialogueTree
         Nodes.Find(n => n.Id == nodeId);
 
     /// <summary>
-    /// Gets the root node of this tree.
+    /// Gets the root node of this tree (the node pointed to by <see cref="RootNodeId"/>).
+    /// For trees with multiple Root-type nodes, use <see cref="GetRootCandidates"/> instead.
     /// </summary>
     public DialogueNode? GetRootNode() => FindNode(RootNodeId);
+
+    /// <summary>
+    /// Gets all Root-type nodes in sort order. Used for conditional root selection — 
+    /// the first root whose conditions pass becomes the NPC greeting.
+    /// </summary>
+    public List<DialogueNode> GetRootCandidates() =>
+        Nodes.Where(n => n.Type == DialogueNodeType.Root)
+             .OrderBy(n => n.SortOrder)
+             .ToList();
 
     /// <summary>
     /// Gets all child nodes reachable from a given node via its choices.
@@ -143,11 +153,11 @@ public sealed class DialogueTree
             errors.Add($"Root node must be of type Root, but is {root.Type}");
         }
 
-        // Check for exactly one Root-type node
+        // Must have at least one Root-type node
         int rootCount = Nodes.Count(n => n.Type == DialogueNodeType.Root);
-        if (rootCount != 1)
+        if (rootCount < 1)
         {
-            errors.Add($"Tree must have exactly one Root node, but has {rootCount}");
+            errors.Add("Tree must have at least one Root node");
         }
 
         // Check all choice targets point to existing nodes
@@ -164,9 +174,12 @@ public sealed class DialogueTree
             }
         }
 
-        // Check for orphan nodes (not reachable from root)
+        // Check for orphan nodes (not reachable from any root)
         HashSet<Guid> reachable = [];
-        CollectReachable(RootNodeId, reachable, nodeIds);
+        foreach (DialogueNode rootCandidate in Nodes.Where(n => n.Type == DialogueNodeType.Root))
+        {
+            CollectReachable(rootCandidate.Id, reachable, nodeIds);
+        }
 
         List<DialogueNode> orphans = Nodes.Where(n => !reachable.Contains(n.Id.Value)).ToList();
         foreach (DialogueNode orphan in orphans)

@@ -185,6 +185,37 @@
                                               rows="3" @bind="_selectedNode.Text"></textarea>
                                 </div>
 
+                                @* Root node conditions (only shown for Root-type nodes) *@
+                                @if (_selectedNode.Type == "Root")
+                                {
+                                    <div class="mb-2">
+                                        <div class="d-flex align-items-center mb-1">
+                                            <span class="small text-warning">
+                                                <i class="bi bi-funnel me-1"></i>Root Conditions
+                                            </span>
+                                            <span class="small text-muted ms-1"
+                                                  title="When multiple Root nodes exist, the first (by Sort Order) whose conditions all pass is used as the NPC greeting. A root with no conditions is an unconditional fallback.">
+                                                <i class="bi bi-info-circle"></i>
+                                            </span>
+                                            <button class="btn btn-sm btn-outline-secondary ms-auto py-0 px-1"
+                                                    @onclick="() => AddNodeCondition(_selectedNode)">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                        </div>
+                                        @if (_selectedNode.Conditions.Count == 0)
+                                        {
+                                            <div class="small text-muted fst-italic">No conditions — this root is always available (fallback).</div>
+                                        }
+                                        @foreach (DialogueConditionDto cond in _selectedNode.Conditions)
+                                        {
+                                            <div class="mb-1">
+                                                <ConditionEditor Condition="cond"
+                                                                 OnRemove="() => _selectedNode.Conditions.Remove(cond)" />
+                                            </div>
+                                        }
+                                    </div>
+                                }
+
                                 @* Actions *@
                                 <div class="mb-2">
                                     <div class="d-flex align-items-center mb-1">
@@ -266,7 +297,7 @@
                                     <button class="btn btn-sm btn-outline-primary" @onclick="() => AddChildNode(_selectedNode)">
                                         <i class="bi bi-diagram-3 me-1"></i>Add Child
                                     </button>
-                                    @if (_editItem!.RootNodeId != _selectedNode.Id)
+                                    @if (_selectedNode.Type != "Root")
                                     {
                                         <button class="btn btn-sm btn-outline-warning" @onclick="() => SetAsRoot(_selectedNode)">
                                             <i class="bi bi-star me-1"></i>Set as Root
@@ -479,7 +510,7 @@
     private RenderFragment RenderNodeTree(DialogueNodeDto node, int depth) => builder =>
     {
         bool isSelected = _selectedNode?.Id == node.Id;
-        bool isRoot = _editItem?.RootNodeId == node.Id;
+        bool isRoot = node.Type == "Root";
         List<DialogueNodeDto> children = GetChildren(node.Id);
 
         builder.OpenElement(0, "div");
@@ -510,6 +541,18 @@
             builder.AddAttribute(13, "style", "font-size:0.6em");
             builder.AddContent(14, "ROOT");
             builder.CloseElement(); // span
+
+            // Show condition count badge for root nodes with conditions
+            int condCount = node.Conditions.Count;
+            if (condCount > 0)
+            {
+                builder.OpenElement(15, "span");
+                builder.AddAttribute(16, "class", "badge bg-info text-dark ms-1");
+                builder.AddAttribute(17, "style", "font-size:0.6em");
+                builder.AddAttribute(18, "title", $"{condCount} condition(s) must pass for this root to be selected");
+                builder.AddContent(19, $"\u26a0{condCount}");
+                builder.CloseElement(); // span
+            }
         }
 
         builder.CloseElement(); // row div
@@ -517,7 +560,7 @@
         // Children
         foreach (DialogueNodeDto child in children)
         {
-            builder.AddContent(15, RenderNodeTree(child, depth + 1));
+            builder.AddContent(20, RenderNodeTree(child, depth + 1));
         }
 
         builder.CloseElement(); // outer div
@@ -531,11 +574,11 @@
 
     private void AddRootNode()
     {
-        DialogueNodeDto node = CreateNode("NpcText");
+        DialogueNodeDto node = CreateNode("Root");
 
-        if (_editItem!.Nodes.Count == 0)
+        // Set RootNodeId to first root if not already set
+        if (string.IsNullOrEmpty(_editItem!.RootNodeId))
         {
-            node.Type = "Root";
             _editItem.RootNodeId = node.Id;
         }
 
@@ -580,7 +623,14 @@
         _editItem.Nodes.Remove(node);
 
         if (_editItem.RootNodeId == node.Id)
-            _editItem.RootNodeId = null;
+        {
+            // Reassign RootNodeId to next available Root-type node
+            DialogueNodeDto? nextRoot = _editItem.Nodes
+                .Where(n => n.Type == "Root" && n.Id != node.Id)
+                .OrderBy(n => n.SortOrder)
+                .FirstOrDefault();
+            _editItem.RootNodeId = nextRoot?.Id;
+        }
         if (_selectedNode?.Id == node.Id)
             _selectedNode = null;
 
@@ -589,8 +639,15 @@
 
     private void SetAsRoot(DialogueNodeDto node)
     {
-        _editItem!.RootNodeId = node.Id;
         node.Type = "Root";
+
+        // Keep RootNodeId pointing at the first Root by sort order (used as fallback)
+        DialogueNodeDto? firstRoot = _editItem!.Nodes
+            .Where(n => n.Type == "Root")
+            .OrderBy(n => n.SortOrder)
+            .FirstOrDefault();
+        _editItem.RootNodeId = firstRoot?.Id ?? node.Id;
+
         StateHasChanged();
     }
 
@@ -619,6 +676,12 @@
     private void AddCondition(DialogueChoiceDto choice)
     {
         choice.Conditions.Add(new DialogueConditionDto { Type = "HasItem" });
+        StateHasChanged();
+    }
+
+    private void AddNodeCondition(DialogueNodeDto node)
+    {
+        node.Conditions.Add(new DialogueConditionDto { Type = "HasItem" });
         StateHasChanged();
     }
 

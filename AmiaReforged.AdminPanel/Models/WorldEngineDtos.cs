@@ -660,6 +660,7 @@ public class DialogueNodeDto
     public string Text { get; set; } = string.Empty;
     public int SortOrder { get; set; }
     public string? ParentNodeId { get; set; }
+    public List<DialogueConditionDto> Conditions { get; set; } = [];
     public List<DialogueChoiceDto> Choices { get; set; } = [];
     public List<DialogueActionDto> Actions { get; set; } = [];
 }

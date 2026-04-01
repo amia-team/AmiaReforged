@@ -51,6 +51,13 @@ public sealed class DialogueNode
     public List<DialogueAction> Actions { get; init; } = [];
 
     /// <summary>
+    /// Conditions that must be met for this node to be considered.
+    /// Used primarily on Root-type nodes to select which NPC greeting is shown.
+    /// If empty, the node is unconditionally available.
+    /// </summary>
+    public List<DialogueCondition> Conditions { get; init; } = [];
+
+    /// <summary>
     /// Optional parent node ID for tree structure (used in authoring).
     /// Null for the root node.
     /// </summary>

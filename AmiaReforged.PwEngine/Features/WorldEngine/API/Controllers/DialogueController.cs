@@ -399,6 +399,7 @@ public class DialogueController
         public string Text { get; init; } = string.Empty;
         public int SortOrder { get; init; }
         public string? ParentNodeId { get; init; }
+        public List<DialogueConditionDto>? Conditions { get; init; }
         public List<DialogueChoiceDto>? Choices { get; init; }
         public List<DialogueActionDto>? Actions { get; init; }
     }
