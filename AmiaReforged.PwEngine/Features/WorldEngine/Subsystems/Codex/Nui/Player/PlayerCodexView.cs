@@ -144,20 +144,20 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
             Border = true,
             Element = new NuiColumn
             {
-                Children = new List<NuiElement>
-                {
+                Children =
+                [
                     new NuiLabel(DetailTitle)
                     {
                         Height = 30f,
                         HorizontalAlign = NuiHAlign.Center,
                         VerticalAlign = NuiVAlign.Middle
                     },
+
                     new NuiSpacer { Height = 4f },
                     new NuiText(DetailBody)
                     {
-                        Scrollbars = NuiScrollbars.None
                     }
-                }
+                ]
             }
         };
     }
