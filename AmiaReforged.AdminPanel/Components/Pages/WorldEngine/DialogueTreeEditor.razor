@@ -202,11 +202,11 @@
                                                 <i class="bi bi-plus"></i>
                                             </button>
                                         </div>
-                                        @if (_selectedNode.Conditions.Count == 0)
+                                        @if ((_selectedNode.Conditions ?? []).Count == 0)
                                         {
                                             <div class="small text-muted fst-italic">No conditions — this root is always available (fallback).</div>
                                         }
-                                        @foreach (DialogueConditionDto cond in _selectedNode.Conditions)
+                                        @foreach (DialogueConditionDto cond in _selectedNode.Conditions ?? [])
                                         {
                                             <div class="mb-1">
                                                 <ConditionEditor Condition="cond"
@@ -543,7 +543,7 @@
             builder.CloseElement(); // span
 
             // Show condition count badge for root nodes with conditions
-            int condCount = node.Conditions.Count;
+            int condCount = (node.Conditions ?? []).Count;
             if (condCount > 0)
             {
                 builder.OpenElement(15, "span");
@@ -681,6 +681,7 @@
 
     private void AddNodeCondition(DialogueNodeDto node)
     {
+        node.Conditions ??= [];
         node.Conditions.Add(new DialogueConditionDto { Type = "HasItem" });
         StateHasChanged();
     }
