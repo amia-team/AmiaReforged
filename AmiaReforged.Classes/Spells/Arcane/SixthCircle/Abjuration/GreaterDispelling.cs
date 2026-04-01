@@ -49,7 +49,8 @@ public class GreaterDispelling(DispelService dispelService) : ISpell
 
         if (eventData.TargetObject is { } targetObject)
         {
-            DoTargetedDispel(caster, targetObject, casterLevel, breachVfx, impactVfx, eventData.Spell);
+            dispelService.DispelTarget(caster, targetObject, caster.CasterLevel, DispelService.DispelType.GreaterDispelling);
+            targetObject.ApplyEffect(EffectDuration.Instant, breachVfx);
         }
         else if (eventData.TargetLocation is { } targetLocation)
         {
