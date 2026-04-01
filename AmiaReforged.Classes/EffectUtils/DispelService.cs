@@ -40,11 +40,11 @@ public class DispelService
     /// </summary>
     /// <param name="caster">The creature casting the dispel</param>
     /// <param name="target">The target to dispel effects from</param>
-    /// <param name="casterLevel">The effective caster level for dispel checks</param>
+    /// <param name="dispelModifier">The effective dispel caster level for dispel checks, use GetDispelModifier</param>
     /// <param name="dispelType">The type of dispel spell being used</param>
     /// <param name="maxSpells">Maximum number of spells to dispel (0 = unlimited)</param>
     /// <returns>The number of spells successfully dispelled</returns>
-    public int DispelEffectsAll(NwCreature caster, NwGameObject target, int casterLevel, DispelType dispelType, int maxSpells = 0)
+    public int DispelEffectsAll(NwCreature caster, NwGameObject target, int dispelModifier, DispelType dispelType, int maxSpells = 0)
     {
         // 1. Signal spell to target
         if (target is NwCreature targetCreature && caster.IsReactionTypeHostile(targetCreature))
@@ -56,12 +56,6 @@ public class DispelService
             SpellUtils.SignalSpell(caster, target, NwSpell.FromSpellId((int)dispelType)!, harmful: false);
         }
 
-        // 2. Calculate dispel caster level
-        int clCap = GetCasterLevelCap(dispelType);
-        int dispelCl = Math.Min(casterLevel, clCap);
-        int featBonus = GetAbjurationFocusBonus(caster);
-        dispelCl += featBonus;
-
         // 3. Begin the dispel process: Iterate dispels into a dispel info list
         List<DispelInfo> spellsToDispel = [];
 
@@ -71,7 +65,7 @@ public class DispelService
             Name: effects[0].Spell?.Name.ToString() ?? "Unknown Spell",
             InnateLevel: effects[0].Spell?.InnateSpellLevel ?? 0,
             CasterLevel: effects[0].CasterLevel,
-            DispelAction: () => TryDispelEffect(target, effects, dispelCl)
+            DispelAction: () => TryDispelEffect(target, effects, dispelModifier)
         )));
 
         // 3.2. Map pairs of item and item property to dispel info
@@ -80,7 +74,7 @@ public class DispelService
             Name: pair.ItemProperties[0].Spell?.Name.ToString() ?? "Unknown Spell",
             InnateLevel: pair.ItemProperties[0].Spell?.InnateSpellLevel ?? 0,
             CasterLevel: pair.ItemProperties[0].CasterLevel,
-            DispelAction: () => TryDispelItemProperty(pair.Item, pair.ItemProperties, dispelCl)
+            DispelAction: () => TryDispelItemProperty(pair.Item, pair.ItemProperties, dispelModifier)
         )));
 
         // 3.3. Sort dispel info by spell level and caster level so dispelling prioritizes strongest effects
@@ -161,13 +155,13 @@ public class DispelService
     /// </summary>
     /// <param name="target">The target to dispel the effect from</param>
     /// <param name="spellEffects">The effects grouped by spell and caster checked for dispelling</param>
-    /// <param name="dispelCl">The dispel caster level, i.e. the strength of the caster's dispel</param>
+    /// <param name="dispelModifier">The dispel caster level, i.e. the strength of the caster's dispel</param>
     /// <returns>True if the effect group is successfully dispelled, otherwise false</returns>
-    private static bool TryDispelEffect(NwGameObject target, Effect[] spellEffects, int dispelCl)
+    private static bool TryDispelEffect(NwGameObject target, Effect[] spellEffects, int dispelModifier)
     {
         int effectCasterLevel = spellEffects[0].CasterLevel;
 
-        if (!DispelCheck(dispelCl, effectCasterLevel)) return false;
+        if (!DispelCheck(dispelModifier, effectCasterLevel)) return false;
 
         foreach (Effect effect in spellEffects)
         {
@@ -184,13 +178,13 @@ public class DispelService
     /// </summary>
     /// <param name="targetItem">The target item to dispel the properties from</param>
     /// <param name="itemProperties">The temporary properties grouped by spell and caster checked for dispelling</param>
-    /// <param name="dispelCl">The dispel caster level, i.e. the strength of the caster's dispel</param>
+    /// <param name="dispelModifier">The dispel caster level, i.e. the strength of the caster's dispel</param>
     /// <returns>True if the effect group is successfully dispelled, otherwise false</returns>
-    private static bool TryDispelItemProperty(NwItem targetItem, ItemProperty[] itemProperties, int dispelCl)
+    private static bool TryDispelItemProperty(NwItem targetItem, ItemProperty[] itemProperties, int dispelModifier)
     {
         int effectCasterLevel = itemProperties[0].CasterLevel;
 
-        if (!DispelCheck(dispelCl, effectCasterLevel)) return false;
+        if (!DispelCheck(dispelModifier, effectCasterLevel)) return false;
 
         foreach (ItemProperty itemProperty in itemProperties)
         {
@@ -199,6 +193,27 @@ public class DispelService
 
         return true;
     }
+
+    /// <summary>
+    /// Gets the dispel modifier for the dispel type, used for dispel checks.
+    /// </summary>
+    /// <param name="caster">Caster who is casting the dispel</param>
+    /// <param name="casterLevel">Caster level, usually got from the spell event's data</param>
+    /// <param name="dispelType">Dispel type which decides the cap, unspecified defaults to Dispel Magic</param>
+    public int GetDispelModifier(NwGameObject caster, int casterLevel, DispelType dispelType = DispelType.DispelMagic)
+    {
+        int casterLevelCap = GetCasterLevelCap(dispelType);
+        int dispelModifier = Math.Min(casterLevel, casterLevelCap);
+
+        if (caster is NwCreature casterCreature)
+        {
+            int featBonus = GetAbjurationFocusBonus(casterCreature);
+            dispelModifier += featBonus;
+        }
+
+        return dispelModifier;
+    }
+
 
     /// <summary>
     /// Gets the caster level cap for a dispel type.
@@ -297,14 +312,14 @@ public class DispelService
     /// <returns>True if the AoE was successfully dispelled</returns>
     public bool TryDispelAreaOfEffect(NwCreature caster, NwAreaOfEffect areaOfEffect, int casterLevel)
     {
-        int dispelCl = casterLevel + GetAbjurationFocusBonus(caster);
+        int dispelModifier = casterLevel + GetAbjurationFocusBonus(caster);
 
         if (areaOfEffect.Tag[..7] == "VFX_MOB")
         {
             return false;
         }
 
-        if (areaOfEffect.Creator == caster || DispelCheck(dispelCl, areaOfEffect.CasterLevel))
+        if (areaOfEffect.Creator == caster || DispelCheck(dispelModifier, areaOfEffect.CasterLevel))
         {
             areaOfEffect.Destroy();
             SendDispelAoeFeedback(caster, areaOfEffect);
@@ -336,9 +351,9 @@ public class DispelService
     /// <summary>
     /// Performs a dispel check of D20 + Dispel CL vs. 12 + Effect Caster Level
     /// </summary>
-    /// <param name="dispelCl">The dispel CL of the dispel caster</param>
+    /// <param name="dispelModifier">The caster's dispel modifier</param>
     /// <param name="targetEffectCl">The effective CL of the target effect being removed</param>
     /// <returns>True if the dispel check is greater or equal than the dispel resistance, otherwise false</returns>
-    private static bool DispelCheck(int dispelCl, int targetEffectCl)
-        => Random.Shared.Roll(20) + dispelCl >= 12 + targetEffectCl;
+    private static bool DispelCheck(int dispelModifier, int targetEffectCl)
+        => Random.Shared.Roll(20) + dispelModifier >= 12 + targetEffectCl;
 }
