@@ -61,7 +61,7 @@ public sealed class QuestDisplayItem : ICodexDisplayItem
             if (!string.IsNullOrEmpty(_entry.Location))
                 body += $"\n\nLocation: {_entry.Location}";
 
-            // Show objectives from the current stage
+            // Show current stage journal text and objectives
             QuestStage? currentStage = _entry.Stages
                 .Where(s => s.StageId <= _entry.CurrentStageId)
                 .OrderByDescending(s => s.StageId)
@@ -69,6 +69,11 @@ public sealed class QuestDisplayItem : ICodexDisplayItem
 
             if (currentStage != null)
             {
+                // Journal text is the primary stage description
+                if (!string.IsNullOrWhiteSpace(currentStage.JournalText))
+                    body += $"\n\n{currentStage.JournalText}";
+
+                // Formal objectives supplement the journal text
                 List<string> objectives = currentStage.ObjectiveGroups
                     .SelectMany(g => g.Objectives)
                     .Select(o => o.DisplayText)
@@ -80,6 +85,16 @@ public sealed class QuestDisplayItem : ICodexDisplayItem
                     foreach (string obj in objectives)
                     {
                         body += $"\n  - {obj}";
+                    }
+                }
+
+                // Show hints if available
+                if (currentStage.Hints.Count > 0)
+                {
+                    body += "\n\nHints:";
+                    foreach (string hint in currentStage.Hints)
+                    {
+                        body += $"\n  - {hint}";
                     }
                 }
             }

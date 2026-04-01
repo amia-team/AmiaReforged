@@ -29,7 +29,11 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
     private static readonly JsonSerializerOptions StageJsonOpts = new()
     {
         PropertyNameCaseInsensitive = true,
-        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
+        Converters =
+        {
+            new JsonStringEnumConverter(JsonNamingPolicy.CamelCase),
+            new ObjectiveIdJsonConverter()
+        },
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
