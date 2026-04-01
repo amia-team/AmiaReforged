@@ -45,10 +45,6 @@ public class QuestObjectiveResolutionServiceTests
         _testDate = new DateTime(2026, 4, 1, 12, 0, 0);
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    //  ProcessItemAcquired
-    // ═══════════════════════════════════════════════════════════════════
-
     [Test]
     public void ProcessItemAcquired_routes_signal_and_produces_events()
     {
@@ -57,7 +53,7 @@ public class QuestObjectiveResolutionServiceTests
         _sessionManager.CreateSession(_characterId, _questId, [group], _testDate);
 
         // When a matching item acquired signal arrives
-        QuestObjectiveResolutionService.ProcessItemAcquiredStatic(_sessionManager, _eventChannel, _characterId, "herb");
+        QuestObjectiveTestHelpers.ProcessItemAcquired(_sessionManager, _eventChannel, _characterId, "herb");
 
         // Then the event channel contains a progress event
         Assert.That(_eventChannel.Reader.TryRead(out CodexDomainEvent? domainEvent), Is.True);
@@ -70,7 +66,7 @@ public class QuestObjectiveResolutionServiceTests
         // Given no active sessions for the character
 
         // When an item acquired signal arrives
-        QuestObjectiveResolutionService.ProcessItemAcquiredStatic(_sessionManager, _eventChannel, _characterId, "herb");
+        QuestObjectiveTestHelpers.ProcessItemAcquired(_sessionManager, _eventChannel, _characterId, "herb");
 
         // Then no events are produced
         Assert.That(_eventChannel.Reader.TryRead(out _), Is.False);
@@ -84,7 +80,7 @@ public class QuestObjectiveResolutionServiceTests
         _sessionManager.CreateSession(_characterId, _questId, [group], _testDate);
 
         // When a non-matching item is acquired
-        QuestObjectiveResolutionService.ProcessItemAcquiredStatic(_sessionManager, _eventChannel, _characterId, "sword");
+        QuestObjectiveTestHelpers.ProcessItemAcquired(_sessionManager, _eventChannel, _characterId, "sword");
 
         // Then no events are produced
         Assert.That(_eventChannel.Reader.TryRead(out _), Is.False);
@@ -98,16 +94,12 @@ public class QuestObjectiveResolutionServiceTests
         _sessionManager.CreateSession(_characterId, _questId, [group], _testDate);
 
         // When the required item is acquired
-        QuestObjectiveResolutionService.ProcessItemAcquiredStatic(_sessionManager, _eventChannel, _characterId, "rune");
+        QuestObjectiveTestHelpers.ProcessItemAcquired(_sessionManager, _eventChannel, _characterId, "rune");
 
         // Then we get both a progress event and a completed event
         List<CodexDomainEvent> events = DrainChannel();
         Assert.That(events.Any(e => e is ObjectiveCompletedEvent), Is.True);
     }
-
-    // ═══════════════════════════════════════════════════════════════════
-    //  ProcessItemLost
-    // ═══════════════════════════════════════════════════════════════════
 
     [Test]
     public void ProcessItemLost_decrements_count_when_loss_tracking_enabled()
@@ -117,21 +109,17 @@ public class QuestObjectiveResolutionServiceTests
         _sessionManager.CreateSession(_characterId, _questId, [group], _testDate);
 
         // Acquire 2 first
-        QuestObjectiveResolutionService.ProcessItemAcquiredStatic(_sessionManager, _eventChannel, _characterId, "artifact");
-        QuestObjectiveResolutionService.ProcessItemAcquiredStatic(_sessionManager, _eventChannel, _characterId, "artifact");
+        QuestObjectiveTestHelpers.ProcessItemAcquired(_sessionManager, _eventChannel, _characterId, "artifact");
+        QuestObjectiveTestHelpers.ProcessItemAcquired(_sessionManager, _eventChannel, _characterId, "artifact");
         DrainChannel(); // clear progress events
 
         // When an artifact is lost
-        QuestObjectiveResolutionService.ProcessItemLostStatic(_sessionManager, _eventChannel, _characterId, "artifact");
+        QuestObjectiveTestHelpers.ProcessItemLost(_sessionManager, _eventChannel, _characterId, "artifact");
 
         // Then a progress event with decremented count is produced
         Assert.That(_eventChannel.Reader.TryRead(out CodexDomainEvent? evt), Is.True);
         Assert.That(evt, Is.TypeOf<ObjectiveProgressedEvent>());
     }
-
-    // ═══════════════════════════════════════════════════════════════════
-    //  InitializeSessionsForPlayerAsync
-    // ═══════════════════════════════════════════════════════════════════
 
     [Test]
     public async Task InitializeSessionsForPlayer_creates_sessions_for_InProgress_quests()
@@ -187,10 +175,6 @@ public class QuestObjectiveResolutionServiceTests
         Assert.That(_sessionManager.GetAllSessions(_characterId), Is.Empty);
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    //  TeardownSessionsForPlayer
-    // ═══════════════════════════════════════════════════════════════════
-
     [Test]
     public void TeardownSessionsForPlayer_removes_all_sessions()
     {
@@ -217,10 +201,6 @@ public class QuestObjectiveResolutionServiceTests
         Assert.DoesNotThrow(() => TeardownSessions());
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    //  CreateSessionForQuest
-    // ═══════════════════════════════════════════════════════════════════
-
     [Test]
     public void CreateSessionForQuest_creates_session_from_quest_entry()
     {
@@ -228,7 +208,7 @@ public class QuestObjectiveResolutionServiceTests
         CodexQuestEntry entry = CreateQuestEntryWithObjectives(QuestState.InProgress);
 
         // When a session is created
-        QuestObjectiveResolutionService.CreateSessionForQuestStatic(_sessionManager, _characterId, entry);
+        QuestObjectiveTestHelpers.CreateSessionForQuest(_sessionManager, _characterId, entry);
 
         // Then the session exists
         Assert.That(_sessionManager.HasSession(_characterId, entry.QuestId), Is.True);
@@ -243,7 +223,7 @@ public class QuestObjectiveResolutionServiceTests
 
         // When CreateSessionForQuest is called again for the same quest
         CodexQuestEntry entry = CreateQuestEntryWithObjectives(QuestState.InProgress);
-        QuestObjectiveResolutionService.CreateSessionForQuestStatic(_sessionManager, _characterId, entry);
+        QuestObjectiveTestHelpers.CreateSessionForQuest(_sessionManager, _characterId, entry);
 
         // Then old session is replaced (still has 1 session for this quest)
         Assert.That(_sessionManager.HasSession(_characterId, _questId), Is.True);
@@ -256,15 +236,11 @@ public class QuestObjectiveResolutionServiceTests
         CodexQuestEntry entry = CreateQuestEntryNoObjectives(QuestState.InProgress);
 
         // When a session is created
-        QuestObjectiveResolutionService.CreateSessionForQuestStatic(_sessionManager, _characterId, entry);
+        QuestObjectiveTestHelpers.CreateSessionForQuest(_sessionManager, _characterId, entry);
 
         // Then no session is created
         Assert.That(_sessionManager.HasSession(_characterId, entry.QuestId), Is.False);
     }
-
-    // ═══════════════════════════════════════════════════════════════════
-    //  GetCurrentStageObjectiveGroups
-    // ═══════════════════════════════════════════════════════════════════
 
     [Test]
     public void GetCurrentStageObjectiveGroups_returns_correct_stage_objectives()
@@ -296,7 +272,7 @@ public class QuestObjectiveResolutionServiceTests
         entry.CurrentStageId = 20;
 
         // When
-        List<QuestObjectiveGroup> result = QuestObjectiveResolutionService.GetCurrentStageObjectiveGroups(entry);
+        List<QuestObjectiveGroup> result = QuestObjectiveTestHelpers.GetCurrentStageObjectiveGroups(entry);
 
         // Then stage 20's objectives are returned
         Assert.That(result, Has.Count.EqualTo(1));
@@ -317,7 +293,7 @@ public class QuestObjectiveResolutionServiceTests
         };
 
         // When
-        List<QuestObjectiveGroup> result = QuestObjectiveResolutionService.GetCurrentStageObjectiveGroups(entry);
+        List<QuestObjectiveGroup> result = QuestObjectiveTestHelpers.GetCurrentStageObjectiveGroups(entry);
 
         // Then empty
         Assert.That(result, Is.Empty);
@@ -353,16 +329,12 @@ public class QuestObjectiveResolutionServiceTests
         entry.CurrentStageId = 25;
 
         // When
-        List<QuestObjectiveGroup> result = QuestObjectiveResolutionService.GetCurrentStageObjectiveGroups(entry);
+        List<QuestObjectiveGroup> result = QuestObjectiveTestHelpers.GetCurrentStageObjectiveGroups(entry);
 
         // Then stage 20's objectives are returned (highest ≤ 25)
         Assert.That(result, Has.Count.EqualTo(1));
         Assert.That(result[0].Objectives[0].TargetTag, Is.EqualTo("item_b"));
     }
-
-    // ═══════════════════════════════════════════════════════════════════
-    //  End-to-end integration
-    // ═══════════════════════════════════════════════════════════════════
 
     [Test]
     public async Task Full_flow_login_acquire_items_complete_objective()
@@ -376,8 +348,8 @@ public class QuestObjectiveResolutionServiceTests
         Assert.That(_sessionManager.HasSession(_characterId, _questId), Is.True);
 
         // And acquires 2 mushrooms
-        QuestObjectiveResolutionService.ProcessItemAcquiredStatic(_sessionManager, _eventChannel, _characterId, "mushroom");
-        QuestObjectiveResolutionService.ProcessItemAcquiredStatic(_sessionManager, _eventChannel, _characterId, "mushroom");
+        QuestObjectiveTestHelpers.ProcessItemAcquired(_sessionManager, _eventChannel, _characterId, "mushroom");
+        QuestObjectiveTestHelpers.ProcessItemAcquired(_sessionManager, _eventChannel, _characterId, "mushroom");
 
         // Then we get progress + completion events
         List<CodexDomainEvent> events = DrainChannel();
@@ -385,13 +357,9 @@ public class QuestObjectiveResolutionServiceTests
         Assert.That(events.Any(e => e is ObjectiveCompletedEvent), Is.True);
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    //  Helpers
-    // ═══════════════════════════════════════════════════════════════════
-
     /// <summary>
     /// Simulates InitializeSessionsForPlayerAsync without NWN dependencies,
-    /// using the same logic as QuestObjectiveResolutionService.
+    /// using the same logic as QuestObjectiveTestHelpers.
     /// </summary>
     private async Task InitializeSessionsAsync()
     {
@@ -401,7 +369,7 @@ public class QuestObjectiveResolutionServiceTests
         foreach (CodexQuestEntry quest in codex.Quests)
         {
             if (quest.State != QuestState.InProgress) continue;
-            QuestObjectiveResolutionService.CreateSessionForQuestStatic(_sessionManager, _characterId, quest);
+            QuestObjectiveTestHelpers.CreateSessionForQuest(_sessionManager, _characterId, quest);
         }
     }
 

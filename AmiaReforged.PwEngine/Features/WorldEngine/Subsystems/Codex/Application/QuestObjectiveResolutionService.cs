@@ -50,10 +50,6 @@ public sealed class QuestObjectiveResolutionService
         NwModule.Instance.OnClientLeave += OnClientLeave;
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    //  NWN Event Handlers (thin adapters → testable methods)
-    // ═══════════════════════════════════════════════════════════════════
-
     private void OnAcquireItem(ModuleEvents.OnAcquireItem obj)
     {
         NwItem? item = obj.Item;
@@ -111,10 +107,6 @@ public sealed class QuestObjectiveResolutionService
         TeardownSessionsForPlayer(characterId);
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    //  Public testable methods — signal processing
-    // ═══════════════════════════════════════════════════════════════════
-
     /// <summary>
     /// Processes an item acquisition event for a character.
     /// Translates to a <see cref="SignalType.ItemAcquired"/> signal and routes it
@@ -136,10 +128,6 @@ public sealed class QuestObjectiveResolutionService
         QuestSignal signal = new(SignalType.ItemLost, itemTag);
         RouteSignalAndEnqueueEvents(characterId, signal);
     }
-
-    // ═══════════════════════════════════════════════════════════════════
-    //  Session lifecycle
-    // ═══════════════════════════════════════════════════════════════════
 
     /// <summary>
     /// Loads the player's codex and creates quest sessions for all active (InProgress)
@@ -201,10 +189,6 @@ public sealed class QuestObjectiveResolutionService
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    //  Private helpers
-    // ═══════════════════════════════════════════════════════════════════
-
     private void RouteSignalAndEnqueueEvents(CharacterId characterId, QuestSignal signal)
     {
         IReadOnlyList<CodexDomainEvent> events = _sessionManager.ProcessSignal(characterId, signal);
@@ -225,7 +209,7 @@ public sealed class QuestObjectiveResolutionService
     /// Extracts the objective groups for the quest entry's current stage.
     /// Returns the objectives from the highest stage ≤ <see cref="CodexQuestEntry.CurrentStageId"/>.
     /// </summary>
-    internal static List<QuestObjectiveGroup> GetCurrentStageObjectiveGroups(CodexQuestEntry quest)
+    private static List<QuestObjectiveGroup> GetCurrentStageObjectiveGroups(CodexQuestEntry quest)
     {
         if (quest.Stages.Count == 0) return [];
 
@@ -235,71 +219,5 @@ public sealed class QuestObjectiveResolutionService
             .FirstOrDefault();
 
         return currentStage?.ObjectiveGroups ?? [];
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    //  Static test-friendly methods (no NWN dependencies)
-    // ═══════════════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Static entry point for tests — processes an item acquired signal
-    /// without requiring NWN module references.
-    /// </summary>
-    internal static void ProcessItemAcquiredStatic(
-        QuestSessionManager sessionManager,
-        System.Threading.Channels.Channel<CodexDomainEvent> eventChannel,
-        CharacterId characterId,
-        string itemTag)
-    {
-        QuestSignal signal = new(SignalType.ItemAcquired, itemTag);
-        RouteSignalStatic(sessionManager, eventChannel, characterId, signal);
-    }
-
-    /// <summary>
-    /// Static entry point for tests — processes an item lost signal
-    /// without requiring NWN module references.
-    /// </summary>
-    internal static void ProcessItemLostStatic(
-        QuestSessionManager sessionManager,
-        System.Threading.Channels.Channel<CodexDomainEvent> eventChannel,
-        CharacterId characterId,
-        string itemTag)
-    {
-        QuestSignal signal = new(SignalType.ItemLost, itemTag);
-        RouteSignalStatic(sessionManager, eventChannel, characterId, signal);
-    }
-
-    /// <summary>
-    /// Static entry point for tests — creates a quest session from a quest entry
-    /// without requiring NWN module references.
-    /// </summary>
-    internal static void CreateSessionForQuestStatic(
-        QuestSessionManager sessionManager,
-        CharacterId characterId,
-        CodexQuestEntry quest)
-    {
-        List<QuestObjectiveGroup> objectiveGroups = GetCurrentStageObjectiveGroups(quest);
-        if (objectiveGroups.Count == 0) return;
-
-        StageContext? stageContext = quest.Stages.Count > 0
-            ? new StageContext(quest.Stages, quest.CurrentStageId)
-            : null;
-
-        sessionManager.CreateSession(characterId, quest.QuestId, objectiveGroups, stageContext: stageContext);
-    }
-
-    private static void RouteSignalStatic(
-        QuestSessionManager sessionManager,
-        System.Threading.Channels.Channel<CodexDomainEvent> eventChannel,
-        CharacterId characterId,
-        QuestSignal signal)
-    {
-        IReadOnlyList<CodexDomainEvent> events = sessionManager.ProcessSignal(characterId, signal);
-        if (events.Count == 0) return;
-
-        foreach (CodexDomainEvent domainEvent in events)
-        {
-            eventChannel.Writer.TryWrite(domainEvent);
-        }
     }
 }
