@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
@@ -350,7 +352,8 @@ public sealed class CodexSubsystem : ICodexSubsystem
                     DateStarted = now,
                     QuestGiver = definition.QuestGiver,
                     Location = definition.Location,
-                    Keywords = ParseKeywords(definition.Keywords)
+                    Keywords = ParseKeywords(definition.Keywords),
+                    Stages = DeserializeStages(definition.StagesJson)
                 };
 
                 // Add to codex in InProgress state, then advance to the requested stage
@@ -382,6 +385,29 @@ public sealed class CodexSubsystem : ICodexSubsystem
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(k => new Keyword(k))
             .ToList();
+    }
+
+    private static readonly JsonSerializerOptions StageJsonOpts = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
+    private static List<QuestStage> DeserializeStages(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json) || json is "[]" or "null")
+            return [];
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<QuestStage>>(json, StageJsonOpts) ?? [];
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(ex, "Failed to deserialize quest stages JSON from definition");
+            return [];
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════

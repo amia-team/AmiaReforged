@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
@@ -14,15 +16,22 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Infrastruc
 
 /// <summary>
 /// EF Core implementation of <see cref="IPlayerCodexRepository"/>.
-/// Persists notes to <c>codex_notes</c> and lore to <c>codex_lore_definitions</c> /
-/// <c>codex_lore_unlocks</c>. Quest and reputation data remains in-memory until
-/// their own tables are created.
+/// Persists notes to <c>codex_notes</c>, lore to <c>codex_lore_definitions</c> /
+/// <c>codex_lore_unlocks</c>, and quests to <c>codex_quests</c>.
+/// Reputation data remains in-memory until its own table is created.
 /// </summary>
 [ServiceBinding(typeof(IPlayerCodexRepository))]
 public class EfPlayerCodexRepository : IPlayerCodexRepository
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly PwContextFactory _factory;
+
+    private static readonly JsonSerializerOptions StageJsonOpts = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
 
     public EfPlayerCodexRepository(PwContextFactory factory)
     {
@@ -34,7 +43,7 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
     // ═══════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Loads a player's codex, hydrating notes and lore from the database.
+    /// Loads a player's codex, hydrating notes, lore, and quests from the database.
     /// </summary>
     public async Task<PlayerCodex?> LoadAsync(CharacterId characterId, CancellationToken cancellationToken = default)
     {
@@ -63,7 +72,12 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
                 .Where(d => d.IsAlwaysAvailable && !unlockedIds.Contains(d.LoreId))
                 .ToListAsync(cancellationToken);
 
-            if (noteRows.Count == 0 && loreRows.Count == 0 && alwaysAvailable.Count == 0)
+            // ── Quests ──
+            List<PersistedCodexQuest> questRows = await context.CodexQuests
+                .Where(q => q.CharacterId == characterId.Value)
+                .ToListAsync(cancellationToken);
+
+            if (noteRows.Count == 0 && loreRows.Count == 0 && alwaysAvailable.Count == 0 && questRows.Count == 0)
                 return null;
 
             // Determine creation date from the earliest persisted record
@@ -74,6 +88,11 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
             {
                 DateTime loreEarliest = loreRows.Min(r => r.DateDiscovered);
                 if (loreEarliest < earliest) earliest = loreEarliest;
+            }
+            if (questRows.Count > 0)
+            {
+                DateTime questEarliest = questRows.Min(r => r.DateStarted);
+                if (questEarliest < earliest) earliest = questEarliest;
             }
 
             PlayerCodex codex = new(characterId, earliest);
@@ -98,6 +117,24 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
                 codex.RecordLoreDiscovered(lore, def.CreatedUtc);
             }
 
+            // Hydrate quests
+            foreach (PersistedCodexQuest row in questRows)
+            {
+                CodexQuestEntry quest = QuestToDomain(row);
+                QuestState state = (QuestState)row.State;
+
+                if (state == QuestState.Discovered)
+                    codex.RecordQuestDiscovered(quest, row.DateStarted);
+                else
+                    codex.RecordQuestStarted(quest, row.DateStarted);
+
+                // Restore the persisted state, stage, and completion date after insertion
+                quest.State = state;
+                quest.CurrentStageId = row.CurrentStageId;
+                quest.DateCompleted = row.DateCompleted;
+                quest.CompletionCount = row.CompletionCount;
+            }
+
             return codex;
         }
         catch (Exception ex)
@@ -112,7 +149,7 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
     // ═══════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Saves a player's codex, upserting notes and lore to the database.
+    /// Saves a player's codex, upserting notes, lore, and quests to the database.
     /// </summary>
     public async Task SaveAsync(PlayerCodex codex, CancellationToken cancellationToken = default)
     {
@@ -122,6 +159,7 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
 
             await SaveNotesAsync(context, codex, cancellationToken);
             await SaveLoreAsync(context, codex, cancellationToken);
+            await SaveQuestsAsync(context, codex, cancellationToken);
 
             await context.SaveChangesAsync(cancellationToken);
         }
@@ -345,5 +383,128 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
         };
 
         return (def, unlock);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Quest persistence
+    // ═══════════════════════════════════════════════════════════════════
+
+    private static async Task SaveQuestsAsync(
+        PwEngineContext context, PlayerCodex codex, CancellationToken ct)
+    {
+        HashSet<string> existingQuestIds = (await context.CodexQuests
+                .Where(q => q.CharacterId == codex.OwnerId.Value)
+                .Select(q => q.QuestId)
+                .ToListAsync(ct))
+            .ToHashSet();
+
+        HashSet<string> domainQuestIds = codex.Quests.Select(q => q.QuestId.Value).ToHashSet();
+
+        // Delete quests removed from the aggregate
+        List<string> toDelete = existingQuestIds.Except(domainQuestIds).ToList();
+        if (toDelete.Count > 0)
+        {
+            await context.CodexQuests
+                .Where(q => q.CharacterId == codex.OwnerId.Value && toDelete.Contains(q.QuestId))
+                .ExecuteDeleteAsync(ct);
+        }
+
+        // Upsert each quest
+        foreach (CodexQuestEntry quest in codex.Quests)
+        {
+            PersistedCodexQuest entity = QuestToEntity(quest, codex.OwnerId);
+
+            if (existingQuestIds.Contains(quest.QuestId.Value))
+                context.CodexQuests.Update(entity);
+            else
+                context.CodexQuests.Add(entity);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Mapping helpers — Quests
+    // ═══════════════════════════════════════════════════════════════════
+
+    private static CodexQuestEntry QuestToDomain(PersistedCodexQuest row)
+    {
+        List<Keyword> keywords = ParseKeywords(row.Keywords);
+        List<QuestStage> stages = DeserializeStages(row.StagesJson);
+
+        TemplateId? sourceTemplate = null;
+        if (row.SourceTemplateId != null && Guid.TryParse(row.SourceTemplateId, out Guid templateGuid))
+            sourceTemplate = (TemplateId)templateGuid;
+
+        return new CodexQuestEntry
+        {
+            QuestId = (QuestId)row.QuestId,
+            Title = row.Title,
+            Description = row.Description,
+            State = (QuestState)row.State,
+            DateStarted = row.DateStarted,
+            QuestGiver = row.QuestGiver,
+            Location = row.Location,
+            Keywords = keywords,
+            Stages = stages,
+            SourceTemplateId = sourceTemplate,
+            Deadline = row.Deadline,
+            ExpiryBehavior = row.ExpiryBehavior.HasValue
+                ? (ExpiryBehavior)row.ExpiryBehavior.Value
+                : null,
+            CompletionCount = row.CompletionCount
+        };
+    }
+
+    private static PersistedCodexQuest QuestToEntity(CodexQuestEntry quest, CharacterId ownerId)
+    {
+        return new PersistedCodexQuest
+        {
+            CharacterId = ownerId.Value,
+            QuestId = quest.QuestId.Value,
+            Title = quest.Title,
+            Description = quest.Description,
+            State = (int)quest.State,
+            CurrentStageId = quest.CurrentStageId,
+            DateStarted = quest.DateStarted,
+            DateCompleted = quest.DateCompleted,
+            QuestGiver = quest.QuestGiver,
+            Location = quest.Location,
+            Keywords = quest.Keywords.Count > 0
+                ? string.Join(",", quest.Keywords.Select(k => (string)k))
+                : null,
+            StagesJson = SerializeStages(quest.Stages),
+            SourceTemplateId = quest.SourceTemplateId?.Value.ToString(),
+            Deadline = quest.Deadline,
+            ExpiryBehavior = quest.ExpiryBehavior.HasValue ? (int)quest.ExpiryBehavior.Value : null,
+            CompletionCount = quest.CompletionCount
+        };
+    }
+
+    private static string SerializeStages(List<QuestStage> stages)
+    {
+        try
+        {
+            return JsonSerializer.Serialize(stages, StageJsonOpts);
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(ex, "Failed to serialize quest stages, defaulting to empty array");
+            return "[]";
+        }
+    }
+
+    private static List<QuestStage> DeserializeStages(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json) || json is "[]" or "null")
+            return [];
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<QuestStage>>(json, StageJsonOpts) ?? [];
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(ex, "Failed to deserialize quest stages JSON");
+            return [];
+        }
     }
 }

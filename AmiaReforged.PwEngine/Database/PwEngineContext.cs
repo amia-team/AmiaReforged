@@ -120,6 +120,7 @@ public class PwEngineContext : DbContext
     // === Codex ===
 
     public DbSet<PersistedCodexNote> CodexNotes { get; set; } = null!;
+    public DbSet<PersistedCodexQuest> CodexQuests { get; set; } = null!;
     public DbSet<PersistedLoreDefinition> CodexLoreDefinitions { get; set; } = null!;
     public DbSet<PersistedLoreUnlock> CodexLoreUnlocks { get; set; } = null!;
     public DbSet<PersistedQuestDefinition> CodexQuestDefinitions { get; set; } = null!;
@@ -242,6 +243,7 @@ public class PwEngineContext : DbContext
 
         // Codex
         modelBuilder.ApplyConfiguration(new PersistedCodexNoteConfiguration());
+        modelBuilder.ApplyConfiguration(new PersistedCodexQuestConfiguration());
         modelBuilder.ApplyConfiguration(new PersistedLoreDefinitionConfiguration());
         modelBuilder.ApplyConfiguration(new PersistedLoreUnlockConfiguration());
 

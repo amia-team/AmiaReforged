@@ -36,7 +36,7 @@ public class CodexQuestEntry
     /// The numeric stage ID the player has reached (0 = not started/no stage set).
     /// Mirrors the NWN journal stage system — quest definitions assign IDs like 10, 20, 30.
     /// </summary>
-    public int CurrentStageId { get; private set; }
+    public int CurrentStageId { get; internal set; }
 
     /// <summary>
     /// When the quest was first discovered/started
@@ -46,7 +46,7 @@ public class CodexQuestEntry
     /// <summary>
     /// When the quest reached a terminal state (Completed/Failed/Abandoned)
     /// </summary>
-    public DateTime? DateCompleted { get; private set; }
+    public DateTime? DateCompleted { get; internal set; }
 
     /// <summary>
     /// Optional giver/source of the quest
