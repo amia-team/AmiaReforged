@@ -28,15 +28,20 @@ public class QuestSessionManager
     /// <summary>
     /// Creates a new quest session for a character.
     /// </summary>
+    /// <param name="stageContext">
+    /// Optional stage context enabling auto-advancement. When provided, the session
+    /// resolves the next stage using: Group.CompletionStageId > Stage.NextStageId > next numeric stage.
+    /// </param>
     public QuestSession CreateSession(
         CharacterId characterId,
         QuestId questId,
         List<QuestObjectiveGroup> objectiveGroups,
-        DateTime? createdAt = null)
+        DateTime? createdAt = null,
+        StageContext? stageContext = null)
     {
         QuestSession session = new(
             questId, characterId, objectiveGroups, _registry,
-            createdAt ?? DateTime.UtcNow);
+            createdAt ?? DateTime.UtcNow, stageContext: stageContext);
 
         if (!_sessions.ContainsKey(characterId))
             _sessions[characterId] = new Dictionary<QuestId, QuestSession>();
@@ -119,13 +124,14 @@ public class QuestSessionManager
         List<CharacterId> partyMembers,
         List<QuestObjectiveGroup> objectiveGroups,
         DateTime? deadline = null,
-        DateTime? createdAt = null)
+        DateTime? createdAt = null,
+        StageContext? stageContext = null)
     {
         DateTime created = createdAt ?? DateTime.UtcNow;
 
         QuestSession session = new(
             questId, primaryCharacterId, objectiveGroups, _registry,
-            created, deadline, partyMembers);
+            created, deadline, partyMembers, stageContext);
 
         // Register the session under every party member so their signals route to it
         foreach (CharacterId memberId in session.PartyMembers)

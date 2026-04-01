@@ -19,6 +19,10 @@ public class RuntimeCharacterTests
 {
     private const string IndustryWithKnowledge = "industry_with_knowledge";
     private const string Noviceknowledge = "NoviceKnowledge";
+    private const string Noviceknowledge2 = "NoviceKnowledge2";
+    private const string Noviceknowledge3 = "NoviceKnowledge3";
+    private const string Noviceknowledge4 = "NoviceKnowledge4";
+    private const string NoviceknowledgeWithCost = "NoviceKnowledgeWithCost";
     private const string Grandmasterknowledge = "GrandMasterKnowledge";
     private const string Masterknowledge = "MasterKnowledge";
     private const string Expertknowledge = "ExpertKnowledge";
@@ -51,6 +55,35 @@ public class RuntimeCharacterTests
                     Name = "Novice",
                     Description = string.Empty,
                     Level = ProficiencyLevel.Novice
+                },
+                new Knowledge
+                {
+                    Tag = Noviceknowledge2,
+                    Name = "Novice 2",
+                    Description = string.Empty,
+                    Level = ProficiencyLevel.Novice
+                },
+                new Knowledge
+                {
+                    Tag = Noviceknowledge3,
+                    Name = "Novice 3",
+                    Description = string.Empty,
+                    Level = ProficiencyLevel.Novice
+                },
+                new Knowledge
+                {
+                    Tag = Noviceknowledge4,
+                    Name = "Novice 4",
+                    Description = string.Empty,
+                    Level = ProficiencyLevel.Novice
+                },
+                new Knowledge
+                {
+                    Tag = NoviceknowledgeWithCost,
+                    Name = "Novice With Cost",
+                    Description = string.Empty,
+                    Level = ProficiencyLevel.Novice,
+                    PointCost = 2
                 },
                 new Knowledge
                 {
@@ -178,9 +211,25 @@ public class RuntimeCharacterTests
 
         character.JoinIndustry(IndustryWithKnowledge);
 
-        LearningResult result = character.Learn(Noviceknowledge);
+        // Set proficiency XP level to the tier ceiling required for Novice → Apprentice
+        IndustryMembership membership = character.AllIndustryMemberships().First();
+        membership.ProficiencyXpLevel = 25;
 
-        Assert.That(result, Is.EqualTo(LearningResult.Success));
+        // Give character enough knowledge points for NoviceKnowledgeWithCost (PointCost = 2)
+        character.AddKnowledgePoints(2);
+
+        // Learn all 5 required novice knowledge items
+        LearningResult result1 = character.Learn(Noviceknowledge);
+        LearningResult result2 = character.Learn(Noviceknowledge2);
+        LearningResult result3 = character.Learn(Noviceknowledge3);
+        LearningResult result4 = character.Learn(Noviceknowledge4);
+        LearningResult result5 = character.Learn(NoviceknowledgeWithCost);
+
+        Assert.That(result1, Is.EqualTo(LearningResult.Success));
+        Assert.That(result2, Is.EqualTo(LearningResult.Success));
+        Assert.That(result3, Is.EqualTo(LearningResult.Success));
+        Assert.That(result4, Is.EqualTo(LearningResult.Success));
+        Assert.That(result5, Is.EqualTo(LearningResult.Success));
 
         RankUpResult rankUpResult = character.RankUp(IndustryWithKnowledge);
 
@@ -282,15 +331,11 @@ public class RuntimeCharacterTests
 
         character.JoinIndustry(IndustryWithKnowledge);
 
-        character.Learn(Noviceknowledge);
-        character.RankUp(IndustryWithKnowledge);
-
-        character.Learn(Apprenticeknowledge);
-        character.RankUp(IndustryWithKnowledge);
-
+        // Give character exactly enough points for the NoviceKnowledgeWithCost item (PointCost = 2)
         character.AddKnowledgePoints(2);
 
-        character.Learn(Journeymanknowledge2);
+        LearningResult result = character.Learn(NoviceknowledgeWithCost);
+        Assert.That(result, Is.EqualTo(LearningResult.Success));
 
         int knowledgePoints = character.GetKnowledgePoints();
 

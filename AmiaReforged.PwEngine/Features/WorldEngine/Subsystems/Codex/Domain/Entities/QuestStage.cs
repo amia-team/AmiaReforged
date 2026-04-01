@@ -25,6 +25,13 @@ public class QuestStage
     public bool IsCompletionStage { get; init; }
 
     /// <summary>
+    /// Explicit next-stage override. When all objective groups in this stage are satisfied
+    /// (and no group-level <see cref="QuestObjectiveGroup.CompletionStageId"/> fires first),
+    /// the quest advances to this stage. If null, falls back to the next numeric stage ID.
+    /// </summary>
+    public int? NextStageId { get; init; }
+
+    /// <summary>
     /// Optional hints revealed at this stage.
     /// </summary>
     public List<string> Hints { get; init; } = [];

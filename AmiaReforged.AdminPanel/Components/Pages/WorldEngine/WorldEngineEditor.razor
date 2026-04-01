@@ -889,6 +889,36 @@
                                                                        @onchange="e => stage.IsCompletionStage = (bool)(e.Value ?? false)" />
                                                                 <label class="form-check-label" for="ceStageComplete_@sid" style="font-size:0.78rem">Completion Stage (closes quest)</label>
                                                             </div>
+                                                            @if (!stage.IsCompletionStage)
+                                                            {
+                                                                <div class="form-group" style="margin-top:4px">
+                                                                    <label style="font-size:0.75rem">Next Stage Override</label>
+                                                                    <select class="form-select form-select-sm" style="font-size:0.78rem"
+                                                                            value="@(stage.NextStageId?.ToString() ?? "")"
+                                                                            @onchange="@(e => stage.NextStageId = string.IsNullOrEmpty(e.Value?.ToString()) ? null : int.Parse(e.Value!.ToString()!))">
+                                                                        <option value="">Auto</option>
+                                                                        @foreach (QuestStageDto otherStage in _ceQuestItem.Stages.OrderBy(s => s.StageId).Where(s => s.StageId != sid))
+                                                                        {
+                                                                            <option value="@otherStage.StageId">Stage @otherStage.StageId</option>
+                                                                        }
+                                                                    </select>
+                                                                    @{ int? fallback = CeComputeFallbackStageId(stage); }
+                                                                    <span style="font-size:0.68rem;color:var(--text-secondary);margin-top:2px">
+                                                                        @if (stage.NextStageId.HasValue)
+                                                                        {
+                                                                            @:Explicit: advances to Stage @stage.NextStageId
+                                                                        }
+                                                                        else if (fallback.HasValue)
+                                                                        {
+                                                                            @:Falls back to Stage @fallback
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            @:Last stage — no further advancement
+                                                                        }
+                                                                    </span>
+                                                                </div>
+                                                            }
                                                             <div>
                                                                 <label style="font-size:0.75rem;font-weight:600">Hints (@stage.Hints.Count)</label>
                                                                 @for (int hi = 0; hi < stage.Hints.Count; hi++)
@@ -956,6 +986,18 @@
                                                                                             <option value="All">All</option>
                                                                                             <option value="Any">Any</option>
                                                                                             <option value="Sequence">Sequence</option>
+                                                                                        </select>
+                                                                                    </div>
+                                                                                    <div class="form-group" style="flex:0 0 150px">
+                                                                                        <label style="font-size:0.7rem" title="Overrides stage-level Next Stage when this group completes first. Enables branching quest paths.">Branch Stage</label>
+                                                                                        <select class="form-select form-select-sm" style="font-size:0.78rem"
+                                                                                                value="@(grp.CompletionStageId?.ToString() ?? "")"
+                                                                                                @onchange="@(e => grp.CompletionStageId = string.IsNullOrEmpty(e.Value?.ToString()) ? null : int.Parse(e.Value!.ToString()!))">
+                                                                                            <option value="">None</option>
+                                                                                            @foreach (QuestStageDto branchStage in _ceQuestItem.Stages.OrderBy(s => s.StageId).Where(s => s.StageId != sid))
+                                                                                            {
+                                                                                                <option value="@branchStage.StageId">Stage @branchStage.StageId</option>
+                                                                                            }
                                                                                         </select>
                                                                                     </div>
                                                                                 </div>
@@ -5047,6 +5089,18 @@
     {
         if (!_ceExpandedStageIds.Add(stageId))
             _ceExpandedStageIds.Remove(stageId);
+    }
+
+    /// <summary>
+    /// Computes the auto-fallback next stage ID for a given stage.
+    /// Returns the next numeric stage ID after this one, or null if it's the last.
+    /// </summary>
+    private int? CeComputeFallbackStageId(QuestStageDto stage)
+    {
+        return _ceQuestItem.Stages
+            .Where(s => s.StageId > stage.StageId)
+            .OrderBy(s => s.StageId)
+            .FirstOrDefault()?.StageId;
     }
 
     private void CeAddHintToStage(int stageId)

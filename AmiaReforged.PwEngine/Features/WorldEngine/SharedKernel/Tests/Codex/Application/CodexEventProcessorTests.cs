@@ -605,6 +605,179 @@ public class CodexEventProcessorTests
     }
 
     #endregion
+
+    #region Objective Event Handling (No-Crash)
+
+    [Test]
+    public async Task Given_ObjectiveProgressedEvent_When_Processed_Then_NoCrash()
+    {
+        // Given
+        QuestId questId = QuestId.NewId();
+        await SeedQuest(questId);
+
+        ObjectiveProgressedEvent evt = new(
+            _characterId, DateTime.UtcNow, questId,
+            ObjectiveId.NewId(), OldCount: 0, NewCount: 1, RequiredCount: 3);
+
+        // When
+        _processor.Start();
+        await _processor.EnqueueEventAsync(evt);
+        await Task.Delay(100);
+        await _processor.StopAsync();
+
+        // Then — no crash, quest state unchanged
+        PlayerCodex? codex = await _repository.LoadAsync(_characterId);
+        Assert.That(codex!.GetQuest(questId)!.State, Is.EqualTo(QuestState.InProgress));
+    }
+
+    [Test]
+    public async Task Given_ObjectiveCompletedEvent_When_Processed_Then_NoCrash()
+    {
+        QuestId questId = QuestId.NewId();
+        await SeedQuest(questId);
+
+        ObjectiveCompletedEvent evt = new(
+            _characterId, DateTime.UtcNow, questId, ObjectiveId.NewId());
+
+        _processor.Start();
+        await _processor.EnqueueEventAsync(evt);
+        await Task.Delay(100);
+        await _processor.StopAsync();
+
+        PlayerCodex? codex = await _repository.LoadAsync(_characterId);
+        Assert.That(codex!.GetQuest(questId)!.State, Is.EqualTo(QuestState.InProgress));
+    }
+
+    [Test]
+    public async Task Given_ObjectiveFailedEvent_When_Processed_Then_NoCrash()
+    {
+        QuestId questId = QuestId.NewId();
+        await SeedQuest(questId);
+
+        ObjectiveFailedEvent evt = new(
+            _characterId, DateTime.UtcNow, questId, ObjectiveId.NewId(), "Escort died");
+
+        _processor.Start();
+        await _processor.EnqueueEventAsync(evt);
+        await Task.Delay(100);
+        await _processor.StopAsync();
+
+        PlayerCodex? codex = await _repository.LoadAsync(_characterId);
+        Assert.That(codex!.GetQuest(questId)!.State, Is.EqualTo(QuestState.InProgress));
+    }
+
+    [Test]
+    public async Task Given_QuestObjectiveGroupCompletedEvent_When_Processed_Then_NoCrash()
+    {
+        QuestId questId = QuestId.NewId();
+        await SeedQuest(questId);
+
+        QuestObjectiveGroupCompletedEvent evt = new(
+            _characterId, DateTime.UtcNow, questId, 0, "Main Objectives", null);
+
+        _processor.Start();
+        await _processor.EnqueueEventAsync(evt);
+        await Task.Delay(100);
+        await _processor.StopAsync();
+
+        PlayerCodex? codex = await _repository.LoadAsync(_characterId);
+        Assert.That(codex!.GetQuest(questId)!.State, Is.EqualTo(QuestState.InProgress));
+    }
+
+    #endregion
+
+    #region QuestStageAdvancedEvent Tests
+
+    [Test]
+    public async Task Given_QuestStageAdvancedEvent_When_Processed_Then_StageAdvanced()
+    {
+        // Given a quest at stage 10
+        QuestId questId = QuestId.NewId();
+        await SeedQuestWithStages(questId, 10,
+            new QuestStage { StageId = 10 },
+            new QuestStage { StageId = 20 },
+            new QuestStage { StageId = 30, IsCompletionStage = true });
+
+        QuestStageAdvancedEvent evt = new(
+            _characterId, DateTime.UtcNow.AddMinutes(5), questId, FromStage: 10, ToStage: 20);
+
+        // When
+        _processor.Start();
+        await _processor.EnqueueEventAsync(evt);
+        await Task.Delay(100);
+        await _processor.StopAsync();
+
+        // Then quest is now at stage 20, still InProgress
+        PlayerCodex? codex = await _repository.LoadAsync(_characterId);
+        CodexQuestEntry? quest = codex!.GetQuest(questId);
+        Assert.That(quest!.CurrentStageId, Is.EqualTo(20));
+        Assert.That(quest.State, Is.EqualTo(QuestState.InProgress));
+    }
+
+    [Test]
+    public async Task Given_QuestStageAdvancedEvent_ToCompletionStage_Then_QuestCompleted()
+    {
+        // Given a quest at stage 10 with stage 30 as completion
+        QuestId questId = QuestId.NewId();
+        await SeedQuestWithStages(questId, 10,
+            new QuestStage { StageId = 10 },
+            new QuestStage { StageId = 20 },
+            new QuestStage { StageId = 30, IsCompletionStage = true });
+
+        QuestStageAdvancedEvent evt = new(
+            _characterId, DateTime.UtcNow.AddMinutes(5), questId, FromStage: 10, ToStage: 30);
+
+        // When
+        _processor.Start();
+        await _processor.EnqueueEventAsync(evt);
+        await Task.Delay(100);
+        await _processor.StopAsync();
+
+        // Then quest is completed
+        PlayerCodex? codex = await _repository.LoadAsync(_characterId);
+        CodexQuestEntry? quest = codex!.GetQuest(questId);
+        Assert.That(quest!.CurrentStageId, Is.EqualTo(30));
+        Assert.That(quest.State, Is.EqualTo(QuestState.Completed));
+    }
+
+    #endregion
+
+    #region Seed Helpers
+
+    private async Task SeedQuest(QuestId questId)
+    {
+        QuestStartedEvent startEvt = new(_characterId, DateTime.UtcNow, questId, "Test Quest", "Test Desc");
+        _processor.Start();
+        await _processor.EnqueueEventAsync(startEvt);
+        await Task.Delay(100);
+        await _processor.StopAsync();
+    }
+
+    private async Task SeedQuestWithStages(QuestId questId, int initialStageId, params QuestStage[] stages)
+    {
+        // Manually build a codex with stages so we can test advancement
+        PlayerCodex codex = new(_characterId, DateTime.UtcNow);
+        CodexQuestEntry quest = new()
+        {
+            QuestId = questId,
+            Title = "Stage Test Quest",
+            Description = "A quest with stages",
+            DateStarted = DateTime.UtcNow,
+            Keywords = new List<Keyword>(),
+            Stages = stages.ToList()
+        };
+        codex.RecordQuestStarted(quest, DateTime.UtcNow);
+
+        // Advance to the initial stage if it's > 0
+        if (initialStageId > 0)
+        {
+            codex.AdvanceQuestStage(questId, initialStageId, DateTime.UtcNow);
+        }
+
+        await _repository.SaveAsync(codex);
+    }
+
+    #endregion
 }
 
 /// <summary>

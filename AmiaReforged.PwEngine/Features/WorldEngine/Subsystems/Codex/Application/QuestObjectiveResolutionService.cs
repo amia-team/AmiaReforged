@@ -170,7 +170,12 @@ public sealed class QuestObjectiveResolutionService
 
         if (objectiveGroups.Count == 0) return;
 
-        _sessionManager.CreateSession(characterId, quest.QuestId, objectiveGroups);
+        // Build stage context so the session can auto-advance when objectives complete
+        StageContext? stageContext = quest.Stages.Count > 0
+            ? new StageContext(quest.Stages, quest.CurrentStageId)
+            : null;
+
+        _sessionManager.CreateSession(characterId, quest.QuestId, objectiveGroups, stageContext: stageContext);
 
         Log.Debug("Created quest session: quest '{QuestId}' stage {StageId} for character {CharacterId} ({GroupCount} objective groups)",
             quest.QuestId.Value, quest.CurrentStageId, characterId, objectiveGroups.Count);
@@ -275,7 +280,12 @@ public sealed class QuestObjectiveResolutionService
     {
         List<QuestObjectiveGroup> objectiveGroups = GetCurrentStageObjectiveGroups(quest);
         if (objectiveGroups.Count == 0) return;
-        sessionManager.CreateSession(characterId, quest.QuestId, objectiveGroups);
+
+        StageContext? stageContext = quest.Stages.Count > 0
+            ? new StageContext(quest.Stages, quest.CurrentStageId)
+            : null;
+
+        sessionManager.CreateSession(characterId, quest.QuestId, objectiveGroups, stageContext: stageContext);
     }
 
     private static void RouteSignalStatic(

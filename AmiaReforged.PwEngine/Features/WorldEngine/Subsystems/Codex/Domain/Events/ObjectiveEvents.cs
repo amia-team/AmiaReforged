@@ -45,5 +45,6 @@ public sealed record QuestObjectiveGroupCompletedEvent(
     DateTime OccurredAt,
     QuestId QuestId,
     int GroupIndex,
-    string GroupName
+    string GroupName,
+    int? CompletionStageId
 ) : CodexDomainEvent(CharacterId, OccurredAt);

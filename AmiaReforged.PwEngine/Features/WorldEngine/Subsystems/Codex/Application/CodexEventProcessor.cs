@@ -211,6 +211,29 @@ public class CodexEventProcessor
                 // created via a separate QuestClaimedEvent.
                 break;
 
+            // --- Objective tracking events (runtime state managed by QuestSession) ---
+
+            case ObjectiveProgressedEvent:
+            case ObjectiveCompletedEvent:
+            case ObjectiveFailedEvent:
+            case QuestObjectiveGroupCompletedEvent:
+                // These events are emitted by QuestSession for observability / logging.
+                // Runtime objective state lives in-memory on the session; the codex
+                // does not persist per-objective progress. No mutation needed.
+                break;
+
+            case QuestStageAdvancedEvent qsae:
+                codex.AdvanceQuestStage(qsae.QuestId, qsae.ToStage, qsae.OccurredAt);
+                // If the new stage is a completion stage, mark the quest completed
+                CodexQuestEntry? advancedQuest = codex.GetQuest(qsae.QuestId);
+                QuestStage? targetStage = advancedQuest?.Stages
+                    .FirstOrDefault(s => s.StageId == qsae.ToStage);
+                if (targetStage is { IsCompletionStage: true })
+                {
+                    codex.RecordQuestCompleted(qsae.QuestId, qsae.OccurredAt);
+                }
+                break;
+
             default:
                 throw new NotSupportedException($"Event type {domainEvent.GetType().Name} is not supported");
         }

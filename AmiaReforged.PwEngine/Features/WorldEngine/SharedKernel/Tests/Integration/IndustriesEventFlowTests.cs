@@ -40,7 +40,7 @@ public class IndustriesEventFlowTests
         // Set up event bus
         _eventBus = new InMemoryEventBus();
 
-        // Create test industry
+        // Create test industry with 5 novice knowledge items (required for rank-up)
         Industry testIndustry = new Industry
         {
             Tag = _industryTag.Value,
@@ -51,6 +51,38 @@ public class IndustriesEventFlowTests
                 {
                     Tag = "test_knowledge",
                     Name = "Test Knowledge",
+                    Description = "Test",
+                    Level = ProficiencyLevel.Novice,
+                    PointCost = 1
+                },
+                new Knowledge
+                {
+                    Tag = "test_knowledge_2",
+                    Name = "Test Knowledge 2",
+                    Description = "Test",
+                    Level = ProficiencyLevel.Novice,
+                    PointCost = 1
+                },
+                new Knowledge
+                {
+                    Tag = "test_knowledge_3",
+                    Name = "Test Knowledge 3",
+                    Description = "Test",
+                    Level = ProficiencyLevel.Novice,
+                    PointCost = 1
+                },
+                new Knowledge
+                {
+                    Tag = "test_knowledge_4",
+                    Name = "Test Knowledge 4",
+                    Description = "Test",
+                    Level = ProficiencyLevel.Novice,
+                    PointCost = 1
+                },
+                new Knowledge
+                {
+                    Tag = "test_knowledge_5",
+                    Name = "Test Knowledge 5",
                     Description = "Test",
                     Level = ProficiencyLevel.Novice,
                     PointCost = 1
@@ -151,10 +183,16 @@ public class IndustriesEventFlowTests
             CharacterId = CharacterId.From(_characterId),
             IndustryTag = _industryTag,
             Level = ProficiencyLevel.Novice,
+            ProficiencyXpLevel = 25, // Required tier ceiling for Novice → Apprentice
             CharacterKnowledge = new List<CharacterKnowledge>()
         };
         _membershipService.AddMembership(membership);
+        // Learn all 5 novice knowledge items (required for rank-up)
         _membershipService.LearnKnowledge(membership, "test_knowledge");
+        _membershipService.LearnKnowledge(membership, "test_knowledge_2");
+        _membershipService.LearnKnowledge(membership, "test_knowledge_3");
+        _membershipService.LearnKnowledge(membership, "test_knowledge_4");
+        _membershipService.LearnKnowledge(membership, "test_knowledge_5");
         _eventBus.ClearPublishedEvents(); // Clear previous events
 
         // Act - Rank up
@@ -185,21 +223,30 @@ public class IndustriesEventFlowTests
             CharacterId = CharacterId.From(_characterId),
             IndustryTag = _industryTag,
             Level = ProficiencyLevel.Novice,
+            ProficiencyXpLevel = 25, // Required tier ceiling for Novice → Apprentice
             CharacterKnowledge = new List<CharacterKnowledge>()
         };
 
         // Act - Perform multiple operations
         _membershipService.AddMembership(membership);
         _membershipService.LearnKnowledge(membership, "test_knowledge");
+        _membershipService.LearnKnowledge(membership, "test_knowledge_2");
+        _membershipService.LearnKnowledge(membership, "test_knowledge_3");
+        _membershipService.LearnKnowledge(membership, "test_knowledge_4");
+        _membershipService.LearnKnowledge(membership, "test_knowledge_5");
         _membershipService.RankUp(membership);
 
         // Assert - Verify all events published in order
         IReadOnlyList<IDomainEvent> events = _eventBus.PublishedEvents;
-        Assert.That(events, Has.Count.EqualTo(3), "Should publish three events");
+        Assert.That(events, Has.Count.EqualTo(7), "Should publish seven events");
 
         Assert.That(events[0], Is.TypeOf<MemberJoinedIndustryEvent>(), "First event should be MemberJoined");
         Assert.That(events[1], Is.TypeOf<RecipeLearnedEvent>(), "Second event should be RecipeLearned");
-        Assert.That(events[2], Is.TypeOf<ProficiencyGainedEvent>(), "Third event should be ProficiencyGained");
+        Assert.That(events[2], Is.TypeOf<RecipeLearnedEvent>(), "Third event should be RecipeLearned");
+        Assert.That(events[3], Is.TypeOf<RecipeLearnedEvent>(), "Fourth event should be RecipeLearned");
+        Assert.That(events[4], Is.TypeOf<RecipeLearnedEvent>(), "Fifth event should be RecipeLearned");
+        Assert.That(events[5], Is.TypeOf<RecipeLearnedEvent>(), "Sixth event should be RecipeLearned");
+        Assert.That(events[6], Is.TypeOf<ProficiencyGainedEvent>(), "Seventh event should be ProficiencyGained");
     }
 }
 

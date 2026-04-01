@@ -1,10 +1,20 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Objectives;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Aggregates;
+
+/// <summary>
+/// Optional context that enables automatic stage advancement when objective groups complete.
+/// When provided, the session can resolve the next stage using the priority chain:
+/// <c>Group.CompletionStageId > Stage.NextStageId > next numeric stage ID</c>.
+/// </summary>
+/// <param name="AllStages">All stages defined for this quest, in any order.</param>
+/// <param name="CurrentStageId">The stage the player is currently on.</param>
+public sealed record StageContext(IReadOnlyList<QuestStage> AllStages, int CurrentStageId);
 
 /// <summary>
 /// Runtime aggregate managing the live state of a player's active quest objectives.
@@ -16,8 +26,12 @@ public class QuestSession
     private readonly IObjectiveEvaluatorRegistry _evaluatorRegistry;
     private readonly Dictionary<ObjectiveId, ObjectiveState> _objectiveStates = new();
     private readonly Dictionary<ObjectiveId, ObjectiveDefinition> _objectiveDefinitions = new();
-    private readonly List<QuestObjectiveGroup> _groups;
+    private List<QuestObjectiveGroup> _groups;
     private readonly Dictionary<int, bool> _groupCompletionStatus = new();
+
+    // Stage context for auto-advancement (null = no auto-advancement; backward compatible)
+    private readonly IReadOnlyList<QuestStage>? _allStages;
+    private int _currentStageId;
 
     /// <summary>The quest this session tracks.</summary>
     public QuestId QuestId { get; }
@@ -49,6 +63,9 @@ public class QuestSession
     /// <summary>Whether any objective has failed (and the quest should be considered failed).</summary>
     public bool HasFailure => _objectiveStates.Values.Any(s => s.IsFailed);
 
+    /// <summary>The stage currently being tracked. Updated when the session auto-advances.</summary>
+    public int CurrentStageId => _currentStageId;
+
     public QuestSession(
         QuestId questId,
         CharacterId characterId,
@@ -56,7 +73,8 @@ public class QuestSession
         IObjectiveEvaluatorRegistry evaluatorRegistry,
         DateTime createdAt,
         DateTime? deadline = null,
-        List<CharacterId>? partyMembers = null)
+        List<CharacterId>? partyMembers = null,
+        StageContext? stageContext = null)
     {
         QuestId = questId;
         CharacterId = characterId;
@@ -65,6 +83,9 @@ public class QuestSession
         CreatedAt = createdAt;
         Deadline = deadline;
         PartyMembers = partyMembers ?? [characterId];
+
+        _allStages = stageContext?.AllStages;
+        _currentStageId = stageContext?.CurrentStageId ?? 0;
 
         // Ensure the primary character is always in the party
         if (!PartyMembers.Contains(characterId))
@@ -209,11 +230,77 @@ public class QuestSession
             _ => false
         };
 
-        if (isComplete)
+        if (!isComplete) return events;
+
+        _groupCompletionStatus[groupIndex] = true;
+        events.Add(new QuestObjectiveGroupCompletedEvent(
+            CharacterId, now, QuestId, groupIndex, group.DisplayName, group.CompletionStageId));
+
+        // ── Auto-stage-advancement ──────────────────────────────────
+        // Priority: Group.CompletionStageId > (all groups done) Stage.NextStageId > next numeric stage
+        if (_allStages is null) return events;
+
+        if (group.CompletionStageId.HasValue)
         {
-            _groupCompletionStatus[groupIndex] = true;
-            events.Add(new QuestObjectiveGroupCompletedEvent(
-                CharacterId, now, QuestId, groupIndex, group.DisplayName));
+            // Group-level branch — advance immediately when this group completes
+            events.AddRange(AdvanceToStageInternal(group.CompletionStageId.Value, now));
+        }
+        else if (IsFullyCompleted)
+        {
+            // All groups done — resolve target via stage-level or numeric fallback
+            int? target = ResolveNextStageId();
+            if (target.HasValue)
+            {
+                events.AddRange(AdvanceToStageInternal(target.Value, now));
+            }
+        }
+
+        return events;
+    }
+
+    /// <summary>
+    /// Resolves the next stage ID using the priority chain:
+    /// <c>CurrentStage.NextStageId > next numeric stage in the quest</c>.
+    /// Returns null if no further stage exists (quest is at its last stage).
+    /// </summary>
+    private int? ResolveNextStageId()
+    {
+        if (_allStages is null) return null;
+
+        QuestStage? currentStage = _allStages.FirstOrDefault(s => s.StageId == _currentStageId);
+
+        // Explicit override on the current stage
+        if (currentStage?.NextStageId is { } explicitNext) return explicitNext;
+
+        // Fallback: next numeric stage after current
+        return _allStages
+            .Where(s => s.StageId > _currentStageId)
+            .OrderBy(s => s.StageId)
+            .FirstOrDefault()?.StageId;
+    }
+
+    /// <summary>
+    /// Advances the session to a new stage: emits a <see cref="QuestStageAdvancedEvent"/>,
+    /// then reinitializes objective tracking for the new stage's groups.
+    /// </summary>
+    private IReadOnlyList<CodexDomainEvent> AdvanceToStageInternal(int targetStageId, DateTime now)
+    {
+        List<CodexDomainEvent> events = [];
+        int fromStage = _currentStageId;
+        _currentStageId = targetStageId;
+
+        events.Add(new QuestStageAdvancedEvent(
+            CharacterId, now, QuestId, fromStage, targetStageId));
+
+        // Load the new stage's objective groups and reinitialize tracking
+        QuestStage? newStage = _allStages?.FirstOrDefault(s => s.StageId == targetStageId);
+        if (newStage is not null)
+        {
+            _groups = newStage.ObjectiveGroups;
+            _objectiveStates.Clear();
+            _objectiveDefinitions.Clear();
+            _groupCompletionStatus.Clear();
+            InitializeObjectiveStates();
         }
 
         return events;

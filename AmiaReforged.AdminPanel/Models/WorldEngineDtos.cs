@@ -218,6 +218,13 @@ public class QuestStageDto
     /// <summary>If true, reaching this stage marks the quest as completed.</summary>
     public bool IsCompletionStage { get; set; }
 
+    /// <summary>
+    /// Explicit next-stage override. When all objective groups complete and no group-level
+    /// CompletionStageId fires first, the quest advances to this stage.
+    /// If null, falls back to the next numeric stage ID.
+    /// </summary>
+    public int? NextStageId { get; set; }
+
     private List<string>? _hints;
     /// <summary>Optional hints revealed at this stage.</summary>
     public List<string> Hints
@@ -243,6 +250,11 @@ public class ObjectiveGroupDto
     /// <summary>Display name for this group (e.g. "Find the stolen artifacts").</summary>
     public string DisplayName { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Optional stage ID the quest advances to when this specific group completes.
+    /// Overrides the stage-level NextStageId. Enables branching quest paths.
+    /// </summary>
+    public int? CompletionStageId { get; set; }
 
     /// <summary>How objectives in this group must be satisfied: All, Any, or Sequence.</summary>
     public string CompletionMode { get; set; } = "All";
