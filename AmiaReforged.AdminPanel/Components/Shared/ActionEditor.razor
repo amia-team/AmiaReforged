@@ -83,16 +83,11 @@
 
             case "GiveItem":
             case "TakeItem":
-                <div class="flex-grow-1" style="min-width:140px">
-                    <SearchableSelect TItem="ItemBlueprintDto"
-                                      SearchFunc="SearchItems"
-                                      DisplayFunc="@(i => $"{i.Name} ({i.ItemTag})")"
-                                      ValueFunc="@(i => i.ItemTag)"
-                                      Value="@(GetParam("itemTag"))"
-                                      ValueChanged="@(v => SetParam("itemTag", v))"
-                                      DisplayText="@(GetParam("itemTag"))"
-                                      Placeholder="Search items…" />
-                </div>
+                <input class="form-control form-control-sm bg-dark text-light border-secondary flex-grow-1"
+                       style="min-width:140px"
+                       placeholder="Item tag"
+                       value="@(GetParam("itemTag"))"
+                       @onchange="@((ChangeEventArgs e) => SetParam("itemTag", e.Value?.ToString() ?? ""))" />
                 <input type="number"
                        class="form-control form-control-sm bg-dark text-light border-secondary"
                        style="width:75px"
