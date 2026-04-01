@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Objectives.Evaluators;
 
@@ -7,6 +8,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Obj
 /// signals matching the definition's target tag and increments the counter.
 /// Also listens for <see cref="SignalType.ItemLost"/> to decrement if configured.
 /// </summary>
+[ServiceBinding(typeof(IObjectiveEvaluator))]
 public sealed class CollectObjectiveEvaluator : IObjectiveEvaluator
 {
     public string TypeTag => "collect";

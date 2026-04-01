@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Objectives.Evaluators;
 
@@ -7,6 +8,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Obj
 /// via signals and completes when the NPC reaches a destination waypoint,
 /// or fails if the NPC dies.
 /// </summary>
+[ServiceBinding(typeof(IObjectiveEvaluator))]
 public sealed class EscortObjectiveEvaluator : IObjectiveEvaluator
 {
     public string TypeTag => "escort";

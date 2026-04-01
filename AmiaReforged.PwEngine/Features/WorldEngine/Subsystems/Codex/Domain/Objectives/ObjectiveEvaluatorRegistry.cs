@@ -1,9 +1,12 @@
+using Anvil.Services;
+
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Objectives;
 
 /// <summary>
 /// In-memory registry for objective evaluators.
 /// Used in tests and as the runtime implementation.
 /// </summary>
+[ServiceBinding(typeof(IObjectiveEvaluatorRegistry))]
 public sealed class ObjectiveEvaluatorRegistry : IObjectiveEvaluatorRegistry
 {
     private readonly Dictionary<string, IObjectiveEvaluator> _evaluators;

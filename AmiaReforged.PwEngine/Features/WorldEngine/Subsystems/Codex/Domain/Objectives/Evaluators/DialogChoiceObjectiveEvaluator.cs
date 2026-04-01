@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Objectives.Evaluators;
 
@@ -7,6 +8,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Obj
 /// a specific dialog choice identified by the target tag.
 /// Supports requiring a specific choice key via the signal payload.
 /// </summary>
+[ServiceBinding(typeof(IObjectiveEvaluator))]
 public sealed class DialogChoiceObjectiveEvaluator : IObjectiveEvaluator
 {
     public string TypeTag => "dialog_choice";

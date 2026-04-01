@@ -4,6 +4,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Objectives;
 
@@ -11,6 +12,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Obj
 /// Manages active quest sessions per character.
 /// Provides signal routing and session lifecycle management.
 /// </summary>
+[ServiceBinding(typeof(QuestSessionManager))]
 public class QuestSessionManager
 {
     private readonly IObjectiveEvaluatorRegistry _registry;

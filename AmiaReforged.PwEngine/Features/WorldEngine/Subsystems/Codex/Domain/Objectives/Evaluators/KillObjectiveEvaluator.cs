@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Objectives.Evaluators;
 
@@ -7,6 +8,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Obj
 /// signals matching the definition's <see cref="ObjectiveDefinition.TargetTag"/>
 /// and increments the counter until <see cref="ObjectiveDefinition.RequiredCount"/> is reached.
 /// </summary>
+[ServiceBinding(typeof(IObjectiveEvaluator))]
 public sealed class KillObjectiveEvaluator : IObjectiveEvaluator
 {
     public string TypeTag => "kill";

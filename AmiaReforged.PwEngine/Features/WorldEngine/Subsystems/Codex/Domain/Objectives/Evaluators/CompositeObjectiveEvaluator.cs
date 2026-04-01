@@ -1,6 +1,7 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Objectives.Evaluators;
 
@@ -13,6 +14,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Obj
 /// to each child, then checks the group's completion mode.
 /// </para>
 /// </summary>
+[ServiceBinding(typeof(IObjectiveEvaluator))]
 public sealed class CompositeObjectiveEvaluator : IObjectiveEvaluator
 {
     public string TypeTag => "composite";

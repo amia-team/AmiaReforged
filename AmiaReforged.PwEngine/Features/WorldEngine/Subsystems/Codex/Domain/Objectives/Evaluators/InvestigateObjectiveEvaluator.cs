@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Objectives.Models;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Objectives.Evaluators;
 
@@ -15,6 +16,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Obj
 /// reaching a terminal success/failure state completes/fails the objective.
 /// </para>
 /// </summary>
+[ServiceBinding(typeof(IObjectiveEvaluator))]
 public sealed class InvestigateObjectiveEvaluator : IObjectiveEvaluator
 {
     public string TypeTag => "investigate";

@@ -9,8 +9,10 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application.Co
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Aggregates;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Objectives;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Repositories;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Nui.Player;
 using Anvil.API;
 using Anvil.Services;
@@ -32,19 +34,25 @@ public sealed class CodexSubsystem : ICodexSubsystem
     private readonly ICommandHandler<OpenCodexCommand> _openHandler;
     private readonly ICommandHandler<CloseCodexCommand> _closeHandler;
     private readonly WindowDirector _windowDirector;
+    private readonly QuestSessionManager _sessionManager;
+    private readonly QuestObjectiveResolutionService _resolutionService;
 
     public CodexSubsystem(
         IPlayerCodexRepository codexRepository,
         PwContextFactory contextFactory,
         ICommandHandler<OpenCodexCommand> openHandler,
         ICommandHandler<CloseCodexCommand> closeHandler,
-        WindowDirector windowDirector)
+        WindowDirector windowDirector,
+        QuestSessionManager sessionManager,
+        QuestObjectiveResolutionService resolutionService)
     {
         _codexRepository = codexRepository;
         _contextFactory = contextFactory;
         _openHandler = openHandler;
         _closeHandler = closeHandler;
         _windowDirector = windowDirector;
+        _sessionManager = sessionManager;
+        _resolutionService = resolutionService;
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -378,6 +386,14 @@ public sealed class CodexSubsystem : ICodexSubsystem
             }
 
             await _codexRepository.SaveAsync(codex);
+
+            // Create/update the quest session so objective tracking begins immediately
+            CodexQuestEntry? updatedEntry = codex.GetQuest(qid);
+            if (updatedEntry is { State: QuestState.InProgress })
+            {
+                _resolutionService.CreateSessionForQuest(characterId, updatedEntry);
+            }
+
             Log.Info("SetQuestStage: quest '{QuestId}' → stage {StageId} for character {CharacterId}",
                 questId, stageId, characterId);
             return CommandResult.OkWith("questId", questId);

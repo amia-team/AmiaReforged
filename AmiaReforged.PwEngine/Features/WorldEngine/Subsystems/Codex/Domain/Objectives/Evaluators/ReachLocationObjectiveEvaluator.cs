@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Objectives.Evaluators;
 
@@ -6,6 +7,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Obj
 /// Evaluates reach-location objectives. Completes when the player enters
 /// an area whose resref matches the definition's target tag.
 /// </summary>
+[ServiceBinding(typeof(IObjectiveEvaluator))]
 public sealed class ReachLocationObjectiveEvaluator : IObjectiveEvaluator
 {
     public string TypeTag => "reach_location";
