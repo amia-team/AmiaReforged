@@ -24,6 +24,14 @@ public class DispelService
         DevourMagic = 1014
     }
 
+    private record DispelInfo
+    (
+        string Name,
+        int InnateLevel,
+        int CasterLevel,
+        Func<bool> DispelAction
+    );
+
     /// <summary>
     /// Dispels all or a set number of spells on a target using Amia's custom dispel system.
     /// Runs dispel checks per magical effects and temporary item properties, grouped by spell and creator.
@@ -54,48 +62,51 @@ public class DispelService
         int featBonus = GetAbjurationFocusBonus(caster);
         dispelCl += featBonus;
 
-        // 3. Begin the dispel process
+        // 3. Begin the dispel process: Iterate dispels into a dispel info list
+        List<DispelInfo> spellsToDispel = [];
 
-        // Store an empty list of spells dispelled to send feedback to the caster
-        List<(string SpellName, int EffectCasterLevel)> dispelInfo = [];
+        // 3.1. Map magic effects to dispel info
+        spellsToDispel.AddRange(ListEffectsBySpell(target).Select(effects => new DispelInfo
+        (
+            Name: effects[0].Spell?.Name.ToString() ?? "Unknown Spell",
+            InnateLevel: effects[0].Spell?.InnateSpellLevel ?? 0,
+            CasterLevel: effects[0].CasterLevel,
+            DispelAction: () => TryDispelEffect(target, effects, dispelCl)
+        )));
 
-        // 3.1. First try to dispel spell effects on the target
-        List<Effect[]> effectsBySpell = ListEffectsBySpell(target);
-        foreach (Effect[] effectsPerSpell in effectsBySpell)
+        // 3.2. Map pairs of item and item property to dispel info
+        spellsToDispel.AddRange(ListItemPropertiesBySpell(target).Select(pair => new DispelInfo
+        (
+            Name: pair.ItemProperties[0].Spell?.Name.ToString() ?? "Unknown Spell",
+            InnateLevel: pair.ItemProperties[0].Spell?.InnateSpellLevel ?? 0,
+            CasterLevel: pair.ItemProperties[0].CasterLevel,
+            DispelAction: () => TryDispelItemProperty(pair.Item, pair.ItemProperties, dispelCl)
+        )));
+
+        // 3.3. Sort dispel info by spell level and caster level so dispelling prioritizes strongest effects
+        spellsToDispel = spellsToDispel
+            .OrderByDescending(t => t.InnateLevel)
+            .ThenByDescending(t => t.CasterLevel)
+            .ToList();
+
+        List<(string SpellName, int EffectCasterLevel)> dispelFeedbackList = [];
+
+        // 4. Dispel spells in dispel info list
+        foreach (DispelInfo dispelInfo in spellsToDispel)
         {
-            if (maxSpells > 0 && dispelInfo.Count >= maxSpells) break;
+            // If a max number of spells is specified, stop dispelling after that number is dispelled
+            if (maxSpells > 0 && spellsToDispel.Count >= maxSpells) break;
 
-            if (TryDispelEffect(target, effectsPerSpell, dispelCl))
+            if (dispelInfo.DispelAction.Invoke())
             {
-                string spellName = effectsPerSpell[0].Spell?.Name.ToString() ?? "Unknown Spell";
-                int effectCasterLevel = effectsPerSpell[0].CasterLevel;
-                dispelInfo.Add((spellName, effectCasterLevel));
+                dispelFeedbackList.Add((dispelInfo.Name, dispelInfo.CasterLevel));
             }
         }
 
-        // Return early if we've reached the cap before trying to dispel item properties
-        if (maxSpells > 0 && dispelInfo.Count >= maxSpells)
-        {
-            SendDispelFeedback(caster, target, dispelInfo);
-            return dispelInfo.Count;
-        }
-
-        // 3.2. Then dispel try to dispel temporary item properties on the target
-        List<(NwItem Item, ItemProperty[] ItemProperties)> itemPropsByItem = ListItemPropertiesBySpell(target);
-        foreach ((NwItem Item, ItemProperty[] ItemProperties) var in itemPropsByItem)
-        {
-            if (maxSpells > 0 && dispelInfo.Count >= maxSpells) break;
-
-            if (TryDispelItemProperty(var.Item, var.ItemProperties, dispelCl))
-            {
-                string spellName = var.ItemProperties[0].Spell?.Name.ToString() ?? "Unknown Spell";
-                int effectCasterLevel = var.ItemProperties[0].CasterLevel;
-                dispelInfo.Add((spellName, effectCasterLevel));
-            }
-        }
-
-        SendDispelFeedback(caster, target, dispelInfo);
-        return dispelInfo.Count;
+        // 5. Send dispel feedback to the caster and target, removing duplicate feedback info
+        dispelFeedbackList = dispelFeedbackList.Distinct().ToList();
+        SendDispelFeedback(caster, target, dispelFeedbackList);
+        return spellsToDispel.Count;
     }
 
     /// <summary>
@@ -103,10 +114,9 @@ public class DispelService
     /// Sorted by spell level and caster level from highest to lowest.
     /// </summary>
     private static List<Effect[]> ListEffectsBySpell(NwGameObject target) => target.ActiveEffects
-        .Where(e => e is { Spell: not null, SubType: EffectSubType.Magical })
+        .Where(e => e is { Spell: not null, SubType: EffectSubType.Magical,
+            EffectType: not (EffectType.SummonCreature or EffectType.Swarm) })
         .GroupBy(e => new {e.Spell, e.Creator})
-        .OrderByDescending(group => group.Key.Spell!.InnateSpellLevel)
-        .ThenByDescending(group => group.Max(e => e.CasterLevel))
         .Select(group => group.ToArray())
         .ToList();
 
@@ -123,8 +133,6 @@ public class DispelService
                 group.Key.Item,
                 ItemProperties: group.Select(x => x.ItemProperty).ToArray()
             ))
-            .OrderByDescending(x => x.ItemProperties[0].Spell!.InnateSpellLevel)
-            .ThenByDescending(x => x.ItemProperties[0].CasterLevel)
             .ToList();
 
     private static readonly InventorySlot[] AllSlots = Enum.GetValues<InventorySlot>();
@@ -225,7 +233,7 @@ public class DispelService
         bool targetIsPlayer = target.IsPlayerControlled(out NwPlayer? targetPlayer);
         if (!casterIsPlayer && !targetIsPlayer) return;
 
-        string dispelMessage = $"{caster.Name} dispelled from {target.Name}:".ColorString(ColorConstants.Lime);
+        string dispelMessage = $"{caster.Name} dispelled from {target.Name}:".ColorString(ColorConstants.Magenta);
         foreach ((string SpellName, int EffectCasterLevel) dispel in dispelInfo)
         {
             dispelMessage += $"\n -{dispel.SpellName} ({dispel.EffectCasterLevel})".ColorString(ColorConstants.Gray);
@@ -245,7 +253,7 @@ public class DispelService
         string spellName = areaOfEffect.Spell?.Name.ToString() ?? "Unknown Spell";
         int effectCasterLevel = areaOfEffect.CasterLevel;
 
-        string dispelMessage = $"Dispelled area of effect: {spellName} ({effectCasterLevel})".ColorString(ColorConstants.Lime);
+        string dispelMessage = $"Dispelled area of effect: {spellName} ({effectCasterLevel})".ColorString(ColorConstants.Magenta);
 
         player.SendServerMessage(dispelMessage);
     }
