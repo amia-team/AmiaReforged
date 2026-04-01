@@ -24,14 +24,16 @@ public class CompositeObjectiveTests
             killEvaluator, collectEvaluator
         });
 
-        _evaluator = new CompositeObjectiveEvaluator(_registry);
+        // Use Lazy to break the circular dependency (same as runtime DI)
+        Lazy<IObjectiveEvaluatorRegistry> lazyRegistry = null!;
+        _evaluator = new CompositeObjectiveEvaluator(new Lazy<IObjectiveEvaluatorRegistry>(() => lazyRegistry.Value));
 
         // Register composite itself so nested composites would work
         _registry = new ObjectiveEvaluatorRegistry(new IObjectiveEvaluator[]
         {
             killEvaluator, collectEvaluator, _evaluator
         });
-        _evaluator = new CompositeObjectiveEvaluator(_registry);
+        lazyRegistry = new Lazy<IObjectiveEvaluatorRegistry>(() => _registry);
     }
 
     #region All Mode

@@ -29,9 +29,9 @@ public sealed class CompositeObjectiveEvaluator : IObjectiveEvaluator
     private const string ChildStatesKey = "child_states";
     private const string InitializedKey = "composite_initialized";
 
-    private readonly IObjectiveEvaluatorRegistry _registry;
+    private readonly Lazy<IObjectiveEvaluatorRegistry> _registry;
 
-    public CompositeObjectiveEvaluator(IObjectiveEvaluatorRegistry registry)
+    public CompositeObjectiveEvaluator(Lazy<IObjectiveEvaluatorRegistry> registry)
     {
         _registry = registry;
     }
@@ -54,7 +54,7 @@ public sealed class CompositeObjectiveEvaluator : IObjectiveEvaluator
                 IsActive = mode != CompletionMode.Sequence || i == 0
             };
 
-            IObjectiveEvaluator? evaluator = _registry.GetEvaluator(child.TypeTag);
+            IObjectiveEvaluator? evaluator = _registry.Value.GetEvaluator(child.TypeTag);
             evaluator?.Initialize(child, childState);
 
             childStates[child.ObjectiveId.Value] = childState;
@@ -90,7 +90,7 @@ public sealed class CompositeObjectiveEvaluator : IObjectiveEvaluator
             if (!childState.IsActive || childState.IsTerminal)
                 continue;
 
-            IObjectiveEvaluator? evaluator = _registry.GetEvaluator(child.TypeTag);
+            IObjectiveEvaluator? evaluator = _registry.Value.GetEvaluator(child.TypeTag);
             if (evaluator == null)
                 continue;
 
