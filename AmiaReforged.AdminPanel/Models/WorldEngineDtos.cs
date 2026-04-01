@@ -676,6 +676,7 @@ public class DialogueChoiceDto
 public class DialogueConditionDto
 {
     public string Type { get; set; } = string.Empty;
+    public bool Negate { get; set; }
     public Dictionary<string, string> Parameters { get; set; } = new();
 }
 

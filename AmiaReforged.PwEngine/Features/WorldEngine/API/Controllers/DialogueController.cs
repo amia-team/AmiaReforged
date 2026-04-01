@@ -415,6 +415,7 @@ public class DialogueController
     private record DialogueConditionDto
     {
         public string Type { get; init; } = string.Empty;
+        public bool Negate { get; init; }
         public Dictionary<string, string>? Parameters { get; init; }
     }
 

@@ -48,6 +48,7 @@ public sealed class DialogueConditionRegistry
             try
             {
                 bool result = await evaluator.EvaluateAsync(condition, player, characterId);
+                if (condition.Negate) result = !result;
                 if (!result) return false;
             }
             catch (Exception ex)

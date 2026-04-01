@@ -14,6 +14,12 @@ public sealed class DialogueCondition
     public DialogueConditionType Type { get; init; }
 
     /// <summary>
+    /// When true, the condition result is inverted (logical NOT).
+    /// A negated HasItem condition passes when the player does NOT have the item.
+    /// </summary>
+    public bool Negate { get; init; }
+
+    /// <summary>
     /// Key-value parameters specific to the condition type.
     /// For example, HasItem: { "itemTag": "quest_gem", "count": "1" }.
     /// </summary>

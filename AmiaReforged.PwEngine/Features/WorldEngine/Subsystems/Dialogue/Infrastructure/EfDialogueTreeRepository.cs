@@ -172,6 +172,7 @@ public sealed class EfDialogueTreeRepository : IDialogueTreeRepository
             Conditions = n.Conditions.Select(cond => new ConditionJsonModel
             {
                 Type = cond.Type,
+                Negate = cond.Negate,
                 Parameters = cond.Parameters
             }).ToList(),
             Choices = n.Choices.Select(c => new ChoiceJsonModel
@@ -182,6 +183,7 @@ public sealed class EfDialogueTreeRepository : IDialogueTreeRepository
                 Conditions = c.Conditions.Select(cond => new ConditionJsonModel
                 {
                     Type = cond.Type,
+                    Negate = cond.Negate,
                     Parameters = cond.Parameters
                 }).ToList()
             }).ToList(),
@@ -217,6 +219,7 @@ public sealed class EfDialogueTreeRepository : IDialogueTreeRepository
                 Conditions = m.Conditions.Select(cond => new DialogueCondition
                 {
                     Type = cond.Type,
+                    Negate = cond.Negate,
                     Parameters = cond.Parameters ?? new Dictionary<string, string>()
                 }).ToList(),
                 Choices = m.Choices.Select(c => new DialogueChoice
@@ -227,6 +230,7 @@ public sealed class EfDialogueTreeRepository : IDialogueTreeRepository
                     Conditions = c.Conditions.Select(cond => new DialogueCondition
                     {
                         Type = cond.Type,
+                        Negate = cond.Negate,
                         Parameters = cond.Parameters ?? new Dictionary<string, string>()
                     }).ToList()
                 }).ToList(),
@@ -280,6 +284,7 @@ public sealed class EfDialogueTreeRepository : IDialogueTreeRepository
     private sealed record ConditionJsonModel
     {
         public DialogueConditionType Type { get; init; }
+        public bool Negate { get; init; }
         public Dictionary<string, string>? Parameters { get; init; }
     }
 
