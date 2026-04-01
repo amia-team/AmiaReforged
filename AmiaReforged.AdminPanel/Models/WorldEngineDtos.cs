@@ -215,8 +215,15 @@ public class QuestStageDto
     /// <summary>Journal text displayed to the player when this stage is reached.</summary>
     public string JournalText { get; set; } = string.Empty;
 
-    /// <summary>If true, reaching this stage marks the quest as completed.</summary>
+    /// <summary>If true, reaching this stage marks the quest as completed. Prefer QuestState for new quests.</summary>
     public bool IsCompletionStage { get; set; }
+
+    /// <summary>
+    /// The quest state applied when the player reaches this stage.
+    /// Values: Discovered, InProgress, Completed, Failed, Abandoned, Expired.
+    /// Null means no state change.
+    /// </summary>
+    public string? QuestState { get; set; }
 
     /// <summary>
     /// Explicit next-stage override. When all objective groups complete and no group-level

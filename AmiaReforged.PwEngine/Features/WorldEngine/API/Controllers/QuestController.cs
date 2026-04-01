@@ -335,6 +335,7 @@ public class QuestController
         public int StageId { get; init; }
         public string JournalText { get; init; } = string.Empty;
         public bool IsCompletionStage { get; init; }
+        public string? QuestState { get; init; }
         public int? NextStageId { get; init; }
         public List<string> Hints { get; init; } = [];
         public List<ObjectiveGroupJsonModel>? ObjectiveGroups { get; init; }

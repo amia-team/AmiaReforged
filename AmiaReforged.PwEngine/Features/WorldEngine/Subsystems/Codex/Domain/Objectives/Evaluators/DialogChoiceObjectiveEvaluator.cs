@@ -4,9 +4,19 @@ using Anvil.Services;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Objectives.Evaluators;
 
 /// <summary>
-/// Evaluates dialog-choice objectives. Completes when the player makes
-/// a specific dialog choice identified by the target tag.
-/// Supports requiring a specific choice key via the signal payload.
+/// Evaluates "speak to NPC" / dialog-choice objectives.
+/// Completes when the player's conversation enters a dialogue node whose
+/// truncated ID (first 8 hex chars) matches the definition's <see cref="ObjectiveDefinition.TargetTag"/>.
+///
+/// <para>
+/// <b>How it works:</b> When the dialogue system enters a node, it publishes a
+/// <c>DialogueNodeEnteredEvent</c>. The resolution service translates this into a
+/// <c>DialogChoice</c> signal whose <c>TargetTag</c> is the node's short ID (e.g. "33220e2f").
+/// An objective definition with <c>TypeTag = "dialog_choice"</c> and <c>TargetTag = "33220e2f"</c>
+/// will complete when that node is entered.
+/// </para>
+///
+/// Optionally supports an <c>expected_choice</c> config key for additional payload matching.
 /// </summary>
 [ServiceBinding(typeof(IObjectiveEvaluator))]
 public sealed class DialogChoiceObjectiveEvaluator : IObjectiveEvaluator

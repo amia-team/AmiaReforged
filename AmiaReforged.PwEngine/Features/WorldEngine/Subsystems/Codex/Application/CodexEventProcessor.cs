@@ -225,11 +225,34 @@ public class CodexEventProcessor
 
             case QuestStageAdvancedEvent qsae:
                 codex.AdvanceQuestStage(qsae.QuestId, qsae.ToStage, qsae.OccurredAt);
-                // If the new stage is a completion stage, mark the quest completed
+                // Apply the stage's quest state if defined
                 CodexQuestEntry? advancedQuest = codex.GetQuest(qsae.QuestId);
                 QuestStage? targetStage = advancedQuest?.Stages
                     .FirstOrDefault(s => s.StageId == qsae.ToStage);
-                if (targetStage is { IsCompletionStage: true })
+                if (targetStage?.QuestState is { } stageQuestState)
+                {
+                    switch (stageQuestState)
+                    {
+                        case QuestState.Completed:
+                            codex.RecordQuestCompleted(qsae.QuestId, qsae.OccurredAt);
+                            break;
+                        case QuestState.Failed:
+                            codex.RecordQuestFailed(qsae.QuestId, qsae.OccurredAt);
+                            break;
+                        case QuestState.Abandoned:
+                            codex.RecordQuestAbandoned(qsae.QuestId, qsae.OccurredAt);
+                            break;
+                        case QuestState.Expired:
+                            codex.RecordQuestExpired(qsae.QuestId, ExpiryBehavior.Fail, qsae.OccurredAt);
+                            break;
+                        // Discovered / InProgress — set directly
+                        default:
+                            advancedQuest!.State = stageQuestState;
+                            break;
+                    }
+                }
+                // Backward compat: IsCompletionStage still works if QuestState is not set
+                else if (targetStage is { IsCompletionStage: true })
                 {
                     codex.RecordQuestCompleted(qsae.QuestId, qsae.OccurredAt);
                 }

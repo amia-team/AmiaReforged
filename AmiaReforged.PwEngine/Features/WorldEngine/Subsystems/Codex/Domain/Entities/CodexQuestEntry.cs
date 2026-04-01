@@ -33,6 +33,27 @@ public class CodexQuestEntry
     public QuestState State { get; internal set; } = QuestState.Discovered;
 
     /// <summary>
+    /// The effective quest state, derived from the current stage's <see cref="QuestStage.QuestState"/>
+    /// property when available, falling back to the entry-level <see cref="State"/>.
+    /// Use this when querying what state a quest is in — it respects per-stage overrides.
+    /// </summary>
+    public QuestState EffectiveState
+    {
+        get
+        {
+            if (Stages.Count == 0 || CurrentStageId == 0)
+                return State;
+
+            QuestStage? currentStage = Stages
+                .Where(s => s.StageId <= CurrentStageId)
+                .OrderByDescending(s => s.StageId)
+                .FirstOrDefault();
+
+            return currentStage?.QuestState ?? State;
+        }
+    }
+
+    /// <summary>
     /// The numeric stage ID the player has reached (0 = not started/no stage set).
     /// Mirrors the NWN journal stage system — quest definitions assign IDs like 10, 20, 30.
     /// </summary>

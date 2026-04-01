@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Aggregates;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
@@ -7,6 +8,8 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Objectives;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Repositories;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Domain.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Domain.ValueObjects;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -36,7 +39,8 @@ public sealed class QuestObjectiveResolutionService
         RuntimeCharacterService characters,
         QuestSessionManager sessionManager,
         CodexEventProcessor eventProcessor,
-        IPlayerCodexRepository codexRepository)
+        IPlayerCodexRepository codexRepository,
+        IEventBus eventBus)
     {
         _characters = characters;
         _sessionManager = sessionManager;
@@ -50,6 +54,14 @@ public sealed class QuestObjectiveResolutionService
         // to guarantee the character key is registered before session initialization.
         characters.CharacterReady += OnCharacterReady;
         characters.CharacterLeaving += OnCharacterLeaving;
+
+        // Subscribe to dialogue domain events so "speak to NPC" objectives resolve
+        // when the conversation enters the target node.
+        eventBus.Subscribe<DialogueNodeEnteredEvent>((evt, _) =>
+        {
+            ProcessDialogueNodeEntered(CharacterId.From(evt.CharacterId), evt.NodeId);
+            return Task.CompletedTask;
+        });
     }
 
     private void OnAcquireItem(ModuleEvents.OnAcquireItem obj)
@@ -118,6 +130,20 @@ public sealed class QuestObjectiveResolutionService
     public void ProcessItemLost(CharacterId characterId, string itemTag)
     {
         QuestSignal signal = new(SignalType.ItemLost, itemTag);
+        RouteSignalAndEnqueueEvents(characterId, signal);
+    }
+
+    /// <summary>
+    /// Processes a dialogue node entered event for a character.
+    /// Translates to a <see cref="SignalType.DialogChoice"/> signal using the
+    /// truncated node ID (first 8 hex chars) as the target tag.
+    /// This is how "speak to NPC" objectives resolve — the objective definition's
+    /// TargetTag is set to the short node ID of the dialogue node that completes it.
+    /// </summary>
+    public void ProcessDialogueNodeEntered(CharacterId characterId, DialogueNodeId nodeId)
+    {
+        string shortNodeId = nodeId.ToShortString();
+        QuestSignal signal = new(SignalType.DialogChoice, shortNodeId);
         RouteSignalAndEnqueueEvents(characterId, signal);
     }
 

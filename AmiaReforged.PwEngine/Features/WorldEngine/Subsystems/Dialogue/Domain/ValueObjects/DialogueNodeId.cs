@@ -36,4 +36,10 @@ public readonly record struct DialogueNodeId
     public static explicit operator DialogueNodeId(Guid value) => new(value);
 
     public override string ToString() => Value.ToString();
+
+    /// <summary>
+    /// Returns the first 8 hex characters of the GUID (e.g. "33220e2f").
+    /// Used as companion short IDs in quest objective target tags.
+    /// </summary>
+    public string ToShortString() => Value.ToString("N")[..8];
 }

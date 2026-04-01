@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
@@ -20,7 +21,16 @@ public class QuestStage
     public string JournalText { get; init; } = string.Empty;
 
     /// <summary>
+    /// The quest state that should be applied when the player reaches this stage.
+    /// For example, a final stage might set <see cref="QuestState.Completed"/>,
+    /// a failure branch might set <see cref="QuestState.Failed"/>.
+    /// When null, the quest state is not changed on stage entry.
+    /// </summary>
+    public QuestState? QuestState { get; init; }
+
+    /// <summary>
     /// When true, reaching this stage marks the quest as completed.
+    /// Kept for backward compatibility — prefer <see cref="QuestState"/> for new quests.
     /// </summary>
     public bool IsCompletionStage { get; init; }
 

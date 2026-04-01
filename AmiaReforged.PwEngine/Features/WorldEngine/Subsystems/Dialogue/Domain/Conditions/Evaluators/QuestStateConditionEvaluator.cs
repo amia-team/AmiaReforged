@@ -38,6 +38,6 @@ public sealed class QuestStateConditionEvaluator : IDialogueConditionEvaluator
         IReadOnlyList<CodexQuestEntry> quests = await QueryService.Value.GetAllQuestsAsync(cid);
 
         CodexQuestEntry? quest = quests.FirstOrDefault(q => q.QuestId == new QuestId(questId));
-        return quest?.State == requiredState;
+        return quest?.EffectiveState == requiredState;
     }
 }

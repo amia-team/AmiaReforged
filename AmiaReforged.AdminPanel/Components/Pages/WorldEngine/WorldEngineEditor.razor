@@ -860,7 +860,19 @@
                                                     <div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--bg-input);cursor:pointer"
                                                          @onclick="() => CeToggleStageExpand(sid)">
                                                         <span style="font-size:0.75rem;font-weight:700;color:var(--accent, #c9a84c);min-width:60px">Stage @sid</span>
-                                                        @if (stage.IsCompletionStage)
+                                                        @if (!string.IsNullOrEmpty(stage.QuestState))
+                                                        {
+                                                            string badgeBg = stage.QuestState switch
+                                                            {
+                                                                "Completed" => "var(--success, #2ecc71)",
+                                                                "Failed" => "var(--danger, #e74c3c)",
+                                                                "Abandoned" or "Expired" => "var(--warning, #f39c12)",
+                                                                "InProgress" => "var(--info, #3498db)",
+                                                                _ => "var(--text-secondary)"
+                                                            };
+                                                            <span class="badge" style="background:@badgeBg;font-size:0.65rem;padding:1px 5px">@stage.QuestState</span>
+                                                        }
+                                                        else if (stage.IsCompletionStage)
                                                         {
                                                             <span class="badge" style="background:var(--success, #2ecc71);font-size:0.65rem;padding:1px 5px">Closes Quest</span>
                                                         }
@@ -887,7 +899,24 @@
                                                                 <input type="checkbox" class="form-check-input" id="ceStageComplete_@sid"
                                                                        checked="@stage.IsCompletionStage"
                                                                        @onchange="e => stage.IsCompletionStage = (bool)(e.Value ?? false)" />
-                                                                <label class="form-check-label" for="ceStageComplete_@sid" style="font-size:0.78rem">Completion Stage (closes quest)</label>
+                                                                <label class="form-check-label" for="ceStageComplete_@sid" style="font-size:0.78rem">Completion Stage (closes quest) — legacy, prefer Quest State below</label>
+                                                            </div>
+                                                            <div class="form-group" style="margin-top:4px">
+                                                                <label style="font-size:0.75rem">Quest State</label>
+                                                                <select class="form-select form-select-sm" style="font-size:0.78rem"
+                                                                        value="@(stage.QuestState ?? "")"
+                                                                        @onchange="@(e => stage.QuestState = string.IsNullOrEmpty(e.Value?.ToString()) ? null : e.Value!.ToString())">
+                                                                    <option value="">None (no state change)</option>
+                                                                    <option value="Discovered">Discovered</option>
+                                                                    <option value="InProgress">In Progress</option>
+                                                                    <option value="Completed">Completed</option>
+                                                                    <option value="Failed">Failed</option>
+                                                                    <option value="Abandoned">Abandoned</option>
+                                                                    <option value="Expired">Expired</option>
+                                                                </select>
+                                                                <span style="font-size:0.68rem;color:var(--text-secondary);margin-top:2px">
+                                                                    Sets the quest state when the player reaches this stage.
+                                                                </span>
                                                             </div>
                                                             @if (!stage.IsCompletionStage)
                                                             {
