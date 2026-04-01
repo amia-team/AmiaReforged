@@ -96,6 +96,9 @@ public class ProficiencyProgressionService : IProficiencyProgressionService
         // At max level — can't gain more
         if (membership.ProficiencyXpLevel >= ProficiencyXpCurve.MaxLevel) return false;
 
+        // Master → Grandmaster promotion is automatic at level 125, so Master has no hard gate
+        if (membership.Level == ProficiencyLevel.Master) return true;
+
         // At tier ceiling and hasn't ranked up past it
         return !IsAtTierCeiling(membership);
     }
