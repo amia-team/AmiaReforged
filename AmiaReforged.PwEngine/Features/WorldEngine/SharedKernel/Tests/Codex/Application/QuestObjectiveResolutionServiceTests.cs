@@ -8,6 +8,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Objecti
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Objectives.Evaluators;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Infrastructure;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Domain.ValueObjects;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Codex.Application;
@@ -32,7 +33,8 @@ public class QuestObjectiveResolutionServiceTests
         {
             new CollectObjectiveEvaluator(),
             new KillObjectiveEvaluator(),
-            new ReachLocationObjectiveEvaluator()
+            new ReachLocationObjectiveEvaluator(),
+            new DialogChoiceObjectiveEvaluator()
         });
 
         _sessionManager = new QuestSessionManager(registry);
@@ -355,6 +357,144 @@ public class QuestObjectiveResolutionServiceTests
         List<CodexDomainEvent> events = DrainChannel();
         Assert.That(events.Count, Is.GreaterThanOrEqualTo(2));
         Assert.That(events.Any(e => e is ObjectiveCompletedEvent), Is.True);
+    }
+
+    [Test]
+    public async Task ProcessDialogueNodeEntered_routes_signal_and_completes_dialog_objective()
+    {
+        // Given a quest at stage 20 with a dialog_choice objective
+        Guid nodeGuid = Guid.Parse("33220e2f-31a8-4d66-8e35-9f92363281d6");
+        DialogueNodeId nodeId = DialogueNodeId.From(nodeGuid);
+        string shortId = nodeId.ToShortString();
+
+        CodexQuestEntry entry = new()
+        {
+            QuestId = _questId,
+            Title = "Talk Quest",
+            Description = "Speak to someone",
+            DateStarted = _testDate,
+            Stages =
+            [
+                new QuestStage
+                {
+                    StageId = 20,
+                    JournalText = "Speak to Gilbert",
+                    ObjectiveGroups =
+                    [
+                        new QuestObjectiveGroup
+                        {
+                            DisplayName = "Talk",
+                            CompletionMode = CompletionMode.All,
+                            Objectives =
+                            [
+                                new ObjectiveDefinition
+                                {
+                                    ObjectiveId = ObjectiveId.NewId(),
+                                    TypeTag = "dialog_choice",
+                                    DisplayText = "Speak to Gilbert",
+                                    TargetTag = shortId,
+                                    RequiredCount = 1
+                                }
+                            ]
+                        }
+                    ]
+                },
+                new QuestStage
+                {
+                    StageId = 30,
+                    JournalText = "You spoke to Gilbert"
+                }
+            ]
+        };
+        entry.State = QuestState.InProgress;
+        entry.CurrentStageId = 20;
+
+        PlayerCodex codex = new(_characterId, _testDate);
+        codex.RecordQuestStarted(entry, _testDate);
+        entry.State = QuestState.InProgress;
+        entry.CurrentStageId = 20;
+        await _repository.SaveAsync(codex);
+
+        // When player logs in and the session is initialized
+        await InitializeSessionsAsync();
+        Assert.That(_sessionManager.HasSession(_characterId, _questId), Is.True);
+
+        // And the dialogue node is entered
+        QuestObjectiveTestHelpers.ProcessDialogueNodeEntered(
+            _sessionManager, _eventChannel, _characterId, nodeId);
+
+        // Then the objective completes and stage advances 20 → 30
+        List<CodexDomainEvent> events = DrainChannel();
+        Assert.That(events.Any(e => e is ObjectiveCompletedEvent), Is.True,
+            "Expected ObjectiveCompletedEvent");
+        Assert.That(events.Any(e => e is QuestObjectiveGroupCompletedEvent), Is.True,
+            "Expected QuestObjectiveGroupCompletedEvent");
+
+        QuestStageAdvancedEvent? stageEvent = events.OfType<QuestStageAdvancedEvent>().FirstOrDefault();
+        Assert.That(stageEvent, Is.Not.Null, "Expected QuestStageAdvancedEvent");
+        Assert.That(stageEvent!.FromStage, Is.EqualTo(20));
+        Assert.That(stageEvent.ToStage, Is.EqualTo(30));
+    }
+
+    [Test]
+    public async Task ProcessDialogueNodeEntered_non_matching_node_produces_no_events()
+    {
+        // Given a dialog_choice quest session
+        Guid nodeGuid = Guid.Parse("33220e2f-31a8-4d66-8e35-9f92363281d6");
+        string shortId = new DialogueNodeId(nodeGuid).ToShortString();
+
+        CodexQuestEntry entry = new()
+        {
+            QuestId = _questId,
+            Title = "Talk Quest",
+            Description = "Speak to someone",
+            DateStarted = _testDate,
+            Stages =
+            [
+                new QuestStage
+                {
+                    StageId = 20,
+                    JournalText = "Speak to Gilbert",
+                    ObjectiveGroups =
+                    [
+                        new QuestObjectiveGroup
+                        {
+                            DisplayName = "Talk",
+                            CompletionMode = CompletionMode.All,
+                            Objectives =
+                            [
+                                new ObjectiveDefinition
+                                {
+                                    ObjectiveId = ObjectiveId.NewId(),
+                                    TypeTag = "dialog_choice",
+                                    DisplayText = "Speak to Gilbert",
+                                    TargetTag = shortId,
+                                    RequiredCount = 1
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+        entry.State = QuestState.InProgress;
+        entry.CurrentStageId = 20;
+
+        PlayerCodex codex = new(_characterId, _testDate);
+        codex.RecordQuestStarted(entry, _testDate);
+        entry.State = QuestState.InProgress;
+        entry.CurrentStageId = 20;
+        await _repository.SaveAsync(codex);
+
+        await InitializeSessionsAsync();
+
+        // When a DIFFERENT dialogue node is entered
+        DialogueNodeId wrongNode = DialogueNodeId.From(Guid.Parse("aaaabbbb-0000-0000-0000-000000000000"));
+        QuestObjectiveTestHelpers.ProcessDialogueNodeEntered(
+            _sessionManager, _eventChannel, _characterId, wrongNode);
+
+        // Then no events produced
+        Assert.That(_eventChannel.Reader.TryRead(out _), Is.False);
     }
 
     /// <summary>

@@ -5,6 +5,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Objectives;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Domain.ValueObjects;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Codex.Application;
 
@@ -39,6 +40,22 @@ internal static class QuestObjectiveTestHelpers
         string itemTag)
     {
         QuestSignal signal = new(SignalType.ItemLost, itemTag);
+        RouteSignal(sessionManager, eventChannel, characterId, signal);
+    }
+
+    /// <summary>
+    /// Processes a dialogue-node-entered signal through the session manager,
+    /// using the truncated node ID as the target tag (same as production
+    /// <c>ProcessDialogueNodeEntered</c>).
+    /// </summary>
+    public static void ProcessDialogueNodeEntered(
+        QuestSessionManager sessionManager,
+        Channel<CodexDomainEvent> eventChannel,
+        CharacterId characterId,
+        DialogueNodeId nodeId)
+    {
+        string shortNodeId = nodeId.ToShortString();
+        QuestSignal signal = new(SignalType.DialogChoice, shortNodeId);
         RouteSignal(sessionManager, eventChannel, characterId, signal);
     }
 

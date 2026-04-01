@@ -224,7 +224,11 @@ public class CodexQuestEntry
         if (State is QuestState.Completed or QuestState.Failed or QuestState.Abandoned or QuestState.Expired)
             throw new InvalidOperationException($"Cannot advance stage on quest in state {State}");
 
-        if (stageId <= CurrentStageId)
+        // Idempotent: already at this stage — nothing to do
+        if (stageId == CurrentStageId)
+            return;
+
+        if (stageId < CurrentStageId)
             throw new InvalidOperationException(
                 $"Cannot advance to stage {stageId} — current stage is {CurrentStageId}");
 

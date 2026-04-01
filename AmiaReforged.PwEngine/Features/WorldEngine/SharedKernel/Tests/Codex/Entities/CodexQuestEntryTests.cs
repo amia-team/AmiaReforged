@@ -610,4 +610,233 @@ public class CodexQuestEntryTests
     }
 
     #endregion
+
+    #region AdvanceToStage Tests
+
+    [Test]
+    public void AdvanceToStage_FromLowerStage_AdvancesSuccessfully()
+    {
+        // Arrange
+        CodexQuestEntry quest = CreateInProgressQuest(currentStage: 10);
+
+        // Act
+        quest.AdvanceToStage(20);
+
+        // Assert
+        Assert.That(quest.CurrentStageId, Is.EqualTo(20));
+    }
+
+    [Test]
+    public void AdvanceToStage_SameStage_IsIdempotentNoOp()
+    {
+        // Arrange
+        CodexQuestEntry quest = CreateInProgressQuest(currentStage: 30);
+
+        // Act — should NOT throw
+        quest.AdvanceToStage(30);
+
+        // Assert — stage unchanged
+        Assert.That(quest.CurrentStageId, Is.EqualTo(30));
+        Assert.That(quest.State, Is.EqualTo(QuestState.InProgress));
+    }
+
+    [Test]
+    public void AdvanceToStage_LowerStage_Throws()
+    {
+        // Arrange
+        CodexQuestEntry quest = CreateInProgressQuest(currentStage: 20);
+
+        // Act & Assert
+        Assert.Throws<InvalidOperationException>(() => quest.AdvanceToStage(10));
+    }
+
+    [Test]
+    public void AdvanceToStage_FromDiscovered_TransitionsToInProgress()
+    {
+        // Arrange
+        CodexQuestEntry quest = new()
+        {
+            QuestId = new QuestId("auto_transition"),
+            Title = "Auto Transition",
+            Description = "Test",
+            DateStarted = _testDate
+        };
+        quest.State = QuestState.Discovered;
+
+        // Act
+        quest.AdvanceToStage(10);
+
+        // Assert
+        Assert.That(quest.State, Is.EqualTo(QuestState.InProgress));
+        Assert.That(quest.CurrentStageId, Is.EqualTo(10));
+    }
+
+    [Test]
+    public void AdvanceToStage_SameStage_WhenDiscovered_DoesNotTransition()
+    {
+        // Arrange — stage 0, Discovered
+        CodexQuestEntry quest = new()
+        {
+            QuestId = new QuestId("no_transition"),
+            Title = "No Transition",
+            Description = "Test",
+            DateStarted = _testDate
+        };
+        quest.State = QuestState.Discovered;
+        quest.CurrentStageId = 0;
+
+        // Act — advance to stage 0 (same stage, idempotent)
+        quest.AdvanceToStage(0);
+
+        // Assert — still Discovered, not transitioned
+        Assert.That(quest.State, Is.EqualTo(QuestState.Discovered));
+    }
+
+    [TestCase(QuestState.Completed)]
+    [TestCase(QuestState.Failed)]
+    [TestCase(QuestState.Abandoned)]
+    [TestCase(QuestState.Expired)]
+    public void AdvanceToStage_InTerminalState_Throws(QuestState terminalState)
+    {
+        // Arrange
+        CodexQuestEntry quest = new()
+        {
+            QuestId = new QuestId("terminal"),
+            Title = "Terminal Quest",
+            Description = "Test",
+            DateStarted = _testDate
+        };
+        quest.State = terminalState;
+
+        // Act & Assert
+        Assert.Throws<InvalidOperationException>(() => quest.AdvanceToStage(10));
+    }
+
+    [Test]
+    public void AdvanceToStage_SameStage_InTerminalState_StillThrows()
+    {
+        // Arrange — Completed at stage 30
+        CodexQuestEntry quest = new()
+        {
+            QuestId = new QuestId("terminal_same"),
+            Title = "Terminal Same",
+            Description = "Test",
+            DateStarted = _testDate
+        };
+        quest.State = QuestState.Completed;
+        quest.CurrentStageId = 30;
+
+        // Act & Assert — terminal state check happens before idempotent check
+        Assert.Throws<InvalidOperationException>(() => quest.AdvanceToStage(30));
+    }
+
+    #endregion
+
+    #region EffectiveState Tests
+
+    [Test]
+    public void EffectiveState_NoStages_ReturnsEntryLevelState()
+    {
+        // Arrange
+        CodexQuestEntry quest = new()
+        {
+            QuestId = new QuestId("no_stages"),
+            Title = "No Stages",
+            Description = "Test",
+            DateStarted = _testDate,
+            Stages = []
+        };
+        quest.State = QuestState.InProgress;
+
+        // Assert
+        Assert.That(quest.EffectiveState, Is.EqualTo(QuestState.InProgress));
+    }
+
+    [Test]
+    public void EffectiveState_StageHasQuestState_ReturnsStageQuestState()
+    {
+        // Arrange
+        CodexQuestEntry quest = new()
+        {
+            QuestId = new QuestId("stage_state"),
+            Title = "Stage State",
+            Description = "Test",
+            DateStarted = _testDate,
+            Stages =
+            [
+                new QuestStage { StageId = 10, QuestState = QuestState.InProgress },
+                new QuestStage { StageId = 20, QuestState = QuestState.Completed }
+            ]
+        };
+        quest.State = QuestState.InProgress;
+        quest.CurrentStageId = 20;
+
+        // Assert — should come from stage 20, not entry level
+        Assert.That(quest.EffectiveState, Is.EqualTo(QuestState.Completed));
+    }
+
+    [Test]
+    public void EffectiveState_StageHasNullQuestState_FallsBackToEntryState()
+    {
+        // Arrange
+        CodexQuestEntry quest = new()
+        {
+            QuestId = new QuestId("null_stage_state"),
+            Title = "Null Stage State",
+            Description = "Test",
+            DateStarted = _testDate,
+            Stages =
+            [
+                new QuestStage { StageId = 10, QuestState = null }
+            ]
+        };
+        quest.State = QuestState.InProgress;
+        quest.CurrentStageId = 10;
+
+        // Assert — null stage QuestState falls back to entry State
+        Assert.That(quest.EffectiveState, Is.EqualTo(QuestState.InProgress));
+    }
+
+    [Test]
+    public void EffectiveState_CurrentStageIdBetweenStages_ResolvesHighestBelow()
+    {
+        // Arrange — stages 10 and 30, current is 25
+        CodexQuestEntry quest = new()
+        {
+            QuestId = new QuestId("gap_stage"),
+            Title = "Gap Stage",
+            Description = "Test",
+            DateStarted = _testDate,
+            Stages =
+            [
+                new QuestStage { StageId = 10, QuestState = QuestState.InProgress },
+                new QuestStage { StageId = 30, QuestState = QuestState.Completed }
+            ]
+        };
+        quest.State = QuestState.Discovered;
+        quest.CurrentStageId = 25;
+
+        // Assert — highest stage ≤ 25 is stage 10
+        Assert.That(quest.EffectiveState, Is.EqualTo(QuestState.InProgress));
+    }
+
+    #endregion
+
+    #region Helpers
+
+    private CodexQuestEntry CreateInProgressQuest(int currentStage)
+    {
+        CodexQuestEntry quest = new()
+        {
+            QuestId = new QuestId("adv_test"),
+            Title = "Advance Test",
+            Description = "Test",
+            DateStarted = _testDate
+        };
+        quest.State = QuestState.InProgress;
+        quest.CurrentStageId = currentStage;
+        return quest;
+    }
+
+    #endregion
 }
