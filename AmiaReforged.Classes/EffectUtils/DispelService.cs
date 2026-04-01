@@ -1,9 +1,7 @@
 using AmiaReforged.Classes.Spells;
 using Anvil.API;
-using Anvil.API.Events;
-using Anvil.Services;
 using NWN.Core;
-using static NWN.Core.NWScript;
+using Anvil.Services;
 
 namespace AmiaReforged.Classes.EffectUtils;
 
@@ -15,118 +13,183 @@ namespace AmiaReforged.Classes.EffectUtils;
 public class DispelService
 {
     /// <summary>
-    /// Dispel type identifiers matching NWN spell constants.
+    /// Dispel type identifiers matching NWN spell ID.
     /// </summary>
     public enum DispelType
     {
-        LesserDispel = 165,      // SPELL_LESSER_DISPEL
-        DispelMagic = 41,        // SPELL_DISPEL_MAGIC
-        GreaterDispelling = 67,  // SPELL_GREATER_DISPELLING
-        MordenkainensDisjunction = 112, // SPELL_MORDENKAINENS_DISJUNCTION
+        LesserDispel = 165,
+        DispelMagic = 41,
+        GreaterDispelling = 67,
+        MordenkainensDisjunction = 112,
         DevourMagic = 1014
     }
 
-    private const int DispelCooldownSeconds = 30;
-    private const string DispelTimerVar = "dispel_timer";
-
     /// <summary>
-    /// Dispels effects on a target using Amia's custom dispel system.
-    /// Iterates through magical effects and performs individual dispel checks with feedback.
+    /// Dispels all or a set number of spells on a target using Amia's custom dispel system.
+    /// Runs dispel checks per magical effects and temporary item properties, grouped by spell and creator.
+    /// Starts from the highest spell level and caster level, working down to the lowest.
+    /// Prints a list of dispelled spells in the combat log to the caster and target.
     /// </summary>
     /// <param name="caster">The creature casting the dispel</param>
     /// <param name="target">The target to dispel effects from</param>
     /// <param name="casterLevel">The effective caster level for dispel checks</param>
     /// <param name="dispelType">The type of dispel spell being used</param>
     /// <param name="maxSpells">Maximum number of spells to dispel (0 = unlimited)</param>
-    /// <returns>The number of effects successfully dispelled</returns>
+    /// <returns>The number of spells successfully dispelled</returns>
     public int DispelEffectsAll(NwCreature caster, NwGameObject target, int casterLevel, DispelType dispelType, int maxSpells = 0)
     {
-        uint casterOid = caster.ObjectId;
-        uint targetOid = target.ObjectId;
-
-        // Signal spell cast event
+        // 1. Signal spell to target
         if (target is NwCreature targetCreature && caster.IsReactionTypeHostile(targetCreature))
         {
-            SpellUtils.SignalSpell(caster, targetCreature, NwSpell.FromSpellId((int)dispelType)!, harmful: true);;
+            SpellUtils.SignalSpell(caster, targetCreature, NwSpell.FromSpellId((int)dispelType)!, harmful: true);
         }
         else
         {
             SpellUtils.SignalSpell(caster, target, NwSpell.FromSpellId((int)dispelType)!, harmful: false);
         }
 
-        // Apply CL cap based on dispel type
+        // 2. Calculate dispel caster level
         int clCap = GetCasterLevelCap(dispelType);
         int dispelCl = Math.Min(casterLevel, clCap);
-
-        // Calculate feat bonuses (+2 per abjuration focus feat)
         int featBonus = GetAbjurationFocusBonus(caster);
         dispelCl += featBonus;
 
-        int dispelledCount = 0;
-        HashSet<int> processedSpells = [];
+        // 3. Begin the dispel process
 
-        // Iterate through all effects on target
-        IntPtr currentEffect = GetFirstEffect(targetOid);
-        while (GetIsEffectValid(currentEffect) == TRUE)
+        // Store an empty list of spells dispelled to send feedback to the caster
+        List<(string SpellName, int EffectCasterLevel)> dispelInfo = [];
+
+        // 3.1. First try to dispel spell effects on the target
+        List<Effect[]> effectsBySpell = ListEffectsBySpell(target);
+        foreach (Effect[] effectsPerSpell in effectsBySpell)
         {
-            int spellId = GetEffectSpellId(currentEffect);
+            if (maxSpells > 0 && dispelInfo.Count >= maxSpells) break;
 
-            // Only process magical effects with valid spell IDs that we haven't processed yet
-            if (spellId > -1 && GetEffectSubType(currentEffect) == SUBTYPE_MAGICAL && processedSpells.Add(spellId))
+            if (TryDispelEffect(target, effectsPerSpell, dispelCl))
             {
-                // Perform dispel check
-                if (TryDispelSpell(caster, target, spellId, dispelCl))
-                {
-                    string spellName = GetSpellName(spellId);
-                    SendDispelFeedback(caster, target, spellName, dispelCl);
-                    RemoveItemEnchantments(target, spellId);
-
-                    dispelledCount++;
-
-                    if (maxSpells > 0 && dispelledCount >= maxSpells)
-                    {
-                        return dispelledCount;
-                    }
-                }
+                string spellName = effectsPerSpell[0].Spell?.Name.ToString() ?? "Unknown Spell";
+                int effectCasterLevel = effectsPerSpell[0].CasterLevel;
+                dispelInfo.Add((spellName, effectCasterLevel));
             }
-
-            currentEffect = GetNextEffect(targetOid);
         }
 
-        return dispelledCount;
+        // Return early if we've reached the cap before trying to dispel item properties
+        if (maxSpells > 0 && dispelInfo.Count >= maxSpells)
+        {
+            SendDispelFeedback(caster, target, dispelInfo);
+            return dispelInfo.Count;
+        }
+
+        // 3.2. Then dispel try to dispel temporary item properties on the target
+        List<(NwItem Item, ItemProperty[] ItemProperties)> itemPropsByItem = ListItemPropertiesBySpell(target);
+        foreach ((NwItem Item, ItemProperty[] ItemProperties) var in itemPropsByItem)
+        {
+            if (maxSpells > 0 && dispelInfo.Count >= maxSpells) break;
+
+            if (TryDispelItemProperty(var.Item, var.ItemProperties, dispelCl))
+            {
+                string spellName = var.ItemProperties[0].Spell?.Name.ToString() ?? "Unknown Spell";
+                int effectCasterLevel = var.ItemProperties[0].CasterLevel;
+                dispelInfo.Add((spellName, effectCasterLevel));
+            }
+        }
+
+        SendDispelFeedback(caster, target, dispelInfo);
+        return dispelInfo.Count;
+    }
+
+    /// <summary>
+    /// Return a list of all effects on a target, grouped by spell and caster.
+    /// Sorted by spell level and caster level from highest to lowest.
+    /// </summary>
+    private static List<Effect[]> ListEffectsBySpell(NwGameObject target) => target.ActiveEffects
+        .Where(e => e is { Spell: not null, SubType: EffectSubType.Magical })
+        .GroupBy(e => new {e.Spell, e.Creator})
+        .OrderByDescending(group => group.Key.Spell!.InnateSpellLevel)
+        .ThenByDescending(group => group.Max(e => e.CasterLevel))
+        .Select(group => group.ToArray())
+        .ToList();
+
+    /// <summary>
+    /// Return a list of all temporary item properties on a target, grouped by item, spell, and caster.
+    /// Sorted by spell level and caster level from highest to lowest.
+    /// </summary>
+    private static List<(NwItem Item, ItemProperty[] ItemProperties)> ListItemPropertiesBySpell(NwGameObject target)
+        => GetEquippedItems(target)
+            .SelectMany(item => item.ItemProperties, (item, ip) => (Item: item, ItemProperty: ip))
+            .Where(x => x.ItemProperty is { Spell: not null, DurationType: EffectDuration.Temporary })
+            .GroupBy(x => new { x.Item, x.ItemProperty.Spell, x.ItemProperty.Creator })
+            .Select(group => (
+                group.Key.Item,
+                ItemProperties: group.Select(x => x.ItemProperty).ToArray()
+            ))
+            .OrderByDescending(x => x.ItemProperties[0].Spell!.InnateSpellLevel)
+            .ThenByDescending(x => x.ItemProperties[0].CasterLevel)
+            .ToList();
+
+    private static readonly InventorySlot[] AllSlots = Enum.GetValues<InventorySlot>();
+
+    private static NwItem[] GetEquippedItems(NwGameObject target)
+    {
+        if (target is not NwCreature creature)
+            return [];
+
+        List<NwItem> equippedItems = [];
+
+        foreach (InventorySlot slot in AllSlots)
+        {
+            NwItem? item = creature.GetItemInSlot(slot);
+            if (item != null)
+                equippedItems.Add(item);
+        }
+
+        return equippedItems.ToArray();
     }
 
     /// <summary>
     /// Performs a dispel check against a specific spell effect on a target.
-    /// Uses the formula: d20 + casterCL >= 12 + targetHitDice
+    /// Uses the formula: d20 + dispel caster level >= 12 + effect caster level
+    /// If the effect doesn't have a caster level, uses the dispelled creature's HD instead.
     /// </summary>
-    private bool TryDispelSpell(NwCreature caster, NwGameObject target, int spellId, int dispelCl)
+    /// <param name="target">The target to dispel the effect from</param>
+    /// <param name="spellEffects">The effects grouped by spell and caster checked for dispelling</param>
+    /// <param name="dispelCl">The dispel caster level, i.e. the strength of the caster's dispel</param>
+    /// <returns>True if the effect group is successfully dispelled, otherwise false</returns>
+    private static bool TryDispelEffect(NwGameObject target, Effect[] spellEffects, int dispelCl)
     {
-        uint targetOid = target.ObjectId;
+        int effectCasterLevel = spellEffects[0].CasterLevel;
 
-        int targetHitDice = target is NwCreature creature ? creature.Level : GetHitDice(targetOid);
-        int enemyBase = 12;
+        if (!DispelCheck(dispelCl, effectCasterLevel)) return false;
 
-        int casterRoll = d20() + dispelCl;
-        int enemyRoll = enemyBase + targetHitDice;
-
-        // On tie, dispel succeeds
-        if (casterRoll >= enemyRoll)
+        foreach (Effect effect in spellEffects)
         {
-            // Remove all effects from this spell
-            IntPtr effect = GetFirstEffect(targetOid);
-            while (GetIsEffectValid(effect) == TRUE)
-            {
-                if (GetEffectSpellId(effect) == spellId)
-                {
-                    RemoveEffect(targetOid, effect);
-                }
-                effect = GetNextEffect(targetOid);
-            }
-            return true;
+            target.RemoveEffect(effect);
         }
 
-        return false;
+        return true;
+    }
+
+    /// <summary>
+    /// Performs a dispel check against a specific spell effect on a target.
+    /// Uses the formula: d20 + dispel caster level >= 12 + effect caster level
+    /// If the effect doesn't have a caster level, uses the dispelled creature's HD instead.
+    /// </summary>
+    /// <param name="targetItem">The target item to dispel the properties from</param>
+    /// <param name="itemProperties">The temporary properties grouped by spell and caster checked for dispelling</param>
+    /// <param name="dispelCl">The dispel caster level, i.e. the strength of the caster's dispel</param>
+    /// <returns>True if the effect group is successfully dispelled, otherwise false</returns>
+    private static bool TryDispelItemProperty(NwItem targetItem, ItemProperty[] itemProperties, int dispelCl)
+    {
+        int effectCasterLevel = itemProperties[0].CasterLevel;
+
+        if (!DispelCheck(dispelCl, effectCasterLevel)) return false;
+
+        foreach (ItemProperty itemProperty in itemProperties)
+        {
+            targetItem.RemoveItemProperty(itemProperty);
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -151,69 +214,40 @@ public class DispelService
         : caster.KnowsFeat(NwFeat.FromFeatType(Feat.SpellFocusAbjuration)!) ? 2
         : 0;
 
-
-    /// <summary>
-    /// Gets the display name for a spell.
-    /// </summary>
-    private static string GetSpellName(int spellId)
-    {
-        string strRef = Get2DAString("spells", "Name", spellId);
-        if (int.TryParse(strRef, out int strRefInt))
-        {
-            return GetStringByStrRef(strRefInt);
-        }
-        return $"Spell #{spellId}";
-    }
-
     /// <summary>
     /// Sends dispel feedback to the caster and target.
     /// </summary>
-    private static void SendDispelFeedback(NwCreature caster, NwGameObject target, string spellName, int dispelCl)
+    private static void SendDispelFeedback(NwCreature caster, NwGameObject target, List<(string, int)> dispelInfo)
     {
-        NwPlayer? casterPlayer = caster.ControllingPlayer;
-        string targetName = target.Name;
+        if (dispelInfo.Count == 0) return;
 
-        if (caster.ObjectId == target.ObjectId)
-        {
-            casterPlayer?.SendServerMessage($"Self Dispelled: {spellName} ({dispelCl})".ColorString(ColorConstants.Lime));
-        }
-        else
-        {
-            casterPlayer?.SendServerMessage($"Dispelled {targetName}: {spellName}".ColorString(ColorConstants.Lime));
+        bool casterIsPlayer = caster.IsPlayerControlled(out NwPlayer? casterPlayer);
+        bool targetIsPlayer = target.IsPlayerControlled(out NwPlayer? targetPlayer);
+        if (!casterIsPlayer && !targetIsPlayer) return;
 
-            if (target is NwCreature targetCreature)
-            {
-                NwPlayer? targetPlayer = targetCreature.ControllingPlayer;
-                targetPlayer?.SendServerMessage($"Dispelled {targetName}: {spellName} ({dispelCl})".ColorString(ColorConstants.Lime));
-            }
+        string dispelMessage = $"{caster.Name} dispelled from {target.Name}:".ColorString(ColorConstants.Lime);
+        foreach ((string SpellName, int EffectCasterLevel) dispel in dispelInfo)
+        {
+            dispelMessage += $"\n -{dispel.SpellName} ({dispel.EffectCasterLevel})".ColorString(ColorConstants.Gray);
         }
+
+        casterPlayer?.SendServerMessage(dispelMessage);
+        targetPlayer?.SendServerMessage(dispelMessage);
     }
 
     /// <summary>
-    /// Removes temporary item enchantments from a target when a buff spell is dispelled.
+    /// Sends dispel feedback to the caster for AOE removal
     /// </summary>
-    private static void RemoveItemEnchantments(NwGameObject target, int spellId)
+    private static void SendDispelAoeFeedback(NwCreature caster, NwAreaOfEffect areaOfEffect)
     {
-        if (target is not NwCreature creature) return;
+        if (!caster.IsPlayerControlled(out NwPlayer? player)) return;
 
-        // Check equipped items for temporary properties tied to this spell
-        foreach (NwItem? item in creature.Inventory.Items.Concat(creature.Inventory.Items))
-        {
-            if (item == null) continue;
+        string spellName = areaOfEffect.Spell?.Name.ToString() ?? "Unknown Spell";
+        int effectCasterLevel = areaOfEffect.CasterLevel;
 
-            // Use NWScript to iterate item properties since we need to check duration type
-            uint itemOid = item.ObjectId;
-            IntPtr itemProp = GetFirstItemProperty(itemOid);
+        string dispelMessage = $"Dispelled area of effect: {spellName} ({effectCasterLevel})".ColorString(ColorConstants.Lime);
 
-            while (GetIsItemPropertyValid(itemProp) == TRUE)
-            {
-                if (GetItemPropertyDurationType(itemProp) == DURATION_TYPE_TEMPORARY)
-                {
-                    RemoveItemProperty(itemOid, itemProp);
-                }
-                itemProp = GetNextItemProperty(itemOid);
-            }
-        }
+        player.SendServerMessage(dispelMessage);
     }
 
     /// <summary>
@@ -226,20 +260,20 @@ public class DispelService
     public bool TryDispelAreaOfEffect(NwCreature caster, uint aoeObject, int casterLevel)
     {
         // Check if it's a mobile aura (can't dispel these)
-        string tag = GetTag(aoeObject);
+        string tag = NWScript.GetTag(aoeObject);
         if (tag.Length >= 7 && tag.Substring(0, 7) == "VFX_MOB")
         {
             return false;
         }
 
         // Get the AoE creator's caster level
-        uint aoeCreator = GetAreaOfEffectCreator(aoeObject);
-        int aoeCreatorCl = GetCasterLevel(aoeCreator);
+        uint aoeCreator = NWScript.GetAreaOfEffectCreator(aoeObject);
+        int aoeCreatorCl = NWScript.GetCasterLevel(aoeCreator);
 
         // Perform dispel check
         if (DispelCheck(casterLevel, aoeCreatorCl))
         {
-            DestroyObject(aoeObject);
+            NWScript.DestroyObject(aoeObject);
             return true;
         }
 
@@ -250,27 +284,27 @@ public class DispelService
     /// Performs a dispel check against an Area of Effect object.
     /// </summary>
     /// <param name="caster">The creature casting the dispel</param>
-    /// <param name="aoeObject">The AoE object to attempt to dispel</param>
+    /// <param name="areaOfEffect">The AoE object to attempt to dispel</param>
     /// <param name="casterLevel">The effective caster level for the dispel check</param>
     /// <returns>True if the AoE was successfully dispelled</returns>
-    public bool TryDispelAreaOfEffect(NwCreature caster, NwAreaOfEffect aoeObject, int casterLevel)
+    public bool TryDispelAreaOfEffect(NwCreature caster, NwAreaOfEffect areaOfEffect, int casterLevel)
     {
-        // Check if it's a mobile aura (can't dispel these)
-        if (aoeObject.Tag[..7] == "VFX_MOB")
+        int dispelCl = casterLevel + GetAbjurationFocusBonus(caster);
+
+        if (areaOfEffect.Tag[..7] == "VFX_MOB")
         {
             return false;
         }
 
-        if (aoeObject.Creator == caster || DispelCheck(dispelCl: casterLevel, targetEffectCl: aoeObject.CasterLevel))
+        if (areaOfEffect.Creator == caster || DispelCheck(dispelCl, areaOfEffect.CasterLevel))
         {
-            aoeObject.Destroy();
-            SendDispelFeedback(caster, aoeObject, aoeObject.Spell?.Name.ToString() ?? "unknown spell", casterLevel);
+            areaOfEffect.Destroy();
+            SendDispelAoeFeedback(caster, areaOfEffect);
             return true;
         }
 
         return false;
     }
-
 
     /// <summary>
     /// Checks for conditions that make the target immune to dispel.
@@ -292,12 +326,11 @@ public class DispelService
     }
 
     /// <summary>
-    /// Performs a dispel check of D20 + Dispel CL vs. 11 + Effect CL.
+    /// Performs a dispel check of D20 + Dispel CL vs. 12 + Effect Caster Level
     /// </summary>
     /// <param name="dispelCl">The dispel CL of the dispel caster</param>
     /// <param name="targetEffectCl">The effective CL of the target effect being removed</param>
-    /// <returns>True if the dispel check is greater or equal than the opposing check, otherwise false</returns>
+    /// <returns>True if the dispel check is greater or equal than the dispel resistance, otherwise false</returns>
     private static bool DispelCheck(int dispelCl, int targetEffectCl)
-        => d20() + dispelCl >= 11 + targetEffectCl;
-
+        => Random.Shared.Roll(20) + dispelCl >= 12 + targetEffectCl;
 }
