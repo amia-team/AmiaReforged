@@ -29,6 +29,7 @@ public class CodexEventProcessor
         _traitSubsystem = traitSubsystem;
         _eventChannel = Channel.CreateUnbounded<CodexDomainEvent>();
         _cts = new CancellationTokenSource();
+        Start();
     }
 
     /// <summary>
@@ -43,12 +44,12 @@ public class CodexEventProcessor
     }
 
     /// <summary>
-    /// Starts the event processor
+    /// Starts the event processor. Safe to call multiple times — subsequent calls are no-ops.
     /// </summary>
     public void Start()
     {
         if (_processingTask != null)
-            throw new InvalidOperationException("Event processor is already running");
+            return;
 
         _processingTask = Task.Run(() => ProcessEventsAsync(_cts.Token), _cts.Token);
     }
