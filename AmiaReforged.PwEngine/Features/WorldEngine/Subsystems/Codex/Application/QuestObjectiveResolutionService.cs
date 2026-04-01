@@ -132,6 +132,8 @@ public sealed class QuestObjectiveResolutionService
     public void ProcessDialogueNodeEntered(CharacterId characterId, DialogueNodeId nodeId)
     {
         string shortNodeId = nodeId.ToShortString();
+        Log.Info("Processing dialogue node entered: nodeId={NodeId} shortId={ShortId} for character {CharacterId}",
+            nodeId.Value, shortNodeId, characterId);
         QuestSignal signal = new(SignalType.DialogChoice, shortNodeId);
         RouteSignalAndEnqueueEvents(characterId, signal);
     }
@@ -201,7 +203,12 @@ public sealed class QuestObjectiveResolutionService
     {
         IReadOnlyList<CodexDomainEvent> events = _sessionManager.ProcessSignal(characterId, signal);
 
-        if (events.Count == 0) return;
+        if (events.Count == 0)
+        {
+            Log.Debug("Signal {SignalType}:{TargetTag} for character {CharacterId} produced no events (no matching objectives or no active sessions)",
+                signal.SignalType, signal.TargetTag, characterId);
+            return;
+        }
 
         Log.Info("Routing signal {SignalType}:{TargetTag} for character {CharacterId} produced {EventCount} events",
             signal.SignalType, signal.TargetTag, characterId, events.Count);

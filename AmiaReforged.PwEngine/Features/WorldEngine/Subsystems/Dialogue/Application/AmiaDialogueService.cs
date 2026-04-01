@@ -180,11 +180,20 @@ public sealed class AmiaDialogueService
         while (newNode != null && newNode.Type == DialogueNodeType.Action && newNode.Choices.Count == 1)
         {
             DialogueChoice autoChoice = newNode.Choices[0];
+            DialogueNodeId autoNodeId = autoChoice.TargetNodeId;
             newNode = session.SelectChoice(autoChoice);
             if (newNode != null)
             {
                 await ExecuteNodeActions(session);
                 await NwTask.SwitchToMainThread();
+
+                // Publish node entered event so dialog_choice objectives can trigger
+                await PublishEventAsync(new DialogueNodeEnteredEvent
+                {
+                    DialogueTreeId = session.Tree.Id,
+                    NodeId = autoNodeId,
+                    CharacterId = session.CharacterId
+                });
             }
         }
 
