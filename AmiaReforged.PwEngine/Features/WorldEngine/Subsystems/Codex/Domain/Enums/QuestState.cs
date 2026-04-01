@@ -36,3 +36,20 @@ public enum QuestState
     /// </summary>
     Expired = 5
 }
+
+/// <summary>
+/// Extension methods for <see cref="QuestState"/>.
+/// </summary>
+public static class QuestStateExtensions
+{
+    public static string DisplayName(this QuestState state) => state switch
+    {
+        QuestState.Discovered => "Discovered",
+        QuestState.InProgress => "In Progress",
+        QuestState.Completed => "Completed",
+        QuestState.Failed => "Failed",
+        QuestState.Abandoned => "Abandoned",
+        QuestState.Expired => "Expired",
+        _ => state.ToString()
+    };
+}

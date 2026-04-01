@@ -57,19 +57,40 @@ public sealed class QuestDisplayItem : ICodexDisplayItem
         get
         {
             string body = _entry.Description;
-            if (!string.IsNullOrEmpty(_entry.QuestGiver))
-                body = $"Quest Giver: {_entry.QuestGiver}\n\n{body}";
+
             if (!string.IsNullOrEmpty(_entry.Location))
                 body += $"\n\nLocation: {_entry.Location}";
-            if (_entry.CurrentStageId > 0)
-                body += $"\n\nCurrent Stage: {_entry.CurrentStageId}";
+
+            // Show objectives from the current stage
+            QuestStage? currentStage = _entry.Stages
+                .Where(s => s.StageId <= _entry.CurrentStageId)
+                .OrderByDescending(s => s.StageId)
+                .FirstOrDefault();
+
+            if (currentStage != null)
+            {
+                List<string> objectives = currentStage.ObjectiveGroups
+                    .SelectMany(g => g.Objectives)
+                    .Select(o => o.DisplayText)
+                    .ToList();
+
+                if (objectives.Count > 0)
+                {
+                    body += "\n\nObjectives:";
+                    foreach (string obj in objectives)
+                    {
+                        body += $"\n  - {obj}";
+                    }
+                }
+            }
+
             if (_entry.DateCompleted.HasValue)
                 body += $"\n\nCompleted: {_entry.DateCompleted.Value:yyyy-MM-dd}";
             return body;
         }
     }
 
-    public string Subtitle => _entry.State.ToString();
+    public string Subtitle => _entry.State.DisplayName();
 }
 
 public sealed class NoteDisplayItem : ICodexDisplayItem
