@@ -61,6 +61,7 @@ public sealed class QuestObjectiveResolutionService
         if (!_characters.TryGetPlayerKey(player, out Guid key) || key == Guid.Empty) return;
 
         CharacterId characterId = CharacterId.From(key);
+        Log.Info("REMOVE LATER: Detected item acquisition: {Item} by character {CharacterId}", item.Tag, characterId);
         ProcessItemAcquired(characterId, item.Tag);
     }
 
@@ -156,7 +157,8 @@ public sealed class QuestObjectiveResolutionService
 
         _sessionManager.CreateSession(characterId, quest.QuestId, objectiveGroups, stageContext: stageContext);
 
-        Log.Debug("Created quest session: quest '{QuestId}' stage {StageId} for character {CharacterId} ({GroupCount} objective groups)",
+        Log.Info(
+            "Created quest session: quest '{QuestId}' stage {StageId} for character {CharacterId} ({GroupCount} objective groups)",
             quest.QuestId.Value, quest.CurrentStageId, characterId, objectiveGroups.Count);
     }
 
@@ -175,7 +177,7 @@ public sealed class QuestObjectiveResolutionService
 
         if (questIds.Count > 0)
         {
-            Log.Debug("Tore down {Count} quest sessions for character {CharacterId}",
+            Log.Info("Tore down {Count} quest sessions for character {CharacterId}",
                 questIds.Count, characterId);
         }
     }
@@ -186,13 +188,17 @@ public sealed class QuestObjectiveResolutionService
 
         if (events.Count == 0) return;
 
+        Log.Info("Routing signal {SignalType}:{TargetTag} for character {CharacterId} produced {EventCount} events",
+            signal.SignalType, signal.TargetTag, characterId, events.Count);
         foreach (CodexDomainEvent domainEvent in events)
         {
             // Fire-and-forget enqueue; the event processor handles persistence asynchronously
+            Log.Info("Enqueuing domain event {EventType} for character {CharacterId}",
+                domainEvent.GetType().Name, characterId);
             _ = _eventProcessor.EnqueueEventAsync(domainEvent);
         }
 
-        Log.Debug("Signal {SignalType}:{TargetTag} produced {EventCount} events for character {CharacterId}",
+        Log.Info("Signal {SignalType}:{TargetTag} produced {EventCount} events for character {CharacterId}",
             signal.SignalType, signal.TargetTag, events.Count, characterId);
     }
 

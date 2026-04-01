@@ -255,8 +255,11 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
         }
 
         // Upsert definitions and unlocks
-        // Load existing definitions so we can preserve admin-managed fields (IsAlwaysAvailable)
+        // Load existing definitions (untracked) so we can preserve admin-managed fields (IsAlwaysAvailable)
+        // AsNoTracking is required — without it, the subsequent Update(def) call would conflict
+        // with the already-tracked instance sharing the same primary key.
         Dictionary<string, PersistedLoreDefinition> existingDefs = await context.CodexLoreDefinitions
+            .AsNoTracking()
             .Where(d => codex.Lore.Select(l => l.LoreId.Value).Contains(d.LoreId))
             .ToDictionaryAsync(d => d.LoreId, ct);
 
