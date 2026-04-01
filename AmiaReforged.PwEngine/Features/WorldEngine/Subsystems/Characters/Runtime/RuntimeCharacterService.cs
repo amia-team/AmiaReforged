@@ -19,6 +19,18 @@ public class RuntimeCharacterService
     private readonly IPersistentPlayerPersonaRepository _playerPersonas;
     private readonly Dictionary<NwPlayer, Guid> _playerKeys = new();
 
+    /// <summary>
+    /// Raised after a character is fully registered with a valid key.
+    /// Subscribers can safely call <see cref="TryGetPlayerKey"/> for this character.
+    /// </summary>
+    public event Action<CharacterId>? CharacterReady;
+
+    /// <summary>
+    /// Raised just before a character's key is removed on logout.
+    /// Subscribers should tear down any character-scoped state here.
+    /// </summary>
+    public event Action<CharacterId>? CharacterLeaving;
+
     public RuntimeCharacterService(ICharacterRepository repository, IPersistentPlayerPersonaRepository playerPersonas)
     {
         _repository = repository;
@@ -31,6 +43,13 @@ public class RuntimeCharacterService
     private void Unregister(ModuleEvents.OnClientLeave obj)
     {
         if (obj.Player.IsDM) return;
+
+        // Notify subscribers before removing the key so they can still resolve the character
+        if (_playerKeys.TryGetValue(obj.Player, out Guid leavingKey) && leavingKey != Guid.Empty)
+        {
+            CharacterLeaving?.Invoke(CharacterId.From(leavingKey));
+        }
+
         TouchPlayerPersona(obj.Player);
         _playerKeys.Remove(obj.Player);
         if (obj.Player.LoginCreature == null) return;
@@ -50,6 +69,7 @@ public class RuntimeCharacterService
 
         Guid key = PcKeyUtils.GetPcKey(player);
 
+        bool wasEmpty = _playerKeys.TryGetValue(player, out Guid previousKey) && previousKey == Guid.Empty;
         _playerKeys[player] = key;
 
         if (key == Guid.Empty) return;
@@ -58,6 +78,12 @@ public class RuntimeCharacterService
         ObjectPlugin.ForceAssignUUID(player.LoginCreature, key.ToUUIDString());
         CreateRuntimeCharacter(player.LoginCreature);
         SetIsCached(player.LoginCreature);
+
+        // If the key just became valid (e.g. pckey item loaded after login), notify subscribers
+        if (wasEmpty)
+        {
+            CharacterReady?.Invoke(CharacterId.From(key));
+        }
     }
 
     private void Register(ModuleEvents.OnClientEnter obj)
@@ -77,6 +103,8 @@ public class RuntimeCharacterService
         CreateRuntimeCharacter(obj.Player.LoginCreature);
         ObjectPlugin.ForceAssignUUID(obj.Player.LoginCreature, key.ToUUIDString());
         SetIsCached(obj.Player.LoginCreature);
+
+        CharacterReady?.Invoke(CharacterId.From(key));
     }
 
     private void CreateRuntimeCharacter(NwCreature creature)

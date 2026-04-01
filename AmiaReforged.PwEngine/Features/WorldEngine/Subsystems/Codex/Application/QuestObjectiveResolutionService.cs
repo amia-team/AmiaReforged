@@ -1,4 +1,3 @@
-using AmiaReforged.Core.UserInterface;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Aggregates;
@@ -46,8 +45,11 @@ public sealed class QuestObjectiveResolutionService
 
         NwModule.Instance.OnAcquireItem += OnAcquireItem;
         NwModule.Instance.OnUnacquireItem += OnUnacquireItem;
-        NwModule.Instance.OnClientEnter += OnClientEnter;
-        NwModule.Instance.OnClientLeave += OnClientLeave;
+
+        // Subscribe to RuntimeCharacterService events instead of NwModule login events
+        // to guarantee the character key is registered before session initialization.
+        characters.CharacterReady += OnCharacterReady;
+        characters.CharacterLeaving += OnCharacterLeaving;
     }
 
     private void OnAcquireItem(ModuleEvents.OnAcquireItem obj)
@@ -79,15 +81,8 @@ public sealed class QuestObjectiveResolutionService
         ProcessItemLost(characterId, item.Tag);
     }
 
-    private async void OnClientEnter(ModuleEvents.OnClientEnter obj)
+    private async void OnCharacterReady(CharacterId characterId)
     {
-        if (obj.Player.IsDM) return;
-
-        Guid key = PcKeyUtils.GetPcKey(obj.Player);
-        if (key == Guid.Empty) return;
-
-        CharacterId characterId = CharacterId.From(key);
-
         try
         {
             await InitializeSessionsForPlayerAsync(characterId);
@@ -98,12 +93,8 @@ public sealed class QuestObjectiveResolutionService
         }
     }
 
-    private void OnClientLeave(ModuleEvents.OnClientLeave obj)
+    private void OnCharacterLeaving(CharacterId characterId)
     {
-        if (obj.Player.IsDM) return;
-        if (!_characters.TryGetPlayerKey(obj.Player, out Guid key) || key == Guid.Empty) return;
-
-        CharacterId characterId = CharacterId.From(key);
         TeardownSessionsForPlayer(characterId);
     }
 
