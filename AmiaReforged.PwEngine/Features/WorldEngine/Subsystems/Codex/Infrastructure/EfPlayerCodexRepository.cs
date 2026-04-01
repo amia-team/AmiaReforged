@@ -122,6 +122,9 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
             }
 
             // Hydrate quests
+            // Collect quest IDs with empty stages so we can backfill from definitions
+            List<string> emptyStageQuestIds = new();
+
             foreach (PersistedCodexQuest row in questRows)
             {
                 CodexQuestEntry quest = QuestToDomain(row);
@@ -137,6 +140,27 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
                 quest.CurrentStageId = row.CurrentStageId;
                 quest.DateCompleted = row.DateCompleted;
                 quest.CompletionCount = row.CompletionCount;
+
+                if (quest.Stages.Count == 0)
+                    emptyStageQuestIds.Add(quest.QuestId.Value);
+            }
+
+            // Backfill stages from quest definitions for any rows saved before stage persistence
+            if (emptyStageQuestIds.Count > 0)
+            {
+                List<PersistedQuestDefinition> definitions = await context.CodexQuestDefinitions
+                    .AsNoTracking()
+                    .Where(d => emptyStageQuestIds.Contains(d.QuestId))
+                    .ToListAsync(cancellationToken);
+
+                foreach (PersistedQuestDefinition def in definitions)
+                {
+                    CodexQuestEntry? quest = codex.GetQuest((QuestId)def.QuestId);
+                    if (quest == null) continue;
+
+                    List<QuestStage> stages = DeserializeStages(def.StagesJson);
+                    quest.Stages.AddRange(stages);
+                }
             }
 
             return codex;

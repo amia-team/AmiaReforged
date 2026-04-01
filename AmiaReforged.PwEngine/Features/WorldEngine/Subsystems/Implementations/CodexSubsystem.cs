@@ -329,7 +329,23 @@ public sealed class CodexSubsystem : ICodexSubsystem
 
             if (codex.HasQuest(qid))
             {
-                // Quest already in codex — advance to the requested stage
+                // Quest already in codex — backfill stages from the definition
+                // if they're empty (e.g., quest was saved before stage population was implemented)
+                CodexQuestEntry existing = codex.GetQuest(qid)!;
+                if (existing.Stages.Count == 0)
+                {
+                    using PwEngineContext backfillCtx = _contextFactory.CreateDbContext();
+                    PersistedQuestDefinition? def = await backfillCtx.CodexQuestDefinitions
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(d => d.QuestId == questId, ct);
+
+                    if (def != null)
+                    {
+                        List<QuestStage> stages = DeserializeStages(def.StagesJson);
+                        existing.Stages.AddRange(stages);
+                    }
+                }
+
                 codex.AdvanceQuestStage(qid, stageId, now);
             }
             else
