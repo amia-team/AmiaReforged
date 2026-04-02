@@ -73,24 +73,6 @@ public class GreaterDispelling(DispelService dispelService) : ISpell
         return Math.Min(casterLevel + bonus, MaxCasterLevel);
     }
 
-    private void DoTargetedDispel(NwCreature caster, NwGameObject target, int casterLevel,
-        Effect breachVfx, Effect impactVfx, NwSpell spell)
-    {
-        SpellUtils.SignalSpell(caster, target, spell);
-
-        if (target is NwCreature targetCreature && HasTimeStop(targetCreature))
-        {
-            targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpGlobeUse));
-            return;
-        }
-
-        if (IsDispelImmune(target)) return;
-
-        target.ApplyEffect(EffectDuration.Instant, impactVfx);
-        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDispelMagicAll(casterLevel), target.ObjectId);
-        target.ApplyEffect(EffectDuration.Instant, breachVfx);
-    }
-
     private void DoAreaDispel(NwCreature caster, Location targetLocation, int casterLevel,
         Effect breachVfx, Effect impactVfx, NwSpell spell)
     {
