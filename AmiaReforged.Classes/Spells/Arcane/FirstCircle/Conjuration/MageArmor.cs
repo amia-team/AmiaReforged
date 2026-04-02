@@ -28,13 +28,10 @@ public class MageArmor : ISpell
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
-        if (eventData.Caster is not NwCreature caster) return;
+        if (eventData.Caster is not NwCreature caster
+            ||eventData.TargetObject is not NwCreature target) return;
 
-        NwGameObject? targetObject = eventData.TargetObject;
-        if (targetObject is not NwCreature target) return;
-
-        // Signal the spell as non-hostile (friendly buff) to prevent breaking invisibility
-        SpellUtils.SignalFriendlySpell(caster, target, eventData.Spell.SpellType);
+        SpellUtils.SignalSpell(caster, target, eventData.Spell, harmful: false);
 
         TimeSpan duration = SpellUtils.ExtendSpell(eventData.MetaMagicFeat, NwTimeSpan.FromHours(caster.CasterLevel));
 
