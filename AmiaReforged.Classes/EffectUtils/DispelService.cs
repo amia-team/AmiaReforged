@@ -29,21 +29,10 @@ public class DispelService
     /// <param name="caster">The creature casting the dispel</param>
     /// <param name="target">The target to dispel effects from</param>
     /// <param name="dispelModifier">The effective dispel caster level for dispel checks, use GetDispelModifier</param>
-    /// <param name="spell">The spell you're casting, get this from the spell cast data</param>
     /// <param name="maxSpells">Maximum number of spells to dispel (0 = unlimited)</param>
     /// <returns>The number of spells successfully dispelled</returns>
-    public int DispelTarget(NwCreature caster, NwGameObject target, int dispelModifier, NwSpell spell, int maxSpells = 0)
+    public int DispelTarget(NwCreature caster, NwGameObject target, int dispelModifier, int maxSpells = 0)
     {
-        // 1. Signal spell to target
-        if (target is NwCreature targetCreature && caster.IsReactionTypeHostile(targetCreature))
-        {
-            SpellUtils.SignalSpell(caster, targetCreature, spell, harmful: true);
-        }
-        else
-        {
-            SpellUtils.SignalSpell(caster, target, spell, harmful: false);
-        }
-
         // 3. Begin the dispel process: Iterate dispels into a dispel info list
         List<DispelInfo> spellsToDispel = [];
 

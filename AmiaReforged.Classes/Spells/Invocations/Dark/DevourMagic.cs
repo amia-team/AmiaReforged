@@ -12,16 +12,15 @@ public class DevourMagic(DispelService dispelService) : IInvocation
     public string ImpactScript => "wlk_devourmagic";
     public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
-        NwSpell spell = castData.Spell;
-        int dispelModifier = dispelService.GetDispelModifier(warlock, invocationCl, spell);
+        int dispelModifier = dispelService.GetDispelModifier(warlock, invocationCl, castData.Spell);
 
         if (castData.TargetObject != null)
         {
-            DevourSingleTarget(warlock, castData.TargetObject, dispelModifier, spell);
+            DevourSingleTarget(warlock, castData.TargetObject, dispelModifier, castData.Spell);
         }
         else if (castData.TargetLocation != null)
         {
-            DevourArea(castData.TargetLocation, warlock, dispelModifier, spell);
+            DevourArea(castData.TargetLocation, warlock, dispelModifier, castData.Spell);
         }
     }
 
@@ -29,7 +28,7 @@ public class DevourMagic(DispelService dispelService) : IInvocation
     {
         if (dispelService.IsImmuneToDispel(targetObject)) return;
 
-        int dispelCount = dispelService.DispelTarget(warlock, targetObject, dispelModifier, spell);
+        int dispelCount = dispelService.DispelTarget(warlock, targetObject, dispelModifier);
         targetObject.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDestruction));
 
         if (dispelCount <= 0) return;
@@ -55,7 +54,7 @@ public class DevourMagic(DispelService dispelService) : IInvocation
 
             if (dispelService.IsImmuneToDispel(targetObject)) continue;
 
-            if (dispelService.DispelTarget(warlock, targetObject, dispelModifier, spell, maxSpells: 1) <= 0) continue;
+            if (dispelService.DispelTarget(warlock, targetObject, dispelModifier, maxSpells: 1) <= 0) continue;
 
             targetObject.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDestruction));
         }

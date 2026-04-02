@@ -49,7 +49,7 @@ public class GreaterDispelling(DispelService dispelService) : ISpell
 
         if (eventData.TargetObject is { } targetObject)
         {
-            dispelService.DispelTarget(caster, targetObject, caster.CasterLevel, eventData.Spell);
+            dispelService.DispelTarget(caster, targetObject, caster.CasterLevel);
             targetObject.ApplyEffect(EffectDuration.Instant, breachVfx);
         }
         else if (eventData.TargetLocation is { } targetLocation)
