@@ -325,6 +325,20 @@ public class DispelService
     }
 
     /// <summary>
+    /// A util signal to be used before DispelTarget in a spell script. Signals harmful spells to neutral and hostile
+    /// creatures; signals harmless spell to friendly creatures and objects
+    /// </summary>
+    /// <param name="caster">Caster of dispel</param>
+    /// <param name="target">Target of dispel</param>
+    /// <param name="spell">Spell gotten from the OnSpellCast event data</param>
+    public void SignalDispel(NwCreature caster, NwGameObject target, NwSpell spell)
+    {
+        if (target is NwCreature creature && !caster.IsReactionTypeFriendly(creature))
+            SpellUtils.SignalSpell(caster, creature, spell);
+        else SpellUtils.SignalSpell(caster, target, spell, harmful: false);
+    }
+
+    /// <summary>
     /// Rolls a dispel check of D20 + Dispel CL vs. 12 + Effect Caster Level
     /// </summary>
     /// <param name="dispelModifier">The caster's dispel modifier</param>
