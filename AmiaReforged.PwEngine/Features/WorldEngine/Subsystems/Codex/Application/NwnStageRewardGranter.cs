@@ -39,9 +39,15 @@ public class NwnStageRewardGranter : IStageRewardGranter
     }
 
     /// <inheritdoc />
-    public Task GrantRewardsAsync(CharacterId characterId, QuestId questId, int completedStageId, RewardMix rewards)
+    public async Task GrantRewardsAsync(CharacterId characterId, QuestId questId, int completedStageId, RewardMix rewards)
     {
-        if (rewards.IsEmpty) return Task.CompletedTask;
+        if (rewards.IsEmpty) return;
+
+        // NWN VM calls (creature.Xp, GiveGold, etc.) MUST run on the server main
+        // thread.  Callers like CodexSubsystem.SetQuestStageAsync and the
+        // CodexEventProcessor channel loop are executed on thread-pool threads after
+        // async DB work, so we must hop back first.
+        await NwTask.SwitchToMainThread();
 
         // Resolve the NWN player — if offline, rewards are lost (quest stage events
         // are only emitted while the player is connected).
@@ -51,7 +57,7 @@ public class NwnStageRewardGranter : IStageRewardGranter
             Log.Warn("Cannot grant stage {StageId} rewards for quest '{QuestId}': " +
                       "character {CharacterId} is not online.",
                 completedStageId, questId.Value, characterId.Value);
-            return Task.CompletedTask;
+            return;
         }
 
         NwCreature creature = player.LoginCreature;
@@ -65,8 +71,6 @@ public class NwnStageRewardGranter : IStageRewardGranter
                  "XP={Xp}, Gold={Gold}, KP={KP}, Proficiencies={ProfCount}",
             completedStageId, questId.Value, characterId.Value,
             rewards.Xp, rewards.Gold, rewards.KnowledgePoints, rewards.Proficiencies.Count);
-
-        return Task.CompletedTask;
     }
 
     private static void GrantXp(NwCreature creature, int xp, QuestId questId, int stageId)
