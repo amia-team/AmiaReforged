@@ -105,7 +105,7 @@ public sealed class QuestDisplayItem : ICodexDisplayItem
         }
     }
 
-    public string Subtitle => _entry.State.DisplayName();
+    public string Subtitle => _entry.EffectiveState.DisplayName();
 }
 
 public sealed class NoteDisplayItem : ICodexDisplayItem

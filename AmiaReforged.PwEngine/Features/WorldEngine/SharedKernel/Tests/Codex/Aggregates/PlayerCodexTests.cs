@@ -1186,4 +1186,110 @@ public class PlayerCodexTests
     }
 
     #endregion
+
+    #region Advance + QuestState Application Tests
+
+    /// <summary>
+    /// Reproduces the exact fix flow: AdvanceQuestStage to a completion stage,
+    /// then RecordQuestCompleted (what ApplyStageQuestState does).
+    /// Both State and EffectiveState must be Completed afterward.
+    /// </summary>
+    [Test]
+    public void AdvanceThenComplete_SetsStateAndEffectiveStateToCompleted()
+    {
+        // Arrange
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexQuestEntry quest = new()
+        {
+            QuestId = new QuestId("advance_complete"),
+            Title = "Advance and Complete",
+            Description = "Test",
+            DateStarted = _testDate,
+            Stages =
+            [
+                new QuestStage { StageId = 10, JournalText = "Start", QuestState = QuestState.InProgress },
+                new QuestStage { StageId = 30, JournalText = "Done!", QuestState = QuestState.Completed }
+            ]
+        };
+        codex.RecordQuestStarted(quest, _testDate);
+        codex.AdvanceQuestStage(quest.QuestId, 10, _testDate);
+
+        // Act — advance to 30, then apply the stage's QuestState
+        DateTime completedAt = _testDate.AddHours(2);
+        codex.AdvanceQuestStage(quest.QuestId, 30, completedAt);
+        codex.RecordQuestCompleted(quest.QuestId, completedAt);
+
+        // Assert
+        CodexQuestEntry? result = codex.GetQuest(quest.QuestId);
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.State, Is.EqualTo(QuestState.Completed));
+        Assert.That(result.EffectiveState, Is.EqualTo(QuestState.Completed));
+        Assert.That(result.DateCompleted, Is.EqualTo(completedAt));
+    }
+
+    /// <summary>
+    /// Advance to a failure stage — RecordQuestFailed should set State = Failed.
+    /// </summary>
+    [Test]
+    public void AdvanceThenFail_SetsStateAndEffectiveStateToFailed()
+    {
+        // Arrange
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexQuestEntry quest = new()
+        {
+            QuestId = new QuestId("advance_fail"),
+            Title = "Advance and Fail",
+            Description = "Test",
+            DateStarted = _testDate,
+            Stages =
+            [
+                new QuestStage { StageId = 10, QuestState = QuestState.InProgress },
+                new QuestStage { StageId = 20, QuestState = QuestState.Failed }
+            ]
+        };
+        codex.RecordQuestStarted(quest, _testDate);
+        codex.AdvanceQuestStage(quest.QuestId, 10, _testDate);
+
+        // Act
+        DateTime failedAt = _testDate.AddHours(1);
+        codex.AdvanceQuestStage(quest.QuestId, 20, failedAt);
+        codex.RecordQuestFailed(quest.QuestId, failedAt);
+
+        // Assert
+        CodexQuestEntry? result = codex.GetQuest(quest.QuestId);
+        Assert.That(result!.State, Is.EqualTo(QuestState.Failed));
+        Assert.That(result.EffectiveState, Is.EqualTo(QuestState.Failed));
+    }
+
+    /// <summary>
+    /// Session creation should not happen for quests whose EffectiveState is terminal.
+    /// This verifies the guard logic uses EffectiveState, not entry State.
+    /// </summary>
+    [Test]
+    public void AdvanceToCompletionStage_EffectiveStateIsNotInProgress()
+    {
+        // Arrange
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexQuestEntry quest = new()
+        {
+            QuestId = new QuestId("session_guard"),
+            Title = "Session Guard Test",
+            Description = "Test",
+            DateStarted = _testDate,
+            Stages =
+            [
+                new QuestStage { StageId = 10, QuestState = QuestState.InProgress },
+                new QuestStage { StageId = 30, QuestState = QuestState.Completed }
+            ]
+        };
+        codex.RecordQuestStarted(quest, _testDate);
+        codex.AdvanceQuestStage(quest.QuestId, 30, _testDate.AddHours(1));
+
+        // Assert — even before RecordQuestCompleted, EffectiveState is Completed
+        CodexQuestEntry? result = codex.GetQuest(quest.QuestId);
+        Assert.That(result!.EffectiveState, Is.Not.EqualTo(QuestState.InProgress));
+        Assert.That(result.EffectiveState, Is.EqualTo(QuestState.Completed));
+    }
+
+    #endregion
 }

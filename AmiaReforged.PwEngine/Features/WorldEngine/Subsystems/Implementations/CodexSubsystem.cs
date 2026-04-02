@@ -354,6 +354,7 @@ public sealed class CodexSubsystem : ICodexSubsystem
                 }
 
                 codex.AdvanceQuestStage(qid, stageId, now);
+                ApplyStageQuestState(codex, existing, qid, stageId, now);
             }
             else
             {
@@ -382,13 +383,14 @@ public sealed class CodexSubsystem : ICodexSubsystem
                 // Add to codex in InProgress state, then advance to the requested stage
                 codex.RecordQuestStarted(entry, now);
                 codex.AdvanceQuestStage(qid, stageId, now);
+                ApplyStageQuestState(codex, entry, qid, stageId, now);
             }
 
             await _codexRepository.SaveAsync(codex);
 
             // Create/update the quest session so objective tracking begins immediately
             CodexQuestEntry? updatedEntry = codex.GetQuest(qid);
-            if (updatedEntry is { State: QuestState.InProgress })
+            if (updatedEntry is not null && updatedEntry.EffectiveState == QuestState.InProgress)
             {
                 _resolutionService.CreateSessionForQuest(characterId, updatedEntry);
             }
@@ -406,6 +408,43 @@ public sealed class CodexSubsystem : ICodexSubsystem
         {
             Log.Error(ex, "SetQuestStage failed for quest '{QuestId}' character {CharacterId}", questId, characterId);
             return CommandResult.Fail($"Database error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Applies the target stage's <see cref="QuestState"/> to the codex entry, transitioning
+    /// to Completed/Failed/etc. if the stage defines it. Ensures the entry-level State stays
+    /// in sync with stage-level overrides at write time.
+    /// </summary>
+    private static void ApplyStageQuestState(
+        PlayerCodex codex, CodexQuestEntry entry, QuestId qid, int stageId, DateTime now)
+    {
+        QuestStage? targetStage = entry.Stages.FirstOrDefault(s => s.StageId == stageId);
+        if (targetStage?.QuestState is not { } stageState)
+        {
+            // Backward compat: IsCompletionStage still works if QuestState is not set
+            if (targetStage is { IsCompletionStage: true })
+                codex.RecordQuestCompleted(qid, now);
+            return;
+        }
+
+        switch (stageState)
+        {
+            case QuestState.Completed:
+                codex.RecordQuestCompleted(qid, now);
+                break;
+            case QuestState.Failed:
+                codex.RecordQuestFailed(qid, now);
+                break;
+            case QuestState.Abandoned:
+                codex.RecordQuestAbandoned(qid, now);
+                break;
+            case QuestState.Expired:
+                codex.RecordQuestExpired(qid, ExpiryBehavior.Fail, now);
+                break;
+            default:
+                entry.State = stageState;
+                break;
         }
     }
 

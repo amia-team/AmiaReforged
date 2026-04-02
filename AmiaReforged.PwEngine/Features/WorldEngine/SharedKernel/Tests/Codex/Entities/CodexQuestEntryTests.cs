@@ -820,6 +820,72 @@ public class CodexQuestEntryTests
         Assert.That(quest.EffectiveState, Is.EqualTo(QuestState.InProgress));
     }
 
+    /// <summary>
+    /// Regression test for the exact user-reported bug: quest at stage 30 with
+    /// QuestState = Completed, but entry State never updated — EffectiveState must
+    /// still show Completed even before MarkCompleted is called.
+    /// </summary>
+    [Test]
+    public void EffectiveState_Regression_StageCompletedButEntryInProgress()
+    {
+        // Arrange — simulates the pre-fix state: AdvanceToStage was called but
+        // ApplyStageQuestState was NOT, so entry State is still InProgress
+        CodexQuestEntry quest = new()
+        {
+            QuestId = new QuestId("farmers_favor"),
+            Title = "A Farmer's Favor",
+            Description = "Help the farmer",
+            DateStarted = _testDate,
+            Stages =
+            [
+                new QuestStage { StageId = 10, JournalText = "Go talk to the farmer.", QuestState = QuestState.InProgress },
+                new QuestStage { StageId = 20, JournalText = "Deliver the goods.", QuestState = QuestState.InProgress },
+                new QuestStage { StageId = 30, JournalText = "Quest complete!", QuestState = QuestState.Completed }
+            ]
+        };
+        quest.State = QuestState.InProgress;
+        quest.AdvanceToStage(10);
+        quest.AdvanceToStage(20);
+        quest.AdvanceToStage(30);
+
+        // Assert — EffectiveState derives from stage 30, showing Completed
+        Assert.That(quest.EffectiveState, Is.EqualTo(QuestState.Completed));
+        // But entry-level State remains InProgress (stage hasn't been applied yet)
+        Assert.That(quest.State, Is.EqualTo(QuestState.InProgress));
+    }
+
+    /// <summary>
+    /// After the full flow (advance + MarkCompleted), both State and EffectiveState agree.
+    /// </summary>
+    [Test]
+    public void EffectiveState_AfterMarkCompleted_BothStateAndEffectiveStateAgree()
+    {
+        // Arrange
+        CodexQuestEntry quest = new()
+        {
+            QuestId = new QuestId("full_flow"),
+            Title = "Full Flow",
+            Description = "Test",
+            DateStarted = _testDate,
+            Stages =
+            [
+                new QuestStage { StageId = 10, QuestState = QuestState.InProgress },
+                new QuestStage { StageId = 30, QuestState = QuestState.Completed }
+            ]
+        };
+        quest.State = QuestState.InProgress;
+        quest.AdvanceToStage(10);
+        quest.AdvanceToStage(30);
+
+        // Act — this is what ApplyStageQuestState does via RecordQuestCompleted
+        quest.MarkCompleted(_testDate.AddHours(1));
+
+        // Assert — both agree
+        Assert.That(quest.State, Is.EqualTo(QuestState.Completed));
+        Assert.That(quest.EffectiveState, Is.EqualTo(QuestState.Completed));
+        Assert.That(quest.DateCompleted, Is.Not.Null);
+    }
+
     #endregion
 
     #region Helpers

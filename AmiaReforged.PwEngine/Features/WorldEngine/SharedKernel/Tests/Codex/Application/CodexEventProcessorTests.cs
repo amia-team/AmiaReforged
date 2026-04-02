@@ -590,18 +590,18 @@ public class CodexEventProcessorTests
     }
 
     [Test]
-    public async Task Given_ProcessorNotStarted_When_EventEnqueued_Then_EventNotProcessed()
+    public async Task Given_ProcessorAutoStarts_When_EventEnqueued_Then_EventIsProcessed()
     {
-        // Given
+        // Given — processor auto-starts in constructor, so events should be processed
         QuestStartedEvent evt = new QuestStartedEvent(_characterId, DateTime.UtcNow, QuestId.NewId(), "Quest", "Desc");
 
         // When
         await _processor.EnqueueEventAsync(evt);
-        await Task.Delay(100);
+        await Task.Delay(200);
 
-        // Then
+        // Then — the event should have been processed since Start() is called in ctor
         PlayerCodex? codex = await _repository.LoadAsync(_characterId);
-        Assert.That(codex, Is.Null);
+        Assert.That(codex, Is.Not.Null);
     }
 
     #endregion
