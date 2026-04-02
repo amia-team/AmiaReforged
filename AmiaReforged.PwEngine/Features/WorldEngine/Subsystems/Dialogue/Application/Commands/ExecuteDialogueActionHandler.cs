@@ -134,7 +134,7 @@ public sealed class ExecuteDialogueActionHandler : ICommandHandler<ExecuteDialog
         int amount = int.TryParse(action.GetRequiredParam("amount"), out int a) ? a : 0;
         if (amount <= 0) return CommandResult.Fail("Gold amount must be positive");
 
-        creature.Gold += (uint)amount;
+        creature.GiveGold(amount);
         Log.Info("Dialogue action: Gave {Amount} gold to {Player}", amount, creature.Name);
         return CommandResult.Ok();
     }
@@ -144,10 +144,10 @@ public sealed class ExecuteDialogueActionHandler : ICommandHandler<ExecuteDialog
         int amount = int.TryParse(action.GetRequiredParam("amount"), out int a) ? a : 0;
         if (amount <= 0) return CommandResult.Fail("Gold amount must be positive");
 
-        if (creature.Gold < amount)
+        if (creature.Gold < (uint)amount)
             return CommandResult.Fail($"Player only has {creature.Gold} gold, needs {amount}");
 
-        creature.Gold -= (uint)amount;
+        creature.TakeGold(amount);
         Log.Info("Dialogue action: Took {Amount} gold from {Player}", amount, creature.Name);
         return CommandResult.Ok();
     }
