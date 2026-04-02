@@ -12,23 +12,24 @@ public class DevourMagic(DispelService dispelService) : IInvocation
     public string ImpactScript => "wlk_devourmagic";
     public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
-        int dispelModifier = dispelService.GetDispelModifier(warlock, invocationCl);
+        NwSpell spell = castData.Spell;
+        int dispelModifier = dispelService.GetDispelModifier(warlock, invocationCl, spell);
 
         if (castData.TargetObject != null)
         {
-            DevourSingleTarget(warlock, castData.TargetObject, dispelModifier);
+            DevourSingleTarget(warlock, castData.TargetObject, dispelModifier, spell);
         }
         else if (castData.TargetLocation != null)
         {
-            DevourArea(castData.TargetLocation, warlock, dispelModifier);
+            DevourArea(castData.TargetLocation, warlock, dispelModifier, spell);
         }
     }
 
-    private void DevourSingleTarget(NwCreature warlock, NwGameObject targetObject, int dispelModifier)
+    private void DevourSingleTarget(NwCreature warlock, NwGameObject targetObject, int dispelModifier, NwSpell spell)
     {
         if (dispelService.IsImmuneToDispel(targetObject)) return;
 
-        int dispelCount = dispelService.DispelTarget(warlock, targetObject, dispelModifier, DispelService.DispelType.DevourMagic);
+        int dispelCount = dispelService.DispelTarget(warlock, targetObject, dispelModifier, spell);
         targetObject.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDestruction));
 
         if (dispelCount <= 0) return;
@@ -36,7 +37,7 @@ public class DevourMagic(DispelService dispelService) : IInvocation
         _ = Heal(warlock, dispelCount);
     }
 
-    private void DevourArea(Location location, NwCreature warlock, int dispelModifier)
+    private void DevourArea(Location location, NwCreature warlock, int dispelModifier, NwSpell spell)
     {
         location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfMysticalExplosion, fScale: 0.2f));
 
@@ -54,8 +55,7 @@ public class DevourMagic(DispelService dispelService) : IInvocation
 
             if (dispelService.IsImmuneToDispel(targetObject)) continue;
 
-            if (dispelService.DispelTarget(warlock, targetObject, dispelModifier,
-                    DispelService.DispelType.DevourMagic, maxSpells: 1) <= 0) continue;
+            if (dispelService.DispelTarget(warlock, targetObject, dispelModifier, spell, maxSpells: 1) <= 0) continue;
 
             targetObject.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDestruction));
         }
