@@ -118,7 +118,6 @@ public class QuestDisplayItemTests
         };
         entry.State = QuestState.InProgress;
         entry.CurrentStageId = 20;
-k
         QuestDisplayItem display = new(entry);
 
         // Assert — EffectiveState from stage overrides entry State
