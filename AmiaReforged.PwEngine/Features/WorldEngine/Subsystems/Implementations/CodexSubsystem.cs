@@ -36,6 +36,7 @@ public sealed class CodexSubsystem : ICodexSubsystem
     private readonly WindowDirector _windowDirector;
     private readonly QuestSessionManager _sessionManager;
     private readonly QuestObjectiveResolutionService _resolutionService;
+    private readonly IStageRewardGranter? _rewardGranter;
 
     public CodexSubsystem(
         IPlayerCodexRepository codexRepository,
@@ -44,7 +45,8 @@ public sealed class CodexSubsystem : ICodexSubsystem
         ICommandHandler<CloseCodexCommand> closeHandler,
         WindowDirector windowDirector,
         QuestSessionManager sessionManager,
-        QuestObjectiveResolutionService resolutionService)
+        QuestObjectiveResolutionService resolutionService,
+        IStageRewardGranter? rewardGranter = null)
     {
         _codexRepository = codexRepository;
         _contextFactory = contextFactory;
@@ -53,6 +55,7 @@ public sealed class CodexSubsystem : ICodexSubsystem
         _windowDirector = windowDirector;
         _sessionManager = sessionManager;
         _resolutionService = resolutionService;
+        _rewardGranter = rewardGranter;
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -335,6 +338,10 @@ public sealed class CodexSubsystem : ICodexSubsystem
                 codex = new PlayerCodex(characterId, now);
             }
 
+            // Track the from-stage so we can grant its rewards after advancing.
+            int fromStageId = -1;
+            CodexQuestEntry? questEntry = null;
+
             if (codex.HasQuest(qid))
             {
                 // Always refresh stages from the definition so admin-panel edits
@@ -353,6 +360,8 @@ public sealed class CodexSubsystem : ICodexSubsystem
                     }
                 }
 
+                fromStageId = existing.CurrentStageId;
+                questEntry = existing;
                 codex.AdvanceQuestStage(qid, stageId, now);
                 ApplyStageQuestState(codex, existing, qid, stageId, now);
             }
@@ -380,11 +389,17 @@ public sealed class CodexSubsystem : ICodexSubsystem
                     Stages = DeserializeStages(definition.StagesJson)
                 };
 
+                fromStageId = 0;
+                questEntry = entry;
+
                 // Add to codex in InProgress state, then advance to the requested stage
                 codex.RecordQuestStarted(entry, now);
                 codex.AdvanceQuestStage(qid, stageId, now);
                 ApplyStageQuestState(codex, entry, qid, stageId, now);
             }
+
+            // Grant the completed (from) stage's rewards if any
+            await GrantFromStageRewardsAsync(_rewardGranter, characterId, qid, fromStageId, stageId, questEntry);
 
             await _codexRepository.SaveAsync(codex);
 
@@ -445,6 +460,35 @@ public sealed class CodexSubsystem : ICodexSubsystem
             default:
                 entry.State = stageState;
                 break;
+        }
+    }
+
+    /// <summary>
+    /// Grants the FROM stage's rewards (if any) when advancing from one stage to another.
+    /// Skipped when the stage didn't actually change (idempotent advance) or when no
+    /// reward granter is registered.
+    /// </summary>
+    internal static async Task GrantFromStageRewardsAsync(
+        IStageRewardGranter? rewardGranter,
+        CharacterId characterId, QuestId questId, int fromStageId, int toStageId, CodexQuestEntry entry)
+    {
+        // Idempotent: stage didn't change — nothing to grant
+        if (fromStageId == toStageId) return;
+
+        if (rewardGranter is null) return;
+
+        QuestStage? fromStage = entry.Stages.FirstOrDefault(s => s.StageId == fromStageId);
+        if (fromStage is null or { Rewards.IsEmpty: true }) return;
+
+        try
+        {
+            await rewardGranter.GrantRewardsAsync(characterId, questId, fromStageId, fromStage.Rewards);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex,
+                "Failed to grant stage {StageId} rewards for quest '{QuestId}' character {CharacterId}",
+                fromStageId, questId.Value, characterId.Value);
         }
     }
 
