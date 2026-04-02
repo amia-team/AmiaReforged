@@ -2,20 +2,16 @@ using AmiaReforged.Classes.EffectUtils;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Arcane.SixthCircle.Abjuration;
 
 /// <summary>
 /// Greater Dispelling - A powerful abjuration spell that removes magical effects.
 ///
-/// Targeted: dispels all effects on the target.
-/// Area: dispels the best (highest CL) effect on each creature.
+/// Targeted: dispels all spells on the target.
+/// Area: dispels the best (highest CL) spells on each creature.
 ///
-/// Dispel check: 1d20 + caster level (max +15) vs DC 11 + spell effect's caster level.
-/// Abjuration focus bonuses (non-cumulative, applied to all casters):
-///   Spell Focus +1, Greater +3, Epic +6.
-/// Maximum effective caster level: 30.
+/// Dispel check: 1d20 + caster level (max +15) + 2 per Abjuration Focus vs. DC 12 + spell effect's caster level
 ///
 /// Spell resistance: no.
 /// Creatures under Time Stop, petrification, or X1_L_IMMUNE_TO_DISPEL=10 are immune.
@@ -23,107 +19,62 @@ namespace AmiaReforged.Classes.Spells.Arcane.SixthCircle.Abjuration;
 [ServiceBinding(typeof(ISpell))]
 public class GreaterDispelling(DispelService dispelService) : ISpell
 {
-    private const int BaseCasterLevelCap = 15;
-    private const int MaxCasterLevel = 30;
-
     public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "NW_S0_GrDispel";
 
     public void SetSpellResisted(bool result) => ResistedSpell = result;
 
-    /// <summary>Greater Dispelling bypasses spell resistance entirely.</summary>
-    public void DoSpellResist(NwCreature creature, NwCreature caster)
-    {
-        CheckedSpellResistance = true;
-        ResistedSpell = false;
-    }
+    // Greater Dispelling bypasses spell resistance
+    public void DoSpellResist(NwCreature creature, NwCreature caster) { }
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
         if (eventData.Caster is not NwCreature caster) return;
 
-        int casterLevel = CalculateEffectiveCasterLevel(caster);
+        int dispelModifier = dispelService.GetDispelModifier(caster, caster.CasterLevel, eventData.Spell);
         Effect breachVfx = Effect.VisualEffect(VfxType.ImpBreach);
-        Effect impactVfx = Effect.VisualEffect(VfxType.FnfDispelGreater);
 
         if (eventData.TargetObject is { } targetObject)
         {
-            dispelService.DispelTarget(caster, targetObject, caster.CasterLevel);
+            DispelTarget(caster, targetObject, dispelModifier, eventData.Spell, breachVfx);
+        }
+        else if (eventData.TargetLocation is { } location)
+        {
+            DispelArea(caster, location, dispelModifier, breachVfx, eventData.Spell);
+        }
+    }
+
+    private void DispelTarget(NwCreature caster, NwGameObject target, int dispelModifier, NwSpell spell, Effect breachVfx)
+    {
+        dispelService.SignalDispel(caster, target, spell);
+
+        if (dispelService.IsImmuneToDispel(target)) return;
+
+        dispelService.DispelTarget(caster, target, dispelModifier);
+        target.ApplyEffect(EffectDuration.Instant, breachVfx);
+    }
+
+    private void DispelArea(NwCreature caster, Location location, int dispelModifier, Effect breachVfx, NwSpell spell)
+    {
+        location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfDispelGreater));
+
+        foreach (NwGameObject targetObject in location.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, losCheck: true,
+                     ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door | ObjectTypes.AreaOfEffect))
+        {
+            if (targetObject is NwAreaOfEffect { Spell: not null } aoeObject)
+            {
+                if (dispelService.TryDispelAreaOfEffect(caster, aoeObject, dispelModifier))
+                    aoeObject.ApplyEffect(EffectDuration.Instant, breachVfx);
+                continue;
+            }
+
+            dispelService.SignalDispel(caster, targetObject, spell);
+
+            if (dispelService.IsImmuneToDispel(targetObject)) continue;
+
+            dispelService.DispelTarget(caster, targetObject, dispelModifier, maxSpells: 1);
             targetObject.ApplyEffect(EffectDuration.Instant, breachVfx);
         }
-        else if (eventData.TargetLocation is { } targetLocation)
-        {
-            DoAreaDispel(caster, targetLocation, casterLevel, breachVfx, impactVfx, eventData.Spell);
-        }
     }
-
-    private static int CalculateEffectiveCasterLevel(NwCreature caster)
-    {
-        int casterLevel = Math.Min(caster.CasterLevel, BaseCasterLevelCap);
-
-        int bonus = caster switch
-        {
-            _ when caster.KnowsFeat(Feat.EpicSpellFocusAbjuration!) => 6,
-            _ when caster.KnowsFeat(Feat.GreaterSpellFocusAbjuration!) => 3,
-            _ when caster.KnowsFeat(Feat.SpellFocusAbjuration!) => 1,
-            _ => 0
-        };
-
-        return Math.Min(casterLevel + bonus, MaxCasterLevel);
-    }
-
-    private void DoAreaDispel(NwCreature caster, Location targetLocation, int casterLevel,
-        Effect breachVfx, Effect impactVfx, NwSpell spell)
-    {
-        targetLocation.ApplyEffect(EffectDuration.Instant, impactVfx);
-
-        IntPtr targetLoc = GetSpellTargetLocation();
-        const int validTypes = OBJECT_TYPE_CREATURE | OBJECT_TYPE_AREA_OF_EFFECT | OBJECT_TYPE_PLACEABLE;
-
-        uint current = GetFirstObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_LARGE, targetLoc, FALSE, validTypes);
-        while (GetIsObjectValid(current) == TRUE)
-        {
-            ProcessAreaTarget(caster, current, casterLevel, breachVfx, spell);
-            current = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_LARGE, targetLoc, FALSE, validTypes);
-        }
-    }
-
-    private void ProcessAreaTarget(NwCreature caster, uint currentTarget, int casterLevel,
-        Effect breachVfx, NwSpell spell)
-    {
-        switch (GetObjectType(currentTarget))
-        {
-            case OBJECT_TYPE_AREA_OF_EFFECT:
-                dispelService.TryDispelAreaOfEffect(caster, currentTarget, casterLevel);
-                break;
-
-            case OBJECT_TYPE_PLACEABLE:
-                SignalEvent(currentTarget, EventSpellCastAt(caster.ObjectId, SPELL_GREATER_DISPELLING));
-                break;
-
-            case OBJECT_TYPE_CREATURE:
-                NwCreature? creature = currentTarget.ToNwObject<NwCreature>();
-                if (creature == null) break;
-
-                SpellUtils.SignalSpell(caster, creature, spell);
-
-                if (HasTimeStop(creature))
-                    creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpGlobeUse));
-                else if (!IsDispelImmune(creature))
-                {
-                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDispelMagicBest(casterLevel), currentTarget);
-                    creature.ApplyEffect(EffectDuration.Instant, breachVfx);
-                }
-
-                break;
-        }
-    }
-
-    private static bool HasTimeStop(NwCreature creature)
-        => creature.ActiveEffects.Any(e => e.Spell?.SpellType == Spell.TimeStop);
-
-    private static bool IsDispelImmune(NwGameObject target)
-        => NwEffects.GetHasEffectType(EFFECT_TYPE_PETRIFY, target.ObjectId) == TRUE
-           || GetLocalInt(target.ObjectId, "X1_L_IMMUNE_TO_DISPEL") == 10;
 }
