@@ -12,6 +12,9 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Applicatio
 /// <summary>
 /// Concrete implementation of <see cref="IStageRewardGranter"/> that applies quest-stage
 /// rewards to a live NWN character via Anvil APIs and WorldEngine subsystem services.
+/// Uses <see cref="Lazy{T}"/> for industry services to break the circular DI chain:
+/// CodexEventProcessor → IStageRewardGranter → IIndustryMembershipService → IEventBus
+/// → DialogueNodeEnteredEventHandler → QuestObjectiveResolutionService → CodexEventProcessor.
 /// </summary>
 [ServiceBinding(typeof(IStageRewardGranter))]
 public class NwnStageRewardGranter : IStageRewardGranter
@@ -20,14 +23,14 @@ public class NwnStageRewardGranter : IStageRewardGranter
 
     private readonly RuntimeCharacterService _runtimeCharacterService;
     private readonly ICharacterRepository _characterRepository;
-    private readonly IIndustryMembershipService _membershipService;
-    private readonly IProficiencyProgressionService _proficiencyService;
+    private readonly Lazy<IIndustryMembershipService> _membershipService;
+    private readonly Lazy<IProficiencyProgressionService> _proficiencyService;
 
     public NwnStageRewardGranter(
         RuntimeCharacterService runtimeCharacterService,
         ICharacterRepository characterRepository,
-        IIndustryMembershipService membershipService,
-        IProficiencyProgressionService proficiencyService)
+        Lazy<IIndustryMembershipService> membershipService,
+        Lazy<IProficiencyProgressionService> proficiencyService)
     {
         _runtimeCharacterService = runtimeCharacterService;
         _characterRepository = characterRepository;
@@ -102,7 +105,7 @@ public class NwnStageRewardGranter : IStageRewardGranter
     {
         if (proficiencies.Count == 0) return;
 
-        List<IndustryMembership> memberships = _membershipService.GetMemberships(characterId.Value);
+        List<IndustryMembership> memberships = _membershipService.Value.GetMemberships(characterId.Value);
 
         foreach (ProficiencyReward profReward in proficiencies)
         {
@@ -118,7 +121,7 @@ public class NwnStageRewardGranter : IStageRewardGranter
                 continue;
             }
 
-            ProficiencyXpResult result = _proficiencyService.AwardProficiencyXp(membership, profReward.ProficiencyXp);
+            ProficiencyXpResult result = _proficiencyService.Value.AwardProficiencyXp(membership, profReward.ProficiencyXp);
 
             if (result.LevelsGained > 0)
             {
