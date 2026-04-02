@@ -76,6 +76,10 @@ public sealed class AmiaDialogueService
         // Resolve which root node to use based on conditions
         DialogueNodeId resolvedRoot = await ResolveRootNodeAsync(tree, player, characterId);
 
+        // Condition evaluation in ResolveRootNodeAsync is async — ensure we're back on the
+        // main NWN server thread before touching any game objects or opening NUI windows.
+        await NwTask.SwitchToMainThread();
+
         DialogueSession session = new(tree, player, characterId, npc, resolvedRoot);
         _activeSessions[player] = session;
         _busyNpcs[npc] = player;
