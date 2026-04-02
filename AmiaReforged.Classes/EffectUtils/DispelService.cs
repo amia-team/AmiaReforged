@@ -254,9 +254,9 @@ public class DispelService
     /// </summary>
     /// <param name="caster">The creature casting the dispel</param>
     /// <param name="aoeObject">The AoE object to attempt to dispel</param>
-    /// <param name="casterLevel">The effective caster level for the dispel check</param>
+    /// <param name="dispelModifier">The effective caster level for the dispel check</param>
     /// <returns>True if the AoE was successfully dispelled</returns>
-    public bool TryDispelAreaOfEffect(NwCreature caster, uint aoeObject, int casterLevel)
+    public bool TryDispelAreaOfEffect(NwCreature caster, uint aoeObject, int dispelModifier)
     {
         // Check if it's a mobile aura (can't dispel these)
         string tag = NWScript.GetTag(aoeObject);
@@ -270,7 +270,7 @@ public class DispelService
         int aoeCreatorCl = NWScript.GetCasterLevel(aoeCreator);
 
         // Perform dispel check
-        if (RollDispelCheck(casterLevel, aoeCreatorCl))
+        if (RollDispelCheck(dispelModifier, aoeCreatorCl))
         {
             NWScript.DestroyObject(aoeObject);
             return true;
@@ -283,22 +283,21 @@ public class DispelService
     /// Performs a dispel check against an Area of Effect object.
     /// </summary>
     /// <param name="caster">The creature casting the dispel</param>
-    /// <param name="areaOfEffect">The AoE object to attempt to dispel</param>
-    /// <param name="casterLevel">The effective caster level for the dispel check</param>
+    /// <param name="aoeObject">The AoE object to attempt to dispel</param>
+    /// <param name="dispelModifier">Caster's modifier for the dispel check, use GetDispelModifier</param>
     /// <returns>True if the AoE was successfully dispelled</returns>
-    public bool TryDispelAreaOfEffect(NwCreature caster, NwAreaOfEffect areaOfEffect, int casterLevel)
+    public bool TryDispelAreaOfEffect(NwCreature caster, NwAreaOfEffect aoeObject, int dispelModifier)
     {
-        int dispelModifier = casterLevel + GetAbjurationFocusBonus(caster);
-
-        if (areaOfEffect.Tag[..7] == "VFX_MOB")
+        // Don't dispel mobility type AoEs, those are dispelled if the dispel is cast on the target itself
+        if (aoeObject.Tag[..7] == "VFX_MOB")
         {
             return false;
         }
 
-        if (areaOfEffect.Creator == caster || RollDispelCheck(dispelModifier, areaOfEffect.CasterLevel))
+        if (aoeObject.Creator == caster || RollDispelCheck(dispelModifier, aoeObject.CasterLevel))
         {
-            areaOfEffect.Destroy();
-            SendDispelAoeFeedback(caster, areaOfEffect);
+            aoeObject.Destroy();
+            SendDispelAoeFeedback(caster, aoeObject);
             return true;
         }
 
