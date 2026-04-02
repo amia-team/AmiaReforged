@@ -354,6 +354,185 @@ public class QuestSessionStageAdvancementTests
 
     #endregion
 
+    #region Stage Rewards
+
+    [Test]
+    public void Completing_stage_with_rewards_emits_StageRewardsGrantedEvent()
+    {
+        // Given stage 10 has rewards, quest advances from 10 → 20
+        RewardMix rewards = new() { Xp = 500, Gold = 200 };
+        QuestStage stage10 = new()
+        {
+            StageId = 10,
+            Rewards = rewards,
+            ObjectiveGroups = [new QuestObjectiveGroup
+            {
+                DisplayName = "Kill Goblins",
+                Objectives = [CreateKillDef("goblin", 1)]
+            }]
+        };
+        QuestStage stage20 = new() { StageId = 20, ObjectiveGroups = [] };
+
+        StageContext ctx = new([stage10, stage20], 10);
+        QuestSession session = new(_questId, _characterId,
+            stage10.ObjectiveGroups, _registry, _testDate, stageContext: ctx);
+
+        // When the objective completes, advancing from stage 10 → 20
+        IReadOnlyList<CodexDomainEvent> events = session.ProcessSignal(
+            new QuestSignal(SignalType.CreatureKilled, "goblin"));
+
+        // Then a StageRewardsGrantedEvent is emitted for the completed stage (10)
+        StageRewardsGrantedEvent? rewardEvent = events.OfType<StageRewardsGrantedEvent>().SingleOrDefault();
+        Assert.That(rewardEvent, Is.Not.Null, "Expected StageRewardsGrantedEvent");
+        Assert.That(rewardEvent!.CompletedStageId, Is.EqualTo(10));
+        Assert.That(rewardEvent.Rewards.Xp, Is.EqualTo(500));
+        Assert.That(rewardEvent.Rewards.Gold, Is.EqualTo(200));
+        Assert.That(rewardEvent.QuestId, Is.EqualTo(_questId));
+        Assert.That(rewardEvent.CharacterId, Is.EqualTo(_characterId));
+    }
+
+    [Test]
+    public void Completing_stage_without_rewards_does_not_emit_StageRewardsGrantedEvent()
+    {
+        // Given stage 10 has empty rewards
+        QuestStage stage10 = new()
+        {
+            StageId = 10,
+            Rewards = RewardMix.Empty,
+            ObjectiveGroups = [new QuestObjectiveGroup
+            {
+                DisplayName = "Kill Goblins",
+                Objectives = [CreateKillDef("goblin", 1)]
+            }]
+        };
+        QuestStage stage20 = new() { StageId = 20, ObjectiveGroups = [] };
+
+        StageContext ctx = new([stage10, stage20], 10);
+        QuestSession session = new(_questId, _characterId,
+            stage10.ObjectiveGroups, _registry, _testDate, stageContext: ctx);
+
+        // When
+        IReadOnlyList<CodexDomainEvent> events = session.ProcessSignal(
+            new QuestSignal(SignalType.CreatureKilled, "goblin"));
+
+        // Then no reward event
+        Assert.That(events.OfType<StageRewardsGrantedEvent>().Count(), Is.EqualTo(0));
+    }
+
+    [Test]
+    public void Reward_event_includes_proficiency_rewards()
+    {
+        // Given stage 10 has proficiency rewards
+        RewardMix rewards = new()
+        {
+            Xp = 100,
+            KnowledgePoints = 3,
+            Proficiencies = [new ProficiencyReward { IndustryTag = "alchemy", ProficiencyXp = 50 }]
+        };
+        QuestStage stage10 = new()
+        {
+            StageId = 10,
+            Rewards = rewards,
+            ObjectiveGroups = [new QuestObjectiveGroup
+            {
+                DisplayName = "Gather Herbs",
+                Objectives = [CreateCollectDef("herb", 1)]
+            }]
+        };
+        QuestStage stage20 = new() { StageId = 20, ObjectiveGroups = [] };
+
+        StageContext ctx = new([stage10, stage20], 10);
+        QuestSession session = new(_questId, _characterId,
+            stage10.ObjectiveGroups, _registry, _testDate, stageContext: ctx);
+
+        // When
+        IReadOnlyList<CodexDomainEvent> events = session.ProcessSignal(
+            new QuestSignal(SignalType.ItemAcquired, "herb"));
+
+        // Then
+        StageRewardsGrantedEvent rewardEvent = events.OfType<StageRewardsGrantedEvent>().Single();
+        Assert.That(rewardEvent.Rewards.KnowledgePoints, Is.EqualTo(3));
+        Assert.That(rewardEvent.Rewards.Proficiencies, Has.Count.EqualTo(1));
+        Assert.That(rewardEvent.Rewards.Proficiencies[0].IndustryTag, Is.EqualTo("alchemy"));
+        Assert.That(rewardEvent.Rewards.Proficiencies[0].ProficiencyXp, Is.EqualTo(50));
+    }
+
+    [Test]
+    public void Multi_stage_advancement_emits_reward_for_each_completed_stage_with_rewards()
+    {
+        // Given stages 10 (rewards) → 20 (rewards) → 30 (no objectives, completion)
+        // Stage 10 completes → advances to 20; if 20 has no objectives it auto-completes
+        RewardMix rewards10 = new() { Xp = 100 };
+        RewardMix rewards20 = new() { Gold = 50 };
+
+        QuestStage stage10 = new()
+        {
+            StageId = 10,
+            Rewards = rewards10,
+            ObjectiveGroups = [new QuestObjectiveGroup
+            {
+                DisplayName = "Phase 1",
+                Objectives = [CreateKillDef("goblin", 1)]
+            }]
+        };
+        QuestStage stage20 = new()
+        {
+            StageId = 20,
+            Rewards = rewards20,
+            ObjectiveGroups = [new QuestObjectiveGroup
+            {
+                DisplayName = "Phase 2",
+                Objectives = [CreateCollectDef("gem", 1)]
+            }]
+        };
+        QuestStage stage30 = new() { StageId = 30, IsCompletionStage = true, ObjectiveGroups = [] };
+
+        List<QuestStage> stages = [stage10, stage20, stage30];
+        StageContext ctx = new(stages, 10);
+        QuestSession session = new(_questId, _characterId,
+            stage10.ObjectiveGroups, _registry, _testDate, stageContext: ctx);
+
+        // When stage 10 completes
+        IReadOnlyList<CodexDomainEvent> events1 = session.ProcessSignal(
+            new QuestSignal(SignalType.CreatureKilled, "goblin"));
+
+        // Then reward for stage 10
+        StageRewardsGrantedEvent reward1 = events1.OfType<StageRewardsGrantedEvent>().Single();
+        Assert.That(reward1.CompletedStageId, Is.EqualTo(10));
+        Assert.That(reward1.Rewards.Xp, Is.EqualTo(100));
+
+        // When stage 20 completes
+        IReadOnlyList<CodexDomainEvent> events2 = session.ProcessSignal(
+            new QuestSignal(SignalType.ItemAcquired, "gem"));
+
+        // Then reward for stage 20
+        StageRewardsGrantedEvent reward2 = events2.OfType<StageRewardsGrantedEvent>().Single();
+        Assert.That(reward2.CompletedStageId, Is.EqualTo(20));
+        Assert.That(reward2.Rewards.Gold, Is.EqualTo(50));
+    }
+
+    [Test]
+    public void No_stage_context_does_not_emit_rewards_event()
+    {
+        // Given a session without stage context (backward compatible, no stages)
+        QuestObjectiveGroup group = new()
+        {
+            DisplayName = "Kill Boss",
+            Objectives = [CreateKillDef("boss", 1)]
+        };
+
+        QuestSession session = new(_questId, _characterId, [group], _registry, _testDate);
+
+        // When
+        IReadOnlyList<CodexDomainEvent> events = session.ProcessSignal(
+            new QuestSignal(SignalType.CreatureKilled, "boss"));
+
+        // Then — no stage context means no reward events
+        Assert.That(events.OfType<StageRewardsGrantedEvent>().Count(), Is.EqualTo(0));
+    }
+
+    #endregion
+
     #region Helpers
 
     /// <summary>

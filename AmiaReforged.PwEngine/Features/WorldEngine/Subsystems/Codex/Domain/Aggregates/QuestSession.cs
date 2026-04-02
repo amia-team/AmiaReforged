@@ -292,6 +292,14 @@ public class QuestSession
         events.Add(new QuestStageAdvancedEvent(
             CharacterId, now, QuestId, fromStage, targetStageId));
 
+        // Grant the completed stage's rewards (if any)
+        QuestStage? completedStage = _allStages?.FirstOrDefault(s => s.StageId == fromStage);
+        if (completedStage is { Rewards.IsEmpty: false })
+        {
+            events.Add(new StageRewardsGrantedEvent(
+                CharacterId, now, QuestId, fromStage, completedStage.Rewards));
+        }
+
         // Load the new stage's objective groups and reinitialize tracking
         QuestStage? newStage = _allStages?.FirstOrDefault(s => s.StageId == targetStageId);
         if (newStage is not null)

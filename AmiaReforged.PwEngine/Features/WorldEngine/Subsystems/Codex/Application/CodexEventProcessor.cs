@@ -19,14 +19,16 @@ public class CodexEventProcessor
 {
     private readonly IPlayerCodexRepository _repository;
     private readonly ITraitSubsystem? _traitSubsystem;
+    private readonly IStageRewardGranter? _rewardGranter;
     private readonly Channel<CodexDomainEvent> _eventChannel;
     private readonly CancellationTokenSource _cts;
     private Task? _processingTask;
 
-    public CodexEventProcessor(IPlayerCodexRepository repository, ITraitSubsystem? traitSubsystem = null)
+    public CodexEventProcessor(IPlayerCodexRepository repository, ITraitSubsystem? traitSubsystem = null, IStageRewardGranter? rewardGranter = null)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _traitSubsystem = traitSubsystem;
+        _rewardGranter = rewardGranter;
         _eventChannel = Channel.CreateUnbounded<CodexDomainEvent>();
         _cts = new CancellationTokenSource();
         Start();
@@ -35,10 +37,11 @@ public class CodexEventProcessor
     /// <summary>
     /// Internal constructor for testing that allows injecting a custom channel
     /// </summary>
-    internal CodexEventProcessor(IPlayerCodexRepository repository, Channel<CodexDomainEvent> channel, ITraitSubsystem? traitSubsystem = null)
+    internal CodexEventProcessor(IPlayerCodexRepository repository, Channel<CodexDomainEvent> channel, ITraitSubsystem? traitSubsystem = null, IStageRewardGranter? rewardGranter = null)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _traitSubsystem = traitSubsystem;
+        _rewardGranter = rewardGranter;
         _eventChannel = channel ?? throw new ArgumentNullException(nameof(channel));
         _cts = new CancellationTokenSource();
     }
@@ -255,6 +258,17 @@ public class CodexEventProcessor
                 else if (targetStage is { IsCompletionStage: true })
                 {
                     codex.RecordQuestCompleted(qsae.QuestId, qsae.OccurredAt);
+                }
+                break;
+
+            case StageRewardsGrantedEvent srge:
+                // Delegate to the reward granter if one is registered.
+                // The granter is responsible for applying XP, gold, knowledge, and
+                // proficiency rewards to the character via the game engine.
+                if (_rewardGranter is not null)
+                {
+                    await _rewardGranter.GrantRewardsAsync(
+                        srge.CharacterId, srge.QuestId, srge.CompletedStageId, srge.Rewards);
                 }
                 break;
 

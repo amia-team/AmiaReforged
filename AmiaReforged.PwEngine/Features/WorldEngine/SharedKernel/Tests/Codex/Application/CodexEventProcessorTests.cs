@@ -742,6 +742,89 @@ public class CodexEventProcessorTests
 
     #endregion
 
+    #region StageRewardsGrantedEvent Tests
+
+    [Test]
+    public async Task Given_StageRewardsGrantedEvent_When_GranterRegistered_Then_GranterCalled()
+    {
+        // Given a processor with a reward granter
+        StubStageRewardGranter granter = new();
+        CodexEventProcessor processor = new(_repository, rewardGranter: granter);
+        QuestId questId = QuestId.NewId();
+        RewardMix rewards = new() { Xp = 500, Gold = 200, KnowledgePoints = 3 };
+
+        StageRewardsGrantedEvent evt = new(
+            _characterId, DateTime.UtcNow, questId, CompletedStageId: 10, rewards);
+
+        // When
+        await processor.EnqueueEventAsync(evt);
+        await Task.Delay(200);
+        await processor.StopAsync();
+
+        // Then the granter was called with the correct parameters
+        Assert.That(granter.Calls, Has.Count.EqualTo(1));
+        StubStageRewardGranter.GrantCall call = granter.Calls[0];
+        Assert.That(call.CharacterId, Is.EqualTo(_characterId));
+        Assert.That(call.QuestId, Is.EqualTo(questId));
+        Assert.That(call.CompletedStageId, Is.EqualTo(10));
+        Assert.That(call.Rewards.Xp, Is.EqualTo(500));
+        Assert.That(call.Rewards.Gold, Is.EqualTo(200));
+        Assert.That(call.Rewards.KnowledgePoints, Is.EqualTo(3));
+    }
+
+    [Test]
+    public async Task Given_StageRewardsGrantedEvent_When_NoGranter_Then_NoError()
+    {
+        // Given a processor WITHOUT a reward granter (default)
+        RewardMix rewards = new() { Xp = 100 };
+        StageRewardsGrantedEvent evt = new(
+            _characterId, DateTime.UtcNow, QuestId.NewId(), CompletedStageId: 10, rewards);
+
+        // When — should not throw
+        _processor.Start();
+        await _processor.EnqueueEventAsync(evt);
+        await Task.Delay(100);
+        await _processor.StopAsync();
+
+        // Then — no crash, processor handled it gracefully
+        Assert.Pass("No exception thrown when reward granter is null");
+    }
+
+    [Test]
+    public async Task Given_StageRewardsGrantedEvent_WithProficiencies_Then_GranterReceivesProficiencies()
+    {
+        // Given rewards with proficiency data
+        StubStageRewardGranter granter = new();
+        CodexEventProcessor processor = new(_repository, rewardGranter: granter);
+
+        RewardMix rewards = new()
+        {
+            Xp = 100,
+            Proficiencies =
+            [
+                new ProficiencyReward { IndustryTag = "alchemy", ProficiencyXp = 50 },
+                new ProficiencyReward { IndustryTag = "smithing", ProficiencyXp = 25 }
+            ]
+        };
+
+        StageRewardsGrantedEvent evt = new(
+            _characterId, DateTime.UtcNow, QuestId.NewId(), CompletedStageId: 20, rewards);
+
+        // When
+        await processor.EnqueueEventAsync(evt);
+        await Task.Delay(200);
+        await processor.StopAsync();
+
+        // Then
+        Assert.That(granter.Calls, Has.Count.EqualTo(1));
+        RewardMix grantedRewards = granter.Calls[0].Rewards;
+        Assert.That(grantedRewards.Proficiencies, Has.Count.EqualTo(2));
+        Assert.That(grantedRewards.Proficiencies[0].IndustryTag, Is.EqualTo("alchemy"));
+        Assert.That(grantedRewards.Proficiencies[1].IndustryTag, Is.EqualTo("smithing"));
+    }
+
+    #endregion
+
     #region Seed Helpers
 
     private async Task SeedQuest(QuestId questId)
@@ -810,5 +893,21 @@ internal class StubTraitSubsystem : Subsystems.ITraitSubsystem
 
     public Task<Subsystems.TraitEffectsSummary> CalculateTraitEffectsAsync(CharacterId characterId, CancellationToken ct = default) =>
         Task.FromResult(new Subsystems.TraitEffectsSummary(characterId, new Dictionary<string, int>(), new List<string>(), new List<string>()));
+}
+
+/// <summary>
+/// Test stub that records all reward grant calls for assertion.
+/// </summary>
+internal class StubStageRewardGranter : IStageRewardGranter
+{
+    public record GrantCall(CharacterId CharacterId, QuestId QuestId, int CompletedStageId, RewardMix Rewards);
+
+    public List<GrantCall> Calls { get; } = [];
+
+    public Task GrantRewardsAsync(CharacterId characterId, QuestId questId, int completedStageId, RewardMix rewards)
+    {
+        Calls.Add(new GrantCall(characterId, questId, completedStageId, rewards));
+        return Task.CompletedTask;
+    }
 }
 

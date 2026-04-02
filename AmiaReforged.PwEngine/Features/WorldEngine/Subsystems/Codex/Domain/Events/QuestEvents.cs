@@ -45,3 +45,16 @@ public sealed record QuestStageAdvancedEvent(
     int FromStage,
     int ToStage
 ) : CodexDomainEvent(CharacterId, OccurredAt);
+
+/// <summary>
+/// Emitted when a stage with non-empty <see cref="RewardMix"/> is completed
+/// (i.e., the quest has advanced past it). The handler is responsible for
+/// translating the reward mix into actual character rewards (XP, gold, etc.).
+/// </summary>
+public sealed record StageRewardsGrantedEvent(
+    CharacterId CharacterId,
+    DateTime OccurredAt,
+    QuestId QuestId,
+    int CompletedStageId,
+    RewardMix Rewards
+) : CodexDomainEvent(CharacterId, OccurredAt);
