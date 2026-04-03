@@ -2081,8 +2081,14 @@
 
     private bool _canDeploy =>
         EditorState.SelectedEndpointId != null
-        && EditorState.ActiveTab is { EntityKey: not null } tab
-        && DeploymentService.SupportedEntityTypes.Contains(tab.EntityType);
+        && (
+            // Standard tab path
+            (EditorState.ActiveTab is { EntityKey: not null } tab
+             && DeploymentService.SupportedEntityTypes.Contains(tab.EntityType))
+            // Interaction editor path (bypasses tabs)
+            || (_interactionEditorOpen && !_ieIsCreating
+                && !string.IsNullOrEmpty(_ieEditItem.Tag))
+        );
 
     // ── Entity list state ───────────────────────────────────────────
     private List<EntityListItem> _listItems = [];
@@ -2370,9 +2376,18 @@
     {
         if (!_canDeploy) return;
 
-        EditorTab tab = EditorState.ActiveTab!;
-        _deployEntityType = tab.EntityType;
-        _deployEntityKey = tab.EntityKey!;
+        if (EditorState.ActiveTab is { EntityKey: not null } tab
+            && DeploymentService.SupportedEntityTypes.Contains(tab.EntityType))
+        {
+            _deployEntityType = tab.EntityType;
+            _deployEntityKey = tab.EntityKey!;
+        }
+        else if (_interactionEditorOpen && !_ieIsCreating)
+        {
+            _deployEntityType = WorldEngineEntityType.Interactions;
+            _deployEntityKey = _ieEditItem.Tag;
+        }
+
         _deploySourceName = _endpoints
             .FirstOrDefault(ep => ep.Id == EditorState.SelectedEndpointId)?.Name ?? "Unknown";
         _showDeployDialog = true;
