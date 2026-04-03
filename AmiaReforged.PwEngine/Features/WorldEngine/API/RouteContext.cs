@@ -12,6 +12,11 @@ public class RouteContext
     public Dictionary<string, string> RouteValues { get; }
     public CancellationToken CancellationToken { get; }
 
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     /// <summary>
     /// Service provider for resolving dependencies in controllers.
     /// Set by the HTTP server when dispatching requests.
@@ -53,7 +58,7 @@ public class RouteContext
 
         using StreamReader reader = new StreamReader(Request.InputStream);
         string json = await reader.ReadToEndAsync();
-        return JsonSerializer.Deserialize<T>(json);
+        return JsonSerializer.Deserialize<T>(json, JsonOptions);
     }
 }
 
