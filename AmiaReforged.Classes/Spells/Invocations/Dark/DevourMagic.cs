@@ -13,65 +13,53 @@ public class DevourMagic(DispelService dispelService) : IInvocation
     public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
         int dispelModifier = dispelService.GetDispelModifier(warlock, invocationCl, castData.Spell);
+        Effect impVfx = Effect.VisualEffect(VfxType.ImpDestruction);
 
         if (castData.TargetObject != null)
         {
-            DevourTarget(warlock, castData.TargetObject, dispelModifier, castData.Spell);
+            DevourTarget(warlock, castData.TargetObject, dispelModifier, castData.Spell, impVfx);
         }
         else if (castData.TargetLocation != null)
         {
-            DevourArea(castData.TargetLocation, warlock, dispelModifier, castData.Spell);
+            DevourArea(castData.TargetLocation, warlock, dispelModifier, castData.Spell, impVfx);
         }
     }
 
-    private void DevourTarget(NwCreature warlock, NwGameObject targetObject, int dispelModifier, NwSpell spell)
+    private void DevourTarget(NwCreature warlock, NwGameObject target, int dispelModifier, NwSpell spell, Effect impVfx)
     {
-        if (targetObject is NwCreature targetCreature && !warlock.IsReactionTypeFriendly(targetCreature))
-            CreatureEvents.OnSpellCastAt.Signal(warlock, targetCreature, spell);
-        else SpellUtils.SignalSpell(warlock, targetObject, spell, harmful: false);
+        dispelService.SignalDispel(warlock, target, spell);
+        if (dispelService.IsImmuneToDispel(target)) return;
 
-        if (dispelService.IsImmuneToDispel(targetObject)) return;
+        Effect dispelMagic = dispelService.DispelMagic(dispelModifier, caster: warlock);
+        target.ApplyEffect(EffectDuration.Instant, dispelMagic);
+        target.ApplyEffect(EffectDuration.Instant, impVfx);
 
-        int dispelCount = dispelService.DispelTarget(warlock, targetObject, dispelModifier);
-        targetObject.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDestruction));
-
-        if (dispelCount <= 0) return;
-
+        int dispelCount = dispelService.FlushDispelFeedback(warlock);
+        if (dispelCount == 0) return;
         _ = Heal(warlock, dispelCount);
     }
 
-    private void DevourArea(Location location, NwCreature warlock, int dispelModifier, NwSpell spell)
+    private void DevourArea(Location location, NwCreature warlock, int dispelModifier, NwSpell spell, Effect impVfx)
     {
-        Effect impDestruction = Effect.VisualEffect(VfxType.ImpDestruction);
+        Effect dispelMagic = dispelService.DispelMagic(dispelModifier, warlock, maxSpells: 1);
+
         location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfMysticalExplosion, fScale: 0.2f));
 
-        int dispelledCount = 0;
         foreach (NwGameObject targetObject in location.GetObjectsInShape(Shape.Sphere, RadiusSize.Large,
                      losCheck: true, ObjectTypes.AreaOfEffect | ObjectTypes.Creature | ObjectTypes.Placeable))
         {
-            if (targetObject is NwAreaOfEffect aoeObject)
-            {
-                targetObject.Location?.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDestruction));
-                if (dispelService.TryDispelAreaOfEffect(warlock, aoeObject, dispelModifier) && aoeObject.Spell != null)
-                        dispelledCount++;
-                continue;
-            }
+            dispelService.SignalDispel(warlock, targetObject, spell);
 
-            if (targetObject is NwCreature targetCreature && !warlock.IsReactionTypeFriendly(targetCreature))
-                CreatureEvents.OnSpellCastAt.Signal(warlock, targetCreature, spell);
-            else SpellUtils.SignalSpell(warlock, targetObject, spell, harmful: false);
+            if (targetObject is NwCreature creature && warlock.IsReactionTypeFriendly(creature)
+                || dispelService.IsImmuneToDispel(targetObject)) continue;
 
-            if (dispelService.IsImmuneToDispel(targetObject)) continue;
-
-            if (dispelService.DispelTarget(warlock, targetObject, dispelModifier, maxSpells: 1) <= 0) continue;
-
-            targetObject.ApplyEffect(EffectDuration.Instant, impDestruction);
-            dispelledCount++;
+            targetObject.ApplyEffect(EffectDuration.Instant, dispelMagic);
+            targetObject.ApplyEffect(EffectDuration.Instant, impVfx);
         }
 
-        if (dispelledCount <= 0) return;
-
-        _ = Heal(warlock, dispelledCount);
+        int dispelCount = dispelService.FlushDispelFeedback(warlock);
+        if (dispelCount == 0) return;
+        _ = Heal(warlock, dispelCount);
     }
 
     private static async Task Heal(NwCreature warlock, int dispelCount)
