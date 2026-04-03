@@ -68,8 +68,14 @@ public class GlyphController
         string graphJson = req.GraphJson ?? "{}";
 
         // For Interaction category, auto-populate the graph with 4 pipeline stage nodes
-        if (string.Equals(req.Category, "Interaction", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(req.EventType, nameof(GlyphEventType.InteractionPipeline), StringComparison.OrdinalIgnoreCase))
+        // only when the caller hasn't supplied a real graph (e.g. deployment sends the
+        // source graph and must not have it overwritten by the template).
+        bool isInteractionCategory =
+            string.Equals(req.Category, "Interaction", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(req.EventType, nameof(GlyphEventType.InteractionPipeline), StringComparison.OrdinalIgnoreCase);
+        bool callerSuppliedGraph = !string.IsNullOrWhiteSpace(req.GraphJson) && req.GraphJson != "{}";
+
+        if (isInteractionCategory && !callerSuppliedGraph)
         {
             graphJson = BuildInteractionPipelineGraphJson(req.Name, req.EventType);
         }

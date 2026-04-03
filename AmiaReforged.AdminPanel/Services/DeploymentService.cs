@@ -142,7 +142,10 @@ public class DeploymentService
             WorldEngineEntityType.Items => ["Self-contained (no additional dependencies)"],
             WorldEngineEntityType.Regions => ["Self-contained (areas and environment data are embedded)"],
             WorldEngineEntityType.ResourceNodes => ["Self-contained (no additional dependencies)"],
-            WorldEngineEntityType.Interactions => ["Self-contained (responses and effects are embedded)"],
+            WorldEngineEntityType.Interactions => [
+                "Glyph pipeline scripts (visual script graphs bound to the interaction)",
+                "Interaction-glyph bindings"
+            ],
             _ => ["Not supported"]
         };
     }
@@ -298,6 +301,7 @@ public class DeploymentService
         Uri targetUri, string targetKey,
         string interactionTag, DeployResult result)
     {
+        // 1. Fetch the interaction definition from source
         InteractionDefinitionDto? interaction = await FetchAsync<InteractionDefinitionDto>(
             sourceUri, sourceKey, $"/api/worldengine/interactions/{Uri.EscapeDataString(interactionTag)}");
 
@@ -307,8 +311,110 @@ public class DeploymentService
             return;
         }
 
+        // 2. Fetch associated Glyph script bindings from source
+        List<InteractionGlyphBindingDto>? sourceBindings = await FetchAsync<List<InteractionGlyphBindingDto>>(
+            sourceUri, sourceKey,
+            $"/api/worldengine/glyphs/interaction-bindings?interactionTag={Uri.EscapeDataString(interactionTag)}");
+        sourceBindings ??= [];
+
+        // 3. For each binding, fetch the full GlyphDefinition (with GraphJson) from source
+        List<(InteractionGlyphBindingDto Binding, GlyphDefinitionDto Definition)> sourceGlyphs = [];
+        foreach (InteractionGlyphBindingDto binding in sourceBindings)
+        {
+            GlyphDefinitionDto? def = await FetchAsync<GlyphDefinitionDto>(
+                sourceUri, sourceKey, $"/api/worldengine/glyphs/{binding.GlyphDefinitionId}");
+            if (def != null)
+                sourceGlyphs.Add((binding, def));
+            else
+                _logger.LogWarning(
+                    "Glyph definition {Id} referenced by interaction binding not found on source; skipping",
+                    binding.GlyphDefinitionId);
+        }
+
+        // 4. Import the interaction definition (upsert by tag)
         string json = JsonSerializer.Serialize(new[] { interaction }, SerializeOptions);
         result.EntityResult = await ImportAsync(targetUri, targetKey, "/api/worldengine/interactions/import", json);
+
+        // 5. Deploy Glyph pipeline scripts and bindings to target
+        if (sourceGlyphs.Count > 0)
+        {
+            int glyphsDeployed = 0;
+            int glyphsFailed = 0;
+            List<string> glyphErrors = [];
+
+            // Fetch existing bindings on target for this interaction tag
+            List<InteractionGlyphBindingDto>? targetBindings = await FetchAsync<List<InteractionGlyphBindingDto>>(
+                targetUri, targetKey,
+                $"/api/worldengine/glyphs/interaction-bindings?interactionTag={Uri.EscapeDataString(interactionTag)}");
+            targetBindings ??= [];
+
+            foreach ((InteractionGlyphBindingDto srcBinding, GlyphDefinitionDto srcDef) in sourceGlyphs)
+            {
+                try
+                {
+                    // Match by event type so we update the right glyph if multiple bindings exist
+                    InteractionGlyphBindingDto? matchingTarget = targetBindings
+                        .FirstOrDefault(b => b.EventType == srcDef.EventType);
+
+                    if (matchingTarget != null)
+                    {
+                        // Update existing glyph definition on target with source's graph data
+                        await PutJsonAsync<GlyphDefinitionDto>(targetUri, targetKey,
+                            $"/api/worldengine/glyphs/{matchingTarget.GlyphDefinitionId}",
+                            new UpdateGlyphRequest(
+                                Name: srcDef.Name,
+                                Description: srcDef.Description,
+                                EventType: srcDef.EventType,
+                                Category: srcDef.Category,
+                                GraphJson: srcDef.GraphJson,
+                                IsActive: srcDef.IsActive));
+                    }
+                    else
+                    {
+                        // Create new glyph definition on target
+                        GlyphDefinitionDto? created = await PostJsonAsync<GlyphDefinitionDto>(targetUri, targetKey,
+                            "/api/worldengine/glyphs",
+                            new CreateGlyphRequest(
+                                Name: srcDef.Name,
+                                EventType: srcDef.EventType,
+                                Category: srcDef.Category,
+                                Description: srcDef.Description,
+                                GraphJson: srcDef.GraphJson,
+                                IsActive: srcDef.IsActive));
+
+                        if (created != null)
+                        {
+                            // Create the interaction-glyph binding on target
+                            await PostJsonAsync<InteractionGlyphBindingDto>(targetUri, targetKey,
+                                "/api/worldengine/glyphs/interaction-bindings",
+                                new CreateInteractionGlyphBindingRequest(
+                                    InteractionTag: interactionTag,
+                                    GlyphDefinitionId: created.Id,
+                                    AreaResRef: srcBinding.AreaResRef,
+                                    Priority: srcBinding.Priority));
+                        }
+                    }
+
+                    glyphsDeployed++;
+                }
+                catch (Exception ex)
+                {
+                    glyphsFailed++;
+                    glyphErrors.Add($"{srcDef.Name}: {ex.Message}");
+                    _logger.LogWarning(ex,
+                        "Failed to deploy glyph script '{Name}' for interaction '{Tag}'",
+                        srcDef.Name, interactionTag);
+                }
+            }
+
+            result.DependencyResults["Glyph Scripts"] = new ImportResult
+            {
+                Succeeded = glyphsDeployed,
+                Failed = glyphsFailed,
+                Total = sourceGlyphs.Count,
+                Errors = glyphErrors
+            };
+        }
     }
 
     // ==================== HTTP Helpers ====================
@@ -334,6 +440,38 @@ public class DeploymentService
         HttpResponseMessage response = await http.SendAsync(request);
         await EnsureSuccessOrThrow(response);
         return await response.Content.ReadFromJsonAsync<T>(JsonOptions);
+    }
+
+    private async Task<T?> PostJsonAsync<T>(Uri baseUri, string apiKey, string relativeUrl, object body) where T : class
+    {
+        HttpClient http = _httpClientFactory.CreateClient("WorldEngine");
+        string json = JsonSerializer.Serialize(body, SerializeOptions);
+        using HttpRequestMessage request = new(HttpMethod.Post, new Uri(baseUri, relativeUrl));
+        request.Headers.Add("X-API-Key", apiKey);
+        request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        HttpResponseMessage response = await http.SendAsync(request);
+        await EnsureSuccessOrThrow(response);
+
+        string content = await response.Content.ReadAsStringAsync();
+        if (string.IsNullOrWhiteSpace(content)) return null;
+        return JsonSerializer.Deserialize<T>(content, JsonOptions);
+    }
+
+    private async Task<T?> PutJsonAsync<T>(Uri baseUri, string apiKey, string relativeUrl, object body) where T : class
+    {
+        HttpClient http = _httpClientFactory.CreateClient("WorldEngine");
+        string json = JsonSerializer.Serialize(body, SerializeOptions);
+        using HttpRequestMessage request = new(HttpMethod.Put, new Uri(baseUri, relativeUrl));
+        request.Headers.Add("X-API-Key", apiKey);
+        request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        HttpResponseMessage response = await http.SendAsync(request);
+        await EnsureSuccessOrThrow(response);
+
+        string content = await response.Content.ReadAsStringAsync();
+        if (string.IsNullOrWhiteSpace(content)) return null;
+        return JsonSerializer.Deserialize<T>(content, JsonOptions);
     }
 
     private async Task<ImportResult?> ImportAsync(Uri baseUri, string apiKey, string relativeUrl, string jsonContent)
