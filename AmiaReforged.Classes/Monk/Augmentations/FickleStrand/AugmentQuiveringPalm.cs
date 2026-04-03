@@ -1,6 +1,6 @@
+using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Monk.Techniques.Cast;
 using AmiaReforged.Classes.Monk.Types;
-using AmiaReforged.Classes.Spells;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -8,7 +8,7 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations.FickleStrand;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class AugmentQuiveringPalm : IAugmentation.ICastAugment
+public class AugmentQuiveringPalm(BreachService breachService) : IAugmentation.ICastAugment
 {
     public PathType Path => PathType.FickleStrand;
     public TechniqueType Technique => TechniqueType.QuiveringPalm;
@@ -33,7 +33,7 @@ public class AugmentQuiveringPalm : IAugmentation.ICastAugment
         };
 
         var stealableSpellGroups = targetCreature.ActiveEffects
-            .Where(e => e.Spell != null && BreachList.BreachSpells.Contains(e.Spell.SpellType))
+            .Where(e => e.Spell != null && breachService.BreachSpells.Contains(e.Spell.SpellType))
             .GroupBy(e => e.Spell)
             .Select(spellGroup => new
             {
