@@ -98,20 +98,21 @@ public static class BlastMechanics
 
     public static (int FlatBonus, double Multiplier) GetEldritchDamageModifiers(NwCreature warlock, int invocationCl)
     {
-        // Every Epic Eldritch Blast feat increases the damage by 5.
+        // Every Epic Eldritch Blast feat increases the damage by 3.
         int epicEldritchCount = EpicEldritchFeatCount(warlock);
-        int flatBonus = epicEldritchCount * 5;
+        int flatBonus = epicEldritchCount * 3;
 
-        double multiplier = 1.0;
-
-        // Charisma multiplies the damage by 1% per Cha Mod, multiplied by 1.5 if warlock is level 30
+        // Charisma mod x 1.5 extra damage; level 30 Charisma mod x 2 extra damage
         int chaMod = warlock.GetAbilityModifier(Ability.Charisma);
-        double chaScale = invocationCl == 30 ? 1.5 : 1.0;
-        multiplier += chaMod * chaScale / 100;
+        double chaScale = invocationCl == 30 ? 2.0 : 1.5;
+        int chaBonus = (int)(chaMod * chaScale);
 
-        // Eldritch Master increases the damage by 25%
+        flatBonus += chaBonus;
+
+        // Eldritch Master increases the damage by 20%
+        double multiplier = 1.0;
         if (warlock.KnowsFeat(EldritchMaster!))
-            multiplier += 0.25;
+            multiplier += 0.20;
 
         return (flatBonus, multiplier);
     }
