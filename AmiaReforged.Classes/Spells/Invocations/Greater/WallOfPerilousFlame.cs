@@ -5,6 +5,7 @@ using Anvil.Services;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Greater;
 
+[ServiceBinding(typeof(IInvocation))]
 public class WallOfPerilousFlame(ScriptHandleFactory scriptHandleFactory) : IInvocation
 {
     private const int VfxPerWlkPerilFlame = 47;
@@ -68,7 +69,7 @@ public class WallOfPerilousFlame(ScriptHandleFactory scriptHandleFactory) : IInv
         return ScriptHandleResult.Handled;
     }
 
-    private static int CalculateDamage(int chaMod) => Random.Shared.Roll(12, 2) + chaMod;
+    private static int CalculateDamage(int chaMod) => (Random.Shared.Roll(12, 2) + chaMod) / 2;
 
     private static async Task ApplyDamage(NwCreature creature, NwCreature warlock, int chaMod)
     {
