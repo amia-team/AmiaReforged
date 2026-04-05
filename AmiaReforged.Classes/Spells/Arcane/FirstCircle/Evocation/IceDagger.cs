@@ -30,7 +30,7 @@ public class IceDagger : ISpell
         if (ResistedSpell) return;
 
         int casterLevel = casterCreature.CasterLevel;
-        int damage = SpellUtils.MaximizeSpell(eventData.MetaMagicFeat, 4, casterLevel);
+        int damage = SpellUtils.MaximizeSpell(eventData.MetaMagicFeat, 4, casterLevel / 2);
         damage = SpellUtils.EmpowerSpell(eventData.MetaMagicFeat, damage);
 
         // Reflex save for half damage (handles evasion and improved evasion)
