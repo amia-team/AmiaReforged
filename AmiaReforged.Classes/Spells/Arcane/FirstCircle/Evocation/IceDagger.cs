@@ -29,7 +29,7 @@ public class IceDagger : ISpell
 
         if (ResistedSpell) return;
 
-        int casterLevel = Math.Min(casterCreature.CasterLevel, 5);
+        int casterLevel = casterCreature.CasterLevel;
         int damage = SpellUtils.MaximizeSpell(eventData.MetaMagicFeat, 4, casterLevel);
         damage = SpellUtils.EmpowerSpell(eventData.MetaMagicFeat, damage);
 
