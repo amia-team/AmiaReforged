@@ -17,7 +17,9 @@ public class EldritchSpear : IShape
     public void CastEldritchShape(NwCreature warlock, int invocationCl, int invocationDc, EssenceData essence,
         SpellEvents.OnSpellCast eventData)
     {
-        if (eventData.TargetObject is not { } targetObject || eventData.Spell is not { } spell) return;
+        if (eventData.TargetObject is not { } targetObject || eventData.Spell is not { } spell
+            || targetObject is NwCreature targetCreature && warlock.IsReactionTypeFriendly(targetCreature))
+            return;
 
         SpellUtils.SignalSpell(caster: warlock, targetObject, spell);
 
