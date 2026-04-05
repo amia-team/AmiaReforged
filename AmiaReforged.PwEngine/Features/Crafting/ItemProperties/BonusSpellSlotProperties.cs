@@ -54,7 +54,7 @@ public static class BonusSpellSlotProperties
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(classType, level)!,
                 GuiLabel = $"{className} Slot: Level {level}",
                 GoldCost = GoldCosts[level],
-                CraftingTier = CraftingTier.Perfect
+                CraftingTier = CraftingTier.Greater
             });
         }
 
