@@ -76,7 +76,7 @@ public class EldritchChain : IShape
             if (!blast.Essence.BypassSpellResistance &&
                 blast.Warlock.InvocationResistCheck(creature, blast.InvocationCl, true)) return;
 
-            int damage = RollEldritchDamage(blast.DamageModifiers, blast.InvocationCl);
+            int damage = RollEldritchDamage(blast.DamageModifiers, blast.InvocationCl) / 2;
 
             creature.ApplyEldritchBlast(blast.Warlock, damage, blast.InvocationDc, blast.Essence);
 
