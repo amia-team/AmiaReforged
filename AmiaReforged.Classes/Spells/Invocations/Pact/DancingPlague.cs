@@ -66,6 +66,7 @@ public class DancingPlague(ScriptHandleFactory scriptHandleFactory) : IInvocatio
         warlock.ApplyPactCooldown();
 
         _ = MakeFeyPretty(warlock, delay, durVfx, targetCreature);
+        _ = MakeFeyDance(warlock, delay);
     }
 
     private static async Task MakeFeyPretty(NwCreature warlock, TimeSpan delay, Effect durVfx, NwCreature? creature)
@@ -79,6 +80,8 @@ public class DancingPlague(ScriptHandleFactory scriptHandleFactory) : IInvocatio
 
         if (creature == null) return;
 
+        feySummon.FaceToObject(creature);
+        feySummon.MovementRate = creature.MovementRate;
         feySummon.Appearance = creature.Appearance;
         feySummon.PortraitId = creature.PortraitId;
 
@@ -90,11 +93,17 @@ public class DancingPlague(ScriptHandleFactory scriptHandleFactory) : IInvocatio
         {
             feySummon.SetColor(channel, creature.GetColor(channel));
         }
+    }
+
+    private static async Task MakeFeyDance(NwCreature warlock, TimeSpan delay)
+    {
+        await NwTask.Delay(delay);
+
+        NwCreature? feySummon = warlock.Associates.FirstOrDefault(a => a.ResRef == FeySummonResRef);
+        if (feySummon == null) return;
 
         feySummon.ClearActionQueue();
-        feySummon.FaceToObject(creature);
-        feySummon.MovementRate = creature.MovementRate;
-
+        feySummon.PlayVoiceChat(VoiceChatType.BattleCry1);
         PlayRandomDance(feySummon, danceDuration: TimeSpan.FromSeconds(3));
     }
 
