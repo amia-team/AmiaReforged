@@ -22,13 +22,6 @@ public class WarlockPactInvocationHandler
         script.CastLightsCalling(info.ObjectSelf);
     }
 
-    [ScriptHandler(scriptName: "wlk_dancingplag")]
-    public void OnDancingPlague(CallInfo info)
-    {
-        DancingPlague script = new();
-        script.CastDancingPlague(info.ObjectSelf);
-    }
-
     [ScriptHandler(scriptName: "wlk_primordial")]
     public void OnPrimordialGust(CallInfo info)
     {

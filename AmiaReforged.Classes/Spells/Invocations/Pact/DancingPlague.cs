@@ -1,222 +1,177 @@
-using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Warlock;
-using static NWN.Core.NWScript;
+using Anvil.API;
+using Anvil.API.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Pact;
 
-public class DancingPlague
+[ServiceBinding(typeof(IInvocation))]
+public class DancingPlague(ScriptHandleFactory scriptHandleFactory) : IInvocation
 {
-    private static readonly IntPtr PartyVfx = EffectVisualEffect(VFX_DUR_PIXIEDUST, FALSE, 1.4f);
+    private const VfxType DurPartyDust = (VfxType)2563;
+    private const VfxType FnfPartyDust = (VfxType)2564;
+    private const string FeySummonResRef = "wlkfey";
 
-    public void CastDancingPlague(uint nwnObjectId)
+    public string ImpactScript => "wlk_dancingplag";
+    public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
-        // Declaring variables for the damage part of the spell
-        uint caster = nwnObjectId;
-        uint target = GetSpellTargetObject();
-        int warlockLevels = GetLevelByClass(57, caster);
-        float effectDuration = warlockLevels < 10 ? RoundsToSeconds(1) : RoundsToSeconds(warlockLevels / 10);
-        float delay = NwEffects.RandomFloat(1.1f, 1.5f);
-        IntPtr location = GetSpellTargetLocation();
+        if (castData.TargetObject is not NwCreature targetCreature || targetCreature.Location is null) return;
 
-        // Declaring variables for the summon part of the spell
-        float summonDuration = RoundsToSeconds(SummonUtility.PactSummonDuration(caster));
-        float summonCooldown = TurnsToSeconds(1);
-        IntPtr cooldownEffect = TagEffect(ExtraordinaryEffect(EffectVisualEffect(VFX_NONE)),
-            sNewTag: "wlk_summon_cd");
+        Effect fnfVfx = Effect.VisualEffect(FnfPartyDust);
+        Effect durVfx = Effect.VisualEffect(DurPartyDust);
+        Effect fortVfx = Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse);
 
-        if (NwEffects.IsPolymorphed(nwnObjectId))
+        int dc = warlock.InvocationDc(invocationCl);
+        NwSpell spell = castData.Spell;
+
+        TimeSpan danceDuration = NwTimeSpan.FromRounds(1);
+        Effect dancePlague = DancePlague(warlock, danceDuration, durVfx, spell, dc, fortVfx);
+        dancePlague.SubType = EffectSubType.Supernatural;
+
+        targetCreature.ApplyEffect(EffectDuration.Instant, fnfVfx);
+
+        foreach (NwCreature creature in targetCreature.Location.GetObjectsInShapeByType<NwCreature>
+                 (Shape.Sphere, RadiusSize.Medium, losCheck: true))
         {
-            SendMessageToPC(nwnObjectId, szMessage: "You cannot cast while polymorphed.");
-            return;
-        }
+            if (!creature.IsValidInvocationTarget(warlock, hurtSelf: false))
+                continue;
 
-        if (!NwEffects.IsValidSpellTarget(target, 2, caster)) return;
+            CreatureEvents.OnSpellCastAt.Signal(warlock, creature, spell);
 
-        //---------------------------
-        // * SUMMONING
-        //---------------------------
+            if (creature.HasSpellEffect(spell) || creature.IsImmuneTo(ImmunityType.Disease))
+                continue;
 
-        // If summonCooldown is active, don't summon; else summon and set summonCooldown
-        if (NwEffects.GetHasEffectByTag(effectTag: "wlk_summon_cd", caster) == FALSE)
-        {
-            // Apply cooldown
-            ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
-            // Summon new
-            ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, EffectVisualEffect(VFX_FNF_SMOKE_PUFF), location, 2f);
-            ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, EffectSummonCreature(sCreatureResref: "wlkfey", -1, 1),
-                location, summonDuration);
-            // Apply effects
-            DelayCommand(1.1f, () => SummonUtility.SetSummonsFacing(1, location));
-            DelayCommand(1.1f, () => MakePretty(target));
-        }
+            SavingThrowResult fortSave =
+                creature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Disease, warlock);
 
-        //---------------------------
-        // * HOSTILE SPELL EFFECT
-        //---------------------------
-
-        SignalEvent(target, EventSpellCastAt(caster, 1010));
-
-        // If the target succeeds the will save or resists spell, then cancel the dance rave, boo!
-        if (GetIsImmune(target, IMMUNITY_TYPE_DISEASE) == TRUE ||
-            GetLocalInt(target, sVarName: "has_danced") == TRUE) return;
-
-        bool passedFortSave =
-            FortitudeSave(target, WarlockUtils.CalculateDc(caster), SAVING_THROW_TYPE_DISEASE, caster) == TRUE;
-
-        if (passedFortSave)
-        {
-            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_FORTITUDE_SAVING_THROW_USE), target);
-            return;
-        }
-
-        // If the target fails the will save, then START THE DANCE RAVE!
-        if (!passedFortSave)
-        {
-            DelayedMakeDance(delay, target, effectDuration);
-            DelayCommand(delay, () => DanceParty(caster, effectDuration, location));
-        }
-    }
-
-    // This function loops the dance party effect in a colossal area for as long as creatures keep failing the will save.
-    private void DanceParty(uint caster, float effectDuration, IntPtr location)
-    {
-        uint currentTarget = GetFirstObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_MEDIUM, location);
-
-        while (GetIsObjectValid(currentTarget) == TRUE)
-        {
-            float delay = NwEffects.RandomFloat(0.5f, 1.5f);
-
-            if (NwEffects.IsValidSpellTarget(currentTarget, 2, caster))
+            if (fortSave == SavingThrowResult.Success)
             {
-                if (GetIsImmune(currentTarget, IMMUNITY_TYPE_DISEASE) == TRUE ||
-                    GetLocalInt(currentTarget, sVarName: "has_danced") == TRUE)
-                {
-                    currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_MEDIUM, location);
-                    continue;
-                }
-
-                bool passedFortSave = FortitudeSave(currentTarget, WarlockUtils.CalculateDc(caster),
-                    SAVING_THROW_TYPE_DISEASE, caster) == TRUE;
-
-                if (passedFortSave)
-                {
-                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_FORTITUDE_SAVING_THROW_USE),
-                        currentTarget);
-                    currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_MEDIUM, location);
-                    continue;
-                }
-
-                if (!passedFortSave)
-                {
-                    DelayedMakeDance(delay, currentTarget, effectDuration);
-                    IntPtr newLocation = GetLocation(currentTarget);
-                    DelayedDanceParty(delay, caster, effectDuration, newLocation);
-                }
+                creature.ApplyEffect(EffectDuration.Temporary, fortVfx);
+                continue;
             }
 
-            currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_MEDIUM, location);
+            creature.ApplyEffect(EffectDuration.Temporary, dancePlague, danceDuration);
         }
+
+        if (warlock.ActiveEffects.Any(e => e.Tag == WarlockExtensions.PactSummonCooldownTag)) return;
+
+        VisualEffectTableEntry summonVfx = NwGameTables.VisualEffectTable.GetRow((int)VfxType.FnfSmokePuff);
+        VisualEffectTableEntry unsummonVfx = NwGameTables.VisualEffectTable.GetRow((int)VfxType.FnfSummonMonster1);
+        TimeSpan delay = TimeSpan.FromSeconds(1);
+        Effect summonEffect = Effect.SummonCreature(FeySummonResRef, summonVfx, delay, unsummonVfx: unsummonVfx);
+        TimeSpan summonDuration = WarlockExtensions.PactSummonDuration(invocationCl);
+        Location summonLocation = targetCreature.Location;
+
+        summonLocation.ApplyEffect(EffectDuration.Temporary, summonEffect, summonDuration);
+        warlock.ApplyPactCooldown();
+
+        _ = MakeFeyPretty(warlock, delay, durVfx, targetCreature);
     }
 
-    private void MakeDance(uint target, float effectDuration)
+    private static async Task MakeFeyPretty(NwCreature warlock, TimeSpan delay, Effect durVfx, NwCreature? creature)
     {
-        ClearAllActions(TRUE);
-        PlayAnimation(RandomDance(), 1, effectDuration);
-        SetCommandable(FALSE, target);
-    }
+        await NwTask.Delay(delay);
+        NwCreature? feySummon = warlock.Associates.FirstOrDefault(a => a.ResRef == FeySummonResRef);
+        if (feySummon == null) return;
 
-    private void DelayedMakeDance(float delay, uint target, float effectDuration)
-    {
-        DelayCommand(delay, () => SetLocalInt(target, sVarName: "has_danced", 1));
-        DelayCommand(delay, () => ApplyEffectToObject(DURATION_TYPE_TEMPORARY, PartyVfx, target, effectDuration));
-        DelayCommand(delay, () => AssignCommand(target, () => MakeDance(target, effectDuration)));
-        DelayCommand(delay + effectDuration, () => SetCommandable(TRUE, target));
-        DelayCommand(delay + effectDuration, () => DeleteLocalInt(target, sVarName: "has_danced"));
-    }
+        feySummon.ApplyEffect(EffectDuration.Permanent, durVfx);
+        feySummon.ApplyEffect(EffectDuration.Permanent, Effect.VisualEffect(VfxType.DurGlowLightGreen));
 
-    private void DelayedDanceParty(float delay, uint caster, float effectDuration, IntPtr location)
-    {
-        DelayCommand(delay, () => DanceParty(caster, effectDuration, location));
-    }
+        if (creature == null) return;
 
-    // Randomize dance effect... sooooo random!
-    private int RandomDance()
-    {
-        int randomDance = d2();
-        switch (randomDance)
+        feySummon.Appearance = creature.Appearance;
+        feySummon.PortraitId = creature.PortraitId;
+
+        foreach (CreaturePart part in Enum.GetValues<CreaturePart>())
         {
-            case 1:
-                return ANIMATION_LOOPING_SPASM;
-            case 2:
-                return ANIMATION_LOOPING_CONJURE2;
+            feySummon.SetCreatureBodyPart(part, creature.GetCreatureBodyPart(part));
+        }
+        foreach (ColorChannel channel in Enum.GetValues<ColorChannel>())
+        {
+            feySummon.SetColor(channel, creature.GetColor(channel));
         }
 
-        return randomDance;
+        feySummon.ClearActionQueue();
+        feySummon.FaceToObject(creature);
+        feySummon.MovementRate = creature.MovementRate;
+
+        PlayRandomDance(feySummon, danceDuration: TimeSpan.FromSeconds(3));
     }
 
-    private void MakePretty(uint target)
+    private Effect DancePlague(NwCreature warlock, TimeSpan danceDuration, Effect durVfx, NwSpell spell, int dc, Effect fortVfx)
     {
-        uint summon = GetAssociate(ASSOCIATE_TYPE_SUMMONED, OBJECT_SELF);
+        ScriptCallbackHandle onApplyDance = scriptHandleFactory.CreateUniqueHandler(info
+            => OnApplyDance(info, danceDuration, durVfx, warlock, spell, dc, fortVfx));
+        ScriptCallbackHandle onRemoveDance = scriptHandleFactory.CreateUniqueHandler(OnRemoveDance);
 
-        int gender = GetGender(target);
-        int appearance = GetAppearanceType(target);
-        int soundset = GetSoundset(target);
-        float height = GetObjectVisualTransform(target, OBJECT_VISUAL_TRANSFORM_SCALE);
-        int tail = GetCreatureTailType(target);
-        int wings = GetCreatureWingType(target);
-        int rfoot = GetCreatureBodyPart(CREATURE_PART_RIGHT_FOOT, target);
-        int lfoot = GetCreatureBodyPart(CREATURE_PART_LEFT_FOOT, target);
-        int rshin = GetCreatureBodyPart(CREATURE_PART_RIGHT_SHIN, target);
-        int lshin = GetCreatureBodyPart(CREATURE_PART_LEFT_SHIN, target);
-        int rthigh = GetCreatureBodyPart(CREATURE_PART_RIGHT_THIGH, target);
-        int lthigh = GetCreatureBodyPart(CREATURE_PART_LEFT_THIGH, target);
-        int pelvis = GetCreatureBodyPart(CREATURE_PART_PELVIS, target);
-        int torso = GetCreatureBodyPart(CREATURE_PART_TORSO, target);
-        int belt = GetCreatureBodyPart(CREATURE_PART_BELT, target);
-        int neck = GetCreatureBodyPart(CREATURE_PART_NECK, target);
-        int rfore = GetCreatureBodyPart(CREATURE_PART_RIGHT_FOREARM, target);
-        int lfore = GetCreatureBodyPart(CREATURE_PART_LEFT_FOREARM, target);
-        int rbicep = GetCreatureBodyPart(CREATURE_PART_RIGHT_BICEP, target);
-        int lbicep = GetCreatureBodyPart(CREATURE_PART_LEFT_BICEP, target);
-        int rshoulder = GetCreatureBodyPart(CREATURE_PART_RIGHT_SHOULDER, target);
-        int lshoulder = GetCreatureBodyPart(CREATURE_PART_LEFT_SHOULDER, target);
-        int rhand = GetCreatureBodyPart(CREATURE_PART_RIGHT_HAND, target);
-        int lhand = GetCreatureBodyPart(CREATURE_PART_LEFT_HAND, target);
-        int head = GetCreatureBodyPart(CREATURE_PART_HEAD, target);
-        int colorHair = GetColor(target, COLOR_CHANNEL_HAIR);
-        int colorSkin = GetColor(target, COLOR_CHANNEL_SKIN);
-        int colorTattoo1 = GetColor(target, COLOR_CHANNEL_TATTOO_1);
-        int colorTattoo2 = GetColor(target, COLOR_CHANNEL_TATTOO_2);
+        Effect danceEffect = Effect.RunAction(onAppliedHandle: onApplyDance, onRemovedHandle: onRemoveDance);
 
-        SetGender(summon, gender);
-        SetCreatureAppearanceType(summon, appearance);
-        SetSoundset(summon, soundset);
-        SetObjectVisualTransform(summon, OBJECT_VISUAL_TRANSFORM_SCALE, height);
-        SetCreatureWingType(wings, summon);
-        SetCreatureTailType(tail, summon);
-        SetCreatureBodyPart(CREATURE_PART_RIGHT_FOOT, rfoot, summon);
-        SetCreatureBodyPart(CREATURE_PART_LEFT_FOOT, lfoot, summon);
-        SetCreatureBodyPart(CREATURE_PART_RIGHT_SHIN, rshin, summon);
-        SetCreatureBodyPart(CREATURE_PART_LEFT_SHIN, lshin, summon);
-        SetCreatureBodyPart(CREATURE_PART_RIGHT_THIGH, rthigh, summon);
-        SetCreatureBodyPart(CREATURE_PART_LEFT_THIGH, lthigh, summon);
-        SetCreatureBodyPart(CREATURE_PART_PELVIS, pelvis, summon);
-        SetCreatureBodyPart(CREATURE_PART_TORSO, torso, summon);
-        SetCreatureBodyPart(CREATURE_PART_BELT, belt, summon);
-        SetCreatureBodyPart(CREATURE_PART_NECK, neck, summon);
-        SetCreatureBodyPart(CREATURE_PART_RIGHT_FOREARM, rfore, summon);
-        SetCreatureBodyPart(CREATURE_PART_LEFT_FOREARM, lfore, summon);
-        SetCreatureBodyPart(CREATURE_PART_RIGHT_BICEP, rbicep, summon);
-        SetCreatureBodyPart(CREATURE_PART_LEFT_BICEP, lbicep, summon);
-        SetCreatureBodyPart(CREATURE_PART_RIGHT_SHOULDER, rshoulder, summon);
-        SetCreatureBodyPart(CREATURE_PART_LEFT_SHOULDER, lshoulder, summon);
-        SetCreatureBodyPart(CREATURE_PART_RIGHT_HAND, rhand, summon);
-        SetCreatureBodyPart(CREATURE_PART_LEFT_HAND, lhand, summon);
-        SetCreatureBodyPart(CREATURE_PART_HEAD, head, summon);
-        SetColor(summon, COLOR_CHANNEL_HAIR, colorHair);
-        SetColor(summon, COLOR_CHANNEL_SKIN, colorSkin);
-        SetColor(summon, COLOR_CHANNEL_TATTOO_1, colorTattoo1);
-        SetColor(summon, COLOR_CHANNEL_TATTOO_2, colorTattoo2);
-        AssignCommand(summon, () => PlayAnimation(RandomDance(), 1, 6f));
+        return danceEffect;
+    }
+
+    private ScriptHandleResult OnApplyDance(CallInfo info, TimeSpan danceDuration, Effect durVfx,
+        NwCreature warlock, NwSpell spell, int dc, Effect fortVfx)
+    {
+        if (info.ObjectSelf is not NwCreature creature) return ScriptHandleResult.Handled;
+        creature.ClearActionQueue();
+        PlayRandomDance(creature, danceDuration);
+        creature.ApplyEffect(EffectDuration.Temporary, durVfx, danceDuration);
+        creature.Commandable = false;
+
+        _ = SpreadDancePlague(warlock, source: creature, danceDuration, durVfx, dc, spell, fortVfx);
+
+        return ScriptHandleResult.Handled;
+    }
+
+    private static void PlayRandomDance(NwCreature creature, TimeSpan danceDuration)
+    {
+        Animation randomDance = Random.Shared.Roll(2) == 1 ? Animation.LoopingSpasm : Animation.LoopingConjure2;
+        creature.PlayAnimation(randomDance, animSpeed: 1.5f, duration: danceDuration);
+    }
+
+    private static ScriptHandleResult OnRemoveDance(CallInfo info)
+    {
+        if (info.ObjectSelf is not NwCreature creature) return ScriptHandleResult.Handled;
+
+        creature.Commandable = true;
+        creature.ClearActionQueue();
+        return ScriptHandleResult.Handled;
+    }
+
+    private async Task SpreadDancePlague(NwCreature warlock, NwCreature source, TimeSpan danceDuration, Effect durVfx,
+        int dc, NwSpell spell, Effect fortVfx)
+    {
+        await NwTask.Delay(TimeSpan.FromSeconds(3));
+        await warlock.WaitForObjectContext();
+
+        // Each time the Plague Spreads, the DC grows weaker and weaker
+        dc--;
+
+        Effect dancePlague = DancePlague(warlock, danceDuration, durVfx, spell, dc, fortVfx);
+
+        if (source.Location is null) return;
+
+        foreach (NwCreature creature in source.Location.GetObjectsInShapeByType<NwCreature>(
+                     Shape.Sphere, RadiusSize.Medium, losCheck: true))
+        {
+            if (creature == source) continue;
+            if (!creature.IsValidInvocationTarget(warlock, hurtSelf: false)) continue;
+
+            CreatureEvents.OnSpellCastAt.Signal(warlock, creature, spell);
+
+            if (creature.HasSpellEffect(spell) || creature.IsImmuneTo(ImmunityType.Disease))
+                continue;
+
+            SavingThrowResult fortSave =
+                creature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Disease, warlock);
+
+            if (fortSave == SavingThrowResult.Success)
+            {
+                creature.ApplyEffect(EffectDuration.Temporary, fortVfx);
+                continue;
+            }
+
+            creature.ApplyEffect(EffectDuration.Temporary, dancePlague, danceDuration);
+        }
     }
 }
