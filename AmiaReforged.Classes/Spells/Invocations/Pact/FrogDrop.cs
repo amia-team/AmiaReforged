@@ -45,11 +45,11 @@ public class FrogDrop(ScriptHandleFactory scriptHandleFactory) : IInvocation
         if (warlock.ActiveEffects.Any(e => e.Tag == WarlockExtensions.PactSummonCooldownTag)) return;
 
         string frog = GetFrog(invocationCl);
-        Effect summonNextFrog = Effect.SummonCreature(frog, VfxImpFrog!, unsummonVfx: VfxImpFrog);
+        Effect summonFrog = Effect.SummonCreature(frog, VfxImpFrog!, unsummonVfx: VfxImpFrog);
         Effect frogDoll = FrogDoll(warlock);
 
         TimeSpan summonDuration = WarlockExtensions.PactSummonDuration(invocationCl);
-        location.ApplyEffect(EffectDuration.Temporary, summonNextFrog, summonDuration);
+        location.ApplyEffect(EffectDuration.Temporary, summonFrog, summonDuration);
 
         _ = ApplyFrogDoll(warlock, frog, frogDoll);
 
