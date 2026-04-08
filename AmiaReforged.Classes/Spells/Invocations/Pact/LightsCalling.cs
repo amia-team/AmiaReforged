@@ -1,9 +1,7 @@
-using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Warlock;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Pact;
 
