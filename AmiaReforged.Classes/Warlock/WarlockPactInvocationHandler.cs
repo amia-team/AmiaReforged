@@ -15,13 +15,6 @@ public class WarlockPactInvocationHandler
         Log.Info(message: "Warlock Pact Invocation Script Handler initialized.");
     }
 
-    [ScriptHandler(scriptName: "wlk_lightscall")]
-    public void OnLightsCalling(CallInfo info)
-    {
-        LightsCalling script = new();
-        script.CastLightsCalling(info.ObjectSelf);
-    }
-
     [ScriptHandler(scriptName: "wlk_primordial")]
     public void OnPrimordialGust(CallInfo info)
     {
