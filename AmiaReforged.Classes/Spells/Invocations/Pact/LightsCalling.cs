@@ -1,124 +1,95 @@
 using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Warlock;
+using Anvil.API;
+using Anvil.API.Events;
+using Anvil.Services;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Pact;
 
-public class LightsCalling
+[ServiceBinding(typeof(IInvocation))]
+public class LightsCalling : IInvocation
 {
-    public void CastLightsCalling(uint nwnObjectId)
+    private const string CelestialSummonResRef = "wlkCelestial";
+
+    public string ImpactScript => "wlk_lightscall";
+    public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
-        if (NwEffects.IsPolymorphed(nwnObjectId))
+        if (castData.TargetLocation is not { } location) return;
+
+        int dc = warlock.InvocationDc(invocationCl);
+
+        Effect blindness = Effect.LinkEffects(Effect.Blindness(), Effect.VisualEffect(VfxType.DurCessateNegative));
+        blindness.SubType = EffectSubType.Magical;
+
+        Effect turned = Effect.LinkEffects(Effect.Turned(), Effect.VisualEffect(VfxType.DurMindAffectingFear));
+        turned.SubType = EffectSubType.Magical;
+
+        TimeSpan duration = NwTimeSpan.FromRounds(1);
+
+        Effect willVfx = Effect.VisualEffect(VfxType.ImpWillSavingThrowUse);
+        Effect impVfx = Effect.VisualEffect(VfxType.ImpSunstrike);
+
+        location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfSunbeam));
+
+        foreach (NwCreature creature in location.GetObjectsInShapeByType<NwCreature>(
+                     Shape.Sphere, RadiusSize.Colossal, losCheck: false))
         {
-            SendMessageToPC(nwnObjectId, szMessage: "You cannot cast while polymorphed.");
+            if (!creature.IsValidInvocationTarget(warlock, false)) continue;
+
+            CreatureEvents.OnSpellCastAt.Signal(warlock, creature, castData.Spell);
+
+            if (warlock.InvocationResistCheck(creature, invocationCl)) continue;
+
+            SavingThrowResult willSave = creature.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.Good, warlock);
+
+            if (willSave == SavingThrowResult.Success)
+            {
+                creature.ApplyEffect(EffectDuration.Instant, willVfx);
+                continue;
+            }
+
+            _ = ApplyLight(creature, willSave, willVfx, impVfx, blindness, turned, duration);
+
+            if (creature.Race.RacialType == RacialType.Undead)
+            {
+                creature.ApplyEffect(EffectDuration.Temporary, turned, duration);
+                continue;
+            }
+
+            creature.ApplyEffect(EffectDuration.Temporary, blindness, duration);
+        }
+
+        if (warlock.ActiveEffects.Any(e => e.Tag == WarlockExtensions.PactSummonCooldownTag))
+            return;
+
+        TimeSpan summonDuration = WarlockExtensions.PactSummonDuration(invocationCl);
+
+        Effect summonCelestial = Effect.SummonCreature(CelestialSummonResRef, VfxType.ImpFearS!, appearType: 1);
+        location.ApplyEffect(EffectDuration.Temporary, summonCelestial, summonDuration);
+
+        warlock.ApplyPactCooldown();
+    }
+
+    private static async Task ApplyLight(NwCreature creature, SavingThrowResult willSave, Effect willVfx, Effect impVfx,
+        Effect blindness, Effect turned, TimeSpan duration)
+    {
+        await NwTask.Delay(SpellUtils.GetRandomDelay(0.8, 1.3));
+
+        if (willSave == SavingThrowResult.Success)
+        {
+            creature.ApplyEffect(EffectDuration.Instant, willVfx);
             return;
         }
 
-        // Declaring variables for the damage part of the spell
-        uint caster = nwnObjectId;
-        int warlockLevels = GetLevelByClass(57, caster);
-        float effectDuration = warlockLevels < 10 ? RoundsToSeconds(1) : RoundsToSeconds(warlockLevels / 10);
-        IntPtr location = GetSpellTargetLocation();
-        IntPtr hostileEffects = NwEffects.LinkEffectList(new List<IntPtr>
+        creature.ApplyEffect(EffectDuration.Instant, impVfx);
+
+        if (creature.Race.RacialType == RacialType.Undead)
         {
-            EffectBlindness(),
-            EffectVisualEffect(VFX_DUR_CESSATE_NEGATIVE)
-        });
-
-        // Declaring variables for the summon part of the spell
-        float summonDuration = RoundsToSeconds(SummonUtility.PactSummonDuration(caster));
-        float summonCooldown = TurnsToSeconds(1);
-        IntPtr cooldownEffect = TagEffect(ExtraordinaryEffect(EffectVisualEffect(VFX_NONE)),
-            sNewTag: "wlk_summon_cd");
-
-        //---------------------------
-        // * HOSTILE SPELL EFFECT
-        //---------------------------
-
-        ApplyEffectAtLocation(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_FNF_SUNBEAM), location);
-        uint currentTarget = GetFirstObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_COLOSSAL, location);
-        while (GetIsObjectValid(currentTarget) == TRUE)
-        {
-            if (NwEffects.IsValidSpellTarget(currentTarget, 3, caster))
-            {
-                SignalEvent(currentTarget, EventSpellCastAt(caster, 1009));
-
-                if (GetHasSpellEffect(SPELL_PROTECTION_FROM_GOOD | SPELL_UNHOLY_AURA, currentTarget) == TRUE)
-                {
-                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_GLOBE_USE), currentTarget);
-                    currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_COLOSSAL, location);
-                    continue;
-                }
-
-                if (NwEffects.ResistSpell(caster, currentTarget))
-                {
-                    currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_COLOSSAL, location);
-                    continue;
-                }
-
-                if (GetRacialType(currentTarget) == RACIAL_TYPE_UNDEAD &&
-                    NwEffects.IsValidSpellTarget(currentTarget, 2, caster))
-                {
-                    bool passedWillSave = FortitudeSave(currentTarget, WarlockUtils.CalculateDc(caster),
-                        SAVING_THROW_TYPE_GOOD, caster) == TRUE;
-
-                    if (passedWillSave)
-                    {
-                        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_WILL_SAVING_THROW_USE),
-                            currentTarget);
-                        currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_COLOSSAL, location);
-                        continue;
-                    }
-
-                    if (!passedWillSave)
-                    {
-                        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectTurned(), currentTarget, effectDuration);
-                        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectVisualEffect(VFX_DUR_PDK_FEAR),
-                            currentTarget, effectDuration);
-                        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_SUNSTRIKE),
-                            currentTarget);
-                    }
-
-                    currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_COLOSSAL, location);
-                    continue;
-                }
-
-                bool passedFortSave = FortitudeSave(currentTarget, WarlockUtils.CalculateDc(caster),
-                    SAVING_THROW_TYPE_GOOD, caster) == TRUE;
-
-                if (passedFortSave)
-                {
-                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_WILL_SAVING_THROW_USE),
-                        currentTarget);
-                    currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_COLOSSAL, location);
-                    continue;
-                }
-
-                if (!passedFortSave)
-                {
-                    ApplyEffectToObject(DURATION_TYPE_TEMPORARY, hostileEffects, currentTarget, effectDuration);
-                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_BLIND_DEAF_M), currentTarget);
-                }
-            }
-
-            currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_COLOSSAL, location);
+            creature.ApplyEffect(EffectDuration.Temporary, turned, duration);
+            return;
         }
 
-        //---------------------------
-        // * SUMMONING
-        //---------------------------
-
-        // If summonCooldown is off and spell has hit a valid target, summon; else don't summon
-        if (NwEffects.GetHasEffectByTag(effectTag: "wlk_summon_cd", caster) == FALSE)
-        {
-            // Apply cooldown
-            ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
-            // Summon
-            float delay = NwEffects.RandomFloat(1, 2);
-            ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY,
-                EffectSummonCreature(sCreatureResref: "wlkCelestial", -1, delay, 1), location, summonDuration);
-            // Apply effects
-            DelayCommand(delay + 2.5f, () => SetPhenoType(19, GetAssociate(ASSOCIATE_TYPE_SUMMONED, caster)));
-        }
+        creature.ApplyEffect(EffectDuration.Temporary, blindness, duration);
     }
 }
