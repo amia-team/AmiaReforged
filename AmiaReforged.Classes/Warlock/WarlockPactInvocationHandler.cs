@@ -28,11 +28,4 @@ public class WarlockPactInvocationHandler
         PrimordialGust script = new();
         script.CastPrimordialGust(info.ObjectSelf);
     }
-
-    [ScriptHandler(scriptName: "wlk_frogdrop")]
-    public void OnFrogDrop(CallInfo info)
-    {
-        FrogDrop script = new();
-        script.CastFrogDrop(info.ObjectSelf);
-    }
 }

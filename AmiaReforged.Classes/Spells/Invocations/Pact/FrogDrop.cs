@@ -1,104 +1,119 @@
-using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Warlock;
-using static NWN.Core.NWScript;
+using Anvil.API;
+using Anvil.API.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Pact;
 
-public class FrogDrop
+[ServiceBinding(typeof(IInvocation))]
+public class FrogDrop(ScriptHandleFactory scriptHandleFactory) : IInvocation
 {
-    public void CastFrogDrop(uint nwnObjectId)
+    private const VfxType VfxImpFrog = (VfxType)2565;
+
+    public string ImpactScript => "wlk_frogdrop";
+    public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
-        if (NwEffects.IsPolymorphed(nwnObjectId))
-        {
-            SendMessageToPC(nwnObjectId, szMessage: "You cannot cast while polymorphed.");
-            return;
-        }
+        if (castData.TargetLocation is not { } location) return;
 
-        // Declaring variables for the damage part of the spell
-        uint caster = nwnObjectId;
-        int warlockLevels = GetLevelByClass(57, caster);
-        float effectDuration = warlockLevels < 10 ? RoundsToSeconds(1) : RoundsToSeconds(warlockLevels / 10);
-        IntPtr location = GetSpellTargetLocation();
+        Effect knockdown = Effect.LinkEffects(Effect.Knockdown(), Effect.VisualEffect(VfxType.ImpDazedS));
+        Effect reflexVfx = Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse);
+        TimeSpan duration = NwTimeSpan.FromRounds(1);
+        int dc = warlock.InvocationDc(invocationCl);
 
-        // Impact VFX onhit
-        IntPtr frogDrop = NwEffects.LinkEffectList(new List<IntPtr>
-        {
-            EffectVisualEffect(VFX_IMP_DAZED_S),
-            EffectKnockdown()
-        });
+        location.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(VfxType.ImpDustExplosion));
+        location.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(VfxType.FnfGasExplosionNature));
 
-        // Declaring variables for summon effects
-        uint summon = GetAssociate(ASSOCIATE_TYPE_SUMMONED, caster);
-        int summonTier = SummonUtility.GetSummonTier(caster);
-        string slaadTier = summonTier switch
+        foreach (NwCreature creature in location.GetObjectsInShapeByType<NwCreature>
+                     (Shape.Sphere, RadiusSize.Medium, losCheck: true))
         {
-            1 or 2 => "wlkslaadred",
-            3 or 4 => "wlkslaadblue",
-            5 or 6 => "wlkslaadgreen",
-            7 => "wlkslaadgray",
-            _ => "wlkslaadred"
-        };
-        float summonDuration = RoundsToSeconds(SummonUtility.PactSummonDuration(caster));
-        float summonCooldown = TurnsToSeconds(1);
-        IntPtr cooldownEffect = TagEffect(ExtraordinaryEffect(EffectVisualEffect(VFX_NONE)),
-            sNewTag: "wlk_summon_cd");
-        IntPtr slaadSummon = EffectSummonCreature(slaadTier, VFX_IMP_POLYMORPH);
+            if (!creature.IsValidInvocationTarget(warlock, false)) continue;
 
-        //---------------------------
-        // * HOSTILE SPELL EFFECT
-        //---------------------------
-        ApplyEffectAtLocation(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_FNF_GAS_EXPLOSION_NATURE), location);
-        uint currentTarget = GetFirstObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_SMALL, location);
-        while (GetIsObjectValid(currentTarget) == TRUE)
-        {
-            if (NwEffects.IsValidSpellTarget(currentTarget, 3, caster))
+            CreatureEvents.OnSpellCastAt.Signal(warlock, creature, castData.Spell);
+
+            SavingThrowResult reflexSave =
+                creature.RollSavingThrow(SavingThrow.Reflex, dc, SavingThrowType.Chaos, warlock);
+
+            if (reflexSave == SavingThrowResult.Success)
             {
-                SignalEvent(currentTarget, EventSpellCastAt(caster, 1010));
-
-                if (GetHasSpellEffect(SPELL_PROTECTION__FROM_CHAOS, currentTarget) == TRUE)
-                {
-                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_GLOBE_USE), currentTarget);
-                    currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_SMALL, location);
-                    continue;
-                }
-
-                if (NwEffects.ResistSpell(caster, currentTarget))
-                {
-                    currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_SMALL, location);
-                    continue;
-                }
-
-                bool passedReflexSave = ReflexSave(currentTarget, WarlockUtils.CalculateDc(caster),
-                    SAVING_THROW_TYPE_CHAOS, caster) == TRUE;
-
-                if (passedReflexSave)
-                {
-                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_WILL_SAVING_THROW_USE),
-                        currentTarget);
-                    currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_SMALL, location);
-                    continue;
-                }
-
-                if (!passedReflexSave)
-                    ApplyEffectToObject(DURATION_TYPE_TEMPORARY, frogDrop, currentTarget, effectDuration);
+                creature.ApplyEffect(EffectDuration.Instant, reflexVfx);
+                continue;
             }
 
-            currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_SMALL, location);
+            creature.ApplyEffect(EffectDuration.Temporary, knockdown, duration);
         }
 
-        //---------------------------
-        // * SUMMONING
-        //---------------------------
+        if (warlock.ActiveEffects.Any(e => e.Tag == WarlockExtensions.PactSummonCooldownTag)) return;
 
-        // If summonCooldown is active, don't summon; else summon and set summonCooldown
-        if (NwEffects.GetHasEffectByTag(effectTag: "wlk_summon_cd", caster) == FALSE)
-        {
-            // Apply cooldown
-            ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
+        string frog = GetFrog(invocationCl);
+        Effect summonNextFrog = Effect.SummonCreature(frog, VfxImpFrog!, unsummonVfx: VfxImpFrog);
+        Effect frogDoll = FrogDoll(warlock);
 
-            // Summon new
-            DelayCommand(2.5f,
-                () => ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, slaadSummon, location, summonDuration));
-        }
+        TimeSpan summonDuration = WarlockExtensions.PactSummonDuration(invocationCl);
+        location.ApplyEffect(EffectDuration.Temporary, summonNextFrog, summonDuration);
+
+        _ = ApplyFrogDoll(warlock, frog, frogDoll);
+
+        warlock.ApplyPactCooldown();
     }
+
+    private static async Task ApplyFrogDoll(NwCreature warlock, string frogResRef, Effect frogDoll)
+    {
+        await NwTask.Delay(TimeSpan.FromSeconds(0.1));
+
+        NwCreature? summonedFrog = warlock.Associates.FirstOrDefault(a => a.ResRef == frogResRef);
+        if (summonedFrog == null) return;
+
+        summonedFrog.ApplyEffect(EffectDuration.Permanent, frogDoll);
+    }
+
+    private Effect FrogDoll(NwCreature warlock)
+    {
+        ScriptCallbackHandle summonNextFrog = scriptHandleFactory.CreateUniqueHandler(info
+            => SummonNextFrog(info, warlock));
+
+        Effect frogDoll = Effect.RunAction(onRemovedHandle: summonNextFrog);
+        frogDoll.SubType = EffectSubType.Extraordinary;
+
+        return frogDoll;
+    }
+
+    private ScriptHandleResult SummonNextFrog(CallInfo info, NwCreature warlock)
+    {
+        if (info.ObjectSelf is not NwCreature summonedFrog || summonedFrog.Location is null)
+            return ScriptHandleResult.Handled;
+
+        string nextFrog = GetNextFrogTier(summonedFrog.ResRef);
+        if (string.IsNullOrEmpty(nextFrog)) return ScriptHandleResult.Handled;
+
+        _ = ApplyFrogToMaster(warlock, nextFrog, summonedFrog.Location);
+
+        Effect frogDoll = FrogDoll(warlock);
+        _ = ApplyFrogDoll(warlock, nextFrog, frogDoll);
+
+        return ScriptHandleResult.Handled;
+    }
+
+    private static async Task ApplyFrogToMaster(NwCreature warlock, string nextFrog, Location summonLocation)
+    {
+        await warlock.WaitForObjectContext();
+        Effect nextFrogSummon = Effect.SummonCreature(nextFrog, VfxImpFrog!, unsummonVfx: VfxImpFrog);
+        TimeSpan summonDuration = WarlockExtensions.PactSummonDuration(warlock.GetInvocationCasterLevel());
+        summonLocation.ApplyEffect(EffectDuration.Temporary, nextFrogSummon, summonDuration);
+    }
+
+    private static string GetFrog(int invocationCl) => invocationCl switch
+    {
+        >= 1 and < 10 => "wlkslaadred",
+        >= 10 and < 20 => "wlkslaadblue",
+        >= 20 and < 30 => "wlkslaadgreen",
+        >= 30 => "wlkslaadgray",
+        _ => ""
+    };
+    private static string GetNextFrogTier(string frogTier) => frogTier switch
+    {
+        "wlkslaadgray" => "wlkslaadgreen",
+        "wlkslaadgreen" => "wlkslaadblue",
+        "wlkslaadblue" => "wlkslaadred",
+        _ => ""
+    };
 }
