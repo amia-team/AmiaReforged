@@ -24,7 +24,7 @@ public class AugmentQuiveringPalm : IAugmentation.ICastAugment
         int dc = MonkUtils.CalculateMonkDc(monk);
 
         SavingThrowResult savingThrowResult =
-            targetCreature.RollSavingThrow(SavingThrow.Reflex, dc, SavingThrowType.Paralysis, monk);
+            targetCreature.RollSavingThrow(SavingThrow.Reflex, dc, SavingThrowType.Law, monk);
 
         if (savingThrowResult is SavingThrowResult.Success)
         {
