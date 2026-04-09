@@ -358,7 +358,7 @@ public class WarlockSummonStatsHandler
         switch (summonTier)
         {
             case 1:
-                
+
                 summon.MaxHP = 30;
                 summon.HP = 30;
                 summon.BaseAC = 0;
@@ -488,18 +488,18 @@ public class WarlockSummonStatsHandler
             _ => null
         };
         if (elements == null) return;
-        
+
         foreach (DamageType element in elements)
         {
-            Effect elementalEffects = Effect.LinkEffects(Effect.DamageIncrease(1, element), 
+            Effect elementalEffects = Effect.LinkEffects(Effect.DamageIncrease(1, element),
                 Effect.DamageImmunityIncrease(element, 100));
             elementalEffects.SubType = EffectSubType.Supernatural;
             summon.ApplyEffect(EffectDuration.Permanent, elementalEffects);
         }
-        
+
         damageIncrease.SubType = EffectSubType.Supernatural;
         summon.ApplyEffect(EffectDuration.Permanent, damageIncrease);
-        
+
         foreach (NwFeat feat in summon.Feats)
         {
             if (feat.FeatType is Feat.UncannyReflex or Feat.WeaponProficiencyCreature) continue;
@@ -1007,21 +1007,5 @@ public class WarlockSummonStatsHandler
             if (feat.FeatType is Feat.UncannyReflex or Feat.WeaponProficiencyCreature) continue;
             summon.RemoveFeat(feat);
         }
-
-        // The duration effect is used to determine the remaining duration of the slaad summon 
-        // for subsequent slaadi spawning in WarlockSummonUtilHandler => OnFrogDeathRussianDoll
-        foreach (Effect effect in warlock.ActiveEffects)
-        {
-            if (effect.Tag != "frogduration") continue;
-            
-            if (TimeSpan.FromSeconds(effect.DurationRemaining) != NwTimeSpan.FromRounds(SummonUtility.PactSummonDuration(warlock)))
-                return;
-        }
-
-        Effect durationEffect = Effect.VisualEffect(VfxType.None);
-        durationEffect.SubType = EffectSubType.Supernatural;
-        durationEffect.Tag = "frogduration";
-        warlock.ApplyEffect(EffectDuration.Temporary, durationEffect,
-            NwTimeSpan.FromRounds(SummonUtility.PactSummonDuration(warlock)));
     }
 }
