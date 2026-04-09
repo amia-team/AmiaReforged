@@ -30,6 +30,29 @@ public static class SummoningService
         _ = SetSummonsDestroyable(caster, delayMax);
     }
 
+    public static void SummonManyDifferent(this Location location, NwCreature caster, Effect[] summonEffects,
+        float radius, float delayMin, float delayMax, TimeSpan summonDuration)
+    {
+        // Before moving on with the multi summon logic, make sure previous summons are removed
+        foreach (NwCreature summon in caster.Associates.Where(a => a.AssociateType == AssociateType.Summoned))
+        {
+            summon.Unsummon();
+        }
+
+        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 1, caster);
+
+        foreach (Effect summonEffect in summonEffects)
+        {
+            TimeSpan randomDelay = SpellUtils.GetRandomDelay(delayMin, delayMax);
+            Location randomLocation = location.GenerateRandomLocationWithinRadius(radius);
+
+            _ = randomLocation.SummonCreature(caster, summonEffect, randomDelay, summonDuration);
+        }
+
+        _ = SetSummonFeedbackVisible(caster, delayMax);
+        _ = SetSummonsDestroyable(caster, delayMax);
+    }
+
     private static async Task SetSummonFeedbackVisible(NwCreature caster, float delayMax)
     {
         await NwTask.Delay(TimeSpan.FromSeconds(delayMax + 0.1f));
