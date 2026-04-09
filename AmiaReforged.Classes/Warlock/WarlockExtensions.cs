@@ -94,14 +94,17 @@ public static class WarlockExtensions
 
     private static TimeSpan PactSummonCooldown => NwTimeSpan.FromTurns(1);
 
-    public const string PactSummonCooldownTag = "wlk_summon_cd";
+    private const string PactSummonCooldownTag = "wlk_summon_cd";
 
-    public static void ApplyPactCooldown(this NwCreature caster)
+    public static bool HasPactCooldown(this NwCreature warlock)
+        => warlock.ActiveEffects.Any(e => e.Tag == PactSummonCooldownTag);
+
+    public static void ApplyPactCooldown(this NwCreature warlock)
     {
         Effect effect = Effect.VisualEffect(VfxType.None);
         effect.SubType = EffectSubType.Extraordinary;
         effect.Tag = PactSummonCooldownTag;
 
-        caster.ApplyEffect(EffectDuration.Temporary, effect, PactSummonCooldown);
+        warlock.ApplyEffect(EffectDuration.Temporary, effect, PactSummonCooldown);
     }
 }

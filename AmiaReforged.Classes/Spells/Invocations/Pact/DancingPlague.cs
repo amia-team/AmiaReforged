@@ -53,7 +53,7 @@ public class DancingPlague(ScriptHandleFactory scriptHandleFactory) : IInvocatio
             creature.ApplyEffect(EffectDuration.Temporary, dancePlague, danceDuration);
         }
 
-        if (warlock.ActiveEffects.Any(e => e.Tag == WarlockExtensions.PactSummonCooldownTag)) return;
+        if (warlock.HasPactCooldown()) return;
 
         VisualEffectTableEntry summonVfx = NwGameTables.VisualEffectTable.GetRow((int)VfxType.FnfSmokePuff);
         VisualEffectTableEntry unsummonVfx = NwGameTables.VisualEffectTable.GetRow((int)VfxType.FnfSummonMonster1);

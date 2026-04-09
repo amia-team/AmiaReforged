@@ -42,7 +42,7 @@ public class FrogDrop(ScriptHandleFactory scriptHandleFactory) : IInvocation
             creature.ApplyEffect(EffectDuration.Temporary, knockdown, duration);
         }
 
-        if (warlock.ActiveEffects.Any(e => e.Tag == WarlockExtensions.PactSummonCooldownTag)) return;
+        if (warlock.HasPactCooldown()) return;
 
         string frog = GetFrog(invocationCl);
         Effect summonFrog = Effect.SummonCreature(frog, VfxImpFrog!, unsummonVfx: VfxImpFrog);

@@ -58,8 +58,7 @@ public class LightsCalling : IInvocation
             creature.ApplyEffect(EffectDuration.Temporary, blindness, duration);
         }
 
-        if (warlock.ActiveEffects.Any(e => e.Tag == WarlockExtensions.PactSummonCooldownTag))
-            return;
+        if (warlock.HasPactCooldown()) return;
 
         TimeSpan summonDuration = WarlockExtensions.PactSummonDuration(invocationCl);
 

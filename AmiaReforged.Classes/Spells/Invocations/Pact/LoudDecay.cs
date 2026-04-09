@@ -58,7 +58,7 @@ public class LoudDecay : IInvocation
             _ = ApplyDamage(warlock, creature, damageVfx, damageAmount);
         }
 
-        if (warlock.ActiveEffects.Any(e => e.Tag == WarlockExtensions.PactSummonCooldownTag)) return;
+        if (warlock.HasPactCooldown()) return;
 
         int summonCount = invocationCl switch
         {
@@ -69,10 +69,9 @@ public class LoudDecay : IInvocation
         };
 
         TimeSpan summonDuration = WarlockExtensions.PactSummonDuration(invocationCl);
-        VisualEffectTableEntry summonVfx = NwGameTables.VisualEffectTable.GetRow((int)VfxType.FnfGasExplosionNature);
-        VisualEffectTableEntry unsummonVfx = NwGameTables.VisualEffectTable.GetRow((int)ImpDestructLow);
 
-        Effect summonEffect = Effect.SummonCreature(AberrationSummonResRef, summonVfx, unsummonVfx: unsummonVfx);
+        Effect summonEffect = Effect.SummonCreature(AberrationSummonResRef, VfxType.FnfGasExplosionNature!,
+            unsummonVfx: ImpDestructLow);
         summonEffect.SubType = EffectSubType.Magical;
 
         location.SummonMany(warlock, summonCount, RadiusSize.Gargantuan, delayMin: 1f, delayMax: 2f, summonEffect,

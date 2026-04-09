@@ -72,7 +72,7 @@ public class BindingOfMaggots(ScriptHandleFactory scriptHandleFactory) : IInvoca
             creature.ApplyEffect(EffectDuration.Temporary, paralysis, NwTimeSpan.FromRounds(1));
         }
 
-        if (warlock.ActiveEffects.Any(e => e.Tag == WarlockExtensions.PactSummonCooldownTag))
+        if (warlock.HasPactCooldown())
             return ScriptHandleResult.Handled;
 
         location.SummonMany(warlock, summonCount, RadiusSize.Medium, delayMin: 1f, delayMax: 2f, summonEffect,
