@@ -14,11 +14,4 @@ public class WarlockPactInvocationHandler
     {
         Log.Info(message: "Warlock Pact Invocation Script Handler initialized.");
     }
-
-    [ScriptHandler(scriptName: "wlk_primordial")]
-    public void OnPrimordialGust(CallInfo info)
-    {
-        PrimordialGust script = new();
-        script.CastPrimordialGust(info.ObjectSelf);
-    }
 }

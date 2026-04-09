@@ -1,133 +1,131 @@
 using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Warlock;
 using Anvil.API;
-using static NWN.Core.NWScript;
+using Anvil.API.Events;
+using Anvil.Services;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Pact;
 
-public class PrimordialGust
+[ServiceBinding(typeof(IInvocation))]
+public class PrimordialGust : IInvocation
 {
-    private static readonly string[] SummonResRefs = ["wlkelemental", "wlkelementalwat", "wlkelementalstea"];
-    public void CastPrimordialGust(uint nwnObjectId)
+    public string ImpactScript => "wlk_primordial";
+    public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
-        // Declaring variables for the damage part of the spell
-        uint caster = nwnObjectId;
-        IntPtr location = GetSpellTargetLocation();
-        int warlockLevels = GetLevelByClass(57, caster);
+        if (castData.TargetLocation is not { } location) return;
 
-        // Impact VFX onhit
-        IntPtr primordialVfx = NwEffects.LinkEffectList(new List<IntPtr>
+        Effect impVfx = Effect.LinkEffects(Effect.VisualEffect(VfxType.ImpFrostS),
+            Effect.VisualEffect(VfxType.ImpFlameS), Effect.VisualEffect(VfxType.ImpLightningS));
+        Effect reflexVfx = Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse);
+
+        int dc = warlock.InvocationDc(invocationCl);
+        int damageDice = invocationCl / 3;
+
+        foreach (NwGameObject target in location.GetObjectsInShape(Shape.SpellCone, size: 11f, losCheck: true,
+                     ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door, origin: warlock.Position))
         {
-            EffectVisualEffect(VFX_COM_HIT_FROST),
-            EffectVisualEffect(VFX_COM_HIT_ELECTRICAL),
-            EffectVisualEffect(VFX_COM_HIT_FIRE)
-        });
+            int damage = Random.Shared.Roll(4, damageDice);
 
-        // Declaring variables for the summon part of the spell
-        int summonCount = warlockLevels switch
+            if (target is NwDoor or NwPlaceable)
+            {
+                _ = ApplyPrimordialDamage(warlock, target, damage, impVfx);
+                continue;
+            }
+
+            if (target is not NwCreature creature)
+                continue;
+
+            if (IsMephit(creature))
+            {
+                _ = HealSummon(warlock, creature, impVfx, damage);
+                continue;
+            }
+
+            if (!creature.IsValidInvocationTarget(warlock, hurtSelf: false))
+                continue;
+
+            CreatureEvents.OnSpellCastAt.Signal(warlock, creature, castData.Spell);
+
+            if (warlock.InvocationResistCheck(creature, invocationCl))
+                continue;
+
+            bool hasEvasion = creature.KnowsFeat(Feat.Evasion!);
+            bool hasImpEvasion = creature.KnowsFeat(Feat.ImprovedEvasion!);
+
+            SavingThrowResult reflexSave = creature.RollSavingThrow(SavingThrow.Reflex, dc, SavingThrowType.None, warlock);
+
+            if (reflexSave == SavingThrowResult.Success)
+            {
+                target.ApplyEffect(EffectDuration.Instant, reflexVfx);
+
+                if (hasEvasion || hasImpEvasion)
+                    continue;
+
+                damage /= 2;
+                _ = ApplyPrimordialDamage(warlock, target, damage, impVfx);
+                continue;
+            }
+
+            if (hasImpEvasion) damage /= 2;
+
+            _ = ApplyPrimordialDamage(warlock, target, damage, impVfx);
+        }
+
+        if (warlock.HasPactCooldown()) return;
+
+        int summonCount = invocationCl switch
         {
             >= 1 and < 15 => 1,
             >= 15 and < 30 => 2,
             >= 30 => 3,
             _ => 0
         };
-        float summonDuration = RoundsToSeconds(SummonUtility.PactSummonDuration(caster));
-        float summonCooldown = TurnsToSeconds(1);
-        IntPtr cooldownEffect = TagEffect(ExtraordinaryEffect(EffectVisualEffect(VFX_NONE)),
-            sNewTag: "wlk_summon_cd");
 
-        if (NwEffects.IsPolymorphed(nwnObjectId))
+        string[] summonResRefs = ["wlkelemental", "wlkelementalwat", "wlkelementalstea"];
+        VfxType[] summonVfx = [VfxType.ImpFlameM, VfxType.ImpFrostL, VfxType.ImpElementalProtection];
+        Effect[] summonEffects = new Effect[summonCount];
+        for (int i = 0; i < summonCount; i++)
         {
-            SendMessageToPC(nwnObjectId, szMessage: "You cannot cast while polymorphed.");
-            return;
+            summonEffects[i] = Effect.SummonCreature(summonResRefs[i], summonVfx[i]!, unsummonVfx: summonVfx[i]);
         }
 
-        //---------------------------
-        // * HOSTILE SPELL EFFECT
-        //---------------------------
-        const int validObjectTypes = OBJECT_TYPE_CREATURE | OBJECT_TYPE_DOOR | OBJECT_TYPE_PLACEABLE;
-        uint currentTarget = GetFirstObjectInShape(SHAPE_SPELLCONE, 11f, location, TRUE, validObjectTypes);
+        location.SummonManyDifferent(
+            warlock,
+            summonEffects,
+            RadiusSize.Small,
+            delayMin: 0.6f,
+            delayMax: 1f,
+            summonDuration: WarlockExtensions.PactSummonDuration(invocationCl));
 
-        while (GetIsObjectValid(currentTarget) == TRUE)
+        warlock.ApplyPactCooldown();
+    }
+
+    private bool IsMephit(NwCreature creature) => creature.ResRef.StartsWith("wlkelemental");
+
+    private static async Task ApplyPrimordialDamage(NwCreature warlock, NwGameObject target, int damage, Effect impVfx)
+    {
+        TimeSpan delay = TimeSpan.FromSeconds(warlock.Distance(target) / 16);
+        await NwTask.Delay(delay);
+
+        DamageData primordialDamageType = new()
         {
-            // Damage variable
-            int damage = d4(warlockLevels / 3);
-            IntPtr primordialDamage = NwEffects.LinkEffectList(new List<IntPtr>
-            {
-                EffectDamage(damage, DAMAGE_TYPE_COLD),
-                EffectDamage(damage, DAMAGE_TYPE_ELECTRICAL),
-                EffectDamage(damage, DAMAGE_TYPE_FIRE)
-            });
+            iCold = damage,
+            iFire = damage,
+            iElectrical = damage
+        };
 
-            if (GetObjectType(currentTarget) == OBJECT_TYPE_DOOR ||
-                GetObjectType(currentTarget) == OBJECT_TYPE_PLACEABLE)
-            {
-                ApplyEffectToObject(DURATION_TYPE_INSTANT, primordialDamage, currentTarget);
-                ApplyEffectToObject(DURATION_TYPE_INSTANT, primordialVfx, currentTarget);
-                currentTarget = GetNextObjectInShape(SHAPE_SPELLCONE, 11f, location, TRUE, validObjectTypes);
-                continue;
-            }
+        DamagePlugin.DealDamage(primordialDamageType, target, oSource: warlock);
+        target.ApplyEffect(EffectDuration.Instant, impVfx);
+    }
 
-            if (SummonResRefs.Contains(GetResRef(currentTarget)))
-            {
-                ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_HEAD_FIRE), currentTarget);
-                ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectHeal(damage), currentTarget);
-                currentTarget = GetNextObjectInShape(SHAPE_SPELLCONE, 11f, location, TRUE, validObjectTypes);
-                continue;
-            }
+    private static async Task HealSummon(NwCreature warlock, NwCreature creature, Effect healVfx, int healAmount)
+    {
+        TimeSpan delay = TimeSpan.FromSeconds(warlock.Distance(creature) / 16);
+        await NwTask.Delay(delay);
+        await warlock.WaitForObjectContext();
 
-            if (NwEffects.IsValidSpellTarget(currentTarget, 2, caster))
-            {
-                bool passedReflexSave = ReflexSave(currentTarget, WarlockUtils.CalculateDc(caster),
-                    SAVING_THROW_TYPE_FIRE | SAVING_THROW_TYPE_COLD | SAVING_THROW_TYPE_ELECTRICITY, caster) == TRUE;
-                bool hasEvasion = GetHasFeat(FEAT_EVASION, currentTarget) == TRUE;
-                bool hasImpEvasion = GetHasFeat(FEAT_IMPROVED_EVASION, currentTarget) == TRUE;
-
-                SignalEvent(currentTarget, EventSpellCastAt(caster, 1012));
-
-                if (passedReflexSave)
-                {
-                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_REFLEX_SAVE_THROW_USE),
-                        currentTarget);
-
-                    if (hasEvasion || hasImpEvasion)
-                    {
-                        currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_LARGE, location, TRUE);
-                        continue;
-                    }
-                }
-
-                damage = d4(warlockLevels / 3);
-                damage = passedReflexSave || hasImpEvasion ? damage / 2 : damage;
-                primordialDamage = NwEffects.LinkEffectList(new List<IntPtr>
-                {
-                    EffectDamage(damage, DAMAGE_TYPE_COLD),
-                    EffectDamage(damage, DAMAGE_TYPE_ELECTRICAL),
-                    EffectDamage(damage, DAMAGE_TYPE_FIRE)
-                });
-                ApplyEffectToObject(DURATION_TYPE_INSTANT, primordialDamage, currentTarget);
-                ApplyEffectToObject(DURATION_TYPE_INSTANT, primordialVfx, currentTarget);
-            }
-
-            currentTarget = GetNextObjectInShape(SHAPE_SPELLCONE, 11f, location, TRUE, validObjectTypes);
-        }
-
-        //---------------------------
-        // * SUMMONING
-        //---------------------------
-
-        // If summonCooldown is off and spell has hit a valid target, summon; else don't summon
-        if (NwEffects.GetHasEffectByTag(effectTag: "wlk_summon_cd", caster) != FALSE) return;
-
-        NwCreature? warlock = caster.ToNwObject() as NwCreature;
-        if (warlock == null) return;
-
-        _ = SummonUtility.SummonManyDifferent(warlock, VFX_FNF_SUMMON_MONSTER_1, VFX_FNF_SUMMON_MONSTER_1, summonDuration, summonCount,
-            SummonResRefs, location, 0.5f, 2f, 0.8f, 1.8f);
-
-        DelayCommand(1.9f, () => SummonUtility.SetSummonsFacing(summonCount, location));
-
-        // Apply cooldown
-        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
+        creature.ApplyEffect(EffectDuration.Instant, healVfx);
+        creature.ApplyEffect(EffectDuration.Instant, Effect.Heal(healAmount));
     }
 }
