@@ -56,7 +56,7 @@ public class QuiveringPalm(AugmentationFactory augmentationFactory) : ICastTechn
 
         if (savingThrowResult is SavingThrowResult.Success or SavingThrowResult.Immune)
         {
-            ApplyQuiveringDamage(monk, targetCreature, damageType);
+            _ = ApplyQuiveringDamage(monk, targetCreature, damageType);
             return touchAttackResult;
         }
 
@@ -69,11 +69,12 @@ public class QuiveringPalm(AugmentationFactory augmentationFactory) : ICastTechn
         return touchAttackResult;
     }
 
-    private static void ApplyQuiveringDamage(NwCreature monk, NwCreature targetCreature, DamageType damageType)
+    private static async Task ApplyQuiveringDamage(NwCreature monk, NwCreature targetCreature, DamageType damageType)
     {
         int damageDice = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
         int damageAmount = Random.Shared.Roll(6, damageDice);
 
+        await monk.WaitForObjectContext();
         Effect quiveringDamage = Effect.LinkEffects(Effect.Damage(damageAmount, damageType),
             Effect.VisualEffect(VfxType.ImpDivineStrikeHoly, false, 0.2f));
 
