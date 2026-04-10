@@ -8,7 +8,7 @@ public static class WarlockFeats
     public const Feat EldritchMaster = (Feat)1298;
     public const Feat EpicEldritchBlast1 = (Feat)1300;
     public const Feat ArmoredCaster = (Feat)1307;
-    public const Feat WarlockDamageReduction = (Feat)1308;
+    public const Feat DamageReduction = (Feat)1308;
     public const Feat EnergyResistanceAcid = (Feat)1309;
     public const Feat EnergyResistanceCold = (Feat)1310;
     public const Feat EnergyResistanceElectrical = (Feat)1311;

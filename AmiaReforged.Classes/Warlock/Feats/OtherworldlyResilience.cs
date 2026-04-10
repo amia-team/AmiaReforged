@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.Warlock.Constants;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -17,7 +18,8 @@ public class OtherworldlyResilience
 
     private void ApplyOnDamaged(OnCreatureDamage eventData)
     {
-        if (eventData.Target is not NwCreature creature || creature.WarlockLevel() < 8)
+        if (eventData.Target is not NwCreature creature
+            || !creature.KnowsFeat(WarlockFeats.OtherworldlyResilience!))
             return;
 
         AdjustResilience(creature);
@@ -25,7 +27,8 @@ public class OtherworldlyResilience
 
     private void ApplyOnHealed(OnHeal eventData)
     {
-        if (eventData.Target is not NwCreature creature || creature.WarlockLevel() < 8)
+        if (eventData.Target is not NwCreature creature
+            || !creature.KnowsFeat(WarlockFeats.OtherworldlyResilience!))
             return;
 
         AdjustResilience(creature);

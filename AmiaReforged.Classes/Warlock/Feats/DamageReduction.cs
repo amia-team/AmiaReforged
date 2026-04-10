@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.Warlock.Constants;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -13,12 +14,12 @@ public class DamageReduction
     {
         NwModule.Instance.OnClientEnter += ApplyOnEnter;
         eventService.SubscribeAll<OnLevelUp, OnLevelUp.Factory>(ApplyOnLevelUp, EventCallbackType.After);
-        eventService.SubscribeAll<OnLevelDown, OnLevelDown.Factory>(ApplyOnLevelDown, EventCallbackType.After);
     }
 
     private void ApplyOnEnter(ModuleEvents.OnClientEnter eventData)
     {
-        if (eventData.Player.LoginCreature is not { } warlock || warlock.WarlockLevel() < 3)
+        if (eventData.Player.LoginCreature is not { } warlock ||
+            !warlock.KnowsFeat(WarlockFeats.DamageReduction!))
             return;
 
         AdjustDamageReduction(warlock);
@@ -26,15 +27,7 @@ public class DamageReduction
 
     private void ApplyOnLevelUp(OnLevelUp eventData)
     {
-        if (eventData.Creature.WarlockLevel() < 3)
-            return;
-
-        AdjustDamageReduction(eventData.Creature);
-    }
-
-    private void ApplyOnLevelDown(OnLevelDown eventData)
-    {
-        if (eventData.Creature.WarlockLevel() < 3)
+        if (!eventData.Creature.KnowsFeat(WarlockFeats.DamageReduction!))
             return;
 
         AdjustDamageReduction(eventData.Creature);

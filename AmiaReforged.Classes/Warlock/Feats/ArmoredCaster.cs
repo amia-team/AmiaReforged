@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.Warlock.Constants;
 using Anvil.API;
 
 namespace AmiaReforged.Classes.Warlock.Feats;
@@ -11,7 +12,8 @@ public static class ArmoredCaster
         int warlockLevel = warlock.WarlockLevel();
 
         bool majorityLevelWarlock = warlockLevel > warlock.Level / 2;
-        if (!majorityLevelWarlock) return effectiveAsf;
+        if (!majorityLevelWarlock || !warlock.KnowsFeat(WarlockFeats.ArmoredCaster!))
+            return effectiveAsf;
 
         NwItem? armor = warlock.GetItemInSlot(InventorySlot.Chest);
         if (armor != null)

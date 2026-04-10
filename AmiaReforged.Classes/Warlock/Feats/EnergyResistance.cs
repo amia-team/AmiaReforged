@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.Warlock.Constants;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -9,11 +10,11 @@ public class EnergyResistance
 {
     private static readonly Dictionary<Feat, (Feat, Feat)> EnergyResistanceMap = new()
     {
-        { (Feat)1309, (Feat.ResistEnergyAcid, Feat.EpicEnergyResistanceAcid1) },
-        { (Feat)1310, (Feat.ResistEnergyCold, Feat.EpicEnergyResistanceCold1) },
-        { (Feat)1311, (Feat.ResistEnergyElectrical, Feat.EpicEnergyResistanceElectrical1) },
-        { (Feat)1312, (Feat.ResistEnergyFire, Feat.EpicEnergyResistanceFire1) },
-        { (Feat)1313, (Feat.ResistEnergySonic, Feat.EpicEnergyResistanceSonic1) },
+        { WarlockFeats.EnergyResistanceAcid, (Feat.ResistEnergyAcid, Feat.EpicEnergyResistanceAcid1) },
+        { WarlockFeats.EnergyResistanceCold, (Feat.ResistEnergyCold, Feat.EpicEnergyResistanceCold1) },
+        { WarlockFeats.EnergyResistanceElectrical, (Feat.ResistEnergyElectrical, Feat.EpicEnergyResistanceElectrical1) },
+        { WarlockFeats.EnergyResistanceFire, (Feat.ResistEnergyFire, Feat.EpicEnergyResistanceFire1) },
+        { WarlockFeats.EnergyResistanceSonic, (Feat.ResistEnergySonic, Feat.EpicEnergyResistanceSonic1) },
     };
 
     public EnergyResistance()
