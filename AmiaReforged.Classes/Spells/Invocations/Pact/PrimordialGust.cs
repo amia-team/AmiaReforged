@@ -18,6 +18,7 @@ public class PrimordialGust : IInvocation
         Effect impVfx = Effect.LinkEffects(Effect.VisualEffect(VfxType.ImpFrostS),
             Effect.VisualEffect(VfxType.ImpFlameS), Effect.VisualEffect(VfxType.ImpLightningS));
         Effect reflexVfx = Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse);
+        Effect healVfx = Effect.VisualEffect(VfxType.ImpHealingS);
 
         int dc = warlock.InvocationDc(invocationCl);
         int damageDice = invocationCl / 3;
@@ -38,7 +39,7 @@ public class PrimordialGust : IInvocation
 
             if (IsMephit(creature))
             {
-                _ = HealSummon(warlock, creature, impVfx, damage);
+                _ = HealSummon(warlock, creature, healVfx, damage);
                 continue;
             }
 
@@ -101,7 +102,7 @@ public class PrimordialGust : IInvocation
         warlock.ApplyPactCooldown();
     }
 
-    private bool IsMephit(NwCreature creature) => creature.ResRef.StartsWith("wlkelemental");
+    private static bool IsMephit(NwCreature creature) => creature.ResRef.StartsWith("wlkelemental");
 
     private static async Task ApplyPrimordialDamage(NwCreature warlock, NwGameObject target, int damage, Effect impVfx)
     {
