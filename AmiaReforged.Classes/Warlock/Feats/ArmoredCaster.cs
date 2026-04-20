@@ -12,7 +12,7 @@ public static class ArmoredCaster
         int warlockLevel = warlock.WarlockLevel();
 
         bool majorityLevelWarlock = warlockLevel > warlock.Level / 2;
-        if (!majorityLevelWarlock || !warlock.KnowsFeat(WarlockFeats.ArmoredCaster!))
+        if (!majorityLevelWarlock || !warlock.KnowsFeat(WarlockFeat.ArmoredCaster!))
             return effectiveAsf;
 
         NwItem? armor = warlock.GetItemInSlot(InventorySlot.Chest);

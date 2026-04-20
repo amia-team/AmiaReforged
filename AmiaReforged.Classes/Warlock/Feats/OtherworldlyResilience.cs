@@ -19,7 +19,7 @@ public class OtherworldlyResilience
     private void ApplyOnDamaged(OnCreatureDamage eventData)
     {
         if (eventData.Target is not NwCreature creature
-            || !creature.KnowsFeat(WarlockFeats.OtherworldlyResilience!))
+            || !creature.KnowsFeat(WarlockFeat.OtherworldlyResilience!))
             return;
 
         AdjustResilience(creature);
@@ -28,7 +28,7 @@ public class OtherworldlyResilience
     private void ApplyOnHealed(OnHeal eventData)
     {
         if (eventData.Target is not NwCreature creature
-            || !creature.KnowsFeat(WarlockFeats.OtherworldlyResilience!))
+            || !creature.KnowsFeat(WarlockFeat.OtherworldlyResilience!))
             return;
 
         AdjustResilience(creature);

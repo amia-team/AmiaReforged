@@ -19,7 +19,7 @@ public class DamageReduction
     private void ApplyOnEnter(ModuleEvents.OnClientEnter eventData)
     {
         if (eventData.Player.LoginCreature is not { } warlock ||
-            !warlock.KnowsFeat(WarlockFeats.DamageReduction!))
+            !warlock.KnowsFeat(WarlockFeat.DamageReduction!))
             return;
 
         AdjustDamageReduction(warlock);
@@ -27,7 +27,7 @@ public class DamageReduction
 
     private void ApplyOnLevelUp(OnLevelUp eventData)
     {
-        if (!eventData.Creature.KnowsFeat(WarlockFeats.DamageReduction!))
+        if (!eventData.Creature.KnowsFeat(WarlockFeat.DamageReduction!))
             return;
 
         AdjustDamageReduction(eventData.Creature);

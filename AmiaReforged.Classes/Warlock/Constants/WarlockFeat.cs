@@ -2,7 +2,7 @@ using Anvil.API;
 
 namespace AmiaReforged.Classes.Warlock.Constants;
 
-public static class WarlockFeats
+public static class WarlockFeat
 {
     public const Feat OtherworldlyResilience = (Feat)1297;
     public const Feat EldritchMaster = (Feat)1298;
@@ -20,4 +20,11 @@ public static class WarlockFeats
     public const Feat FiendPact = (Feat)1317;
     public const Feat ElementalPact = (Feat)1318;
     public const Feat SlaadPact = (Feat)1319;
+    public const Feat PactBase = (Feat)1321;
+    public const Feat LoudDecay = (Feat)1323;
+    public const Feat LightsCalling = (Feat)1324;
+    public const Feat DancingPlague = (Feat)1325;
+    public const Feat BindingOfMaggots = (Feat)1326;
+    public const Feat PrimordialGust = (Feat)1327;
+    public const Feat FrogDrop = (Feat)1328;
 }

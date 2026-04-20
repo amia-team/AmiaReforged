@@ -1,7 +1,7 @@
 using AmiaReforged.Classes.Warlock.EldritchBlast.Essence;
 using Anvil.API;
 using NWN.Core.NWNX;
-using static AmiaReforged.Classes.Warlock.Constants.WarlockFeats;
+using static AmiaReforged.Classes.Warlock.Constants.WarlockFeat;
 
 namespace AmiaReforged.Classes.Warlock.EldritchBlast;
 

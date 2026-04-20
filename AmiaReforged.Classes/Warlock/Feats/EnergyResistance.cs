@@ -10,11 +10,11 @@ public class EnergyResistance
 {
     private static readonly Dictionary<Feat, (Feat, Feat)> EnergyResistanceMap = new()
     {
-        { WarlockFeats.EnergyResistanceAcid, (Feat.ResistEnergyAcid, Feat.EpicEnergyResistanceAcid1) },
-        { WarlockFeats.EnergyResistanceCold, (Feat.ResistEnergyCold, Feat.EpicEnergyResistanceCold1) },
-        { WarlockFeats.EnergyResistanceElectrical, (Feat.ResistEnergyElectrical, Feat.EpicEnergyResistanceElectrical1) },
-        { WarlockFeats.EnergyResistanceFire, (Feat.ResistEnergyFire, Feat.EpicEnergyResistanceFire1) },
-        { WarlockFeats.EnergyResistanceSonic, (Feat.ResistEnergySonic, Feat.EpicEnergyResistanceSonic1) },
+        { WarlockFeat.EnergyResistanceAcid, (Feat.ResistEnergyAcid, Feat.EpicEnergyResistanceAcid1) },
+        { WarlockFeat.EnergyResistanceCold, (Feat.ResistEnergyCold, Feat.EpicEnergyResistanceCold1) },
+        { WarlockFeat.EnergyResistanceElectrical, (Feat.ResistEnergyElectrical, Feat.EpicEnergyResistanceElectrical1) },
+        { WarlockFeat.EnergyResistanceFire, (Feat.ResistEnergyFire, Feat.EpicEnergyResistanceFire1) },
+        { WarlockFeat.EnergyResistanceSonic, (Feat.ResistEnergySonic, Feat.EpicEnergyResistanceSonic1) },
     };
 
     public EnergyResistance()

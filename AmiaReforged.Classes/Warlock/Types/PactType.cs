@@ -7,10 +7,10 @@ namespace AmiaReforged.Classes.Warlock.Types;
 /// </summary>
 public enum PactType
 {
-    Aberrant = WarlockFeats.AberrantPact,
-    Celestial = WarlockFeats.CelestialPact,
-    Fey = WarlockFeats.FeyPact,
-    Fiend = WarlockFeats.FiendPact,
-    Elemental = WarlockFeats.ElementalPact,
-    Slaad = WarlockFeats.SlaadPact,
+    Aberrant = WarlockFeat.AberrantPact,
+    Celestial = WarlockFeat.CelestialPact,
+    Fey = WarlockFeat.FeyPact,
+    Fiend = WarlockFeat.FiendPact,
+    Elemental = WarlockFeat.ElementalPact,
+    Slaad = WarlockFeat.SlaadPact,
 }
