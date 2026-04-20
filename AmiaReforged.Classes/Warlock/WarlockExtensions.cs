@@ -1,4 +1,5 @@
 using AmiaReforged.Classes.Spells;
+using AmiaReforged.Classes.Warlock.Types;
 using Anvil.API;
 using NWN.Core;
 
@@ -106,5 +107,27 @@ public static class WarlockExtensions
         effect.Tag = PactSummonCooldownTag;
 
         warlock.ApplyEffect(EffectDuration.Temporary, effect, PactSummonCooldown);
+    }
+
+    public static PactType? GetPact(this NwCreature warlock)
+    {
+        foreach (PactType pact in Enum.GetValues<PactType>())
+        {
+            if (warlock.Feats.Any(f => f.FeatType == (Feat)pact))
+                return pact;
+        }
+
+        return null;
+    }
+
+    public static int GetFirstWarlockLevel(this NwCreature warlock)
+    {
+        for (int i = 0; i < warlock.LevelInfo.Count; i++)
+        {
+            if (warlock.LevelInfo[i].ClassInfo.Class.Id == WarlockId)
+                return i + 1;
+        }
+
+        return 0;
     }
 }
