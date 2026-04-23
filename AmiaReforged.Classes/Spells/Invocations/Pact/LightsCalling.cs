@@ -25,7 +25,7 @@ public class LightsCalling : IInvocation
 
         TimeSpan duration = NwTimeSpan.FromRounds(1);
 
-        Effect willVfx = Effect.VisualEffect(VfxType.ImpWillSavingThrowUse);
+        Effect fortVfx = Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse);
         Effect impVfx = Effect.VisualEffect(VfxType.ImpSunstrike);
 
         location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfSunbeam));
@@ -39,15 +39,15 @@ public class LightsCalling : IInvocation
 
             if (warlock.InvocationResistCheck(creature, invocationCl)) continue;
 
-            SavingThrowResult willSave = creature.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.Good, warlock);
+            SavingThrowResult fortSave = creature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Good, warlock);
 
-            if (willSave == SavingThrowResult.Success)
+            if (fortSave == SavingThrowResult.Success)
             {
-                creature.ApplyEffect(EffectDuration.Instant, willVfx);
+                creature.ApplyEffect(EffectDuration.Instant, fortVfx);
                 continue;
             }
 
-            _ = ApplyLight(creature, willSave, willVfx, impVfx, blindness, turned, duration);
+            _ = ApplyLight(creature, fortSave, fortVfx, impVfx, blindness, turned, duration);
 
             if (creature.Race.RacialType == RacialType.Undead)
             {
@@ -68,14 +68,14 @@ public class LightsCalling : IInvocation
         warlock.ApplyPactCooldown();
     }
 
-    private static async Task ApplyLight(NwCreature creature, SavingThrowResult willSave, Effect willVfx, Effect impVfx,
+    private static async Task ApplyLight(NwCreature creature, SavingThrowResult fortSave, Effect fortVfx, Effect impVfx,
         Effect blindness, Effect turned, TimeSpan duration)
     {
         await NwTask.Delay(SpellUtils.GetRandomDelay(0.8, 1.3));
 
-        if (willSave == SavingThrowResult.Success)
+        if (fortSave == SavingThrowResult.Success)
         {
-            creature.ApplyEffect(EffectDuration.Instant, willVfx);
+            creature.ApplyEffect(EffectDuration.Instant, fortVfx);
             return;
         }
 
