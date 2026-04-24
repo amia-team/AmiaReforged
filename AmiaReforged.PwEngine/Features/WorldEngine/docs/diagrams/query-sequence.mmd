@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant C as Caller
+    participant F as IWorldEngineFacade
+    participant D as QueryDispatcher
+    participant H as IQueryHandler<TQuery, TResult>
+    participant R as Repositories
+
+    C->>F: QueryAsync<TQuery, TResult>(query)
+    F->>D: DispatchAsync(query)
+    D->>D: Lookup handler (cached)
+    D->>H: HandleAsync(query, ct)
+    H->>R: Read
+    H-->>D: TResult
+    D-->>F: TResult
+    F-->>C: TResult

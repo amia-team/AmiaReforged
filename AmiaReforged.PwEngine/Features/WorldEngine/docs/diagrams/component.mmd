@@ -1,0 +1,59 @@
+flowchart TD
+    subgraph External
+        Admin[Admin panel / tooling]
+        Sim[WorldSimulator]
+    end
+
+    Admin -->|HTTPS + X-API-Key| HTTP
+    Sim  -->|HTTPS + X-API-Key| HTTP
+
+    subgraph API[API layer]
+        HTTP[WorldEngineHttpServer]
+        Router[WorldEngineApiRouter]
+        RT[RouteTable]
+        Ctrls[Controllers]
+        HTTP --> Router --> RT --> Ctrls
+    end
+
+    Ctrls --> Facade
+
+    subgraph Facade_layer[Facade]
+        Facade[IWorldEngineFacade]
+    end
+
+    subgraph Domain[Application + Domain]
+        Subs[Subsystems]
+        CmdD[CommandDispatcher]
+        QryD[QueryDispatcher]
+        Hnd["Command / Query handlers"]
+        Personas[IPersonaGateway]
+    end
+
+    Facade --> Subs
+    Facade --> Personas
+    Facade --> CmdD
+    Facade --> QryD
+    CmdD --> Hnd
+    QryD --> Hnd
+    Hnd --> Repos[(Repositories / EF Core)]
+    Subs --> Repos
+
+    subgraph Kernel[SharedKernel]
+        VO[Value objects]
+        Iface["ICommand / IQuery / IDomainEvent"]
+        Cfg[IWorldConfigProvider]
+        Const[WorldConstants]
+    end
+
+    CmdD --> Bus[IEventBus]
+    Bus --> EH[IEventHandler]
+    EH --> Anvil[Anvil / NWN runtime]
+
+    subgraph Integration[Integration services]
+        Sanit[Local variable sanitization]
+        EventBus[AnvilEventBusService]
+    end
+
+    Anvil --> Sanit
+    CmdD -. uses .-> Iface
+    Subs -. uses .-> VO

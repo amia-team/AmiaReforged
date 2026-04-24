@@ -1,0 +1,30 @@
+flowchart TD
+    Req[HTTP request] --> Auth{Valid X-API-Key?}
+    Auth -- no --> R401[401 Unauthorized]
+    Auth -- yes --> Router[WorldEngineApiRouter]
+    Router --> Match{Route matched?}
+    Match -- no --> R404[404 Not found]
+    Match -- yes --> Ctx["RouteContext<br/>route values, query, body, Services"]
+    Ctx --> Ctrl[Controller method]
+
+    Ctrl --> Facade[IWorldEngineFacade]
+    Facade --> Sub{Subsystem or CQRS?}
+    Sub -- subsystem --> SubCall[ISomeSubsystem.DoAsync]
+    Sub -- command --> CDisp[CommandDispatcher]
+    Sub -- query --> QDisp[QueryDispatcher]
+
+    CDisp --> CHandler[ICommandHandler]
+    CHandler --> Repo[(Repositories)]
+    CHandler --> Result[CommandResult]
+    Result -->|Success| Bus[IEventBus]
+    Bus --> EH[IEventHandler]
+
+    QDisp --> QHandler[IQueryHandler]
+    QHandler --> Repo
+
+    SubCall --> Repo
+
+    Result --> Resp[ApiResult]
+    QHandler --> Resp
+    SubCall --> Resp
+    Resp --> JSON["JSON response<br/>camelCase"]

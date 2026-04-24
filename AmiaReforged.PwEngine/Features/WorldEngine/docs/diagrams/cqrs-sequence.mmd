@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant C as Caller (controller / service)
+    participant F as IWorldEngineFacade
+    participant D as CommandDispatcher
+    participant H as ICommandHandler<TCommand>
+    participant R as Repositories
+    participant B as IEventBus
+    participant EH as Event handlers
+
+    C->>F: ExecuteAsync(command)
+    F->>D: DispatchAsync(command)
+    D->>D: Lookup handler (cached)
+    D->>H: HandleAsync(command, ct)
+    H->>R: Load aggregate, mutate, save
+    H-->>D: CommandResult.Ok / Fail
+    alt result.Success
+        D->>B: PublishAsync(CommandExecutedEvent<TCommand>)
+        B-->>EH: HandleAsync(event) (async, queued)
+    end
+    D-->>F: CommandResult
+    F-->>C: CommandResult

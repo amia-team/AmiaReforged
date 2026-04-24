@@ -1,0 +1,44 @@
+classDiagram
+    class IWorldEngineFacade {
+        +IPersonaGateway Personas
+        +IEconomySubsystem Economy
+        +IOrganizationSubsystem Organizations
+        +ICharacterSubsystem Characters
+        +IIndustrySubsystem Industries
+        +IHarvestingSubsystem Harvesting
+        +IRegionSubsystem Regions
+        +ITraitSubsystem Traits
+        +IItemSubsystem Items
+        +ICodexSubsystem Codex
+        +IInteractionSubsystem Interactions
+        +IDialogueSubsystem Dialogue
+        +ExecuteAsync(cmd) CommandResult
+        +ExecuteBatchAsync(cmds) BatchCommandResult
+        +QueryAsync(query) TResult
+    }
+
+    class IPersonaGateway
+    class IEconomySubsystem
+    class IOrganizationSubsystem
+    class ICharacterSubsystem
+    class IIndustrySubsystem
+    class IHarvestingSubsystem
+    class IRegionSubsystem
+    class ITraitSubsystem
+    class IItemSubsystem
+    class ICodexSubsystem
+    class IInteractionSubsystem
+    class IDialogueSubsystem
+
+    IWorldEngineFacade --> IPersonaGateway
+    IWorldEngineFacade --> IEconomySubsystem
+    IWorldEngineFacade --> IOrganizationSubsystem
+    IWorldEngineFacade --> ICharacterSubsystem
+    IWorldEngineFacade --> IIndustrySubsystem
+    IWorldEngineFacade --> IHarvestingSubsystem
+    IWorldEngineFacade --> IRegionSubsystem
+    IWorldEngineFacade --> ITraitSubsystem
+    IWorldEngineFacade --> IItemSubsystem
+    IWorldEngineFacade --> ICodexSubsystem
+    IWorldEngineFacade --> IInteractionSubsystem
+    IWorldEngineFacade --> IDialogueSubsystem
