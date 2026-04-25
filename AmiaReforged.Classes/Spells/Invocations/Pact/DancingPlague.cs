@@ -15,9 +15,9 @@ public class DancingPlague(ScriptHandleFactory scriptHandleFactory) : IInvocatio
     public string ImpactScript => "wlk_dancingplag";
     public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
-        if (castData.TargetObject is not NwCreature targetCreature || targetCreature.Location is null) return;
+        if (castData.TargetLocation is not { } location) return;
 
-        Effect fnfVfx = Effect.VisualEffect(FnfPartyDust);
+        Effect fnfVfx = Effect.VisualEffect(FnfPartyDust, fScale: 2f);
         Effect durVfx = Effect.VisualEffect(DurPartyDust);
         Effect fortVfx = Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse);
 
@@ -28,10 +28,10 @@ public class DancingPlague(ScriptHandleFactory scriptHandleFactory) : IInvocatio
         Effect dancePlague = DancePlague(warlock, danceDuration, durVfx, spell, dc, fortVfx);
         dancePlague.SubType = EffectSubType.Supernatural;
 
-        targetCreature.ApplyEffect(EffectDuration.Instant, fnfVfx);
+        location.ApplyEffect(EffectDuration.Instant, fnfVfx);
 
-        foreach (NwCreature creature in targetCreature.Location.GetObjectsInShapeByType<NwCreature>
-                 (Shape.Sphere, RadiusSize.Medium, losCheck: true))
+        foreach (NwCreature creature in location.GetObjectsInShapeByType<NwCreature>
+                 (Shape.Sphere, RadiusSize.Large, losCheck: true))
         {
             if (!creature.IsValidInvocationTarget(warlock, hurtSelf: false))
                 continue;
@@ -60,16 +60,17 @@ public class DancingPlague(ScriptHandleFactory scriptHandleFactory) : IInvocatio
         TimeSpan delay = TimeSpan.FromSeconds(1);
         Effect summonEffect = Effect.SummonCreature(FeySummonResRef, summonVfx, delay, unsummonVfx: unsummonVfx);
         TimeSpan summonDuration = WarlockExtensions.PactSummonDuration(invocationCl);
-        Location summonLocation = targetCreature.Location;
 
-        summonLocation.ApplyEffect(EffectDuration.Temporary, summonEffect, summonDuration);
+        location.ApplyEffect(EffectDuration.Temporary, summonEffect, summonDuration);
         warlock.ApplyPactCooldown();
 
-        _ = MakeFeyPretty(warlock, delay, durVfx, targetCreature);
+        NwCreature? creatureToCopy = castData.TargetObject as NwCreature;
+        if (creatureToCopy == null) creatureToCopy = warlock;
+        _ = MakeFeyPretty(warlock, delay, durVfx, creatureToCopy);
         _ = MakeFeyDance(warlock, delay);
     }
 
-    private static async Task MakeFeyPretty(NwCreature warlock, TimeSpan delay, Effect durVfx, NwCreature? creature)
+    private static async Task MakeFeyPretty(NwCreature warlock, TimeSpan delay, Effect durVfx, NwCreature creature)
     {
         await NwTask.Delay(delay);
         NwCreature? feySummon = warlock.Associates.FirstOrDefault(a => a.ResRef == FeySummonResRef);
@@ -77,8 +78,6 @@ public class DancingPlague(ScriptHandleFactory scriptHandleFactory) : IInvocatio
 
         feySummon.ApplyEffect(EffectDuration.Permanent, durVfx);
         feySummon.ApplyEffect(EffectDuration.Permanent, Effect.VisualEffect(VfxType.DurGlowLightGreen));
-
-        if (creature == null) return;
 
         feySummon.FaceToObject(creature);
         feySummon.MovementRate = creature.MovementRate;
