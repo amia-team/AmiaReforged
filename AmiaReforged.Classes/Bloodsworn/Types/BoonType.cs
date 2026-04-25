@@ -1,0 +1,35 @@
+namespace AmiaReforged.Classes.Bloodsworn.Types;
+
+public enum BoonType
+{
+    Strength = 1263,
+    Dexterity = 1264,
+    Constitution = 1265,
+    Intelligence = 1266,
+    Charisma = 1267,
+    Wisdom = 1268,
+    Life = 1269,
+    Shadows = 1270,
+    Perception = 1271,
+    MagicalDefense = 1272,
+    Discipline = 1273,
+    Luck = 1274,
+    Concentration = 1371,
+    DisableTrap = 1372,
+    Heal = 1373,
+    Hide = 1374,
+    Listen = 1375,
+    Lore = 1376,
+    MoveSilently = 1377,
+    OpenLock = 1378,
+    Parry = 1379,
+    Perform = 1380,
+    Persuade = 1381,
+    PickPocket = 1382,
+    Search = 1383,
+    SetTrap = 1384,
+    Spellcraft = 1385,
+    Spot = 1386,
+    Taunt = 1387,
+    UseMagicDevice = 1388
+}
