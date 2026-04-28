@@ -2,6 +2,7 @@ using AmiaReforged.Classes.Warlock;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using static AmiaReforged.Classes.Warlock.PactSummon.Slaad.SlaadSummonData;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Pact;
 
@@ -103,17 +104,17 @@ public class FrogDrop(ScriptHandleFactory scriptHandleFactory) : IInvocation
 
     private static string GetFrog(int invocationCl) => invocationCl switch
     {
-        >= 1 and < 10 => "wlkslaadred",
-        >= 10 and < 20 => "wlkslaadblue",
-        >= 20 and < 30 => "wlkslaadgreen",
-        >= 30 => "wlkslaadgray",
-        _ => ""
+        >= 1 and < 10 => RedSlaad,
+        >= 10 and < 20 => BlueSlaad,
+        >= 20 and < 30 => GreenSlaad,
+        >= 30 => GraySlaad,
+        _ => RedSlaad
     };
     private static string GetNextFrogTier(string frogTier) => frogTier switch
     {
-        "wlkslaadgray" => "wlkslaadgreen",
-        "wlkslaadgreen" => "wlkslaadblue",
-        "wlkslaadblue" => "wlkslaadred",
-        _ => ""
+        GraySlaad => GreenSlaad,
+        GreenSlaad => BlueSlaad,
+        BlueSlaad => RedSlaad,
+        _ => string.Empty
     };
 }

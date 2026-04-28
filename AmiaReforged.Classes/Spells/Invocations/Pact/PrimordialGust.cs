@@ -4,6 +4,7 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core.NWNX;
+using static AmiaReforged.Classes.Warlock.PactSummon.Elemental.ElementalSummonData;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Pact;
 
@@ -83,8 +84,8 @@ public class PrimordialGust : IInvocation
             _ => 0
         };
 
-        string[] summonResRefs = ["wlkelemental", "wlkelementalwat", "wlkelementalstea"];
-        VfxType[] summonVfx = [VfxType.ImpFlameM, VfxType.ImpFrostL, VfxType.ImpElementalProtection];
+        string[] summonResRefs = [FireMephit, WaterMephit, SteamMephit];
+        VfxType[] summonVfx = [VfxType.ImpFlameM, VfxType.ImpDispel, VfxType.ImpElementalProtection];
         Effect[] summonEffects = new Effect[summonCount];
         for (int i = 0; i < summonCount; i++)
         {
@@ -102,7 +103,7 @@ public class PrimordialGust : IInvocation
         warlock.ApplyPactCooldown();
     }
 
-    private static bool IsMephit(NwCreature creature) => creature.ResRef.StartsWith("wlkelemental");
+    private static bool IsMephit(NwCreature creature) => creature.ResRef.StartsWith(FireMephit);
 
     private static async Task ApplyPrimordialDamage(NwCreature warlock, NwGameObject target, int damage, Effect impVfx)
     {
