@@ -41,20 +41,7 @@ public static class WarlockExtensions
         return SpellUtils.IsValidHostileTarget(targetCreature, warlock);
     }
 
-    private static readonly HashSet<string> PactSummonResRefs =
-    [
-        "wlkfiend",
-        "wlkfey",
-        "wlkcelestial",
-        "wlkaberrant",
-        "wlkelemental",
-        "wlkslaadred",
-        "wlkslaadblue",
-        "wlkslaadgreen",
-        "wlkslaadgray"
-    ];
-
-    public static bool IsPactSummon(this NwCreature targetCreature) => PactSummonResRefs.Contains(targetCreature.ResRef);
+    public static bool IsPactSummon(this NwCreature targetCreature) => targetCreature.ResRef.StartsWith("wlk");
 
     /// <summary>
     /// A custom spell resistance check for warlock invocations; should always be used in place of other checks.

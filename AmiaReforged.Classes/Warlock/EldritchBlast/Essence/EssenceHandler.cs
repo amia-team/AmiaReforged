@@ -24,7 +24,7 @@ public class EssenceHandler
         if (eventData.Feat.Id != RemoveEssenceId) return;
 
         eventData.Creature.GetObjectVariable<LocalVariableInt>(EssenceVar).Delete();
-        eventData.Creature.ControllingPlayer?.SendServerMessage(WarlockUtils.String(message: "Eldritch Essence removed."));
+        eventData.Creature.ControllingPlayer?.SendServerMessage("Eldritch Essence removed.".AddWarlockColor());
     }
 
     private void OnEldritchEssence(OnSpellAction eventData)
@@ -36,7 +36,7 @@ public class EssenceHandler
         EssenceType essenceType = (EssenceType)spellId;
 
         eventData.Caster.ControllingPlayer?
-            .SendServerMessage(WarlockUtils.String(message: $"{essenceType.ToString()} Essence applied."));
+            .SendServerMessage($"{essenceType.ToString()} Essence applied.".AddWarlockColor());
 
         eventData.PreventSpellCast = true;
     }
