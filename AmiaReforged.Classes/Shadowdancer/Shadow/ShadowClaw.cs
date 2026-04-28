@@ -28,8 +28,9 @@ public class ShadowClaw
 
     private void DoShadowClaw(OnCreatureDamage attackData)
     {
-        if (attackData.DamagedBy.ResRef is not "sd_shadow_4" || attackData.DamagedBy is not NwCreature shadow ||
-            attackData.Target is not NwCreature targetCreature || targetCreature.IsImmuneTo(ImmunityType.AbilityDecrease))
+        if (attackData.DamagedBy is not NwCreature { ResRef: "sd_shadow_4" } shadow
+            || attackData.Target is not NwCreature targetCreature
+            || targetCreature.IsImmuneTo(ImmunityType.AbilityDecrease))
             return;
 
         int sdLevel = shadow.GetObjectVariable<LocalVariableInt>("sd_level").Value;
@@ -52,7 +53,7 @@ public class ShadowClaw
         }
     }
 
-    private void ApplyShadowClaw(int conDrainDie, int strDrainDie, NwCreature targetCreature, NwCreature shadow)
+    private static void ApplyShadowClaw(int conDrainDie, int strDrainDie, NwCreature targetCreature, NwCreature shadow)
     {
         if (strDrainDie > 0)
         {
@@ -81,7 +82,7 @@ public class ShadowClaw
         targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpReduceAbilityScore));
     }
 
-    private async Task ShadowClawKill(NwCreature targetCreature, NwCreature shadow)
+    private static async Task ShadowClawKill(NwCreature targetCreature, NwCreature shadow)
     {
         await shadow.WaitForObjectContext();
         Effect shadowClawKill = Effect.Death();
