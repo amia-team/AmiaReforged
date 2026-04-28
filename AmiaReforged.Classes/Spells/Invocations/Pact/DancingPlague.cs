@@ -56,7 +56,7 @@ public class DancingPlague(ScriptHandleFactory scriptHandleFactory) : IInvocatio
         if (warlock.HasPactCooldown()) return;
 
         VisualEffectTableEntry summonVfx = NwGameTables.VisualEffectTable.GetRow((int)VfxType.FnfSmokePuff);
-        VisualEffectTableEntry unsummonVfx = NwGameTables.VisualEffectTable.GetRow((int)VfxType.FnfSummonMonster1);
+        VisualEffectTableEntry unsummonVfx = NwGameTables.VisualEffectTable.GetRow((int)VfxType.ImpElementalProtection);
         TimeSpan delay = TimeSpan.FromSeconds(1);
         Effect summonEffect = Effect.SummonCreature(FeySummonResRef, summonVfx, delay, unsummonVfx: unsummonVfx);
         TimeSpan summonDuration = WarlockExtensions.PactSummonDuration(invocationCl);
@@ -66,23 +66,21 @@ public class DancingPlague(ScriptHandleFactory scriptHandleFactory) : IInvocatio
 
         NwCreature? creatureToCopy = castData.TargetObject as NwCreature;
         if (creatureToCopy == null) creatureToCopy = warlock;
-        _ = MakeFeyPretty(warlock, delay, durVfx, creatureToCopy);
+        _ = MakeFeyPretty(warlock, delay, creatureToCopy);
         _ = MakeFeyDance(warlock, delay);
     }
 
-    private static async Task MakeFeyPretty(NwCreature warlock, TimeSpan delay, Effect durVfx, NwCreature creature)
+    private static async Task MakeFeyPretty(NwCreature warlock, TimeSpan delay, NwCreature creature)
     {
         await NwTask.Delay(delay);
         NwCreature? feySummon = warlock.Associates.FirstOrDefault(a => a.ResRef == FeySummonResRef);
         if (feySummon == null) return;
 
-        feySummon.ApplyEffect(EffectDuration.Permanent, durVfx);
-        feySummon.ApplyEffect(EffectDuration.Permanent, Effect.VisualEffect(VfxType.DurGlowLightGreen));
-
         feySummon.FaceToObject(creature);
         feySummon.MovementRate = creature.MovementRate;
         feySummon.Appearance = creature.Appearance;
         feySummon.PortraitId = creature.PortraitId;
+        feySummon.Gender = creature.Gender;
 
         foreach (CreaturePart part in Enum.GetValues<CreaturePart>())
         {
