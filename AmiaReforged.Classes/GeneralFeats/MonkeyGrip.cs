@@ -30,7 +30,7 @@ public class MonkeyGrip(NwCreature creature)
         }
 
         creature.Size = targetSize;
-        TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
+        _ = TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
     }
 
     private bool UnequipOffhand()
