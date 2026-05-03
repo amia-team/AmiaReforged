@@ -6,7 +6,7 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Spells.Invocations.Lesser;
 
 [ServiceBinding(typeof(IInvocation))]
-public class WrithingDarkness(ScriptHandleFactory scriptHandleFactory) : IInvocation
+public class WrithingShadows(ScriptHandleFactory scriptHandleFactory) : IInvocation
 {
     private const string DarknessProhibitedVar = "NO_DARKNESS";
     private const int VfxPerWlkDarkId = 48;
