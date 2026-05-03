@@ -8,7 +8,7 @@ namespace AmiaReforged.Classes.Spells.Invocations.Pact;
 [ServiceBinding(typeof(IInvocation))]
 public class LightsCalling : IInvocation
 {
-    private const string CelestialSummonResRef = "wlkCelestial";
+    private const string CelestialSummonResRef = "wlkcelestial";
 
     public string ImpactScript => "wlk_lightscall";
     public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
@@ -23,9 +23,10 @@ public class LightsCalling : IInvocation
         Effect turned = Effect.LinkEffects(Effect.Turned(), Effect.VisualEffect(VfxType.DurMindAffectingFear));
         turned.SubType = EffectSubType.Magical;
 
-        TimeSpan duration = NwTimeSpan.FromRounds(1);
+        TimeSpan duration = NwTimeSpan.FromRounds(invocationCl / 10);
 
         Effect fortVfx = Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse);
+        Effect willVfx = Effect.VisualEffect(VfxType.ImpWillSavingThrowUse);
         Effect impVfx = Effect.VisualEffect(VfxType.ImpSunstrike);
 
         location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfSunbeam));
@@ -39,23 +40,7 @@ public class LightsCalling : IInvocation
 
             if (warlock.InvocationResistCheck(creature, invocationCl)) continue;
 
-            SavingThrowResult fortSave = creature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Good, warlock);
-
-            if (fortSave == SavingThrowResult.Success)
-            {
-                creature.ApplyEffect(EffectDuration.Instant, fortVfx);
-                continue;
-            }
-
-            _ = ApplyLight(creature, fortSave, fortVfx, impVfx, blindness, turned, duration);
-
-            if (creature.Race.RacialType == RacialType.Undead)
-            {
-                creature.ApplyEffect(EffectDuration.Temporary, turned, duration);
-                continue;
-            }
-
-            creature.ApplyEffect(EffectDuration.Temporary, blindness, duration);
+            _ = ApplyLight(creature, warlock, dc, fortVfx, willVfx, impVfx, blindness, turned, duration);
         }
 
         if (warlock.HasPactCooldown()) return;
@@ -68,25 +53,34 @@ public class LightsCalling : IInvocation
         warlock.ApplyPactCooldown();
     }
 
-    private static async Task ApplyLight(NwCreature creature, SavingThrowResult fortSave, Effect fortVfx, Effect impVfx,
-        Effect blindness, Effect turned, TimeSpan duration)
+    private static async Task ApplyLight(NwCreature creature, NwCreature warlock, int dc, Effect fortVfx,
+        Effect willVfx, Effect impVfx, Effect blindness, Effect turned, TimeSpan duration)
     {
         await NwTask.Delay(SpellUtils.GetRandomDelay(0.8, 1.3));
+        await warlock.WaitForObjectContext();
 
-        if (fortSave == SavingThrowResult.Success)
+        if (creature.IsDead || !creature.IsValid) return;
+
+        bool isUndead = creature.Race.RacialType == RacialType.Undead;
+
+        SavingThrowResult saveResult;
+        if (isUndead)
         {
+            saveResult = creature.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.None, warlock);
+        }
+        else
+        {
+            saveResult = creature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.None, warlock);
             creature.ApplyEffect(EffectDuration.Instant, fortVfx);
+        }
+
+        if (saveResult == SavingThrowResult.Success)
+        {
+            creature.ApplyEffect(EffectDuration.Instant, isUndead ? willVfx : fortVfx);
             return;
         }
 
         creature.ApplyEffect(EffectDuration.Instant, impVfx);
-
-        if (creature.Race.RacialType == RacialType.Undead)
-        {
-            creature.ApplyEffect(EffectDuration.Temporary, turned, duration);
-            return;
-        }
-
-        creature.ApplyEffect(EffectDuration.Temporary, blindness, duration);
+        creature.ApplyEffect(EffectDuration.Temporary, isUndead ? turned : blindness, duration);
     }
 }

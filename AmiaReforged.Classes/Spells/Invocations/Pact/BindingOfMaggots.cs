@@ -40,7 +40,7 @@ public class BindingOfMaggots(ScriptHandleFactory scriptHandleFactory) : IInvoca
 
         TimeSpan duration = NwTimeSpan.FromTurns(1);
 
-        location.RemoveAoeSpell(warlock, castData.Spell, RadiusSize.Large);
+        location.RemoveAoeSpell(warlock, castData.Spell, RadiusSize.Colossal);
         location.ApplyEffect(EffectDuration.Temporary, bindingOfMaggots, duration);
     }
 
@@ -69,7 +69,7 @@ public class BindingOfMaggots(ScriptHandleFactory scriptHandleFactory) : IInvoca
 
         if (willSave == SavingThrowResult.Failure)
         {
-            creature.ApplyEffect(EffectDuration.Temporary, paralysis, NwTimeSpan.FromRounds(1));
+            creature.ApplyEffect(EffectDuration.Temporary, paralysis, NwTimeSpan.FromRounds(invocationCl / 10));
         }
 
         if (warlock.HasPactCooldown())

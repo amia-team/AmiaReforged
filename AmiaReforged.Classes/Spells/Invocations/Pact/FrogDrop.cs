@@ -18,7 +18,7 @@ public class FrogDrop(ScriptHandleFactory scriptHandleFactory) : IInvocation
 
         Effect knockdown = Effect.LinkEffects(Effect.Knockdown(), Effect.VisualEffect(VfxType.ImpDazedS));
         Effect reflexVfx = Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse);
-        TimeSpan duration = NwTimeSpan.FromRounds(1);
+        TimeSpan duration = NwTimeSpan.FromRounds(invocationCl / 10);
         int dc = warlock.InvocationDc(invocationCl);
 
         location.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(VfxType.ImpDustExplosion));

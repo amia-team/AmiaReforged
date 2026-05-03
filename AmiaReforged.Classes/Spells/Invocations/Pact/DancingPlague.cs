@@ -24,7 +24,7 @@ public class DancingPlague(ScriptHandleFactory scriptHandleFactory) : IInvocatio
         int dc = warlock.InvocationDc(invocationCl);
         NwSpell spell = castData.Spell;
 
-        TimeSpan danceDuration = NwTimeSpan.FromRounds(1);
+        TimeSpan danceDuration = NwTimeSpan.FromRounds(invocationCl / 10);
         Effect dancePlague = DancePlague(warlock, danceDuration, durVfx, spell, dc, fortVfx);
         dancePlague.SubType = EffectSubType.Supernatural;
 
