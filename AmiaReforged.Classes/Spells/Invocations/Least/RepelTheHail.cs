@@ -1,11 +1,11 @@
-﻿using AmiaReforged.Classes.EffectUtils;
-using AmiaReforged.Classes.Warlock;
+﻿using AmiaReforged.Classes.Warlock;
 using Anvil.API;
 using Anvil.API.Events;
-using static NWN.Core.NWScript;
+using Anvil.Services;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Least;
 
+[ServiceBinding(typeof(IInvocation))]
 public class RepelTheHail : IInvocation
 {
     private const VfxType DurDeathWardMid = (VfxType)2543;
