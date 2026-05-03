@@ -25,7 +25,7 @@ public class ScreamingEssence : IEssence
     );
 
     private static Effect ScreamingEffect => Effect.LinkEffects(Effect.VisualEffect(VfxType.DurCessateNegative),
-        Effect.DamageImmunityDecrease(DamageType.Sonic, 15));
+        Effect.Deaf(), Effect.DamageImmunityDecrease(DamageType.Sonic, 15));
 
     private static TimeSpan EssenceDuration(int invocationCl)
     {
