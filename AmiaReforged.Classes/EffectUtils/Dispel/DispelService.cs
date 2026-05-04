@@ -2,7 +2,7 @@ using AmiaReforged.Classes.Spells;
 using Anvil.API;
 using Anvil.Services;
 
-namespace AmiaReforged.Classes.EffectUtils;
+namespace AmiaReforged.Classes.EffectUtils.Dispel;
 
 /// <summary>
 /// Service for handling dispel magic mechanics with custom logic matching Amia's dispel system.

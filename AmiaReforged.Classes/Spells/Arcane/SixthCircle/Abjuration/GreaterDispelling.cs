@@ -1,4 +1,5 @@
 using AmiaReforged.Classes.EffectUtils;
+using AmiaReforged.Classes.EffectUtils.Dispel;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;

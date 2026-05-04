@@ -1,4 +1,5 @@
 using AmiaReforged.Classes.EffectUtils;
+using AmiaReforged.Classes.EffectUtils.Dispel;
 using AmiaReforged.Classes.Warlock;
 using Anvil.API;
 using Anvil.API.Events;
