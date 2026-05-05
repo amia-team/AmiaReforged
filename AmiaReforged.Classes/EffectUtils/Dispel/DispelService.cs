@@ -205,14 +205,17 @@ public class DispelService(ScriptHandleFactory scriptHandleFactory)
     /// </summary>
     /// <param name="caster">Caster who is casting the dispel</param>
     /// <param name="casterLevel">Caster level, usually got from the spell event's data</param>
-    /// <param name="spell">Spell which decides the cap, defaults to 10 if it's not recognised</param>
+    /// <param name="spell">Spell which decides the cap, defaults to 0 if it's not recognised</param>
     public int GetDispelModifier(NwGameObject caster, int casterLevel, NwSpell spell)
     {
-        int casterLevelCap = GetCasterLevelCap(spell.SpellType);
-        int dispelModifier = Math.Min(casterLevel, casterLevelCap);
+        int dispelModifier = GetCasterLevelByDispel(spell.SpellType, casterLevel);
 
         if (caster is NwCreature casterCreature)
         {
+            if (dispelModifier == 0)
+                casterCreature.ControllingPlayer?.SendServerMessage
+                    ("Dispel modifier not recognised, please report to a dev.".ColorString(ColorConstants.Red));
+
             int featBonus = GetAbjurationFocusBonus(casterCreature);
             dispelModifier += featBonus;
         }
@@ -317,17 +320,17 @@ public class DispelService(ScriptHandleFactory scriptHandleFactory)
     private const Spell DevourMagic = (Spell)1014;
 
     /// <summary>
-    /// Gets the caster level cap for a dispel type, defaults to 10 if it's not recognised.
-    /// Lesser Dispel = 5, Dispel Magic = 10, Greater Dispel = 15, Devour Magic = 20, Mordenkainen's Disjunction = 30.
+    /// Gets the caster level scaling by dispel, defaults to 0 if the spell's not recognised.
+    /// Lesser Dispel 1:3, Dispel Magic 1:2, Greater Dispel 2:3, Devour Magic 2:3, Mordenkainen's Disjunction 1:1
     /// </summary>
-    private static int GetCasterLevelCap(Spell spell) => spell switch
+    private static int GetCasterLevelByDispel(Spell spell, int casterLevel) => spell switch
     {
-        Spell.LesserDispel => 5,
-        Spell.DispelMagic => 10,
-        Spell.GreaterDispelling => 15,
-        DevourMagic => 20,
-        Spell.MordenkainensDisjunction => 30,
-        _ => 10
+        Spell.LesserDispel => casterLevel / 3,
+        Spell.DispelMagic => casterLevel / 2,
+        Spell.GreaterDispelling => casterLevel * 2 / 3,
+        DevourMagic => casterLevel * 2 / 3,
+        Spell.MordenkainensDisjunction => casterLevel,
+        _ => 0
     };
 
     /// <summary>
