@@ -70,28 +70,15 @@ public class DispelService(ScriptHandleFactory scriptHandleFactory)
             return ScriptHandleResult.Handled;
         }
 
-        List<DispelInfo> spellsToDispel = [];
+        List<(NwGameObject Owner, Effect Effect)[]> sortedEffects = GetSortedEffects(target);
 
-        spellsToDispel.AddRange(GetEffectsBySpell(target).Select(effects => new DispelInfo
+        List<DispelInfo> spellsToDispel = sortedEffects.Select(effects => new DispelInfo
         (
-            Name: effects[0].Spell?.Name.ToString() ?? "Unknown Spell",
-            InnateLevel: effects[0].Spell?.InnateSpellLevel ?? 0,
-            CasterLevel: effects[0].CasterLevel,
-            DispelAction: () => TryDispelEffect(target, effects, dispelModifier)
-        )));
-
-        spellsToDispel.AddRange(GetItemPropertiesBySpell(target).Select(pair => new DispelInfo
-        (
-            Name: pair.ItemProperties[0].Spell?.Name.ToString() ?? "Unknown Spell",
-            InnateLevel: pair.ItemProperties[0].Spell?.InnateSpellLevel ?? 0,
-            CasterLevel: pair.ItemProperties[0].CasterLevel,
-            DispelAction: () => TryDispelItemProperty(pair.Item, pair.ItemProperties, dispelModifier)
-        )));
-
-        spellsToDispel = spellsToDispel
-            .OrderByDescending(t => t.InnateLevel)
-            .ThenByDescending(t => t.CasterLevel)
-            .ToList();
+            Name: effects[0].Effect.Spell?.Name.ToString() ?? "Unknown Spell",
+            InnateLevel: effects[0].Effect.Spell?.InnateSpellLevel ?? 0,
+            CasterLevel: effects[0].Effect.CasterLevel,
+            DispelAction: () => TryDispelEffect(effects, dispelModifier)
+        )).ToList();
 
         foreach (DispelInfo dispelInfo in spellsToDispel)
         {
@@ -272,37 +259,16 @@ public class DispelService(ScriptHandleFactory scriptHandleFactory)
     /// <param name="spellEffects">The effects grouped by spell and caster checked for dispelling</param>
     /// <param name="dispelModifier">The caster's modifier for the dispel check</param>
     /// <returns>True if the effect group is successfully dispelled, otherwise false</returns>
-    private static bool TryDispelEffect(NwGameObject target, Effect[] spellEffects, int dispelModifier)
+    private static bool TryDispelEffect((NwGameObject Owner, Effect Effect)[] spellEffects, int dispelModifier)
     {
-        int effectCasterLevel = spellEffects[0].CasterLevel;
+        int effectCasterLevel = spellEffects[0].Effect.CasterLevel;
 
         if (!RollDispelCheck(dispelModifier, effectCasterLevel)) return false;
 
-        foreach (Effect effect in spellEffects)
+        // Remove the effect from its specific owner (creature or item)
+        foreach ((NwGameObject owner, Effect effect) in spellEffects)
         {
-            target.RemoveEffect(effect);
-        }
-
-        return true;
-    }
-
-    /// <summary>
-    /// Performs a dispel check against a specific spell effect on a target.
-    /// Uses the formula: d20 + dispel modifier >= 12 + effect caster level
-    /// </summary>
-    /// <param name="targetItem">The target item to dispel the properties from</param>
-    /// <param name="itemProperties">The temporary properties grouped by spell and caster checked for dispelling</param>
-    /// <param name="dispelModifier">The caster's modifier for the dispel check</param>
-    /// <returns>True if the effect group is successfully dispelled, otherwise false</returns>
-    private static bool TryDispelItemProperty(NwItem targetItem, ItemProperty[] itemProperties, int dispelModifier)
-    {
-        int effectCasterLevel = itemProperties[0].CasterLevel;
-
-        if (!RollDispelCheck(dispelModifier, effectCasterLevel)) return false;
-
-        foreach (ItemProperty itemProperty in itemProperties)
-        {
-            targetItem.RemoveItemProperty(itemProperty);
+            owner.RemoveEffect(effect);
         }
 
         return true;
@@ -343,48 +309,39 @@ public class DispelService(ScriptHandleFactory scriptHandleFactory)
         : 0;
 
     /// <summary>
-    /// Return a list of all effects on a target, grouped by spell and creator.
+    /// Return a list of all effects on a target and its equipped items, grouped by spell/creator and sorted by Innate Level then Caster Level.
     /// </summary>
-    private static List<Effect[]> GetEffectsBySpell(NwGameObject target) => target.ActiveEffects
-        .Where(e => e is { Spell: not null, SubType: EffectSubType.Magical,
-            EffectType: not (EffectType.SummonCreature or EffectType.Swarm) })
-        .GroupBy(e => new {e.Spell, e.Creator})
-        .Select(group => group.ToArray())
-        .ToList();
-
     /// <summary>
-    /// Return a list of all temporary item properties on a target, grouped by item, spell, and creator.
+    /// Return a list of all effects on a target and its equipped items, grouped by spell/creator and sorted by Innate Level then Caster Level.
     /// </summary>
-    private static List<(NwItem Item, ItemProperty[] ItemProperties)> GetItemPropertiesBySpell(NwGameObject target)
-        => GetEquippedItems(target)
-            .SelectMany(item => item.ItemProperties, (item, ip) => (Item: item, ItemProperty: ip))
-            .Where(x => x.ItemProperty is { Spell: not null, DurationType: EffectDuration.Temporary })
-            .GroupBy(x => new { x.Item, x.ItemProperty.Spell, x.ItemProperty.Creator })
-            .Select(group => (
-                group.Key.Item,
-                ItemProperties: group.Select(x => x.ItemProperty).ToArray()
-            ))
-            .ToList();
-
-    private static readonly InventorySlot[] AllSlots = Enum.GetValues<InventorySlot>();
-
-    /// <summary>
-    /// Gets all items currently equipped by the target creature.
-    /// </summary>
-    private static NwItem[] GetEquippedItems(NwGameObject target)
+    private static List<(NwGameObject Owner, Effect Effect)[]> GetSortedEffects(NwGameObject target)
     {
-        if (target is not NwCreature creature)
-            return [];
+        // Tag creature effects with the creature as the owner
+        IEnumerable<(NwGameObject Owner, Effect Effect)> allEffects = target.ActiveEffects.Select(e => (target, e));
 
-        List<NwItem> equippedItems = [];
-
-        foreach (InventorySlot slot in AllSlots)
+        if (target is NwCreature creature)
         {
-            NwItem? item = creature.GetItemInSlot(slot);
-            if (item != null)
-                equippedItems.Add(item);
+            // Tag item effects with the item as the owner
+            IEnumerable<(NwGameObject Owner, Effect Effect)> itemEffects = AllSlots
+                .Select(creature.GetItemInSlot)
+                .Where(item => item != null)
+                .SelectMany(item => item!.ActiveEffects.Select(e => ((NwGameObject)item, e)));
+
+            allEffects = allEffects.Concat(itemEffects);
         }
 
-        return equippedItems.ToArray();
+        return allEffects
+            .Where(x => x.Effect is
+            {
+                Spell: not null, SubType: EffectSubType.Magical,
+                EffectType: not (EffectType.SummonCreature or EffectType.Swarm)
+            })
+            .GroupBy(x => new { x.Effect.Spell, x.Effect.Creator, x.Effect.CasterLevel })
+            .OrderByDescending(g => g.Key.Spell!.InnateSpellLevel)
+            .ThenByDescending(g => g.Key.CasterLevel)
+            .Select(group => group.ToArray())
+            .ToList();
     }
+
+    private static readonly InventorySlot[] AllSlots = Enum.GetValues<InventorySlot>();
 }

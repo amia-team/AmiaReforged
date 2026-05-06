@@ -1,5 +1,5 @@
 using AmiaReforged.Classes.EffectUtils;
-using AmiaReforged.Classes.EffectUtils.WeaponBuff;
+using AmiaReforged.Classes.EffectUtils.ItemBuff;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -13,7 +13,7 @@ namespace AmiaReforged.Classes.Spells.Arcane.FourthCircle.Evocation;
 /// This spell does not stack with death armor, elemental shield, wounding whispers, or mestil's acid sheath.
 /// </summary>
 [ServiceBinding(typeof(ISpell))]
-public class MorgensElectrifier(DamageShieldService damageShieldService, WeaponBuffService weaponBuffService) : ISpell
+public class MorgensElectrifier(DamageShieldService damageShieldService, ItemBuffService itemBuffService) : ISpell
 {
     private const VfxType DurElectricalShield = (VfxType)2546;
 
@@ -34,25 +34,18 @@ public class MorgensElectrifier(DamageShieldService damageShieldService, WeaponB
         const IPDamageType damageType = IPDamageType.Electrical;
         const IPDamageBonus damageBonus = IPDamageBonus.Plus1d8;
 
-        NwItem? weapon = weaponBuffService.SelectWeaponToBuff(eventData, damageType, damageBonus);
+        NwItem? weapon = WeaponBuffUtils.SelectWeaponToBuff(eventData, damageType, damageBonus);
         if (weapon == null) return;
 
         ItemProperty damageProperty = ItemProperty.DamageBonus(damageType, damageBonus);
         ItemProperty weaponVisual = ItemProperty.VisualEffect(ItemVisual.Electrical);
 
-        weapon.AddItemProperty
-        (
-            damageProperty,
-            EffectDuration.Temporary,
-            duration
-        );
-
-        weapon.AddItemProperty
-        (
-            weaponVisual,
-            EffectDuration.Temporary,
-            duration
-        );
+        itemBuffService.ApplyItemBuff(
+            weapon,
+            eventData.Spell,
+            [damageProperty, weaponVisual],
+            EffectSubType.Magical,
+            duration);
 
         caster.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpPulseWind));
     }
