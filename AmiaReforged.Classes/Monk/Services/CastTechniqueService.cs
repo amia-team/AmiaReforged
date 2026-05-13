@@ -1,7 +1,7 @@
+using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Monk.Constants;
 using AmiaReforged.Classes.Monk.Techniques;
 using AmiaReforged.Classes.Monk.Types;
-using AmiaReforged.Classes.Spells;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -13,6 +13,7 @@ namespace AmiaReforged.Classes.Monk.Services;
 public class CastTechniqueService
 {
     private readonly TechniqueFactory _techniqueFactory;
+    private readonly CooldownService _cooldownService;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private static readonly Dictionary<TechniqueType, TimeSpan> TechniqueCooldowns = new()
     {
@@ -25,12 +26,12 @@ public class CastTechniqueService
     private static readonly HashSet<int> SupportedFeatIds =
         TechniqueCooldowns.Keys.Select(x => (int)x).ToHashSet();
     private static readonly NwFeat? WholenessOfBody = NwFeat.FromFeatId(MonkFeat.WholenessOfBodyNew);
-    private static string GetCooldownTag(TechniqueType technique) => $"{technique}_cd";
     private const string NoSpecialAbilitiesVar = "NoSpecialAbilities";
 
-    public CastTechniqueService(TechniqueFactory techniqueFactory)
+    public CastTechniqueService(TechniqueFactory techniqueFactory, CooldownService cooldownService)
     {
         _techniqueFactory = techniqueFactory;
+        _cooldownService = cooldownService;
 
         NwModule.Instance.OnSpellCast += CastBodyTechnique;
         Log.Info(message: "Cast Technique Service initialized.");
@@ -47,19 +48,14 @@ public class CastTechniqueService
         string techniqueName = castData.Spell.FeatReference.Name.ToString();
         TechniqueType castTechnique = (TechniqueType)castData.Spell.FeatReference.Id;
 
-        string techniqueCdTag = GetCooldownTag(castTechnique);
+        if (IsTechniqueRestricted(monk, techniqueName)
+            || !TechniqueCooldowns.TryGetValue(castTechnique, out TimeSpan cooldown))
+            return;
 
-        if (TechniqueOnCooldown(monk, techniqueCdTag, techniqueName)) return;
+        if (_cooldownService.IsOnCooldown(monk, techniqueName))
+            return;
 
-        if (IsTechniqueRestricted(monk, techniqueName)) return;
-
-        Effect techniqueCd = Effect.VisualEffect(VfxType.None);
-        techniqueCd.SubType = EffectSubType.Supernatural;
-        techniqueCd.Tag = techniqueCdTag;
-
-        if (!TechniqueCooldowns.TryGetValue(castTechnique, out TimeSpan cooldown)) return;
-
-        monk.ApplyEffect(EffectDuration.Temporary, techniqueCd, cooldown);
+        _cooldownService.ApplyCooldown(monk, techniqueName, cooldown);
 
         ITechnique? techniqueHandler = _techniqueFactory.GetTechnique(castTechnique);
 
@@ -67,17 +63,6 @@ public class CastTechniqueService
         {
             castHandler.HandleCastTechnique(monk, castData);
         }
-    }
-
-    private static bool TechniqueOnCooldown(NwCreature monk, string cdTag, string techniqueName)
-    {
-        Effect? techniqueCd = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == cdTag);
-        if (techniqueCd == null) return false;
-
-        if (monk.IsPlayerControlled(out NwPlayer? player))
-            SpellUtils.SendRemainingCoolDown(player, techniqueName, techniqueCd.DurationRemaining);
-
-        return true;
     }
 
     private static bool IsTechniqueRestricted(NwCreature monk, string techniqueName)
@@ -108,5 +93,4 @@ public class CastTechniqueService
             .FloatingTextString("- You may not use this Special Ability in this area! -", false);
         return true;
     }
-
 }

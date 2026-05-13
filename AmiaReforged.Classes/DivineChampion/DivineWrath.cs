@@ -1,4 +1,5 @@
-﻿using Anvil.API;
+﻿using AmiaReforged.Classes.EffectUtils;
+using Anvil.API;
 using AmiaReforged.Classes.Spells;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -6,9 +7,8 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.DivineChampion;
 
 [ServiceBinding(typeof(ISpell))]
-public class DivineWrath : ISpell
+public class DivineWrath(CooldownService cooldownService) : ISpell
 {
-    private const string DivineWrathCdTag = "divine_wrath_cd";
     public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "x2_s2_DivWrath";
@@ -26,33 +26,27 @@ public class DivineWrath : ISpell
     {
         if (eventData.Caster is not NwCreature creature) return;
 
-        Effect? divineWrathCd = creature.ActiveEffects.FirstOrDefault(effect => effect.Tag == DivineWrathCdTag);
+        string effectName = eventData.Spell.Name.ToString();
 
-        if (divineWrathCd != null)
-        {
-            if (creature.IsPlayerControlled(out NwPlayer? player))
-                SpellUtils.SendRemainingCoolDown(player, eventData.Spell.Name.ToString(), divineWrathCd.DurationRemaining);
-
+        if (cooldownService.IsOnCooldown(creature, effectName))
             return;
-        }
 
         int divineChampionLevel = creature.GetClassInfo(ClassType.DivineChampion)?.Level ?? 0;
-
-        Effect divineWrath = DivineWrathEffect(divineChampionLevel);
 
         int chaMod = creature.GetAbilityModifier(Ability.Charisma);
         int durationBonus = chaMod < 0 ? 0 : chaMod;
 
         int divineWrathRounds = divineChampionLevel >= 18 ? 10 + durationBonus + 5 : 10 + durationBonus;
 
-        creature.ApplyEffect(EffectDuration.Temporary, divineWrath, NwTimeSpan.FromRounds(divineWrathRounds));
+        Effect divineWrath = DivineWrathEffect(divineChampionLevel);
+        TimeSpan duration = NwTimeSpan.FromRounds(divineWrathRounds);
+        divineWrath.SubType = EffectSubType.Extraordinary;
+
+        creature.ApplyEffect(EffectDuration.Temporary, divineWrath, duration);
         creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpGoodHelp));
 
-        divineWrathCd = Effect.VisualEffect(VfxType.None);
-        divineWrathCd.Tag = DivineWrathCdTag;
-        divineWrathCd.SubType = EffectSubType.Extraordinary;
-
-        creature.ApplyEffect(EffectDuration.Temporary, divineWrathCd, NwTimeSpan.FromTurns(5));
+        TimeSpan cooldown = NwTimeSpan.FromTurns(5);
+        cooldownService.ApplyCooldown(creature, effectName, cooldown);
     }
 
     private static Effect DivineWrathEffect(int divineChampionLevel)
@@ -98,7 +92,6 @@ public class DivineWrath : ISpell
             Effect.SavingThrowIncrease(SavingThrow.All, divineWrathBonuses.UniversalSave),
             Effect.VisualEffect(VfxType.DurCessatePositive));
 
-        divineWrath.SubType = EffectSubType.Extraordinary;
         return divineWrath;
     }
 
