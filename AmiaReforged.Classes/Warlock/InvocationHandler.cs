@@ -11,8 +11,6 @@ namespace AmiaReforged.Classes.Warlock;
 public class InvocationHandler
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    private const VfxType SpellFailHeadVfx = (VfxType)292;
-    private const VfxType SpellFailHandVfx = (VfxType)293;
     private const string EldritchBlastSpellScript = "wlk_el_blst";
 
     public InvocationHandler()
@@ -30,28 +28,9 @@ public class InvocationHandler
 
         ResetWarlockInvocations(warlock);
 
-        if (!InvocationFailCheck(warlock)) return;
+        if (warlock.CheckArcaneSpellFailure(spell)) return;
 
         eventData.PreventSpellCast = true;
-
-        VfxType spellFailVfx = SpellFailHandVfx;
-        if (spell.CastAnim == SpellCastAnimType.Up)
-            spellFailVfx = SpellFailHeadVfx;
-
-        warlock.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(spellFailVfx));
-
-        warlock.ControllingPlayer?.SendServerMessage("Invocation failed due to arcane spell failure!");
-    }
-
-    private static bool InvocationFailCheck(NwCreature warlock)
-    {
-        if (warlock.ArcaneSpellFailure <= 0) return false;
-
-        int effectiveAsf = ArmoredCaster.CalculateAsf(warlock);
-
-        if (effectiveAsf <= 0) return false;
-
-        return Random.Shared.Roll(100) <= effectiveAsf;
     }
 
     private void OnInvocationInterrupt(OnSpellInterrupt eventData)

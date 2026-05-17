@@ -1,4 +1,5 @@
 using AmiaReforged.Classes.Spells;
+using AmiaReforged.Classes.Warlock.Feats;
 using AmiaReforged.Classes.Warlock.Types;
 using Anvil.API;
 using NWN.Core;
@@ -7,10 +8,10 @@ namespace AmiaReforged.Classes.Warlock;
 
 public static class WarlockExtensions
 {
+    private const VfxType SpellFailHeadVfx = (VfxType)292;
+    private const VfxType SpellFailHandVfx = (VfxType)293;
     public const int WarlockId = 57;
-
     private const int WordOfChangingId = 994;
-
     public const string EldritchBlastImpactScript = "wlk_el_blst";
 
     public static int WarlockLevel(this NwCreature warlock) => NWScript.GetLevelByClass(WarlockId, warlock);
@@ -76,7 +77,35 @@ public static class WarlockExtensions
         return warlock.SpellResistanceCheck(target, casterLevel: invocationCl);
     }
 
-    public static string AddWarlockColor(this string message) => message.ColorString(ColorConstants.Magenta);
+    /// <summary>
+    /// Does an arcane spell failure check and plays the fail vfx if the spell fails. You still need to return
+    /// the actual spell early before it's cast based on the bool, though.
+    /// </summary>
+    /// <param name="warlock">The warlock casting the spell</param>
+    /// <param name="spell">Spell being cast</param>
+    /// <returns>True if spell passes asf check, false if spell fails</returns>
+    public static bool CheckArcaneSpellFailure(this NwCreature warlock, NwSpell spell)
+    {
+        // If there's no asf at all, the spell always passes
+        if (warlock.ArcaneSpellFailure <= 0) return true;
+
+        // Check if warlock's Armored Caster feat reduces the asf check, pass spell if effective asf is 0 or lower
+        int effectiveAsf = ArmoredCaster.CalculateAsf(warlock);
+        if (effectiveAsf <= 0) return true;
+
+        // Do the actual asf check
+        if (effectiveAsf < Random.Shared.Roll(100)) return true;
+
+        // Play the fail vfx
+        VfxType spellFailVfx = spell.CastAnim == SpellCastAnimType.Up ? SpellFailHeadVfx : SpellFailHandVfx;
+        warlock.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(spellFailVfx));
+
+        warlock.ControllingPlayer?.SendServerMessage("Invocation failed due to arcane spell failure!");
+
+        return false;
+    }
+
+    public static string ColorWarlock(this string message) => message.ColorString(ColorConstants.Magenta);
 
     public static TimeSpan PactSummonDuration(int invocationCl) => NwTimeSpan.FromRounds(5 + invocationCl / 2);
 

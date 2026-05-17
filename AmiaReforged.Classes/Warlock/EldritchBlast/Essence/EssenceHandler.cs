@@ -2,6 +2,7 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Warlock.EldritchBlast.Essence;
 
@@ -24,7 +25,8 @@ public class EssenceHandler
         if (eventData.Feat.Id != RemoveEssenceId) return;
 
         eventData.Creature.GetObjectVariable<LocalVariableInt>(EssenceVar).Delete();
-        eventData.Creature.ControllingPlayer?.SendServerMessage("Eldritch Essence removed.".AddWarlockColor());
+        if (!eventData.Creature.IsPlayerControlled(out NwPlayer? player)) return;
+        player.SendServerMessage("Eldritch Essence removed.".ColorWarlock());
     }
 
     private void OnEldritchEssence(OnSpellAction eventData)
@@ -33,10 +35,12 @@ public class EssenceHandler
         if (!Enum.IsDefined(typeof(EssenceType), spellId)) return;
 
         eventData.Caster.GetObjectVariable<LocalVariableInt>(EssenceVar).Value = spellId;
-        EssenceType essenceType = (EssenceType)spellId;
 
-        eventData.Caster.ControllingPlayer?
-            .SendServerMessage($"{essenceType.ToString()} Essence applied.".AddWarlockColor());
+        if (!eventData.Caster.IsPlayerControlled(out NwPlayer? player)) return;
+        string essenceName = eventData.Spell.Name.ToString();
+
+        player.SendServerMessage($"{essenceName} applied.".ColorWarlock());
+        player.FloatingTextString($"*{essenceName} Activated*".ColorWarlock(), false, false);
 
         eventData.PreventSpellCast = true;
     }

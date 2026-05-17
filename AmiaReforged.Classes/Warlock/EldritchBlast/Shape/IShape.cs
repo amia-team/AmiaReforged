@@ -8,5 +8,5 @@ public interface IShape
 {
     ShapeType ShapeType { get; }
     public void CastEldritchShape(NwCreature warlock, int invocationCl, int invocationDc, EssenceData essence,
-        SpellEvents.OnSpellCast castData);
+        SpellEvents.OnSpellCast eventData);
 }

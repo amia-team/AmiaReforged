@@ -165,7 +165,7 @@ public sealed class WarlockPactPresenter(WarlockPactView pactView, NwPlayer play
         {
             player.SendServerMessage("You have already selected a pact! You must choose to same one to gain the " +
                                      "updated pact spells for that pact. Changing your pact is only allowed by request."
-                                         .AddWarlockColor());
+                                         .ColorWarlock());
             return;
         }
 
@@ -177,7 +177,7 @@ public sealed class WarlockPactPresenter(WarlockPactView pactView, NwPlayer play
             NwFeat? currentPactFeat = WarlockPactModel.GetPactFeat(pact);
             if (currentPactFeat != null && warlock.KnowsFeat(currentPactFeat))
             {
-                player.SendServerMessage($"{currentPactFeat.Name} removed".AddWarlockColor());
+                player.SendServerMessage($"{currentPactFeat.Name} removed".ColorWarlock());
                 warlock.RemoveFeat(currentPactFeat);
             }
 
@@ -186,14 +186,14 @@ public sealed class WarlockPactPresenter(WarlockPactView pactView, NwPlayer play
                 NwFeat? existingFeat = warlock.Feats.FirstOrDefault(f => f.FeatType == feat);
                 if (existingFeat == null) continue;
 
-                player.SendServerMessage($"{existingFeat.Name} removed".AddWarlockColor());
+                player.SendServerMessage($"{existingFeat.Name} removed".ColorWarlock());
                 warlock.RemoveFeat(existingFeat);
             }
         }
 
 
         warlock.AddFeat(newPactFeat, warlock.Level);
-        player.SendServerMessage($"{newPactFeat.Name} added".AddWarlockColor());
+        player.SendServerMessage($"{newPactFeat.Name} added".ColorWarlock());
 
         Feat[] newPactFeats = PactFeatMap.GetFeats(selectedPact.Value);
         foreach (Feat feat in newPactFeats)
@@ -205,7 +205,7 @@ public sealed class WarlockPactPresenter(WarlockPactView pactView, NwPlayer play
                 continue;
             }
             warlock.AddFeat(featToAdd, warlock.Level);
-            player.SendServerMessage($"Pact spell {featToAdd.Name} added".AddWarlockColor());
+            player.SendServerMessage($"Pact spell {featToAdd.Name} added".ColorWarlock());
         }
 
         RaiseCloseEvent();

@@ -6,5 +6,6 @@ public enum ShapeType
     Spear = 982,
     Doom = 1003,
     Pulse = 1004,
-    Chain = 1005
+    Chain = 1005,
+    HideousBlow = 1006
 }
