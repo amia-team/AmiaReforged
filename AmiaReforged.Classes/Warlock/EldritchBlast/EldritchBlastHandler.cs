@@ -21,7 +21,9 @@ public class EldritchBlastHandler(EssenceFactory essenceFactory, ShapeFactory sh
         shapeFactory.GetShapeType(shapeType)?
             .CastEldritchShape(warlock, invocationCl, dc, essenceData, castData);
 
-        if (warlock.KnowsFeat(WarlockFeat.EldritchMaster!))
-            warlock.ApplyEldritchMasterAttackBonus();
+        if (!warlock.KnowsFeat(WarlockFeat.EldritchMaster!)) return;
+
+        warlock.ApplyEldritchMasterAttackBonus();
+        EldritchEyeGlow.ApplyEyeGlow(warlock, essenceData.Type, (AppearanceType)warlock.Appearance.RowIndex, warlock.Gender);
     }
 }
