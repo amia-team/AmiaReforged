@@ -12,20 +12,21 @@ public class HideousBlowHandler
 
     public HideousBlowHandler()
     {
-        NwModule.Instance.OnCreatureDamage += ProcHideousBlow;
+        NwModule.Instance.OnCreatureAttack += ProcHideousBlow;
     }
 
-    private void ProcHideousBlow(OnCreatureDamage eventData)
+    private void ProcHideousBlow(OnCreatureAttack eventData)
     {
-        if (eventData.DamagedBy is not NwCreature warlock
-            || eventData.Spell != null // Don't trigger on spells
-            || !warlock.HasSpellUse(HideousBlow!))
+        if (!IsHit(eventData.AttackResult) || !eventData.Attacker.HasSpellUse(HideousBlow!))
             return;
 
         NwGameObject target = eventData.Target;
         Location? location = target.Location;
         if (location == null) return;
 
-        CreaturePlugin.DoItemCastSpell(warlock, target, location, (int)HideousBlow, 0, 0);
+        CreaturePlugin.DoItemCastSpell(eventData.Attacker, target, location, (int)HideousBlow, 0, 0);
     }
+
+    private static bool IsHit(AttackResult attackResult) => attackResult is AttackResult.Hit or AttackResult.CriticalHit
+        or AttackResult.AutomaticHit or AttackResult.DevastatingCritical;
 }
