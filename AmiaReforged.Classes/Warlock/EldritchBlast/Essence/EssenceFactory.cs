@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Warlock.Constants;
 using Anvil.API;
 using Anvil.Services;
@@ -37,5 +38,5 @@ public class EssenceFactory
     /// </summary>
     private static EssenceData DefaultEssence
         => new(EssenceType.None, DamageType.Magical, SavingThrow.Will, SavingThrowType.Spell,
-            VfxType.ImpMagblue, VfxType.BeamOdd, WarlockVfx.FnfDoomOdd, WarlockVfx.ImpPulseOdd);
+            VfxType.ImpMagblue, VfxType.BeamOdd, WarlockVfx.FnfDoomOdd, WarlockVfx.ImpPulseOdd, ExtraItemVisuals.OddHue);
 }

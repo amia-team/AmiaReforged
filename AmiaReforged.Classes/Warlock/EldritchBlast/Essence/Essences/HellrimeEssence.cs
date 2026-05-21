@@ -19,6 +19,7 @@ public class HellrimeEssence : IEssence
         BeamVfx: VfxType.BeamCold,
         DoomVfx: WarlockVfx.FnfDoomCold,
         PulseVfx: WarlockVfx.ImpPulseCold,
+        HideousBlowVfx: ItemVisual.Cold,
         Effect: HellrimeEffect,
         Duration: EssenceDuration(invocationCl)
     );

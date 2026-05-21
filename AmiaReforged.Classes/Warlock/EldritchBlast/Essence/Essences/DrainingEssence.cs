@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Warlock.Constants;
 using Anvil.API;
 using Anvil.Services;
@@ -19,6 +20,7 @@ public class DrainingEssence : IEssence
         BeamVfx: VfxType.BeamOdd,
         DoomVfx: WarlockVfx.FnfDoomOdd,
         PulseVfx: WarlockVfx.ImpPulseOdd,
+        HideousBlowVfx: ExtraItemVisuals.OddHue,
         Effect: DrainingEffect,
         EffectImpVfx: VfxType.ImpSlow,
         Duration: EssenceDuration(invocationCl)

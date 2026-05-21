@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Warlock.Constants;
 using Anvil.API;
 using Anvil.Services;
@@ -19,6 +20,7 @@ public class BewitchingEssence : IEssence
         BeamVfx: VfxType.BeamMind,
         DoomVfx: WarlockVfx.FnfDoomMind,
         PulseVfx: WarlockVfx.ImpPulseMind,
+        HideousBlowVfx: ExtraItemVisuals.Mind,
         Effect: BewitchingEffect,
         EffectImpVfx: VfxType.ImpCharm,
         Duration: EssenceDuration(invocationCl)

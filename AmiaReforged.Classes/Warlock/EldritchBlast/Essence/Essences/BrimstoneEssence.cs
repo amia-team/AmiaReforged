@@ -20,6 +20,7 @@ public class BrimstoneEssence(DamageOverTimeService dotService) : IEssence
         BeamVfx: VfxType.BeamFire,
         DoomVfx: WarlockVfx.FnfDoomFire,
         PulseVfx: WarlockVfx.ImpPulseFire,
+        HideousBlowVfx: ItemVisual.Fire,
         Effect: BrimstoneEffect(warlock),
         Duration: EssenceDuration(invocationCl)
     );

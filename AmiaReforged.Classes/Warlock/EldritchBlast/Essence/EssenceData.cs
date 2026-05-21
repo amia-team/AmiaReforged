@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.EffectUtils;
 using Anvil.API;
 
 namespace AmiaReforged.Classes.Warlock.EldritchBlast.Essence;
@@ -12,6 +13,7 @@ public readonly record struct EssenceData
     VfxType BeamVfx,
     VfxType DoomVfx,
     VfxType PulseVfx,
+    ItemVisual HideousBlowVfx,
     bool AllowStacking = false,
     bool BypassSpellResistance = false,
     Effect? Effect = null,

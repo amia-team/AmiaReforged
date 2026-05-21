@@ -19,6 +19,7 @@ public class UtterdarkEssence : IEssence
         BeamVfx: VfxType.BeamEvil,
         DoomVfx: WarlockVfx.FnfDoomNegative,
         PulseVfx: WarlockVfx.ImpPulseNegative,
+        HideousBlowVfx: ItemVisual.Evil,
         Effect: UtterdarkEffect,
         AllowStacking: true,
         Duration: EssenceDuration(invocationCl),

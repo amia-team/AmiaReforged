@@ -20,6 +20,7 @@ public class ScreamingEssence : IEssence
         DoomVfx: WarlockVfx.FnfDoomSonic,
         PulseVfx: WarlockVfx.ImpPulseWind,
         Effect: ScreamingEffect,
+        HideousBlowVfx: ItemVisual.Sonic,
         EffectImpVfx: VfxType.ImpBlindDeafM,
         Duration: EssenceDuration(invocationCl)
     );

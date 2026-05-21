@@ -20,6 +20,7 @@ public class VitriolicEssence(DamageOverTimeService dotService) : IEssence
         BeamVfx: VfxType.BeamDisintegrate,
         DoomVfx: WarlockVfx.FnfDoomAcid,
         PulseVfx: WarlockVfx.ImpPulseNature,
+        HideousBlowVfx: ItemVisual.Acid,
         Effect: VitriolicEffect(warlock),
         AllowStacking: true,
         Duration: EssenceDuration(invocationCl)
