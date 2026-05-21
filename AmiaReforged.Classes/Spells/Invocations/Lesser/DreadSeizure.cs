@@ -28,7 +28,7 @@ public class DreadSeizure(ScriptHandleFactory scriptHandleFactory) : IInvocation
         dreadSeizureEffect.SubType = EffectSubType.Magical;
 
         ScriptCallbackHandle onEnterDread = scriptHandleFactory.CreateUniqueHandler(info =>
-            OnEnterDread(info, warlock, dreadSeizureEffect, invocationCl, warlock.InvocationDc(invocationCl)));
+            OnEnterDread(info, warlock, dreadSeizureEffect, invocationCl, warlock.InvocationDc()));
 
         ScriptCallbackHandle onExitDread = scriptHandleFactory.CreateUniqueHandler(OnExitDread);
 

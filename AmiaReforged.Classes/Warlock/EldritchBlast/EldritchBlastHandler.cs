@@ -14,7 +14,7 @@ public class EldritchBlastHandler(EssenceFactory essenceFactory, ShapeFactory sh
         SpellEvents.OnSpellCast castData)
     {
         ShapeType shapeType = (ShapeType)castData.Spell.Id;
-        int dc = warlock.InvocationDc(invocationCl);
+        int dc = warlock.InvocationDc();
 
         EssenceData essenceData = essenceFactory.GetEssenceData(warlock, invocationCl);
 

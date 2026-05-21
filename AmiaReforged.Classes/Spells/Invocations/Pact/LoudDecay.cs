@@ -18,7 +18,7 @@ public class LoudDecay : IInvocation
     {
         if (castData.TargetLocation is not { } location) return;
 
-        int dc = warlock.InvocationDc(invocationCl);
+        int dc = warlock.InvocationDc();
         int damageDice = invocationCl / 2;
         const int dieSides = 6;
 

@@ -17,7 +17,7 @@ public class BindingOfMaggots(ScriptHandleFactory scriptHandleFactory) : IInvoca
     {
         if (castData.TargetLocation is not { } location) return;
 
-        int invocationDc = warlock.InvocationDc(invocationCl);
+        int invocationDc = warlock.InvocationDc();
 
         Effect paralysis = Effect.LinkEffects(
             Effect.VisualEffect(VfxType.DurParalyzed),

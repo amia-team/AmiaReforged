@@ -7,7 +7,7 @@ namespace AmiaReforged.Classes.EffectUtils.ItemBuff;
 public class ItemBuffService(ScriptHandleFactory scriptHandleFactory)
 {
     public void ApplyItemBuff(NwItem targetItem, NwSpell spell, ItemProperty[] itemProperties, EffectSubType subType,
-        TimeSpan duration)
+        TimeSpan duration, string? tag = null)
     {
         if (itemProperties.Length == 0) return;
 
@@ -16,6 +16,7 @@ public class ItemBuffService(ScriptHandleFactory scriptHandleFactory)
 
         Effect itemBuffEffect = EffectItemBuff(targetItem, itemProperties, duration);
         itemBuffEffect.SubType = subType;
+        if (tag != null) itemBuffEffect.Tag = tag;
 
         targetItem.ApplyEffect(EffectDuration.Temporary, itemBuffEffect, duration);
     }

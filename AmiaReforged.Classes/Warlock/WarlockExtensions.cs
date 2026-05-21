@@ -28,8 +28,8 @@ public static class WarlockExtensions
         return casterLevel;
     }
 
-    public static int InvocationDc(this NwCreature warlock, int warlockLevel) =>
-        10 + warlock.GetAbilityModifier(Ability.Charisma) + warlockLevel / 3;
+    public static int InvocationDc(this NwCreature warlock) =>
+        10 + warlock.GetAbilityModifier(Ability.Charisma) + warlock.GetInvocationCasterLevel() / 3;
 
     /// <summary>
     /// Harmful invocations never hurt pact summons, but otherwise respect normal targeting rules.

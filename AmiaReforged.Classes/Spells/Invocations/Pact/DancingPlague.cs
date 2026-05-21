@@ -21,7 +21,7 @@ public class DancingPlague(ScriptHandleFactory scriptHandleFactory) : IInvocatio
         Effect durVfx = Effect.VisualEffect(DurPartyDust);
         Effect fortVfx = Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse);
 
-        int dc = warlock.InvocationDc(invocationCl);
+        int dc = warlock.InvocationDc();
         NwSpell spell = castData.Spell;
 
         TimeSpan danceDuration = NwTimeSpan.FromRounds(invocationCl / 10);
