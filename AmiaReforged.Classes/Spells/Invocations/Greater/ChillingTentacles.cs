@@ -9,6 +9,7 @@ namespace AmiaReforged.Classes.Spells.Invocations.Greater;
 public class ChillingTentacles(ScriptHandleFactory scriptHandleFactory) : IInvocation
 {
     private const int VfxPerChillingId = 51;
+    private const int VfxPerIceTentacleId = 61;
     public string ImpactScript => "wlk_chilltentac";
     public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
@@ -27,13 +28,12 @@ public class ChillingTentacles(ScriptHandleFactory scriptHandleFactory) : IInvoc
             => OnHeartbeatChilling(info, warlock, tentacleStrike, castData.Spell));
 
         PersistentVfxTableEntry chillingVfx = NwGameTables.PersistentEffectTable.GetRow(VfxPerChillingId);
-        PersistentVfxTableEntry evardsVfx =
-            NwGameTables.PersistentEffectTable.GetRow((int)PersistentVfxType.PerEvardsBlackTentacles);
+        PersistentVfxTableEntry iceTentacleVfx = NwGameTables.PersistentEffectTable.GetRow(VfxPerIceTentacleId);
 
         Effect chillingTentacles = Effect.LinkEffects
         (
             Effect.AreaOfEffect(chillingVfx, heartbeatHandle: onHeartBeatChilling),
-            Effect.AreaOfEffect(evardsVfx)
+            Effect.AreaOfEffect(iceTentacleVfx)
         );
         chillingTentacles.SubType = EffectSubType.Magical;
 
