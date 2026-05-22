@@ -2,7 +2,6 @@ using AmiaReforged.Classes.Warlock.EldritchBlast.Essence;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using NLog;
 using static AmiaReforged.Classes.Warlock.EldritchBlast.BlastMechanics;
 
 namespace AmiaReforged.Classes.Warlock.EldritchBlast.Shape.Shapes;
@@ -10,8 +9,6 @@ namespace AmiaReforged.Classes.Warlock.EldritchBlast.Shape.Shapes;
 [ServiceBinding(typeof(IShape))]
 public class HideousBlow(ScriptHandleFactory scriptHandleFactory, EssenceFactory essenceFactory) : IShape
 {
-    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    private const string HideousBlowTag = "hideous_blow";
     private const int CooldownRounds = 2;
     public ShapeType ShapeType => ShapeType.HideousBlow;
 
@@ -37,7 +34,7 @@ public class HideousBlow(ScriptHandleFactory scriptHandleFactory, EssenceFactory
             || eventData.Spell is not { } spell
             || warlock.GetItemInSlot(InventorySlot.RightHand) is not { } equippedWeapon
             || equippedWeapon.IsRangedWeapon
-            || equippedWeapon.ItemProperties.All(ip => ip.Tag != HideousBlowTag))
+            || equippedWeapon.ItemProperties.All(ip => ip.Tag != nameof(ShapeType.HideousBlow)))
             return;
 
         Effect hideousCooldown = HideousCooldown(equippedWeapon, warlock);
@@ -108,7 +105,7 @@ public class HideousBlow(ScriptHandleFactory scriptHandleFactory, EssenceFactory
         ItemProperty[] hideousProperties = [hideousBlowIp, weaponVfx];
         foreach (ItemProperty ip in hideousProperties)
         {
-            ip.Tag = HideousBlowTag;
+            ip.Tag = nameof(ShapeType.HideousBlow);
             weapon.AddItemProperty(ip, EffectDuration.Temporary, TimeSpan.FromHours(8));
         }
     }
@@ -117,7 +114,7 @@ public class HideousBlow(ScriptHandleFactory scriptHandleFactory, EssenceFactory
     {
         foreach (ItemProperty ip in item.ItemProperties)
         {
-            if (ip.Tag == HideousBlowTag)
+            if (ip.Tag == nameof(ShapeType.HideousBlow))
                 item.RemoveItemProperty(ip);
         }
     }
