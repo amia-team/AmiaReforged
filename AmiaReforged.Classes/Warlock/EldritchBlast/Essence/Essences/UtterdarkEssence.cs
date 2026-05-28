@@ -1,4 +1,4 @@
-using AmiaReforged.Classes.Warlock.Constants;
+using AmiaReforged.Classes.EffectUtils;
 using Anvil.API;
 using Anvil.Services;
 
@@ -17,8 +17,8 @@ public class UtterdarkEssence : IEssence
         SavingThrowType: SavingThrowType.Negative,
         DmgImpVfx: VfxType.ImpNegativeEnergy,
         BeamVfx: VfxType.BeamEvil,
-        DoomVfx: WarlockVfx.FnfDoomNegative,
-        PulseVfx: WarlockVfx.ImpPulseNegative,
+        DoomVfx: AmiaVfxTypes.FnfDoomNegative,
+        PulseVfx: AmiaVfxTypes.ImpPulseNegativeChest,
         HideousBlowVfx: ItemVisual.Evil,
         Effect: UtterdarkEffect,
         AllowStacking: true,

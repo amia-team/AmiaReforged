@@ -30,7 +30,7 @@ public class CurseOfDespair : IInvocation
         Effect curseImpVfx = Effect.VisualEffect(VfxType.ImpReduceAbilityScore);
         Effect abDecreaseImpVfx = Effect.VisualEffect(VfxType.ImpHeadEvil);
 
-        int invocationDc = warlock.InvocationDc();
+        int invocationDc = warlock.InvocationDc(invocationCl);
         TimeSpan duration = NwTimeSpan.FromRounds(invocationCl);
 
         location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpPulseNegative));

@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.EffectUtils;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -19,7 +20,6 @@ namespace AmiaReforged.Classes.Spells.Divine.FourthCircle.Necromancy;
 [ServiceBinding(typeof(ISpell))]
 public class RigorMortis : ISpell
 {
-    private const VfxType DurImmobilize = (VfxType)2526;
     public string ImpactScript => "rigor_mortis";
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
@@ -50,7 +50,7 @@ public class RigorMortis : ISpell
 
         Effect rigorEffect = Effect.LinkEffects
         (
-            Effect.VisualEffect(DurImmobilize),
+            Effect.VisualEffect(AmiaVfxTypes.DurImmobilize),
             Effect.AbilityDecrease(Ability.Dexterity, 4),
             Effect.MovementSpeedDecrease(10)
         );

@@ -38,5 +38,5 @@ public class EssenceFactory
     /// </summary>
     private static EssenceData DefaultEssence
         => new(EssenceType.None, DamageType.Magical, SavingThrow.Will, SavingThrowType.Spell,
-            VfxType.ImpMagblue, VfxType.BeamOdd, WarlockVfx.FnfDoomOdd, WarlockVfx.ImpPulseOdd, ExtraItemVisuals.OddHue);
+            VfxType.ImpMagblue, VfxType.BeamOdd, AmiaVfxTypes.FnfDoomOdd, AmiaVfxTypes.ImpPulseOddChest, AmiaItemVisuals.OddHue);
 }

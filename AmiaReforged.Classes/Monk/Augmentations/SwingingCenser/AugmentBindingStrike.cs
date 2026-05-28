@@ -1,4 +1,4 @@
-using AmiaReforged.Classes.Monk.Constants;
+using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
@@ -38,7 +38,7 @@ public class AugmentBindingStrike : IAugmentation.IAttackAugment
             _ => 1
         };
 
-        Effect healPulseVfx = MonkUtils.ResizedVfx(MonkVfx.ImpPulseHolyChest, RadiusSize.Medium);
+        Effect healPulseVfx = MonkUtils.ResizedVfx(AmiaVfxTypes.ImpPulseHolyChest, RadiusSize.Medium);
         targetCreature.ApplyEffect(EffectDuration.Instant, healPulseVfx);
 
         Effect healVfx = Effect.VisualEffect(VfxType.ImpHeadHeal, fScale: 0.7f);

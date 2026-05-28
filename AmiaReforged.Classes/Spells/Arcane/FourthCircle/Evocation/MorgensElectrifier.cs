@@ -1,5 +1,5 @@
-using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.EffectUtils.ItemBuff;
+using AmiaReforged.Classes.EffectUtils;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -15,8 +15,6 @@ namespace AmiaReforged.Classes.Spells.Arcane.FourthCircle.Evocation;
 [ServiceBinding(typeof(ISpell))]
 public class MorgensElectrifier(DamageShieldService damageShieldService, ItemBuffService itemBuffService) : ISpell
 {
-    private const VfxType DurElectricalShield = (VfxType)2546;
-
     public string ImpactScript => "morgens_elec";
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
@@ -53,7 +51,7 @@ public class MorgensElectrifier(DamageShieldService damageShieldService, ItemBuf
     private static Effect MorgensElectrifierEffect =>
         Effect.LinkEffects
         (
-            Effect.VisualEffect(DurElectricalShield),
+            Effect.VisualEffect(AmiaVfxTypes.DurElectricShield),
             Effect.DamageShield(0, DamageBonus.Plus2d6, DamageType.Electrical),
             Effect.MovementSpeedIncrease(50),
             Effect.DamageImmunityIncrease(DamageType.Electrical, 25)

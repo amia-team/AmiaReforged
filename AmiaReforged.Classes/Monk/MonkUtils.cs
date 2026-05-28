@@ -1,8 +1,8 @@
-using AmiaReforged.Classes.Monk.Types;
+using AmiaReforged.Classes.EffectUtils;
 using Anvil.API;
 using Anvil.API.Events;
 using NWN.Core;
-using AmiaReforged.Classes.Monk.Constants;
+using AmiaReforged.Classes.Monk.Types;
 
 namespace AmiaReforged.Classes.Monk;
 
@@ -67,7 +67,7 @@ public static class MonkUtils
             VfxType.ImpFrostL => 0.7f,
             VfxType.ImpAcidS or VfxType.ImpBlindDeafM => 1f,
             VfxType.FnfLosEvil10 => RadiusSize.Medium,
-            VfxType.FnfElectricExplosion or MonkVfx.FnfFreezingSphere or MonkVfx.FnfVitriolicSphere
+            VfxType.FnfElectricExplosion or AmiaVfxTypes.FnfFreezingSphere or AmiaVfxTypes.FnfVitriolicSphere
                 or VfxType.FnfMysticalExplosion => RadiusSize.Gargantuan,
             VfxType.FnfHowlOdd or VfxType.FnfHowlMind or VfxType.FnfLosEvil30 or VfxType.FnfLosHoly30 => RadiusSize.Colossal,
             _ => RadiusSize.Large

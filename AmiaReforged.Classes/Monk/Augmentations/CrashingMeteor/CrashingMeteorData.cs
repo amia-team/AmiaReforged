@@ -1,4 +1,4 @@
-using AmiaReforged.Classes.Monk.Constants;
+using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 
@@ -40,18 +40,18 @@ public struct CrashingMeteorData
             AoeVfx = MonkUtils.ResizedVfx(elementalType switch
             {
                 ElementalType.Fire => VfxType.FnfFireball,
-                ElementalType.Water => MonkVfx.FnfFreezingSphere,
+                ElementalType.Water => AmiaVfxTypes.FnfFreezingSphere,
                 ElementalType.Air => VfxType.FnfElectricExplosion,
-                ElementalType.Earth => MonkVfx.FnfVitriolicSphere,
+                ElementalType.Earth => AmiaVfxTypes.FnfVitriolicSphere,
                 _ => VfxType.FnfFireball
             }, RadiusSize.Large),
             PulseVfx = MonkUtils.ResizedVfx(elementalType switch
             {
-                ElementalType.Fire => MonkVfx.ImpPulseFireChest,
-                ElementalType.Water => MonkVfx.ImpPulseColdChest,
-                ElementalType.Air => MonkVfx.ImpPulseAirChest,
-                ElementalType.Earth => MonkVfx.ImpPulseEarthChest,
-                _ => MonkVfx.ImpPulseFireChest
+                ElementalType.Fire => AmiaVfxTypes.ImpPulseFireChest,
+                ElementalType.Water => AmiaVfxTypes.ImpPulseColdChest,
+                ElementalType.Air => AmiaVfxTypes.ImpPulseAirChest,
+                ElementalType.Earth => AmiaVfxTypes.ImpPulseEarthChest,
+                _ => AmiaVfxTypes.ImpPulseFireChest
             }, RadiusSize.Medium),
             DamageVfx = elementalType switch
             {

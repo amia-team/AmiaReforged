@@ -1,4 +1,5 @@
 using AmiaReforged.Classes.Warlock;
+using AmiaReforged.Classes.EffectUtils;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -8,8 +9,6 @@ namespace AmiaReforged.Classes.Spells.Invocations.Pact;
 [ServiceBinding(typeof(IInvocation))]
 public class DancingPlague(ScriptHandleFactory scriptHandleFactory) : IInvocation
 {
-    private const VfxType DurPartyDust = (VfxType)2563;
-    private const VfxType FnfPartyDust = (VfxType)2564;
     private const string FeySummonResRef = "wlkfey";
 
     public string ImpactScript => "wlk_dancingplag";
@@ -17,11 +16,11 @@ public class DancingPlague(ScriptHandleFactory scriptHandleFactory) : IInvocatio
     {
         if (castData.TargetLocation is not { } location) return;
 
-        Effect fnfVfx = Effect.VisualEffect(FnfPartyDust, fScale: 2f);
-        Effect durVfx = Effect.VisualEffect(DurPartyDust);
+        Effect fnfVfx = Effect.VisualEffect(AmiaVfxTypes.FnfPartyDust, fScale: 2f);
+        Effect durVfx = Effect.VisualEffect(AmiaVfxTypes.DurPartyDust);
         Effect fortVfx = Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse);
 
-        int dc = warlock.InvocationDc();
+        int dc = warlock.InvocationDc(invocationCl);
         NwSpell spell = castData.Spell;
 
         TimeSpan danceDuration = NwTimeSpan.FromRounds(invocationCl / 10);

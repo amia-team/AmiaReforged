@@ -1,4 +1,4 @@
-using AmiaReforged.Classes.Monk.Constants;
+using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
@@ -52,8 +52,8 @@ public class AugmentWholenessOfBody : IAugmentation.ICastAugment
 
         VfxType aoeVfx = hasOverflow switch
         {
-            true => MonkVfx.ImpPulseHolyChest,
-            false => MonkVfx.ImpPulseNegativeChest
+            true => AmiaVfxTypes.ImpPulseHolyChest,
+            false => AmiaVfxTypes.ImpPulseNegativeChest
         };
 
         Effect useFortVfx = Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse);

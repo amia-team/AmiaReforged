@@ -1,4 +1,5 @@
-﻿using AmiaReforged.Classes.EffectUtils.ChangeAppearance;
+﻿using AmiaReforged.Classes.EffectUtils;
+using AmiaReforged.Classes.EffectUtils.ChangeAppearance;
 using AmiaReforged.Classes.Warlock;
 using AmiaReforged.Classes.Warlock.PactAppearance;
 using AmiaReforged.Classes.Warlock.Types;
@@ -11,20 +12,17 @@ namespace AmiaReforged.Classes.Spells.Invocations.Dark;
 [ServiceBinding(typeof(IInvocation))]
 public class WordOfChanging(ChangeAppearanceService changeAppearanceService) : IInvocation
 {
-    private const string WordOfChangingTag = "word_of_changing";
-    private const VfxType FnfDoomOdd = (VfxType)2552;
-
     public string ImpactScript => "wlk_wordchange";
     public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
-        Effect vfxDoomOdd = Effect.VisualEffect(FnfDoomOdd, fScale: 0.6f);
+        Effect vfxDoomOdd = Effect.VisualEffect(AmiaVfxTypes.FnfDoomOdd, fScale: 0.6f);
 
-        Effect? wordOfChanging = warlock.ActiveEffects.FirstOrDefault(e => e.Tag == WordOfChangingTag);
+        Effect? wordOfChanging = warlock.ActiveEffects.FirstOrDefault(e => e.Tag == nameof(WordOfChanging));
         if (wordOfChanging != null)
         {
             warlock.RemoveEffect(wordOfChanging);
-            // Reset invocation CL to warlock level, as this invocation decreases the invocation CL while active
-            invocationCl = warlock.WarlockLevel();
+            // Reset invocation CL, as this invocation decreases the invocation CL while active
+            invocationCl = warlock.GetInvocationCasterLevel();
 
             _ = ApplyWordOfChanging(warlock, invocationCl, delay: TimeSpan.FromSeconds(0.5), vfxApply: null, vfxRemove: vfxDoomOdd);
             return;
@@ -57,7 +55,7 @@ public class WordOfChanging(ChangeAppearanceService changeAppearanceService) : I
             changeEffect
         );
         wordOfChanging.SubType = EffectSubType.Magical;
-        wordOfChanging.Tag = WordOfChangingTag;
+        wordOfChanging.Tag = nameof(WordOfChanging);
 
         TimeSpan duration = NwTimeSpan.FromRounds(invocationCl);
 

@@ -1,4 +1,5 @@
 using AmiaReforged.Classes.Poisons;
+using AmiaReforged.Classes.EffectUtils;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -22,7 +23,6 @@ namespace AmiaReforged.Classes.Spells.Divine.FourthCircle.Transmutation;
 [ServiceBinding(typeof(ISpell))]
 public class SphereOfThorns(PoisonService poisonService) : ISpell
 {
-    private const VfxType FnfThornSphere = (VfxType)2549;
     public string ImpactScript => "sphere_of_thorns";
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
@@ -35,7 +35,7 @@ public class SphereOfThorns(PoisonService poisonService) : ISpell
         TimeSpan entangleDuration = NwTimeSpan.FromRounds(caster.CasterLevel / 2);
         if (eventData.MetaMagicFeat == MetaMagic.Extend) entangleDuration *= 2;
 
-        location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(FnfThornSphere, fScale: 1.5f));
+        location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(AmiaVfxTypes.FnfThornSphere, fScale: 1.5f));
         foreach (NwCreature creature in location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Large, true))
         {
             _ = ApplyEffect(caster, creature, eventData.SaveDC, reflexSave, entangleEffect, entangleDuration, eventData.Spell);

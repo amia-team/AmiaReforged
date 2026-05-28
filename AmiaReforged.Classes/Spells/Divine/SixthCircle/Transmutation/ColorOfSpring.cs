@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.EffectUtils;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -20,7 +21,6 @@ namespace AmiaReforged.Classes.Spells.Divine.SixthCircle.Transmutation;
 [ServiceBinding(typeof(ISpell))]
 public class ColorOfSpring : ISpell
 {
-    private const VfxType FnfSpringColor = (VfxType)2550;
     public string ImpactScript => "color_of_spring";
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
@@ -37,7 +37,7 @@ public class ColorOfSpring : ISpell
 
         MetaMagic metaMagic = eventData.MetaMagicFeat;
 
-        location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(FnfSpringColor));
+        location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(AmiaVfxTypes.FnfSpringColor));
 
         foreach (NwCreature creature in location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Huge, false))
         {

@@ -18,7 +18,7 @@ public class WrithingShadows(ScriptHandleFactory scriptHandleFactory) : IInvocat
             || IsDarknessProhibited(warlock)) return;
 
         int chaMod = warlock.GetAbilityModifier(Ability.Charisma);
-        int dc = warlock.InvocationDc();
+        int dc = warlock.InvocationDc(invocationCl);
         Effect blindness = Effect.LinkEffects(Effect.Blindness(), Effect.VisualEffect(VfxType.DurCessateNegative));
         blindness.SubType = EffectSubType.Magical;
 

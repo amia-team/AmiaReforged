@@ -21,7 +21,7 @@ public class PrimordialGust : IInvocation
         Effect reflexVfx = Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse);
         Effect healVfx = Effect.VisualEffect(VfxType.ImpHealingS);
 
-        int dc = warlock.InvocationDc();
+        int dc = warlock.InvocationDc(invocationCl);
         int damageDice = invocationCl / 3;
 
         foreach (NwGameObject target in location.GetObjectsInShape(Shape.SpellCone, size: 11f, losCheck: true,

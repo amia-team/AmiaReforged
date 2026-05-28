@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.EffectUtils;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -26,10 +27,6 @@ public class RottingAura(ShifterDcService shifterDcService, ScriptHandleFactory 
     private const string SickenedEffectTag = "sickened_rotting";
     private const string NauseatedEffectTag = "nauseated_rotting";
     private const string RottingAuraEffectTag = "rotting_aura";
-
-    private static readonly Effect SickenedVfx = Effect.VisualEffect(VfxType.ImpDiseaseS);
-    private static readonly Effect NauseatedVfx = Effect.VisualEffect((VfxType)2517);
-    private static readonly Effect SyphonHeal = Effect.Heal(5);
 
     private static Effect SickenedEffect()
     {
@@ -159,7 +156,7 @@ public class RottingAura(ShifterDcService shifterDcService, ScriptHandleFactory 
 
         CreatureEvents.OnSpellCastAt.Signal(caster, targetCreature, spell);
 
-        targetCreature.ApplyEffect(EffectDuration.Instant, SickenedVfx);
+        targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDiseaseS));
         targetCreature.ApplyEffect(EffectDuration.Permanent, SickenedEffect());
 
         return ScriptHandleResult.Handled;
@@ -191,9 +188,9 @@ public class RottingAura(ShifterDcService shifterDcService, ScriptHandleFactory 
             if (savingThrowResult != SavingThrowResult.Failure) continue;
 
             targetCreature.ApplyEffect(EffectDuration.Permanent, NauseatedEffect());
-            targetCreature.ApplyEffect(EffectDuration.Instant, NauseatedVfx);
+            targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(AmiaVfxTypes.FnfDebilitate));
 
-            caster.ApplyEffect(EffectDuration.Instant, SyphonHeal);
+            caster.ApplyEffect(EffectDuration.Instant, Effect.Heal(5));
         }
 
         return ScriptHandleResult.Handled;

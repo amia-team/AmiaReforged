@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.EffectUtils;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -18,14 +19,13 @@ namespace AmiaReforged.Classes.Spells.Divine.EighthCircle.Transmutation;
 [ServiceBinding(typeof(ISpell))]
 public class SylvanWrath : ISpell
 {
-    private const VfxType ImpDruidClaw = (VfxType)2547;
     public string ImpactScript => "sylvan_wrath";
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
         if (eventData.TargetObject is not { } targetObject || eventData.Caster is not NwCreature caster)
             return;
 
-        targetObject.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(ImpDruidClaw));
+        targetObject.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(AmiaVfxTypes.ImpDruidClaw));
         SpellUtils.SignalSpell(caster, targetObject, eventData.Spell);
 
         if (caster.SpellResistanceCheck(targetObject, eventData.Spell, caster.CasterLevel))

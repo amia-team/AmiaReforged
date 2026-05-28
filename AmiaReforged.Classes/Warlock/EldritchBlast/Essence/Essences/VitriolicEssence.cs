@@ -1,5 +1,5 @@
 using AmiaReforged.Classes.EffectUtils.DamageOverTime;
-using AmiaReforged.Classes.Warlock.Constants;
+using AmiaReforged.Classes.EffectUtils;
 using Anvil.API;
 using Anvil.Services;
 
@@ -18,8 +18,8 @@ public class VitriolicEssence(DamageOverTimeService dotService) : IEssence
         SavingThrowType: SavingThrowType.Acid,
         DmgImpVfx: VfxType.ImpAcidS,
         BeamVfx: VfxType.BeamDisintegrate,
-        DoomVfx: WarlockVfx.FnfDoomAcid,
-        PulseVfx: WarlockVfx.ImpPulseNature,
+        DoomVfx: AmiaVfxTypes.FnfDoomAcid,
+        PulseVfx: AmiaVfxTypes.ImpPulseEarthChest,
         HideousBlowVfx: ItemVisual.Acid,
         Effect: VitriolicEffect(warlock),
         AllowStacking: true,

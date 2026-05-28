@@ -1,4 +1,6 @@
 using AmiaReforged.Classes.Spells;
+using AmiaReforged.Classes.Spells.Invocations.Dark;
+using AmiaReforged.Classes.Warlock.EldritchBlast.Essence;
 using AmiaReforged.Classes.Warlock.Feats;
 using AmiaReforged.Classes.Warlock.Types;
 using Anvil.API;
@@ -20,16 +22,30 @@ public static class WarlockExtensions
     {
         int casterLevel = warlock.WarlockLevel();
 
-        if (warlock.ActiveEffects.Any(e => e.Spell?.Id == WordOfChangingId))
+        if (warlock.ActiveEffects.Any(e => e.Tag == nameof(WordOfChanging)))
         {
             casterLevel -= 5;
+        }
+
+        LocalVariableInt gluttonousEssence = warlock.GetObjectVariable<LocalVariableInt>(nameof(EssenceType.Gluttonous));
+
+        if (gluttonousEssence.HasValue)
+        {
+            if (gluttonousEssence.Value < 0)
+                gluttonousEssence.Value = 0;
+
+            if (gluttonousEssence.Value > 0)
+            {
+                if (gluttonousEssence.Value > 3) gluttonousEssence.Value = 3;
+                casterLevel += gluttonousEssence.Value;
+            }
         }
 
         return casterLevel;
     }
 
-    public static int InvocationDc(this NwCreature warlock) =>
-        10 + warlock.GetAbilityModifier(Ability.Charisma) + warlock.GetInvocationCasterLevel() / 3;
+    public static int InvocationDc(this NwCreature warlock, int invocationCl) =>
+        10 + warlock.GetAbilityModifier(Ability.Charisma) + invocationCl / 3;
 
     /// <summary>
     /// Harmful invocations never hurt pact summons, but otherwise respect normal targeting rules.

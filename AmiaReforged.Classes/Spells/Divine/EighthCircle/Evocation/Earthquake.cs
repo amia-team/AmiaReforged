@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.EffectUtils;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -7,7 +8,6 @@ namespace AmiaReforged.Classes.Spells.Divine.EighthCircle.Evocation;
 [ServiceBinding(typeof(ISpell))]
 public class Earthquake : ISpell
 {
-    private const VfxType EarthquakeDurVfx = (VfxType)356;
     public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "X0_S0_Earthquake";
@@ -29,7 +29,7 @@ public class Earthquake : ISpell
         int damageDice = Math.Min(caster.CasterLevel, damageDiceCap);
         int dc = SpellUtils.GetSpellDc(eventData);
 
-        caster.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(EarthquakeDurVfx), NwTimeSpan.FromRounds(1));
+        caster.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(AmiaVfxTypes.FnfScreenShake2), NwTimeSpan.FromRounds(1));
 
         foreach (NwGameObject obj in location.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, true,
                      ObjectTypes.Creature | ObjectTypes.Door | ObjectTypes.Placeable))

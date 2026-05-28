@@ -1,4 +1,4 @@
-using AmiaReforged.Classes.Warlock.Constants;
+using AmiaReforged.Classes.EffectUtils;
 using Anvil.API;
 using Anvil.Services;
 
@@ -17,8 +17,8 @@ public class ScreamingEssence : IEssence
         SavingThrowType: SavingThrowType.Sonic,
         DmgImpVfx: VfxType.ImpSonic,
         BeamVfx: VfxType.BeamSilentCold,
-        DoomVfx: WarlockVfx.FnfDoomSonic,
-        PulseVfx: WarlockVfx.ImpPulseWind,
+        DoomVfx: AmiaVfxTypes.FnfDoomSonic,
+        PulseVfx: AmiaVfxTypes.ImpPulseAirChest,
         Effect: ScreamingEffect,
         HideousBlowVfx: ItemVisual.Sonic,
         EffectImpVfx: VfxType.ImpBlindDeafM,

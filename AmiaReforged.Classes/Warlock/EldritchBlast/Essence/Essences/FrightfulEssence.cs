@@ -1,5 +1,4 @@
 using AmiaReforged.Classes.EffectUtils;
-using AmiaReforged.Classes.Warlock.Constants;
 using Anvil.API;
 using Anvil.Services;
 
@@ -18,9 +17,9 @@ public class FrightfulEssence : IEssence
         SavingThrowType: SavingThrowType.Fear,
         DmgImpVfx: VfxType.ImpMagblue,
         BeamVfx: VfxType.BeamMind,
-        DoomVfx: WarlockVfx.FnfDoomMind,
-        PulseVfx: WarlockVfx.ImpPulseMind,
-        HideousBlowVfx: ExtraItemVisuals.Mind,
+        DoomVfx: AmiaVfxTypes.FnfDoomMind,
+        PulseVfx: AmiaVfxTypes.ImpPulseMindChest,
+        HideousBlowVfx: AmiaItemVisuals.Mind,
         Effect: FrightfulEffect,
         Duration: EssenceDuration(invocationCl)
     );

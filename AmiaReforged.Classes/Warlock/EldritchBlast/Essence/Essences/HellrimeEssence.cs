@@ -1,4 +1,4 @@
-using AmiaReforged.Classes.Warlock.Constants;
+using AmiaReforged.Classes.EffectUtils;
 using Anvil.API;
 using Anvil.Services;
 
@@ -17,8 +17,8 @@ public class HellrimeEssence : IEssence
         SavingThrowType: SavingThrowType.Cold,
         DmgImpVfx: VfxType.ImpFrostS,
         BeamVfx: VfxType.BeamCold,
-        DoomVfx: WarlockVfx.FnfDoomCold,
-        PulseVfx: WarlockVfx.ImpPulseCold,
+        DoomVfx: AmiaVfxTypes.FnfDoomCold,
+        PulseVfx: AmiaVfxTypes.ImpPulseColdChest,
         HideousBlowVfx: ItemVisual.Cold,
         Effect: HellrimeEffect,
         Duration: EssenceDuration(invocationCl)

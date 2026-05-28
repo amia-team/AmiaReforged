@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.EffectUtils;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -12,9 +13,6 @@ namespace AmiaReforged.Classes.Spells.Arcane.SecondCircle.Evocation;
 [ServiceBinding(typeof(ISpell))]
 public class OrsonsPyromagic(ScriptHandleFactory scriptHandleFactory) : ISpell
 {
-    private const VfxType DurFireWhirl = (VfxType)2545;
-    private const VfxType ImpMirvFire = (VfxType)2544;
-
     public string ImpactScript => "orsons_pyro";
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
@@ -45,7 +43,7 @@ public class OrsonsPyromagic(ScriptHandleFactory scriptHandleFactory) : ISpell
         Effect pyroEffect = Effect.LinkEffects
         (
             Effect.RunAction(onIntervalHandle: doPyro, interval: NwTimeSpan.FromRounds(1)),
-            Effect.VisualEffect(DurFireWhirl)
+            Effect.VisualEffect(AmiaVfxTypes.DurFireSwirl)
         );
         pyroEffect.SubType = EffectSubType.Magical;
 
@@ -66,7 +64,7 @@ public class OrsonsPyromagic(ScriptHandleFactory scriptHandleFactory) : ISpell
             if (!caster.IsReactionTypeHostile(creature) || !creature.IsValid || creature.IsDead) continue;
 
             CreatureEvents.OnSpellCastAt.Signal(caster, creature, spell);
-            creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(ImpMirvFire));
+            creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(AmiaVfxTypes.ImpMirvFire));
             _ = ApplyFireMissile(caster, creature, dc, metaMagic, spell, reflexVfx, damageVfx);
         }
 

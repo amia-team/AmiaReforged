@@ -15,7 +15,7 @@ public class ChillingTentacles(ScriptHandleFactory scriptHandleFactory) : IInvoc
     {
         if (castData.TargetLocation is not { } location) return;
 
-        int dc = warlock.InvocationDc();
+        int dc = warlock.InvocationDc(invocationCl);
         Effect paralyze = Effect.LinkEffects(Effect.Paralyze(), Effect.VisualEffect(VfxType.DurParalyzed));
         paralyze.SubType = EffectSubType.Magical;
 

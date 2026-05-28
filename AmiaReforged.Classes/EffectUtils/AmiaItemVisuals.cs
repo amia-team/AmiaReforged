@@ -2,7 +2,7 @@ using Anvil.API;
 
 namespace AmiaReforged.Classes.EffectUtils
 {
-    public static class ExtraItemVisuals
+    public static class AmiaItemVisuals
     {
         public const ItemVisual Shadow = (ItemVisual)8;
         public const ItemVisual Mind = (ItemVisual)9;

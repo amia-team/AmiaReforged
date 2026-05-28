@@ -15,7 +15,7 @@ public class LightsCalling : IInvocation
     {
         if (castData.TargetLocation is not { } location) return;
 
-        int dc = warlock.InvocationDc();
+        int dc = warlock.InvocationDc(invocationCl);
 
         Effect blindness = Effect.LinkEffects(Effect.Blindness(), Effect.VisualEffect(VfxType.DurCessateNegative));
         blindness.SubType = EffectSubType.Magical;

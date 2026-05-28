@@ -21,7 +21,7 @@ public class FleeTheScene : IInvocation
 
         if (!warlock.IsInCombat) return;
 
-        int invocationDc = warlock.InvocationDc();
+        int invocationDc = warlock.InvocationDc(invocationCl);
         warlock.ApplyEffect(EffectDuration.Temporary, Effect.Sanctuary(invocationDc), TimeSpan.FromSeconds(3f));
     }
 }

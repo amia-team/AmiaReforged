@@ -1,4 +1,5 @@
 using AmiaReforged.Classes.EffectUtils.DamageOverTime;
+using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Warlock.Constants;
 using Anvil.API;
 using Anvil.Services;
@@ -18,8 +19,8 @@ public class BrimstoneEssence(DamageOverTimeService dotService) : IEssence
         SavingThrowType: SavingThrowType.Fire,
         DmgImpVfx: VfxType.ImpFlameS,
         BeamVfx: VfxType.BeamFire,
-        DoomVfx: WarlockVfx.FnfDoomFire,
-        PulseVfx: WarlockVfx.ImpPulseFire,
+        DoomVfx: AmiaVfxTypes.FnfDoomFire,
+        PulseVfx: AmiaVfxTypes.ImpPulseFireChest,
         HideousBlowVfx: ItemVisual.Fire,
         Effect: BrimstoneEffect(warlock),
         Duration: EssenceDuration(invocationCl)

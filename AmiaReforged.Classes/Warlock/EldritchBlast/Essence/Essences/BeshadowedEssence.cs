@@ -1,5 +1,4 @@
 using AmiaReforged.Classes.EffectUtils;
-using AmiaReforged.Classes.Warlock.Constants;
 using Anvil.API;
 using Anvil.Services;
 
@@ -18,9 +17,9 @@ public class BeshadowedEssence : IEssence
         SavingThrowType: SavingThrowType.Spell,
         DmgImpVfx: VfxType.ImpMagblue,
         BeamVfx: VfxType.BeamBlack,
-        DoomVfx: WarlockVfx.FnfDoomShadow,
-        PulseVfx: WarlockVfx.ImpPulseShadow,
-        HideousBlowVfx: ExtraItemVisuals.Shadow,
+        DoomVfx: AmiaVfxTypes.FnfDoomShadow,
+        PulseVfx: AmiaVfxTypes.ImpPulseShadowChest,
+        HideousBlowVfx: AmiaItemVisuals.Shadow,
         Effect: BeshadowedEffect,
         EffectImpVfx: VfxType.ImpBlindDeafM,
         Duration: EssenceDuration(invocationCl)

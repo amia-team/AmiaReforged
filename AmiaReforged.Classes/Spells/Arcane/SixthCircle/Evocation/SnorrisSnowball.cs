@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.EffectUtils;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -30,7 +31,6 @@ namespace AmiaReforged.Classes.Spells.Arcane.SixthCircle.Evocation;
 [ServiceBinding(typeof(ISpell))]
 public class SnorrisSnowball : ISpell
 {
-    private const VfxType FnfFreezingSphere = (VfxType)2533;
     public string ImpactScript => "snorris_snowball";
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
@@ -61,7 +61,7 @@ public class SnorrisSnowball : ISpell
         burstDamageDice += bonusDamageDice;
         Effect reflexVfx = Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse);
 
-        target.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(FnfFreezingSphere));
+        target.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(AmiaVfxTypes.FnfFreezingSphere));
         foreach (NwGameObject nwGameObject in target.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, true,
                      ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door))
         {

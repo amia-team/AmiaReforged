@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Warlock;
 using Anvil.API;
 using Anvil.API.Events;
@@ -9,8 +10,6 @@ namespace AmiaReforged.Classes.Spells.Invocations.Pact;
 [ServiceBinding(typeof(IInvocation))]
 public class FrogDrop(ScriptHandleFactory scriptHandleFactory) : IInvocation
 {
-    private const VfxType VfxImpFrog = (VfxType)2565;
-
     public string ImpactScript => "wlk_frogdrop";
     public void CastInvocation(NwCreature warlock, int invocationCl, SpellEvents.OnSpellCast castData)
     {
@@ -19,7 +18,7 @@ public class FrogDrop(ScriptHandleFactory scriptHandleFactory) : IInvocation
         Effect knockdown = Effect.LinkEffects(Effect.Knockdown(), Effect.VisualEffect(VfxType.ImpDazedS));
         Effect reflexVfx = Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse);
         TimeSpan duration = NwTimeSpan.FromRounds(invocationCl / 10);
-        int dc = warlock.InvocationDc();
+        int dc = warlock.InvocationDc(invocationCl);
 
         location.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(VfxType.ImpDustExplosion));
         location.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(VfxType.FnfGasExplosionNature));
@@ -46,7 +45,7 @@ public class FrogDrop(ScriptHandleFactory scriptHandleFactory) : IInvocation
         if (warlock.HasPactCooldown()) return;
 
         string frog = GetFrog(invocationCl);
-        Effect summonFrog = Effect.SummonCreature(frog, VfxImpFrog!, unsummonVfx: VfxImpFrog);
+        Effect summonFrog = Effect.SummonCreature(frog, AmiaVfxTypes.ImpFrog!, unsummonVfx: AmiaVfxTypes.ImpFrog);
         Effect frogDoll = FrogDoll(warlock);
 
         TimeSpan summonDuration = WarlockExtensions.PactSummonDuration(invocationCl);
@@ -97,7 +96,7 @@ public class FrogDrop(ScriptHandleFactory scriptHandleFactory) : IInvocation
     private static async Task ApplyFrogToMaster(NwCreature warlock, string nextFrog, Location summonLocation)
     {
         await warlock.WaitForObjectContext();
-        Effect nextFrogSummon = Effect.SummonCreature(nextFrog, VfxImpFrog!, unsummonVfx: VfxImpFrog);
+        Effect nextFrogSummon = Effect.SummonCreature(nextFrog, AmiaVfxTypes.ImpFrog!, unsummonVfx: AmiaVfxTypes.ImpFrog);
         TimeSpan summonDuration = WarlockExtensions.PactSummonDuration(warlock.GetInvocationCasterLevel());
         summonLocation.ApplyEffect(EffectDuration.Temporary, nextFrogSummon, summonDuration);
     }

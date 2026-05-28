@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.EffectUtils;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -21,7 +22,6 @@ namespace AmiaReforged.Classes.Spells.Divine.SecondCircle.Conjuration;
 public class WallOfThorns(ScriptHandleFactory scriptHandleFactory) : ISpell
 {
     private const PersistentVfxType PerWallthorn = (PersistentVfxType)59;
-    private const VfxType DurThornWall = (VfxType)2548;
     public string ImpactScript => "wall_of_thorns";
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
@@ -77,7 +77,7 @@ public class WallOfThorns(ScriptHandleFactory scriptHandleFactory) : ISpell
         dummyObject.MouseCursor = MouseCursor.Walk;
         dummyObject.Useable = false;
 
-        dummyObject.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(DurThornWall), duration);
+        dummyObject.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(AmiaVfxTypes.DurThornWall), duration);
 
         await NwTask.Delay(duration);
         dummyObject.Immortal = false;

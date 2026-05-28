@@ -9,8 +9,6 @@ namespace AmiaReforged.Classes.Spells.Invocations.Pact;
 [ServiceBinding(typeof(IInvocation))]
 public class LoudDecay : IInvocation
 {
-    private const VfxType FnfLoudDecay = (VfxType)2133;
-    private const VfxType ImpDestructLow = (VfxType)302;
     private const string AberrationSummonResRef = "wlkaberrant";
 
     public string ImpactScript => "wlk_louddecay";
@@ -18,7 +16,7 @@ public class LoudDecay : IInvocation
     {
         if (castData.TargetLocation is not { } location) return;
 
-        int dc = warlock.InvocationDc();
+        int dc = warlock.InvocationDc(invocationCl);
         int damageDice = invocationCl / 2;
         const int dieSides = 6;
 
@@ -26,7 +24,7 @@ public class LoudDecay : IInvocation
         Effect healVfx = Effect.VisualEffect(VfxType.ImpHealingM);
         Effect fortVfx = Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse);
 
-        location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(FnfLoudDecay));
+        location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(AmiaVfxTypes.FnfLoudDecay));
 
         foreach (NwCreature creature in location.GetObjectsInShapeByType<NwCreature>
                      (Shape.Sphere, RadiusSize.Colossal, losCheck: false))
@@ -71,7 +69,7 @@ public class LoudDecay : IInvocation
         TimeSpan summonDuration = WarlockExtensions.PactSummonDuration(invocationCl);
 
         Effect summonEffect = Effect.SummonCreature(AberrationSummonResRef, VfxType.FnfGasExplosionNature!,
-            unsummonVfx: ImpDestructLow);
+            unsummonVfx: AmiaVfxTypes.ImpDestructLow);
         summonEffect.SubType = EffectSubType.Magical;
 
         location.SummonMany(warlock, summonCount, RadiusSize.Gargantuan, delayMin: 1f, delayMax: 2f, summonEffect,
