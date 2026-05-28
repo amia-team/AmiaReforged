@@ -27,4 +27,10 @@ public static class WarlockFeat
     public const Feat BindingOfMaggots = (Feat)1326;
     public const Feat PrimordialGust = (Feat)1327;
     public const Feat FrogDrop = (Feat)1328;
+    public const Feat HollowingEssence = (Feat)1347;
+    public const Feat RadiantEssence = (Feat)1348;
+    public const Feat WitchwoodEssence = (Feat)1349;
+    public const Feat StormEssence = (Feat)1350;
+    public const Feat GluttonousEssence = (Feat)1351;
+    public const Feat EntropicEssence = (Feat)1352;
 }

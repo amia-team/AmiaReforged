@@ -14,5 +14,11 @@ public enum EssenceType
     Hellrime = 1021,
     Screaming = 1022,
     Utterdark = 1023,
-    Vitriolic = 1024
+    Vitriolic = 1024,
+    Hollowing = 1047,
+    Radiant = 1048,
+    Witchwood = 1049,
+    Storm = 1050,
+    Gluttonous = 1051,
+    Entropic = 1052
 }

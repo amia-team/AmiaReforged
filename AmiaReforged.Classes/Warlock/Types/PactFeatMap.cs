@@ -7,12 +7,12 @@ public static class PactFeatMap
 {
     private static readonly Dictionary<PactType, Feat[]> FeatsByPact = new()
     {
-        [PactType.Aberrant] = [WarlockFeat.LoudDecay],
-        [PactType.Celestial] = [WarlockFeat.LightsCalling],
-        [PactType.Fey] = [WarlockFeat.DancingPlague],
-        [PactType.Fiend] = [WarlockFeat.BindingOfMaggots],
-        [PactType.Elemental] = [WarlockFeat.PrimordialGust],
-        [PactType.Slaad] = [WarlockFeat.FrogDrop],
+        [PactType.Aberrant] = [WarlockFeat.LoudDecay, WarlockFeat.HollowingEssence],
+        [PactType.Celestial] = [WarlockFeat.LightsCalling, WarlockFeat.RadiantEssence],
+        [PactType.Elemental] = [WarlockFeat.PrimordialGust, WarlockFeat.StormEssence],
+        [PactType.Fey] = [WarlockFeat.DancingPlague, WarlockFeat.WitchwoodEssence],
+        [PactType.Fiend] = [WarlockFeat.BindingOfMaggots, WarlockFeat.GluttonousEssence],
+        [PactType.Slaad] = [WarlockFeat.FrogDrop, WarlockFeat.EntropicEssence],
     };
 
     public static Feat[] GetFeats(PactType pact) => FeatsByPact.TryGetValue(pact, out Feat[]? feats) ? feats : [];
