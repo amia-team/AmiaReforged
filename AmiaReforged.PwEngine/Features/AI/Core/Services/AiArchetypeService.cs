@@ -99,7 +99,7 @@ public class AiArchetypeService
         // Only casters transition (legacy: C → M/R, never M/R → C)
         if (state.ArchetypeId != "caster") return;
 
-        string newArchetype = HasRangedWeaponEquipped(creature) ? "ranged" : "melee";
+        string newArchetype = creature.IsRangedWeaponEquipped ? "ranged" : "melee";
         state.ArchetypeId = newArchetype;
         state.ArchetypeValue = GetArchetypeNumericValue(creature);
     }
@@ -174,7 +174,7 @@ public class AiArchetypeService
         }
 
         // Priority 4: Ranged weapon equipped → ranged
-        if (HasRangedWeaponEquipped(creature))
+        if (creature.IsRangedWeaponEquipped)
         {
             return "ranged";
         }
@@ -229,25 +229,6 @@ public class AiArchetypeService
         }
 
         return false;
-    }
-
-    /// <summary>
-    /// Checks if the creature has a ranged weapon in its right hand.
-    /// </summary>
-    private bool HasRangedWeaponEquipped(NwCreature creature)
-    {
-        NwItem? rightHand = creature.GetItemInSlot(InventorySlot.RightHand);
-        if (rightHand == null) return false;
-
-        BaseItemType baseType = rightHand.BaseItem.ItemType;
-        return baseType == BaseItemType.Longbow ||
-               baseType == BaseItemType.Shortbow ||
-               baseType == BaseItemType.LightCrossbow ||
-               baseType == BaseItemType.HeavyCrossbow ||
-               baseType == BaseItemType.Sling ||
-               baseType == BaseItemType.ThrowingAxe ||
-               baseType == BaseItemType.Dart ||
-               baseType == BaseItemType.Shuriken;
     }
 
     /// <summary>
