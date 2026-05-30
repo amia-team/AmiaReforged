@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.AI.Core.Models;
 using Anvil.API;
 
 namespace AmiaReforged.PwEngine.Features.AI.Core.Extensions;
@@ -9,207 +10,41 @@ namespace AmiaReforged.PwEngine.Features.AI.Core.Extensions;
 /// </summary>
 public static class SpellExtensions
 {
-    private static TwoDimArray? _spellTable;
-    private static TwoDimArray SpellTable => _spellTable ??= NwGameTables.GetTable("spells")!;
-
-    // Category IDs from categories.2da
-    private const int CategoryHarmfulAoeDiscriminant = 1;
-    private const int CategoryHarmfulRanged = 2;
-    private const int CategoryHarmfulTouch = 3;
-    private const int CategoryBeneficialHealingAoe = 4;
-    private const int CategoryBeneficialHealingTouch = 5;
-    private const int CategoryBeneficialConditionalAoe = 6;
-    private const int CategoryBeneficialConditionalSingle = 7;
-    private const int CategoryBeneficialEnhancementAoe = 8;
-    private const int CategoryBeneficialEnhancementSingle = 9;
-    private const int CategoryBeneficialEnhancementSelf = 10;
-    private const int CategoryHarmfulAoeIndiscriminant = 11;
-    private const int CategoryBeneficialProtectionSelf = 12;
-    private const int CategoryBeneficialProtectionSingle = 13;
-    private const int CategoryBeneficialProtectionAoe = 14;
-    private const int CategoryBeneficialSummon = 15;
-    private const int CategoryPersistentAoe = 16;
-    private const int CategoryBeneficialHealingPotion = 17;
-    private const int CategoryBeneficialConditionalPotion = 18;
-    private const int CategoryDragonsBreath = 19;
-    private const int CategoryBeneficialProtectionPotion = 20;
-    private const int CategoryBeneficialEnhancementPotion = 21;
-    private const int CategoryHarmfulMelee = 22;
-    private const int CategoryDispel = 23;
+    // Amia custom ID for dispel talent not found in the normal Anvil.API
+    private const TalentCategory TalentCategoryDispel = (TalentCategory)23;
 
     /// <summary>
-    /// Gets the category ID from spells.2da Category column.
-    /// This ID references categories.2da.
+    /// Gets the spell talent type based on the spell's category.
     /// </summary>
-    public static int GetCategoryId(this Spell spell)
+    public static SpellTalentType GetSpellTalent(this NwSpell spell) => spell.TalentCategory switch
     {
-        string? categoryStr = SpellTable.GetString((int)spell, "Category");
-        if (!string.IsNullOrEmpty(categoryStr) && int.TryParse(categoryStr, out int categoryId))
-        {
-            return categoryId;
-        }
-        return 0;
-    }
-
-    #region Simplified AI Categorization
-
-    /// <summary>
-    /// Checks if this is an offensive/harmful spell (for AI attack behavior).
-    /// Includes: Harmful AoE, Harmful Ranged, Harmful Touch, Harmful Melee, Dragon's Breath.
-    /// </summary>
-    public static bool IsAttackSpell(this Spell spell)
-    {
-        int categoryId = spell.GetCategoryId();
-        return categoryId switch
-        {
-            CategoryHarmfulAoeDiscriminant => true,
-            CategoryHarmfulRanged => true,
-            CategoryHarmfulTouch => true,
-            CategoryHarmfulAoeIndiscriminant => true,
-            CategoryHarmfulMelee => true,
-            CategoryDragonsBreath => true,
-            _ => false
-        };
-    }
-
-    /// <summary>
-    /// Checks if this is a healing spell (for AI healing behavior).
-    /// Includes: All healing categories (AoE, Touch, Potion).
-    /// </summary>
-    public static bool IsHealingSpell(this Spell spell)
-    {
-        int categoryId = spell.GetCategoryId();
-        return categoryId switch
-        {
-            CategoryBeneficialHealingAoe => true,
-            CategoryBeneficialHealingTouch => true,
-            CategoryBeneficialHealingPotion => true,
-            _ => false
-        };
-    }
-
-    /// <summary>
-    /// Checks if this is a buff/enhancement spell (for AI buffing behavior).
-    /// Includes: Protection, Enhancement, Conditional buffs (Self, Single, AoE).
-    /// </summary>
-    public static bool IsBuffSpell(this Spell spell)
-    {
-        int categoryId = spell.GetCategoryId();
-        return categoryId switch
-        {
-            CategoryBeneficialConditionalAoe => true,
-            CategoryBeneficialConditionalSingle => true,
-            CategoryBeneficialEnhancementAoe => true,
-            CategoryBeneficialEnhancementSingle => true,
-            CategoryBeneficialEnhancementSelf => true,
-            CategoryBeneficialProtectionSelf => true,
-            CategoryBeneficialProtectionSingle => true,
-            CategoryBeneficialProtectionAoe => true,
-            CategoryBeneficialConditionalPotion => true,
-            CategoryBeneficialProtectionPotion => true,
-            CategoryBeneficialEnhancementPotion => true,
-            _ => false
-        };
-    }
-
-    /// <summary>
-    /// Checks if this is a summoning spell (for AI summoning behavior).
-    /// </summary>
-    public static bool IsSummonSpell(this Spell spell)
-    {
-        int categoryId = spell.GetCategoryId();
-        return categoryId == CategoryBeneficialSummon;
-    }
-
-    /// <summary>
-    /// Checks if this is a persistent area of effect spell.
-    /// </summary>
-    public static bool IsPersistentAoeSpell(this Spell spell)
-    {
-        int categoryId = spell.GetCategoryId();
-        return categoryId == CategoryPersistentAoe;
-    }
-
-    /// <summary>
-    /// Checks if this is a dispel/counter spell.
-    /// </summary>
-    public static bool IsDispelSpell(this Spell spell)
-    {
-        int categoryId = spell.GetCategoryId();
-        return categoryId == CategoryDispel;
-    }
-
-    #endregion
-
-    #region Spell Metadata
-
-    /// <summary>
-    /// Gets the base caster level for this spell from spells.2da "Innate" column.
-    /// </summary>
-    public static int GetBaseCasterLevel(this Spell spell)
-    {
-        string? innateLevel = SpellTable.GetString((int)spell, "Innate");
-        if (!string.IsNullOrEmpty(innateLevel) && int.TryParse(innateLevel, out int level))
-        {
-            return level;
-        }
-        return 0;
-    }
-
-    /// <summary>
-    /// Gets the spell school from spells.2da "School" column.
-    /// </summary>
-    public static int GetSpellSchool(this Spell spell)
-    {
-        string? school = SpellTable.GetString((int)spell, "School");
-        if (!string.IsNullOrEmpty(school) && int.TryParse(school, out int schoolId))
-        {
-            return schoolId;
-        }
-        return 0;
-    }
-
-    /// <summary>
-    /// Gets the spell name from spells.2da "Label" column.
-    /// </summary>
-    public static string GetSpellName(this Spell spell)
-    {
-        return SpellTable.GetString((int)spell, "Label") ?? spell.ToString();
-    }
-
-    /// <summary>
-    /// Gets the target type from spells.2da "TargetType" column.
-    /// </summary>
-    public static string? GetTargetType(this Spell spell)
-    {
-        return SpellTable.GetString((int)spell, "TargetType");
-    }
-
-    /// <summary>
-    /// Gets the range from spells.2da "Range" column.
-    /// </summary>
-    public static string? GetRange(this Spell spell)
-    {
-        return SpellTable.GetString((int)spell, "Range");
-    }
-
-    /// <summary>
-    /// Gets the hostile setting from spells.2da "HostileSetting" column.
-    /// </summary>
-    public static string? GetHostileSetting(this Spell spell)
-    {
-        return SpellTable.GetString((int)spell, "HostileSetting");
-    }
-
-    #endregion
-
-    #region Target Filtering
+        TalentCategory.HarmfulAreaEffectDiscriminant or TalentCategory.HarmfulRanged or TalentCategory.HarmfulTouch
+            or TalentCategory.HarmfulAreaEffectIndiscriminant or TalentCategory.HarmfulMelee or TalentCategory.DragonsBreath
+            => SpellTalentType.Attack,
+        TalentCategory.BeneficialConditionalAreaEffect or TalentCategory.BeneficialConditionalSingle
+            or TalentCategory.BeneficialEnhancementSingle or TalentCategory.BeneficialEnhancementAreaEffect
+            or TalentCategory.BeneficialEnhancementSelf or TalentCategory.BeneficialProtectionSelf
+            or TalentCategory.BeneficialProtectionSingle or TalentCategory.BeneficialProtectionAreaEffect
+            or TalentCategory.BeneficialConditionalPotion or TalentCategory.BeneficialProtectionPotion
+            or TalentCategory.BeneficialEnhancementPotion
+            => SpellTalentType.Buff,
+        TalentCategory.BeneficialHealingAreaEffect or TalentCategory.BeneficialHealingTouch
+            or TalentCategory.BeneficialHealingPotion
+            => SpellTalentType.Heal,
+        TalentCategory.BeneficialObtainAllies
+            => SpellTalentType.Summon,
+        TalentCategory.PersistentAreaOfEffect
+            => SpellTalentType.PersistentAoe,
+        TalentCategoryDispel
+            => SpellTalentType.Dispel,
+        _ => SpellTalentType.Unknown
+    };
 
     /// <summary>
     /// Checks if this spell is valid for the given target type.
-    /// Handles undead-specific spell filtering (cure→harm swap).
+    /// Handles undead-specific spell filtering (cure -> harm swap).
     /// </summary>
-    public static bool IsValidForTarget(this Spell spell, NwCreature target)
+    public static bool IsValidForTarget(this NwSpell spell, NwCreature target)
     {
         // Undead-specific filtering (from FixSpellsVersusUndead in ds_ai_include.nss)
         if (target.Race.RacialType == RacialType.Undead)
@@ -222,47 +57,71 @@ public static class SpellExtensions
         return true;
     }
 
+    public static bool TryGetRandomPolymorphSpell(this NwSpell spell, out NwSpell? polymorphSpell)
+    {
+        polymorphSpell = spell.MasterSpell switch
+        {
+            { SpellType: Spell.PolymorphSelf } => NwSpell.FromSpellId(GetRandomPolymorphShape()),
+            { SpellType: Spell.Shapechange } => NwSpell.FromSpellId(GetRandomShapechangeShape()),
+            _ => null
+        };
+
+        return polymorphSpell != null;
+    }
+
+    private static int GetRandomPolymorphShape() => Random.Shared.Next(387, 392);
+    private static int GetRandomShapechangeShape() => Random.Shared.Next(392, 401);
+
     /// <summary>
     /// Checks if this spell requires line of sight to target.
     /// </summary>
-    public static bool RequiresLineOfSight(this Spell spell)
-    {
-        // Most offensive spells require LoS
-        return spell.IsAttackSpell();
-    }
+    public static bool RequiresLineOfSight(this NwSpell spell)
+        => spell.Range is not (SpellRange.Personal or SpellRange.Touch);
 
-    #endregion
 
     #region Spell Type Helpers
 
-    private static bool IsCureSpell(Spell spell)
+    private static bool IsCureSpell(NwSpell spell) => spell.SpellType switch
     {
-        return spell switch
-        {
-            Spell.CureMinorWounds => true,
-            Spell.CureLightWounds => true,
-            Spell.CureModerateWounds => true,
-            Spell.CureSeriousWounds => true,
-            Spell.CureCriticalWounds => true,
-            Spell.Heal => true,
-            Spell.Regenerate => true,
-            _ => false
-        };
-    }
+        Spell.CureMinorWounds => true,
+        Spell.CureLightWounds => true,
+        Spell.CureModerateWounds => true,
+        Spell.CureSeriousWounds => true,
+        Spell.CureCriticalWounds => true,
+        Spell.Heal => true,
+        Spell.Regenerate => true,
+        _ => false
+    };
 
-    private static bool IsHarmSpell(Spell spell)
+    private static bool IsHarmSpell(NwSpell spell) => spell.SpellType switch
     {
-        return spell switch
-        {
-            Spell.InflictMinorWounds => true,
-            Spell.InflictLightWounds => true,
-            Spell.InflictModerateWounds => true,
-            Spell.InflictSeriousWounds => true,
-            Spell.InflictCriticalWounds => true,
-            Spell.Harm => true,
-            _ => false
-        };
-    }
+        Spell.InflictMinorWounds => true,
+        Spell.InflictLightWounds => true,
+        Spell.InflictModerateWounds => true,
+        Spell.InflictSeriousWounds => true,
+        Spell.InflictCriticalWounds => true,
+        Spell.Harm => true,
+        _ => false
+    };
+
+    /// <summary>
+    /// Gets the spell priority based on the spell's innate level. Certain good spells are given higher priority.
+    /// </summary>
+    public static int GetSpellPriority(this NwSpell spell) => spell.SpellType switch
+    {
+        Spell.TrueStrike => 10,
+        Spell.GhostlyVisage => 8,
+        Spell.Stoneskin => 8,
+        Spell.EtherealVisage => 8,
+        Spell.Haste => 7,
+        Spell.ImprovedInvisibility => 7,
+        Spell.Displacement => 7,
+        Spell.Darkness => 6,
+        Spell.Darkvision => 5,  // This is actually Ultravision
+        Spell.Invisibility => 4,
+        Spell.SeeInvisibility => 4,
+        _ => spell.InnateSpellLevel
+    };
 
     #endregion
 }

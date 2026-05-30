@@ -2,13 +2,12 @@ using System.Numerics;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using AmiaReforged.PwEngine.Features.AI.Behaviors;
-using AmiaReforged.PwEngine.Features.AI.Core.Extensions;
-using AmiaReforged.PwEngine.Features.AI.Core.Interfaces;
 using AmiaReforged.PwEngine.Features.AI.Core.Models;
 using AmiaReforged.PwEngine.Features.AI.Core.Services;
 using NWN.Core;
 using NWN.Core.NWNX;
+using static AmiaReforged.PwEngine.Features.AI.Core.Extensions.SpellExtensions;
+using static AmiaReforged.PwEngine.Features.AI.Core.Models.CreatureSpellCache;
 
 namespace AmiaReforged.PwEngine.Features.AI.Behaviors.Generic;
 
@@ -34,14 +33,15 @@ namespace AmiaReforged.PwEngine.Features.AI.Behaviors.Generic;
 /// - Pet-to-PC target preference (50% switch from pet to master)
 /// </summary>
 [ServiceBinding(typeof(IOnHeartbeatBehavior))]
-public class GenericAiHeartbeat : IOnHeartbeatBehavior
+public class GenericAiHeartbeat(
+    AiStateManager stateManager,
+    AiTargetingService targetingService,
+    AiArchetypeService archetypeService,
+    AiSpellCacheService spellCacheService,
+    AiTalentService talentService)
+    : IOnHeartbeatBehavior
 {
-    private readonly AiStateManager _stateManager;
-    private readonly AiTargetingService _targetingService;
-    private readonly AiArchetypeService _archetypeService;
-    private readonly AiSpellCacheService _spellCacheService;
-    private readonly AiTalentService _talentService;
-    private readonly bool _isEnabled;
+    private readonly bool _isEnabled = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE") != "live";
 
     /// <summary>Distance threshold for path-blocking detection.</summary>
     private const float BlockDetectionDistance = 10.0f;
@@ -64,21 +64,6 @@ public class GenericAiHeartbeat : IOnHeartbeatBehavior
 
     public string ScriptName => "ds_ai_heartbeat";
 
-    public GenericAiHeartbeat(
-        AiStateManager stateManager,
-        AiTargetingService targetingService,
-        AiArchetypeService archetypeService,
-        AiSpellCacheService spellCacheService,
-        AiTalentService talentService)
-    {
-        _stateManager = stateManager;
-        _targetingService = targetingService;
-        _archetypeService = archetypeService;
-        _spellCacheService = spellCacheService;
-        _talentService = talentService;
-        _isEnabled = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE") != "live";
-    }
-
     public void OnHeartbeat(CreatureEvents.OnHeartbeat eventData)
     {
         if (!_isEnabled) return;
@@ -88,7 +73,7 @@ public class GenericAiHeartbeat : IOnHeartbeatBehavior
         // Skip player-controlled creatures
         if (creature.IsPlayerControlled || creature.IsDMAvatar) return;
 
-        AiState? state = _stateManager.GetState(creature);
+        AiState? state = stateManager.GetState(creature);
         if (state == null) return;
 
         // Check for sleep mode (>5 inactive heartbeats)
@@ -131,7 +116,7 @@ public class GenericAiHeartbeat : IOnHeartbeatBehavior
     private bool PerformAction(NwCreature creature, AiState state)
     {
         // --- Target acquisition with pet-to-PC preference ---
-        NwGameObject? target = _targetingService.GetValidTarget(creature, state.CurrentTarget);
+        NwGameObject? target = targetingService.GetValidTarget(creature, state.CurrentTarget);
 
         if (target == null)
         {
@@ -172,11 +157,11 @@ public class GenericAiHeartbeat : IOnHeartbeatBehavior
             return true;
         }
 
-        int archetypeValue = _archetypeService.GetArchetypeValue(creature);
-        CreatureSpellCache spellCache = _spellCacheService.GetOrCreateCache(creature);
+        int archetypeValue = archetypeService.GetArchetypeValue(creature);
+        CreatureSpellCache spellCache = spellCacheService.GetOrCreateCache(creature);
 
         // --- Caster archetype (C): spell category sub-selection (d6 roll) ---
-        if (_archetypeService.IsCasterArchetype(creature) && spellCache.MaxCasterLevel > 0)
+        if (archetypeService.IsCasterArchetype(creature) && spellCache.Spells.Count > 0)
         {
             if (TryCasterSpellSelection(creature, target, state, spellCache))
             {
@@ -185,10 +170,10 @@ public class GenericAiHeartbeat : IOnHeartbeatBehavior
         }
 
         // --- Feat buffs (one-time) ---
-        _talentService.TryUseFeatBuff(creature);
+        talentService.TryUseFeatBuff(creature);
 
         // --- HiPS archetype: 70% chance to disengage, stealth, and re-engage ---
-        if (_archetypeService.IsHipsArchetype(creature))
+        if (archetypeService.IsHipsArchetype(creature))
         {
             if (TryHipsBehavior(creature, target))
             {
@@ -197,7 +182,7 @@ public class GenericAiHeartbeat : IOnHeartbeatBehavior
         }
 
         // --- Special attacks (d12 roll) ---
-        if (_talentService.TrySpecialAttack(creature, target))
+        if (talentService.TrySpecialAttack(creature, target))
         {
             return true;
         }
@@ -209,16 +194,16 @@ public class GenericAiHeartbeat : IOnHeartbeatBehavior
         }
 
         // --- Hybrids try spells after melee ---
-        if (archetypeValue >= 4 && spellCache.MaxCasterLevel > 0)
+        if (archetypeValue >= 4 && spellCache.Spells.Count > 0)
         {
-            if (TryDoSpellCast(creature, target, state, spellCache, "attc"))
+            if (TryDoSpellCast(creature, target, state, spellCache, SpellTalentType.Attack))
             {
                 return true;
             }
         }
 
         // --- Fallback: move toward target ---
-        TargetValidity validity = _targetingService.ValidateTarget(creature,
+        TargetValidity validity = targetingService.ValidateTarget(creature,
             target as NwCreature ?? creature);
         if (validity > TargetValidity.NotHostile)
         {
@@ -248,34 +233,27 @@ public class GenericAiHeartbeat : IOnHeartbeatBehavior
             return true;
         }
 
-        int roll = Random.Shared.Next(1, 7); // d6
+        int roll = Random.Shared.Roll(6);
 
-        string spellType = roll switch
-        {
-            3 => "infl", // Influence/inflict spell
-            4 => "buff", // Buff spell on self
-            5 => "poly", // Polymorph spell
-            6 => "summ", // Summon spell
-            _ => "attc" // Attack spell (1, 2, and fallback)
-        };
+        SpellTalentType spellTalent = (SpellTalentType)roll;
 
         // Try the selected type first
-        if (TryDoSpellCast(creature, target, state, spellCache, spellType))
+        if (TryDoSpellCast(creature, target, state, spellCache, spellTalent))
         {
             return true;
         }
 
         // Fall through to attack spell if first choice failed
-        if (spellType != "attc")
+        if (spellTalent != SpellTalentType.Attack)
         {
-            if (TryDoSpellCast(creature, target, state, spellCache, "attc"))
+            if (TryDoSpellCast(creature, target, state, spellCache, SpellTalentType.Attack))
             {
                 return true;
             }
         }
 
         // If caster has no Combat Casting, queue melee attack after spell attempt
-        if (!creature.KnowsFeat(Feat.CombatCasting))
+        if (!creature.KnowsFeat(Feat.CombatCasting!))
         {
             creature.ActionAttackTarget(target);
             return true;
@@ -327,112 +305,71 @@ public class GenericAiHeartbeat : IOnHeartbeatBehavior
     /// - Spell list rotation (different spells tried each round)
     /// </summary>
     private bool TryDoSpellCast(NwCreature creature, NwGameObject target,
-        AiState state, CreatureSpellCache spellCache, string spellType)
+        AiState state, CreatureSpellCache spellCache, SpellTalentType spellTalent)
     {
-        IReadOnlyList<Spell> spellList = spellType switch
-        {
-            "attc" => spellCache.AttackSpells,
-            "buff" => spellCache.BuffSpells,
-            "heal" => spellCache.HealingSpells,
-            "infl" => spellCache.AttackSpells, // Inflict uses attack list in C#
-            "poly" => spellCache.BuffSpells, // Poly is a subset of buffs
-            "summ" => spellCache.SummonSpells,
-            _ => spellCache.AttackSpells
-        };
-
-        if (spellList.Count == 0) return false;
+        if (spellCache.Spells.Count == 0) return false;
 
         // Collect up to 3 candidate spells (rotation: randomize order)
-        List<Spell> candidates = spellList.OrderBy(_ => Random.Shared.Next()).Take(3).ToList();
+        AiSpellData[] candidates = spellCache.Spells.OrderBy(_ => Random.Shared.Next()).Take(3).ToArray();
 
-        foreach (Spell spell in candidates)
+        foreach (AiSpellData aiSpellData in candidates)
         {
+            NwSpell spell = aiSpellData.Spell;
             // Spam limit check
             if (spellCache.HasReachedSpamLimit(spell)) continue;
 
             // Check spell availability
-            NwSpell? nwSpell = NwSpell.FromSpellId((int)spell);
-            if (nwSpell == null || !creature.HasSpellUse(nwSpell)) continue;
+            if (!creature.HasSpellUse(spell)) continue;
 
             // Pre-filter: don't cast same spell twice in a row
             if (state.LastSpellCast == spell) continue;
 
             // === Type-specific filtering ===
-
-            if (spellType == "attc" || spellType == "infl")
+            if (spellTalent == SpellTalentType.Attack)
             {
                 if (target is NwCreature targetCreature)
                 {
-                    // Undead reversal: inflict heals undead, cure damages undead
-                    if (spell.IsHealingSpell() && targetCreature.Race.RacialType == RacialType.Undead)
-                    {
-                        // Cure spells damage undead — this is valid, allow it
-                    }
-                    else if (!spell.IsValidForTarget(targetCreature))
-                    {
+                    // Checks if target is undead so it doesn't heal undead with inflict spells and allows cure spells
+                    if (!spell.IsValidForTarget(targetCreature))
                         continue;
-                    }
-
                     // Pre-spell target filtering: Dismissal/Banishment only vs summoned
-                    if (spell == Spell.Dismissal || spell == Spell.Banishment)
-                    {
-                        if (targetCreature.Master == null)
-                        {
-                            continue; // Not a summoned creature, skip this spell
-                        }
-                    }
+                    if (spell.SpellType is Spell.Dismissal or Spell.Banishment
+                        && targetCreature.AssociateType is not (AssociateType.Summoned or AssociateType.Familiar))
+                        continue;
                 }
 
                 // Cast attack spell at target
                 creature.ClearActionQueue();
                 creature.ActionCastSpellAt(spell, target);
             }
-            else if (spellType == "buff")
+            else if  (spellTalent == SpellTalentType.Buff)
             {
                 // Buff duplicate avoidance: skip if already has the buff effect
-                // (simplified: just check last spell)
                 if (state.LastSpellCast == spell) continue;
-
                 creature.ClearActionQueue();
-                creature.ActionCastSpellAt(spell, creature); // Cast on self
-            }
-            else if (spellType == "heal")
-            {
-                // Undead check: if creature is undead, try inflict on self instead (heals undead)
-                if (creature.Race.RacialType == RacialType.Undead)
+
+                // If the spell is a polymorph type spell, then return a random shape to cast
+                if (spell.TryGetRandomPolymorphSpell(out NwSpell? polySpell) && polySpell != null)
                 {
-                    // Skip heal spells for undead casters (they need inflict)
-                    continue;
+                    creature.ActionCastSpellAt(polySpell, creature);
+                    return true;
                 }
 
-                if (creature.HP >= creature.MaxHP * 0.5) continue; // Only heal below 50%
+                creature.ActionCastSpellAt(spell, creature);
+            }
+            else if (spellTalent == SpellTalentType.Heal)
+            {
+                // Skip heal spells for undead casters (they need inflict)
+                if (creature.Race.RacialType == RacialType.Undead)
+                    continue;
+
+                // Only heal below 50%
+                if (creature.HP >= creature.MaxHP * 0.5) continue;
 
                 creature.ClearActionQueue();
                 creature.ActionCastSpellAt(spell, creature);
             }
-            else if (spellType == "poly")
-            {
-                // Filter to actual polymorph spells
-                if ((int)spell < 387 || (int)spell > 396) continue;
-
-                // Randomize polymorph variant (legacy GetMultiOption)
-                int polySpellId = spell switch
-                {
-                    >= Spell.PolymorphSelf and <= (Spell)391 =>
-                        Random.Shared.Next((int)Spell.PolymorphSelf, 392),
-                    >= (Spell)392 and <= (Spell)396 =>
-                        Random.Shared.Next(392, 397),
-                    _ => (int)spell
-                };
-                Spell polySpell = (Spell)polySpellId;
-
-                creature.ClearActionQueue();
-                creature.ActionCastSpellAt(polySpell, creature);
-
-                // Archetype transition: caster → melee after polymorph (3s delay)
-                NWScript.DelayCommand(3.0f, () => { _archetypeService.OnSpellsExhausted(creature); });
-            }
-            else if (spellType == "summ")
+            else if (spellTalent == SpellTalentType.Summon)
             {
                 // Summon duplicate prevention: skip if already has a summoned associate
                 NwCreature? existingSummon = creature.GetAssociate(AssociateType.Summoned);
@@ -448,20 +385,17 @@ public class GenericAiHeartbeat : IOnHeartbeatBehavior
 
             // Track spell usage
             state.LastSpellCast = spell;
-            if (!spellCache.SpellUsageCount.ContainsKey(spell))
-            {
-                spellCache.SpellUsageCount[spell] = 0;
-            }
-
-            spellCache.SpellUsageCount[spell]++;
+            // Increment spell usage count for the limit check
+            spellCache.SpellUsageCount[spell] = spellCache.SpellUsageCount.GetValueOrDefault(spell) + 1;
 
             return true;
         }
 
         // If we exhausted all spells of this type, check for archetype transition
-        if (spellType == "attc" && !candidates.Any(s => creature.HasSpellUse(NwSpell.FromSpellId((int)s))))
+        if (spellTalent == SpellTalentType.Attack
+            && !candidates.Any(s => creature.HasSpellUse(s.Spell) && s.SpellTalent == SpellTalentType.Attack))
         {
-            _archetypeService.OnSpellsExhausted(creature);
+            archetypeService.OnSpellsExhausted(creature);
         }
 
         return false;
@@ -480,8 +414,6 @@ public class GenericAiHeartbeat : IOnHeartbeatBehavior
     /// </summary>
     private bool DoAttack(NwCreature creature, NwGameObject target, AiState state)
     {
-        if (target == null) return false;
-
         float distance = creature.Distance(target);
         Vector3 currentPosition = creature.Position;
 
@@ -539,13 +471,13 @@ public class GenericAiHeartbeat : IOnHeartbeatBehavior
         if (state.HasHealed) return false;
         if (creature.HP >= creature.MaxHP * 0.5) return false;
 
-        CreatureSpellCache spellCache = _spellCacheService.GetOrCreateCache(creature);
+        CreatureSpellCache spellCache = spellCacheService.GetOrCreateCache(creature);
 
         // Try healing spells
-        foreach (Spell spell in spellCache.HealingSpells)
+        foreach (AiSpellData aiSpellData in spellCache.Spells)
         {
-            NwSpell? nwSpell = NwSpell.FromSpellId((int)spell);
-            if (nwSpell == null || !creature.HasSpellUse(nwSpell)) continue;
+            if (aiSpellData.SpellTalent != SpellTalentType.Heal) continue;
+            if (!creature.HasSpellUse(aiSpellData.Spell)) continue;
 
             // Undead creatures need inflict spells, not cure spells
             if (creature.Race.RacialType == RacialType.Undead)
@@ -555,7 +487,7 @@ public class GenericAiHeartbeat : IOnHeartbeatBehavior
             }
 
             creature.ClearActionQueue();
-            creature.ActionCastSpellAt(spell, creature);
+            creature.ActionCastSpellAt(aiSpellData.Spell, creature);
             state.HasHealed = true;
             return true;
         }

@@ -39,7 +39,7 @@ public class AiState
     /// <summary>
     /// Last spell cast by this creature (prevents immediate re-casting of buffs).
     /// </summary>
-    public Spell? LastSpellCast { get; set; }
+    public NwSpell? LastSpellCast { get; set; }
 
     /// <summary>
     /// Whether feat buffs have been applied on spawn (one-time).
