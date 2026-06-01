@@ -20,6 +20,8 @@ public class GreaterWildshape : ISpell
     {
         if (eventData.Caster is not NwCreature creature) return;
         Log.Info($"Greater Wildshape used by {creature.Name}.");
+        if (PolymorphUtils.PreventDoublePolymorph(creature))
+            return;
 
         NwSpell? masterSpell = eventData.Spell.MasterSpell;
         if (masterSpell == null)

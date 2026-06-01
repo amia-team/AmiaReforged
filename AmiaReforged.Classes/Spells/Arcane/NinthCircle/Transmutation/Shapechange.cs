@@ -13,7 +13,9 @@ public class Shapechange : ISpell
     public string ImpactScript => PolymorphScriptConstants.Shapechange;
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
-        if (eventData.Caster is not NwCreature creature) return;
+        if (eventData.Caster is not NwCreature creature
+            || PolymorphUtils.PreventDoublePolymorph(creature))
+            return;
 
         Dictionary<int, int> polymorphMapping = creature.KnowsFeat(Feat.EpicSpellFocusTransmutation!)
             ? PolymorphMapping.Shapechange.Epic

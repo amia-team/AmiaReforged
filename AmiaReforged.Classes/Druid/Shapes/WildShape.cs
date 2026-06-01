@@ -14,7 +14,9 @@ public class WildShape : ISpell
     public string ImpactScript => PolymorphScriptConstants.WildShape;
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
-        if (eventData.Caster is not NwCreature creature) return;
+        if (eventData.Caster is not NwCreature creature
+            || PolymorphUtils.PreventDoublePolymorph(creature))
+            return;
 
         int casterLevel = creature.CasterLevel;
 

@@ -18,7 +18,9 @@ public class HybridTransformation : ISpell
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
-        if (eventData.Caster is not NwCreature creature) return;
+        if (eventData.Caster is not NwCreature creature
+            || PolymorphUtils.PreventDoublePolymorph(creature))
+            return;
 
         int creatureLevel = creature.Level;
         int lycanLevel = creature.CasterLevel;

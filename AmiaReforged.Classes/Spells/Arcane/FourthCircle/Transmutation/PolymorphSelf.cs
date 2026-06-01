@@ -13,7 +13,9 @@ public class PolymorphSelf : ISpell
     public string ImpactScript => PolymorphScriptConstants.PolymorphSelf;
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
-        if (eventData.Caster is not NwCreature creature) return;
+        if (eventData.Caster is not NwCreature creature
+            || PolymorphUtils.PreventDoublePolymorph(creature))
+            return;
 
         PolymorphMapping.PolymorphSelf.Shapes.TryGetValue(eventData.Spell.Id, out int polymorphId);
 
