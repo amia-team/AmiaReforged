@@ -122,7 +122,7 @@ public class GreaterWildshape : ISpell
         int armorAcBonus = casterLevel switch
         {
             >= 4 and < 8 => 1,
-            >= 9 and < 12 => 2,
+            >= 8 and < 12 => 2,
             >= 12 and < 16 => 3,
             >= 16 and < 20 => 4,
             >= 20 => 5,
