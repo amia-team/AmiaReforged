@@ -43,20 +43,20 @@ public class PolymorphMergeService
     /// Defensive cleanup: remove any pending merge data for a creature whose player is leaving.
     /// Normally the Before/After pair runs synchronously, but this guards against edge cases.
     /// </summary>
-    private void CleanupOnClientLeave(ModuleEvents.OnClientLeave obj)
+    private void CleanupOnClientLeave(ModuleEvents.OnClientLeave eventData)
     {
-        NwCreature? creature = obj.Player.LoginCreature;
-        if (creature == null) return;
-
-        _pendingWeaponMerges.Remove(creature);
-        _pendingArmorMerges.Remove(creature);
-        _pendingItemMerges.Remove(creature);
-        _pendingWaterBreathing.Remove(creature);
+        if (eventData.Player.ControlledCreature is not { } creature) return;
+        ClearPendingMerges(creature);
     }
 
     private void OnApplyPolymorphBefore(OnPolymorphApply eventData)
     {
+        if (eventData.PolymorphType is { MergeW: false, MergeA: false, MergeI: false })
+            return;
+
+        Log.Info("Storing polymorph merges for {0}", eventData.Creature.Name);
         NwCreature creature = eventData.Creature;
+        ClearPendingMerges(creature);
 
         if (eventData.PolymorphType.MergeW == true)
         {
@@ -90,9 +90,14 @@ public class PolymorphMergeService
 
     private void OnApplyPolymorphAfter(OnPolymorphApply eventData)
     {
+        if (eventData.PolymorphType is { MergeW: false, MergeA: false, MergeI: false })
+            return;
+
         NwCreature creature = eventData.Creature;
         NwPlayer? player = creature.ControllingPlayer;
         List<string>? mergeMessages = player != null ? [] : null;
+
+        Log.Info("Applying polymorph merges for {0}", creature.Name);
 
         _pendingWaterBreathing.Remove(creature, out bool hasWaterBreathing);
 
@@ -270,5 +275,14 @@ public class PolymorphMergeService
         return valueName.Contains(subTypeName, StringComparison.OrdinalIgnoreCase)
             ? valueName
             : $"{subTypeName} {valueName}";
+    }
+
+    private void ClearPendingMerges(NwCreature creature)
+    {
+        Log.Info("Clearing pending merges for {0}", creature.Name);
+        _pendingWeaponMerges.Remove(creature);
+        _pendingArmorMerges.Remove(creature);
+        _pendingItemMerges.Remove(creature);
+        _pendingWaterBreathing.Remove(creature);
     }
 }
