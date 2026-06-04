@@ -96,7 +96,7 @@ public class EldritchSpear : IShape
         TimeSpan beamDuration = TimeSpan.FromSeconds(1.1);
 
         Effect spearVfx = Effect.Beam(beamVfx, warlock, BodyNode.Hand, missEffect);
-        spearVfx.FloatParams[0] = 8.0f;
+        spearVfx.FloatParams[0] = 6;
 
         targetObject.ApplyEffect(EffectDuration.Temporary, spearVfx, beamDuration);
     }
