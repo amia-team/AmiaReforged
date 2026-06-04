@@ -18,9 +18,11 @@ public class EssenceFactory
     {
         EssenceType activeEssence = GetActivateEssence(warlock);
 
-        return _essences.TryGetValue(activeEssence, out IEssence? essence)
-            ? essence.GetEssenceData(invocationCl, warlock)
-            : DefaultEssence;
+        EssenceData? essenceData = _essences.GetValueOrDefault(activeEssence)?.GetEssenceData(invocationCl, warlock);
+        if (essenceData == null || essenceData.Value.Type == EssenceType.None)
+            return DefaultEssence;
+
+        return essenceData.Value;
     }
 
     private static EssenceType GetActivateEssence(NwCreature caster)

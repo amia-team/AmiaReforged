@@ -17,18 +17,8 @@ public class EssenceHandler
     public EssenceHandler(EssenceFactory essenceFactory)
     {
         _essenceFactory = essenceFactory;
-        NwModule.Instance.OnUseFeat += OnRemoveEldritchEssence;
         NwModule.Instance.OnSpellAction += OnEldritchEssence;
         Log.Info(message: "Warlock Essence Handler initialized.");
-    }
-
-    private void OnRemoveEldritchEssence(OnUseFeat eventData)
-    {
-        if (eventData.Feat.Id != RemoveEssenceId) return;
-
-        eventData.Creature.GetObjectVariable<LocalVariableInt>(EssenceVar).Delete();
-        if (!eventData.Creature.IsPlayerControlled(out NwPlayer? player)) return;
-        player.SendServerMessage("Eldritch Essence removed.".ColorWarlock());
     }
 
     private void OnEldritchEssence(OnSpellAction eventData)
@@ -37,25 +27,45 @@ public class EssenceHandler
         if (!Enum.IsDefined(typeof(EssenceType), spellId)) return;
 
         NwCreature warlock = eventData.Caster;
+        LocalVariableInt essenceKey = warlock.GetObjectVariable<LocalVariableInt>(EssenceVar);
+        EssenceType essenceType = (EssenceType)spellId;
 
-        warlock.GetObjectVariable<LocalVariableInt>(EssenceVar).Value = spellId;
-
-        if (!warlock.IsPlayerControlled(out NwPlayer? player)) return;
-        string essenceName = eventData.Spell.Name.ToString();
-
-        player.SendServerMessage($"{essenceName} applied.".ColorWarlock());
-        player.FloatingTextString($"*{essenceName} Activated*".ColorWarlock(), false, false);
+        if (essenceType == EssenceType.None)
+            essenceKey.Delete();
+        else
+            essenceKey.Value = spellId;
 
         eventData.PreventSpellCast = true;
 
-        if (eventData.Caster.GetItemInSlot(InventorySlot.RightHand) is not { } weapon
-            || weapon.ItemProperties.All(ip => ip.Tag != nameof(ShapeType.HideousBlow)))
-            return;
+        if (!warlock.IsPlayerControlled(out NwPlayer? player)) return;
+
+        string essenceName = eventData.Spell.Name.ToString();
+        SendEssenceMessage(player, essenceName, essenceType);
+
+        NwItem? weapon = eventData.Caster.GetItemInSlot(InventorySlot.RightHand);
+        if (weapon == null) return;
+        if (!WeaponHasHideousBlow(weapon)) return;
 
         EssenceData? essence = _essenceFactory?.GetEssenceData(warlock, warlock.GetInvocationCasterLevel());
         if (essence == null) return;
         ChangeHideousBlowGlow(weapon, essence.Value);
     }
+
+    private static void SendEssenceMessage(NwPlayer player, string essenceName, EssenceType essenceType)
+    {
+        if (essenceType == EssenceType.None)
+        {
+            player.SendServerMessage("Eldritch essence removed.".ColorWarlock());
+            player.FloatingTextString("*Essence Deactivated*".ColorWarlock(), false, false);
+            return;
+        }
+
+        player.SendServerMessage($"{essenceName} applied.".ColorWarlock());
+        player.FloatingTextString($"*{essenceName} Activated*".ColorWarlock(), false, false);
+    }
+
+    private static bool WeaponHasHideousBlow(NwItem weapon)
+        => weapon.ItemProperties.Any(ip => ip.Tag == nameof(ShapeType.HideousBlow));
 
     /// <summary>
     /// Hideous Blow recharges every two rounds, and it's possible to change the essence on the fly, so we have to

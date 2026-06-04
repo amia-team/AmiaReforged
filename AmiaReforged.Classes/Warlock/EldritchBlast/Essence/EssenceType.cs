@@ -4,7 +4,6 @@
 // opaque to determine which essence has been activated.
 public enum EssenceType
 {
-    None,
     Beshadowed = 1015,
     Bewitching = 1016,
     Binding = 1017,
@@ -15,6 +14,7 @@ public enum EssenceType
     Screaming = 1022,
     Utterdark = 1023,
     Vitriolic = 1024,
+    None = 1025,
     Hollowing = 1047,
     Radiant = 1048,
     Witchwood = 1049,
