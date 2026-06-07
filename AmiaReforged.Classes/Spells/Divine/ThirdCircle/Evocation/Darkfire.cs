@@ -14,9 +14,9 @@ public class Darkfire(ItemBuffService itemBuffService) : ISpell
     {
         if (eventData.Caster is not { } caster) return;
 
-        (IPDamageType damageType, int casterLevel) = WeaponBuffUtils.GetBuffData(caster, eventData);
+        (IPDamageType damageType, int casterLevel) = WeaponBuffUtils.GetFlameWeaponData(caster, eventData);
 
-        IPDamageBonus damageBonus = WeaponBuffUtils.GetDamageBonus(casterLevel);
+        IPDamageBonus damageBonus = WeaponBuffUtils.GetFlameWeaponDamageBonus(casterLevel);
 
         NwItem? weapon = WeaponBuffUtils.SelectWeaponToBuff(eventData, damageType, damageBonus);
 

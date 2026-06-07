@@ -157,7 +157,7 @@ public static class WeaponBuffUtils
     /// <summary>
     /// Centralised scaling for weapon damage buffs based on Caster Level.
     /// </summary>
-    public static IPDamageBonus GetDamageBonus(int casterLevel)
+    public static IPDamageBonus GetFlameWeaponDamageBonus(int casterLevel)
         => casterLevel switch
         {
             >= 25 => IPDamageBonus.Plus1d12,
@@ -169,7 +169,7 @@ public static class WeaponBuffUtils
 
     private const string BotPrefix = "ds_spell_";
 
-    public static (IPDamageType, int CasterLevel) GetBuffData(NwGameObject caster, SpellEvents.OnSpellCast castData)
+    public static (IPDamageType, int CasterLevel) GetFlameWeaponData(NwGameObject caster, SpellEvents.OnSpellCast castData)
     {
         if (castData.Item != null)
         {
