@@ -59,8 +59,8 @@ public static class WeaponBuffUtils
     /// </summary>
     public static NwItem? SelectWeaponToBuff(SpellEvents.OnSpellCast castData, IPDamageType damageType, IPDamageBonus damageBonus)
     {
-        List<NwItem>? weaponList = GetWeaponsToBuff(castData);
-        if (weaponList == null || weaponList.Count == 0) return null;
+        List<NwItem> weaponList = GetWeaponsToBuff(castData);
+        if (weaponList.Count == 0) return null;
 
         NwItem? weaponToBuff = weaponList
             // Filter out items that have a more powerful effect
@@ -113,23 +113,23 @@ public static class WeaponBuffUtils
     /// Gets which target creature's weapon should be enhanced
     /// </summary>
     /// <returns>The list of weapons to consider for enhancements</returns>
-    private static List<NwItem>? GetWeaponsToBuff(SpellEvents.OnSpellCast castData)
+    public static List<NwItem> GetWeaponsToBuff(SpellEvents.OnSpellCast castData, bool allowRanged = false)
     {
-        if (castData.TargetObject is NwItem { BaseItem.Category: BaseItemCategory.Melee } meleeWeapon)
-            return [meleeWeapon];
+        if (castData.TargetObject is NwItem targetWeapon && IsAllowedWeapon(targetWeapon, allowRanged))
+            return [targetWeapon];
 
         if (castData.TargetObject is not NwCreature creature)
-            return null;
+            return [];
 
         // Prio 1: weapons
-        List<NwItem> meleeWeapons = [];
-        if (creature.GetItemInSlot(InventorySlot.RightHand) is { BaseItem.Category: BaseItemCategory.Melee } mainWeapon)
-            meleeWeapons.Add(mainWeapon);
-        if (creature.GetItemInSlot(InventorySlot.LeftHand) is { BaseItem.Category: BaseItemCategory.Melee } offWeapon)
-            meleeWeapons.Add(offWeapon);
+        List<NwItem> weapons = [];
+        if (creature.GetItemInSlot(InventorySlot.RightHand) is { } mainWeapon&& IsAllowedWeapon(mainWeapon, allowRanged))
+            weapons.Add(mainWeapon);
+        if (creature.GetItemInSlot(InventorySlot.LeftHand) is { } offWeapon && IsAllowedWeapon(offWeapon, allowRanged))
+            weapons.Add(offWeapon);
 
-        if (meleeWeapons.Count > 0)
-            return meleeWeapons;
+        if (weapons.Count > 0)
+            return weapons;
 
         // Prio 2: gloves
         NwItem? armItem = creature.GetItemInSlot(InventorySlot.Arms);
@@ -147,6 +147,9 @@ public static class WeaponBuffUtils
 
         return creatureWeapons;
     }
+
+    private static bool IsAllowedWeapon(NwItem item, bool allowRanged) =>
+        IsMeleeWeapon(item) || allowRanged && item.BaseItem.Category == BaseItemCategory.Ranged;
 
     public static bool IsMeleeWeapon(NwItem item) =>
         item.BaseItem.Category == BaseItemCategory.Melee
