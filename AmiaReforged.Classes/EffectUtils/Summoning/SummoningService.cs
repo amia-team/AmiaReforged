@@ -3,7 +3,7 @@ using AmiaReforged.Classes.Spells;
 using Anvil.API;
 using NWN.Core.NWNX;
 
-namespace AmiaReforged.Classes.EffectUtils;
+namespace AmiaReforged.Classes.EffectUtils.Summoning;
 
 public static class SummoningService
 {

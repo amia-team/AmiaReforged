@@ -3,7 +3,7 @@ using Anvil.API;
 using NWN.Core.NWNX;
 using static NWN.Core.NWScript;
 
-namespace AmiaReforged.Classes.EffectUtils;
+namespace AmiaReforged.Classes.EffectUtils.Summoning;
 
 public static class SummonUtility
 {
