@@ -63,7 +63,7 @@ Source: [diagrams/subsystems-class.mmd](diagrams/subsystems-class.mmd).
 | Regions | [`IRegionSubsystem`](../Subsystems/IRegionSubsystem.cs) | [Subsystems/Regions/](../Subsystems/Regions/) | Regional groupings of areas & regional effects. |
 | Traits | [`ITraitSubsystem`](../Subsystems/ITraitSubsystem.cs) | [Subsystems/Traits/](../Subsystems/Traits/) | Character traits and their effects. |
 | Items | [`IItemSubsystem`](../Subsystems/IItemSubsystem.cs) | [Subsystems/Items/](../Subsystems/Items/) | Item definitions, blueprints, properties. |
-| Codex | [`ICodexSubsystem`](../Subsystems/ICodexSubsystem.cs) | [Subsystems/Codex/](../Subsystems/Codex/) | In-world knowledge / lore entries. |
+| Codex | [`ICodexSubsystem`](../Subsystems/ICodexSubsystem.cs) | [Subsystems/Codex/](../Subsystems/Codex/) | Player journal, quest tracking, lore/knowledge, reputation, notes, traits, dynamic quests. [Detailed status](codex.md). |
 | Interactions | [`IInteractionSubsystem`](../Subsystems/IInteractionSubsystem.cs) | [Subsystems/Interactions/](../Subsystems/Interactions/) | Generic interaction framework (harvesting, prospecting, etc.). |
 | Dialogue | [`IDialogueSubsystem`](../Subsystems/IDialogueSubsystem.cs) | [Subsystems/Dialogue/](../Subsystems/Dialogue/) | NPC dialogue trees, runtime conversations. |
 
@@ -154,7 +154,7 @@ Source: [diagrams/subsystems-class.mmd](diagrams/subsystems-class.mmd).
 | `Regions` | [`IRegionSubsystem`](../Subsystems/IRegionSubsystem.cs) | Regions / area grouping / regional effects. |
 | `Traits` | [`ITraitSubsystem`](../Subsystems/ITraitSubsystem.cs) | Character traits and trait effects. |
 | `Items` | [`IItemSubsystem`](../Subsystems/IItemSubsystem.cs) | Item definitions, blueprints, and property lookups. |
-| `Codex` | [`ICodexSubsystem`](../Subsystems/ICodexSubsystem.cs) | Knowledge / lore catalogue. |
+| `Codex` | [`ICodexSubsystem`](../Subsystems/ICodexSubsystem.cs) | Journal, quests, lore, reputation, notes, traits, dynamic quests. [Details](codex.md). |
 | `Interactions` | [`IInteractionSubsystem`](../Subsystems/IInteractionSubsystem.cs) | Generic interaction framework (harvesting, prospecting, …). |
 | `Dialogue` | [`IDialogueSubsystem`](../Subsystems/IDialogueSubsystem.cs) | NPC dialogue trees and runtime conversations. |
 
@@ -167,7 +167,7 @@ Subsystems/
 ├── AreaGraph/            # Area connectivity graph
 ├── AreaPersistence/      # Persistent area state
 ├── Characters/           # Character entities, repositories
-├── Codex/                # Lore entries
+├── Codex/                # Journal, quests, lore, reputation, notes, traits
 ├── Dialogue/             # Dialogue trees
 ├── Economy/              # Banking, Storage, Shops + facades
 ├── Harvesting/           # Resource gathering
