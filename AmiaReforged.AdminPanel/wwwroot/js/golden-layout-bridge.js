@@ -344,11 +344,15 @@ function handleZIndex(inst, container, defaultZIndex) {
 export function waitForContainerReady(containerId, timeoutMs = 2000) {
     return new Promise((resolve) => {
         const start = Date.now();
+        console.log(`[GL Bridge] waitForContainerReady: polling #${containerId} (timeout=${timeoutMs}ms)`);
         function check() {
             const el = document.getElementById(containerId);
             if (el && el.clientHeight > 0 && el.clientWidth > 0) {
+                console.log(`[GL Bridge] waitForContainerReady: #${containerId} ready (${el.clientWidth}x${el.clientHeight}) after ${Date.now() - start}ms`);
                 resolve();
             } else if (Date.now() - start > timeoutMs) {
+                const dims = el ? `${el.clientWidth}x${el.clientHeight}` : 'not found';
+                console.warn(`[GL Bridge] waitForContainerReady: #${containerId} TIMEOUT after ${Date.now() - start}ms (dims=${dims})`);
                 resolve(); // resolve anyway, caller handles the error
             } else {
                 requestAnimationFrame(check);

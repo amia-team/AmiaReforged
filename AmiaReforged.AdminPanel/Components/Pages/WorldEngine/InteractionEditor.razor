@@ -495,6 +495,7 @@
     /// <summary>Open the editor for a new interaction.</summary>
     public async Task OpenCreate()
     {
+        Logger.LogInformation("[IE] OpenCreate called. Industries available: {Count}", AvailableIndustries.Count);
         _isCreating = true;
         _editItem = new InteractionDefinitionDto
         {
@@ -512,13 +513,16 @@
         _error = null;
         _isOpen = true;
         StateHasChanged();
+        Logger.LogInformation("[IE] OpenCreate: _isOpen=true, waiting 50ms for DOM render...");
         await Task.Delay(50); // Let DOM render the GL host and panels
+        Logger.LogInformation("[IE] OpenCreate: calling InitLayout()");
         await InitLayout();
     }
 
     /// <summary>Open the editor for an existing interaction.</summary>
     public async Task OpenEdit(InteractionDefinitionDto item)
     {
+        Logger.LogInformation("[IE] OpenEdit called for tag={Tag}. Industries available: {Count}", item.Tag, AvailableIndustries.Count);
         _isCreating = false;
         _editItem = DeepCopy(item);
         _availableIndustries = AvailableIndustries;
@@ -526,7 +530,9 @@
         _error = null;
         _isOpen = true;
         StateHasChanged();
+        Logger.LogInformation("[IE] OpenEdit: _isOpen=true, waiting 50ms for DOM render...");
         await Task.Delay(50);
+        Logger.LogInformation("[IE] OpenEdit: calling InitLayout()");
         await InitLayout();
         await LoadInteractionScripts(item.Tag);
     }
@@ -539,26 +545,36 @@
     {
         try
         {
+            Logger.LogInformation("[IE] InitLayout: importing GL bridge...");
             _bridgeModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/golden-layout-bridge.js");
             _dotNetRef ??= DotNetObjectReference.Create(this);
 
             string layoutConfig = BuildDefaultLayoutConfig();
+            Logger.LogInformation("[IE] InitLayout: calling GL bridge init(instanceId={Id}, containerId=gl-container)", GlInstanceId);
             await _bridgeModule.InvokeVoidAsync("init", GlInstanceId, "gl-container", layoutConfig, _dotNetRef);
+            Logger.LogInformation("[IE] InitLayout: GL bridge init completed");
 
             // Load node catalog if needed
             if (_nodeCatalog.Count == 0)
             {
-                try { _nodeCatalog = await GlyphApi.GetNodeCatalogAsync(); }
+                try
+                {
+                    Logger.LogInformation("[IE] InitLayout: loading node catalog...");
+                    _nodeCatalog = await GlyphApi.GetNodeCatalogAsync();
+                    Logger.LogInformation("[IE] InitLayout: node catalog loaded, {Count} entries", _nodeCatalog.Count);
+                }
                 catch (Exception ex) { Logger.LogWarning(ex, "Failed to load node catalog"); }
             }
 
             // Wait for GL to position the canvas panel, then init the glyph editor
+            Logger.LogInformation("[IE] InitLayout: waiting for container 'interaction-glyph-canvas' to be ready...");
             await _bridgeModule.InvokeVoidAsync("waitForContainerReady", "interaction-glyph-canvas", 2000);
+            Logger.LogInformation("[IE] InitLayout: container ready, calling InitScriptEditor()");
             await InitScriptEditor();
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Failed to initialize Golden Layout");
+            Logger.LogError(ex, "[IE] InitLayout FAILED");
             _error = "Layout initialization failed. Try closing and reopening.";
         }
     }
@@ -775,8 +791,14 @@
     {
         try
         {
+            Logger.LogInformation("[IE] InitScriptEditor: importing glyph-editor.js...");
             _scriptEditorModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js");
             _dotNetRef ??= DotNetObjectReference.Create(this);
+
+            // Check canvas container dimensions before init
+            int[] dims = await _scriptEditorModule.InvokeAsync<int[]>("eval",
+                "[document.getElementById('interaction-glyph-canvas')?.clientWidth ?? 0, document.getElementById('interaction-glyph-canvas')?.clientHeight ?? 0]");
+            Logger.LogInformation("[IE] InitScriptEditor: canvas container dimensions = {W}x{H}", dims[0], dims[1]);
 
             string catalogJson = JsonSerializer.Serialize(_nodeCatalog);
             string graphJson = _pipelineGraphJson;
@@ -786,13 +808,15 @@
                 graphJson = BuildEmptyPipelineGraphJson();
             }
 
+            Logger.LogInformation("[IE] InitScriptEditor: calling initGlyphEditor(container=interaction-glyph-canvas, catalogSize={Size})", _nodeCatalog.Count);
             await _scriptEditorModule.InvokeVoidAsync("initGlyphEditor", "interaction-glyph-canvas", catalogJson, graphJson, _dotNetRef);
             _scriptEditorReady = true;
+            Logger.LogInformation("[IE] InitScriptEditor: glyph editor initialized successfully");
             StateHasChanged();
         }
         catch (Exception ex)
         {
-            Logger.LogWarning(ex, "Script editor init failed");
+            Logger.LogWarning(ex, "[IE] InitScriptEditor FAILED");
             _scriptEditorReady = false;
         }
     }
