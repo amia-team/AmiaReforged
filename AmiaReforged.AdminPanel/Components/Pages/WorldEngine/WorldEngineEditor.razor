@@ -882,6 +882,15 @@
         {
             _listSearch = "";
             await LoadEntityList(reset: true);
+
+            // Pre-load industries for InteractionEditor
+            try
+            {
+                PagedResult<IndustryDefinitionDto> indResult = await IndustryApi.GetAllAsync(null, 1, 200);
+                _interactionEditorIndustries = indResult.Items;
+            }
+            catch { _interactionEditorIndustries = []; }
+
             StateHasChanged();
         });
     }
@@ -2379,24 +2388,9 @@
         _interactionEditorOpen = true;
         _interactionEditorIsCreating = true;
         _interactionEditorTag = null;
-        StateHasChanged();
 
-        try
-        {
-            PagedResult<IndustryDefinitionDto> indResult = await IndustryApi.GetAllAsync(null, 1, 200);
-            _interactionEditorIndustries = indResult.Items;
-            StateHasChanged();
-            await Task.Delay(50);
-
-            if (_interactionEditorRef != null)
-                await _interactionEditorRef.OpenCreate();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Failed to open new interaction editor");
-            _interactionEditorOpen = false;
-            StateHasChanged();
-        }
+        if (_interactionEditorRef != null)
+            await _interactionEditorRef.OpenCreate();
     }
 
     private async Task OpenInteractionEditor(string interactionTag)
@@ -2407,26 +2401,16 @@
         _interactionEditorOpen = true;
         _interactionEditorIsCreating = false;
         _interactionEditorTag = interactionTag;
-        StateHasChanged();
 
         try
         {
-            Task<InteractionDefinitionDto?> interactionTask = InteractionApi.GetByTagAsync(interactionTag);
-            Task<PagedResult<IndustryDefinitionDto>> industriesTask = IndustryApi.GetAllAsync(null, 1, 200);
-            await Task.WhenAll(interactionTask, industriesTask);
-
-            InteractionDefinitionDto? loaded = await interactionTask;
+            InteractionDefinitionDto? loaded = await InteractionApi.GetByTagAsync(interactionTag);
             if (loaded == null)
             {
                 _interactionEditorOpen = false;
                 StateHasChanged();
                 return;
             }
-
-            PagedResult<IndustryDefinitionDto> indResult = await industriesTask;
-            _interactionEditorIndustries = indResult.Items;
-            StateHasChanged();
-            await Task.Delay(50);
 
             if (_interactionEditorRef != null)
                 await _interactionEditorRef.OpenEdit(loaded);

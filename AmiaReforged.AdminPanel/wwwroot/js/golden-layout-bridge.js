@@ -332,3 +332,28 @@ function handleZIndex(inst, container, defaultZIndex) {
     if (!entry) return;
     entry.element.style.zIndex = defaultZIndex;
 }
+
+/**
+ * Poll a container element until it has non-zero dimensions, or timeout.
+ * Used by InteractionEditor to wait for GL to position the canvas panel
+ * before initializing the glyph editor.
+ * @param {string} containerId  DOM id of the element to wait for
+ * @param {number} timeoutMs    Max wait time in ms (default 2000)
+ * @returns {Promise<void>}
+ */
+export function waitForContainerReady(containerId, timeoutMs = 2000) {
+    return new Promise((resolve) => {
+        const start = Date.now();
+        function check() {
+            const el = document.getElementById(containerId);
+            if (el && el.clientHeight > 0 && el.clientWidth > 0) {
+                resolve();
+            } else if (Date.now() - start > timeoutMs) {
+                resolve(); // resolve anyway, caller handles the error
+            } else {
+                requestAnimationFrame(check);
+            }
+        }
+        requestAnimationFrame(check);
+    });
+}

@@ -553,7 +553,7 @@
             }
 
             // Wait for GL to position the canvas panel, then init the glyph editor
-            await Task.Delay(100);
+            await _bridgeModule.InvokeVoidAsync("waitForContainerReady", "interaction-glyph-canvas", 2000);
             await InitScriptEditor();
         }
         catch (Exception ex)
@@ -702,7 +702,7 @@
             await _bridgeModule.InvokeVoidAsync("loadLayout", GlInstanceId, layoutConfig);
 
             // Re-init the canvas editor since GL will unbind/rebind panels
-            await Task.Delay(100);
+            await _bridgeModule.InvokeVoidAsync("waitForContainerReady", "interaction-glyph-canvas", 2000);
             await InitScriptEditor();
         }
     }
