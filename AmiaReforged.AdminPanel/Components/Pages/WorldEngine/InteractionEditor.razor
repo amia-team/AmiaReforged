@@ -752,13 +752,19 @@
         }
     }
 
-    private async Task Cancel()
+    /// <summary>Force-close the editor from the parent (e.g. when switching activity bar tabs).</summary>
+    public async Task Close()
     {
         await DestroyLayout();
         _isOpen = false;
         _error = null;
         StateHasChanged();
         await OnClosed.InvokeAsync(new InteractionEditorResult { Saved = false });
+    }
+
+    private async Task Cancel()
+    {
+        await Close();
     }
 
     // ═══════════════════════════════════════════════════════════════════

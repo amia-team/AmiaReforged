@@ -17,3 +17,8 @@ public enum WorldEngineEntityType
     Coinhouses,
     Dialogues,
 }
+
+/// <summary>
+/// Lightweight display model for the entity list panel.
+/// </summary>
+public sealed record EntityListItem(string Key, string DisplayName, WorldEngineEntityType EntityType);

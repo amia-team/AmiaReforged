@@ -1,0 +1,57 @@
+@using AmiaReforged.AdminPanel.Models
+
+<div class="we-editor__list-search">
+    <input type="text" class="form-control form-control-sm"
+           placeholder="Search…"
+           value="@Search"
+           @oninput="OnSearchInput" />
+</div>
+
+<div class="we-editor__list-body">
+    @if (Loading)
+    {
+        <p class="text-muted small p-2"><em>Loading…</em></p>
+    }
+    else if (!string.IsNullOrEmpty(Error))
+    {
+        <p class="text-danger small p-2">@Error</p>
+    }
+    else if (Items.Count == 0)
+    {
+        <p class="text-muted small p-2">No entities found.</p>
+    }
+    else
+    {
+        @foreach (EntityListItem item in Items)
+        {
+            <button class="we-editor__list-item" @onclick="() => OnItemClick.InvokeAsync(item)">
+                <span class="we-editor__list-item-name">@item.DisplayName</span>
+                <span class="we-editor__list-item-key">@item.Key</span>
+            </button>
+        }
+
+        @if (HasMore)
+        {
+            <button class="we-editor__list-load-more" @onclick="() => OnLoadMore.InvokeAsync()">
+                Load more…
+            </button>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<EntityListItem> Items { get; set; } = [];
+    [Parameter] public bool HasMore { get; set; }
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public string Search { get; set; } = "";
+    [Parameter] public EventCallback<string> OnSearch { get; set; }
+    [Parameter] public EventCallback OnLoadMore { get; set; }
+    [Parameter] public EventCallback<EntityListItem> OnItemClick { get; set; }
+
+    private async Task OnSearchInput(ChangeEventArgs e)
+    {
+        string value = e.Value?.ToString() ?? "";
+        await OnSearch.InvokeAsync(value);
+    }
+}

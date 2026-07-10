@@ -1,19 +1,35 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace AmiaReforged.AdminPanel.Models;
 
 // ==================== Item Blueprint DTOs ====================
 
 public class ItemBlueprintDto
 {
+    [Required]
+    [StringLength(128)]
     public string ResRef { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(128)]
     public string ItemTag { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(256)]
     public string Name { get; set; } = string.Empty;
+
+    [StringLength(4000)]
     public string? Description { get; set; }
+
     public string[]? Materials { get; set; }
     public string? ItemForm { get; set; }
     public int BaseItemType { get; set; }
     public AppearanceDataDto? Appearance { get; set; }
     public List<LocalVariableDto>? LocalVariables { get; set; }
+
+    [Range(0, int.MaxValue)]
     public int BaseValue { get; set; } = 1;
+
     public int WeightIncreaseConstant { get; set; } = -1;
     public List<MaterialVariantDto>? Variants { get; set; }
     public bool IsTemplate { get; set; }
@@ -144,8 +160,14 @@ public class AreaGraphDto
 
 public class RegionDefinitionDto
 {
+    [Required]
+    [StringLength(128)]
     public string Tag { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(256)]
     public string Name { get; set; } = string.Empty;
+
     public List<AreaDefinitionDto> Areas { get; set; } = new();
     public ChaosStateDto? DefaultChaos { get; set; }
 }
@@ -194,9 +216,17 @@ public class ChaosStateDto
 
 public class LoreDefinitionDto
 {
+    [Required]
+    [StringLength(128)]
     public string LoreId { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(256)]
     public string Title { get; set; } = string.Empty;
+
+    [Required]
     public string Content { get; set; } = string.Empty;
+
     public int Category { get; set; }
     public string? CategoryName { get; set; }
     public int Tier { get; set; }
@@ -335,8 +365,15 @@ public class ProficiencyRewardDto
 
 public class QuestDefinitionDto
 {
+    [Required]
+    [StringLength(128)]
     public string QuestId { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(256)]
     public string Title { get; set; } = string.Empty;
+
+    [Required]
     public string Description { get; set; } = string.Empty;
 
     private List<QuestStageDto>? _stages;
@@ -357,9 +394,18 @@ public class QuestDefinitionDto
 
 public class TraitDefinitionDto
 {
+    [Required]
+    [StringLength(128)]
     public string Tag { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(256)]
     public string Name { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(4000)]
     public string Description { get; set; } = string.Empty;
+
     public int PointCost { get; set; }
     public string Category { get; set; } = "Background";
     public string DeathBehavior { get; set; } = "Persist";
@@ -394,8 +440,14 @@ public class EnumValueDto
 
 public class IndustryDefinitionDto
 {
+    [Required]
+    [StringLength(128)]
     public string Tag { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(256)]
     public string Name { get; set; } = string.Empty;
+
     public List<IndustryKnowledgeDto> Knowledge { get; set; } = [];
     public List<IndustryRecipeDto> Recipes { get; set; } = [];
 }
@@ -474,9 +526,17 @@ public class IndustryProductDto
 public class OrganizationDto
 {
     public Guid Id { get; set; }
+
+    [Required]
+    [StringLength(256)]
     public string Name { get; set; } = string.Empty;
+
+    [StringLength(4000)]
     public string? Description { get; set; }
+
+    [Required]
     public string Type { get; set; } = string.Empty;
+
     public Guid? ParentOrganizationId { get; set; }
 }
 
@@ -511,9 +571,17 @@ public class AddMemberRequestDto
 
 public class WorkstationDefinitionDto
 {
+    [Required]
+    [StringLength(128)]
     public string Tag { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(256)]
     public string Name { get; set; } = string.Empty;
+
+    [StringLength(4000)]
     public string? Description { get; set; }
+
     public string? PlaceableResRef { get; set; }
     public int? AppearanceId { get; set; }
     public List<string> SupportedIndustries { get; set; } = [];
@@ -524,10 +592,17 @@ public class WorkstationDefinitionDto
 public class CoinhouseDto
 {
     public long Id { get; set; }
+
+    [Required]
+    [StringLength(128)]
     public string Tag { get; set; } = string.Empty;
+
     public int Settlement { get; set; }
     public Guid EngineId { get; set; }
+
+    [Range(0, int.MaxValue)]
     public int StoredGold { get; set; }
+
     public string? PersonaIdString { get; set; }
     public int AccountCount { get; set; }
     public int TotalDeposits { get; set; }
@@ -538,8 +613,15 @@ public class CoinhouseDto
 
 public class InteractionDefinitionDto
 {
+    [Required]
+    [StringLength(128)]
     public string Tag { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(256)]
     public string Name { get; set; } = string.Empty;
+
+    [StringLength(4000)]
     public string? Description { get; set; }
     public string TargetMode { get; set; } = "Trigger";
     public int BaseRounds { get; set; } = 4;
@@ -661,9 +743,17 @@ public class KnowledgeCapProfileDto
 
 public class DialogueTreeDto
 {
+    [Required]
+    [StringLength(128)]
     public string DialogueTreeId { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(256)]
     public string Title { get; set; } = string.Empty;
+
+    [Required]
     public string Description { get; set; } = string.Empty;
+
     public string? RootNodeId { get; set; }
     public string? SpeakerTag { get; set; }
     public List<DialogueNodeDto> Nodes { get; set; } = [];

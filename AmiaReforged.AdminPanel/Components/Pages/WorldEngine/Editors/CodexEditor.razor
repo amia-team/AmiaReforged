@@ -1,0 +1,1684 @@
+@using AmiaReforged.AdminPanel.Models
+@using AmiaReforged.AdminPanel.Services
+@using System.Text.Json
+@inject LoreApiService LoreApi
+@inject QuestApiService QuestApi
+@inject IndustryApiService IndustryApi
+@inject ILogger<CodexEditor> Logger
+@inject IJSRuntime JS
+
+@* ══════ Codex Editor GL Mode ══════ *@
+<div class="we-editor__codex-editor-wrap">
+    @* ── Toolbar ── *@
+    <div class="we-ce-toolbar">
+        <h5 class="we-ce-toolbar__title">
+            @if (_isCreating)
+            {
+                @($"New {_subType}")
+            }
+            else
+            {
+                @(_subType == CodexSubType.Lore ? _loreItem.Title : _questItem.Title)
+            }
+        </h5>
+        <span class="badge" style="background:var(--bg-input);color:var(--text-secondary);font-size:0.75rem;font-weight:normal">
+            @(_subType == CodexSubType.Lore ? "Lore" : "Quest")
+        </span>
+        <div class="we-ce-toolbar__divider"></div>
+        @* View menu *@
+        <div class="dropdown" style="position:relative">
+            <button class="btn btn-sm btn-outline-secondary" style="font-size:0.72rem;padding:2px 8px" @onclick="CeToggleViewMenu">View ▾</button>
+            @if (_showViewMenu)
+            {
+                <div style="position:absolute;top:100%;right:0;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:4px;padding:4px 0;z-index:1060;min-width:160px;box-shadow:0 4px 12px rgba(0,0,0,0.4)">
+                    @foreach (KeyValuePair<string, string> kv in PanelTitles)
+                    {
+                        bool isOpen = _openPanels.Contains(kv.Key);
+                        <button style="display:block;width:100%;text-align:left;background:none;border:none;padding:4px 12px;font-size:0.8rem;color:var(--text-primary);cursor:pointer"
+                                @onclick="() => CeTogglePanel(kv.Key)" disabled="@isOpen">
+                            @(isOpen ? "✓ " : "  ")@kv.Value
+                        </button>
+                    }
+                    <div style="border-top:1px solid var(--border-subtle);margin:4px 0"></div>
+                    <button style="display:block;width:100%;text-align:left;background:none;border:none;padding:4px 12px;font-size:0.8rem;color:var(--text-secondary);cursor:pointer"
+                            @onclick="CeResetLayout">
+                        Reset Layout
+                    </button>
+                </div>
+            }
+        </div>
+        <div style="flex:1"></div>
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <span style="color:var(--danger);font-size:0.8rem;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="@_error">⚠ @_error</span>
+        }
+        @if (!string.IsNullOrEmpty(_success))
+        {
+            <span style="color:var(--success, #2ecc71);font-size:0.8rem">✓ @_success</span>
+        }
+        <button class="btn btn-sm btn-secondary" @onclick="CeCancel">Cancel</button>
+        <button class="btn btn-sm btn-primary" @onclick="CeSave" disabled="@_isSaving">
+            @(_isSaving ? "Saving…" : "Save")
+        </button>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="we-ce-loading-overlay">
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            <span>Loading codex editor…</span>
+        </div>
+    }
+    else if (_editorError != null)
+    {
+        <div class="we-editor__tab-error">
+            <span class="bi bi-exclamation-triangle me-1"></span> @_editorError
+        </div>
+    }
+
+    @* ── Layout area: position:relative wrapper for GL + panels ── *@
+    <div class="we-ce-layout-area">
+        @* GL container *@
+        <div id="we-codex-gl-container" class="we-ce-gl-host"></div>
+
+        @* ── Pre-rendered Panel: Entity List ── *@
+        <div id="bl-panel-ce-list" class="we-editor__gl-panel" style="display:none">
+            <div style="background:var(--bg-card);height:100%;display:flex;flex-direction:column">
+                <div style="padding:8px 12px;border-bottom:1px solid var(--border-subtle);flex-shrink:0;display:flex;gap:6px;align-items:center">
+                    <select class="form-control form-control-sm" style="font-size:0.8rem;flex:0 0 auto;width:auto"
+                            @bind="_subType" @bind:after="CeOnSubTypeChanged">
+                        <option value="@CodexSubType.Lore">Lore</option>
+                        <option value="@CodexSubType.Quest">Quests</option>
+                    </select>
+                    <input type="text" class="form-control form-control-sm" placeholder="Search..."
+                           @bind="_listSearch" @bind:event="oninput" @bind:after="CeSearchChanged"
+                           style="font-size:0.8rem;flex:1" />
+                </div>
+                <div style="flex:1;overflow-y:auto">
+                    @if (_listLoading)
+                    {
+                        <div style="padding:12px;text-align:center;color:var(--text-secondary)">
+                            <span class="spinner-border spinner-border-sm me-1"></span> Loading…
+                        </div>
+                    }
+                    else if (_listItems.Count == 0)
+                    {
+                        <div style="padding:12px;color:var(--text-secondary);font-size:0.8rem;text-align:center">
+                            No entries found.
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (CeListEntry entry in _listItems)
+                        {
+                            <div style="padding:6px 12px;border-bottom:1px solid var(--border-subtle);cursor:pointer;font-size:0.82rem"
+                                 class="@(entry.IsSelected ? "bg-primary bg-opacity-25" : "")"
+                                 @onclick="() => CeSelectListItem(entry)">
+                                <span style="color:var(--text-primary)">@entry.Title</span>
+                                @if (!string.IsNullOrEmpty(entry.SubLabel))
+                                {
+                                    <br /><small style="color:var(--text-secondary)">@entry.SubLabel</small>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* ── Pre-rendered Panel: Form / Editor ── *@
+        <div id="bl-panel-ce-form" class="we-editor__gl-panel" style="display:none">
+            <div style="background:var(--bg-card);padding:12px;min-height:100%;overflow-y:auto">
+                @if (_subType == CodexSubType.Lore)
+                {
+                    @* Lore form *@
+                    <h5 style="margin:0 0 10px 0;font-size:0.9rem">Lore Entry</h5>
+
+                    <div class="form-group" style="margin-bottom:8px">
+                        <label style="font-size:0.8rem">Lore ID</label>
+                        <input class="form-control form-control-sm" @bind="_loreItem.LoreId" disabled="@(!_isCreating)" placeholder="e.g. lore_ancient_ruins" />
+                    </div>
+                    <div class="form-group" style="margin-bottom:8px">
+                        <label style="font-size:0.8rem">Title</label>
+                        <input class="form-control form-control-sm" @bind="_loreItem.Title" placeholder="e.g. The Ancient Ruins" />
+                    </div>
+                    <div class="form-group" style="margin-bottom:8px">
+                        <label style="font-size:0.8rem">Content</label>
+                        <textarea class="form-control form-control-sm" rows="8" @bind="_loreItem.Content" placeholder="Lore content..."></textarea>
+                    </div>
+                    <div style="display:flex;gap:8px;margin-bottom:8px">
+                        <div class="form-group" style="flex:1">
+                            <label style="font-size:0.8rem">Category</label>
+                            <select class="form-control form-control-sm" @bind="_loreItem.Category">
+                                <option value="0">General</option>
+                                <option value="1">History</option>
+                                <option value="2">Geography</option>
+                                <option value="3">Religion</option>
+                                <option value="4">Arcana</option>
+                                <option value="5">Nature</option>
+                                <option value="6">Faction</option>
+                                <option value="7">Character</option>
+                                <option value="8">Item</option>
+                                <option value="9">Quest</option>
+                                <option value="10">Miscellaneous</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex:1">
+                            <label style="font-size:0.8rem">Tier</label>
+                            <select class="form-control form-control-sm" @bind="_loreItem.Tier">
+                                <option value="0">Common</option>
+                                <option value="1">Uncommon</option>
+                                <option value="2">Rare</option>
+                                <option value="3">Legendary</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:8px">
+                        <label style="font-size:0.8rem">Keywords</label>
+                        <input class="form-control form-control-sm" @bind="_loreItem.Keywords" placeholder="Comma-separated keywords" />
+                    </div>
+                    <div class="form-check" style="margin-bottom:8px">
+                        <input type="checkbox" class="form-check-input" id="ceLoreAlwaysAvailable" @bind="_loreItem.IsAlwaysAvailable" />
+                        <label class="form-check-label" for="ceLoreAlwaysAvailable" style="font-size:0.8rem">Always Available</label>
+                    </div>
+                }
+                else
+                {
+                    @* Quest form *@
+                    <h5 style="margin:0 0 10px 0;font-size:0.9rem">Quest Entry</h5>
+
+                    <div class="form-group" style="margin-bottom:8px">
+                        <label style="font-size:0.8rem">Quest ID</label>
+                        <input class="form-control form-control-sm" @bind="_questItem.QuestId" disabled="@(!_isCreating)" placeholder="e.g. quest_lost_artifact" />
+                    </div>
+                    <div class="form-group" style="margin-bottom:8px">
+                        <label style="font-size:0.8rem">Title</label>
+                        <input class="form-control form-control-sm" @bind="_questItem.Title" placeholder="e.g. The Lost Artifact" />
+                    </div>
+                    <div class="form-group" style="margin-bottom:8px">
+                        <label style="font-size:0.8rem">Description</label>
+                        <textarea class="form-control form-control-sm" rows="4" @bind="_questItem.Description" placeholder="Quest description..."></textarea>
+                    </div>
+
+                    @* ── Quest Stages ── *@
+                    <div style="margin-bottom:8px">
+                        <label style="font-size:0.8rem;font-weight:600">Stages</label>
+                        @if (_questItem.Stages.Count == 0)
+                        {
+                            <div style="padding:8px;color:var(--text-secondary);font-size:0.8rem;text-align:center;border:1px dashed var(--border-subtle);border-radius:4px;margin-top:4px">
+                                No stages defined. Add a stage to begin.
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (QuestStageDto stage in _questItem.Stages.OrderBy(s => s.StageId))
+                            {
+                                int sid = stage.StageId;
+                                bool isExpanded = _expandedStageIds.Contains(sid);
+                                <div style="border:1px solid var(--border-subtle);border-radius:4px;margin-top:4px;overflow:hidden">
+                                    @* Stage header *@
+                                    <div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--bg-input);cursor:pointer"
+                                         @onclick="() => CeToggleStageExpand(sid)">
+                                        <span style="font-size:0.75rem;font-weight:700;color:var(--accent, #c9a84c);min-width:60px">Stage @sid</span>
+                                        @if (!string.IsNullOrEmpty(stage.QuestState))
+                                        {
+                                            string badgeBg = stage.QuestState switch
+                                            {
+                                                "Completed" => "var(--success, #2ecc71)",
+                                                "Failed" => "var(--danger, #e74c3c)",
+                                                "Abandoned" or "Expired" => "var(--warning, #f39c12)",
+                                                "InProgress" => "var(--info, #3498db)",
+                                                _ => "var(--text-secondary)"
+                                            };
+                                            <span class="badge" style="background:@badgeBg;font-size:0.65rem;padding:1px 5px">@stage.QuestState</span>
+                                        }
+                                        else if (stage.IsCompletionStage)
+                                        {
+                                            <span class="badge" style="background:var(--success, #2ecc71);font-size:0.65rem;padding:1px 5px">Closes Quest</span>
+                                        }
+                                        <span style="flex:1;font-size:0.78rem;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                                            @(string.IsNullOrWhiteSpace(stage.JournalText) ? "(no text)" : stage.JournalText.Length > 60 ? stage.JournalText[..60] + "…" : stage.JournalText)
+                                        </span>
+                                        <span style="font-size:0.7rem;color:var(--text-secondary)">@(stage.Hints.Count > 0 ? $"{stage.Hints.Count} hint(s)" : "")</span>
+                                        <span style="font-size:0.7rem">@(isExpanded ? "▲" : "▼")</span>
+                                        <button class="btn btn-sm btn-outline-danger" style="font-size:0.65rem;padding:0 5px;line-height:1.4"
+                                                @onclick="() => CeRemoveStage(sid)" @onclick:stopPropagation="true">×</button>
+                                    </div>
+                                    @* Stage body (expanded) *@
+                                    @if (isExpanded)
+                                    {
+                                        <div style="padding:8px;display:flex;flex-direction:column;gap:6px">
+                                            <div class="form-group">
+                                                <label style="font-size:0.75rem">Journal Text</label>
+                                                <textarea class="form-control form-control-sm" rows="3"
+                                                          value="@stage.JournalText"
+                                                          @onchange="e => stage.JournalText = e.Value?.ToString() ?? string.Empty"
+                                                          placeholder="Text shown in the player's journal at this stage…"></textarea>
+                                            </div>
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input" id="ceStageComplete_@sid"
+                                                       checked="@stage.IsCompletionStage"
+                                                       @onchange="e => stage.IsCompletionStage = (bool)(e.Value ?? false)" />
+                                                <label class="form-check-label" for="ceStageComplete_@sid" style="font-size:0.78rem">Completion Stage (closes quest) — legacy, prefer Quest State below</label>
+                                            </div>
+                                            <div class="form-group" style="margin-top:4px">
+                                                <label style="font-size:0.75rem">Quest State</label>
+                                                <select class="form-select form-select-sm" style="font-size:0.78rem"
+                                                        value="@(stage.QuestState ?? "")"
+                                                        @onchange="@(e => stage.QuestState = string.IsNullOrEmpty(e.Value?.ToString()) ? null : e.Value!.ToString())">
+                                                    <option value="">None (no state change)</option>
+                                                    <option value="Discovered">Discovered</option>
+                                                    <option value="InProgress">In Progress</option>
+                                                    <option value="Completed">Completed</option>
+                                                    <option value="Failed">Failed</option>
+                                                    <option value="Abandoned">Abandoned</option>
+                                                    <option value="Expired">Expired</option>
+                                                </select>
+                                                <span style="font-size:0.68rem;color:var(--text-secondary);margin-top:2px">
+                                                    Sets the quest state when the player reaches this stage.
+                                                </span>
+                                            </div>
+                                            @if (!stage.IsCompletionStage)
+                                            {
+                                                <div class="form-group" style="margin-top:4px">
+                                                    <label style="font-size:0.75rem">Next Stage Override</label>
+                                                    <select class="form-select form-select-sm" style="font-size:0.78rem"
+                                                            value="@(stage.NextStageId?.ToString() ?? "")"
+                                                            @onchange="@(e => stage.NextStageId = string.IsNullOrEmpty(e.Value?.ToString()) ? null : int.Parse(e.Value!.ToString()!))">
+                                                        <option value="">Auto</option>
+                                                        @foreach (QuestStageDto otherStage in _questItem.Stages.OrderBy(s => s.StageId).Where(s => s.StageId != sid))
+                                                        {
+                                                            <option value="@otherStage.StageId">Stage @otherStage.StageId</option>
+                                                        }
+                                                    </select>
+                                                    @{ int? fallback = CeComputeFallbackStageId(stage); }
+                                                    <span style="font-size:0.68rem;color:var(--text-secondary);margin-top:2px">
+                                                        @if (stage.NextStageId.HasValue)
+                                                        {
+                                                            @:Explicit: advances to Stage @stage.NextStageId
+                                                        }
+                                                        else if (fallback.HasValue)
+                                                        {
+                                                            @:Falls back to Stage @fallback
+                                                        }
+                                                        else
+                                                        {
+                                                            @:Last stage — no further advancement
+                                                        }
+                                                    </span>
+                                                </div>
+                                            }
+                                            <div>
+                                                <label style="font-size:0.75rem;font-weight:600">Hints (@stage.Hints.Count)</label>
+                                                @for (int hi = 0; hi < stage.Hints.Count; hi++)
+                                                {
+                                                    int hIdx = hi;
+                                                    <div style="display:flex;gap:4px;margin-top:3px">
+                                                        <input class="form-control form-control-sm" style="flex:1;font-size:0.78rem"
+                                                               value="@stage.Hints[hIdx]"
+                                                               @onchange="e => stage.Hints[hIdx] = e.Value?.ToString() ?? string.Empty" />
+                                                        <button class="btn btn-sm btn-outline-danger" style="font-size:0.65rem;padding:0 5px"
+                                                                @onclick="() => CeRemoveHintFromStage(sid, hIdx)">×</button>
+                                                    </div>
+                                                }
+                                                <button class="btn btn-sm btn-outline-secondary" style="font-size:0.72rem;margin-top:4px"
+                                                        @onclick="() => CeAddHintToStage(sid)">+ Hint</button>
+                                            </div>
+
+                                            @* ── Objective Groups ── *@
+                                            <div style="margin-top:6px">
+                                                <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+                                                    <label style="font-size:0.75rem;font-weight:600;margin:0">Objective Groups (@stage.ObjectiveGroups.Count)</label>
+                                                    <button class="btn btn-sm btn-outline-primary" style="font-size:0.65rem;padding:0 6px;line-height:1.6"
+                                                            @onclick="() => CeAddObjectiveGroup(sid)">+ Group</button>
+                                                </div>
+                                                @if (stage.ObjectiveGroups.Count == 0)
+                                                {
+                                                    <div style="padding:6px;color:var(--text-secondary);font-size:0.75rem;text-align:center;border:1px dashed var(--border-subtle);border-radius:4px">
+                                                        No objectives. Stage advances on narrative triggers only.
+                                                    </div>
+                                                }
+                                                @for (int gi = 0; gi < stage.ObjectiveGroups.Count; gi++)
+                                                {
+                                                    int groupIdx = gi;
+                                                    ObjectiveGroupDto grp = stage.ObjectiveGroups[gi];
+                                                    string grpKey = $"{sid}_{gi}";
+                                                    bool grpExpanded = _expandedGroupKeys.Contains(grpKey);
+                                                    <div style="border:1px solid var(--border-subtle);border-radius:4px;margin-top:4px;background:var(--bg-card)">
+                                                        <div style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:rgba(201,168,76,0.08);cursor:pointer"
+                                                             @onclick="() => CeToggleGroupExpand(grpKey)">
+                                                            <span style="font-size:0.72rem;font-weight:600;color:var(--accent,#c9a84c)">Group @(gi + 1)</span>
+                                                            <span style="flex:1;font-size:0.72rem;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                                                                @(string.IsNullOrWhiteSpace(grp.DisplayName) ? "(unnamed)" : grp.DisplayName) — @grp.CompletionMode
+                                                            </span>
+                                                            <span style="font-size:0.68rem;color:var(--text-secondary)">@grp.Objectives.Count obj</span>
+                                                            <span style="font-size:0.68rem">@(grpExpanded ? "▲" : "▼")</span>
+                                                            <button class="btn btn-sm btn-outline-danger" style="font-size:0.6rem;padding:0 4px;line-height:1.3"
+                                                                    @onclick="() => CeRemoveObjectiveGroup(sid, groupIdx)" @onclick:stopPropagation="true">×</button>
+                                                        </div>
+                                                        @if (grpExpanded)
+                                                        {
+                                                            <div style="padding:6px 8px;display:flex;flex-direction:column;gap:5px">
+                                                                <div style="display:flex;gap:6px">
+                                                                    <div class="form-group" style="flex:1">
+                                                                        <label style="font-size:0.7rem">Group Name</label>
+                                                                        <input class="form-control form-control-sm" style="font-size:0.78rem"
+                                                                               value="@grp.DisplayName"
+                                                                               @onchange="e => grp.DisplayName = e.Value?.ToString() ?? string.Empty"
+                                                                               placeholder="e.g. Find the stolen artifacts" />
+                                                                    </div>
+                                                                    <div class="form-group" style="flex:0 0 120px">
+                                                                        <label style="font-size:0.7rem">Completion Mode</label>
+                                                                        <select class="form-select form-select-sm" style="font-size:0.78rem"
+                                                                                value="@grp.CompletionMode"
+                                                                                @onchange="@(e => grp.CompletionMode = e.Value?.ToString() ?? "All")">
+                                                                            <option value="All">All</option>
+                                                                            <option value="Any">Any</option>
+                                                                            <option value="Sequence">Sequence</option>
+                                                                        </select>
+                                                                    </div>
+                                                                    <div class="form-group" style="flex:0 0 150px">
+                                                                        <label style="font-size:0.7rem" title="Overrides stage-level Next Stage when this group completes first. Enables branching quest paths.">Branch Stage</label>
+                                                                        <select class="form-select form-select-sm" style="font-size:0.78rem"
+                                                                                value="@(grp.CompletionStageId?.ToString() ?? "")"
+                                                                                @onchange="@(e => grp.CompletionStageId = string.IsNullOrEmpty(e.Value?.ToString()) ? null : int.Parse(e.Value!.ToString()!))">
+                                                                            <option value="">None</option>
+                                                                            @foreach (QuestStageDto branchStage in _questItem.Stages.OrderBy(s => s.StageId).Where(s => s.StageId != sid))
+                                                                            {
+                                                                                <option value="@branchStage.StageId">Stage @branchStage.StageId</option>
+                                                                            }
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+
+                                                                @* ── Objectives list ── *@
+                                                                <div>
+                                                                    <label style="font-size:0.7rem;font-weight:600">Objectives (@grp.Objectives.Count)</label>
+                                                                    @for (int oi = 0; oi < grp.Objectives.Count; oi++)
+                                                                    {
+                                                                        int objIdx = oi;
+                                                                        ObjectiveDefinitionDto obj = grp.Objectives[oi];
+                                                                        string objKey = $"{grpKey}_{oi}";
+                                                                        bool objExpanded = _expandedObjectiveKeys.Contains(objKey);
+                                                                        <div style="border:1px solid var(--border-subtle);border-radius:3px;margin-top:3px;background:var(--bg-input)">
+                                                                            <div style="display:flex;align-items:center;gap:4px;padding:3px 6px;cursor:pointer"
+                                                                                 @onclick="() => CeToggleObjectiveExpand(objKey)">
+                                                                                <span class="badge" style="background:var(--accent,#c9a84c);font-size:0.6rem;padding:1px 4px">@obj.TypeTag</span>
+                                                                                <span style="flex:1;font-size:0.72rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                                                                                    @(string.IsNullOrWhiteSpace(obj.DisplayText) ? "(no text)" : obj.DisplayText)
+                                                                                </span>
+                                                                                @if (obj.RequiredCount > 1)
+                                                                                {
+                                                                                    <span style="font-size:0.65rem;color:var(--text-secondary)">×@obj.RequiredCount</span>
+                                                                                }
+                                                                                <span style="font-size:0.65rem">@(objExpanded ? "▲" : "▼")</span>
+                                                                                <button class="btn btn-sm btn-outline-danger" style="font-size:0.55rem;padding:0 3px;line-height:1.2"
+                                                                                        @onclick="() => CeRemoveObjective(sid, groupIdx, objIdx)" @onclick:stopPropagation="true">×</button>
+                                                                            </div>
+                                                                            @if (objExpanded)
+                                                                            {
+                                                                                <div style="padding:5px 6px;display:flex;flex-direction:column;gap:4px">
+                                                                                    <div style="display:flex;gap:4px">
+                                                                                        <div class="form-group" style="flex:0 0 130px">
+                                                                                            <label style="font-size:0.68rem">Type</label>
+                                                                                            <select class="form-select form-select-sm" style="font-size:0.75rem"
+                                                                                                    value="@obj.TypeTag"
+                                                                                                    @onchange="@(e => obj.TypeTag = e.Value?.ToString() ?? "kill")">
+                                                                                                <option value="kill">Kill</option>
+                                                                                                <option value="collect">Collect</option>
+                                                                                                <option value="reach_location">Reach Location</option>
+                                                                                                <option value="dialog_choice">Dialog Choice</option>
+                                                                                                <option value="investigate">Investigate</option>
+                                                                                                <option value="escort">Escort</option>
+                                                                                                <option value="composite">Composite</option>
+                                                                                            </select>
+                                                                                        </div>
+                                                                                        <div class="form-group" style="flex:1">
+                                                                                            <label style="font-size:0.68rem">Display Text</label>
+                                                                                            <input class="form-control form-control-sm" style="font-size:0.75rem"
+                                                                                                   value="@obj.DisplayText"
+                                                                                                   @onchange="e => obj.DisplayText = e.Value?.ToString() ?? string.Empty"
+                                                                                                   placeholder="e.g. Kill 5 goblins" />
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div style="display:flex;gap:4px">
+                                                                                        <div class="form-group" style="flex:1">
+                                                                                            <label style="font-size:0.68rem">Target Tag</label>
+                                                                                            <input class="form-control form-control-sm" style="font-size:0.75rem"
+                                                                                                   value="@obj.TargetTag"
+                                                                                                   @onchange="e => obj.TargetTag = e.Value?.ToString()"
+                                                                                                   placeholder="e.g. goblin, lost_ring" />
+                                                                                        </div>
+                                                                                        <div class="form-group" style="flex:0 0 80px">
+                                                                                            <label style="font-size:0.68rem">Count</label>
+                                                                                            <input type="number" class="form-control form-control-sm" style="font-size:0.75rem"
+                                                                                                   value="@obj.RequiredCount" min="1"
+                                                                                                   @onchange="e => obj.RequiredCount = int.TryParse(e.Value?.ToString(), out var rc) ? Math.Max(1, rc) : 1" />
+                                                                                        </div>
+                                                                                    </div>
+
+                                                                                    @* ── Type-specific config ── *@
+                                                                                    @if (obj.TypeTag == "investigate")
+                                                                                    {
+                                                                                        string investigateMode = GetConfigString(obj, "mode", "clue_graph");
+                                                                                        var capturedObj1 = obj;
+                                                                                        <div style="display:flex;gap:4px;align-items:end">
+                                                                                            <div class="form-group" style="flex:0 0 140px">
+                                                                                                <label style="font-size:0.68rem">Investigate Mode</label>
+                                                                                                <select class="form-select form-select-sm" style="font-size:0.75rem"
+                                                                                                        value="@investigateMode"
+                                                                                                        @onchange="@(e => { var v = e.Value?.ToString(); SetConfig(capturedObj1, "mode", string.IsNullOrEmpty(v) ? "clue_graph" : v); })">
+                                                                                                    <option value="clue_graph">Clue Graph</option>
+                                                                                                    <option value="state_machine">State Machine</option>
+                                                                                                </select>
+                                                                                            </div>
+                                                                                            <button class="btn btn-sm btn-outline-warning" style="font-size:0.68rem;height:31px"
+                                                                                                    @onclick="() => CeOpenGraphEditor(sid, groupIdx, objIdx, investigateMode)">
+                                                                                                Open @(investigateMode == "clue_graph" ? "Clue Graph" : "State Machine") Editor
+                                                                                            </button>
+                                                                                        </div>
+                                                                                    }
+                                                                                    else if (obj.TypeTag == "escort")
+                                                                                    {
+                                                                                        var capturedObj2 = obj;
+                                                                                        <div style="display:flex;gap:4px">
+                                                                                            <div class="form-group" style="flex:1">
+                                                                                                <label style="font-size:0.68rem">Destination Waypoint</label>
+                                                                                                <input class="form-control form-control-sm" style="font-size:0.75rem"
+                                                                                                       value="@(GetConfigString(capturedObj2, "destination_waypoint", ""))"
+                                                                                                       @onchange="@(e => SetConfig(capturedObj2, "destination_waypoint", e.Value?.ToString() ?? string.Empty))"
+                                                                                                       placeholder="waypoint_tag" />
+                                                                                            </div>
+                                                                                            <div class="form-group" style="flex:0 0 100px">
+                                                                                                <label style="font-size:0.68rem">Fail on Death</label>
+                                                                                                <select class="form-select form-select-sm" style="font-size:0.75rem"
+                                                                                                        value="@(GetConfigString(capturedObj2, "fail_on_death", "true"))"
+                                                                                                        @onchange="@(e => SetConfig(capturedObj2, "fail_on_death", e.Value?.ToString() ?? "true"))">
+                                                                                                    <option value="true">Yes</option>
+                                                                                                    <option value="false">No</option>
+                                                                                                </select>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    }
+                                                                                    else if (obj.TypeTag == "dialog_choice")
+                                                                                    {
+                                                                                        var capturedObj3 = obj;
+                                                                                        <div class="form-group">
+                                                                                            <label style="font-size:0.68rem">Expected Choice (optional)</label>
+                                                                                            <input class="form-control form-control-sm" style="font-size:0.75rem"
+                                                                                                   value="@(GetConfigString(capturedObj3, "expected_choice", ""))"
+                                                                                                   @onchange="@(e => SetConfig(capturedObj3, "expected_choice", e.Value?.ToString() ?? string.Empty))"
+                                                                                                   placeholder="dialog_node_id or leave empty" />
+                                                                                        </div>
+                                                                                    }
+                                                                                    else if (obj.TypeTag == "collect")
+                                                                                    {
+                                                                                        var capturedObj4 = obj;
+                                                                                        <div class="form-check">
+                                                                                            <input type="checkbox" class="form-check-input" id="ceObjTrackLoss_@objKey"
+                                                                                                   checked="@(GetConfigString(capturedObj4, "track_loss", "false") == "true")"
+                                                                                                   @onchange="@(e => SetConfig(capturedObj4, "track_loss", ((bool)(e.Value ?? false)) ? "true" : "false"))" />
+                                                                                            <label class="form-check-label" for="ceObjTrackLoss_@objKey" style="font-size:0.72rem">Track item loss (decrements count)</label>
+                                                                                        </div>
+                                                                                    }
+                                                                                </div>
+                                                                            }
+                                                                        </div>
+                                                                    }
+                                                                    <div style="margin-top:4px">
+                                                                        <button class="btn btn-sm btn-outline-secondary" style="font-size:0.68rem"
+                                                                                @onclick="() => CeAddObjective(sid, groupIdx)">+ Objective</button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
+
+                                            @* ── Stage Rewards ── *@
+                                            <div style="margin-top:6px">
+                                                @{ RewardMixDto stageReward = stage.Rewards ??= new RewardMixDto(); }
+                                                <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;cursor:pointer"
+                                                     @onclick="() => CeToggleStageRewardExpand(sid)">
+                                                    <label style="font-size:0.75rem;font-weight:600;margin:0;cursor:pointer">Stage Rewards</label>
+                                                    @if (!stageReward.IsEmpty)
+                                                    {
+                                                        <span class="badge" style="background:var(--accent,#c9a84c);font-size:0.6rem;padding:1px 4px">configured</span>
+                                                    }
+                                                    <span style="font-size:0.68rem">@(_expandedStageRewardIds.Contains(sid) ? "▲" : "▼")</span>
+                                                </div>
+                                                @if (_expandedStageRewardIds.Contains(sid))
+                                                {
+                                                    <div style="border:1px solid var(--border-subtle);border-radius:4px;padding:6px 8px;background:var(--bg-card)">
+                                                        <div style="display:flex;gap:6px;margin-bottom:4px">
+                                                            <div class="form-group" style="flex:1">
+                                                                <label style="font-size:0.68rem">XP</label>
+                                                                <input type="number" class="form-control form-control-sm" style="font-size:0.75rem" min="0"
+                                                                       value="@stageReward.Xp"
+                                                                       @onchange="e => stageReward.Xp = int.TryParse(e.Value?.ToString(), out var v) ? Math.Max(0, v) : 0" />
+                                                            </div>
+                                                            <div class="form-group" style="flex:1">
+                                                                <label style="font-size:0.68rem">Gold</label>
+                                                                <input type="number" class="form-control form-control-sm" style="font-size:0.75rem" min="0"
+                                                                       value="@stageReward.Gold"
+                                                                       @onchange="e => stageReward.Gold = int.TryParse(e.Value?.ToString(), out var v) ? Math.Max(0, v) : 0" />
+                                                            </div>
+                                                            <div class="form-group" style="flex:1">
+                                                                <label style="font-size:0.68rem">Knowledge Pts</label>
+                                                                <input type="number" class="form-control form-control-sm" style="font-size:0.75rem" min="0"
+                                                                       value="@stageReward.KnowledgePoints"
+                                                                       @onchange="e => stageReward.KnowledgePoints = int.TryParse(e.Value?.ToString(), out var v) ? Math.Max(0, v) : 0" />
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <label style="font-size:0.68rem;font-weight:600">Proficiency Grants (@stageReward.Proficiencies.Count)</label>
+                                                            @for (int pi = 0; pi < stageReward.Proficiencies.Count; pi++)
+                                                            {
+                                                                int profIdx = pi;
+                                                                ProficiencyRewardDto prof = stageReward.Proficiencies[pi];
+                                                                <div style="display:flex;gap:4px;margin-top:3px;align-items:end">
+                                                                    <div class="form-group" style="flex:1">
+                                                                        <select class="form-select form-select-sm" style="font-size:0.72rem"
+                                                                                value="@prof.IndustryTag"
+                                                                                @onchange="e => prof.IndustryTag = e.Value?.ToString() ?? string.Empty">
+                                                                            <option value="">-- Select Industry --</option>
+                                                                            @foreach (var ind in _industries)
+                                                                            {
+                                                                                <option value="@ind.Tag">@ind.Name (@ind.Tag)</option>
+                                                                            }
+                                                                        </select>
+                                                                    </div>
+                                                                    <div class="form-group" style="flex:0 0 70px">
+                                                                        <input type="number" class="form-control form-control-sm" style="font-size:0.72rem" min="0"
+                                                                               value="@prof.ProficiencyXp"
+                                                                               @onchange="e => prof.ProficiencyXp = int.TryParse(e.Value?.ToString(), out var v) ? Math.Max(0, v) : 0"
+                                                                               placeholder="XP" />
+                                                                    </div>
+                                                                    <button class="btn btn-sm btn-outline-danger" style="font-size:0.6rem;padding:0 4px;line-height:1.3"
+                                                                            @onclick="() => stageReward.Proficiencies.RemoveAt(profIdx)">×</button>
+                                                                </div>
+                                                            }
+                                                            <button class="btn btn-sm btn-outline-secondary" style="font-size:0.68rem;margin-top:4px"
+                                                                    @onclick="() => stageReward.Proficiencies.Add(new ProficiencyRewardDto())">+ Proficiency</button>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                        @* Add stage row *@
+                        <div style="display:flex;gap:4px;margin-top:6px;align-items:end">
+                            <div style="flex:0 0 80px">
+                                <label style="font-size:0.72rem">Stage ID</label>
+                                <input type="number" class="form-control form-control-sm" @bind="_newStageId" min="1" style="font-size:0.8rem" />
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary" style="height:31px" @onclick="CeAddStage">+ Stage</button>
+                        </div>
+                    </div>
+
+                    @* ── Quest Completion Reward ── *@
+                    <div style="margin-bottom:8px">
+                        @{ RewardMixDto completionReward = _questItem.CompletionReward ??= new RewardMixDto(); }
+                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;cursor:pointer"
+                             @onclick="() => _completionRewardExpanded = !_completionRewardExpanded">
+                            <label style="font-size:0.8rem;font-weight:600;margin:0;cursor:pointer">Quest Completion Reward</label>
+                            @if (!completionReward.IsEmpty)
+                            {
+                                <span class="badge" style="background:var(--success,#2ecc71);font-size:0.65rem;padding:1px 5px">configured</span>
+                            }
+                            <span style="font-size:0.7rem">@(_completionRewardExpanded ? "▲" : "▼")</span>
+                        </div>
+                        @if (_completionRewardExpanded)
+                        {
+                            <div style="border:1px solid var(--border-subtle);border-radius:4px;padding:8px;background:var(--bg-card)">
+                                <small style="display:block;color:var(--text-secondary);font-size:0.72rem;margin-bottom:6px">
+                                    Awarded when the entire quest reaches a completion stage, in addition to any per-stage rewards.
+                                </small>
+                                <div style="display:flex;gap:6px;margin-bottom:4px">
+                                    <div class="form-group" style="flex:1">
+                                        <label style="font-size:0.68rem">XP</label>
+                                        <input type="number" class="form-control form-control-sm" style="font-size:0.75rem" min="0"
+                                               value="@completionReward.Xp"
+                                               @onchange="e => completionReward.Xp = int.TryParse(e.Value?.ToString(), out var v) ? Math.Max(0, v) : 0" />
+                                    </div>
+                                    <div class="form-group" style="flex:1">
+                                        <label style="font-size:0.68rem">Gold</label>
+                                        <input type="number" class="form-control form-control-sm" style="font-size:0.75rem" min="0"
+                                               value="@completionReward.Gold"
+                                               @onchange="e => completionReward.Gold = int.TryParse(e.Value?.ToString(), out var v) ? Math.Max(0, v) : 0" />
+                                    </div>
+                                    <div class="form-group" style="flex:1">
+                                        <label style="font-size:0.68rem">Knowledge Pts</label>
+                                        <input type="number" class="form-control form-control-sm" style="font-size:0.75rem" min="0"
+                                               value="@completionReward.KnowledgePoints"
+                                               @onchange="e => completionReward.KnowledgePoints = int.TryParse(e.Value?.ToString(), out var v) ? Math.Max(0, v) : 0" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style="font-size:0.68rem;font-weight:600">Proficiency Grants (@completionReward.Proficiencies.Count)</label>
+                                    @for (int cpi = 0; cpi < completionReward.Proficiencies.Count; cpi++)
+                                    {
+                                        int cpIdx = cpi;
+                                        ProficiencyRewardDto cProf = completionReward.Proficiencies[cpi];
+                                        <div style="display:flex;gap:4px;margin-top:3px;align-items:end">
+                                            <div class="form-group" style="flex:1">
+                                                <select class="form-select form-select-sm" style="font-size:0.72rem"
+                                                        value="@cProf.IndustryTag"
+                                                        @onchange="e => cProf.IndustryTag = e.Value?.ToString() ?? string.Empty">
+                                                    <option value="">-- Select Industry --</option>
+                                                    @foreach (var ind in _industries)
+                                                    {
+                                                        <option value="@ind.Tag">@ind.Name (@ind.Tag)</option>
+                                                    }
+                                                </select>
+                                            </div>
+                                            <div class="form-group" style="flex:0 0 70px">
+                                                <input type="number" class="form-control form-control-sm" style="font-size:0.72rem" min="0"
+                                                       value="@cProf.ProficiencyXp"
+                                                       @onchange="e => cProf.ProficiencyXp = int.TryParse(e.Value?.ToString(), out var v) ? Math.Max(0, v) : 0"
+                                                       placeholder="XP" />
+                                            </div>
+                                            <button class="btn btn-sm btn-outline-danger" style="font-size:0.6rem;padding:0 4px;line-height:1.3"
+                                                    @onclick="() => completionReward.Proficiencies.RemoveAt(cpIdx)">×</button>
+                                        </div>
+                                    }
+                                    <button class="btn btn-sm btn-outline-secondary" style="font-size:0.68rem;margin-top:4px"
+                                            @onclick="() => completionReward.Proficiencies.Add(new ProficiencyRewardDto())">+ Proficiency</button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div style="display:flex;gap:8px;margin-bottom:8px">
+                        <div class="form-group" style="flex:1">
+                            <label style="font-size:0.8rem">Quest Giver</label>
+                            <input class="form-control form-control-sm" @bind="_questItem.QuestGiver" placeholder="NPC tag" />
+                        </div>
+                        <div class="form-group" style="flex:1">
+                            <label style="font-size:0.8rem">Location</label>
+                            <input class="form-control form-control-sm" @bind="_questItem.Location" placeholder="Optional location" />
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:8px">
+                        <label style="font-size:0.8rem">Keywords</label>
+                        <input class="form-control form-control-sm" @bind="_questItem.Keywords" placeholder="Comma-separated keywords" />
+                    </div>
+                    <div class="form-check" style="margin-bottom:8px">
+                        <input type="checkbox" class="form-check-input" id="ceQuestAlwaysAvailable" @bind="_questItem.IsAlwaysAvailable" />
+                        <label class="form-check-label" for="ceQuestAlwaysAvailable" style="font-size:0.8rem">Always Available</label>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* ── Pre-rendered Panel: Preview ── *@
+        <div id="bl-panel-ce-preview" class="we-editor__gl-panel" style="display:none">
+            <div style="background:var(--bg-card);padding:12px;min-height:100%;overflow-y:auto">
+                <h5 style="margin:0 0 10px 0;font-size:0.9rem">Preview</h5>
+                @if (_subType == CodexSubType.Lore)
+                {
+                    <div class="we-entity-form">
+                        <div class="we-entity-form__field"><label>Lore ID</label><span>@_loreItem.LoreId</span></div>
+                        <div class="we-entity-form__field"><label>Title</label><span>@_loreItem.Title</span></div>
+                        <div class="we-entity-form__field"><label>Category</label><span>@CeGetLoreCategoryName(_loreItem.Category)</span></div>
+                        <div class="we-entity-form__field"><label>Tier</label><span>@CeGetLoreTierName(_loreItem.Tier)</span></div>
+                        <div class="we-entity-form__field"><label>Keywords</label><span>@(_loreItem.Keywords ?? "—")</span></div>
+                        <div class="we-entity-form__field"><label>Always Available</label><span>@(_loreItem.IsAlwaysAvailable ? "Yes" : "No")</span></div>
+                        @if (!string.IsNullOrEmpty(_loreItem.Content))
+                        {
+                            <div style="margin-top:8px;padding:8px;background:var(--bg-input);border-radius:4px;font-size:0.82rem;white-space:pre-wrap;max-height:400px;overflow-y:auto">
+                                @_loreItem.Content
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="we-entity-form">
+                        <div class="we-entity-form__field"><label>Quest ID</label><span>@_questItem.QuestId</span></div>
+                        <div class="we-entity-form__field"><label>Title</label><span>@_questItem.Title</span></div>
+                        <div class="we-entity-form__field"><label>Quest Giver (tag)</label><span>@(_questItem.QuestGiver ?? "—")</span></div>
+                        <div class="we-entity-form__field"><label>Location</label><span>@(_questItem.Location ?? "—")</span></div>
+                        <div class="we-entity-form__field"><label>Keywords</label><span>@(_questItem.Keywords ?? "—")</span></div>
+                        <div class="we-entity-form__field"><label>Always Available</label><span>@(_questItem.IsAlwaysAvailable ? "Yes" : "No")</span></div>
+                        @if (_questItem.Stages.Count > 0)
+                        {
+                            <div style="margin-top:8px">
+                                <label style="font-size:0.8rem;font-weight:600">Stages (@_questItem.Stages.Count)</label>
+                                @foreach (QuestStageDto stg in _questItem.Stages.OrderBy(s => s.StageId))
+                                {
+                                    <div style="margin-top:6px;padding:6px 8px;border:1px solid var(--border-subtle);border-radius:4px">
+                                        <div style="display:flex;align-items:center;gap:6px">
+                                            <span style="font-weight:700;font-size:0.8rem;color:var(--accent, #c9a84c)">Stage @stg.StageId</span>
+                                            @if (stg.IsCompletionStage)
+                                            {
+                                                <span class="badge" style="background:var(--success, #2ecc71);font-size:0.6rem;padding:1px 4px">Closes Quest</span>
+                                            }
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(stg.JournalText))
+                                        {
+                                            <div style="font-size:0.8rem;white-space:pre-wrap;margin-top:3px">@stg.JournalText</div>
+                                        }
+                                        @if (stg.Hints.Count > 0)
+                                        {
+                                            <div style="margin-top:4px">
+                                                <small style="color:var(--text-secondary);font-size:0.72rem;font-weight:600">Hints:</small>
+                                                <ul style="margin:2px 0 0 0;padding-left:16px;font-size:0.78rem">
+                                                    @foreach (string h in stg.Hints)
+                                                    {
+                                                        <li>@h</li>
+                                                    }
+                                                </ul>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(_questItem.Description))
+                        {
+                            <div style="margin-top:8px;padding:8px;background:var(--bg-input);border-radius:4px;font-size:0.82rem;white-space:pre-wrap;max-height:400px;overflow-y:auto">
+                                @_questItem.Description
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div> @* end we-ce-layout-area *@
+
+    @* ── Graph Editor Overlay (ClueGraph / StateMachine) ── *@
+    @if (_graphEditorOpen)
+    {
+        ObjectiveDefinitionDto? graphObj = CeGetGraphEditorObjective();
+        <div style="position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.85);display:flex;flex-direction:column">
+            @* Toolbar *@
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--bg-card);border-bottom:1px solid var(--border-subtle)">
+                <span style="font-weight:700;font-size:0.9rem;color:var(--accent,#c9a84c)">
+                    @(_graphEditorMode == "clue_graph" ? "Clue Graph Editor" : "State Machine Editor")
+                </span>
+                @if (graphObj != null)
+                {
+                    <span style="font-size:0.78rem;color:var(--text-secondary)">— @graphObj.DisplayText</span>
+                }
+                <span style="flex:1"></span>
+                <button class="btn btn-sm btn-outline-secondary" style="font-size:0.75rem"
+                        @onclick="CeCloseGraphEditor">Done</button>
+            </div>
+            @* Body — Canvas + Sidebar *@
+            <div style="flex:1;display:flex;overflow:hidden">
+                @* Canvas *@
+                <div style="flex:1;position:relative">
+                    <div id="ce-graph-canvas" style="width:100%;height:100%"></div>
+                </div>
+                @* Sidebar property panel *@
+                <div style="width:280px;background:var(--bg-card);border-left:1px solid var(--border-subtle);overflow-y:auto;padding:12px">
+                    @if (_graphEditorMode == "clue_graph")
+                    {
+                        <h6 style="font-size:0.82rem;margin:0 0 8px 0">Clue Graph Properties</h6>
+                        <p style="font-size:0.72rem;color:var(--text-secondary)">
+                            Click nodes to select clues. Click edges to select deductions.
+                            Double-click canvas to add a clue. Right-click for context menu.
+                        </p>
+                        <div id="ce-graph-sidebar-clue" style="display:none">
+                            <div class="form-group" style="margin-bottom:6px">
+                                <label style="font-size:0.7rem">Clue Name</label>
+                                <input class="form-control form-control-sm" id="ce-graph-clue-name" style="font-size:0.78rem" />
+                            </div>
+                            <div class="form-group" style="margin-bottom:6px">
+                                <label style="font-size:0.7rem">Trigger Tag</label>
+                                <input class="form-control form-control-sm" id="ce-graph-clue-trigger" style="font-size:0.78rem" />
+                            </div>
+                        </div>
+                        <div id="ce-graph-sidebar-deduction" style="display:none">
+                            <div class="form-group" style="margin-bottom:6px">
+                                <label style="font-size:0.7rem">Required Clues</label>
+                                <div id="ce-graph-deduction-required" style="font-size:0.75rem"></div>
+                            </div>
+                            <div class="form-group" style="margin-bottom:6px">
+                                <label style="font-size:0.7rem">Unlocks Clues</label>
+                                <div id="ce-graph-deduction-unlocks" style="font-size:0.75rem"></div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <h6 style="font-size:0.82rem;margin:0 0 8px 0">State Machine Properties</h6>
+                        <p style="font-size:0.72rem;color:var(--text-secondary)">
+                            Drag to move states. Drag from a state edge to create a transition.
+                            Double-click canvas to add a state. Right-click → set initial/terminal.
+                        </p>
+                        <div id="ce-graph-sidebar-state" style="display:none">
+                            <div class="form-group" style="margin-bottom:6px">
+                                <label style="font-size:0.7rem">State ID</label>
+                                <input class="form-control form-control-sm" id="ce-graph-state-id" style="font-size:0.78rem" />
+                            </div>
+                            <div class="form-group" style="margin-bottom:6px">
+                                <label style="font-size:0.7rem">Description</label>
+                                <textarea class="form-control form-control-sm" rows="2" id="ce-graph-state-desc" style="font-size:0.78rem"></textarea>
+                            </div>
+                            <div class="form-check" style="margin-bottom:4px">
+                                <input type="checkbox" class="form-check-input" id="ce-graph-state-terminal-success" />
+                                <label class="form-check-label" for="ce-graph-state-terminal-success" style="font-size:0.72rem">Terminal Success</label>
+                            </div>
+                            <div class="form-check" style="margin-bottom:4px">
+                                <input type="checkbox" class="form-check-input" id="ce-graph-state-terminal-failure" />
+                                <label class="form-check-label" for="ce-graph-state-terminal-failure" style="font-size:0.72rem">Terminal Failure</label>
+                            </div>
+                        </div>
+                        <div id="ce-graph-sidebar-transition" style="display:none">
+                            <div class="form-group" style="margin-bottom:6px">
+                                <label style="font-size:0.7rem">Signal Type</label>
+                                <select class="form-select form-select-sm" id="ce-graph-trans-signal" style="font-size:0.78rem">
+                                    <option value="creature_killed">Creature Killed</option>
+                                    <option value="item_acquired">Item Acquired</option>
+                                    <option value="item_lost">Item Lost</option>
+                                    <option value="area_entered">Area Entered</option>
+                                    <option value="area_exited">Area Exited</option>
+                                    <option value="dialog_choice">Dialog Choice</option>
+                                    <option value="clue_found">Clue Found</option>
+                                    <option value="npc_status_changed">NPC Status Changed</option>
+                                    <option value="waypoint_reached">Waypoint Reached</option>
+                                    <option value="custom">Custom</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom:6px">
+                                <label style="font-size:0.7rem">Target Tag</label>
+                                <input class="form-control form-control-sm" id="ce-graph-trans-target" style="font-size:0.78rem" />
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    // ═══════════════════════════════════════════════════════════════════
+    //  Parameters
+    // ═══════════════════════════════════════════════════════════════════
+
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnEntityListRefresh { get; set; }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Public enum (shared with parent)
+    // ═══════════════════════════════════════════════════════════════════
+
+    public enum CodexSubType { Lore, Quest }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  State
+    // ═══════════════════════════════════════════════════════════════════
+
+    private const string GlInstanceId = "we-codex-editor";
+    private bool _loading;
+    private string? _editorError;
+
+    private CodexSubType _subType = CodexSubType.Lore;
+    private bool _isCreating;
+    private bool _isSaving;
+    private string? _error;
+    private string? _success;
+
+    // Lore edit state
+    private LoreDefinitionDto _loreItem = new();
+
+    // Quest edit state
+    private QuestDefinitionDto _questItem = new();
+    private int _newStageId = 10;
+    private readonly HashSet<int> _expandedStageIds = [];
+    private readonly HashSet<string> _expandedGroupKeys = [];
+    private readonly HashSet<string> _expandedObjectiveKeys = [];
+    private readonly HashSet<int> _expandedStageRewardIds = [];
+    private bool _completionRewardExpanded;
+    private List<IndustryDefinitionDto> _industries = [];
+    private bool _industriesLoaded;
+
+    // Graph editor overlay state
+    private bool _graphEditorOpen;
+    private string _graphEditorMode = "clue_graph";
+    private int _graphEditorStageId;
+    private int _graphEditorGroupIdx;
+    private int _graphEditorObjIdx;
+
+    // View menu
+    private bool _showViewMenu;
+    private readonly HashSet<string> _openPanels = ["ce-list", "ce-form", "ce-preview"];
+    private static readonly Dictionary<string, string> PanelTitles = new()
+    {
+        ["ce-list"] = "Entity List",
+        ["ce-form"] = "Data Editor Panel",
+        ["ce-preview"] = "Preview",
+    };
+
+    // GL bridge refs
+    private IJSObjectReference? _bridgeModule;
+    private DotNetObjectReference<CodexEditor>? _dotNetRef;
+
+    // Inner list state
+    private string _listSearch = "";
+    private bool _listLoading;
+    private List<CeListEntry> _listItems = [];
+    private CancellationTokenSource? _searchCts;
+
+    private sealed class CeListEntry
+    {
+        public string Id { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string? SubLabel { get; set; }
+        public CodexSubType SubType { get; set; }
+        public bool IsSelected { get; set; }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Lifecycle
+    // ═══════════════════════════════════════════════════════════════════
+
+    public async Task OpenNewAsync(CodexSubType subType)
+    {
+        _loading = true;
+        _editorError = null;
+        _error = null;
+        _success = null;
+        _isCreating = true;
+        _subType = subType;
+        _loreItem = new LoreDefinitionDto();
+        _questItem = new QuestDefinitionDto { Stages = [] };
+        StateHasChanged();
+
+        try
+        {
+            await CeLoadList();
+            if (subType == CodexSubType.Quest) await CeEnsureIndustriesLoaded();
+            StateHasChanged();
+            await Task.Delay(50);
+
+            await CeInitLayout();
+
+            _loading = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to open new codex editor");
+            _editorError = $"Failed to load: {ex.Message}";
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    public async Task OpenExistingAsync(string entityId, CodexSubType subType)
+    {
+        _loading = true;
+        _editorError = null;
+        _error = null;
+        _success = null;
+        _isCreating = false;
+        _subType = subType;
+        StateHasChanged();
+
+        try
+        {
+            if (subType == CodexSubType.Lore)
+            {
+                LoreDefinitionDto? loaded = await LoreApi.GetByIdAsync(entityId);
+                if (loaded == null)
+                {
+                    _editorError = $"Lore entry '{entityId}' not found.";
+                    _loading = false;
+                    StateHasChanged();
+                    return;
+                }
+                _loreItem = loaded;
+            }
+            else
+            {
+                QuestDefinitionDto? loaded = await QuestApi.GetByIdAsync(entityId);
+                if (loaded == null)
+                {
+                    _editorError = $"Quest entry '{entityId}' not found.";
+                    _loading = false;
+                    StateHasChanged();
+                    return;
+                }
+                _questItem = loaded;
+            }
+
+            await CeLoadList();
+            StateHasChanged();
+            await Task.Delay(50);
+
+            await CeInitLayout();
+
+            _loading = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to open codex editor for {Id}", entityId);
+            _editorError = $"Failed to load: {ex.Message}";
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CloseInternal()
+    {
+        try
+        {
+            if (_bridgeModule != null)
+            {
+                await _bridgeModule.InvokeVoidAsync("destroy", GlInstanceId);
+            }
+        }
+        catch (Exception ex) { Logger.LogWarning(ex, "Error destroying Codex GL layout"); }
+
+        _showViewMenu = false;
+        _listItems = [];
+        await OnClose.InvokeAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_bridgeModule != null)
+            {
+                await _bridgeModule.InvokeVoidAsync("destroy", GlInstanceId);
+                await _bridgeModule.DisposeAsync();
+            }
+        }
+        catch { }
+        _dotNetRef?.Dispose();
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  GL Layout
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task CeInitLayout()
+    {
+        try
+        {
+            _bridgeModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/golden-layout-bridge.js");
+            _dotNetRef ??= DotNetObjectReference.Create(this);
+
+            string layoutConfig = CeBuildDefaultLayoutConfig();
+            await _bridgeModule.InvokeVoidAsync("init", GlInstanceId, "we-codex-gl-container", layoutConfig, _dotNetRef);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to initialize Codex GL layout");
+            _editorError = "Layout initialization failed. Try closing and reopening.";
+        }
+    }
+
+    private static string CeBuildDefaultLayoutConfig()
+    {
+        var config = new
+        {
+            root = new
+            {
+                type = "row",
+                content = new object[]
+                {
+                    new
+                    {
+                        type = "component",
+                        componentType = "ce-form",
+                        title = "Data Editor Panel",
+                        size = "60%",
+                    },
+                    new
+                    {
+                        type = "column",
+                        size = "40%",
+                        content = new object[]
+                        {
+                            new
+                            {
+                                type = "component",
+                                componentType = "ce-preview",
+                                title = "Preview",
+                                size = "50%",
+                            },
+                            new
+                            {
+                                type = "component",
+                                componentType = "ce-list",
+                                title = "Entity List",
+                                size = "50%",
+                            },
+                        },
+                    },
+                },
+            },
+        };
+        return JsonSerializer.Serialize(config);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  View Menu & Panel Toggles
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void CeToggleViewMenu() => _showViewMenu = !_showViewMenu;
+
+    private async Task CeTogglePanel(string panelKey)
+    {
+        _showViewMenu = false;
+        if (_openPanels.Contains(panelKey)) return;
+        _openPanels.Add(panelKey);
+
+        if (_bridgeModule != null)
+        {
+            try
+            {
+                string title = PanelTitles.GetValueOrDefault(panelKey, panelKey);
+                await _bridgeModule.InvokeVoidAsync("addPanel", GlInstanceId, panelKey, title);
+            }
+            catch (Exception ex) { Logger.LogWarning(ex, "Failed to add CE panel {Panel}", panelKey); }
+        }
+        StateHasChanged();
+    }
+
+    private async Task CeResetLayout()
+    {
+        _showViewMenu = false;
+        _openPanels.Clear();
+        foreach (string key in PanelTitles.Keys) _openPanels.Add(key);
+
+        if (_bridgeModule != null)
+        {
+            try
+            {
+                string layoutConfig = CeBuildDefaultLayoutConfig();
+                await _bridgeModule.InvokeVoidAsync("loadLayout", GlInstanceId, layoutConfig);
+            }
+            catch (Exception ex) { Logger.LogWarning(ex, "Failed to reset CE layout"); }
+        }
+        StateHasChanged();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Save / Cancel / Delete
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task CeSave()
+    {
+        _isSaving = true;
+        _error = null;
+        _success = null;
+        StateHasChanged();
+
+        try
+        {
+            if (_subType == CodexSubType.Lore)
+            {
+                if (_isCreating)
+                    await LoreApi.CreateAsync(_loreItem);
+                else
+                    await LoreApi.UpdateAsync(_loreItem.LoreId, _loreItem);
+                _success = _isCreating ? "Lore entry created." : "Lore entry updated.";
+            }
+            else
+            {
+                if (_isCreating)
+                    await QuestApi.CreateAsync(_questItem);
+                else
+                    await QuestApi.UpdateAsync(_questItem.QuestId, _questItem);
+                _success = _isCreating ? "Quest entry created." : "Quest entry updated.";
+            }
+
+            _isCreating = false;
+            await CeLoadList();
+            await OnEntityListRefresh.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to save codex entry");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CeCancel()
+    {
+        await CloseInternal();
+    }
+
+    private async Task CeDelete()
+    {
+        _error = null;
+        _success = null;
+
+        try
+        {
+            if (_subType == CodexSubType.Lore)
+            {
+                await LoreApi.DeleteAsync(_loreItem.LoreId);
+                _success = "Lore entry deleted.";
+            }
+            else
+            {
+                await QuestApi.DeleteAsync(_questItem.QuestId);
+                _success = "Quest entry deleted.";
+            }
+
+            _isCreating = true;
+            _loreItem = new LoreDefinitionDto();
+            _questItem = new QuestDefinitionDto { Stages = [] };
+            await CeLoadList();
+            await OnEntityListRefresh.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to delete codex entry");
+        }
+        finally { StateHasChanged(); }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Entity List (inner panel)
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task CeLoadList()
+    {
+        _listLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            string? search = string.IsNullOrWhiteSpace(_listSearch) ? null : _listSearch.Trim();
+            _listItems = [];
+
+            if (_subType == CodexSubType.Lore)
+            {
+                PagedResult<LoreDefinitionDto> result = await LoreApi.GetAllAsync(search, page: 1, pageSize: 200);
+                _listItems = result.Items.Select(i => new CeListEntry
+                {
+                    Id = i.LoreId, Title = i.Title,
+                    SubLabel = i.CategoryName ?? $"Category {i.Category}",
+                    SubType = CodexSubType.Lore,
+                }).ToList();
+            }
+            else
+            {
+                PagedResult<QuestDefinitionDto> result = await QuestApi.GetAllAsync(search, page: 1, pageSize: 200);
+                _listItems = result.Items.Select(i => new CeListEntry
+                {
+                    Id = i.QuestId, Title = i.Title,
+                    SubLabel = i.QuestGiver ?? i.Location,
+                    SubType = CodexSubType.Quest,
+                }).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load codex entity list");
+        }
+        finally
+        {
+            _listLoading = false;
+        }
+    }
+
+    private void CeSearchChanged()
+    {
+        _searchCts?.Cancel();
+        _searchCts = new CancellationTokenSource();
+        CancellationToken ct = _searchCts.Token;
+
+        _ = InvokeAsync(async () =>
+        {
+            try
+            {
+                await Task.Delay(300, ct);
+                if (!ct.IsCancellationRequested)
+                {
+                    await CeLoadList();
+                    StateHasChanged();
+                }
+            }
+            catch (TaskCanceledException) { }
+        });
+    }
+
+    private async Task CeOnSubTypeChanged()
+    {
+        _listSearch = "";
+        await CeLoadList();
+        StateHasChanged();
+    }
+
+    private async Task CeSelectListItem(CeListEntry entry)
+    {
+        foreach (CeListEntry item in _listItems) item.IsSelected = false;
+        entry.IsSelected = true;
+
+        _isCreating = false;
+        _error = null;
+        _success = null;
+
+        try
+        {
+            if (entry.SubType == CodexSubType.Lore)
+            {
+                _subType = CodexSubType.Lore;
+                LoreDefinitionDto? loaded = await LoreApi.GetByIdAsync(entry.Id);
+                if (loaded != null) _loreItem = loaded;
+            }
+            else
+            {
+                _subType = CodexSubType.Quest;
+                QuestDefinitionDto? loaded = await QuestApi.GetByIdAsync(entry.Id);
+                if (loaded != null) _questItem = loaded;
+                await CeEnsureIndustriesLoaded();
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load: {ex.Message}";
+        }
+        StateHasChanged();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Stage Helpers
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void CeAddStage()
+    {
+        if (_questItem.Stages.Any(s => s.StageId == _newStageId)) return;
+        _questItem.Stages.Add(new QuestStageDto
+        {
+            StageId = _newStageId,
+            JournalText = "",
+            IsCompletionStage = false,
+            Hints = []
+        });
+        _expandedStageIds.Add(_newStageId);
+        _newStageId = _questItem.Stages.Max(s => s.StageId) + 10;
+    }
+
+    private void CeRemoveStage(int stageId)
+    {
+        _questItem.Stages.RemoveAll(s => s.StageId == stageId);
+        _expandedStageIds.Remove(stageId);
+    }
+
+    private void CeToggleStageExpand(int stageId)
+    {
+        if (!_expandedStageIds.Add(stageId))
+            _expandedStageIds.Remove(stageId);
+    }
+
+    private int? CeComputeFallbackStageId(QuestStageDto stage)
+    {
+        return _questItem.Stages
+            .Where(s => s.StageId > stage.StageId)
+            .OrderBy(s => s.StageId)
+            .FirstOrDefault()?.StageId;
+    }
+
+    private void CeAddHintToStage(int stageId)
+    {
+        var stage = _questItem.Stages.FirstOrDefault(s => s.StageId == stageId);
+        stage?.Hints.Add("");
+    }
+
+    private void CeRemoveHintFromStage(int stageId, int hintIndex)
+    {
+        var stage = _questItem.Stages.FirstOrDefault(s => s.StageId == stageId);
+        if (stage != null && hintIndex >= 0 && hintIndex < stage.Hints.Count)
+            stage.Hints.RemoveAt(hintIndex);
+    }
+
+    public static string CeGetLoreCategoryName(int category) => category switch
+    {
+        0 => "General",
+        1 => "History",
+        2 => "Geography",
+        3 => "Religion",
+        4 => "Arcana",
+        5 => "Nature",
+        6 => "Faction",
+        7 => "Character",
+        8 => "Item",
+        9 => "Quest",
+        10 => "Miscellaneous",
+        _ => $"Unknown ({category})"
+    };
+
+    public static string CeGetLoreTierName(int tier) => tier switch
+    {
+        0 => "Common",
+        1 => "Uncommon",
+        2 => "Rare",
+        3 => "Legendary",
+        _ => $"Unknown ({tier})"
+    };
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Objective Group Helpers
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void CeAddObjectiveGroup(int stageId)
+    {
+        QuestStageDto? stage = _questItem.Stages.FirstOrDefault(s => s.StageId == stageId);
+        if (stage == null) return;
+        stage.ObjectiveGroups.Add(new ObjectiveGroupDto
+        {
+            DisplayName = "",
+            CompletionMode = "All",
+            Objectives = []
+        });
+        string grpKey = $"{stageId}_{stage.ObjectiveGroups.Count - 1}";
+        _expandedGroupKeys.Add(grpKey);
+    }
+
+    private void CeRemoveObjectiveGroup(int stageId, int groupIdx)
+    {
+        QuestStageDto? stage = _questItem.Stages.FirstOrDefault(s => s.StageId == stageId);
+        if (stage != null && groupIdx >= 0 && groupIdx < stage.ObjectiveGroups.Count)
+            stage.ObjectiveGroups.RemoveAt(groupIdx);
+    }
+
+    private void CeToggleGroupExpand(string grpKey)
+    {
+        if (!_expandedGroupKeys.Add(grpKey))
+            _expandedGroupKeys.Remove(grpKey);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Objective Helpers
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void CeAddObjective(int stageId, int groupIdx)
+    {
+        QuestStageDto? stage = _questItem.Stages.FirstOrDefault(s => s.StageId == stageId);
+        if (stage == null || groupIdx < 0 || groupIdx >= stage.ObjectiveGroups.Count) return;
+
+        ObjectiveGroupDto grp = stage.ObjectiveGroups[groupIdx];
+        grp.Objectives.Add(new ObjectiveDefinitionDto
+        {
+            ObjectiveId = Guid.NewGuid().ToString("N")[..12],
+            TypeTag = "kill",
+            DisplayText = "",
+            RequiredCount = 1
+        });
+        string objKey = $"{stageId}_{groupIdx}_{grp.Objectives.Count - 1}";
+        _expandedObjectiveKeys.Add(objKey);
+    }
+
+    private void CeRemoveObjective(int stageId, int groupIdx, int objIdx)
+    {
+        QuestStageDto? stage = _questItem.Stages.FirstOrDefault(s => s.StageId == stageId);
+        if (stage == null || groupIdx < 0 || groupIdx >= stage.ObjectiveGroups.Count) return;
+
+        ObjectiveGroupDto grp = stage.ObjectiveGroups[groupIdx];
+        if (objIdx >= 0 && objIdx < grp.Objectives.Count)
+            grp.Objectives.RemoveAt(objIdx);
+    }
+
+    private void CeToggleObjectiveExpand(string objKey)
+    {
+        if (!_expandedObjectiveKeys.Add(objKey))
+            _expandedObjectiveKeys.Remove(objKey);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Config Helpers
+    // ═══════════════════════════════════════════════════════════════════
+
+    public static string GetConfigString(ObjectiveDefinitionDto obj, string key, string fallback)
+    {
+        if (obj.Config != null && obj.Config.TryGetValue(key, out object? val) && val != null)
+            return val.ToString() ?? fallback;
+        return fallback;
+    }
+
+    public static void SetConfig(ObjectiveDefinitionDto obj, string key, string value)
+    {
+        obj.Config ??= new Dictionary<string, object>();
+        obj.Config[key] = value;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Reward Helpers
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void CeToggleStageRewardExpand(int stageId)
+    {
+        if (!_expandedStageRewardIds.Add(stageId))
+            _expandedStageRewardIds.Remove(stageId);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Industry Cache
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task CeEnsureIndustriesLoaded()
+    {
+        if (_industriesLoaded) return;
+        try
+        {
+            PagedResult<IndustryDefinitionDto> result = await IndustryApi.GetAllAsync(pageSize: 500);
+            _industries = result.Items?.ToList() ?? [];
+            _industriesLoaded = true;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load industries for reward dropdown");
+            _industries = [];
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Graph Editor
+    // ═══════════════════════════════════════════════════════════════════
+
+    private async Task CeOpenGraphEditor(int stageId, int groupIdx, int objIdx, string mode)
+    {
+        _graphEditorStageId = stageId;
+        _graphEditorGroupIdx = groupIdx;
+        _graphEditorObjIdx = objIdx;
+        _graphEditorMode = mode;
+        _graphEditorOpen = true;
+        StateHasChanged();
+
+        await Task.Delay(50);
+
+        _dotNetRef ??= DotNetObjectReference.Create(this);
+
+        ObjectiveDefinitionDto? obj = CeGetGraphEditorObjective();
+        string existingJson = obj != null ? GetConfigString(obj, "graph_json", "{}") : "{}";
+
+        if (mode == "clue_graph")
+        {
+            await JS.InvokeVoidAsync("clueGraphEditor.init", "ce-graph-canvas", existingJson, _dotNetRef);
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("stateMachineEditor.init", "ce-graph-canvas", existingJson, _dotNetRef);
+        }
+    }
+
+    private async Task CeCloseGraphEditor()
+    {
+        try
+        {
+            string json;
+            if (_graphEditorMode == "clue_graph")
+            {
+                json = await JS.InvokeAsync<string>("clueGraphEditor.getGraphJson");
+                await JS.InvokeVoidAsync("clueGraphEditor.destroy");
+            }
+            else
+            {
+                json = await JS.InvokeAsync<string>("stateMachineEditor.getGraphJson");
+                await JS.InvokeVoidAsync("stateMachineEditor.destroy");
+            }
+
+            ObjectiveDefinitionDto? obj = CeGetGraphEditorObjective();
+            if (obj != null && !string.IsNullOrWhiteSpace(json))
+            {
+                SetConfig(obj, "graph_json", json);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to save graph editor data");
+        }
+
+        _graphEditorOpen = false;
+    }
+
+    [JSInvokable]
+    public void OnGraphChanged(string graphJson)
+    {
+        ObjectiveDefinitionDto? obj = CeGetGraphEditorObjective();
+        if (obj != null)
+        {
+            SetConfig(obj, "graph_json", graphJson);
+        }
+    }
+
+    [JSInvokable]
+    public void OnClueSelected(string clueJson) { }
+
+    [JSInvokable]
+    public void OnDeductionSelected(string deductionJson) { }
+
+    [JSInvokable]
+    public void OnStateSelected(string stateJson) { }
+
+    [JSInvokable]
+    public void OnTransitionSelected(string transitionJson) { }
+
+    [JSInvokable]
+    public void OnSelectionCleared(string _) { }
+
+    private ObjectiveDefinitionDto? CeGetGraphEditorObjective()
+    {
+        QuestStageDto? stage = _questItem.Stages.FirstOrDefault(s => s.StageId == _graphEditorStageId);
+        if (stage == null || _graphEditorGroupIdx < 0 || _graphEditorGroupIdx >= stage.ObjectiveGroups.Count)
+            return null;
+        ObjectiveGroupDto grp = stage.ObjectiveGroups[_graphEditorGroupIdx];
+        if (_graphEditorObjIdx < 0 || _graphEditorObjIdx >= grp.Objectives.Count)
+            return null;
+        return grp.Objectives[_graphEditorObjIdx];
+    }
+}
