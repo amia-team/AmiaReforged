@@ -297,7 +297,7 @@ function handleRect(inst, instanceId, container, width, height) {
     el.style.top = `${top}px`;
     el.style.width = `${width}px`;
     el.style.height = `${height}px`;
-    el.style.display = '';
+    el.style.display = 'block';
 
     // Notify Blazor of panel resize (canvas needs to update dimensions)
     if (inst.dotNetRef) {
@@ -314,7 +314,7 @@ function handleRect(inst, instanceId, container, width, height) {
 function handleVisibility(inst, instanceId, container, visible) {
     const entry = inst.componentMap.get(container);
     if (!entry) return;
-    entry.element.style.display = visible ? '' : 'none';
+    entry.element.style.display = visible ? 'block' : 'none';
 
     // Notify Blazor of visibility change
     if (inst.dotNetRef) {

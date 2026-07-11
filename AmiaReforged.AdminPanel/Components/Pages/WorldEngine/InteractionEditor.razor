@@ -795,11 +795,6 @@
             _scriptEditorModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js");
             _dotNetRef ??= DotNetObjectReference.Create(this);
 
-            // Check canvas container dimensions before init
-            int[] dims = await _scriptEditorModule.InvokeAsync<int[]>("eval",
-                "[document.getElementById('interaction-glyph-canvas')?.clientWidth ?? 0, document.getElementById('interaction-glyph-canvas')?.clientHeight ?? 0]");
-            Logger.LogInformation("[IE] InitScriptEditor: canvas container dimensions = {W}x{H}", dims[0], dims[1]);
-
             string catalogJson = JsonSerializer.Serialize(_nodeCatalog);
             string graphJson = _pipelineGraphJson;
 
