@@ -87,13 +87,13 @@ public class SpellCastingService
             && target is NwCreature targetCreature
             && eventData.Spell.IsHostileSpell)
         {
-            bool targetIsInParty = casterCreature.Faction.GetMembers().Any(member => member == targetCreature);
+            // Don't apply hostile spells against friendlies
+            if (casterCreature.IsReactionTypeFriendly(targetCreature))
+                return ScriptHandleResult.Handled;
 
-            if (!targetIsInParty)
-            {
-                spell.DoSpellResist(targetCreature, casterCreature);
-                CreatureEvents.OnSpellCastAt.Signal(caster, targetCreature, eventData.Spell);
-            }
+            // If the target is valid, perform spell resistance check and signal spell cast event
+            spell.DoSpellResist(targetCreature, casterCreature);
+            CreatureEvents.OnSpellCastAt.Signal(caster, targetCreature, eventData.Spell);
         }
 
         spell.OnSpellImpact(eventData);
