@@ -85,13 +85,9 @@ public class SpellCastingService
 
         if (casterCreature is { IsLoginPlayerCharacter: true, IsDMAvatar: false }
             && target is NwCreature targetCreature
-            && eventData.Spell.IsHostileSpell)
+            && eventData.Spell.IsHostileSpell
+            && !casterCreature.IsReactionTypeFriendly(targetCreature))
         {
-            // Don't apply hostile spells against friendlies
-            if (casterCreature.IsReactionTypeFriendly(targetCreature))
-                return ScriptHandleResult.Handled;
-
-            // If the target is valid, perform spell resistance check and signal spell cast event
             spell.DoSpellResist(targetCreature, casterCreature);
             CreatureEvents.OnSpellCastAt.Signal(caster, targetCreature, eventData.Spell);
         }
