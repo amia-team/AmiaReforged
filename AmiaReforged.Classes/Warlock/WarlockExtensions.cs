@@ -13,7 +13,6 @@ public static class WarlockExtensions
     private const VfxType SpellFailHeadVfx = (VfxType)292;
     private const VfxType SpellFailHandVfx = (VfxType)293;
     public const int WarlockId = 57;
-    private const int WordOfChangingId = 994;
     public const string EldritchBlastImpactScript = "wlk_el_blst";
 
     public static int WarlockLevel(this NwCreature warlock) => NWScript.GetLevelByClass(WarlockId, warlock);
