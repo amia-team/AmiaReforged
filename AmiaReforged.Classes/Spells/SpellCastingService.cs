@@ -89,7 +89,7 @@ public class SpellCastingService
         {
             bool targetIsInParty = casterCreature.Faction.GetMembers().Any(member => member == targetCreature);
 
-            if (targetIsInParty == false)
+            if (!targetIsInParty)
             {
                 spell.DoSpellResist(targetCreature, casterCreature);
                 CreatureEvents.OnSpellCastAt.Signal(caster, targetCreature, eventData.Spell);
