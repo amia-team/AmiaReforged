@@ -1,4 +1,4 @@
-﻿﻿using Anvil.API;
+﻿using Anvil.API;
 using Anvil.API.Events;
 using NWN.Core;
 
@@ -110,10 +110,10 @@ public static class SpellUtils
     }
 
     /// <summary>
-    /// Performs a spell resistance check against the target.
-    /// Returns true if the spell was resisted.
+    /// A simple spell resistance check on the target that follows base game rules and visuals.
     /// </summary>
-    public static bool MyResistSpell(NwCreature caster, NwCreature target)
+    /// <returns> True if the spell was resisted </returns>
+    public static bool MyResistSpell(NwCreature caster, NwGameObject target)
     {
         // MyResistSpell returns:
         // 0 = not resisted
@@ -121,6 +121,70 @@ public static class SpellUtils
         // 2 = resisted by globe/mantle
         int result = NWScript.ResistSpell(caster, target);
         return result != 0;
+    }
+
+    /// <summary>
+    /// Performs a spell resistance check against the target, with control of feedback messages, caster level,
+    /// spell level, and visuals. Can be used in a spell cast context.
+    /// </summary>
+    /// <param name="caster">Spell caster</param>
+    /// <param name="target">Spell target</param>
+    /// <param name="spell">Spell from the OnSpellCast context</param>
+    /// <param name="feedback">False to silence spell resist feedback</param>
+    /// <param name="playVisuals">False to hide visuals</param>
+    /// <param name="casterLevel">If null, will use the default caster level</param>
+    /// <param name="spellLevel">If null, will use the default innate spell level</param>
+    /// <returns> True if the spell was resisted </returns>
+    public static ResistSpellResult MyResistSpell(this NwCreature caster, NwGameObject target, NwSpell spell,
+        bool feedback = true, bool playVisuals = true, int? casterLevel = null, int? spellLevel = null)
+        => caster.MyResistSpell(target, (Spell)spell.Id, spell.SpellSchool, spellLevel ?? spell.InnateSpellLevel,
+            feedback, playVisuals, casterLevel);
+
+    /// <summary>
+    /// Performs a spell resistance check against the target. Notably, this can be used outside the normal
+    /// spellcasting context.
+    /// </summary>
+    /// <param name="caster">Spell caster</param>
+    /// <param name="target">Spell target</param>
+    /// <param name="spellType">Spell type corresponding to the spell id</param>
+    /// <param name="school">Spell school</param>
+    /// <param name="spellLevel">Spell innate level</param>
+    /// <param name="feedback">False to silence spell resist feedback</param>
+    /// <param name="playVisuals">False to hide visuals</param>
+    /// <param name="casterLevel">If null, will use the default caster level</param>
+    /// <returns> True if the spell was resisted </returns>
+    public static ResistSpellResult MyResistSpell(this NwCreature caster, NwGameObject target, Spell spellType,
+        SpellSchool school, int spellLevel, bool feedback = true, bool playVisuals = true, int? casterLevel = null)
+    {
+        int resolvedCasterLevel = casterLevel ?? caster.CasterLevel;
+        int spellId = (int)spellType;
+        int schoolId = (int)school;
+        int feedbackInt = feedback.ToInt();
+
+        if (NWScript.SpellAbsorptionLimitedCheck(target, caster, spellId, schoolId, spellLevel,
+                bFeedback: feedbackInt) == 1)
+        {
+            if (playVisuals)
+                target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpSpellMantleUse));
+            return ResistSpellResult.ResistedSpellAbsorbed;
+        }
+
+        if (NWScript.SpellAbsorptionUnlimitedCheck(target, caster, spellId, schoolId, spellLevel, bFeedback: feedbackInt) == 1
+            || NWScript.SpellImmunityCheck(target, caster, spellId, feedbackInt) == 1)
+        {
+            if (playVisuals)
+                target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpGlobeUse));
+            return ResistSpellResult.ResistedMagicImmune;
+        }
+
+        if (NWScript.SpellResistanceCheck(target, caster, spellId, resolvedCasterLevel, bFeedback: feedbackInt) == 1)
+        {
+            if (playVisuals)
+                target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpMagicResistanceUse));
+            return ResistSpellResult.Resisted;
+        }
+
+        return ResistSpellResult.Failed;
     }
 
     /// <summary>
