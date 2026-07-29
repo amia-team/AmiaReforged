@@ -1,0 +1,14 @@
+@inject IWorldEngineEditorCatalog Catalog
+
+@foreach (WorldEngineEditorExtensionDefinition extension in Catalog.GetExtensions(Slot, Context))
+{
+    <DynamicComponent @key="extension.Id" Type="extension.ComponentType" />
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public WorldEngineEditorExtensionSlot Slot { get; set; }
+
+    [Parameter, EditorRequired]
+    public WorldEngineEditorHostContext Context { get; set; } = null!;
+}

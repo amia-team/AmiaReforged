@@ -2,9 +2,10 @@
  * golden-layout-bridge.js
  * 
  * ES module that wraps Golden Layout v2's VirtualLayout to integrate with
- * Blazor Server.  Blazor pre-renders panel <div>s in the Razor markup; this
- * bridge positions them absolutely inside the GL host element using GL's
- * virtual-component events.
+ * Blazor Server. Blazor pre-renders panel elements in Razor markup; this
+ * bridge locates them within the layout's panel root and positions them using
+ * Golden Layout's virtual-component events. Prefer data-gl-panel="type"; the
+ * legacy bl-panel-{type} id convention remains supported.
  *
  * Multi-instance: each layout is keyed by an instanceId string, allowing
  * multiple simultaneous GL layouts (e.g. tabbed editor panes).
@@ -21,6 +22,7 @@ import { VirtualLayout } from './lib/golden-layout.js';
  * @property {VirtualLayout}     layout
  * @property {DotNetObjectReference} dotNetRef
  * @property {HTMLElement}       glRootElement
+ * @property {HTMLElement|Document} panelRootElement
  * @property {DOMRect|null}      glRootRect
  * @property {Map<object, { element: HTMLElement, componentType: string }>} componentMap
  * @property {Map<string, object>} typeToContainer
@@ -50,8 +52,9 @@ function getInstance(instanceId) {
  * @param {string}  containerId       DOM id of the GL host element
  * @param {string}  layoutConfigJson  Serialised LayoutConfig JSON
  * @param {object}  blazorRef         DotNetObjectReference for callbacks
+ * @param {string=} panelRootId       Optional element that contains the pre-rendered Blazor panels
  */
-export function init(instanceId, containerId, layoutConfigJson, blazorRef) {
+export function init(instanceId, containerId, layoutConfigJson, blazorRef, panelRootId) {
     // Destroy any previous instance with the same id
     if (instances.has(instanceId)) {
         destroy(instanceId);
@@ -59,6 +62,11 @@ export function init(instanceId, containerId, layoutConfigJson, blazorRef) {
 
     const glRootElement = document.getElementById(containerId);
     if (!glRootElement) throw new Error(`GL host element #${containerId} not found`);
+
+    const panelRootElement = panelRootId
+        ? document.getElementById(panelRootId)
+        : (glRootElement.parentElement ?? document);
+    if (!panelRootElement) throw new Error(`GL panel root #${panelRootId} not found`);
 
     // Ensure the host is positioned so absolute children work
     const pos = getComputedStyle(glRootElement).position;
@@ -69,6 +77,7 @@ export function init(instanceId, containerId, layoutConfigJson, blazorRef) {
         layout: null,
         dotNetRef: blazorRef,
         glRootElement,
+        panelRootElement,
         glRootRect: null,
         componentMap: new Map(),
         typeToContainer: new Map(),
@@ -192,6 +201,7 @@ export function destroy(instanceId) {
     inst.componentMap.clear();
     inst.typeToContainer.clear();
     inst.glRootElement = null;
+    inst.panelRootElement = null;
     inst.glRootRect = null;
     inst.dotNetRef = null;
     instances.delete(instanceId);
@@ -221,8 +231,9 @@ export function getBoundPanels(instanceId) {
 
 /**
  * Called by GL when a component needs to be bound.
- * Finds the pre-rendered Blazor <div id="bl-panel-{type}"> and wires
- * positioning events.
+ * Finds the pre-rendered Blazor panel in this layout's panel root and wires
+ * positioning events. data-gl-panel is preferred; bl-panel-{type} is retained
+ * for backward compatibility.
  * @param {LayoutInstance} inst
  * @param {string}         instanceId
  */
@@ -234,9 +245,18 @@ function handleBind(inst, instanceId, container, itemConfig) {
     }
 
     const panelId = `bl-panel-${typeName}`;
-    const blazorEl = document.getElementById(panelId);
+    const escapedType = CSS.escape(String(typeName));
+    const escapedPanelId = CSS.escape(panelId);
+    const blazorEl =
+        inst.panelRootElement?.querySelector?.(`[data-gl-panel="${escapedType}"]`) ??
+        inst.panelRootElement?.querySelector?.(`#${escapedPanelId}`) ??
+        document.getElementById(panelId);
+
     if (!blazorEl) {
-        console.error(`[GL Bridge] No Blazor panel element found: #${panelId}`);
+        console.error(
+            `[GL Bridge] No Blazor panel found for '${typeName}'. ` +
+            `Add data-gl-panel="${typeName}" or id="${panelId}" inside the panel root.`
+        );
         return { component: undefined, virtual: true };
     }
 

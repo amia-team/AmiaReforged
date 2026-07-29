@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using AmiaReforged.AdminPanel.Components;
+using AmiaReforged.AdminPanel.Components.Pages.WorldEngine.EditorFramework;
 using AmiaReforged.AdminPanel.Configuration;
 using AmiaReforged.AdminPanel.Hubs;
 using AmiaReforged.AdminPanel.Services;
@@ -103,6 +104,9 @@ public class Program
 
             // World Engine Editor state (one per circuit)
             builder.Services.AddScoped<WorldEngineEditorState>();
+
+            // World Engine Editor shell metadata and extension points
+            builder.Services.AddWorldEngineEditorFramework();
 
             // Graph layout computation (singleton for shared cache)
             builder.Services.AddSingleton<GraphLayoutService>();

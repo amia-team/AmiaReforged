@@ -1,0 +1,36 @@
+<div class="we-editor__new-menu">
+    <button class="btn btn-sm btn-primary"
+            title="Create new codex entry"
+            @onclick="ToggleMenu">
+        + New ▾
+    </button>
+
+    @if (_open)
+    {
+        <div class="we-editor__new-menu-items">
+            <button @onclick="OpenLore">Lore Entry</button>
+            <button @onclick="OpenQuest">Quest</button>
+        </div>
+    }
+</div>
+
+@code {
+    private bool _open;
+
+    [CascadingParameter]
+    public WorldEngineEditorHostContext Context { get; set; } = null!;
+
+    private void ToggleMenu() => _open = !_open;
+
+    private async Task OpenLore()
+    {
+        _open = false;
+        await Context.OpenNewLoreAsync();
+    }
+
+    private async Task OpenQuest()
+    {
+        _open = false;
+        await Context.OpenNewQuestAsync();
+    }
+}

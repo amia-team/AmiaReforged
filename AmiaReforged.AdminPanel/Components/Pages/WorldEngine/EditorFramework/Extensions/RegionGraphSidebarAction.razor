@@ -1,0 +1,19 @@
+<div class="we-editor__list-graph-btn">
+    @if (Context.IsRegionGraphOpen())
+    {
+        <button class="btn btn-sm btn-accent w-100" @onclick="Context.CloseRegionGraphAsync">
+            <span class="bi bi-x-circle me-1"></span> Close Graph View
+        </button>
+    }
+    else
+    {
+        <button class="btn btn-sm btn-primary w-100" @onclick="Context.OpenRegionGraphAsync">
+            <span class="bi bi-diagram-3 me-1"></span> Open Region Graph
+        </button>
+    }
+</div>
+
+@code {
+    [CascadingParameter]
+    public WorldEngineEditorHostContext Context { get; set; } = null!;
+}

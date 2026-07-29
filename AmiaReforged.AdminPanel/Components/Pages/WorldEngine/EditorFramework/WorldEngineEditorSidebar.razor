@@ -1,0 +1,91 @@
+@inject IWorldEngineEditorCatalog Catalog
+
+<div class="we-editor__activity-bar">
+    @foreach (WorldEngineEditorFeatureDefinition feature in Catalog.Features)
+    {
+        bool isActive = Context.State.ActiveEntityType == feature.EntityType;
+        <button class="we-editor__activity-btn @(isActive ? "we-editor__activity-btn--active" : "")"
+                title="@feature.Label"
+                @onclick="() => OnFeatureSelected.InvokeAsync(feature.EntityType)">
+            <span class="bi @feature.Icon"></span>
+        </button>
+    }
+</div>
+
+@if (IsOpen && Context.State.ActiveEntityType is { } activeEntityType)
+{
+    WorldEngineEditorFeatureDefinition activeFeature = Catalog.GetFeature(activeEntityType);
+
+    <div class="we-editor__list-panel">
+        <div class="we-editor__list-header">
+            <span>@activeFeature.Label</span>
+            <div class="we-editor__list-header-actions">
+                <EditorExtensionPoint Slot="WorldEngineEditorExtensionSlot.SidebarHeaderActions" Context="Context" />
+                <button class="btn btn-sm btn-link" @onclick="() => OnCloseRequested.InvokeAsync()" title="Close">
+                    <span class="bi bi-x"></span>
+                </button>
+            </div>
+        </div>
+
+        @if (Context.State.SelectedEndpointId is null)
+        {
+            <div class="we-editor__list-body">
+                <p class="text-muted small p-2">Select an endpoint to load entities.</p>
+            </div>
+        }
+        else
+        {
+            <EditorExtensionPoint Slot="WorldEngineEditorExtensionSlot.SidebarBeforeList" Context="Context" />
+
+            <EntityListPanel Items="Items"
+                             HasMore="HasMore"
+                             Loading="Loading"
+                             Error="Error"
+                             Search="Search"
+                             OnSearch="OnSearch"
+                             OnLoadMore="OnLoadMore"
+                             OnItemClick="OnItemClick" />
+
+            <EditorExtensionPoint Slot="WorldEngineEditorExtensionSlot.SidebarAfterList" Context="Context" />
+            <EditorExtensionPoint Slot="WorldEngineEditorExtensionSlot.SidebarFooter" Context="Context" />
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public WorldEngineEditorHostContext Context { get; set; } = null!;
+
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<EntityListItem> Items { get; set; } = [];
+
+    [Parameter]
+    public bool HasMore { get; set; }
+
+    [Parameter]
+    public bool Loading { get; set; }
+
+    [Parameter]
+    public string? Error { get; set; }
+
+    [Parameter]
+    public string Search { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<WorldEngineEntityType> OnFeatureSelected { get; set; }
+
+    [Parameter]
+    public EventCallback OnCloseRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnSearch { get; set; }
+
+    [Parameter]
+    public EventCallback OnLoadMore { get; set; }
+
+    [Parameter]
+    public EventCallback<EntityListItem> OnItemClick { get; set; }
+}

@@ -1060,3 +1060,43 @@
 .deploy-dialog__error-list li {
     margin-bottom: 2px;
 }
+
+/* World Engine editor extension framework */
+.we-editor__list-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.we-editor__new-menu {
+    position: relative;
+}
+
+.we-editor__new-menu-items {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 1060;
+    min-width: 130px;
+    padding: 4px 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.we-editor__new-menu-items button {
+    display: block;
+    width: 100%;
+    padding: 5px 12px;
+    color: var(--text-primary);
+    font-size: 0.82rem;
+    text-align: left;
+    cursor: pointer;
+    background: none;
+    border: 0;
+}
+
+.we-editor__new-menu-items button:hover {
+    background: var(--bg-input, #33302a);
+}

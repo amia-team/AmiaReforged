@@ -1,0 +1,10 @@
+<button class="btn btn-sm btn-primary"
+        title="Create new interaction"
+        @onclick="Context.OpenNewInteractionAsync">
+    + New
+</button>
+
+@code {
+    [CascadingParameter]
+    public WorldEngineEditorHostContext Context { get; set; } = null!;
+}
