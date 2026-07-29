@@ -676,6 +676,7 @@ function hitTestPin(wx, wy) {
 // ==================== Input Handling ====================
 
 function onMouseDown(e) {
+    if (!canvas || canvas.width === 0 || canvas.height === 0) return;
     const rect = canvas.getBoundingClientRect();
     const sx = (e.clientX - rect.left) * (canvas.width / rect.width);
     const sy = (e.clientY - rect.top) * (canvas.height / rect.height);
@@ -733,6 +734,7 @@ function onMouseDown(e) {
 }
 
 function onMouseMove(e) {
+    if (!canvas || canvas.width === 0 || canvas.height === 0) return;
     const rect = canvas.getBoundingClientRect();
     mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
     mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
@@ -770,6 +772,7 @@ function onMouseMove(e) {
 }
 
 function onMouseUp(e) {
+    if (!canvas || canvas.width === 0 || canvas.height === 0) return;
     const rect = canvas.getBoundingClientRect();
     const sx = (e.clientX - rect.left) * (canvas.width / rect.width);
     const sy = (e.clientY - rect.top) * (canvas.height / rect.height);
@@ -1272,13 +1275,18 @@ function autoArrange() {
 
 // ==================== Resize ====================
 
+function setCanvasSize(w, h) {
+    if (!canvas || canvas.width === w && canvas.height === h) return;
+    canvas.width = w;
+    canvas.height = h;
+}
+
 function resizeCanvas() {
     if (!canvas) return;
     const container = canvas.parentElement;
     if (!container) return;
 
-    canvas.width = container.clientWidth;
-    canvas.height = container.clientHeight;
+    setCanvasSize(container.clientWidth, container.clientHeight);
 }
 
 let resizeObserver = null;
@@ -1294,6 +1302,7 @@ function onDragOver(e) {
 
 function onDrop(e) {
     e.preventDefault();
+    if (!canvas || canvas.width === 0 || canvas.height === 0) return;
     const typeId = e.dataTransfer.getData('application/glyph-node');
     if (!typeId) return;
 
@@ -1465,9 +1474,7 @@ export function arrangeNodes() {
  * @param {number} h  Height in pixels
  */
 export function resizeCanvasToSize(w, h) {
-    if (!canvas) return;
-    canvas.width = w;
-    canvas.height = h;
+    setCanvasSize(w, h);
 }
 
 export function destroy() {

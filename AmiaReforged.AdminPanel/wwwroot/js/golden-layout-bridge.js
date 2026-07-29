@@ -24,6 +24,8 @@ import { VirtualLayout } from './lib/golden-layout.js';
  * @property {DOMRect|null}      glRootRect
  * @property {Map<object, { element: HTMLElement, componentType: string }>} componentMap
  * @property {Map<string, object>} typeToContainer
+ * @property {Map<string, { width: number, height: number }>} pendingResizes
+ * @property {boolean}           resizeFlushPending
  */
 
 /** @type {Map<string, LayoutInstance>} */
@@ -70,6 +72,8 @@ export function init(instanceId, containerId, layoutConfigJson, blazorRef) {
         glRootRect: null,
         componentMap: new Map(),
         typeToContainer: new Map(),
+        pendingResizes: new Map(),
+        resizeFlushPending: false,
     };
 
     inst.layout = new VirtualLayout(
@@ -299,10 +303,24 @@ function handleRect(inst, instanceId, container, width, height) {
     el.style.height = `${height}px`;
     el.style.display = 'block';
 
-    // Notify Blazor of panel resize (canvas needs to update dimensions)
+    // Notify Blazor of panel resize (canvas needs to update dimensions).
+    // Batch multiple recting events per animation frame into a single SignalR call.
     if (inst.dotNetRef) {
-        inst.dotNetRef.invokeMethodAsync('OnPanelResized', instanceId, entry.componentType, width, height)
-            .catch(err => console.warn('[GL Bridge] OnPanelResized failed:', err));
+        inst.pendingResizes.set(entry.componentType, { width, height });
+        if (!inst.resizeFlushPending) {
+            inst.resizeFlushPending = true;
+            requestAnimationFrame(() => {
+                inst.resizeFlushPending = false;
+                const dotNetRef = inst.dotNetRef;
+                const pending = inst.pendingResizes;
+                inst.pendingResizes = new Map();
+                if (!dotNetRef) return;
+                for (const [componentType, dims] of pending) {
+                    dotNetRef.invokeMethodAsync('OnPanelResized', instanceId, componentType, dims.width, dims.height)
+                        .catch(err => console.warn('[GL Bridge] OnPanelResized failed:', err));
+                }
+            });
+        }
     }
 }
 

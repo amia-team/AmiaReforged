@@ -67,9 +67,11 @@
         <button class="btn btn-sm" style="background:none;border:none;color:var(--text-secondary);font-size:1.2rem;padding:0 4px;cursor:pointer" @onclick="Cancel" title="Close">✕</button>
     </div>
 
-    @* ═══════ Golden Layout Host ═══════ *@
-    <div id="gl-container" class="interaction-editor__gl-host" style="flex:1;overflow:hidden">
-    </div>
+    @* ═══════ Workspace (GL host + panels) ═══════ *@
+    <div class="interaction-editor__workspace">
+        @* ═══════ Golden Layout Host ═══════ *@
+        <div id="gl-container" class="interaction-editor__gl-host">
+        </div>
 
     @* ═══════ Pre-rendered Blazor Panel Divs ═══════ *@
     @* These are positioned absolutely by the GL bridge when bound *@
@@ -406,6 +408,7 @@
             }
         </div>
     </div>
+    </div>
 </div>
 }
 
@@ -456,6 +459,7 @@
     private string _scriptNodeSearchFilter = "";
     private bool _scriptEditorReady;
     private SelectedNodeInfo? _scriptSelectedNodeInfo;
+    private bool _skipInitialScriptEditor;
 
     // JS module references
     private const string GlInstanceId = "interaction-editor";
@@ -513,9 +517,7 @@
         _error = null;
         _isOpen = true;
         StateHasChanged();
-        Logger.LogInformation("[IE] OpenCreate: _isOpen=true, waiting 50ms for DOM render...");
-        await Task.Delay(50); // Let DOM render the GL host and panels
-        Logger.LogInformation("[IE] OpenCreate: calling InitLayout()");
+        Logger.LogInformation("[IE] OpenCreate: _isOpen=true, calling InitLayout()");
         await InitLayout();
     }
 
@@ -529,10 +531,9 @@
         ResetScriptState();
         _error = null;
         _isOpen = true;
+        _skipInitialScriptEditor = true;
         StateHasChanged();
-        Logger.LogInformation("[IE] OpenEdit: _isOpen=true, waiting 50ms for DOM render...");
-        await Task.Delay(50);
-        Logger.LogInformation("[IE] OpenEdit: calling InitLayout()");
+        Logger.LogInformation("[IE] OpenEdit: _isOpen=true, calling InitLayout()");
         await InitLayout();
         await LoadInteractionScripts(item.Tag);
     }
@@ -548,6 +549,9 @@
             Logger.LogInformation("[IE] InitLayout: importing GL bridge...");
             _bridgeModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/golden-layout-bridge.js");
             _dotNetRef ??= DotNetObjectReference.Create(this);
+
+            // Wait for the GL host to be rendered before asking GL to initialise
+            await _bridgeModule.InvokeVoidAsync("waitForContainerReady", "gl-container", 2000);
 
             string layoutConfig = BuildDefaultLayoutConfig();
             Logger.LogInformation("[IE] InitLayout: calling GL bridge init(instanceId={Id}, containerId=gl-container)", GlInstanceId);
@@ -570,7 +574,11 @@
             Logger.LogInformation("[IE] InitLayout: waiting for container 'interaction-glyph-canvas' to be ready...");
             await _bridgeModule.InvokeVoidAsync("waitForContainerReady", "interaction-glyph-canvas", 2000);
             Logger.LogInformation("[IE] InitLayout: container ready, calling InitScriptEditor()");
-            await InitScriptEditor();
+            if (!_skipInitialScriptEditor)
+            {
+                await InitScriptEditor();
+            }
+            _skipInitialScriptEditor = false;
         }
         catch (Exception ex)
         {
@@ -791,6 +799,14 @@
     {
         try
         {
+            _scriptEditorReady = false;
+
+            if (_bridgeModule != null)
+            {
+                Logger.LogInformation("[IE] InitScriptEditor: waiting for canvas container...");
+                await _bridgeModule.InvokeVoidAsync("waitForContainerReady", "interaction-glyph-canvas", 2000);
+            }
+
             Logger.LogInformation("[IE] InitScriptEditor: importing glyph-editor.js...");
             _scriptEditorModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js");
             _dotNetRef ??= DotNetObjectReference.Create(this);
@@ -867,7 +883,11 @@
 
             // Re-init the glyph editor with the loaded graph
             await DestroyScriptEditor();
-            await Task.Delay(50);
+
+            if (_bridgeModule != null)
+            {
+                await _bridgeModule.InvokeVoidAsync("waitForContainerReady", "interaction-glyph-canvas", 2000);
+            }
             await InitScriptEditor();
         }
         catch (Exception ex) { Logger.LogWarning(ex, "Failed to load interaction scripts for {Tag}", interactionTag); }
@@ -949,6 +969,8 @@
     [JSInvokable]
     public Task OnNodeSelectionChanged(string? json)
     {
+        if (!_scriptEditorReady) return Task.CompletedTask;
+
         if (string.IsNullOrEmpty(json) || json == "null")
         {
             _scriptSelectedNodeInfo = null;
@@ -1010,7 +1032,11 @@
         _scriptSelectedNodeInfo = null;
         await DestroyScriptEditor();
         StateHasChanged();
-        await Task.Delay(50);
+
+        if (_bridgeModule != null)
+        {
+            await _bridgeModule.InvokeVoidAsync("waitForContainerReady", "interaction-glyph-canvas", 2000);
+        }
         await InitScriptEditor();
     }
 

@@ -159,7 +159,20 @@
 }
 
 /* ── Interaction editor specific ─────────────────────────────────── */
-.interaction-editor__gl-host,
+.interaction-editor__workspace {
+    position: relative;
+    flex: 1 1 auto;
+    overflow: hidden;
+    min-width: 0;
+    min-height: 0;
+}
+
+.interaction-editor__gl-host {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
 .we-editor__gl-host {
     position: relative;
     width: 100%;

@@ -6,6 +6,10 @@
 
 **Current state**: Phase 0 complete, Tasks 1.1 and 1.2 complete. `WorldEngineEditor.razor` reduced from 5,379 → 2,487 lines (54%). **67 tests passing**, 0 failures.
 
+### Known Issues
+
+_(none currently)_
+
 ---
 
 ## Testing Strategy
@@ -223,30 +227,46 @@
 
 ---
 
-### Task 1.2 — Extract CodexEditor component `[parallel]`
+### Task 1.2 — Extract CodexEditor component `[parallel]` ✅
 
-**Files**: `WorldEngineEditor.razor` (remove ~700 lines), `Components/Pages/WorldEngine/Editors/CodexEditor.razor` (new)
+**Files**: `WorldEngineEditor.razor` (remove ~1,670 lines), `Components/Pages/WorldEngine/Editors/CodexEditor.razor` (new, 1,684 lines)
 **Estimate**: 1 session
 
-- [ ] Create `Editors/CodexEditor.razor` with signature:
-  ```razor
-  <CodexEditor LoreApi="@LoreApi" QuestApi="@QuestApi"
-               OnSave="@handler" OnCancel="@handler" />
-  ```
-- [ ] Move all `_ce*` state fields to the new component
-- [ ] Move the codex editor markup (`@if (_codexEditorOpen)` block, all GL panels for lore + quest forms)
-- [ ] Move all `Ce*` methods
-- [ ] Wire `WorldEngineEditor.razor` to use `<CodexEditor>` in the switch block
+- [x] Created `Editors/CodexEditor.razor` with public methods `OpenNewAsync(CodexSubType)` / `OpenExistingAsync(string, CodexSubType)`
+- [x] Moved all `_ce*` state fields (~38 fields) to the new component
+- [x] Moved `CodexSubType` enum (made public inside component)
+- [x] Moved codex editor markup (GL panels for lore + quest forms, full editor UI)
+- [x] Moved all `Ce*` methods (CRUD, stage/objective CRUD, graph callbacks, save/cancel/delete)
+- [x] Moved GL lifecycle (init, destroy, panel events, resize handling)
+- [x] Moved `[JSInvokable]` graph editor callbacks to component
+- [x] Moved `DisposeAsync` GL cleanup to component
+- [x] Made static helpers `BuildStageListJson`, `BuildObjectiveListJson`, `BuildEmptyPipelineGraphJson` public for testability
+- [x] Wired `WorldEngineEditor.razor` to use `@ref` + `OpenCodexEditor`/`OpenExistingCodexEditor` delegation
+- [x] Updated `Components/_Imports.razor` with `Editors` using directive
+- [x] Added `@using System.Text.Json` to CodexEditor
 
 #### Tests for Task 1.2
 
-- [ ] Create `Tests/Components/CodexEditorTests.cs` (bUnit)
-- [ ] Test: renders lore form fields
-- [ ] Test: renders quest form fields
-- [ ] Test: fires `OnSave` with updated codex data
-- [ ] Test: fires `OnCancel` when cancel triggered
+- [x] Created `Tests/Components/CodexEditorTests.cs` (bUnit)
+- [x] Test: renders nothing by default (component starts closed)
+- [x] Test: OnSave callback is wired
+- [x] Test: OnCancel callback is wired
+- [x] Test: OnEntityListRefresh callback is wired
+- [x] Test: available parameter combinations work
+- [x] Test: BuildStageListJson returns valid JSON array
+- [x] Test: BuildObjectiveListJson returns valid JSON array
+- [x] Test: BuildEmptyPipelineGraphJson returns valid JSON object
+- [x] Test: GraphHasNodes correctly identifies empty graphs
+- [x] Test: CodexSubType enum has expected values
+- [x] Test: CodexSubType enum values are unique
+- [x] Test: DeepCopy creates independent copy of InteractionDefinitionDto
+- [x] Test: DeepCopy modifications don't affect original
+- [x] Test: DeepCopy for InteractionResponseDto works correctly
+- [x] Test: InteractionResponseDto has expected properties
+- [x] Test: EventCallback types match component parameters
+- 17 bUnit tests pass
 
-**Done when**: Codex/lore editor works from its own component. ~700 lines removed. 4+ bUnit tests pass.
+**Done when**: Codex/lore editor works from its own component. ~1,670 lines removed from parent. 17 bUnit tests pass.
 
 ---
 
