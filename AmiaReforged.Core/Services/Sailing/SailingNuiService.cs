@@ -13,10 +13,11 @@ private static readonly Logger Log =
 private readonly Dictionary<string, NuiWindowToken> _tokens =
     new();
 
+private NuiGroup? _mapGroup;
+
 // ---------------------------------------------------------------------
 // Binds
 // ---------------------------------------------------------------------
-
 private readonly NuiBind<string> _areaBind =
     new("ship_area");
 
@@ -25,9 +26,6 @@ private readonly NuiBind<string> _positionBind =
 
 private readonly NuiBind<string> _headingBind =
     new("ship_heading");
-
-private readonly NuiBind<string> _mapBind =
-    new("sailing_map");
 
 private readonly NuiBind<string> _statusBind =
     new("ship_status");
@@ -129,7 +127,22 @@ public SailingNuiService(
     Log.Info(
         "Sailing NUI Service initialized.");
 }
-
+private static string GetShipImage(
+    Heading heading)
+{
+    return heading switch
+    {
+        Heading.North => "ship_n",
+        Heading.NorthEast => "ship_ne",
+        Heading.East => "ship_e",
+        Heading.SouthEast => "ship_se",
+        Heading.South => "ship_s",
+        Heading.SouthWest => "ship_sw",
+        Heading.West => "ship_w",
+        Heading.NorthWest => "ship_nw",
+        _ => "ship_e",
+    };
+}
 // ---------------------------------------------------------------------
 // UI Helpers
 // ---------------------------------------------------------------------
@@ -254,17 +267,24 @@ public void Open(
      * The label is intentionally tall enough to display
      * the complete 16 x 16 map.
      */
-    NuiText mapText =
-    new(
-    NuiProperty<string>.CreateBind(
-        "sailing_map"));
-
-        mapText.Id =
-        "sailing_map";
-
-        mapText.Height =
-        320.0f;
-
+NuiRow mapCanvas = new()
+{
+    Width = 512f,
+    Height = 512f,
+    DrawList =
+    [
+        new NuiDrawListImage(
+            "sailing_map",
+            new NuiRect(0f, 0f, 512f, 512f))
+    ]
+};
+_mapGroup = new NuiGroup
+{
+    Id = "sailing_map_group",
+    Width = 512f,
+    Height = 512f,
+    Layout = mapCanvas
+};
     NuiButton leftButton =
         Button(
             "LEFT",
@@ -557,8 +577,7 @@ NuiLabel horizon =
     column.Children.Add(
         heading);
 
-   column.Children.Add(
-        mapText);
+column.Children.Add(_mapGroup);
 
     column.Children.Add(
         movementRowOne);
@@ -736,9 +755,27 @@ Log.Info( $"Sailing NUI updating: " + $"Player={player.PlayerName}, " + $"Shi
         _headingBind,
         $"Heading: {ship.Heading}");
 
-    token.SetBindValue(
-        _mapBind,
-        BuildSailingMap(ship));
+
+// -----------------------------------------------------------------
+// Sailing Map
+// -----------------------------------------------------------------
+
+if (_mapGroup != null)
+{
+    token.SetGroupLayout(
+        _mapGroup,
+        BuildMapCanvas(ship));
+}
+
+// -----------------------------------------------------------------
+// Horizon
+// -----------------------------------------------------------------
+
+token.SetBindValue(
+    _horizonBind,
+    _horizonContactService.BuildHorizonString(ship));
+
+
 
     token.SetBindValue(
         _horizonBind,
@@ -897,146 +934,217 @@ else
 // ---------------------------------------------------------------------
 // Live Sailing Map
 // ---------------------------------------------------------------------
-private string BuildSailingMap( ShipState ship) { char[,] map = new char[ MapCells, MapCells];
-for (int y = 0;
-     y < MapCells;
-     y++)
+
+private NuiRow BuildMapCanvas(
+    ShipState ship)
 {
-    for (int x = 0;
-         x < MapCells;
-         x++)
+    float drawX =
+        (ship.X / MapWorldSize) * 512.0f;
+
+    float drawY =
+        512.0f -
+        ((ship.Y / MapWorldSize) * 512.0f);
+
+    return new NuiRow
     {
-        map[x, y] =
-            '.';
-    }
-}
+        Width = 512.0f,
+        Height = 512.0f,
+        DrawList =
+        [
+            new NuiDrawListImage(
+                "sailing_map",
+                new NuiRect(
+                    0.0f,
+                    0.0f,
+                    512.0f,
+                    512.0f)),
 
-// -------------------------------------------------------------
-// Obstacles
-// -------------------------------------------------------------
-
-for (int y = 0;
-     y < MapCells;
-     y++)
-{
-    for (int x = 0;
-         x < MapCells;
-         x++)
-    {
-        float mapX =
-            (x * 10.0f) + 5.0f;
-
-        float mapY =
-            (y * 10.0f) + 5.0f;
-
-        if (_shipObstacleService.GetObstacleAt(
-                ship.AreaResRef,
-                mapX,
-                mapY) != null)
-        {
-            map[x, y] =
-                '#';
-        }
-    }
-    }
-
-// -------------------------------------------------------------
-// ------------------------------------------------------------- // Ocean Contacts // -------------------------------------------------------------
-foreach (OceanContact contact in _oceanContactService.GetVisibleContacts(ship)) { int contactX = Math.Clamp( (int)(contact.X / 10.0f), 0, MapCells - 1);
-int contactY =
-    Math.Clamp(
-        (int)(contact.Y / 10.0f),
-        0,
-        MapCells - 1);
-
-map[contactX, contactY] =
-    contact.Type switch
-    {
-        EncounterType.Pirate => 'P',
-        EncounterType.Merchant => 'M',
-        EncounterType.Wreck => 'W',
-        EncounterType.Whirlpool => '~',
-        EncounterType.SeaSerpent => 'S',
-        _ => '?'
+            new NuiDrawListImage(
+                GetShipImage(ship.Heading),
+                new NuiRect(
+                    drawX - 16.0f,
+                    drawY - 16.0f,
+                    32.0f,
+                    32.0f))
+        ]
     };
 }
-// ------------------------------------------------------------- // Nearby Ships // -------------------------------------------------------------
-foreach (ShipState nearbyShip in _shipEncounterService.GetNearbyShips( ship)) { int nearbyX = Math.Clamp( (int)(nearbyShip.X / 10.0f), 0, MapCells - 1);
-int nearbyY =
-    Math.Clamp(
-        (int)(nearbyShip.Y / 10.0f),
-        0,
-        MapCells - 1);
 
-map[nearbyX, nearbyY] =
-    'S';
-} // ------------------------------------------------------------- // Ship // -------------------------------------------------------------
-int shipX =
-    Math.Clamp(
-        (int)(ship.X / 10.0f),
-        0,
-        MapCells - 1);
+// ---------------------------------------------------------------------
+// Debug / Text Sailing Map
+// ---------------------------------------------------------------------
 
-int shipY =
-    Math.Clamp(
-        (int)(ship.Y / 10.0f),
-        0,
-        MapCells - 1);
-
-map[shipX, shipY] =
-    GetHeadingSymbol(
-        ship.Heading);
-
-// -------------------------------------------------------------
-// Build map
-// -------------------------------------------------------------
-
-StringBuilder result =
-    new();
-
-result.AppendLine(
-    "       NORTH");
-
-result.AppendLine(
-    "   +-----------------+");
-
-for (int y = MapCells - 1;
-     y >= 0;
-     y--)
+private string BuildSailingMap(
+    ShipState ship)
 {
-    result.Append(
-        "| ");
+    char[,] map =
+        new char[MapCells, MapCells];
 
-    for (int x = 0;
-         x < MapCells;
-         x++)
+    for (int y = 0;
+         y < MapCells;
+         y++)
+    {
+        for (int x = 0;
+             x < MapCells;
+             x++)
+        {
+            map[x, y] = '.';
+        }
+    }
+
+    // -------------------------------------------------------------
+    // Obstacles
+    // -------------------------------------------------------------
+
+    for (int y = 0;
+         y < MapCells;
+         y++)
+    {
+        for (int x = 0;
+             x < MapCells;
+             x++)
+        {
+            float mapX =
+                (x * 10.0f) + 5.0f;
+
+            float mapY =
+                (y * 10.0f) + 5.0f;
+
+            if (_shipObstacleService.GetObstacleAt(
+                    ship.AreaResRef,
+                    mapX,
+                    mapY) != null)
+            {
+                map[x, y] = '#';
+            }
+        }
+    }
+
+    // -------------------------------------------------------------
+    // Ocean Contacts
+    // -------------------------------------------------------------
+
+    foreach (OceanContact contact
+             in _oceanContactService.GetVisibleContacts(ship))
+    {
+        int contactX =
+            Math.Clamp(
+                (int)(contact.X / 10.0f),
+                0,
+                MapCells - 1);
+
+        int contactY =
+            Math.Clamp(
+                (int)(contact.Y / 10.0f),
+                0,
+                MapCells - 1);
+
+        map[contactX, contactY] =
+            contact.Type switch
+            {
+                EncounterType.Pirate => 'P',
+                EncounterType.Merchant => 'M',
+                EncounterType.Wreck => 'W',
+                EncounterType.Whirlpool => '~',
+                EncounterType.SeaSerpent => 'S',
+                _ => '?'
+            };
+    }
+
+    // -------------------------------------------------------------
+    // Nearby Ships
+    // -------------------------------------------------------------
+
+    foreach (ShipState nearbyShip
+             in _shipEncounterService.GetNearbyShips(ship))
+    {
+        int nearbyX =
+            Math.Clamp(
+                (int)(nearbyShip.X / 10.0f),
+                0,
+                MapCells - 1);
+
+        int nearbyY =
+            Math.Clamp(
+                (int)(nearbyShip.Y / 10.0f),
+                0,
+                MapCells - 1);
+
+        map[nearbyX, nearbyY] =
+            'S';
+    }
+
+    // -------------------------------------------------------------
+    // Ship
+    // -------------------------------------------------------------
+
+    int shipX =
+        Math.Clamp(
+            (int)(ship.X / 10.0f),
+            0,
+            MapCells - 1);
+
+    int shipY =
+        Math.Clamp(
+            (int)(ship.Y / 10.0f),
+            0,
+            MapCells - 1);
+
+    map[shipX, shipY] =
+        GetHeadingSymbol(
+            ship.Heading);
+
+    // -------------------------------------------------------------
+    // Build map
+    // -------------------------------------------------------------
+
+    StringBuilder result =
+        new();
+
+    result.AppendLine(
+        "       NORTH");
+
+    result.AppendLine(
+        "   +-----------------+");
+
+    for (int y = MapCells - 1;
+         y >= 0;
+         y--)
     {
         result.Append(
-            map[x, y]);
+            "| ");
 
-        result.Append(
-            ' ');
+        for (int x = 0;
+             x < MapCells;
+             x++)
+        {
+            result.Append(
+                map[x, y]);
+
+            result.Append(
+                ' ');
+        }
+
+        result.AppendLine(
+            "|");
     }
 
     result.AppendLine(
-        "|");
+        "   +-----------------+");
+
+    result.AppendLine(
+        "     0 0 0 0 0 0 0 0");
+
+    result.AppendLine();
+
+    result.Append(
+        $"X: {ship.X:0.0}  " +
+        $"Y: {ship.Y:0.0}  " +
+        $"Heading: {ship.Heading}");
+
+    return result.ToString();
 }
 
-result.AppendLine(
-    "   +-----------------+");
-
-result.AppendLine(
-    "     0 0 0 0 0 0 0 0");
-
-result.AppendLine();
-
-result.Append(
-    $"X: {ship.X:0.0}  " +
-    $"Y: {ship.Y:0.0}  " +
-    $"Heading: {ship.Heading}");
-
-return result.ToString();
-}
 // ---------------------------------------------------------------------
 // Heading Symbol
 // ---------------------------------------------------------------------
