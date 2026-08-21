@@ -90,17 +90,22 @@ private readonly HorizonContactService
 private readonly OceanContactService
     _oceanContactService;
 
-// ---------------------------------------------------------------------
-// Constructor
-// ---------------------------------------------------------------------
+private readonly ShipVisibilityService
+    _shipVisibilityService;
+//private readonly HelmService _helmService;
+    // ---------------------------------------------------------------------
+    // Constructor
+    // ---------------------------------------------------------------------
 
-public SailingNuiService(
+    public SailingNuiService(
     ShipEncounterService shipEncounterService,
     ShipBoardingService shipBoardingService,
     ShipCombatService shipCombatService,
     ShipObstacleService shipObstacleService,
     HorizonContactService horizonContactService,
     OceanContactService oceanContactService,
+    ShipVisibilityService shipVisibilityService,
+    //HelmService helmService,
     ShipNavigationService shipNavigationService)
 {
     _shipEncounterService =
@@ -124,30 +129,45 @@ public SailingNuiService(
     _oceanContactService =
         oceanContactService;
 
-    Log.Info(
+   //_helmService = helmService;
+_shipVisibilityService = shipVisibilityService;
+
+        Log.Info(
         "Sailing NUI Service initialized.");
 }
-private static string GetShipImage(
-    Heading heading)
+private static string GetShipImage(ShipState ship)
 {
-    return heading switch
+    string direction = ship.Heading switch
     {
-        Heading.North => "ship_n",
-        Heading.NorthEast => "ship_ne",
-        Heading.East => "ship_e",
-        Heading.SouthEast => "ship_se",
-        Heading.South => "ship_s",
-        Heading.SouthWest => "ship_sw",
-        Heading.West => "ship_w",
-        Heading.NorthWest => "ship_nw",
-        _ => "ship_e",
+        Heading.North => "n",
+        Heading.NorthEast => "ne",
+        Heading.East => "e",
+        Heading.SouthEast => "se",
+        Heading.South => "s",
+        Heading.SouthWest => "sw",
+        Heading.West => "w",
+        Heading.NorthWest => "nw",
+        _ => "e",
+    };
+
+    return $"{ship.SpritePrefix}_{direction}";
+}
+private static string GetHorizonIcon(
+    ShipState ship)
+{
+    return ship.ShipType switch
+    {
+        ShipType.Pirate => "pirate",
+        ShipType.Merchant => "merchant",
+        ShipType.Navy => "navy",
+        _ => "unknown",
     };
 }
-// ---------------------------------------------------------------------
-// UI Helpers
-// ---------------------------------------------------------------------
+    // ---------------------------------------------------------------------
+    // UI Helpers
+    // ---------------------------------------------------------------------
 
-private static NuiLabel Spacer(
+    private static NuiLabel Spacer(
     float height = 8.0f)
 {
     NuiLabel spacer = new(
@@ -732,24 +752,43 @@ column.Children.Add(_mapGroup);
 
 public void Update(
     NwPlayer player,
-    ShipState ship)
+    ShipState ship,
+    IReadOnlyCollection<ShipState>? ships = null)
 {
-   if (!_tokens.TryGetValue(
-    player.PlayerName,
-    out NuiWindowToken token))
-{ Log.Warn( $"Sailing NUI update skipped: " + $"Player={player.PlayerName}, " + "no active NUI token.");
-return;
-}
-Log.Info( $"Sailing NUI updating: " + $"Player={player.PlayerName}, " + $"Ship={ship.ShipName}, " + $"Area={ship.AreaResRef}, " + $"X={ship.X:0.00}, " + $"Y={ship.Y:0.00}, " + $"Heading={ship.Heading}"); // ----------------------------------------------------------------- // Navigation // -----------------------------------------------------------------
+    ships ??= Array.Empty<ShipState>();
+
+    if (!_tokens.TryGetValue(
+            player.PlayerName,
+            out NuiWindowToken token))
+    {
+        Log.Warn(
+            $"Sailing NUI update skipped: " +
+            $"Player={player.PlayerName}, " +
+            "no active NUI token.");
+
+        return;
+    }
+
+    Log.Info(
+        $"Sailing NUI updating: " +
+        $"Player={player.PlayerName}, " +
+        $"Ship={ship.ShipName}, " +
+        $"Area={ship.AreaResRef}, " +
+        $"X={ship.X:0.00}, " +
+        $"Y={ship.Y:0.00}, " +
+        $"Heading={ship.Heading}");
+
+    // -----------------------------------------------------------------
+    // Navigation
+    // -----------------------------------------------------------------
+
     token.SetBindValue(
         _areaBind,
         $"Area: {ship.AreaResRef}");
 
     token.SetBindValue(
         _positionBind,
-        $"Position: X {ship.X:0}  |  " +
-        $"Y {ship.Y:0}  |  " +
-        $"Z {ship.Z:0}");
+        $"Position: X {ship.X:0}  |  Y {ship.Y:0}  |  Z {ship.Z:0}");
 
     token.SetBindValue(
         _headingBind,
@@ -764,7 +803,7 @@ if (_mapGroup != null)
 {
     token.SetGroupLayout(
         _mapGroup,
-        BuildMapCanvas(ship));
+        BuildMapCanvas(ship, ships));
 }
 
 // -----------------------------------------------------------------
@@ -936,40 +975,85 @@ else
 // ---------------------------------------------------------------------
 
 private NuiRow BuildMapCanvas(
-    ShipState ship)
+    ShipState ship,
+    IReadOnlyCollection<ShipState>? ships = null)
+{
+    ships ??= Array.Empty<ShipState>();
+Log.Info(
+    $"BuildMapCanvas: Viewer={ship.ShipName}, ShipCount={ships.Count}");
+    float playerDrawX =
+        (ship.X / MapWorldSize) * 512.0f;
+
+    float playerDrawY =
+        512.0f -
+        ((ship.Y / MapWorldSize) * 512.0f);
+
+    List<NuiDrawListItem> drawList =
+    [
+        new NuiDrawListImage(
+            "sailing_map",
+            new NuiRect(
+                0.0f,
+                0.0f,
+                512.0f,
+                512.0f))
+    ];
+
+    // -------------------------------------------------------------
+    // Draw other visible ships first.
+    // -------------------------------------------------------------
+// -------------------------------------------------------------
+// Draw other visible ships first.
+// -------------------------------------------------------------
+
+Log.Info($"BuildMapCanvas: Viewer={ship.ShipName}, ShipCount={ships.Count}");
+
+foreach (VisibleShipContact contact in
+         _shipVisibilityService.GetVisibleShips(ship, ships))
 {
     float drawX =
-        (ship.X / MapWorldSize) * 512.0f;
+        (contact.Ship.X / MapWorldSize) * 512.0f;
 
     float drawY =
         512.0f -
-        ((ship.Y / MapWorldSize) * 512.0f);
+        ((contact.Ship.Y / MapWorldSize) * 512.0f);
+
+    string icon = GetShipImage(contact.Ship);
+
+    Log.Info(
+        $"Map contact: {contact.Ship.ShipName}, " +
+        $"Icon={icon}, " +
+        $"DrawX={drawX:0}, DrawY={drawY:0}");
+
+    drawList.Add(
+        new NuiDrawListImage(
+            icon,
+            new NuiRect(
+                drawX - 16.0f,
+                drawY - 16.0f,
+                32.0f,
+                32.0f)));
+}
+
+    // -------------------------------------------------------------
+    // Draw the player's ship last so it stays on top.
+    // -------------------------------------------------------------
+    drawList.Add(
+        new NuiDrawListImage(
+            GetShipImage(ship),
+            new NuiRect(
+                playerDrawX - 16.0f,
+                playerDrawY - 16.0f,
+                32.0f,
+                32.0f)));
 
     return new NuiRow
     {
         Width = 512.0f,
         Height = 512.0f,
-        DrawList =
-        [
-            new NuiDrawListImage(
-                "sailing_map",
-                new NuiRect(
-                    0.0f,
-                    0.0f,
-                    512.0f,
-                    512.0f)),
-
-            new NuiDrawListImage(
-                GetShipImage(ship.Heading),
-                new NuiRect(
-                    drawX - 16.0f,
-                    drawY - 16.0f,
-                    32.0f,
-                    32.0f))
-        ]
+        DrawList = drawList
     };
 }
-
 // ---------------------------------------------------------------------
 // Debug / Text Sailing Map
 // ---------------------------------------------------------------------
@@ -1223,3 +1307,4 @@ public void Close(
         player.PlayerName);
 }
 }
+
