@@ -1,6 +1,7 @@
 ﻿﻿using AmiaReforged.Core.Models;
 using AmiaReforged.Core.Models.DmModels;
 using AmiaReforged.Core.Models.Faction;
+using AmiaReforged.Core.Models.Sailing;
 using AmiaReforged.Core.Models.World;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -26,6 +27,7 @@ public class AmiaDbContext : DbContext
     public DbSet<InvasionRecord> InvasionRecord { get; set; } = null!;
     public DbSet<LastLocation> LastLocation { get; set; } = null!;
     public DbSet<PersistPLC> PersistPLC { get; set; } = null!;
+    public DbSet<SavedShipState> SavedShipStates { get; set; } = null!;
     public DbSet<Encounter> Encounters { get; set; } = null!;
     public DbSet<EncounterEntry> EncounterEntries { get; set; } = null!;
     public DbSet<Npc> Npcs { get; set; } = null!;
@@ -130,30 +132,79 @@ public class AmiaDbContext : DbContext
                 .HasConstraintName("player_playtime_records_cd_key_fkey");
         });
 
-        modelBuilder.Entity<DmPlaytimeRecord>(entity =>
-        {
-            entity.HasKey(e => e.Id)
-                .HasName("dm_playtime_records_pkey");
+    modelBuilder.Entity<DmPlaytimeRecord>(entity =>
+    {
+        entity.HasKey(e => e.Id)
+            .HasName("dm_playtime_records_pkey");
 
-            entity.ToTable("dm_playtime_records");
+        entity.ToTable("dm_playtime_records");
 
-            entity.HasIndex(e => new { e.CdKey, e.WeekStart }, "dm_playtime_records_cdkey_weekstart_key")
-                .IsUnique();
+        entity.HasIndex(e => new { e.CdKey, e.WeekStart }, "dm_playtime_records_cdkey_weekstart_key")
+            .IsUnique();
 
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.CdKey)
-                .HasColumnType("character varying")
-                .HasColumnName("cd_key");
-            entity.Property(e => e.WeekStart).HasColumnName("week_start");
-            entity.Property(e => e.MinutesPlayed).HasColumnName("minutes_played");
-            entity.Property(e => e.MinutesTowardNextDc).HasColumnName("minutes_toward_next_dc");
-            entity.Property(e => e.LastUpdated).HasColumnName("last_updated");
+        entity.Property(e => e.Id).HasColumnName("id");
+        entity.Property(e => e.CdKey)
+            .HasColumnType("character varying")
+            .HasColumnName("cd_key");
+        entity.Property(e => e.WeekStart).HasColumnName("week_start");
+        entity.Property(e => e.MinutesPlayed).HasColumnName("minutes_played");
+        entity.Property(e => e.MinutesTowardNextDc).HasColumnName("minutes_toward_next_dc");
+        entity.Property(e => e.LastUpdated).HasColumnName("last_updated");
 
-            entity.HasOne(d => d.Dm)
-                .WithMany(p => p.PlaytimeRecords)
-                .HasForeignKey(d => d.CdKey)
-                .OnDelete(DeleteBehavior.Cascade)
-                .HasConstraintName("dm_playtime_records_cd_key_fkey");
-        });
-    }
+        entity.HasOne(d => d.Dm)
+            .WithMany(p => p.PlaytimeRecords)
+            .HasForeignKey(d => d.CdKey)
+            .OnDelete(DeleteBehavior.Cascade)
+            .HasConstraintName("dm_playtime_records_cd_key_fkey");
+    });
+
+    // -------------------------------------------------------------------------
+    // Sailing
+    // -------------------------------------------------------------------------
+
+    modelBuilder.Entity<SavedShipState>(entity =>
+    {
+        entity.HasKey(e => e.Id);
+
+        entity.ToTable("saved_ship_states");
+
+        entity.Property(e => e.Id)
+            .HasColumnName("id");
+
+        entity.Property(e => e.ShipName)
+            .HasColumnName("ship_name")
+            .IsRequired();
+
+        entity.Property(e => e.AreaResRef)
+            .HasColumnName("area_res_ref")
+            .IsRequired();
+
+        entity.Property(e => e.X)
+            .HasColumnName("x");
+
+        entity.Property(e => e.Y)
+            .HasColumnName("y");
+
+        entity.Property(e => e.Z)
+            .HasColumnName("z");
+
+        entity.Property(e => e.Heading)
+            .HasColumnName("heading");
+
+        entity.Property(e => e.Underway)
+            .HasColumnName("underway");
+
+        entity.Property(e => e.Hull)
+            .HasColumnName("hull");
+
+        entity.Property(e => e.WeaponResRef)
+        .HasColumnName("weapon_res_ref")
+        .IsRequired();    
+
+        entity.HasIndex(e => e.ShipName)
+            .IsUnique();
+    });
 }
+}
+
+        
