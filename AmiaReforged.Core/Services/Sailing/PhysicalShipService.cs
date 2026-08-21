@@ -38,60 +38,40 @@ public class PhysicalShipService
 
     public event Action<string, NwPlayer>? PlayerLeft;
 
-    public PhysicalShipService()
-    {
-        Log.Info(
-            "!!! PHYSICAL SHIP SERVICE CONSTRUCTOR RUNNING !!!");
-
-        RegisterSeaSprite();
-
-        RegisterPhysicalShipInteractions();
-
-        Log.Info(
-            "Physical Ship Service initialized.");
-    }
+public PhysicalShipService()
+{
+    Log.Info("Physical Ship Service initialized.");
+}
 
     // -----------------------------------------------------------------
     // Registration
     // -----------------------------------------------------------------
 
-    private void RegisterSeaSprite()
+public void RegisterPhysicalShip(ShipDefinition definition)
+{
+    PhysicalShip ship = new()
     {
-        PhysicalShip seaSprite = new()
-        {
-            ShipName =
-                "Sea Sprite",
+        ShipName = definition.ShipName,
+        PlaceableTag = definition.PlaceableTag,
+        ExitPlaceableTag = definition.ExitTag,
+        DeckAreaResRef = definition.DeckAreaResRef,
+        CabinAreaResRef = definition.CabinAreaResRef
+    };
 
-            PlaceableTag =
-                "sea_sprite",
+    _physicalShips[ship.ShipName] = ship;
 
-            ExitPlaceableTag =
-                "sea_sprite_exit",
-
-            DeckAreaResRef =
-                "sea_sprite_d2",
-
-            CabinAreaResRef =
-                "sea_sprite_c"
-        };
-
-        _physicalShips[
-            seaSprite.ShipName] =
-            seaSprite;
-
-        Log.Info(
-            $"Registered physical ship: " +
-            $"Ship={seaSprite.ShipName}, " +
-            $"Tag={seaSprite.PlaceableTag}, " +
-            $"Deck={seaSprite.DeckAreaResRef}, " +
-            $"Cabin={seaSprite.CabinAreaResRef}");
-    }
-
+    Log.Info(
+        $"Registered physical ship: " +
+        $"Ship={ship.ShipName}, " +
+        $"Tag={ship.PlaceableTag}, " +
+        $"Deck={ship.DeckAreaResRef}, " +
+        $"Cabin={ship.CabinAreaResRef}");
+}
     // -----------------------------------------------------------------
     // Physical Ship Interaction Registration
     // -----------------------------------------------------------------
 
-    private void RegisterPhysicalShipInteractions()
+    public void RegisterPhysicalShipInteractions()
     {
         foreach (PhysicalShip physicalShip
             in _physicalShips.Values)
@@ -702,7 +682,10 @@ public class PhysicalShipService
             physicalShip.ShipName,
             player);
     }
-
+public void SpawnPhysicalShip(string shipName)
+{
+    TestPhysicalShip(shipName);
+}
     // -----------------------------------------------------------------
     // Test
     // -----------------------------------------------------------------

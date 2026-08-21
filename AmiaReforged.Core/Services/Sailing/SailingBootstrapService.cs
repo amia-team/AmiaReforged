@@ -1,3 +1,5 @@
+using AmiaReforged.Core.Models.Sailing;
+using Anvil.API;
 using Anvil.Services;
 using NLog;
 
@@ -11,39 +13,106 @@ public class SailingBootstrapService
 
     private readonly HelmService _helmService;
 
-    private readonly PhysicalShipService
-        _physicalShipService;
+    private readonly PhysicalShipService _physicalShipService;
+
+    // ---------------------------------------------------------------------
+    // Starting Fleet
+    // ---------------------------------------------------------------------
+
+    private static readonly ShipDefinition[] StartingFleet =
+    {
+new(
+    "Sea Sprite",
+    "sloop",
+    "sailing_helm",
+    "sea_sprite",
+    "sea_sprite_exit",
+    "sea_sprite_d2",
+    "sea_sprite_c",
+    "ocean_01",
+    50f,
+    50f,
+    0f,
+    Heading.East,
+    ShipType.Player,
+    100),
+new(
+    "Black Pearl",
+    "galleon",
+    "sailing_helm_black_pearl",
+    "black_pearl",
+    "black_pearl_exit",
+    "black_pearl_d2",
+    "black_pearl_c",
+    "ocean_01",
+    100f,
+    100f,
+    0f,
+    Heading.West,
+    ShipType.Player,
+    160),
+
+new(
+    "Stormrunner",
+    "brig",
+    "sailing_helm_stormrunner",
+    "stormrunner",
+    "stormrunner_exit",
+    "stormrunner_d2",
+    "stormrunner_c",
+    "ocean_01",
+    70f,
+    40f,
+    0f,
+    Heading.East,
+    ShipType.Player,
+    90),
+
+new(
+    "Golden Gull",
+    "cog",
+    "sailing_helm_golden_gull",
+    "golden_gull",
+    "golden_gull_exit",
+    "golden_gull_d2",
+    "golden_gull_c",
+    "ocean_01",
+    120f,
+    70f,
+    0f,
+    Heading.South,
+    ShipType.Player,
+    140),
+    };
+
+    // ---------------------------------------------------------------------
+    // Constructor
+    // ---------------------------------------------------------------------
 
     public SailingBootstrapService(
         HelmService helmService,
         PhysicalShipService physicalShipService)
     {
-        _helmService =
-            helmService;
+        _helmService = helmService;
+        _physicalShipService = physicalShipService;
 
-        _physicalShipService =
-            physicalShipService;
+ foreach (ShipDefinition ship in StartingFleet)
+{
+  _helmService.CreateShip(ship);
 
-        _helmService.CreateShip(
-            "Sea Sprite",
-            50.0f,
-            50.0f,
-            0.0f);
+    _physicalShipService.RegisterPhysicalShip(ship);
+}
 
-        _helmService.CreateShip(
-            "Black Pearl",
-            100.0f,
-            100.0f,
-            0.0f);
+_physicalShipService.RegisterPhysicalShipInteractions();
 
-        _physicalShipService.TestPhysicalShip(
-            "Sea Sprite");
+foreach (ShipDefinition ship in StartingFleet)
+{
+    _physicalShipService.SpawnPhysicalShip(ship.ShipName);
+}
+        // Spawn a physical ship for testing.
+        //_physicalShipService.TestPhysicalShip("Sea Sprite");
 
         Log.Info(
-            "Sailing system initialized. " +
-            "Sea Sprite registered in ocean_01 " +
-            "at X=50, Y=50, Z=0. " +
-            "Black Pearl registered in ocean_01 " +
-            "at X=100, Y=100, Z=0.");
+            $"Sailing system initialized. Registered {StartingFleet.Length} ship(s).");
     }
 }

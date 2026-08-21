@@ -22,6 +22,7 @@ public class ShipState
 
     public ShipType ShipType { get; set; } = ShipType.Player;
 
+    public string SpritePrefix { get; set; } = "sloop";
     public bool CanDock { get; set; }
 
     public string? NearbyIslandId { get; set; }

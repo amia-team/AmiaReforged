@@ -162,7 +162,17 @@ boardingPoint.OnLeftClick +=
     }    
 
 
+public void RegisterShipDefinition(ShipDefinition definition)
+{
+    _helmShips[definition.HelmTag] =
+        definition.ShipName;
 
+    _shipPlaceableTags[definition.ShipName] =
+        definition.PlaceableTag;
+
+    Log.Info(
+        $"Registered helm '{definition.HelmTag}' for {definition.ShipName}.");
+}
 
 private readonly ShipRoutePlannerService
     _shipRoutePlannerService;
@@ -602,7 +612,8 @@ if (ship == null)
 
 _sailingNuiService.Update(
     obj.Player,
-    ship);
+    ship,
+    _ships.Values);
     }
 
     if (obj.EventType == NuiEventType.MouseUp &&
@@ -945,9 +956,10 @@ ShipCombatService.ShipAttackResult result =
         // Refresh attacker's NUI
         // -----------------------------------------------------------------
 
-        _sailingNuiService.Update(
-            player,
-            ship);
+_sailingNuiService.Update(
+    player,
+    ship,
+    _ships.Values);
     }
     catch (Exception ex)
     {
@@ -1035,10 +1047,12 @@ private async Task EquipWeapon(
         $"'{weapon.DisplayName}' on " +
         $"ship '{ship.ShipName}'.");
 
-    _sailingNuiService.Update(
-        player,
-        ship);
+_sailingNuiService.Update(
+    player,
+    ship,
+    _ships.Values);
 }
+
 private ShipState SpawnContactAsShip(
     OceanContact contact)
 {
@@ -1428,9 +1442,10 @@ private void RequestBoarding(
             $"{request.RequestingShip.ShipName} -> " +
             $"{request.TargetShip.ShipName}.");
 
-        _sailingNuiService.Update(
-            player,
-            ship);
+   _sailingNuiService.Update(
+    player,
+    ship,
+    _ships.Values);
 
         NwPlayer? targetPlayer =
             NwModule.Instance.Players.FirstOrDefault(
@@ -1448,9 +1463,10 @@ private void RequestBoarding(
 
             if (targetShip != null)
             {
-                _sailingNuiService.Update(
-                    targetPlayer,
-                    targetShip);
+              _sailingNuiService.Update(
+    targetPlayer,
+    targetShip,
+    _ships.Values);
             }
         }
 
@@ -1483,9 +1499,10 @@ private void AcceptBoarding(
 
         if (ship != null)
         {
-            _sailingNuiService.Update(
-                player,
-                ship);
+        _sailingNuiService.Update(
+    player,
+    ship,
+    _ships.Values);
         }
 
         Log.Info(
@@ -1513,9 +1530,10 @@ private void RejectBoarding(
 
         if (ship != null)
         {
-            _sailingNuiService.Update(
-                player,
-                ship);
+       _sailingNuiService.Update(
+    player,
+    ship,
+    _ships.Values);
         }
 
         NwPlayer? requestingPlayer =
@@ -1595,9 +1613,10 @@ private void HandleBoardingCompleted(
     if (targetPlayer != null &&
         targetShip != null)
     {
-        _sailingNuiService.Update(
-            targetPlayer,
-            targetShip);
+   _sailingNuiService.Update(
+    targetPlayer,
+    targetShip,
+    _ships.Values);
     }
 
     Log.Info(
@@ -1606,32 +1625,27 @@ private void HandleBoardingCompleted(
         $"{request.TargetShip.ShipName}.");
 }
 
-public ShipState CreateShip(
-    string shipName,
-    float x,
-    float y,
-    float z)
+public ShipState CreateShip(ShipDefinition definition)
 {
     ShipState ship = new()
-{
-    ShipName = shipName,
-    DeckAreaResRef = shipName == "Sea Sprite"
-        ? "sea_sprite_d2"
-        : shipName == "Black Pearl"
-            ? "black_pearl_d"
-            : "sea_sprite_d2",
+    {
+        ShipName = definition.ShipName,
+        SpritePrefix = definition.SpritePrefix,
+        DeckAreaResRef = definition.DeckAreaResRef,
+        AreaResRef = definition.OceanAreaResRef,
+        ShipType = definition.ShipType,
+        X = definition.X,
+        Y = definition.Y,
+        Z = definition.Z,
+        Heading = definition.Heading,
+        Hull = definition.Hull,
+        WeaponResRef = definition.WeaponResRef
+    };
 
-    AreaResRef = "ocean_01",
-    X = x,
-    Y = y,
-    Z = z,
-    Heading = Heading.East
-};
-
-    _ships[shipName] = ship;
+    _ships[definition.ShipName] = ship;
 
     Log.Info(
-        $"Ship '{shipName}' created: " +
+        $"Ship '{definition.ShipName}' created: " +
         $"Area={ship.AreaResRef}, " +
         $"X={ship.X}, " +
         $"Y={ship.Y}, " +
@@ -1674,9 +1688,10 @@ private async Task RepairShip(
             "⚓ HULL INTEGRITY\n" +
             "Already at 100%.");
 
-        _sailingNuiService.Update(
-            player,
-            ship);
+      _sailingNuiService.Update(
+    player,
+    ship,
+    _ships.Values);
 
         return;
     }
@@ -1713,16 +1728,26 @@ private async Task RepairShip(
         $"{ship.ShipName}\n" +
         $"Hull: {previousHull}% → {ship.Hull}%");
 
-    _sailingNuiService.Update(
-        player,
-        ship);
+  _sailingNuiService.Update(
+    player,
+    ship,
+    _ships.Values);
 
     Log.Info(
         $"Player {playerName} repaired " +
         $"ship '{ship.ShipName}': " +
         $"Hull={previousHull}->{ship.Hull}.");
 }
-private async Task LoadSavedShipState(
+public void RegisterHelm(
+    ShipDefinition definition)
+{
+    _helmShips[definition.HelmTag] =
+        definition.ShipName;
+
+    _shipPlaceableTags[definition.ShipName] =
+        definition.PlaceableTag;
+}
+    private async Task LoadSavedShipState(
     ShipState ship)
 {
     SavedShipState? savedState =
@@ -2981,9 +3006,10 @@ private void UpdateSailingNui(
             continue;
         }
 
-        _sailingNuiService.Update(
-            player,
-            ship);
+       _sailingNuiService.Update(
+    player,
+    ship,
+    _ships.Values);
     }
 }
 }
