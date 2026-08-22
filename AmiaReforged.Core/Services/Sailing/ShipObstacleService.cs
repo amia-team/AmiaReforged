@@ -88,6 +88,21 @@ public class ShipObstacleService
 
         return null;
     }
+    /// <summary>
+/// Returns every obstacle registered in the specified sailing area.
+/// </summary>
+public IReadOnlyCollection<SailingObstacle> GetObstacles(
+    string areaResRef)
+{
+    if (!_obstaclesByArea.TryGetValue(
+            areaResRef,
+            out List<SailingObstacle>? obstacles))
+    {
+        return Array.Empty<SailingObstacle>();
+    }
+
+    return obstacles;
+}
 
     private void RegisterObstacles()
     {

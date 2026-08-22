@@ -94,7 +94,9 @@ private readonly ChartMarkerService _chartMarkerService;
 
     private readonly ShipVisibilityService
     _shipVisibilityService;
-//private readonly HelmService _helmService;
+
+private readonly ChartDiscoveryService _chartDiscoveryService;
+    //private readonly HelmService _helmService;
     // ---------------------------------------------------------------------
     // Constructor
     // ---------------------------------------------------------------------
@@ -108,6 +110,7 @@ private readonly ChartMarkerService _chartMarkerService;
     OceanContactService oceanContactService,
     ShipVisibilityService shipVisibilityService,
     ChartMarkerService chartMarkerService,
+    ChartDiscoveryService chartDiscoveryService,
     //HelmService helmService,
     ShipNavigationService shipNavigationService)
 {
@@ -132,8 +135,10 @@ private readonly ChartMarkerService _chartMarkerService;
     _oceanContactService =
         oceanContactService;
 
-   //_helmService = helmService;
-_shipVisibilityService = shipVisibilityService;
+    _chartDiscoveryService = chartDiscoveryService;
+
+        //_helmService = helmService;
+        _shipVisibilityService = shipVisibilityService;
 
    _chartMarkerService = chartMarkerService;
         
@@ -818,9 +823,9 @@ public void Update(
 
 if (_mapGroup != null)
 {
-    token.SetGroupLayout(
-        _mapGroup,
-        BuildMapCanvas(ship, ships));
+token.SetGroupLayout(
+    _mapGroup,
+    BuildMapCanvas(player, ship, ships));
 }
 
 // -----------------------------------------------------------------
@@ -992,6 +997,7 @@ else
 // ---------------------------------------------------------------------
 
 private NuiRow BuildMapCanvas(
+    NwPlayer player,
     ShipState ship,
     IReadOnlyCollection<ShipState>? ships = null)
 {
@@ -1015,10 +1021,86 @@ Log.Info(
                 512.0f,
                 512.0f))
     ];
-    // -------------------------------------------------------------
-// Draw permanent chart markers.
+
+   // -------------------------------------------------------------
+// Draw islands.
 // -------------------------------------------------------------
-foreach (ChartMarker marker in
+// -------------------------------------------------------------
+// Draw discovered islands.
+// -------------------------------------------------------------
+foreach (SailingObstacle obstacle in
+         _shipObstacleService.GetObstacles(ship.AreaResRef))
+{
+    int gridX =
+        Math.Clamp((int)(obstacle.MinX / 10f), 0, 15);
+
+    int gridY =
+        Math.Clamp((int)(obstacle.MinY / 10f), 0, 15);
+
+    if (!_chartDiscoveryService.IsDiscovered(
+            player,
+            ship.AreaResRef,
+            gridX,
+            gridY))
+    {
+        continue;
+    }
+
+    float drawX =
+        (obstacle.MinX / MapWorldSize) * 512f;
+
+    float drawY =
+        512f -
+        ((obstacle.MaxY / MapWorldSize) * 512f);
+
+    float width =
+        ((obstacle.MaxX - obstacle.MinX) / MapWorldSize) * 512f;
+
+    float height =
+        ((obstacle.MaxY - obstacle.MinY) / MapWorldSize) * 512f;
+
+    drawList.Add(
+        new NuiDrawListImage(
+            "chart_island",
+            new NuiRect(
+                drawX,
+                drawY,
+                width,
+                height)));
+}
+
+// -------------------------------------------------------------
+// Debug fog-of-war overlay.
+// -------------------------------------------------------------
+const float cellSize = 512f / 16f;
+
+for (int x = 0; x < 16; x++)
+{
+    for (int y = 0; y < 16; y++)
+    {
+        if (_chartDiscoveryService.IsDiscovered(
+                player,
+                ship.AreaResRef,
+                x,
+                y))
+        {
+            continue;
+        }
+
+        drawList.Add(
+            new NuiDrawListImage(
+                "fog_cell",
+                new NuiRect(
+                    x * cellSize,
+                    y * cellSize,
+                    cellSize,
+                    cellSize)));
+    }
+}
+        // -------------------------------------------------------------
+        // Draw permanent chart markers.
+        // -------------------------------------------------------------
+        foreach (ChartMarker marker in
          _chartMarkerService.GetMarkers(ship.AreaResRef))
 {
     float drawX =

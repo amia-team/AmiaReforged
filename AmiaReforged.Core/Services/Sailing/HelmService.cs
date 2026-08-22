@@ -59,6 +59,8 @@ private readonly OceanContactService
 private readonly PhysicalShipService
 _physicalShipService;
 
+private readonly ChartDiscoveryService _chartDiscoveryService;
+
     private readonly PirateAiService _pirateAiService;
 
     private readonly ShipCrewService
@@ -81,6 +83,7 @@ public HelmService(
     PirateAiService pirateAiService,
     IslandService islandService,
     PhysicalShipService physicalShipService,
+    ChartDiscoveryService chartDiscoveryService,
     SailingAreaService sailingAreaService)
     {
         _shipRoutePlannerService =
@@ -125,7 +128,8 @@ public HelmService(
     _physicalShipService =
     physicalShipService;
 
-
+    _chartDiscoveryService = chartDiscoveryService;
+    
         _pirateAiService =
     pirateAiService;
 
@@ -610,7 +614,11 @@ if (ship == null)
                  break;
             }
 
-_sailingNuiService.Update(
+_chartDiscoveryService.RevealAroundShip(
+    obj.Player,
+    ship);
+
+            _sailingNuiService.Update(
     obj.Player,
     ship,
     _ships.Values);
