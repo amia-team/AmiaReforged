@@ -6,8 +6,8 @@ namespace AmiaReforged.Core.Services.Sailing;
 [ServiceBinding(typeof(ShipVisibilityService))]
 public sealed class ShipVisibilityService
 {
-    private const float NearbyRange = 40f;
-    private const float HorizonRange = 80f;
+    private const float NearbyRange = 120f;
+    private const float HorizonRange = 150f;
 
     public IEnumerable<VisibleShipContact> GetVisibleShips(
         ShipState viewer,

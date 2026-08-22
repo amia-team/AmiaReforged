@@ -90,7 +90,9 @@ private readonly HorizonContactService
 private readonly OceanContactService
     _oceanContactService;
 
-private readonly ShipVisibilityService
+private readonly ChartMarkerService _chartMarkerService;
+
+    private readonly ShipVisibilityService
     _shipVisibilityService;
 //private readonly HelmService _helmService;
     // ---------------------------------------------------------------------
@@ -105,6 +107,7 @@ private readonly ShipVisibilityService
     HorizonContactService horizonContactService,
     OceanContactService oceanContactService,
     ShipVisibilityService shipVisibilityService,
+    ChartMarkerService chartMarkerService,
     //HelmService helmService,
     ShipNavigationService shipNavigationService)
 {
@@ -132,12 +135,14 @@ private readonly ShipVisibilityService
    //_helmService = helmService;
 _shipVisibilityService = shipVisibilityService;
 
+   _chartMarkerService = chartMarkerService;
+        
         Log.Info(
         "Sailing NUI Service initialized.");
 }
-private static string GetShipImage(ShipState ship)
+private static string GetShipImage(Heading heading)
 {
-    string direction = ship.Heading switch
+    return heading switch
     {
         Heading.North => "n",
         Heading.NorthEast => "ne",
@@ -149,9 +154,21 @@ private static string GetShipImage(ShipState ship)
         Heading.NorthWest => "nw",
         _ => "e",
     };
-
-    return $"{ship.SpritePrefix}_{direction}";
 }
+
+private static string GetShipImage(ShipState ship)
+{
+    string prefix =
+        string.IsNullOrWhiteSpace(ship.SpritePrefix)
+            ? "ship"
+            : ship.SpritePrefix;
+
+        return $"{prefix}_{GetShipImage(ship.Heading)}";
+        Log.Info(
+    $"Sprite lookup: {ship.ShipName}, " +
+    $"Prefix={ship.SpritePrefix}, " +
+    $"Result={ship.SpritePrefix}_{GetShipImage(ship.Heading)}");
+    }
 private static string GetHorizonIcon(
     ShipState ship)
 {
@@ -998,15 +1015,37 @@ Log.Info(
                 512.0f,
                 512.0f))
     ];
-
     // -------------------------------------------------------------
-    // Draw other visible ships first.
-    // -------------------------------------------------------------
+// Draw permanent chart markers.
 // -------------------------------------------------------------
-// Draw other visible ships first.
-// -------------------------------------------------------------
+foreach (ChartMarker marker in
+         _chartMarkerService.GetMarkers(ship.AreaResRef))
+{
+    float drawX =
+        (marker.X / MapWorldSize) * 512f;
 
-Log.Info($"BuildMapCanvas: Viewer={ship.ShipName}, ShipCount={ships.Count}");
+    float drawY =
+        512f -
+        ((marker.Y / MapWorldSize) * 512f);
+
+    drawList.Add(
+        new NuiDrawListImage(
+            marker.Sprite,
+            new NuiRect(
+                drawX - marker.Size / 2f,
+                drawY - marker.Size / 2f,
+                marker.Size,
+                marker.Size)));
+}
+
+        // -------------------------------------------------------------
+        // Draw other visible ships first.
+        // -------------------------------------------------------------
+        // -------------------------------------------------------------
+        // Draw other visible ships first.
+        // -------------------------------------------------------------
+
+        Log.Info($"BuildMapCanvas: Viewer={ship.ShipName}, ShipCount={ships.Count}");
 
 foreach (VisibleShipContact contact in
          _shipVisibilityService.GetVisibleShips(ship, ships))
@@ -1018,21 +1057,14 @@ foreach (VisibleShipContact contact in
         512.0f -
         ((contact.Ship.Y / MapWorldSize) * 512.0f);
 
-    string icon = GetShipImage(contact.Ship);
-
-    Log.Info(
-        $"Map contact: {contact.Ship.ShipName}, " +
-        $"Icon={icon}, " +
-        $"DrawX={drawX:0}, DrawY={drawY:0}");
-
     drawList.Add(
         new NuiDrawListImage(
-            icon,
+            GetShipImage(contact.Ship),
             new NuiRect(
-                drawX - 16.0f,
-                drawY - 16.0f,
-                32.0f,
-                32.0f)));
+                drawX - 10.0f,
+                drawY - 10.0f,
+                20.0f,
+                20.0f)));
 }
 
     // -------------------------------------------------------------

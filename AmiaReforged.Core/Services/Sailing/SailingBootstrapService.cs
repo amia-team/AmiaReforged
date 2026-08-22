@@ -48,7 +48,7 @@ new(
     100f,
     100f,
     0f,
-    Heading.West,
+    Heading.East,
     ShipType.Player,
     160),
 
@@ -80,7 +80,7 @@ new(
     120f,
     70f,
     0f,
-    Heading.South,
+    Heading.East,
     ShipType.Player,
     140),
     };

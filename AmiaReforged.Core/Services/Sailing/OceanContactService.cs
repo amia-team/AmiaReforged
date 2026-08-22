@@ -14,17 +14,17 @@ public sealed class OceanContactService
 
     private readonly List<OceanContact> contacts =
     [
-        new OceanContact
+      /*  new OceanContact
         {
             Id="pirate_001",
             Name="Black Fang",
             Type=EncounterType.Pirate,
-            AreaResRef="ocean_01",
+            AreaResRef="ocean_002",
             X=120f,
             Y=100f,
-            ShipTag="pirate_black_fang",
-            ShipResRef="pirate_brig"
-        }
+           ShipTag="pirate_black_fang",
+           ShipResRef="pirate_brig"
+         }*/
     ];
 
     public IEnumerable<OceanContact> GetContacts(

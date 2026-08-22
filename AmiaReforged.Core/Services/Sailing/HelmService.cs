@@ -1056,33 +1056,37 @@ _sailingNuiService.Update(
 private ShipState SpawnContactAsShip(
     OceanContact contact)
 {
-    ShipState ship = new()
+ ShipState ship = new()
+{
+    ShipName = contact.Name,
+
+    DeckAreaResRef = contact.Type switch
     {
-        ShipName = contact.Name,
+        EncounterType.Pirate => "pirate_brig_d",
+        EncounterType.Merchant => "merchant_ship_d",
+        _ => "sea_sprite_d2"
+    },
 
-        DeckAreaResRef = contact.Type switch
-        {
-            EncounterType.Pirate => "pirate_brig_d",
-            EncounterType.Merchant => "merchant_ship_d",
-            _ => "sea_sprite_d2"
-        },
+    ShipType = ShipType.Player, // keep them all as Player
 
-        ShipType = contact.Type switch
-        {
-            EncounterType.Pirate => ShipType.Pirate,
-            EncounterType.Merchant => ShipType.Merchant,
-            _ => ShipType.Player
-        },
+    AreaResRef = contact.AreaResRef,
+    X = contact.X,
+    Y = contact.Y,
+    Z = 0.0f,
+    Heading = Heading.West,
+    Hull = 100,
+    Underway = true,
+    HelmsmanPCKey = null,
 
-        AreaResRef = contact.AreaResRef,
-        X = contact.X,
-        Y = contact.Y,
-        Z = 0.0f,
-        Heading = Heading.West,
-        Hull = 100,
-        Underway = true,
-        HelmsmanPCKey = null
-    };
+    SpritePrefix = contact.ShipResRef switch
+    {
+        "stormrunner" => "brig",
+        "black_pearl" => "galleon",
+        "golden_gull" => "cog",
+        "sea_sprite" => "sloop",
+        _ => "sloop"
+    }
+};
     _ships[ship.ShipName] = ship;
 
 // Register this ship's physical placeable tag.
