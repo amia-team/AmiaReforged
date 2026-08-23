@@ -1,4 +1,6 @@
-namespace AmiaReforged.Core.Models.Sailing;
+using AmiaReforged.Core.Models.Sailing;
+
+namespace AmiaReforged.Core.Services.Sailing;
 
 public sealed record ShipDefinition(
     string ShipName,
