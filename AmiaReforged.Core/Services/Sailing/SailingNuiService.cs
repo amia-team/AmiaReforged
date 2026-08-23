@@ -316,20 +316,20 @@ public void Open(
      */
 NuiRow mapCanvas = new()
 {
-    Width = 1254f,
-    Height = 1254f,
+    Width = 800f,
+    Height = 800f,
     DrawList =
     [
         new NuiDrawListImage(
             "sailing_map",
-            new NuiRect(0f, 0f, 1254f, 1254f))
+            new NuiRect(0f, 0f, 800f, 800f))
     ]
 };
 _mapGroup = new NuiGroup
 {
     Id = "sailing_map_group",
-    Width = 1254f,
-    Height = 1254f,
+    Width = 800f,
+    Height = 800f,
     Layout = mapCanvas
 };
     NuiButton leftButton =
@@ -1010,11 +1010,11 @@ private NuiRow BuildMapCanvas(
 Log.Info(
     $"BuildMapCanvas: Viewer={ship.ShipName}, ShipCount={ships.Count}");
     float playerDrawX =
-        (ship.X / MapWorldSize) * 1254.0f;
+        (ship.X / MapWorldSize) * 800.0f;
 
     float playerDrawY =
-        1254.0f -
-        ((ship.Y / MapWorldSize) * 1254.0f);
+        800.0f -
+        ((ship.Y / MapWorldSize) * 800.0f);
 
     List<NuiDrawListItem> drawList =
     [
@@ -1023,8 +1023,8 @@ Log.Info(
             new NuiRect(
                 0.0f,
                 0.0f,
-                1254.0f,
-                1254.0f))
+                800.0f,
+                800.0f))
     ];
 
         // -------------------------------------------------------------
@@ -1034,11 +1034,11 @@ Log.Info(
                 _chartLandmarkService.GetLandmarks(ship.AreaResRef))
        {
            float drawX =
-               (landmark.X / MapWorldSize) * 1254f;
+               (landmark.X / MapWorldSize) * 800f;
 
            float drawY =
-               1254f -
-               ((landmark.Y / MapWorldSize) * 1254f);
+               800f -
+               ((landmark.Y / MapWorldSize) * 800f);
 
            drawList.Add(
                new NuiDrawListImage(
@@ -1073,17 +1073,17 @@ Log.Info(
            }
 
            float drawX =
-               (obstacle.MinX / MapWorldSize) * 1254f;
+               (obstacle.MinX / MapWorldSize) * 800f;
 
            float drawY =
-               1254f -
-               ((obstacle.MaxY / MapWorldSize) * 1254f);
+               800f -
+               ((obstacle.MaxY / MapWorldSize) * 800f);
 
            float width =
-               ((obstacle.MaxX - obstacle.MinX) / MapWorldSize) * 1254f;
+               ((obstacle.MaxX - obstacle.MinX) / MapWorldSize) * 800f;
 
            float height =
-               ((obstacle.MaxY - obstacle.MinY) / MapWorldSize) * 1254f;
+               ((obstacle.MaxY - obstacle.MinY) / MapWorldSize) * 800f;
 
            drawList.Add(
                new NuiDrawListImage(
@@ -1098,7 +1098,7 @@ Log.Info(
         // -------------------------------------------------------------
         // Debug fog-of-war overlay.
         // -------------------------------------------------------------
-          const float cellSize = 1254f / 16f;
+          const float cellSize = 800f / 16f;
 
           for (int x = 0; x < 16; x++)
           {
@@ -1132,11 +1132,11 @@ Log.Info(
                  _chartMarkerService.GetMarkers(ship.AreaResRef))
         {
             float drawX =
-                (marker.X / MapWorldSize) * 1254f;
+                (marker.X / MapWorldSize) * 800f;
 
             float drawY =
-                1254f -
-                ((marker.Y / MapWorldSize) * 1254f);
+                800f -
+                ((marker.Y / MapWorldSize) * 800f);
 
             const float markerSize = 28f;
 
@@ -1161,11 +1161,11 @@ foreach (VisibleShipContact contact in
          _shipVisibilityService.GetVisibleShips(ship, ships))
 {
     float drawX =
-        (contact.Ship.X / MapWorldSize) * 1254.0f;
+        (contact.Ship.X / MapWorldSize) * 800.0f;
 
     float drawY =
-        1254.0f -
-        ((contact.Ship.Y / MapWorldSize) * 1254.0f);
+        800.0f -
+        ((contact.Ship.Y / MapWorldSize) * 800.0f);
 
     drawList.Add(
         new NuiDrawListImage(
@@ -1191,8 +1191,8 @@ foreach (VisibleShipContact contact in
 
     return new NuiRow
     {
-        Width = 1254.0f,
-        Height = 1254.0f,
+        Width = 800.0f,
+        Height = 800.0f,
         DrawList = drawList
     };
 }

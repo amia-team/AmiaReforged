@@ -9,7 +9,7 @@ public sealed class ChartDiscoveryService
 {
     private const int GridSize = 16;
     private const float WorldSize = 640f;
-    private const int RevealRadius = 1;
+    private const int RevealRadius = 2;
 
     private readonly Dictionary<string, Dictionary<string, bool[,]>> _discovery = new();
 
