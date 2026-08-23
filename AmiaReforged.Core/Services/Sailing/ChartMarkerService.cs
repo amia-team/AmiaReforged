@@ -2,13 +2,13 @@ using AmiaReforged.Core.Models.Sailing;
 using Anvil.Services;
 
 namespace AmiaReforged.Core.Services.Sailing;
-
+ 
 [ServiceBinding(typeof(ChartMarkerService))]
 public sealed class ChartMarkerService
 {
     private readonly List<ChartMarker> markers =
-    [
-        new()
+   [
+     /*   new()
         {
             AreaResRef = "ocean_01",
             Sprite = "chart_port",
@@ -21,9 +21,9 @@ public sealed class ChartMarkerService
         {
             AreaResRef = "ocean_01",
             Sprite = "chart_dock",
-            X = 110f,
-            Y = 40f
-        }
+            X = 120f,
+            Y = 90f
+        }*/
     ];
 
     public IEnumerable<ChartMarker> GetMarkers(string areaResRef)

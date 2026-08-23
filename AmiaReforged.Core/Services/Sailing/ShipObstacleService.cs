@@ -104,26 +104,95 @@ public IReadOnlyCollection<SailingObstacle> GetObstacles(
     return obstacles;
 }
 
-    private void RegisterObstacles()
+private void RegisterObstacles()
+{
+    // =============================================================
+    // Main Amia landmass
+    // Ocean scale: 640 x 640
+    // These are coarse collision volumes matching the chart.
+    // =============================================================
+/*
+    RegisterObstacle(new SailingObstacle
     {
-        // Test obstacle.
-        //
-        // This is deliberately temporary.
-        // We will replace this with the actual
-        // Amia sailing map obstacles later.
+        Name = "Amia North",
+        AreaResRef = "ocean_01",
+        MinX = 63f,
+        MaxX = 90f,
+        MinY = 34f,
+        MaxY = 60f
+    });
 
-        RegisterObstacle(
-            new SailingObstacle
-            {
-                Name = "Test Island",
-                AreaResRef = "ocean_01",
-                MinX = 70.0f,
-                MaxX = 80.0f,
-                MinY = 70.0f,
-                MaxY = 80.0f
-            });
-    }
+    RegisterObstacle(new SailingObstacle
+    {
+        Name = "Amia Central",
+        AreaResRef = "ocean_01",
+        MinX = 55f,
+        MaxX = 95f,
+        MinY = 60f,
+        MaxY = 90f
+    });
 
+    RegisterObstacle(new SailingObstacle
+    {
+        Name = "Amia South",
+        AreaResRef = "ocean_01",
+        MinX = 60f,
+        MaxX = 88f,
+        MinY = 90f,
+        MaxY = 120f
+    });
+
+    RegisterObstacle(new SailingObstacle
+    {
+        Name = "West Peninsula",
+        AreaResRef = "ocean_01",
+        MinX = 46f,
+        MaxX = 62f,
+        MinY = 52f,
+        MaxY = 122f
+    });
+
+    RegisterObstacle(new SailingObstacle
+    {
+        Name = "East Coast",
+        AreaResRef = "ocean_01",
+        MinX = 90f,
+        MaxX = 103f,
+        MinY = 46f,
+        MaxY = 92f
+    });
+
+    RegisterObstacle(new SailingObstacle
+    {
+        Name = "South-east Peninsula",
+        AreaResRef = "ocean_01",
+        MinX = 82f,
+        MaxX = 102f,
+        MinY = 92f,
+        MaxY = 118f
+    });
+
+    RegisterObstacle(new SailingObstacle
+    {
+        Name = "South-west Hook",
+        AreaResRef = "ocean_01",
+        MinX = 42f,
+        MaxX = 56f,
+        MinY = 104f,
+        MaxY = 138f
+    });
+*/
+    RegisterObstacle(new SailingObstacle
+    {
+        Name = "North-east Isle",
+        AreaResRef = "ocean_01",
+        MinX = 120f,
+        MaxX = 90f,
+        MinY = 18f,
+        MaxY = 36f
+    });
+}
+ 
     private void RegisterObstacle(
         SailingObstacle obstacle)
     {

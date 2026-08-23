@@ -2,7 +2,7 @@ using System.Text; using AmiaReforged.Core.Models.Sailing; using Anvil.API; u
 namespace AmiaReforged.Core.Services.Sailing;
 [ServiceBinding(typeof(SailingNuiService))] public class SailingNuiService { private const string WindowId = "sailing";
 private const float MapWorldSize =
-    160.0f;
+    640.0f;
 
 private const int MapCells =
     16;
@@ -95,7 +95,9 @@ private readonly ChartMarkerService _chartMarkerService;
     private readonly ShipVisibilityService
     _shipVisibilityService;
 
-private readonly ChartDiscoveryService _chartDiscoveryService;
+private readonly ChartLandmarkService _chartLandmarkService;
+
+    private readonly ChartDiscoveryService _chartDiscoveryService;
     //private readonly HelmService _helmService;
     // ---------------------------------------------------------------------
     // Constructor
@@ -111,6 +113,7 @@ private readonly ChartDiscoveryService _chartDiscoveryService;
     ShipVisibilityService shipVisibilityService,
     ChartMarkerService chartMarkerService,
     ChartDiscoveryService chartDiscoveryService,
+    ChartLandmarkService chartLandmarkService,
     //HelmService helmService,
     ShipNavigationService shipNavigationService)
 {
@@ -140,8 +143,10 @@ private readonly ChartDiscoveryService _chartDiscoveryService;
         //_helmService = helmService;
         _shipVisibilityService = shipVisibilityService;
 
-   _chartMarkerService = chartMarkerService;
-        
+        _chartMarkerService = chartMarkerService;
+
+     _chartLandmarkService = chartLandmarkService;   
+
         Log.Info(
         "Sailing NUI Service initialized.");
 }
@@ -303,7 +308,7 @@ public void Open(
                 "ship_heading"));
 
     /*
-     * The map uses the same 160 x 160 coordinate space
+     * The map uses the same 640 x 640 coordinate space
      * as the sailing system.
      *
      * The label is intentionally tall enough to display
@@ -311,20 +316,20 @@ public void Open(
      */
 NuiRow mapCanvas = new()
 {
-    Width = 512f,
-    Height = 512f,
+    Width = 1254f,
+    Height = 1254f,
     DrawList =
     [
         new NuiDrawListImage(
             "sailing_map",
-            new NuiRect(0f, 0f, 512f, 512f))
+            new NuiRect(0f, 0f, 1254f, 1254f))
     ]
 };
 _mapGroup = new NuiGroup
 {
     Id = "sailing_map_group",
-    Width = 512f,
-    Height = 512f,
+    Width = 1254f,
+    Height = 1254f,
     Layout = mapCanvas
 };
     NuiButton leftButton =
@@ -1005,11 +1010,11 @@ private NuiRow BuildMapCanvas(
 Log.Info(
     $"BuildMapCanvas: Viewer={ship.ShipName}, ShipCount={ships.Count}");
     float playerDrawX =
-        (ship.X / MapWorldSize) * 512.0f;
+        (ship.X / MapWorldSize) * 1254.0f;
 
     float playerDrawY =
-        512.0f -
-        ((ship.Y / MapWorldSize) * 512.0f);
+        1254.0f -
+        ((ship.Y / MapWorldSize) * 1254.0f);
 
     List<NuiDrawListItem> drawList =
     [
@@ -1018,114 +1023,137 @@ Log.Info(
             new NuiRect(
                 0.0f,
                 0.0f,
-                512.0f,
-                512.0f))
+                1254.0f,
+                1254.0f))
     ];
 
-   // -------------------------------------------------------------
-// Draw islands.
-// -------------------------------------------------------------
-// -------------------------------------------------------------
-// Draw discovered islands.
-// -------------------------------------------------------------
-foreach (SailingObstacle obstacle in
-         _shipObstacleService.GetObstacles(ship.AreaResRef))
-{
-    int gridX =
-        Math.Clamp((int)(obstacle.MinX / 10f), 0, 15);
+        // -------------------------------------------------------------
+        // Draw islands.
+               // -------------------------------------------------------------
+     /*  foreach (ChartLandmark landmark in
+                _chartLandmarkService.GetLandmarks(ship.AreaResRef))
+       {
+           float drawX =
+               (landmark.X / MapWorldSize) * 1254f;
 
-    int gridY =
-        Math.Clamp((int)(obstacle.MinY / 10f), 0, 15);
+           float drawY =
+               1254f -
+               ((landmark.Y / MapWorldSize) * 1254f);
 
-    if (!_chartDiscoveryService.IsDiscovered(
-            player,
-            ship.AreaResRef,
-            gridX,
-            gridY))
-    {
-        continue;
-    }
+           drawList.Add(
+               new NuiDrawListImage(
+                   landmark.Sprite,
+                   new NuiRect(
+                       drawX - 64f,
+                       drawY - 64f,
+                       128f,
+                       128f)));
+       }
 
-    float drawX =
-        (obstacle.MinX / MapWorldSize) * 512f;
+               // -------------------------------------------------------------
+               // Draw discovered islands.
+               // -------------------------------------------------------------
+               foreach (SailingObstacle obstacle in
+                _shipObstacleService.GetObstacles(ship.AreaResRef))
+       {
+           int gridX =
+               Math.Clamp((int)(obstacle.MinX / 10f), 0, 15);
 
-    float drawY =
-        512f -
-        ((obstacle.MaxY / MapWorldSize) * 512f);
+          int gridY =
+           15 -
+           Math.Clamp((int)(obstacle.MinY / 10f), 0, 15);
 
-    float width =
-        ((obstacle.MaxX - obstacle.MinX) / MapWorldSize) * 512f;
+           if (!_chartDiscoveryService.IsDiscovered(
+                   player,
+                   ship.AreaResRef,
+                   gridX,
+                   gridY))
+           {
+               continue;
+           }
 
-    float height =
-        ((obstacle.MaxY - obstacle.MinY) / MapWorldSize) * 512f;
+           float drawX =
+               (obstacle.MinX / MapWorldSize) * 1254f;
 
-    drawList.Add(
-        new NuiDrawListImage(
-            "chart_island",
-            new NuiRect(
-                drawX,
-                drawY,
-                width,
-                height)));
-}
+           float drawY =
+               1254f -
+               ((obstacle.MaxY / MapWorldSize) * 1254f);
 
-// -------------------------------------------------------------
-// Debug fog-of-war overlay.
-// -------------------------------------------------------------
-const float cellSize = 512f / 16f;
+           float width =
+               ((obstacle.MaxX - obstacle.MinX) / MapWorldSize) * 1254f;
 
-for (int x = 0; x < 16; x++)
-{
-    for (int y = 0; y < 16; y++)
-    {
-        if (_chartDiscoveryService.IsDiscovered(
-                player,
-                ship.AreaResRef,
-                x,
-                y))
-        {
-            continue;
-        }
+           float height =
+               ((obstacle.MaxY - obstacle.MinY) / MapWorldSize) * 1254f;
 
-        drawList.Add(
-            new NuiDrawListImage(
-                "fog_cell",
-                new NuiRect(
-                    x * cellSize,
-                    y * cellSize,
-                    cellSize,
-                    cellSize)));
-    }
-}
+           drawList.Add(
+               new NuiDrawListImage(
+                   "chart_island",
+                   new NuiRect(
+                       drawX,
+                       drawY,
+                       width,
+                       height)));
+       }
+*/
+        // -------------------------------------------------------------
+        // Debug fog-of-war overlay.
+        // -------------------------------------------------------------
+          const float cellSize = 1254f / 16f;
+
+          for (int x = 0; x < 16; x++)
+          {
+              for (int y = 0; y < 16; y++)
+              {
+                  if (_chartDiscoveryService.IsDiscovered(
+                          player,
+                          ship.AreaResRef,
+                          x,
+                          y))
+                  {
+                      continue;
+                  }
+
+                  drawList.Add(
+                      new NuiDrawListImage(
+                          "fog_cell",
+                          new NuiRect(
+                              x * cellSize,
+                              y * cellSize,
+                              cellSize,
+                              cellSize)));
+              }
+          }
+          
+          
         // -------------------------------------------------------------
         // Draw permanent chart markers.
         // -------------------------------------------------------------
-        foreach (ChartMarker marker in
-         _chartMarkerService.GetMarkers(ship.AreaResRef))
-{
-    float drawX =
-        (marker.X / MapWorldSize) * 512f;
+        /*foreach (ChartMarker marker in
+                 _chartMarkerService.GetMarkers(ship.AreaResRef))
+        {
+            float drawX =
+                (marker.X / MapWorldSize) * 1254f;
 
-    float drawY =
-        512f -
-        ((marker.Y / MapWorldSize) * 512f);
+            float drawY =
+                1254f -
+                ((marker.Y / MapWorldSize) * 1254f);
 
-    drawList.Add(
-        new NuiDrawListImage(
-            marker.Sprite,
-            new NuiRect(
-                drawX - marker.Size / 2f,
-                drawY - marker.Size / 2f,
-                marker.Size,
-                marker.Size)));
-}
+            const float markerSize = 28f;
 
-        // -------------------------------------------------------------
-        // Draw other visible ships first.
-        // -------------------------------------------------------------
-        // -------------------------------------------------------------
-        // Draw other visible ships first.
-        // -------------------------------------------------------------
+            drawList.Add(
+                new NuiDrawListImage(
+                    "chart_dock",
+                    new NuiRect(
+                        drawX,
+                        drawY,
+                        markerSize,
+                        markerSize)));
+        }*/     // -------------------------------------------------------------
+                // Draw other visible ships first.
+                // -------------------------------------------------------------
+                // -------------------------------------------------------------
+                // Draw other visible ships first.
+                // -------------------------------------------------------------
 
         Log.Info($"BuildMapCanvas: Viewer={ship.ShipName}, ShipCount={ships.Count}");
 
@@ -1133,11 +1161,11 @@ foreach (VisibleShipContact contact in
          _shipVisibilityService.GetVisibleShips(ship, ships))
 {
     float drawX =
-        (contact.Ship.X / MapWorldSize) * 512.0f;
+        (contact.Ship.X / MapWorldSize) * 1254.0f;
 
     float drawY =
-        512.0f -
-        ((contact.Ship.Y / MapWorldSize) * 512.0f);
+        1254.0f -
+        ((contact.Ship.Y / MapWorldSize) * 1254.0f);
 
     drawList.Add(
         new NuiDrawListImage(
@@ -1163,8 +1191,8 @@ foreach (VisibleShipContact contact in
 
     return new NuiRow
     {
-        Width = 512.0f,
-        Height = 512.0f,
+        Width = 1254.0f,
+        Height = 1254.0f,
         DrawList = drawList
     };
 }

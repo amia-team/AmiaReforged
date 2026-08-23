@@ -2,8 +2,8 @@ using AmiaReforged.Core.Models.Sailing; using Anvil.API; using Anvil.API.Events;
 namespace AmiaReforged.Core.Services.Sailing;
 [ServiceBinding(typeof(HelmService))] public class HelmService { private const string StartingAreaResRef = "ocean_01";
 private const float SailingStep = 1.0f;
-private const float AreaMaxX = 160.0f;
-private const float AreaMaxY = 160.0f;
+private const float AreaMaxX = 640.0f;
+private const float AreaMaxY = 640.0f;
 //private const bool PersistShips = false;
 
 private const float BoundaryEntryOffset = 5.0f;
@@ -1992,13 +1992,31 @@ public void NavigateAllShips()
         else if (ship.Underway &&
                  !string.IsNullOrEmpty(ship.HelmsmanPCKey))
         {
-     TryMoveShip(
+TryMoveShip(
     ship,
     SailingStep);
 
 UpdateDockingState(ship);
 
-UpdateSailingNui(ship);
+if (!string.IsNullOrWhiteSpace(ship.HelmsmanPCKey))
+{
+    NwPlayer? captain =
+        NwModule.Instance.Players.FirstOrDefault(
+            p => p.PlayerName == ship.HelmsmanPCKey);
+
+    if (captain != null)
+    {
+        _chartDiscoveryService.RevealAroundShip(
+            captain,
+            ship);
+
+        _sailingNuiService.Update(
+            captain,
+            ship,
+            _ships.Values);
+    }
+}
+
 if (string.IsNullOrWhiteSpace(ship.HelmsmanPCKey))
 {
     continue;

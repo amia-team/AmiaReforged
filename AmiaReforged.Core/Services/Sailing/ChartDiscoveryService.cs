@@ -8,7 +8,7 @@ namespace AmiaReforged.Core.Services.Sailing;
 public sealed class ChartDiscoveryService
 {
     private const int GridSize = 16;
-    private const float WorldSize = 160f;
+    private const float WorldSize = 640f;
     private const int RevealRadius = 1;
 
     private readonly Dictionary<string, Dictionary<string, bool[,]>> _discovery = new();
@@ -41,7 +41,7 @@ public sealed class ChartDiscoveryService
             ship.AreaResRef);
 
         int centerX = Math.Clamp((int)(ship.X / (WorldSize / GridSize)), 0, GridSize - 1);
-        int centerY = Math.Clamp((int)(ship.Y / (WorldSize / GridSize)), 0, GridSize - 1);
+       int centerY = GridSize - 1 - Math.Clamp((int)(ship.Y / (WorldSize / GridSize)), 0, GridSize - 1);
 
         for (int x = centerX - RevealRadius; x <= centerX + RevealRadius; x++)
         {

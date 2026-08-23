@@ -8,10 +8,10 @@ namespace AmiaReforged.Core.Services.Sailing;
 public class SailingAreaService
 {
     private const float AreaMinX = 0.0f;
-    private const float AreaMaxX = 160.0f;
+    private const float AreaMaxX = 640.0f;
 
     private const float AreaMinY = 0.0f;
-    private const float AreaMaxY = 160.0f;
+    private const float AreaMaxY = 640.0f;
 
     private readonly Dictionary<
         string,
@@ -64,7 +64,7 @@ public class SailingAreaService
 
             EastEntry = CreateLocation(
             "ocean_01",
-             160.0f,
+             640.0f,
                 80.0f),
 
             WestEntry = CreateLocation(
@@ -105,7 +105,7 @@ public class SailingAreaService
 
 EastEntry = CreateLocation(
     "ocean_003",
-    160.0f,
+    640.0f,
     80.0f),
         };
 
@@ -124,7 +124,7 @@ EastEntry = CreateLocation(
 NorthEntry = CreateLocation(
     "ocean_004",
     80.0f,
-    160.0f),
+    640.0f),
         };
 
         SailingArea ocean05 = new()

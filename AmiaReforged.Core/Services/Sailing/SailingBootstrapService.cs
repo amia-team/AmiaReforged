@@ -50,7 +50,7 @@ new(
     0f,
     Heading.East,
     ShipType.Player,
-    160),
+    640),
 
 new(
     "Stormrunner",
