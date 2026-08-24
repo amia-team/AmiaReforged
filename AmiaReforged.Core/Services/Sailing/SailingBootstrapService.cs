@@ -14,7 +14,8 @@ public class SailingBootstrapService
     private readonly HelmService _helmService;
 
     private readonly PhysicalShipService _physicalShipService;
-
+private readonly MerchantTradeRouteService
+    _merchantTradeRouteService;
     // ---------------------------------------------------------------------
     // Starting Fleet
     // ---------------------------------------------------------------------
@@ -68,51 +69,79 @@ new(
     ShipType.Player,
     90),
 
-new(
-    "Golden Gull",
-    "cog",
-    "sailing_helm_golden_gull",
-    "golden_gull",
-    "golden_gull_exit",
-    "golden_gull_d2",
-    "golden_gull_c",
-    "ocean_01",
-    120f,
-    70f,
-    0f,
-    Heading.East,
-    ShipType.Player,
-    140),
     };
 
     // ---------------------------------------------------------------------
     // Constructor
     // ---------------------------------------------------------------------
 
-    public SailingBootstrapService(
-        HelmService helmService,
-        PhysicalShipService physicalShipService)
+public SailingBootstrapService(
+    HelmService helmService,
+    PhysicalShipService physicalShipService,
+    MerchantTradeRouteService merchantTradeRouteService)
+{
+    _helmService = helmService;
+    _physicalShipService = physicalShipService;
+    _merchantTradeRouteService = merchantTradeRouteService;
+
+    // ---------------------------------------------------------------------
+    // Starting fleet
+    // ---------------------------------------------------------------------
+
+    foreach (ShipDefinition ship in StartingFleet)
     {
-        _helmService = helmService;
-        _physicalShipService = physicalShipService;
-
- foreach (ShipDefinition ship in StartingFleet)
-{
-  _helmService.CreateShip(ship);
-
-    _physicalShipService.RegisterPhysicalShip(ship);
-}
-
-_physicalShipService.RegisterPhysicalShipInteractions();
-
-foreach (ShipDefinition ship in StartingFleet)
-{
-    _physicalShipService.SpawnPhysicalShip(ship.ShipName);
-}
-        // Spawn a physical ship for testing.
-        //_physicalShipService.TestPhysicalShip("Sea Sprite");
-
-        Log.Info(
-            $"Sailing system initialized. Registered {StartingFleet.Length} ship(s).");
+        _helmService.CreateShip(ship);
+        _physicalShipService.RegisterPhysicalShip(ship);
     }
+
+    // ---------------------------------------------------------------------
+    // Merchant ships
+    // ---------------------------------------------------------------------
+
+    ShipDefinition goldenGullDefinition =
+        new(
+            "Golden Gull",
+            "cog",
+            "sailing_helm_golden_gull",
+            "golden_gull",
+            "golden_gull_exit",
+            "golden_gull_d2",
+            "golden_gull_c",
+            "ocean_01",
+            120f,
+            90f,
+            0f,
+            Heading.West,
+            ShipType.Merchant,
+            140);
+
+    ShipState goldenGull =
+        _helmService.CreateShip(
+            goldenGullDefinition);
+
+    _merchantTradeRouteService
+        .AssignDriftwoodSouthportRoute(
+            goldenGull);
+
+    _physicalShipService.RegisterPhysicalShip(
+        goldenGullDefinition);
+
+    // ---------------------------------------------------------------------
+    // Physical ship interactions
+    // ---------------------------------------------------------------------
+
+    _physicalShipService.RegisterPhysicalShipInteractions();
+
+    foreach (ShipDefinition ship in StartingFleet)
+    {
+        _physicalShipService.SpawnPhysicalShip(
+            ship.ShipName);
+    }
+
+    Log.Info(
+        $"Sailing system initialized. " +
+        $"Registered {StartingFleet.Length} starting ship(s) " +
+        $"and 1 merchant ship.");
 }
+}
+
