@@ -119,17 +119,26 @@ public bool AdvanceWaypoint(
         $"X={waypoint?.X:0.00}, " +
         $"Y={waypoint?.Y:0.00}");
 
-    route.CurrentWaypointIndex++;
+route.CurrentWaypointIndex++;
 
-    if (route.IsComplete)
-    {
-        Log.Info(
-            $"Navigation route complete: " +
-            $"Ship={ship.ShipName}");
+if (route.Loop &&
+    route.CurrentWaypointIndex >= route.Waypoints.Count)
+{
+    route.CurrentWaypointIndex = 0;
 
-        return true;
-    }
+    Log.Info(
+        $"Navigation route looping: " +
+        $"Ship={ship.ShipName}");
+}
 
+if (route.IsComplete)
+{
+    Log.Info(
+        $"Navigation route complete: " +
+        $"Ship={ship.ShipName}");
+
+    return true;
+}
     ShipNavigationWaypoint next =
         route.CurrentWaypoint!;
 

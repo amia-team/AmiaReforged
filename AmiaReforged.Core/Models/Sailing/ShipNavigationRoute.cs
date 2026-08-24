@@ -10,14 +10,11 @@ public class ShipNavigationRoute
 
     public int CurrentWaypointIndex { get; set; }
 
-    public bool IsComplete
-    {
-        get
-        {
-            return CurrentWaypointIndex >=
-                   Waypoints.Count;
-        }
-    }
+public bool Loop { get; set; }
+    
+   public bool IsComplete =>
+    !Loop &&
+    CurrentWaypointIndex >= Waypoints.Count;
 
     public ShipNavigationWaypoint?
         CurrentWaypoint
