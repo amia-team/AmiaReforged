@@ -8,6 +8,9 @@ public sealed class IslandService
 {
     private readonly List<IslandLocation> _islands =
     [
+        // -------------------------------------------------------------
+        // Driftwood Isle
+        // -------------------------------------------------------------
         new IslandLocation
         {
             Id = "driftwood_isle",
@@ -21,9 +24,33 @@ public sealed class IslandService
             DockRadius = 10f,
 
             LandingArea = "sea_islet1",
-
             LandingX = 24f,
             LandingY = 207f,
+            LandingZ = 0f
+        },
+
+        // -------------------------------------------------------------
+        // Southport
+        // -------------------------------------------------------------
+        new IslandLocation
+        {
+            Id = "southport",
+            Name = "Southport",
+
+            OceanArea = "ocean_01",
+
+            OceanX = 90f,
+            OceanY = 100f,
+
+            DockRadius = 10f,
+
+            // ---------------------------------------------------------
+            // TODO:
+            // Replace these once the Southport area is built.
+            // ---------------------------------------------------------
+            LandingArea = "southport",
+            LandingX = 0f,
+            LandingY = 0f,
             LandingZ = 0f
         }
     ];
