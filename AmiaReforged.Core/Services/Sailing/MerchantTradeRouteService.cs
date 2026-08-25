@@ -20,49 +20,61 @@ public sealed class MerchantTradeRouteService
             shipNavigationService;
     }
 
-    public void AssignDriftwoodSouthportRoute(
-        ShipState ship)
-    {
-        ShipNavigationRoute route =
-            new()
-            {
-                ShipName = ship.ShipName,
-                Loop = true
-            };
+  public void AssignDriftwoodSouthportRoute(
+    ShipState ship)
+{
+    ShipNavigationRoute route =
+        new()
+        {
+            ShipName = ship.ShipName,
+            Loop = true
+        };
 
-        // -------------------------------------------------------------
-        // Driftwood Isle
-        // -------------------------------------------------------------
-        route.Waypoints.Add(
-            new ShipNavigationWaypoint
-            {
-                AreaResRef = "ocean_01",
-                X = 120f,
-                Y = 90f,
-                Z = 0f,
-                Description = "Driftwood Isle"
-            });
+    route.Waypoints.Add(
+        new ShipNavigationWaypoint
+        {
+            AreaResRef = "ocean_01",
+            X = 120f,
+            Y = 90f,
+            Z = 0f,
+            Description = "Driftwood Isle"
+        });
 
-        // -------------------------------------------------------------
-        // Southport
-        // -------------------------------------------------------------
-        route.Waypoints.Add(
-            new ShipNavigationWaypoint
-            {
-                AreaResRef = "ocean_01",
-                X = 90f,
-                Y = 100f,
-                Z = 0f,
-                Description = "Southport"
-            });
+    route.Waypoints.Add(
+        new ShipNavigationWaypoint
+        {
+            AreaResRef = "ocean_01",
+            X = 90f,
+            Y = 100f,
+            Z = 0f,
+            Description = "Southport"
+        });
 
-        _shipNavigationService.SetRoute(
-            ship,
-            route);
+    // -------------------------------------------------------------
+    // Activate navigation using the first waypoint.
+    // -------------------------------------------------------------
 
-        Log.Info(
-            $"Merchant trade route assigned: " +
-            $"Ship={ship.ShipName}, " +
-            $"Route=Driftwood Isle <-> Southport");
-    }
+    ShipNavigationWaypoint firstWaypoint =
+        route.Waypoints[0];
+
+    _shipNavigationService.SetDestination(
+        ship,
+        firstWaypoint.AreaResRef,
+        firstWaypoint.X,
+        firstWaypoint.Y,
+        firstWaypoint.Z);
+
+    // -------------------------------------------------------------
+    // Install the route.
+    // -------------------------------------------------------------
+
+    _shipNavigationService.SetRoute(
+        ship,
+        route);
+
+    Log.Info(
+        $"Merchant trade route assigned: " +
+        $"Ship={ship.ShipName}, " +
+        $"Route=Driftwood Isle <-> Southport");
+}
 }

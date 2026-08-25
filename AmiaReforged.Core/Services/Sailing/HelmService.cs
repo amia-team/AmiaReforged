@@ -2584,11 +2584,11 @@ else
         return;
     }
 
-    // -------------------------------------------------------------
-    // Waypoint reached
-    // -------------------------------------------------------------
+// -------------------------------------------------------------
+// Waypoint reached
+// -------------------------------------------------------------
 
-    if (_shipNavigationService.IsCurrentWaypointReached(ship))
+if (_shipNavigationService.IsCurrentWaypointReached(ship))
 {
     ShipNavigationWaypoint? currentWaypoint =
         _shipNavigationService.GetCurrentWaypoint(ship);
@@ -2617,6 +2617,7 @@ else
                     StringComparison.OrdinalIgnoreCase))
             {
                 // Stay on the boundary waypoint.
+                // CrossBoundary() will advance the route.
             }
             else
             {
@@ -2626,6 +2627,31 @@ else
                 if (routeComplete)
                 {
                     _shipNavigationService.ClearRoute(ship);
+                    ship.Underway = false;
+                    return;
+                }
+
+                // -------------------------------------------------
+                // Route advanced. Activate the new waypoint.
+                // -------------------------------------------------
+
+                ShipNavigationWaypoint? newWaypoint =
+                    _shipNavigationService.GetCurrentWaypoint(ship);
+
+                if (newWaypoint != null)
+                {
+                    _shipNavigationService.SetDestination(
+                        ship,
+                        newWaypoint.AreaResRef,
+                        newWaypoint.X,
+                        newWaypoint.Y,
+                        newWaypoint.Z);
+
+                    Log.Info(
+                        $"Ship '{ship.ShipName}' advancing to waypoint: " +
+                        $"Area={newWaypoint.AreaResRef}, " +
+                        $"X={newWaypoint.X:0.00}, " +
+                        $"Y={newWaypoint.Y:0.00}");
                 }
             }
         }
@@ -2657,10 +2683,7 @@ else
 
     UpdateSailingNui(ship);
     _ = _shipStatePersistenceService.SaveState(ship);
-
-    // Continue this navigation tick.
-}
-    
+}   
 
     // -------------------------------------------------------------
     // Final destination reached

@@ -50,8 +50,20 @@ public void SetRoute(
     ShipState ship,
     ShipNavigationRoute route)
 {
-    _routes[ship.ShipName] =
-        route;
+    _routes[ship.ShipName] = route;
+
+    ShipNavigationWaypoint? waypoint =
+        route.CurrentWaypoint;
+
+    if (waypoint != null)
+    {
+        SetDestination(
+            ship,
+            waypoint.AreaResRef,
+            waypoint.X,
+            waypoint.Y,
+            waypoint.Z);
+    }
 
     Log.Info(
         $"Navigation route set: " +
