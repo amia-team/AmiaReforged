@@ -131,26 +131,35 @@ public bool AdvanceWaypoint(
         $"X={waypoint?.X:0.00}, " +
         $"Y={waypoint?.Y:0.00}");
 
-route.CurrentWaypointIndex++;
+    route.CurrentWaypointIndex++;
 
-if (route.Loop &&
-    route.CurrentWaypointIndex >= route.Waypoints.Count)
-{
-    route.CurrentWaypointIndex = 0;
+    // -------------------------------------------------------------
+    // Looping merchant route
+    // -------------------------------------------------------------
 
-    Log.Info(
-        $"Navigation route looping: " +
-        $"Ship={ship.ShipName}");
-}
+    if (route.Loop &&
+        route.CurrentWaypointIndex >= route.Waypoints.Count)
+    {
+        route.CurrentWaypointIndex = 0;
 
-if (route.IsComplete)
-{
-    Log.Info(
-        $"Navigation route complete: " +
-        $"Ship={ship.ShipName}");
+        Log.Info(
+            $"Navigation route looping: " +
+            $"Ship={ship.ShipName}");
+    }
 
-    return true;
-}
+    // -------------------------------------------------------------
+    // Non-looping route complete
+    // -------------------------------------------------------------
+
+    if (route.IsComplete)
+    {
+        Log.Info(
+            $"Navigation route complete: " +
+            $"Ship={ship.ShipName}");
+
+        return true;
+    }
+
     ShipNavigationWaypoint next =
         route.CurrentWaypoint!;
 
@@ -163,8 +172,7 @@ if (route.IsComplete)
         $"Y={next.Y:0.00}");
 
     return false;
-}
-    // -----------------------------------------------------------------
+}    // -----------------------------------------------------------------
     // Destination
     // -----------------------------------------------------------------
 

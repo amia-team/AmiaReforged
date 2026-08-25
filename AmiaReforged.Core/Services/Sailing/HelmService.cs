@@ -2492,7 +2492,9 @@ UpdatePhysicalShip(ship);
 
 UpdateSailingNui(ship);
 
-_shipEncounterService.CheckEncounters(
+UpdateSailingNuiForAllPlayers(ship);
+
+            _shipEncounterService.CheckEncounters(
     _ships.Values);
 
 _ = _shipStatePersistenceService.SaveState(
@@ -2604,58 +2606,97 @@ if (_shipNavigationService.IsCurrentWaypointReached(ship))
         ShipNavigationRoute? route =
             _shipNavigationService.GetRoute(ship);
 
-        if (route != null &&
-            route.CurrentWaypointIndex + 1 < route.Waypoints.Count)
+   if (route != null)
+{
+    bool isFinalWaypoint =
+        route.CurrentWaypointIndex >=
+        route.Waypoints.Count - 1;
+
+    // ---------------------------------------------------------
+    // Looping route at its final waypoint.
+    // AdvanceWaypoint() will wrap the route back to waypoint 0.
+    // ---------------------------------------------------------
+
+    if (route.Loop && isFinalWaypoint)
+    {
+        bool routeComplete =
+            _shipNavigationService.AdvanceWaypoint(ship);
+
+        if (routeComplete)
         {
-            ShipNavigationWaypoint next =
-                route.Waypoints[
-                    route.CurrentWaypointIndex + 1];
+            _shipNavigationService.ClearRoute(ship);
+            ship.Underway = false;
+            return;
+        }
 
-            if (!string.Equals(
-                    next.AreaResRef,
-                    ship.AreaResRef,
-                    StringComparison.OrdinalIgnoreCase))
+        ShipNavigationWaypoint? newWaypoint =
+            _shipNavigationService.GetCurrentWaypoint(ship);
+
+        if (newWaypoint != null)
+        {
+            _shipNavigationService.SetDestination(
+                ship,
+                newWaypoint.AreaResRef,
+                newWaypoint.X,
+                newWaypoint.Y,
+                newWaypoint.Z);
+
+            Log.Info(
+                $"Ship '{ship.ShipName}' looping to waypoint: " +
+                $"Area={newWaypoint.AreaResRef}, " +
+                $"X={newWaypoint.X:0.00}, " +
+                $"Y={newWaypoint.Y:0.00}");
+        }
+    }
+    else if (
+        route.CurrentWaypointIndex + 1 <
+        route.Waypoints.Count)
+    {
+        ShipNavigationWaypoint next =
+            route.Waypoints[
+                route.CurrentWaypointIndex + 1];
+
+        if (!string.Equals(
+                next.AreaResRef,
+                ship.AreaResRef,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            // Stay on the boundary waypoint.
+            // CrossBoundary() will advance the route.
+        }
+        else
+        {
+            bool routeComplete =
+                _shipNavigationService.AdvanceWaypoint(ship);
+
+            if (routeComplete)
             {
-                // Stay on the boundary waypoint.
-                // CrossBoundary() will advance the route.
+                _shipNavigationService.ClearRoute(ship);
+                ship.Underway = false;
+                return;
             }
-            else
+
+            ShipNavigationWaypoint? newWaypoint =
+                _shipNavigationService.GetCurrentWaypoint(ship);
+
+            if (newWaypoint != null)
             {
-                bool routeComplete =
-                    _shipNavigationService.AdvanceWaypoint(ship);
+                _shipNavigationService.SetDestination(
+                    ship,
+                    newWaypoint.AreaResRef,
+                    newWaypoint.X,
+                    newWaypoint.Y,
+                    newWaypoint.Z);
 
-                if (routeComplete)
-                {
-                    _shipNavigationService.ClearRoute(ship);
-                    ship.Underway = false;
-                    return;
-                }
-
-                // -------------------------------------------------
-                // Route advanced. Activate the new waypoint.
-                // -------------------------------------------------
-
-                ShipNavigationWaypoint? newWaypoint =
-                    _shipNavigationService.GetCurrentWaypoint(ship);
-
-                if (newWaypoint != null)
-                {
-                    _shipNavigationService.SetDestination(
-                        ship,
-                        newWaypoint.AreaResRef,
-                        newWaypoint.X,
-                        newWaypoint.Y,
-                        newWaypoint.Z);
-
-                    Log.Info(
-                        $"Ship '{ship.ShipName}' advancing to waypoint: " +
-                        $"Area={newWaypoint.AreaResRef}, " +
-                        $"X={newWaypoint.X:0.00}, " +
-                        $"Y={newWaypoint.Y:0.00}");
-                }
+                Log.Info(
+                    $"Ship '{ship.ShipName}' advancing to waypoint: " +
+                    $"Area={newWaypoint.AreaResRef}, " +
+                    $"X={newWaypoint.X:0.00}, " +
+                    $"Y={newWaypoint.Y:0.00}");
             }
         }
     }
+}   }
 }
 else
 {
@@ -2685,24 +2726,41 @@ else
     _ = _shipStatePersistenceService.SaveState(ship);
 }   
 
+// -------------------------------------------------------------
+// Final destination reached
+// -------------------------------------------------------------
+
+if (_shipNavigationService.IsDestinationReached(ship))
+{
+    ShipNavigationRoute? route =
+        _shipNavigationService.GetRoute(ship);
+
     // -------------------------------------------------------------
-    // Final destination reached
+    // Route navigation:
+    // Reaching a waypoint is NOT the end of navigation.
+    // The waypoint system will advance the route.
     // -------------------------------------------------------------
 
-    if (_shipNavigationService.IsDestinationReached(ship))
+    if (route != null)
     {
-        _shipNavigationService.CompleteNavigation(ship);
-        _shipNavigationService.ClearRoute(ship);
-
-        ship.Underway = false;
-
-        Log.Info(
-            $"Ship '{ship.ShipName}' has arrived at its navigation destination.");
-
-        UpdateSailingNui(ship);
         return;
     }
 
+    // -------------------------------------------------------------
+    // Normal one-shot navigation.
+    // -------------------------------------------------------------
+
+    _shipNavigationService.CompleteNavigation(ship);
+
+    ship.Underway = false;
+
+    Log.Info(
+        $"Ship '{ship.ShipName}' arrived at its navigation destination.");
+
+    UpdateSailingNui(ship);
+
+    return;
+}
     // -------------------------------------------------------------
     // Determine obstacle-aware navigation heading
     // -------------------------------------------------------------
@@ -2739,19 +2797,40 @@ else
 
     UpdateSailingNui(ship);
 
+    UpdateSailingNuiForAllPlayers(ship);
+
+// -------------------------------------------------------------
+// Check destination after movement
+// -------------------------------------------------------------
+
+if (_shipNavigationService.IsDestinationReached(ship))
+{
+    ShipNavigationRoute? route =
+        _shipNavigationService.GetRoute(ship);
+
     // -------------------------------------------------------------
-    // Check destination after movement
+    // Looping merchant route:
+    // Leave navigation active.
+    // The next navigation tick will advance the waypoint.
     // -------------------------------------------------------------
 
-    if (_shipNavigationService.IsDestinationReached(ship))
+    if (route != null &&
+        route.Loop)
     {
-        _shipNavigationService.CompleteNavigation(ship);
-
-        ship.Underway = false;
-
-        Log.Info(
-            $"Ship '{ship.ShipName}' arrived at its navigation destination.");
+        return;
     }
+
+    // -------------------------------------------------------------
+    // Normal one-shot navigation
+    // -------------------------------------------------------------
+
+    _shipNavigationService.CompleteNavigation(ship);
+
+    ship.Underway = false;
+
+    Log.Info(
+        $"Ship '{ship.ShipName}' arrived at its navigation destination.");
+}
 }
 
 
@@ -3063,6 +3142,43 @@ private void UpdateSailingNui(
     player,
     ship,
     _ships.Values);
+    }
+}
+private void UpdateSailingNuiForAllPlayers(
+    ShipState movedShip)
+{
+    foreach (NwPlayer player in
+        NwModule.Instance.Players)
+    {
+        if (player.ControlledCreature == null ||
+            !player.ControlledCreature.IsValid)
+        {
+            continue;
+        }
+
+        // Only update players who are currently sailing.
+        if (!_playerShips.ContainsKey(player.PlayerName))
+        {
+            continue;
+        }
+
+        ShipState? playerShip =
+            _ships.Values.FirstOrDefault(
+                ship =>
+                    string.Equals(
+                        _playerShips[player.PlayerName],
+                        ship.ShipName,
+                        StringComparison.Ordinal));
+
+        if (playerShip == null)
+        {
+            continue;
+        }
+
+        _sailingNuiService.Update(
+            player,
+            playerShip,
+            _ships.Values);
     }
 }
 }
