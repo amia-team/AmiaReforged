@@ -25,7 +25,10 @@ public class ShipState
     public string SpritePrefix { get; set; } = "sloop";
 public List<MerchantCargo> Cargo { get; set; } =
     new();
-
+/// <summary>
+/// Gold currently available to the merchant for purchases.
+/// </summary>
+public int MerchantGold { get; set; } = 1000;
     public bool CanDock { get; set; }
 
     public string? NearbyIslandId { get; set; }

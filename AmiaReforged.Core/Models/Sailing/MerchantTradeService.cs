@@ -19,28 +19,37 @@ public sealed class MerchantTradeService
                     new PortTradeDefinition
                     {
                         PortId = "driftwood",
-                        BuyItems =
+
+                        // What Driftwood pays the merchant.
+                        BuyPrices =
                         {
-                            "grain"
+                            ["grain"] = 15
                         },
-                        SellItems =
+
+                        // What Driftwood charges the merchant.
+                        SellPrices =
                         {
-                            "timber"
+                            ["timber"] = 10
                         }
                     }
                 },
+
                 {
                     "southport",
                     new PortTradeDefinition
                     {
                         PortId = "southport",
-                        BuyItems =
+
+                        // What Southport pays the merchant.
+                        BuyPrices =
                         {
-                            "timber"
+                            ["timber"] = 18
                         },
-                        SellItems =
+
+                        // What Southport charges the merchant.
+                        SellPrices =
                         {
-                            "grain"
+                            ["grain"] = 8
                         }
                     }
                 }
@@ -67,25 +76,35 @@ public sealed class MerchantTradeService
 
         Log.Info(
             $"Merchant '{ship.ShipName}' trading at " +
-            $"{port.PortId}.");
+            $"{port.PortId}. " +
+            $"Gold={ship.MerchantGold}");
 
         // ---------------------------------------------------------
-        // Sell cargo that this port buys.
+        // SELL CURRENT CARGO
         // ---------------------------------------------------------
 
-        foreach (MerchantCargo cargo in ship.Cargo)
+        foreach (MerchantCargo cargo in
+                 ship.Cargo.ToList())
         {
-            if (!port.BuyItems.Contains(
+            if (!port.BuyPrices.TryGetValue(
                     cargo.ItemId,
-                    StringComparer.OrdinalIgnoreCase))
+                    out int sellPrice))
             {
                 continue;
             }
 
+            int quantity =
+                cargo.Quantity;
+
+            int revenue =
+                quantity * sellPrice;
+
+            ship.MerchantGold += revenue;
+
             Log.Info(
                 $"Merchant '{ship.ShipName}' sold " +
-                $"{cargo.Quantity} units of {cargo.ItemId} " +
-                $"at {port.PortId}.");
+                $"{quantity} {cargo.ItemId} " +
+                $"at {sellPrice} each for {revenue} gold.");
 
             cargo.Quantity = 0;
         }
@@ -94,17 +113,38 @@ public sealed class MerchantTradeService
             cargo => cargo.Quantity <= 0);
 
         // ---------------------------------------------------------
-        // Buy one test cargo.
+        // BUY NEW CARGO
         // ---------------------------------------------------------
 
-        foreach (string itemId in port.SellItems)
+        foreach (KeyValuePair<string, int> item in
+                 port.SellPrices)
         {
+            const int purchaseQuantity = 50;
+
+            int totalCost =
+                purchaseQuantity * item.Value;
+
+            if (ship.MerchantGold <
+                totalCost)
+            {
+                Log.Info(
+                    $"Merchant '{ship.ShipName}' cannot afford " +
+                    $"{purchaseQuantity} {item.Key}. " +
+                    $"Cost={totalCost}, " +
+                    $"Gold={ship.MerchantGold}");
+
+                continue;
+            }
+
+            ship.MerchantGold -=
+                totalCost;
+
             MerchantCargo? cargo =
                 ship.Cargo.FirstOrDefault(
                     c =>
                         string.Equals(
                             c.ItemId,
-                            itemId,
+                            item.Key,
                             StringComparison.OrdinalIgnoreCase));
 
             if (cargo == null)
@@ -112,21 +152,42 @@ public sealed class MerchantTradeService
                 ship.Cargo.Add(
                     new MerchantCargo
                     {
-                        ItemId = itemId,
-                        Quantity = 50
+                        ItemId = item.Key,
+                        Quantity = purchaseQuantity
                     });
             }
             else
             {
-                cargo.Quantity += 50;
+                cargo.Quantity +=
+                    purchaseQuantity;
             }
 
             Log.Info(
                 $"Merchant '{ship.ShipName}' bought " +
-                $"50 units of {itemId} " +
-                $"at {port.PortId}.");
-
-            break;
+                $"{purchaseQuantity} {item.Key} " +
+                $"at {item.Value} each " +
+                $"for {totalCost} gold. " +
+                $"RemainingGold={ship.MerchantGold}");
         }
+
+        Log.Info(
+            $"Merchant '{ship.ShipName}' trade complete. " +
+            $"Gold={ship.MerchantGold}, " +
+            $"Cargo={FormatCargo(ship)}");
+    }
+
+    private static string FormatCargo(
+        ShipState ship)
+    {
+        if (ship.Cargo.Count == 0)
+        {
+            return "Empty";
+        }
+
+        return string.Join(
+            ", ",
+            ship.Cargo.Select(
+                c =>
+                    $"{c.ItemId}={c.Quantity}"));
     }
 }

@@ -118,7 +118,7 @@ public SailingBootstrapService(
     ShipState goldenGull =
         _helmService.CreateShip(
             goldenGullDefinition);
-
+goldenGull.MerchantGold = 1000;
 goldenGull.Cargo.Add(
     new MerchantCargo
     {

@@ -4,9 +4,9 @@ public class PortTradeDefinition
 {
     public required string PortId { get; set; }
 
-    public List<string> BuyItems { get; set; } =
-        new();
+    public Dictionary<string, int> BuyPrices { get; set; } =
+        new(StringComparer.OrdinalIgnoreCase);
 
-    public List<string> SellItems { get; set; } =
-        new();
+    public Dictionary<string, int> SellPrices { get; set; } =
+        new(StringComparer.OrdinalIgnoreCase);
 }
