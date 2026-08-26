@@ -119,7 +119,14 @@ public SailingBootstrapService(
         _helmService.CreateShip(
             goldenGullDefinition);
 
-    _merchantTradeRouteService
+goldenGull.Cargo.Add(
+    new MerchantCargo
+    {
+        ItemId = "timber",
+        Quantity = 50
+    });            
+
+        _merchantTradeRouteService
         .AssignDriftwoodSouthportRoute(
             goldenGull);
 

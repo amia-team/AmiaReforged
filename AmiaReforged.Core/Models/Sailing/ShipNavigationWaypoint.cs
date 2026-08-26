@@ -10,5 +10,7 @@ public class ShipNavigationWaypoint
 
     public float Z { get; set; }
 
+    public string? PortId { get; set; }
+
     public string? Description { get; set; }
 }

@@ -28,7 +28,9 @@ private readonly Dictionary<string, string> _playerShips = new();
 
 private readonly SailingAreaService _sailingAreaService;
 
-private readonly SailingNuiService _sailingNuiService;
+private readonly MerchantPortService _merchantPortService;
+
+    private readonly SailingNuiService _sailingNuiService;
 
 private readonly IslandService
     _islandService;
@@ -84,6 +86,7 @@ public HelmService(
     IslandService islandService,
     PhysicalShipService physicalShipService,
     ChartDiscoveryService chartDiscoveryService,
+    MerchantPortService merchantPortService,
     SailingAreaService sailingAreaService)
     {
         _shipRoutePlannerService =
@@ -129,7 +132,9 @@ public HelmService(
     physicalShipService;
 
     _chartDiscoveryService = chartDiscoveryService;
-    
+
+    _merchantPortService = merchantPortService;
+
         _pirateAiService =
     pirateAiService;
 
@@ -2570,7 +2575,65 @@ else
     {
         return;
     }
+// -------------------------------------------------------------
+// Merchant port stay
+// -------------------------------------------------------------
 
+if (ship.ShipType == ShipType.Merchant &&
+    ship.IsInPort)
+{
+    bool stillInPort =
+        _merchantPortService.UpdatePortStay(ship);
+
+    if (stillInPort)
+    {
+        return;
+    }
+
+    // ---------------------------------------------------------
+    // Port stay finished.
+    // Advance to the next route waypoint immediately so we
+    // don't re-enter the same port.
+    // ---------------------------------------------------------
+
+    ShipNavigationRoute? portRoute =
+        _shipNavigationService.GetRoute(ship);
+
+    if (portRoute != null)
+    {
+        bool routeComplete =
+            _shipNavigationService.AdvanceWaypoint(ship);
+
+        if (routeComplete)
+        {
+            _shipNavigationService.ClearRoute(ship);
+            ship.Underway = false;
+            return;
+        }
+
+        ShipNavigationWaypoint? nextWaypoint =
+            _shipNavigationService.GetCurrentWaypoint(ship);
+
+        if (nextWaypoint != null)
+        {
+            _shipNavigationService.SetDestination(
+                ship,
+                nextWaypoint.AreaResRef,
+                nextWaypoint.X,
+                nextWaypoint.Y,
+                nextWaypoint.Z);
+
+            Log.Info(
+                $"Merchant '{ship.ShipName}' departing port and " +
+                $"heading to waypoint: " +
+                $"Area={nextWaypoint.AreaResRef}, " +
+                $"X={nextWaypoint.X:0.00}, " +
+                $"Y={nextWaypoint.Y:0.00}");
+        }
+    }
+
+    return;
+}
     // -------------------------------------------------------------
     // Disabled ship
     // -------------------------------------------------------------
@@ -2611,7 +2674,23 @@ if (_shipNavigationService.IsCurrentWaypointReached(ship))
     bool isFinalWaypoint =
         route.CurrentWaypointIndex >=
         route.Waypoints.Count - 1;
+// -------------------------------------------------
+// Merchant port stop
+// -------------------------------------------------
 
+if (ship.ShipType == ShipType.Merchant &&
+    currentWaypoint != null &&
+    !string.IsNullOrWhiteSpace(currentWaypoint.PortId))
+{
+    if (!_merchantPortService.BeginPortStay(
+            ship,
+            currentWaypoint))
+    {
+        // Could not begin port stay.
+    }
+
+    return;
+}
     // ---------------------------------------------------------
     // Looping route at its final waypoint.
     // AdvanceWaypoint() will wrap the route back to waypoint 0.

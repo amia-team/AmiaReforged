@@ -29,26 +29,27 @@ public sealed class MerchantTradeRouteService
             ShipName = ship.ShipName,
             Loop = true
         };
+route.Waypoints.Add(
+    new ShipNavigationWaypoint
+    {
+        AreaResRef = "ocean_01",
+        X = 120f,
+        Y = 90f,
+        Z = 0f,
+        Description = "Driftwood Isle",
+        PortId = "driftwood"
+    });
 
-    route.Waypoints.Add(
-        new ShipNavigationWaypoint
-        {
-            AreaResRef = "ocean_01",
-            X = 120f,
-            Y = 90f,
-            Z = 0f,
-            Description = "Driftwood Isle"
-        });
-
-    route.Waypoints.Add(
-        new ShipNavigationWaypoint
-        {
-            AreaResRef = "ocean_01",
-            X = 90f,
-            Y = 100f,
-            Z = 0f,
-            Description = "Southport"
-        });
+route.Waypoints.Add(
+    new ShipNavigationWaypoint
+    {
+        AreaResRef = "ocean_01",
+        X = 90f,
+        Y = 100f,
+        Z = 0f,
+        Description = "Southport",
+        PortId = "southport"
+    });
 
     // -------------------------------------------------------------
     // Activate navigation using the first waypoint.
