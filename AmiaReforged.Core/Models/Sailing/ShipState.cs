@@ -23,6 +23,9 @@ public class ShipState
     public ShipType ShipType { get; set; } = ShipType.Player;
 
     public string SpritePrefix { get; set; } = "sloop";
+public List<MerchantCargo> Cargo { get; set; } =
+    new();
+
     public bool CanDock { get; set; }
 
     public string? NearbyIslandId { get; set; }
@@ -93,9 +96,19 @@ public class ShipState
     public string WeaponResRef { get; set; } =
         "ship_cannon";
 
+        
     /// <summary>
-/// True while the ship is performing a dock/undock transition.
-/// Prevents duplicate NUI and navigation updates during area changes.
+    /// True while the ship is performing a dock/undock transition.
+    /// Prevents duplicate NUI and navigation updates during area changes.
+    /// </summary>
+    public bool IsDocking { get; set; }
+/// <summary>
+/// Indicates whether a merchant ship is currently stopped at a port.
 /// </summary>
-public bool IsDocking { get; set; }
+public bool IsInPort { get; set; }
+
+/// <summary>
+/// The time at which the merchant should depart its current port.
+/// </summary>
+public DateTime PortDepartureTime { get; set; }
 }
