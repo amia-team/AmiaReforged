@@ -1,5 +1,5 @@
+using AmiaReforged.Core.Models.Sailing.Ship.Types;
 using AmiaReforged.Core.Models.Sailing.Ship.Weapon;
-using AmiaReforged.Core.Models.Sailing.Ship.Weapon.Ammunition;
 
 namespace AmiaReforged.Core.Models.Sailing.Ship.Armament;
 
@@ -37,5 +37,10 @@ public sealed class ShipArmament
     public void Repair()
     {
         IsOperational = true;
+    }
+
+    public void ApplyCooldown()
+    {
+
     }
 }
