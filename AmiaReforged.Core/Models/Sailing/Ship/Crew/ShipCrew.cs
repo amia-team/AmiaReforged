@@ -13,9 +13,9 @@ public sealed class ShipCrew
 
     public IReadOnlyList<ShipCrewMember> Members => _members;
 
-    public void AddMember(ShipCrewMember member, ShipCrewRole role)
+    public void AddMember(ShipCrewMember member, Types.ShipCrewRole role)
     {
-        if (role == ShipCrewRole.Captain && _members.Any(m => m.Role == ShipCrewRole.Captain))
+        if (role == Types.ShipCrewRole.Captain && _members.Any(m => m.Role == ShipCrewRole.Captain))
             return;
 
         _members.Add(member);

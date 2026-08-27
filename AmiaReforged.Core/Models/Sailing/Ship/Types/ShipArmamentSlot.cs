@@ -1,4 +1,4 @@
-namespace AmiaReforged.Core.Models.Sailing.Ship.Armament;
+namespace AmiaReforged.Core.Models.Sailing.Ship.Types;
 
 public enum ShipArmamentSlot
 {

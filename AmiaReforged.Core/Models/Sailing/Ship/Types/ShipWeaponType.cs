@@ -1,4 +1,4 @@
-namespace AmiaReforged.Core.Models.Sailing.Ship.Weapon;
+namespace AmiaReforged.Core.Models.Sailing.Ship.Types;
 
 public enum ShipWeaponType
 {

@@ -1,4 +1,4 @@
-namespace AmiaReforged.Core.Models.Sailing.Ship.Crew;
+namespace AmiaReforged.Core.Models.Sailing.Ship.Types;
 
 public enum ShipCrewRole
 {

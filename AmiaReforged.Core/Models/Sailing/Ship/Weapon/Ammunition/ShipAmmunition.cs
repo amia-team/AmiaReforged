@@ -1,3 +1,5 @@
+using AmiaReforged.Core.Models.Sailing.Ship.Types;
+
 namespace AmiaReforged.Core.Models.Sailing.Ship.Weapon.Ammunition;
 
 public sealed class ShipAmmunition

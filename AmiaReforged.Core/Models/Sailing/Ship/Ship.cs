@@ -1,5 +1,6 @@
 using AmiaReforged.Core.Models.Sailing.Ship.Armament;
 using AmiaReforged.Core.Models.Sailing.Ship.Crew;
+using AmiaReforged.Core.Models.Sailing.Ship.Types;
 using AmiaReforged.Core.Models.Sailing.Ship.Weapon.Ammunition;
 
 namespace AmiaReforged.Core.Models.Sailing.Ship;
@@ -38,8 +39,6 @@ public sealed class Ship
 
     public int MaximumHull { get; }
 
-    public sealed record ShipPosition(string AreaResRef, float X, float Y, float Z);
-
     public ShipPosition Position { get; private set; }
 
     public Heading Heading { get; private set; }
@@ -49,7 +48,6 @@ public sealed class Ship
     public bool IsUnderway { get; set; }
 
     public bool IsSunk => Hull <= 0;
-
 
     public IReadOnlyCollection<ShipArmament> Armaments => _armaments.Values;
 
@@ -75,5 +73,26 @@ public sealed class Ship
     {
         if (amount <= 0) return;
         Hull = Math.Min(MaximumHull, Hull + amount);
+    }
+
+    public ShipAttackResult ResolveAttack(Ship target, ShipArmamentSlot armamentSlot, ShipAmmunitionType ammunitionType)
+    {
+        if (IsSunk || IsUnderway)
+            return ShipAttackResult.AttackerDisabled;
+        if (target.IsSunk || target.IsUnderway)
+            return ShipAttackResult.TargetDisabled;
+        if (TryGetArmament(armamentSlot, out ShipArmament? armament) || armament == null)
+            return ShipAttackResult.NoWeapon;
+        if (!armament.IsOperational)
+            return ShipAttackResult.AttackerDisabled;
+        if (TryGetAmmunition(ammunitionType, out ShipAmmunition? ammunition)
+            || ammunition == null || ammunition.Quantity <= 0)
+            return ShipAttackResult.NoAmmunition;
+        if (Position.DistanceTo(target.Position) > armament.Range)
+            return ShipAttackResult.OutOfRange;
+
+        ammunition.UseAmmo();
+        armament.ApplyCooldown();
+        return ShipAttackResult.Hit;
     }
 }
