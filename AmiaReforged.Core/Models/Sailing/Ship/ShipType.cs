@@ -1,6 +1,11 @@
 namespace AmiaReforged.Core.Models.Sailing.Ship;
 
-public class ShipType
+public enum ShipType
 {
-    
+    Player,
+    Pirate,
+    Merchant,
+    Navy,
+    Smuggler,
+    Monster
 }
