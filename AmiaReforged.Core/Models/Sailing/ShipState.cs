@@ -29,6 +29,12 @@ public List<MerchantCargo> Cargo { get; set; } =
 /// Gold currently available to the merchant for purchases.
 /// </summary>
 public int MerchantGold { get; set; } = 1000;
+/// <summary>
+/// Goods this merchant is willing to trade.
+/// </summary>
+public List<string> TradeGoods { get; set; } =
+    new();
+public int CargoCapacity { get; set; } = 50;
     public bool CanDock { get; set; }
 
     public string? NearbyIslandId { get; set; }

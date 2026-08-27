@@ -113,69 +113,113 @@ public sealed class MerchantTradeService
             cargo => cargo.Quantity <= 0);
 
         // ---------------------------------------------------------
-        // BUY NEW CARGO
-        // ---------------------------------------------------------
+// ---------------------------------------------------------
+// BUY NEW CARGO
+// ---------------------------------------------------------
 
-        foreach (KeyValuePair<string, int> item in
-                 port.SellPrices)
-        {
-            const int purchaseQuantity = 50;
+foreach (KeyValuePair<string, int> item in
+         port.SellPrices)
+{
+    const int desiredPurchaseQuantity = 50;
 
-            int totalCost =
-                purchaseQuantity * item.Value;
+    // ---------------------------------------------------------
+    // Determine how much cargo space remains.
+    // ---------------------------------------------------------
 
-            if (ship.MerchantGold <
-                totalCost)
-            {
-                Log.Info(
-                    $"Merchant '{ship.ShipName}' cannot afford " +
-                    $"{purchaseQuantity} {item.Key}. " +
-                    $"Cost={totalCost}, " +
-                    $"Gold={ship.MerchantGold}");
+    int currentCargo =
+        ship.Cargo.Sum(
+            cargo => cargo.Quantity);
 
-                continue;
-            }
+    int remainingCapacity =
+        ship.CargoCapacity -
+        currentCargo;
 
-            ship.MerchantGold -=
-                totalCost;
-
-            MerchantCargo? cargo =
-                ship.Cargo.FirstOrDefault(
-                    c =>
-                        string.Equals(
-                            c.ItemId,
-                            item.Key,
-                            StringComparison.OrdinalIgnoreCase));
-
-            if (cargo == null)
-            {
-                ship.Cargo.Add(
-                    new MerchantCargo
-                    {
-                        ItemId = item.Key,
-                        Quantity = purchaseQuantity
-                    });
-            }
-            else
-            {
-                cargo.Quantity +=
-                    purchaseQuantity;
-            }
-
-            Log.Info(
-                $"Merchant '{ship.ShipName}' bought " +
-                $"{purchaseQuantity} {item.Key} " +
-                $"at {item.Value} each " +
-                $"for {totalCost} gold. " +
-                $"RemainingGold={ship.MerchantGold}");
-        }
-
+    if (remainingCapacity <= 0)
+    {
         Log.Info(
-            $"Merchant '{ship.ShipName}' trade complete. " +
-            $"Gold={ship.MerchantGold}, " +
-            $"Cargo={FormatCargo(ship)}");
+            $"Merchant '{ship.ShipName}' has no cargo space " +
+            $"remaining. " +
+            $"Cargo={currentCargo}/{ship.CargoCapacity}");
+
+        continue;
     }
 
+    int purchaseQuantity =
+        Math.Min(
+            desiredPurchaseQuantity,
+            remainingCapacity);
+
+    int totalCost =
+        purchaseQuantity * item.Value;
+
+    // ---------------------------------------------------------
+    // Merchant cannot afford the full purchase.
+    // Determine the maximum quantity it can afford.
+    // ---------------------------------------------------------
+
+    if (ship.MerchantGold <
+        totalCost)
+    {
+        purchaseQuantity =
+            ship.MerchantGold /
+            item.Value;
+
+        if (purchaseQuantity <= 0)
+        {
+            Log.Info(
+                $"Merchant '{ship.ShipName}' cannot afford " +
+                $"{item.Key}. " +
+                $"Price={item.Value}, " +
+                $"Gold={ship.MerchantGold}");
+
+            continue;
+        }
+
+        totalCost =
+            purchaseQuantity *
+            item.Value;
+    }
+
+    // ---------------------------------------------------------
+    // Complete the purchase.
+    // ---------------------------------------------------------
+
+    ship.MerchantGold -=
+        totalCost;
+
+    MerchantCargo? cargo =
+        ship.Cargo.FirstOrDefault(
+            c =>
+                string.Equals(
+                    c.ItemId,
+                    item.Key,
+                    StringComparison.OrdinalIgnoreCase));
+
+    if (cargo == null)
+    {
+        ship.Cargo.Add(
+            new MerchantCargo
+            {
+                ItemId = item.Key,
+                Quantity = purchaseQuantity
+            });
+    }
+    else
+    {
+        cargo.Quantity +=
+            purchaseQuantity;
+    }
+
+    Log.Info(
+        $"Merchant '{ship.ShipName}' bought " +
+        $"{purchaseQuantity} {item.Key} " +
+        $"at {item.Value} each " +
+        $"for {totalCost} gold. " +
+        $"Cargo={ship.Cargo.Sum(c => c.Quantity)}/" +
+        $"{ship.CargoCapacity}. " +
+        $"RemainingGold={ship.MerchantGold}");
+}
+    }
     private static string FormatCargo(
         ShipState ship)
     {

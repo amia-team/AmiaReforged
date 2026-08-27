@@ -1656,6 +1656,7 @@ public ShipState CreateShip(ShipDefinition definition)
         Z = definition.Z,
         Heading = definition.Heading,
         Hull = definition.Hull,
+        CargoCapacity = definition.CargoCapacity,
         WeaponResRef = definition.WeaponResRef
     };
 

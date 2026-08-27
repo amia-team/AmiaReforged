@@ -22,7 +22,7 @@ private readonly MerchantTradeRouteService
 
     private static readonly ShipDefinition[] StartingFleet =
     {
-new(
+ new(
     "Sea Sprite",
     "sloop",
     "sailing_helm",
@@ -114,7 +114,7 @@ public SailingBootstrapService(
             Heading.West,
             ShipType.Merchant,
             140);
-
+goldenGullDefinition.CargoCapacity = 120;
     ShipState goldenGull =
         _helmService.CreateShip(
             goldenGullDefinition);

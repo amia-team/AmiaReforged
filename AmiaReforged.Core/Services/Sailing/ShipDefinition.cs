@@ -17,4 +17,7 @@ public sealed record ShipDefinition(
     Heading Heading,
     ShipType ShipType,
     int Hull,
-    string WeaponResRef = "ship_cannon");
+    string WeaponResRef = "ship_cannon")
+{
+    public int CargoCapacity { get; set; } = 50;
+}
