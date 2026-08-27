@@ -38,6 +38,8 @@ public sealed class Ship
 
     public int MaximumHull { get; }
 
+    public sealed record ShipPosition(string AreaResRef, float X, float Y, float Z);
+
     public ShipPosition Position { get; private set; }
 
     public Heading Heading { get; private set; }
