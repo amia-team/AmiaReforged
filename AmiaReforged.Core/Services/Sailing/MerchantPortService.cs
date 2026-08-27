@@ -43,7 +43,8 @@ public sealed class MerchantPortService
         }
 
         ship.IsInPort = true;
-
+ship.CurrentTradePortId =
+    waypoint.PortId;
         ship.PortDepartureTime =
             DateTime.UtcNow.AddSeconds(
                 DefaultPortStaySeconds);
@@ -79,6 +80,8 @@ public sealed class MerchantPortService
         }
 
         ship.IsInPort = false;
+
+ship.CurrentTradePortId = null;
 
         Log.Info(
             $"Merchant '{ship.ShipName}' departing port.");

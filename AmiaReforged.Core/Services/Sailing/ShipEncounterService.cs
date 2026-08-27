@@ -15,6 +15,14 @@ public class ShipEncounterService
     private static readonly Logger Log =
         LogManager.GetCurrentClassLogger();
 
+    // -------------------------------------------------------------
+    // Encounter events
+    // -------------------------------------------------------------
+
+    public event Action<ShipEncounter>? EncounterStarted;
+
+    public event Action<ShipEncounter>? EncounterEnded;
+
     public ShipEncounterService()
     {
         Log.Info(
@@ -60,27 +68,27 @@ public class ShipEncounterService
     {
         return _activeEncounters.Values;
     }
+
     public IEnumerable<ShipState> GetNearbyShips(
-    ShipState ship)
-{
-    foreach (ShipEncounter encounter
-        in _activeEncounters.Values)
+        ShipState ship)
     {
-        if (ReferenceEquals(
-                encounter.ShipA,
-                ship))
+        foreach (ShipEncounter encounter
+            in _activeEncounters.Values)
         {
-            yield return encounter.ShipB;
-        }
-        else if (ReferenceEquals(
-                     encounter.ShipB,
-                     ship))
-        {
-            yield return encounter.ShipA;
+            if (ReferenceEquals(
+                    encounter.ShipA,
+                    ship))
+            {
+                yield return encounter.ShipB;
+            }
+            else if (ReferenceEquals(
+                         encounter.ShipB,
+                         ship))
+            {
+                yield return encounter.ShipA;
+            }
         }
     }
-}
-
 
     public bool TryGetEncounter(
         ShipState shipA,
@@ -220,6 +228,13 @@ public class ShipEncounterService
             _activeEncounters[encounterKey] =
                 encounter;
 
+            // -----------------------------------------------------
+            // Notify subscribers that a new encounter exists.
+            // -----------------------------------------------------
+
+            EncounterStarted?.Invoke(
+                encounter);
+
             Log.Info(
                 $"Ship encounter started: " +
                 $"{shipA.ShipName} <-> " +
@@ -250,6 +265,13 @@ public class ShipEncounterService
                 encounterKey,
                 out ShipEncounter? encounter))
         {
+            // -----------------------------------------------------
+            // Notify subscribers that the encounter has ended.
+            // -----------------------------------------------------
+
+            EncounterEnded?.Invoke(
+                encounter);
+
             Log.Info(
                 $"Ship encounter ended: " +
                 $"{encounter.ShipA.ShipName} <-> " +
@@ -272,4 +294,3 @@ public class ShipEncounterService
         return $"{shipB.ShipName}|{shipA.ShipName}";
     }
 }
-

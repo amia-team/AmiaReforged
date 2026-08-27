@@ -104,7 +104,11 @@ public int CargoCapacity { get; set; } = 50;
     /// </summary>
     public string WeaponResRef { get; set; } =
         "ship_cannon";
-
+/// <summary>
+/// The port the merchant is currently operating from.
+/// Null while the merchant is sailing between ports.
+/// </summary>
+public string? CurrentTradePortId { get; set; }
         
     /// <summary>
     /// True while the ship is performing a dock/undock transition.
