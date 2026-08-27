@@ -57,10 +57,23 @@ private readonly NuiBind<string> _encounterDistanceBind =
 
 private readonly NuiBind<string> _horizonBind =
     new("ship_horizon");
+private readonly NuiBind<string> _tradeMerchantBind =
+    new("trade_merchant");
 
+private readonly NuiBind<string> _tradePortBind =
+    new("trade_port");
+
+private readonly NuiBind<string> _tradeGoldBind =
+    new("trade_gold");
+
+private readonly NuiBind<string> _tradeCargoBind =
+    new("trade_cargo");
 private readonly NuiBind<bool> _dockEnabledBind =
     new("dock_enabled");
 
+    private readonly Dictionary<string, string>
+    _activeTradeMerchants =
+        new(StringComparer.Ordinal);
 
     //private readonly OceanContactService
     //    _oceanContactService;
@@ -532,23 +545,28 @@ NuiLabel horizon =
     weaponRowTwo.Children.Add(
         heavyCannonButton);
 
-    // -----------------------------------------------------------------
-    // Actions
-    // -----------------------------------------------------------------
+ // -----------------------------------------------------------------
+// Actions
+// -----------------------------------------------------------------
 
-    NuiLabel actionHeader =
-        SectionHeader(
-            "ACTIONS");
+NuiLabel actionHeader =
+    SectionHeader(
+        "ACTIONS");
 
-    NuiButton hailButton =
-        Button(
-            "HAIL",
-            "hail_button");
+NuiButton hailButton =
+    Button(
+        "HAIL",
+        "hail_button");
 
-    NuiButton attackButton =
-        Button(
-            "ATTACK",
-            "attack_button");
+NuiButton tradeButton =
+    Button(
+        "TRADE",
+        "trade_button");
+
+NuiButton attackButton =
+    Button(
+        "ATTACK",
+        "attack_button");
 
     NuiButton repairButton =
         Button(
@@ -559,14 +577,16 @@ NuiLabel horizon =
         new();
 
     actionRow.Children.Add(
-        hailButton);
+    hailButton);
 
-    actionRow.Children.Add(
-        attackButton);
+actionRow.Children.Add(
+    tradeButton);
 
-    actionRow.Children.Add(
-        repairButton);
+actionRow.Children.Add(
+    attackButton);
 
+actionRow.Children.Add(
+    repairButton);
     // -----------------------------------------------------------------
     // Combat log
     // -----------------------------------------------------------------
@@ -585,7 +605,29 @@ NuiLabel horizon =
         Button(
             "LEAVE HELM",
             "leave_button");
+// -----------------------------------------------------------------
+// Merchant Trade
+// -----------------------------------------------------------------
 
+NuiLabel tradeMerchant =
+    InfoLabel(
+        _tradeMerchantBind,
+        56.0f);
+
+NuiLabel tradePort =
+    InfoLabel(
+        _tradePortBind,
+        56.0f);
+
+NuiLabel tradeGold =
+    InfoLabel(
+        _tradeGoldBind,
+        56.0f);
+
+NuiLabel tradeCargo =
+    InfoLabel(
+        _tradeCargoBind,
+        56.0f);
     // -----------------------------------------------------------------
     // Single-column layout
     // -----------------------------------------------------------------
@@ -711,9 +753,23 @@ column.Children.Add(_mapGroup);
 
     column.Children.Add(
         Spacer(12.0f));
+        //trade
+        column.Children.Add(
+    Spacer(12.0f));
 
-    // Combat
-    column.Children.Add(
+column.Children.Add(
+    tradeMerchant);
+
+column.Children.Add(
+    tradePort);
+
+column.Children.Add(
+    tradeGold);
+
+column.Children.Add(
+    tradeCargo);
+        // Combat
+        column.Children.Add(
         combatHeader);
 
     column.Children.Add(
@@ -965,11 +1021,77 @@ else
         "Distance: --");
 }
 }
-    // -----------------------------------------------------------------
-    // Boarding
-    // -----------------------------------------------------------------
+// -----------------------------------------------------------------
+// Merchant Trade
+// -----------------------------------------------------------------
 
-    if (_shipBoardingService
+if (_shipEncounterService.TryGetTarget(
+        ship,
+        out ShipState? tradeTarget,
+        out ShipEncounter? tradeEncounter) &&
+    tradeTarget != null &&
+    tradeEncounter != null &&
+    tradeTarget.ShipType == ShipType.Merchant)
+{
+    token.SetBindValue(
+        _tradeMerchantBind,
+        $"Merchant: {tradeTarget.ShipName}");
+
+    token.SetBindValue(
+        _tradePortBind,
+        $"Port: " +
+        $"{tradeTarget.CurrentTradePortId ?? "NONE"}");
+
+    token.SetBindValue(
+        _tradeGoldBind,
+        $"Merchant Gold: " +
+        $"{tradeTarget.MerchantGold}");
+
+    string cargoText;
+
+    if (tradeTarget.Cargo.Count == 0)
+    {
+        cargoText =
+            "Cargo: Empty";
+    }
+    else
+    {
+        cargoText =
+            "Cargo: " +
+            string.Join(
+                ", ",
+                tradeTarget.Cargo.Select(
+                    cargo =>
+                        $"{cargo.ItemId}={cargo.Quantity}"));
+    }
+
+    token.SetBindValue(
+        _tradeCargoBind,
+        cargoText);
+}
+else
+{
+    token.SetBindValue(
+        _tradeMerchantBind,
+        "Merchant: --");
+
+    token.SetBindValue(
+        _tradePortBind,
+        "Port: --");
+
+    token.SetBindValue(
+        _tradeGoldBind,
+        "Merchant Gold: --");
+
+    token.SetBindValue(
+        _tradeCargoBind,
+        "Cargo: --");
+}
+        // -----------------------------------------------------------------
+        // Boarding
+        // -----------------------------------------------------------------
+
+        if (_shipBoardingService
             .TryGetRequestForPlayer(
                 player.PlayerName,
                 out ShipBoardingRequest?

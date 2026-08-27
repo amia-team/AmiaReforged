@@ -27,11 +27,12 @@ private readonly Dictionary<string, ShipState> _ships = new();
 private readonly Dictionary<string, string> _playerShips = new();
 
 private readonly SailingAreaService _sailingAreaService;
-
+private readonly MerchantTradeService _merchantTradeService;
 private readonly MerchantPortService _merchantPortService;
 
     private readonly SailingNuiService _sailingNuiService;
-
+private const string MerchantTradeWindowId =
+    "merchant_trade";
 private readonly IslandService
     _islandService;
 private readonly ShipStatePersistenceService
@@ -87,6 +88,7 @@ public HelmService(
     PhysicalShipService physicalShipService,
     ChartDiscoveryService chartDiscoveryService,
     MerchantPortService merchantPortService,
+    MerchantTradeService merchantTradeService,
     SailingAreaService sailingAreaService)
     {
         _shipRoutePlannerService =
@@ -138,8 +140,16 @@ public HelmService(
         _pirateAiService =
     pirateAiService;
 
+    _merchantTradeService =
+    merchantTradeService;
 
-     _shipBoardingService.BoardingCompleted -=
+        _shipEncounterService.EncounterStarted +=
+    HandleShipEncounterStarted;
+
+_shipEncounterService.EncounterEnded +=
+    HandleShipEncounterEnded;
+    
+        _shipBoardingService.BoardingCompleted -=
     HandleBoardingCompleted;
 
 _shipBoardingService.BoardingCompleted +=
@@ -551,8 +561,17 @@ if (ship == null)
                     shipName,
                     obj.Player);
                 break;
-
-        case "dock_button":
+case "trade_button":
+    TradeWithTarget(
+        shipName,
+        obj.Player);
+                    break;
+    case "merchant_trade_buy_1":
+    BuyFromMerchant(
+        obj.Player,
+        1);
+    break;                
+                case "dock_button":
             DockShip(
                 shipName,
                 obj.Player);
@@ -1363,76 +1382,106 @@ player.LoginCreature
         return;
     }
 
-    // ...rest of your existing HailTarget() remains unchanged...
-
-
     ShipState targetShip;
 
-    if (ReferenceEquals(
-            encounter.ShipA,
-            ship))
-    {
-        targetShip =
-            encounter.ShipB;
-    }
-    else
-    {
-        targetShip =
-            encounter.ShipA;
-    }
+if (ReferenceEquals(
+        encounter.ShipA,
+        ship))
+{
+    targetShip =
+        encounter.ShipB;
+}
+else
+{
+    targetShip =
+        encounter.ShipA;
+}
 
-    // Message to the player who clicked HAIL.
+// -------------------------------------------------------------
+// Merchant ship
+// -------------------------------------------------------------
+
+if (targetShip.ShipType == ShipType.Merchant)
+{
     player.SendServerMessage(
         $"You hail the {targetShip.ShipName}.");
 
-    // The target ship's current helmsman.
-    string? targetPlayerKey =
-        targetShip.HelmsmanPCKey;
+    player.SendServerMessage(
+        $"The {targetShip.ShipName} acknowledges your signal.");
 
-    if (!string.IsNullOrWhiteSpace(
-            targetPlayerKey))
+    Log.Info(
+        $"Merchant hail: " +
+        $"Player={player.PlayerName}, " +
+        $"Ship={ship.ShipName}, " +
+        $"Merchant={targetShip.ShipName}, " +
+        $"Distance={encounter.Distance:0.00}");
+
+    _sailingNuiService.Update(
+        player,
+        ship,
+        _ships.Values);
+
+    return;
+}
+
+// -------------------------------------------------------------
+// Existing player-to-player hailing
+// -------------------------------------------------------------
+
+// Message to the player who clicked HAIL.
+player.SendServerMessage(
+    $"You hail the {targetShip.ShipName}.");
+
+// The target ship's current helmsman.
+string? targetPlayerKey =
+    targetShip.HelmsmanPCKey;
+
+if (!string.IsNullOrWhiteSpace(
+        targetPlayerKey))
+{
+    NwPlayer? targetPlayer =
+        NwModule.Instance.Players.FirstOrDefault(
+            p => string.Equals(
+                p.PlayerName,
+                targetPlayerKey,
+                StringComparison.Ordinal));
+
+    if (targetPlayer != null)
     {
-        NwPlayer? targetPlayer =
-            NwModule.Instance.Players.FirstOrDefault(
-                p => string.Equals(
-                    p.PlayerName,
-                    targetPlayerKey,
-                    StringComparison.Ordinal));
+        targetPlayer.SendServerMessage(
+            $"The {ship.ShipName} is hailing you.");
 
-        if (targetPlayer != null)
-        {
-            targetPlayer.SendServerMessage(
-                $"The {ship.ShipName} is hailing you.");
-
-            Log.Info(
-                $"Ship hail delivered: " +
-                $"Player={targetPlayer.PlayerName}, " +
-                $"Ship={targetShip.ShipName}");
-        }
-        else
-        {
-            Log.Warn(
-                $"Could not find online player " +
-                $"'{targetPlayerKey}' at the helm of " +
-                $"'{targetShip.ShipName}'.");
-        }
+       Log.Info(
+    $"Ship hail delivered: " +
+    $"Player={targetPlayer.PlayerName}, " +
+    $"Ship={targetShip.ShipName}");
     }
     else
     {
-        Log.Info(
-            $"Ship '{targetShip.ShipName}' has no helmsman. " +
-            $"Hail from '{ship.ShipName}' was not delivered.");
+        Log.Warn(
+            $"Could not find online player " +
+            $"'{targetPlayerKey}' at the helm of " +
+            $"'{targetShip.ShipName}'.");
     }
-
+}
+else
+{
     Log.Info(
-        $"Ship hail: " +
-        $"{ship.ShipName} -> " +
-        $"{targetShip.ShipName}, " +
-        $"Area={encounter.AreaResRef}, " +
-        $"Distance={encounter.Distance:0.00}");
+        $"Ship '{targetShip.ShipName}' has no helmsman. " +
+        $"Hail from '{ship.ShipName}' was not delivered.");
 }
 
-private void RequestBoarding(
+Log.Info(
+    $"Ship hail: " +
+    $"{ship.ShipName} -> " +
+    $"{targetShip.ShipName}, " +
+    $"Area={encounter.AreaResRef}, " +
+    $"Distance={encounter.Distance:0.00}");
+}
+
+
+
+    private void RequestBoarding(
     string shipName,
     NwPlayer player)
 {
@@ -3254,6 +3303,391 @@ private void UpdateSailingNuiForAllPlayers(
         {
             continue;
         }
+
+        _sailingNuiService.Update(
+            player,
+            playerShip,
+            _ships.Values);
+    }
+}
+private void HandleShipEncounterStarted(
+    ShipEncounter encounter)
+{
+    HandleEncounterForShip(
+        encounter,
+        encounter.ShipA);
+
+    HandleEncounterForShip(
+        encounter,
+        encounter.ShipB);
+}
+
+private void HandleEncounterForShip(
+    ShipEncounter encounter,
+    ShipState ship)
+{
+    // Only notify player-controlled ships.
+    if (ship.ShipType != ShipType.Player)
+    {
+        return;
+    }
+
+    if (string.IsNullOrWhiteSpace(
+            ship.HelmsmanPCKey))
+    {
+        return;
+    }
+
+    NwPlayer? player =
+        NwModule.Instance.Players.FirstOrDefault(
+            p =>
+                string.Equals(
+                    p.PlayerName,
+                    ship.HelmsmanPCKey,
+                    StringComparison.Ordinal));
+
+    if (player == null)
+    {
+        return;
+    }
+
+    ShipState targetShip =
+        ReferenceEquals(
+            encounter.ShipA,
+            ship)
+            ? encounter.ShipB
+            : encounter.ShipA;
+
+    player.SendServerMessage(
+        $"You have encountered the " +
+        $"{targetShip.ShipName}.");
+
+    Log.Info(
+        $"Player encounter notification: " +
+        $"Player={player.PlayerName}, " +
+        $"Ship={ship.ShipName}, " +
+        $"Target={targetShip.ShipName}, " +
+        $"Distance={encounter.Distance:0.00}");
+
+    _sailingNuiService.Update(
+        player,
+        ship,
+        _ships.Values);
+}
+
+private void HandleShipEncounterEnded(
+    ShipEncounter encounter)
+{
+    HandleEncounterEndedForShip(
+        encounter,
+        encounter.ShipA);
+
+    HandleEncounterEndedForShip(
+        encounter,
+        encounter.ShipB);
+}
+
+private void HandleEncounterEndedForShip(
+    ShipEncounter encounter,
+    ShipState ship)
+{
+    if (ship.ShipType != ShipType.Player)
+    {
+        return;
+    }
+
+    if (string.IsNullOrWhiteSpace(
+            ship.HelmsmanPCKey))
+    {
+        return;
+    }
+
+    NwPlayer? player =
+        NwModule.Instance.Players.FirstOrDefault(
+            p =>
+                string.Equals(
+                    p.PlayerName,
+                    ship.HelmsmanPCKey,
+                    StringComparison.Ordinal));
+
+    if (player == null)
+    {
+        return;
+    }
+
+    player.SendServerMessage(
+        "The other ship has moved out of encounter range.");
+
+    _sailingNuiService.Update(
+        player,
+        ship,
+        _ships.Values);
+
+    Log.Info(
+        $"Player encounter ended: " +
+        $"Player={player.PlayerName}, " +
+        $"Ship={ship.ShipName}, " +
+        $"OtherShip=" +
+        $"{(ReferenceEquals(encounter.ShipA, ship) ? encounter.ShipB.ShipName : encounter.ShipA.ShipName)}");
+}
+private void TradeWithTarget(
+    string shipName,
+    NwPlayer player)
+{
+    ShipState? ship =
+        GetShip(shipName);
+
+    if (ship == null)
+    {
+        Log.Warn(
+            $"Cannot trade from ship '{shipName}': " +
+            "ship does not exist.");
+
+        return;
+    }
+
+    if (!_shipEncounterService.TryGetTarget(
+            ship,
+            out ShipState? targetShip,
+            out ShipEncounter? encounter) ||
+        targetShip == null ||
+        encounter == null)
+    {
+        player.SendServerMessage(
+            "There is no ship close enough to trade with.");
+
+        return;
+    }
+
+    if (targetShip.ShipType != ShipType.Merchant)
+    {
+        player.SendServerMessage(
+            $"The {targetShip.ShipName} is not a merchant vessel.");
+
+        return;
+    }
+
+    if (string.IsNullOrWhiteSpace(
+            targetShip.CurrentTradePortId))
+    {
+        player.SendServerMessage(
+            $"The {targetShip.ShipName} is currently sailing " +
+            $"and has no active trade market.");
+
+        return;
+    }
+
+    OpenMerchantTradeWindow(
+        player,
+        ship,
+        targetShip);
+
+    Log.Info(
+        $"Merchant trade window opened: " +
+        $"Player={player.PlayerName}, " +
+        $"Merchant={targetShip.ShipName}, " +
+        $"Port={targetShip.CurrentTradePortId}");
+}
+
+    private static string FormatMerchantCargo(
+    ShipState ship)
+{
+    if (ship.Cargo.Count == 0)
+    {
+        return "Empty";
+    }
+
+    return string.Join(
+        ", ",
+        ship.Cargo.Select(
+            cargo =>
+                $"{cargo.ItemId}={cargo.Quantity}"));
+}
+private void OpenMerchantTradeWindow(
+    NwPlayer player,
+    ShipState playerShip,
+    ShipState merchant)
+{
+    NuiLabel title =
+        new(
+            $"TRADE WITH {merchant.ShipName}");
+
+    NuiLabel port =
+        new(
+            $"Port: {merchant.CurrentTradePortId}");
+
+    NuiLabel gold =
+        new(
+            $"Merchant Gold: {merchant.MerchantGold}");
+
+    string cargoText =
+        merchant.Cargo.Count == 0
+            ? "Cargo: Empty"
+            : "Cargo: " +
+              string.Join(
+                  ", ",
+                  merchant.Cargo.Select(
+                      cargo =>
+                          $"{cargo.ItemId}={cargo.Quantity}"));
+
+    NuiLabel cargo =
+        new(
+            cargoText);
+
+    NuiLabel capacity =
+        new(
+            $"Cargo Capacity: " +
+            $"{merchant.Cargo.Sum(c => c.Quantity)} / " +
+            $"{merchant.CargoCapacity}");
+NuiButton buyButton =
+    new("BUY 1");
+
+buyButton.Id =
+    "merchant_trade_buy_1";
+    NuiButton closeButton =
+        new(
+            "CLOSE");
+
+    closeButton.Id =
+        "merchant_trade_close";
+
+    NuiColumn column =
+        new();
+
+    column.Children.Add(
+        title);
+
+    column.Children.Add(
+        port);
+
+    column.Children.Add(
+        gold);
+
+    column.Children.Add(
+        cargo);
+
+    column.Children.Add(
+        capacity);
+column.Children.Add(
+    buyButton);
+    column.Children.Add(
+        closeButton);
+
+    NuiWindow window =
+        new(
+            column,
+            NuiProperty<string>.CreateValue(
+                "Merchant Trade"));
+
+    window.Geometry =
+        new NuiRect(
+            -1.0f,
+            -1.0f,
+            500.0f,
+            400.0f);
+
+    window.Closable =
+        true;
+
+    if (!player.TryCreateNuiWindow(
+            window,
+            out NuiWindowToken token,
+            MerchantTradeWindowId))
+    {
+        Log.Warn(
+            $"Failed to create merchant trade window " +
+            $"for player {player.PlayerName}.");
+
+        return;
+    }
+
+    Log.Info(
+        $"Merchant trade NUI created: " +
+        $"Player={player.PlayerName}, " +
+        $"Merchant={merchant.ShipName}");
+}
+private void BuyFromMerchant(
+    NwPlayer player,
+    int quantity)
+{
+    ShipState? playerShip =
+        _ships.Values.FirstOrDefault(
+            ship =>
+                string.Equals(
+                    ship.HelmsmanPCKey,
+                    player.PlayerName,
+                    StringComparison.Ordinal));
+
+    if (playerShip == null)
+    {
+        player.SendServerMessage(
+            "You are not currently at the helm of a ship.");
+
+        return;
+    }
+
+    if (!_shipEncounterService.TryGetTarget(
+            playerShip,
+            out ShipState? merchant,
+            out ShipEncounter? encounter) ||
+        merchant == null ||
+        encounter == null)
+    {
+        player.SendServerMessage(
+            "There is no merchant close enough to trade with.");
+
+        return;
+    }
+
+    if (merchant.ShipType != ShipType.Merchant)
+    {
+        player.SendServerMessage(
+            "That ship is not a merchant.");
+
+        return;
+    }
+
+    if (string.IsNullOrWhiteSpace(
+            merchant.CurrentTradePortId))
+    {
+        player.SendServerMessage(
+            "The merchant is not currently trading at a port.");
+
+        return;
+    }
+
+    NwCreature? creature =
+        player.LoginCreature;
+
+    if (creature == null)
+    {
+        player.SendServerMessage(
+            "Your character could not be found.");
+
+        return;
+    }
+
+    bool success =
+        _merchantTradeService.TryBuy(
+            creature,
+            playerShip,
+            merchant,
+            "grain",
+            quantity,
+            out string message);
+
+    player.SendServerMessage(
+        message);
+
+    if (success)
+    {
+        Log.Info(
+            $"Player trade completed: " +
+            $"Player={player.PlayerName}, " +
+            $"Ship={playerShip.ShipName}, " +
+            $"Merchant={merchant.ShipName}, " +
+            $"Item=grain, " +
+            $"Quantity={quantity}");
 
         _sailingNuiService.Update(
             player,
