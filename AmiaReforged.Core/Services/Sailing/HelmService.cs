@@ -570,7 +570,13 @@ case "trade_button":
     BuyFromMerchant(
         obj.Player,
         1);
-    break;                
+       break;
+case "merchant_trade_sell_1":
+    SellToMerchant(
+        obj.Player,
+        1);
+    break;
+                    
                 case "dock_button":
             DockShip(
                 shipName,
@@ -3508,6 +3514,50 @@ private void OpenMerchantTradeWindow(
     ShipState playerShip,
     ShipState merchant)
 {
+    NwCreature? creature =
+        player.LoginCreature;
+
+    if (creature == null)
+    {
+        player.SendServerMessage(
+            "Your character could not be found.");
+
+        return;
+    }
+
+    int playerGold =
+        (int)creature.Gold;
+
+    int playerCargoUsed =
+        playerShip.Cargo.Sum(
+            cargo => cargo.Quantity);
+
+    string playerCargoText =
+        playerShip.Cargo.Count == 0
+            ? "Empty"
+            : string.Join(
+                ", ",
+                playerShip.Cargo.Select(
+                    cargo =>
+                        $"{cargo.ItemId}={cargo.Quantity}"));
+
+    int merchantCargoUsed =
+        merchant.Cargo.Sum(
+            cargo => cargo.Quantity);
+
+    string merchantCargoText =
+        merchant.Cargo.Count == 0
+            ? "Empty"
+            : string.Join(
+                ", ",
+                merchant.Cargo.Select(
+                    cargo =>
+                        $"{cargo.ItemId}={cargo.Quantity}"));
+
+    string marketText =
+        BuildMarketText(
+            merchant);
+
     NuiLabel title =
         new(
             $"TRADE WITH {merchant.ShipName}");
@@ -3516,34 +3566,45 @@ private void OpenMerchantTradeWindow(
         new(
             $"Port: {merchant.CurrentTradePortId}");
 
-    NuiLabel gold =
+    NuiLabel playerGoldLabel =
         new(
-            $"Merchant Gold: {merchant.MerchantGold}");
+            $"Your Gold: {playerGold}");
 
-    string cargoText =
-        merchant.Cargo.Count == 0
-            ? "Cargo: Empty"
-            : "Cargo: " +
-              string.Join(
-                  ", ",
-                  merchant.Cargo.Select(
-                      cargo =>
-                          $"{cargo.ItemId}={cargo.Quantity}"));
-
-    NuiLabel cargo =
+    NuiLabel playerCargoLabel =
         new(
-            cargoText);
+            $"Your Cargo: " +
+            $"{playerCargoUsed}/{playerShip.CargoCapacity} " +
+            $"| {playerCargoText}");
 
-    NuiLabel capacity =
+    NuiLabel merchantGoldLabel =
         new(
-            $"Cargo Capacity: " +
-            $"{merchant.Cargo.Sum(c => c.Quantity)} / " +
-            $"{merchant.CargoCapacity}");
-NuiButton buyButton =
-    new("BUY 1");
+            $"Merchant Gold: " +
+            $"{merchant.MerchantGold}");
 
-buyButton.Id =
-    "merchant_trade_buy_1";
+    NuiLabel merchantCargoLabel =
+        new(
+            $"Merchant Cargo: " +
+            $"{merchantCargoUsed}/{merchant.CargoCapacity} " +
+            $"| {merchantCargoText}");
+
+    NuiLabel marketLabel =
+        new(
+            marketText);
+
+    NuiButton buyButton =
+        new(
+            "BUY 1 GRAIN");
+
+    buyButton.Id =
+        "merchant_trade_buy_1";
+
+    NuiButton sellButton =
+        new(
+            "SELL 1 TIMBER");
+
+    sellButton.Id =
+        "merchant_trade_sell_1";
+
     NuiButton closeButton =
         new(
             "CLOSE");
@@ -3561,15 +3622,26 @@ buyButton.Id =
         port);
 
     column.Children.Add(
-        gold);
+        playerGoldLabel);
 
     column.Children.Add(
-        cargo);
+        playerCargoLabel);
 
     column.Children.Add(
-        capacity);
-column.Children.Add(
-    buyButton);
+        merchantGoldLabel);
+
+    column.Children.Add(
+        merchantCargoLabel);
+
+    column.Children.Add(
+        marketLabel);
+
+    column.Children.Add(
+        buyButton);
+
+    column.Children.Add(
+        sellButton);
+
     column.Children.Add(
         closeButton);
 
@@ -3583,8 +3655,8 @@ column.Children.Add(
         new NuiRect(
             -1.0f,
             -1.0f,
-            500.0f,
-            400.0f);
+            600.0f,
+            500.0f);
 
     window.Closable =
         true;
@@ -3606,8 +3678,8 @@ column.Children.Add(
         $"Player={player.PlayerName}, " +
         $"Merchant={merchant.ShipName}");
 }
-private void BuyFromMerchant(
-    NwPlayer player,
+    private void BuyFromMerchant(
+        NwPlayer player,
     int quantity)
 {
     ShipState? playerShip =
@@ -3694,5 +3766,102 @@ private void BuyFromMerchant(
             playerShip,
             _ships.Values);
     }
+}
+private void SellToMerchant(
+    NwPlayer player,
+    int quantity)
+{
+    ShipState? playerShip =
+        _ships.Values.FirstOrDefault(
+            ship =>
+                string.Equals(
+                    ship.HelmsmanPCKey,
+                    player.PlayerName,
+                    StringComparison.Ordinal));
+
+    if (playerShip == null)
+    {
+        player.SendServerMessage(
+            "You are not currently at the helm of a ship.");
+
+        return;
+    }
+
+    if (!_shipEncounterService.TryGetTarget(
+            playerShip,
+            out ShipState? merchant,
+            out ShipEncounter? encounter) ||
+        merchant == null ||
+        encounter == null)
+    {
+        player.SendServerMessage(
+            "There is no merchant close enough to trade with.");
+
+        return;
+    }
+
+    if (merchant.ShipType != ShipType.Merchant)
+    {
+        player.SendServerMessage(
+            "That ship is not a merchant.");
+
+        return;
+    }
+
+    if (string.IsNullOrWhiteSpace(
+            merchant.CurrentTradePortId))
+    {
+        player.SendServerMessage(
+            "The merchant is not currently trading at a port.");
+
+        return;
+    }
+
+    NwCreature? creature =
+        player.LoginCreature;
+
+    if (creature == null)
+    {
+        player.SendServerMessage(
+            "Your character could not be found.");
+
+        return;
+    }
+
+    bool success =
+        _merchantTradeService.TrySell(
+            creature,
+            playerShip,
+            merchant,
+            "timber",
+            quantity,
+            out string message);
+
+    player.SendServerMessage(
+        message);
+
+    if (success)
+    {
+        _sailingNuiService.Update(
+            player,
+            playerShip,
+            _ships.Values);
+    }
+}
+private string BuildMarketText(
+    ShipState merchant)
+{
+    if (string.IsNullOrWhiteSpace(
+            merchant.CurrentTradePortId))
+    {
+        return "Market: CLOSED";
+    }
+
+    // We need the existing port definition from
+    // MerchantTradeService. Do not duplicate prices here.
+    return
+        $"Market: {merchant.CurrentTradePortId}\n" +
+        "Merchant sells: grain 8 gp\n" +
+        "Merchant buys: timber 18 gp";
 }
 }

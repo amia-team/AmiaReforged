@@ -1,6 +1,6 @@
 using AmiaReforged.Core.Models.Sailing;
-using Anvil.Services;
 using Anvil.API;
+using Anvil.Services;
 using NLog;
 
 namespace AmiaReforged.Core.Services.Sailing;
@@ -368,7 +368,138 @@ foreach (KeyValuePair<string, int> item in
         $"Port={merchant.CurrentTradePortId}");
 
     return true;
-}   
+}
+public bool TrySell(
+    NwCreature seller,
+    ShipState sellerShip,
+    ShipState merchant,
+    string itemId,
+    int quantity,
+    out string message)
+{
+    message = string.Empty;
+
+    if (quantity <= 0)
+    {
+        message = "Invalid quantity.";
+        return false;
+    }
+
+    if (merchant.ShipType != ShipType.Merchant)
+    {
+        message = "That ship is not a merchant.";
+        return false;
+    }
+
+    if (string.IsNullOrWhiteSpace(
+            merchant.CurrentTradePortId))
+    {
+        message =
+            "The merchant is not currently trading.";
+
+        return false;
+    }
+
+    if (!_ports.TryGetValue(
+            merchant.CurrentTradePortId,
+            out PortTradeDefinition? port))
+    {
+        message =
+            "No market exists at this port.";
+
+        return false;
+    }
+
+    if (!port.BuyPrices.TryGetValue(
+            itemId,
+            out int price))
+    {
+        message =
+            $"The merchant is not buying {itemId}.";
+
+        return false;
+    }
+
+    MerchantCargo? sellerCargo =
+        sellerShip.Cargo.FirstOrDefault(
+            cargo =>
+                string.Equals(
+                    cargo.ItemId,
+                    itemId,
+                    StringComparison.OrdinalIgnoreCase));
+
+    if (sellerCargo == null ||
+        sellerCargo.Quantity < quantity)
+    {
+        message =
+            $"You do not have enough {itemId}.";
+
+        return false;
+    }
+
+    int totalRevenue =
+        quantity * price;
+
+    if (merchant.MerchantGold <
+        totalRevenue)
+    {
+        message =
+            "The merchant cannot afford that cargo.";
+
+        return false;
+    }
+
+    merchant.MerchantGold -=
+        totalRevenue;
+
+    seller.GiveGold(
+        totalRevenue);
+
+    sellerCargo.Quantity -=
+        quantity;
+
+    MerchantCargo? merchantCargo =
+        merchant.Cargo.FirstOrDefault(
+            cargo =>
+                string.Equals(
+                    cargo.ItemId,
+                    itemId,
+                    StringComparison.OrdinalIgnoreCase));
+
+    if (merchantCargo == null)
+    {
+        merchant.Cargo.Add(
+            new MerchantCargo
+            {
+                ItemId = itemId,
+                Quantity = quantity
+            });
+    }
+    else
+    {
+        merchantCargo.Quantity +=
+            quantity;
+    }
+
+    sellerShip.Cargo.RemoveAll(
+        cargo => cargo.Quantity <= 0);
+
+    message =
+        $"You sold {quantity} {itemId} " +
+        $"for {totalRevenue} gold.";
+
+    Log.Info(
+        $"Player sold cargo: " +
+        $"Player={seller.Name}, " +
+        $"Ship={sellerShip.ShipName}, " +
+        $"Merchant={merchant.ShipName}, " +
+        $"Item={itemId}, " +
+        $"Quantity={quantity}, " +
+        $"Revenue={totalRevenue}, " +
+        $"Port={merchant.CurrentTradePortId}");
+
+    return true;
+}
     private static string FormatCargo(
         ShipState ship)
     {
