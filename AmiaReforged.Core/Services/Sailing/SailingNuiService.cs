@@ -57,17 +57,21 @@ private readonly NuiBind<string> _encounterDistanceBind =
 
 private readonly NuiBind<string> _horizonBind =
     new("ship_horizon");
-private readonly NuiBind<string> _tradeMerchantBind =
-    new("trade_merchant");
+private readonly NuiBind<string>
+    _tradePlayerGoldBind =
+        new("trade_player_gold");
 
-private readonly NuiBind<string> _tradePortBind =
-    new("trade_port");
+private readonly NuiBind<string>
+    _tradePlayerCargoBind =
+        new("trade_player_cargo");
 
-private readonly NuiBind<string> _tradeGoldBind =
-    new("trade_gold");
+private readonly NuiBind<string>
+    _tradeMerchantGoldBind =
+        new("trade_merchant_gold");
 
-private readonly NuiBind<string> _tradeCargoBind =
-    new("trade_cargo");
+private readonly NuiBind<string>
+    _tradeMerchantCargoBind =
+        new("trade_merchant_cargo");
 private readonly NuiBind<bool> _dockEnabledBind =
     new("dock_enabled");
 
@@ -609,25 +613,7 @@ actionRow.Children.Add(
 // Merchant Trade
 // -----------------------------------------------------------------
 
-NuiLabel tradeMerchant =
-    InfoLabel(
-        _tradeMerchantBind,
-        56.0f);
 
-NuiLabel tradePort =
-    InfoLabel(
-        _tradePortBind,
-        56.0f);
-
-NuiLabel tradeGold =
-    InfoLabel(
-        _tradeGoldBind,
-        56.0f);
-
-NuiLabel tradeCargo =
-    InfoLabel(
-        _tradeCargoBind,
-        56.0f);
     // -----------------------------------------------------------------
     // Single-column layout
     // -----------------------------------------------------------------
@@ -757,17 +743,7 @@ column.Children.Add(_mapGroup);
         column.Children.Add(
     Spacer(12.0f));
 
-column.Children.Add(
-    tradeMerchant);
 
-column.Children.Add(
-    tradePort);
-
-column.Children.Add(
-    tradeGold);
-
-column.Children.Add(
-    tradeCargo);
         // Combat
         column.Children.Add(
         combatHeader);
@@ -1033,20 +1009,7 @@ if (_shipEncounterService.TryGetTarget(
     tradeEncounter != null &&
     tradeTarget.ShipType == ShipType.Merchant)
 {
-    token.SetBindValue(
-        _tradeMerchantBind,
-        $"Merchant: {tradeTarget.ShipName}");
-
-    token.SetBindValue(
-        _tradePortBind,
-        $"Port: " +
-        $"{tradeTarget.CurrentTradePortId ?? "NONE"}");
-
-    token.SetBindValue(
-        _tradeGoldBind,
-        $"Merchant Gold: " +
-        $"{tradeTarget.MerchantGold}");
-
+    
     string cargoText;
 
     if (tradeTarget.Cargo.Count == 0)
@@ -1065,28 +1028,7 @@ if (_shipEncounterService.TryGetTarget(
                         $"{cargo.ItemId}={cargo.Quantity}"));
     }
 
-    token.SetBindValue(
-        _tradeCargoBind,
-        cargoText);
-}
-else
-{
-    token.SetBindValue(
-        _tradeMerchantBind,
-        "Merchant: --");
 
-    token.SetBindValue(
-        _tradePortBind,
-        "Port: --");
-
-    token.SetBindValue(
-        _tradeGoldBind,
-        "Merchant Gold: --");
-
-    token.SetBindValue(
-        _tradeCargoBind,
-        "Cargo: --");
-}
         // -----------------------------------------------------------------
         // Boarding
         // -----------------------------------------------------------------
@@ -1117,6 +1059,7 @@ else
             _boardingBind,
             "Boarding: NONE");
     }
+}
 }
 
 // ---------------------------------------------------------------------

@@ -29,11 +29,29 @@ private readonly Dictionary<string, string> _playerShips = new();
 private readonly SailingAreaService _sailingAreaService;
 private readonly MerchantTradeService _merchantTradeService;
 private readonly MerchantPortService _merchantPortService;
-
+private readonly Dictionary<string, NuiWindowToken>
+    _merchantTradeTokens =
+        new(StringComparer.Ordinal);
     private readonly SailingNuiService _sailingNuiService;
 private const string MerchantTradeWindowId =
     "merchant_trade";
-private readonly IslandService
+
+private readonly NuiBind<string>
+    _tradePlayerGoldBind =
+        new("trade_player_gold");
+
+private readonly NuiBind<string>
+    _tradePlayerCargoBind =
+        new("trade_player_cargo");
+
+private readonly NuiBind<string>
+    _tradeMerchantGoldBind =
+        new("trade_merchant_gold");
+
+private readonly NuiBind<string>
+    _tradeMerchantCargoBind =
+        new("trade_merchant_cargo");
+    private readonly IslandService
     _islandService;
 private readonly ShipStatePersistenceService
 _shipStatePersistenceService;
@@ -3559,34 +3577,28 @@ private void OpenMerchantTradeWindow(
             merchant);
 
     NuiLabel title =
-        new(
-            $"TRADE WITH {merchant.ShipName}");
+    new(
+        $"TRADE WITH {merchant.ShipName}");
 
-    NuiLabel port =
-        new(
-            $"Port: {merchant.CurrentTradePortId}");
+NuiLabel port =
+    new(
+        $"Port: {merchant.CurrentTradePortId}");
 
-    NuiLabel playerGoldLabel =
-        new(
-            $"Your Gold: {playerGold}");
+NuiLabel playerGoldLabel =
+    new(
+        _tradePlayerGoldBind);
 
-    NuiLabel playerCargoLabel =
-        new(
-            $"Your Cargo: " +
-            $"{playerCargoUsed}/{playerShip.CargoCapacity} " +
-            $"| {playerCargoText}");
+NuiLabel playerCargoLabel =
+    new(
+        _tradePlayerCargoBind);
 
-    NuiLabel merchantGoldLabel =
-        new(
-            $"Merchant Gold: " +
-            $"{merchant.MerchantGold}");
+NuiLabel merchantGoldLabel =
+    new(
+        _tradeMerchantGoldBind);
 
-    NuiLabel merchantCargoLabel =
-        new(
-            $"Merchant Cargo: " +
-            $"{merchantCargoUsed}/{merchant.CargoCapacity} " +
-            $"| {merchantCargoText}");
-
+NuiLabel merchantCargoLabel =
+    new(
+        _tradeMerchantCargoBind);
     NuiLabel marketLabel =
         new(
             marketText);
@@ -3661,18 +3673,40 @@ private void OpenMerchantTradeWindow(
     window.Closable =
         true;
 
-    if (!player.TryCreateNuiWindow(
-            window,
-            out NuiWindowToken token,
-            MerchantTradeWindowId))
-    {
-        Log.Warn(
-            $"Failed to create merchant trade window " +
-            $"for player {player.PlayerName}.");
+if (!player.TryCreateNuiWindow(
+        window,
+        out NuiWindowToken token,
+        MerchantTradeWindowId))
+{
+    Log.Warn(
+        $"Failed to create merchant trade window " +
+        $"for player {player.PlayerName}.");
 
-        return;
-    }
+    return;
+}
 
+_merchantTradeTokens[player.PlayerName] =
+    token;
+token.SetBindValue(
+    _tradePlayerGoldBind,
+    $"Your Gold: {(int)creature.Gold}");
+
+token.SetBindValue(
+    _tradePlayerCargoBind,
+    $"Your Cargo: " +
+    $"{playerCargoUsed}/{playerShip.CargoCapacity} " +
+    $"| {playerCargoText}");
+
+token.SetBindValue(
+    _tradeMerchantGoldBind,
+    $"Merchant Gold: " +
+    $"{merchant.MerchantGold}");
+
+token.SetBindValue(
+    _tradeMerchantCargoBind,
+    $"Merchant Cargo: " +
+    $"{merchantCargoUsed}/{merchant.CargoCapacity} " +
+    $"| {merchantCargoText}");
     Log.Info(
         $"Merchant trade NUI created: " +
         $"Player={player.PlayerName}, " +
@@ -3760,7 +3794,8 @@ private void OpenMerchantTradeWindow(
             $"Merchant={merchant.ShipName}, " +
             $"Item=grain, " +
             $"Quantity={quantity}");
-
+RefreshMerchantTradeWindow(
+    player);
         _sailingNuiService.Update(
             player,
             playerShip,
@@ -3840,13 +3875,16 @@ private void SellToMerchant(
     player.SendServerMessage(
         message);
 
-    if (success)
-    {
-        _sailingNuiService.Update(
-            player,
-            playerShip,
-            _ships.Values);
-    }
+if (success)
+{
+    RefreshMerchantTradeWindow(
+        player);
+
+    _sailingNuiService.Update(
+        player,
+        playerShip,
+        _ships.Values);
+}
 }
 private string BuildMarketText(
     ShipState merchant)
@@ -3863,5 +3901,98 @@ private string BuildMarketText(
         $"Market: {merchant.CurrentTradePortId}\n" +
         "Merchant sells: grain 8 gp\n" +
         "Merchant buys: timber 18 gp";
+}
+private void RefreshMerchantTradeWindow(
+    NwPlayer player)
+{
+    if (!_merchantTradeTokens.TryGetValue(
+            player.PlayerName,
+            out NuiWindowToken token))
+    {
+        return;
+    }
+
+    NwCreature? creature =
+        player.LoginCreature;
+
+    if (creature == null)
+    {
+        return;
+    }
+
+    ShipState? playerShip =
+        _ships.Values.FirstOrDefault(
+            ship =>
+                string.Equals(
+                    ship.HelmsmanPCKey,
+                    player.PlayerName,
+                    StringComparison.Ordinal));
+
+    if (playerShip == null)
+    {
+        return;
+    }
+
+    if (!_shipEncounterService.TryGetTarget(
+            playerShip,
+            out ShipState? merchant,
+            out ShipEncounter? encounter) ||
+        merchant == null ||
+        encounter == null ||
+        merchant.ShipType != ShipType.Merchant)
+    {
+        return;
+    }
+
+    int playerGold =
+        
+        (int)creature.Gold;
+
+    int playerCargoUsed =
+        playerShip.Cargo.Sum(
+            cargo => cargo.Quantity);
+
+    string playerCargoText =
+        playerShip.Cargo.Count == 0
+            ? "Empty"
+            : string.Join(
+                ", ",
+                playerShip.Cargo.Select(
+                    cargo =>
+                        $"{cargo.ItemId}={cargo.Quantity}"));
+
+    int merchantCargoUsed =
+        merchant.Cargo.Sum(
+            cargo => cargo.Quantity);
+
+    string merchantCargoText =
+        merchant.Cargo.Count == 0
+            ? "Empty"
+            : string.Join(
+                ", ",
+                merchant.Cargo.Select(
+                    cargo =>
+                        $"{cargo.ItemId}={cargo.Quantity}"));
+
+    token.SetBindValue(
+        _tradePlayerGoldBind,
+        $"Your Gold: {playerGold}");
+
+    token.SetBindValue(
+        _tradePlayerCargoBind,
+        $"Your Cargo: " +
+        $"{playerCargoUsed}/{playerShip.CargoCapacity} " +
+        $"| {playerCargoText}");
+
+    token.SetBindValue(
+        _tradeMerchantGoldBind,
+        $"Merchant Gold: " +
+        $"{merchant.MerchantGold}");
+
+    token.SetBindValue(
+        _tradeMerchantCargoBind,
+        $"Merchant Cargo: " +
+        $"{merchantCargoUsed}/{merchant.CargoCapacity} " +
+        $"| {merchantCargoText}");
 }
 }
