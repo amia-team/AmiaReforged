@@ -31,21 +31,23 @@ public sealed class Ship
         _ammunition = (ammunition ?? []).ToDictionary(a => a.Type);
     }
 
+    public Guid Id { get; init; }
+
     public string Name { get; }
 
     public ShipType Type { get; }
 
-    public int Hull { get; set; }
-
     public int MaximumHull { get; }
+
+    public int Hull { get; private set; }
 
     public ShipPosition Position { get; private set; }
 
     public Heading Heading { get; private set; }
 
-    public ShipCrew Crew { get; set; }
+    public ShipCrew Crew { get; private set; }
 
-    public bool IsUnderway { get; set; }
+    public bool IsUnderway { get; private set; }
 
     public bool IsSunk => Hull <= 0;
 
@@ -58,6 +60,10 @@ public sealed class Ship
 
     public bool TryGetAmmunition(ShipAmmunitionType type, out ShipAmmunition? ammunition)
         => _ammunition.TryGetValue(type, out ammunition);
+
+    public void StartUnderway() => IsUnderway = true;
+
+    public void StopUnderway() => IsUnderway = false;
 
     public void MoveTo(ShipPosition position) => Position = position;
 
@@ -77,15 +83,17 @@ public sealed class Ship
 
     public ShipAttackResult ResolveAttack(Ship target, ShipArmamentSlot armamentSlot, ShipAmmunitionType ammunitionType)
     {
-        if (IsSunk || IsUnderway)
+        if (target == this)
+            return ShipAttackResult.NoTarget;
+        if (IsSunk)
             return ShipAttackResult.AttackerDisabled;
-        if (target.IsSunk || target.IsUnderway)
+        if (target.IsSunk)
             return ShipAttackResult.TargetDisabled;
-        if (TryGetArmament(armamentSlot, out ShipArmament? armament) || armament == null)
+        if (!TryGetArmament(armamentSlot, out ShipArmament? armament) || armament == null)
             return ShipAttackResult.NoWeapon;
         if (!armament.IsOperational)
             return ShipAttackResult.AttackerDisabled;
-        if (TryGetAmmunition(ammunitionType, out ShipAmmunition? ammunition)
+        if (!TryGetAmmunition(ammunitionType, out ShipAmmunition? ammunition)
             || ammunition == null || ammunition.Quantity <= 0)
             return ShipAttackResult.NoAmmunition;
         if (Position.DistanceTo(target.Position) > armament.Range)
