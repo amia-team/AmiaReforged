@@ -1,4 +1,5 @@
 using AmiaReforged.Core.Models.Sailing.Ship.Armament;
+using AmiaReforged.Core.Models.Sailing.Ship.Cargo;
 using AmiaReforged.Core.Models.Sailing.Ship.Crew;
 using AmiaReforged.Core.Models.Sailing.Ship.Types;
 using AmiaReforged.Core.Models.Sailing.Ship.Weapon.Ammunition;
@@ -25,6 +26,7 @@ public sealed class Ship
     /// <param name="armaments">Initial set of weapons installed on the ship.</param>
     /// <param name="ammunition">Initial stock of ammunition types.</param>
     /// <param name="crew">The crew assigned to the ship. If null, a new empty crew is created.</param>
+    /// <param name="cargoCapacity">The maximum number of cargo units the ship can carry.</param>
     public Ship(
         string name,
         ShipType type,
@@ -33,7 +35,8 @@ public sealed class Ship
         Heading heading = Heading.East,
         ShipArmament[]? armaments = null,
         ShipAmmunition[]? ammunition = null,
-        ShipCrew? crew = null)
+        ShipCrew? crew = null,
+        int cargoCapacity = 50)
     {
         Name = name;
         Type = type;
@@ -42,6 +45,7 @@ public sealed class Ship
         Position = position;
         Heading = heading;
         Crew = crew ?? new ShipCrew();
+        Cargo = new ShipCargo(cargoCapacity);
         _armaments = (armaments ?? []).ToDictionary(a => a.Slot);
         _ammunition = (ammunition ?? []).ToDictionary(a => a.Type);
         Id = Guid.NewGuid();
@@ -88,6 +92,11 @@ public sealed class Ship
     /// The crew members currently assigned to the ship.
     /// </summary>
     public ShipCrew Crew { get; private set; }
+
+    /// <summary>
+    /// The cargo currently carried by the ship.
+    /// </summary>
+    public ShipCargo Cargo { get; }
 
     /// <summary>
     /// Indicates whether the ship is currently moving through the water.
