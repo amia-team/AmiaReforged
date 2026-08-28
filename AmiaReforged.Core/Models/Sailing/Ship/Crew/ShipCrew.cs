@@ -1,5 +1,3 @@
-using Anvil.API;
-
 namespace AmiaReforged.Core.Models.Sailing.Ship.Crew;
 
 public sealed class ShipCrew
