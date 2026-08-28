@@ -29,11 +29,17 @@ public sealed class Ship
         Crew = crew ?? new ShipCrew();
         _armaments = (armaments ?? []).ToDictionary(a => a.Slot);
         _ammunition = (ammunition ?? []).ToDictionary(a => a.Type);
+        Id = Guid.NewGuid();
     }
 
-    public Guid Id { get; init; }
-
     public string Name { get; }
+
+    /// <summary>
+    /// The unique identifier of the ship. Each generated ship object is unique, and you don't need this for reference.
+    /// Ship.Id should be used for database operations for persistence if relogging or crashing the server loses
+    /// the ship object context or relevant associations.
+    /// </summary>
+    public Guid Id { get; }
 
     public ShipType Type { get; }
 
