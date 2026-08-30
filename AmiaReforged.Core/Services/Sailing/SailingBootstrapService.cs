@@ -46,12 +46,12 @@ new(
     "black_pearl_d2",
     "black_pearl_c",
     "ocean_01",
-    100f,
-    100f,
+    10f,
+    10f,
     0f,
     Heading.East,
     ShipType.Player,
-    640),
+    140),
 
 new(
     "Stormrunner",
