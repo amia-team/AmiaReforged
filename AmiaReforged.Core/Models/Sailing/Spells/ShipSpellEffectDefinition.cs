@@ -23,6 +23,12 @@ public sealed class ShipSpellEffectDefinition
     public int HullDamage { get; init; }
 
     /// <summary>
+    /// Maximum distance at which the spell can affect
+    /// another ship.
+    /// </summary>
+    public float MaxRange { get; init; }
+
+    /// <summary>
     /// Movement multiplier applied while the effect is active.
     /// 1.0 means normal movement.
     /// 2.0 means double movement.
