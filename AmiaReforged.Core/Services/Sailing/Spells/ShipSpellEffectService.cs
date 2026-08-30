@@ -11,45 +11,7 @@ public sealed class ShipSpellEffectService
     private static readonly Logger Log =
         LogManager.GetCurrentClassLogger();
     //new
-    private static readonly Dictionary<int, ShipSpellEffectDefinition>
-    SpellDefinitions = new()
-    {
-        {
-            (int)Spell.Fireball,
-            new ShipSpellEffectDefinition
-            {
-                SpellId = (int)Spell.Fireball,
-                DisplayName = "Fireball",
-                EffectType = ShipSpellEffectType.Offensive,
-                HullDamage = 10,
-                RequiresEnemyTarget = true,
-                RequiresEncounter = true
-            }
-        },
-        {
-    (int)Spell.LightningBolt,
-    new ShipSpellEffectDefinition
-    {
-        SpellId = (int)Spell.LightningBolt,
-        DisplayName = "Lightning Bolt",
-        EffectType = ShipSpellEffectType.Offensive,
-        HullDamage = 10,
-        RequiresEnemyTarget = true,
-        RequiresEncounter = true
-    }
-},
-        {
-            (int)Spell.GustOfWind,
-            new ShipSpellEffectDefinition
-            {
-                SpellId = (int)Spell.GustOfWind,
-                DisplayName = "Gust of Wind",
-                EffectType = ShipSpellEffectType.Movement,
-                SpeedMultiplier = 2.0f,
-                Duration = TimeSpan.FromSeconds(60)
-            }
-        }
-    };
+
     // -------------------------------------------------------------
     // Temporary Fireball damage
     // -------------------------------------------------------------
@@ -244,7 +206,23 @@ public sealed class ShipSpellEffectService
 
         return;
     }
+if (definition.MaxRange > 0.0f &&
+    encounter.Distance > definition.MaxRange)
+{
+    player.SendServerMessage(
+        $"{definition.DisplayName} is out of range. " +
+        $"Range: {definition.MaxRange:0.0}, " +
+        $"Distance: {encounter.Distance:0.0}.");
 
+    Log.Info(
+        $"{definition.DisplayName} rejected: " +
+        $"Ship={attackingShip.ShipName}, " +
+        $"Target={targetShip.ShipName}, " +
+        $"Distance={encounter.Distance:0.00}, " +
+        $"MaxRange={definition.MaxRange:0.00}.");
+
+    return;
+}
     int previousHull =
         targetShip.Hull;
 
@@ -368,7 +346,23 @@ public sealed class ShipSpellEffectService
 
         return;
     }
+if (definition.MaxRange > 0.0f &&
+    encounter.Distance > definition.MaxRange)
+{
+    player.SendServerMessage(
+        $"{definition.DisplayName} is out of range. " +
+        $"Range: {definition.MaxRange:0.0}, " +
+        $"Distance: {encounter.Distance:0.0}.");
 
+    Log.Info(
+        $"{definition.DisplayName} rejected: " +
+        $"Ship={attackingShip.ShipName}, " +
+        $"Target={targetShip.ShipName}, " +
+        $"Distance={encounter.Distance:0.00}, " +
+        $"MaxRange={definition.MaxRange:0.00}.");
+
+    return;
+}
     int damage =
     definition.HullDamage;
 
@@ -492,17 +486,17 @@ public sealed class ShipSpellEffectService
             $"Multiplier=2.0x, " +
             $"Duration=60s.");
     }
-    public static bool TryGetDefinition(
+   public static bool TryGetDefinition(
     NwSpell spell,
     out ShipSpellEffectDefinition? definition)
 {
-    return SpellDefinitions.TryGetValue(
+    return ShipSpellDefinitions.All.TryGetValue(
         spell.Id,
         out definition);
 }
 public static IReadOnlyCollection<ShipSpellEffectDefinition>
 GetDefinitions()
 {
-    return SpellDefinitions.Values;
+    return ShipSpellDefinitions.All.Values;
 }
 }

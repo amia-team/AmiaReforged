@@ -352,43 +352,6 @@ public bool IsPreparedCaster(
 
         return null;
     }
-    private static readonly Dictionary<int, ShipSpellEffectDefinition>
-    SpellDefinitions = new()
-    {
-        {
-            (int)Spell.Fireball,
-            new ShipSpellEffectDefinition
-            {
-                SpellId = (int)Spell.Fireball,
-                DisplayName = "Fireball",
-                EffectType = ShipSpellEffectType.Offensive,
-                HullDamage = 10,
-                RequiresEnemyTarget = true,
-                RequiresEncounter = true
-            }
-        },
-        {
-            (int)Spell.GustOfWind,
-            new ShipSpellEffectDefinition
-            {
-                SpellId = (int)Spell.GustOfWind,
-                DisplayName = "Gust of Wind",
-                EffectType = ShipSpellEffectType.Movement,
-                SpeedMultiplier = 2.0f,
-                Duration = TimeSpan.FromSeconds(60)
-            }
-        },
-        {
-    (int)Spell.LightningBolt,
-    new ShipSpellEffectDefinition
-    {
-        SpellId = (int)Spell.LightningBolt,
-        DisplayName = "Lightning Bolt",
-        EffectType = ShipSpellEffectType.Offensive,
-        HullDamage = 10,
-        RequiresEnemyTarget = true,
-        RequiresEncounter = true
-    }
-},
-    };
 }
+
+    
