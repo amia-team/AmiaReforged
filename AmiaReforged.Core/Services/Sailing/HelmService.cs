@@ -23,7 +23,7 @@ private readonly Dictionary<string, string> _shipPlaceableTags = new()
 };
 
 private readonly Dictionary<string, ShipState> _ships = new();
-
+private readonly ShipSpellEffectStateService _shipSpellEffectStateService;
 private readonly Dictionary<string, string> _playerShips = new();
 
 private readonly SailingAreaService _sailingAreaService;
@@ -107,6 +107,7 @@ public HelmService(
     ChartDiscoveryService chartDiscoveryService,
     MerchantPortService merchantPortService,
     MerchantTradeService merchantTradeService,
+    ShipSpellEffectStateService shipSpellEffectStateService,
     SailingAreaService sailingAreaService)
     {
         _shipRoutePlannerService =
@@ -160,6 +161,9 @@ public HelmService(
 
     _merchantTradeService =
     merchantTradeService;
+
+    _shipSpellEffectStateService =
+    shipSpellEffectStateService;
 
         _shipEncounterService.EncounterStarted +=
     HandleShipEncounterStarted;
@@ -2071,9 +2075,13 @@ public void NavigateAllShips()
         else if (ship.Underway &&
                  !string.IsNullOrEmpty(ship.HelmsmanPCKey))
         {
+float movementDistance =
+    SailingStep *
+    _shipSpellEffectStateService.GetMovementMultiplier(ship);
+
 TryMoveShip(
     ship,
-    SailingStep);
+    movementDistance);
 
 UpdateDockingState(ship);
 
@@ -2320,9 +2328,13 @@ private void MoveAhead(
         return;
     }
 
-    TryMoveShip(
-        ship,
-        SailingStep);
+float movementDistance =
+    SailingStep *
+    _shipSpellEffectStateService.GetMovementMultiplier(ship);
+
+TryMoveShip(
+    ship,
+    movementDistance);
 
     UpdateSailingNui(
     ship);
@@ -2340,9 +2352,13 @@ private void MoveAstern(
         return;
     }
 
+    float movementDistance =
+    SailingStep *
+    _shipSpellEffectStateService.GetMovementMultiplier(ship);
+
     TryMoveShip(
         ship,
-        -SailingStep);
+        -movementDistance);
 }
 
 private void TryMoveShip(
