@@ -50,4 +50,14 @@ public sealed class ShipCargo
 
         return true;
     }
+
+    public bool TryTransferTo(Ship targetShip, CargoItemType itemType, int quantity)
+    {
+        if (GetQuantity(itemType) < quantity || !targetShip.Cargo.TryAdd(itemType, quantity))
+            return false;
+
+        TryRemove(itemType, quantity);
+        targetShip.Cargo.TryAdd(itemType, quantity);
+        return true;
+    }
 }

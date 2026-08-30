@@ -19,7 +19,7 @@ public sealed class Ship
     /// Initializes a new instance of a Ship.
     /// </summary>
     /// <param name="name">The display name of the ship.</param>
-    /// <param name="type">The template or class of the ship (e.g., Sloop, Frigate).</param>
+    /// <param name="faction">Which faction of ship it is.</param>
     /// <param name="maximumHull">The maximum health points of the ship's hull.</param>
     /// <param name="position">The initial world position of the ship.</param>
     /// <param name="heading">The direction the ship is facing. Defaults to East.</param>
@@ -29,7 +29,7 @@ public sealed class Ship
     /// <param name="cargoCapacity">The maximum number of cargo units the ship can carry.</param>
     public Ship(
         string name,
-        ShipType type,
+        ShipFaction faction,
         int maximumHull,
         ShipPosition position,
         Heading heading = Heading.East,
@@ -39,7 +39,7 @@ public sealed class Ship
         int cargoCapacity = 50)
     {
         Name = name;
-        Type = type;
+        Faction = faction;
         MaximumHull = maximumHull;
         Hull = maximumHull;
         Position = position;
@@ -66,7 +66,7 @@ public sealed class Ship
     /// <summary>
     /// The classification of the ship, determining its base statistics and appearance.
     /// </summary>
-    public ShipType Type { get; }
+    public ShipFaction Faction { get; }
 
     /// <summary>
     /// The maximum integrity points the hull can have.

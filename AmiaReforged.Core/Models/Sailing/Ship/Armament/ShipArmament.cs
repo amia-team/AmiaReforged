@@ -10,10 +10,26 @@ namespace AmiaReforged.Core.Models.Sailing.Ship.Armament;
 /// </summary>
 public sealed class ShipArmament
 {
+    private readonly HashSet<ShipWeaponType> _allowedWeaponTypes;
+
+    public ShipArmament(
+        ShipArmamentSlot slot,
+        HashSet<ShipWeaponType> allowedWeaponTypes,
+        ShipWeaponType initialWeaponType)
+    {
+        Slot = slot;
+        _allowedWeaponTypes = allowedWeaponTypes;
+
+        if (allowedWeaponTypes.Count == 0 || !allowedWeaponTypes.Contains(initialWeaponType))
+            return;
+
+        WeaponType = initialWeaponType;
+    }
+
     /// <summary>
     /// The physical location on the ship where this weapon is mounted (e.g., Bow, Port).
     /// </summary>
-    public required ShipArmamentSlot Slot { get; init; }
+    public ShipArmamentSlot Slot { get; }
 
     /// <summary>
     /// The specific model or type of weapon installed in this slot.
@@ -57,13 +73,21 @@ public sealed class ShipArmament
     public IReadOnlySet<ShipAmmunitionType> AcceptedAmmunition => Weapon.ValidAmmunition;
 
     /// <summary>
-    /// Swaps the current weapon for a different one. Resets operational status.
+    /// Determines whether the given weapon can be installed in this mount.
     /// </summary>
-    /// <param name="weaponType">The new weapon type to install.</param>
-    public void ChangeWeapon(ShipWeaponType weaponType)
+    public bool CanMount(ShipWeaponType weaponType) => _allowedWeaponTypes.Contains(weaponType);
+
+    /// <summary>
+    /// Attempts to replace the currently installed weapon.
+    /// </summary>
+    public bool TryChangeWeapon(ShipWeaponType weaponType)
     {
+        if (!CanMount(weaponType))
+            return false;
+
         WeaponType = weaponType;
         IsOperational = true;
+        return true;
     }
 
     /// <summary>
