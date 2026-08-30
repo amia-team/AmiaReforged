@@ -651,9 +651,29 @@ if (castingClass == null)
         // Execute the sailing effect.
         // -------------------------------------------------------------
 
-       // -------------------------------------------------------------
-// Execute the sailing spell through the central effect service.
 // -------------------------------------------------------------
+// Execute the sailing spell.
+// -------------------------------------------------------------
+
+bool spellSucceeded =
+    _shipSpellEffectService.ProcessSpell(
+        player,
+        caster,
+        spell);
+
+if (!spellSucceeded)
+{
+    RefreshCombatWindow(
+        player);
+
+    return;
+}
+
+// -------------------------------------------------------------
+// Only consume a prepared spell slot after the
+// sailing spell successfully executes.
+// -------------------------------------------------------------
+
 if (_shipSpellService.IsPreparedCaster(
         castingClass))
 {
@@ -672,18 +692,15 @@ if (_shipSpellService.IsPreparedCaster(
             $"Spell={definition.DisplayName}, " +
             $"SpellId={spell.Id}.");
 
+        RefreshCombatWindow(
+            player);
+
         return;
     }
 }
-_shipSpellEffectService.ProcessSpell(
-    player,
-    caster,
-    spell);
 
 RefreshCombatWindow(
     player);
-        RefreshCombatWindow(
-            player);
     }
 
     // -----------------------------------------------------------------

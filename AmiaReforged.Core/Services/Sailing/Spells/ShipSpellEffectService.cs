@@ -64,7 +64,7 @@ public sealed class ShipSpellEffectService
 }
     
     //process spell
-    public void ProcessSpell(
+  public bool ProcessSpell(
     NwPlayer player,
     NwCreature caster,
     NwSpell spell)
@@ -79,7 +79,7 @@ public sealed class ShipSpellEffectService
             $"Spell={spell.Name}, " +
             $"SpellId={spell.Id}.");
 
-        return;
+        return false;
     }
 
     Log.Info(
@@ -89,48 +89,57 @@ public sealed class ShipSpellEffectService
 
     switch (definition.EffectType)
     {
-              case ShipSpellEffectType.Offensive:
-    if (spell.Id == (int)Spell.Fireball)
-    {
-        ProcessFireball(
-            player,
-            caster,
-            definition);
-    }
-    else if (spell.Id == (int)Spell.LightningBolt)
-    {
-        ProcessLightningBolt(
-            player,
-            caster,
-            definition);
-    }
+        case ShipSpellEffectType.Offensive:
 
-    break;
+            if (spell.Id == (int)Spell.Fireball)
+            {
+                return ProcessFireball(
+                    player,
+                    caster,
+                    definition);
+            }
+
+            if (spell.Id == (int)Spell.LightningBolt)
+            {
+                return ProcessLightningBolt(
+                    player,
+                    caster,
+                    definition);
+            }
+
+            return false;
 
         case ShipSpellEffectType.Movement:
+
             if (spell.Id == (int)Spell.GustOfWind)
             {
-                ProcessGustOfWind(
+                return ProcessGustOfWind(
                     player,
                     caster);
             }
 
-            break;
+            return false;
 
         case ShipSpellEffectType.Defensive:
         case ShipSpellEffectType.Control:
+
             Log.Debug(
-                $"Sailing spell type '{definition.EffectType}' " +
+                $"Sailing spell type " +
+                $"'{definition.EffectType}' " +
                 $"has no processor yet.");
 
-            break;
+            return false;
+
+        default:
+
+            return false;
     }
 }
     // -------------------------------------------------------------
     // Fireball
     // -------------------------------------------------------------
 
-   public void ProcessFireball(
+   public bool ProcessFireball(
     NwPlayer player,
     NwCreature caster,
     ShipSpellEffectDefinition definition)
@@ -145,7 +154,7 @@ public sealed class ShipSpellEffectService
             $"Fireball ignored: " +
             $"Player={player.PlayerName} is not aboard a ship.");
 
-        return;
+        return false;
     }
 
     ShipState? attackingShip =
@@ -157,7 +166,7 @@ public sealed class ShipSpellEffectService
             $"Fireball failed: " +
             $"Could not resolve ShipState for '{shipName}'.");
 
-        return;
+        return false;
     }
 
     ShipState? targetShip = null;
@@ -180,7 +189,7 @@ public sealed class ShipSpellEffectService
                 $"Ship={attackingShip.ShipName} " +
                 $"requires an encounter target.");
 
-            return;
+            return false;
         }
     }
 
@@ -190,7 +199,7 @@ public sealed class ShipSpellEffectService
             $"Fireball failed: " +
             $"No target ship was resolved.");
 
-        return;
+        return false;
     }
 
     if (!string.Equals(
@@ -204,7 +213,7 @@ public sealed class ShipSpellEffectService
             $"Attacker={attackingShip.AreaResRef}, " +
             $"Target={targetShip.AreaResRef}.");
 
-        return;
+        return false;
     }
 if (definition.MaxRange > 0.0f &&
     encounter.Distance > definition.MaxRange)
@@ -221,7 +230,7 @@ if (definition.MaxRange > 0.0f &&
         $"Distance={encounter.Distance:0.00}, " +
         $"MaxRange={definition.MaxRange:0.00}.");
 
-    return;
+    return false;
 }
     int previousHull =
         targetShip.Hull;
@@ -284,9 +293,11 @@ if (definition.MaxRange > 0.0f &&
         $"Distance={encounter?.Distance:0.00}, " +
         $"Damage={definition.HullDamage}, " +
         $"Hull={previousHull}->{targetShip.Hull}.");
-}
+
+        return true;
+    }
     //lightning bolt
-    public void ProcessLightningBolt(
+    public bool ProcessLightningBolt(
     NwPlayer player,
     NwCreature caster,
     ShipSpellEffectDefinition definition)
@@ -301,7 +312,7 @@ if (definition.MaxRange > 0.0f &&
             $"Lightning Bolt ignored: " +
             $"Player={player.PlayerName} is not aboard a ship.");
 
-        return;
+        return false;
     }
 
     ShipState? attackingShip =
@@ -313,7 +324,7 @@ if (definition.MaxRange > 0.0f &&
             $"Lightning Bolt failed: " +
             $"Could not resolve ShipState for '{shipName}'.");
 
-        return;
+        return false;
     }
 
     if (!_shipEncounterService.TryGetTarget(
@@ -330,7 +341,7 @@ if (definition.MaxRange > 0.0f &&
             $"Lightning Bolt failed: " +
             $"Ship={attackingShip.ShipName} has no encounter target.");
 
-        return;
+        return false;
     }
 
     if (!string.Equals(
@@ -344,7 +355,7 @@ if (definition.MaxRange > 0.0f &&
             $"Attacker={attackingShip.AreaResRef}, " +
             $"Target={targetShip.AreaResRef}.");
 
-        return;
+        return false;
     }
 if (definition.MaxRange > 0.0f &&
     encounter.Distance > definition.MaxRange)
@@ -361,7 +372,7 @@ if (definition.MaxRange > 0.0f &&
         $"Distance={encounter.Distance:0.00}, " +
         $"MaxRange={definition.MaxRange:0.00}.");
 
-    return;
+    return false;
 }
     int damage =
     definition.HullDamage;
@@ -427,12 +438,14 @@ if (definition.MaxRange > 0.0f &&
         $"Distance={encounter.Distance:0.00}, " +
         $"Damage={damage}, " +
         $"Hull={previousHull}->{targetShip.Hull}.");
-}
+
+        return true;
+    }
     // -------------------------------------------------------------
     // Gust of Wind
     // -------------------------------------------------------------
 
-    public void ProcessGustOfWind(
+    public bool ProcessGustOfWind(
         NwPlayer player,
         NwCreature caster)
     {
@@ -446,7 +459,7 @@ if (definition.MaxRange > 0.0f &&
                 $"Gust of Wind ignored: " +
                 $"Player={player.PlayerName} is not aboard a ship.");
 
-            return;
+            return false;
         }
 
         ShipState? ship =
@@ -458,7 +471,7 @@ if (definition.MaxRange > 0.0f &&
                 $"Gust of Wind failed: " +
                 $"Could not resolve ShipState for '{shipName}'.");
 
-            return;
+            return false;
         }
 
         _shipSpellEffectStateService.ApplySpeedBoost(
@@ -485,6 +498,8 @@ if (definition.MaxRange > 0.0f &&
             $"Caster={player.PlayerName}, " +
             $"Multiplier=2.0x, " +
             $"Duration=60s.");
+
+            return true;
     }
    public static bool TryGetDefinition(
     NwSpell spell,
