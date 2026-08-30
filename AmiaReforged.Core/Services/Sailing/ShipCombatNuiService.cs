@@ -879,6 +879,13 @@ RefreshCombatWindow(
         return false;
     }
 
+    if (definition.MaxRange > 0.0f &&
+        encounter != null &&
+        encounter.Distance > definition.MaxRange)
+    {
+        return false;
+    }
+
     return true;
 }
 }

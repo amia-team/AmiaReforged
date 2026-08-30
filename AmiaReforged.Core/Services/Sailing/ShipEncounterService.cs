@@ -7,7 +7,7 @@ namespace AmiaReforged.Core.Services.Sailing;
 [ServiceBinding(typeof(ShipEncounterService))]
 public class ShipEncounterService
 {
-    private const float EncounterDistance = 15.0f;
+    private const float EncounterDistance = 35.0f;
 
     private readonly Dictionary<string, ShipEncounter>
         _activeEncounters = new();
