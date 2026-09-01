@@ -714,4 +714,33 @@ public void SpawnPhysicalShip(string shipName)
 
         return true;
     }
+    public bool MovePhysicalShip(
+    string shipName,
+    Location location)
+{
+    NwPlaceable? placeable =
+        FindShipPlaceable(shipName);
+
+    if (placeable == null)
+    {
+        Log.Warn(
+            $"Cannot move physical ship '{shipName}': " +
+            "physical placeable was not found.");
+
+        return false;
+    }
+
+    placeable.Location =
+        location;
+
+    Log.Info(
+        $"Physical ship '{shipName}' moved to " +
+        $"Area={location.Area?.ResRef}, " +
+        $"Position=(" +
+        $"{location.Position.X:0.00}, " +
+        $"{location.Position.Y:0.00}, " +
+        $"{location.Position.Z:0.00})");
+
+    return true;
+}
 }

@@ -45,12 +45,12 @@ public sealed class IslandService
             DockRadius = 10f,
 
             // ---------------------------------------------------------
-            // TODO:
+            // 
             // Replace these once the Southport area is built.
             // ---------------------------------------------------------
-            LandingArea = "southport",
-            LandingX = 0f,
-            LandingY = 0f,
+            LandingArea = "cordor_west",
+            LandingX = 75f,
+            LandingY = 45f,
             LandingZ = 0f
         }
     ];

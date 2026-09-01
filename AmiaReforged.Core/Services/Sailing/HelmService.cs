@@ -9,6 +9,12 @@ private const float AreaMaxY = 640.0f;
 private const float BoundaryEntryOffset = 5.0f;
 private const int RepairAmount = 25;
 private const int MaxHull = 100;
+
+private const string SouthportShipyardTag =
+    "southport_shipyard";
+
+private const string SouthportPortId =
+    "southport";
 private readonly Dictionary<string, string> _helmShips = new()
 {
     ["sailing_helm"] = "Sea Sprite",
@@ -33,8 +39,15 @@ private readonly Dictionary<string, NuiWindowToken>
     _merchantTradeTokens =
         new(StringComparer.Ordinal);
     private readonly SailingNuiService _sailingNuiService;
-private const string MerchantTradeWindowId =
-    "merchant_trade";
+
+private const string ShipRetrievalWindowId =
+    "ship_retrieval_window";
+
+private readonly Dictionary<string, NuiWindowToken>
+    _shipRetrievalTokens = new();
+
+    private const string MerchantTradeWindowId =
+        "merchant_trade";
 
 private readonly NuiBind<string>
     _tradePlayerGoldBind =
@@ -82,10 +95,13 @@ _physicalShipService;
 
 private readonly ChartDiscoveryService _chartDiscoveryService;
 
-    private readonly PirateAiService _pirateAiService;
+private readonly PirateAiService _pirateAiService;
 
-    private readonly ShipCrewService
-    _shipCrewService;   
+private readonly ShipCrewService
+    _shipCrewService;
+
+private readonly ShipStorageService
+    _shipStorageService;
 private static readonly Logger Log =
     LogManager.GetCurrentClassLogger();
 
@@ -108,6 +124,7 @@ public HelmService(
     MerchantPortService merchantPortService,
     MerchantTradeService merchantTradeService,
     ShipSpellEffectStateService shipSpellEffectStateService,
+    ShipStorageService shipStorageService,
     SailingAreaService sailingAreaService)
     {
         _shipRoutePlannerService =
@@ -162,6 +179,9 @@ public HelmService(
     _merchantTradeService =
     merchantTradeService;
 
+    _shipStorageService =
+    shipStorageService;
+
     _shipSpellEffectStateService =
     shipSpellEffectStateService;
 
@@ -178,22 +198,35 @@ _shipBoardingService.BoardingCompleted +=
     HandleBoardingCompleted;
 foreach (string helmTag in _helmShips.Keys)
 {
-    foreach (NwPlaceable helm in NwObject.FindObjectsWithTag<NwPlaceable>(helmTag))
+    foreach (NwPlaceable helm in
+        NwObject.FindObjectsWithTag<NwPlaceable>(helmTag))
     {
-   helm.OnLeftClick -= HandleHelmClick;
-   helm.OnLeftClick += HandleHelmClick;
-            }
+        helm.OnLeftClick -= HandleHelmClick;
+        helm.OnLeftClick += HandleHelmClick;
+    }
 }
+
+foreach (NwPlaceable shipyard in
+    NwObject.FindObjectsWithTag<NwPlaceable>(
+        SouthportShipyardTag))
+{
+    shipyard.OnLeftClick -=
+        HandleSouthportShipyardClick;
+
+    shipyard.OnLeftClick +=
+        HandleSouthportShipyardClick;
+}
+
 foreach (NwPlaceable boardingPoint in
     NwObject.FindObjectsWithTag<NwPlaceable>(
         "ship_boarding_point"))
 {
-boardingPoint.OnLeftClick -=
-    HandleBoardingPointClick;
+    boardingPoint.OnLeftClick -=
+        HandleBoardingPointClick;
 
-boardingPoint.OnLeftClick +=
-    HandleBoardingPointClick;
-        }
+    boardingPoint.OnLeftClick +=
+        HandleBoardingPointClick;
+}
       foreach (NwPlaceable boardTest in
     NwObject.FindObjectsWithTag<NwPlaceable>("board_test"))
 {
@@ -312,6 +345,7 @@ if (tookHelm)
             $"but it was occupied.");
     }
 }
+
 private async void HandleBoardTestClick(
     PlaceableEvents.OnLeftClick obj)
 {
@@ -1172,25 +1206,25 @@ SpawnOrUpdatePhysicalShip(
     NwPlayer player)
 {
     ShipState? ship =
-    GetShip(shipName);
+        GetShip(shipName);
 
-if (ship == null)
-{
-    return;
-}
+    if (ship == null)
+    {
+        return;
+    }
 
-if (ship.IsDocking)
-{
-    Log.Info(
-        $"Dock request ignored for '{shipName}' because it is already docking.");
+    if (ship.IsDocking)
+    {
+        Log.Info(
+            $"Dock request ignored for '{shipName}' " +
+            "because it is already docking.");
 
-    return;
-}
-
-ship.IsDocking = true;
+        return;
+    }
 
     if (!ship.CanDock ||
-        string.IsNullOrWhiteSpace(ship.NearbyIslandId))
+        string.IsNullOrWhiteSpace(
+            ship.NearbyIslandId))
     {
         player.SendServerMessage(
             "You are not close enough to dock.");
@@ -1225,53 +1259,101 @@ ship.IsDocking = true;
             "The landing area could not be found.");
 
         Log.Error(
-            $"Landing area '{island.LandingArea}' was not found.");
+            $"Landing area '{island.LandingArea}' " +
+            "was not found.");
 
         return;
     }
 
-    //ship.Underway = false;
-    //ship.HelmsmanPCKey = null;
-    Location landingLocation =
-        Location.Create(
-            landingArea,
-            new System.Numerics.Vector3(
-                island.LandingX,
-                island.LandingY,
-                island.LandingZ),
-            0.0f);
-        player.LoginCreature.GetObjectVariable<LocalVariableString>(
-        "SAILING_DOCKED_SHIP").Value = ship.ShipName;
+    // -------------------------------------------------------------
+    // Begin docking
+    // -------------------------------------------------------------
 
-ship.Underway = false;
-ship.HelmsmanPCKey = null;
+    ship.IsDocking = true;
 
-    _sailingNuiService.Close(player);
-
-// belt-and-suspenders: remove any cached token
-   // _tokens.Remove(player.PlayerName);
-
-    _physicalShipService.RemovePlayerAboard(
-    ship.ShipName,
-    player);
-// Let the NUI fully close before changing areas.
     try
-{
-    await NwTask.NextFrame();
+    {
+        // ---------------------------------------------------------
+        // Store the ship at the port.
+        // ---------------------------------------------------------
 
-    player.ControlledCreature.Location =
-        landingLocation;
+        if (!_shipStorageService.StoreShip(
+                ship,
+                island.Id))
+        {
+            player.SendServerMessage(
+                $"The {ship.ShipName} could not be stored.");
 
-    player.SendServerMessage(
-        $"You make landfall at {island.Name}.");
+            return;
+        }
 
-    Log.Info(
-        $"Ship '{ship.ShipName}' docked at {island.Name}.");
-}
-finally
-{
-    ship.IsDocking = false;
-}
+        // ---------------------------------------------------------
+        // Remove the player from the helm.
+        // ---------------------------------------------------------
+
+        ship.HelmsmanPCKey = null;
+
+        // ---------------------------------------------------------
+        // Remember which ship the player docked.
+        // ---------------------------------------------------------
+
+        player.LoginCreature
+            .GetObjectVariable<LocalVariableString>(
+                "SAILING_DOCKED_SHIP")
+            .Value =
+            ship.ShipName;
+
+        // ---------------------------------------------------------
+        // Close sailing UI.
+        // ---------------------------------------------------------
+
+        _sailingNuiService.Close(
+            player);
+
+        // ---------------------------------------------------------
+        // Remove player from physical ship.
+        // ---------------------------------------------------------
+
+        _physicalShipService.RemovePlayerAboard(
+            ship.ShipName,
+            player);
+
+        // ---------------------------------------------------------
+        // Save stored ship state.
+        // ---------------------------------------------------------
+
+        _ = _shipStatePersistenceService.SaveState(
+            ship);
+
+        // ---------------------------------------------------------
+        // Let the NUI close before changing areas.
+        // ---------------------------------------------------------
+
+        await NwTask.NextFrame();
+
+        player.ControlledCreature.Location =
+            Location.Create(
+                landingArea,
+                new System.Numerics.Vector3(
+                    island.LandingX,
+                    island.LandingY,
+                    island.LandingZ),
+                0.0f);
+
+        player.SendServerMessage(
+            $"You make landfall at {island.Name}. " +
+            $"The {ship.ShipName} is stored here.");
+
+        Log.Info(
+            $"Ship '{ship.ShipName}' stored at " +
+            $"port '{island.Id}'. " +
+            $"Player '{player.PlayerName}' made landfall " +
+            $"at {island.Name}.");
+    }
+    finally
+    {
+        ship.IsDocking = false;
+    }
 }
 //boarding
     private void BoardShip(
@@ -2068,6 +2150,10 @@ public void NavigateAllShips()
 {
     foreach (ShipState ship in _ships.Values)
     {
+            if (ship.IsStored)
+    {
+        continue;
+    }
         if (_shipNavigationService.IsNavigating(ship))
         {
             NavigateShip(ship);
@@ -4010,5 +4096,368 @@ private void RefreshMerchantTradeWindow(
         $"Merchant Cargo: " +
         $"{merchantCargoUsed}/{merchant.CargoCapacity} " +
         $"| {merchantCargoText}");
+}
+private void StoreShip(
+    string shipName,
+    NwPlayer player)
+{
+    ShipState? ship =
+        GetShip(shipName);
+
+    if (ship == null)
+    {
+        player.SendServerMessage(
+            "Your ship could not be found.");
+
+        return;
+    }
+
+    if (!ship.CanDock ||
+        string.IsNullOrWhiteSpace(
+            ship.NearbyIslandId))
+    {
+        player.SendServerMessage(
+            "Your ship is not at a port.");
+
+        return;
+    }
+
+    IslandLocation? island =
+        _islandService.GetNearestIsland(ship);
+
+    if (island == null)
+    {
+        player.SendServerMessage(
+            "The port could not be identified.");
+
+        return;
+    }
+
+    if (!_shipStorageService.StoreShip(
+            ship,
+            island.Id))
+    {
+        player.SendServerMessage(
+            "Your ship could not be stored.");
+
+        return;
+    }
+
+    ship.HelmsmanPCKey = null;
+
+    player.SendServerMessage(
+        $"The {ship.ShipName} is now stored at " +
+        $"{island.Name}.");
+
+    Log.Info(
+        $"Ship stored: " +
+        $"Ship={ship.ShipName}, " +
+        $"Port={island.Id}, " +
+        $"Player={player.PlayerName}");
+
+    _ = _shipStatePersistenceService.SaveState(
+        ship);
+}
+private void RetrieveStoredShip(
+    string shipName,
+    string portId,
+    NwPlayer player)
+{
+    ShipState? ship =
+        GetShip(shipName);
+
+    if (ship == null)
+    {
+        player.SendServerMessage(
+            "That ship could not be found.");
+
+        return;
+    }
+
+    if (!_shipStorageService.IsStoredAtPort(
+            ship,
+            portId))
+    {
+        player.SendServerMessage(
+            $"The {ship.ShipName} is not stored at " +
+            $"{portId}.");
+
+        return;
+    }
+
+    if (!_shipStorageService.RetrieveShip(
+            ship,
+            portId))
+    {
+        player.SendServerMessage(
+            $"The {ship.ShipName} could not be retrieved.");
+
+        return;
+    }
+
+    NwArea? deckArea =
+        NwModule.Instance.Areas.FirstOrDefault(
+            area =>
+                string.Equals(
+                    area.ResRef,
+                    ship.DeckAreaResRef,
+                    StringComparison.OrdinalIgnoreCase));
+
+    if (deckArea == null)
+    {
+        player.SendServerMessage(
+            "The ship's deck could not be found.");
+
+        // Restore storage because retrieval did not complete.
+        ship.IsStored = true;
+        ship.StoredPortId = portId;
+
+        return;
+    }
+
+    /*ship.HelmsmanPCKey =
+        player.PlayerName;
+
+    _playerShips[player.PlayerName] =
+        ship.ShipName;*/
+
+    player.LoginCreature
+        .GetObjectVariable<LocalVariableString>(
+            "SAILING_DOCKED_SHIP")
+        .Value = string.Empty;
+
+  NwWaypoint? spawnWaypoint =
+    NwObject.FindObjectsWithTag<NwWaypoint>(
+        "SAILING_DECK_SPAWN")
+    .FirstOrDefault(
+        waypoint =>
+            waypoint.Area != null &&
+            string.Equals(
+                waypoint.Area.ResRef,
+                ship.DeckAreaResRef,
+                StringComparison.OrdinalIgnoreCase));
+
+if (spawnWaypoint == null)
+{
+    player.SendServerMessage(
+        "The ship's deck spawn point could not be found.");
+
+    Log.Error(
+        $"No deck spawn waypoint found: " +
+        $"Ship={ship.ShipName}, " +
+        $"Deck={ship.DeckAreaResRef}, " +
+        $"Tag=sailing_deck_spawn");
+
+    // Put the ship back into storage.
+    ship.IsStored = true;
+    ship.StoredPortId = portId;
+
+    ship.HelmsmanPCKey = null;
+
+    _playerShips.Remove(
+        player.PlayerName);
+
+    return;
+}
+
+Location deckLocation =
+    spawnWaypoint.Location;
+
+    player.SendServerMessage(
+        $"The {ship.ShipName} has been retrieved from " +
+        $"{portId}.");
+
+ player.ControlledCreature.Location =
+    deckLocation;
+
+if (!_physicalShipService.AddPlayerAboard(
+        ship.ShipName,
+        player))
+{
+    player.SendServerMessage(
+        $"The {ship.ShipName} could not be boarded.");
+
+    Log.Warn(
+        $"Stored ship '{ship.ShipName}' was retrieved, " +
+        $"but player '{player.PlayerName}' could not be " +
+        $"added to aboard tracking.");
+
+    return;
+}
+
+_shipStatePersistenceService.SaveState(
+    ship);
+
+    Log.Info(
+        $"Stored ship retrieved: " +
+        $"Ship={ship.ShipName}, " +
+        $"Port={portId}, " +
+        $"Player={player.PlayerName}, " +
+        $"Deck={ship.DeckAreaResRef}");
+}
+private void HandleSouthportShipyardClick(
+    PlaceableEvents.OnLeftClick obj)
+{
+    Log.Info(
+        $"Southport shipyard clicked: " +
+        $"Tag={obj.Placeable.Tag}, " +
+        $"ResRef={obj.Placeable.ResRef}");
+
+    NwPlayer player =
+        obj.ClickedBy;
+
+    OpenShipRetrievalWindow(
+        player,
+        SouthportPortId);
+}
+private void OpenShipRetrievalWindow(
+    NwPlayer player,
+    string portId)
+{
+    List<ShipState> storedShips =
+        _shipStorageService.GetStoredShips(
+            _ships.Values,
+            portId)
+        .ToList();
+
+    NuiColumn column =
+        new();
+
+    column.Children.Add(
+        new NuiLabel(
+            "SOUTHPORT SHIPYARD"));
+
+    column.Children.Add(
+        new NuiLabel(
+            $"Ships stored at {portId}:"));
+
+    foreach (ShipState ship in storedShips)
+    {
+        NuiRow shipRow =
+            new();
+
+        NuiLabel shipLabel =
+            new(
+                ship.ShipName);
+
+        NuiButton retrieveButton =
+            new(
+                "RETRIEVE");
+
+        retrieveButton.Id =
+            $"retrieve_ship_{ship.ShipName}";
+
+        shipRow.Children.Add(
+            shipLabel);
+
+        shipRow.Children.Add(
+            retrieveButton);
+
+        column.Children.Add(
+            shipRow);
+    }
+
+    if (storedShips.Count == 0)
+    {
+        column.Children.Add(
+            new NuiLabel(
+                "You have no ships stored here."));
+    }
+
+    NuiButton closeButton =
+        new(
+            "CLOSE");
+
+    closeButton.Id =
+        "ship_retrieval_close";
+
+    column.Children.Add(
+        closeButton);
+
+    NuiWindow window =
+        new(
+            column,
+            NuiProperty<string>.CreateValue(
+                "Ship Retrieval"));
+
+    window.Geometry =
+        new NuiRect(
+            -1.0f,
+            -1.0f,
+            500.0f,
+            400.0f);
+
+    window.Closable =
+        true;
+
+    if (!player.TryCreateNuiWindow(
+            window,
+            out NuiWindowToken token,
+            ShipRetrievalWindowId))
+    {
+        Log.Warn(
+            $"Failed to create ship retrieval window " +
+            $"for player {player.PlayerName}.");
+
+        return;
+    }
+
+    _shipRetrievalTokens[player.PlayerName] =
+        token;
+player.OnNuiEvent -=
+    HandleShipRetrievalNuiEvent;
+
+player.OnNuiEvent +=
+    HandleShipRetrievalNuiEvent;
+    Log.Info(
+        $"Ship retrieval window opened: " +
+        $"Player={player.PlayerName}, " +
+        $"Port={portId}");
+}
+private void HandleShipRetrievalNuiEvent(
+    ModuleEvents.OnNuiEvent obj)
+{
+    if (obj.EventType != NuiEventType.MouseUp)
+    {
+        return;
+    }
+
+    NwPlayer player =
+        obj.Player;
+
+    if (obj.ElementId ==
+        "ship_retrieval_close")
+    {
+        if (_shipRetrievalTokens.TryGetValue(
+                player.PlayerName,
+                out NuiWindowToken token))
+        {
+            token.Close();
+        }
+
+        _shipRetrievalTokens.Remove(
+            player.PlayerName);
+
+        return;
+    }
+
+    const string retrievePrefix =
+        "retrieve_ship_";
+
+    if (!obj.ElementId.StartsWith(
+            retrievePrefix,
+            StringComparison.Ordinal))
+    {
+        return;
+    }
+
+    string shipName =
+        obj.ElementId[
+            retrievePrefix.Length..];
+
+    RetrieveStoredShip(
+        shipName,
+        SouthportPortId,
+        player);
 }
 }
