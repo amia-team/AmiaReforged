@@ -45,8 +45,9 @@ private const string ShipRetrievalWindowId =
 
 private readonly Dictionary<string, NuiWindowToken>
     _shipRetrievalTokens = new();
-
-    private const string MerchantTradeWindowId =
+private readonly Dictionary<string, string>
+    _shipRetrievalPorts = new();
+private const string MerchantTradeWindowId =
         "merchant_trade";
 
 private readonly NuiBind<string>
@@ -206,15 +207,31 @@ foreach (string helmTag in _helmShips.Keys)
     }
 }
 
-foreach (NwPlaceable shipyard in
-    NwObject.FindObjectsWithTag<NwPlaceable>(
-        SouthportShipyardTag))
+foreach (IslandLocation island in
+    _islandService.GetIslands())
 {
-    shipyard.OnLeftClick -=
-        HandleSouthportShipyardClick;
+    if (string.IsNullOrWhiteSpace(
+            island.ShipyardTag))
+    {
+        continue;
+    }
 
-    shipyard.OnLeftClick +=
-        HandleSouthportShipyardClick;
+    foreach (NwPlaceable shipyard in
+        NwObject.FindObjectsWithTag<NwPlaceable>(
+            island.ShipyardTag))
+    {
+        shipyard.OnLeftClick -=
+            HandleShipyardClick;
+
+        shipyard.OnLeftClick +=
+            HandleShipyardClick;
+
+        Log.Info(
+            $"Shipyard interaction registered: " +
+            $"Island={island.Id}, " +
+            $"Tag={island.ShipyardTag}, " +
+            $"Area={shipyard.Area?.ResRef}");
+    }
 }
 
 foreach (NwPlaceable boardingPoint in
@@ -1246,7 +1263,14 @@ SpawnOrUpdatePhysicalShip(
 
         return;
     }
+if (string.IsNullOrWhiteSpace(
+        island.ShipyardTag))
+{
+    player.SendServerMessage(
+        $"{island.Name} does not have a shipyard.");
 
+    return;
+}
     NwArea? landingArea =
         NwModule.Instance.Areas.FirstOrDefault(
             area =>
@@ -4295,20 +4319,37 @@ _shipStatePersistenceService.SaveState(
         $"Player={player.PlayerName}, " +
         $"Deck={ship.DeckAreaResRef}");
 }
-private void HandleSouthportShipyardClick(
+private void HandleShipyardClick(
     PlaceableEvents.OnLeftClick obj)
 {
-    Log.Info(
-        $"Southport shipyard clicked: " +
-        $"Tag={obj.Placeable.Tag}, " +
-        $"ResRef={obj.Placeable.ResRef}");
-
     NwPlayer player =
         obj.ClickedBy;
 
+    Log.Info(
+        $"Shipyard clicked: " +
+        $"Player={player.PlayerName}, " +
+        $"Tag={obj.Placeable.Tag}, " +
+        $"Area={obj.Placeable.Area?.ResRef}");
+
+    IslandLocation? island =
+        _islandService.GetIslandByShipyardTag(
+            obj.Placeable.Tag);
+
+    if (island == null)
+    {
+        Log.Warn(
+            $"No island configured for shipyard tag " +
+            $"'{obj.Placeable.Tag}'.");
+
+        player.SendServerMessage(
+            "This shipyard is not properly configured.");
+
+        return;
+    }
+
     OpenShipRetrievalWindow(
         player,
-        SouthportPortId);
+        island.Id);
 }
 private void OpenShipRetrievalWindow(
     NwPlayer player,
@@ -4323,9 +4364,9 @@ private void OpenShipRetrievalWindow(
     NuiColumn column =
         new();
 
-    column.Children.Add(
-        new NuiLabel(
-            "SOUTHPORT SHIPYARD"));
+  column.Children.Add(
+    new NuiLabel(
+        $"{portId.ToUpperInvariant()} SHIPYARD"));
 
     column.Children.Add(
         new NuiLabel(
@@ -4404,7 +4445,9 @@ private void OpenShipRetrievalWindow(
 
     _shipRetrievalTokens[player.PlayerName] =
         token;
-player.OnNuiEvent -=
+    _shipRetrievalPorts[player.PlayerName] =
+    portId;   
+        player.OnNuiEvent -=
     HandleShipRetrievalNuiEvent;
 
 player.OnNuiEvent +=
@@ -4437,7 +4480,8 @@ private void HandleShipRetrievalNuiEvent(
 
         _shipRetrievalTokens.Remove(
             player.PlayerName);
-
+        _shipRetrievalPorts.Remove(
+            player.PlayerName);
         return;
     }
 
@@ -4455,9 +4499,19 @@ private void HandleShipRetrievalNuiEvent(
         obj.ElementId[
             retrievePrefix.Length..];
 
-    RetrieveStoredShip(
-        shipName,
-        SouthportPortId,
-        player);
+    if (!_shipRetrievalPorts.TryGetValue(
+        player.PlayerName,
+        out string portId))
+{
+    player.SendServerMessage(
+        "The shipyard location could not be determined.");
+
+    return;
+}
+
+RetrieveStoredShip(
+    shipName,
+    portId,
+    player);
 }
 }
