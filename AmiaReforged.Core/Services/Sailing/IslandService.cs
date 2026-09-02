@@ -6,6 +6,8 @@ namespace AmiaReforged.Core.Services.Sailing;
 [ServiceBinding(typeof(IslandService))]
 public sealed class IslandService
 {
+    public string? ShipyardTag { get; set; }
+
     private readonly List<IslandLocation> _islands =
     [
         // -------------------------------------------------------------
@@ -36,7 +38,7 @@ public sealed class IslandService
         {
             Id = "southport",
             Name = "Southport",
-
+            
             OceanArea = "ocean_01",
 
             OceanX = 90f,
@@ -51,7 +53,9 @@ public sealed class IslandService
             LandingArea = "cordor_west",
             LandingX = 75f,
             LandingY = 45f,
-            LandingZ = 0f
+            LandingZ = 0f,
+
+            ShipyardTag = "southport_shipyard",
         }
     ];
 
@@ -73,4 +77,24 @@ public sealed class IslandService
             })
             .FirstOrDefault();
     }
+    public IReadOnlyCollection<IslandLocation>
+    GetIslands()
+{
+    return _islands;
+}
+public IslandLocation? GetIslandByShipyardTag(
+    string shipyardTag)
+{
+    if (string.IsNullOrWhiteSpace(shipyardTag))
+    {
+        return null;
+    }
+
+    return _islands.FirstOrDefault(
+        island =>
+            string.Equals(
+                island.ShipyardTag,
+                shipyardTag,
+                StringComparison.OrdinalIgnoreCase));
+}
 }
