@@ -34,7 +34,13 @@ public class ShipWorldRepository
         {
             string shipName = GetShipName(deckArea);
             if (string.IsNullOrWhiteSpace(shipName))
+            {
+                Log.Warn(
+                    "Ship deck area '{DeckAreaName}' has ship name is empty. " +
+                    "Make sure you give this ship a proper name in {DeckLocalVarName}",
+                    deckArea.Name, DeckLocalVarName);
                 continue;
+            }
 
             NwPlaceable? helm = GetHelm(deckArea);
             if (helm == null)
@@ -62,8 +68,7 @@ public class ShipWorldRepository
                 WarnMissingArmamentWaypoints();
             }
 
-            ShipWorldObject ship = new(shipName);
-            ship.BindShipObjects(helm, exit, deckArea, cabinArea, armamentWaypoints);
+            ShipWorldObject ship = new(shipName, deckArea, helm, exit, cabinArea, armamentWaypoints);
 
             if (!_ships.TryAdd(shipName, ship))
                 Log.Warn("A ship named '{ShipName}' was already discovered. Skipping duplicate.", shipName);
