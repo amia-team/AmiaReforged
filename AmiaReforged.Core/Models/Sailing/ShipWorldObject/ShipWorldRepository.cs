@@ -14,17 +14,21 @@ public class ShipWorldRepository
     private const string CabinTransitionTag = "deck_to_cabin_transition";
 
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+    private readonly Dictionary<string, ShipWorldObject> _ships = new();
 
     /// <summary>
-    /// Gets all discovered ships.
+    /// Gets a ship by name.
     /// </summary>
-    private readonly Dictionary<string, ShipWorldObject> _ships = new();
+    public ShipWorldObject? GetShip(string shipName) => _ships.GetValueOrDefault(shipName);
 
     /// <summary>
     /// Gets all discovered ships.
     /// </summary>
     public IReadOnlyCollection<ShipWorldObject> Ships => _ships.Values;
 
+    /// <summary>
+    /// Discovers all ships in the world and stores them in the repository. Use Ships and GetShip to access them.
+    /// </summary>
     public void DiscoverShips()
     {
         _ships.Clear();
