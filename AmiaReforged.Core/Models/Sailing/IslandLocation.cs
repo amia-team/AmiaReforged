@@ -21,4 +21,6 @@ public sealed class IslandLocation
     public float LandingY { get; set; }
 
     public float LandingZ { get; set; }
+
+    public string? ShipyardTag { get; set; }
 }
