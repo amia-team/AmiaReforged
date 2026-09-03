@@ -1,14 +1,16 @@
+using System.Numerics;
 using AmiaReforged.Core.Models.Sailing;
 using Anvil.API;
 using Anvil.Services;
 using NLog;
-using System.Numerics;
 
 namespace AmiaReforged.Core.Services.Sailing;
 
 [ServiceBinding(typeof(ShipBoardingService))]
 public class ShipBoardingService
 {
+    private readonly PhysicalShipService
+    _physicalShipService;
     private const float BoardingOffset = 2.0f;
 
     private readonly Dictionary<string, ShipBoardingRequest>
@@ -27,14 +29,18 @@ public class ShipBoardingService
         BoardingCompleted;
 
     public ShipBoardingService(
-        ShipEncounterService shipEncounterService)
-    {
-        _shipEncounterService =
-            shipEncounterService;
+    ShipEncounterService shipEncounterService,
+    PhysicalShipService physicalShipService)
+{
+    _shipEncounterService =
+        shipEncounterService;
 
-        Log.Info(
-            "Ship Boarding Service initialized.");
-    }
+    _physicalShipService =
+        physicalShipService;
+
+    Log.Info(
+        "Ship Boarding Service initialized.");
+}
 
     public bool TryRequestBoarding(
         ShipState requestingShip,
@@ -173,41 +179,47 @@ public class ShipBoardingService
             return false;
         }
 
-        NwArea? targetArea =
-            NwModule.Instance.Areas.FirstOrDefault(
-                area =>
-                    string.Equals(
-                        area.ResRef,
-                        foundRequest.TargetShip.AreaResRef,
-                        StringComparison.OrdinalIgnoreCase));
+        NwWaypoint? spawnWaypoint =
+    NwObject.FindObjectsWithTag<NwWaypoint>(
+        "SAILING_DECK_SPAWN")
+    .FirstOrDefault(
+        waypoint =>
+            waypoint.Area != null &&
+            string.Equals(
+                waypoint.Area.ResRef,
+                foundRequest.TargetShip.DeckAreaResRef,
+                StringComparison.OrdinalIgnoreCase));
 
-        if (targetArea == null)
-        {
-            Log.Warn(
-                $"Cannot board '{foundRequest.TargetShip.ShipName}': " +
-                $"area '{foundRequest.TargetShip.AreaResRef}' " +
-                $"was not found.");
+if (spawnWaypoint == null)
+{
+    Log.Warn(
+        $"Cannot board '{foundRequest.TargetShip.ShipName}': " +
+        $"no deck spawn found for area " +
+        $"'{foundRequest.TargetShip.DeckAreaResRef}'.");
 
-            RemoveRequest(
-                foundRequest);
+    RemoveRequest(
+        foundRequest);
 
-            return false;
-        }
+    return false;
+}
 
-        Vector3 boardingPosition =
-            GetBoardingPosition(
-                foundRequest.TargetShip);
-
-        Location boardingLocation =
-            Location.Create(
-                targetArea,
-                boardingPosition,
-                GetHeadingRotation(
-                    foundRequest.TargetShip.Heading));
-
-        creature.Location =
-            boardingLocation;
-
+Location boardingLocation =
+    spawnWaypoint.Location;
+    
+    creature.Location =
+    boardingLocation;
+    _physicalShipService.RemovePlayerAboard(
+    foundRequest.RequestingShip.ShipName,
+    requestingPlayer);
+        if (!_physicalShipService.AddPlayerAboard(
+        foundRequest.TargetShip.ShipName,
+        requestingPlayer))
+{
+    Log.Warn(
+        $"Player '{requestingPlayer.PlayerName}' was moved " +
+        $"onto '{foundRequest.TargetShip.ShipName}' but " +
+        "could not be added to aboard tracking.");
+}
         foundRequest.RequestingShip.HelmsmanPCKey =
             null;
 
