@@ -4,6 +4,7 @@ using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
 
+
 namespace AmiaReforged.Core.Services.Sailing;
 
 [ServiceBinding(typeof(ShipSpellService))]
@@ -28,14 +29,18 @@ public sealed class ShipSpellService
         ClassType.Assassin
     ];
 
-    private readonly PhysicalShipService _physicalShipService;
-    private readonly ShipSpellEffectService _shipSpellEffectService;
-    public ShipSpellService(
+private readonly PhysicalShipService _physicalShipService;
+private readonly ShipSpellEffectService _shipSpellEffectService;
+private readonly ShipSpellVfxService _shipSpellVfxService;
+
+public ShipSpellService(
     PhysicalShipService physicalShipService,
-    ShipSpellEffectService shipSpellEffectService)
+    ShipSpellEffectService shipSpellEffectService,
+    ShipSpellVfxService shipSpellVfxService)
 {
     _physicalShipService = physicalShipService;
     _shipSpellEffectService = shipSpellEffectService;
+    _shipSpellVfxService = shipSpellVfxService;
 
     NwModule.Instance.OnSpellCast += eventData =>
         HandleSpellCast(eventData);
@@ -111,7 +116,9 @@ public sealed class ShipSpellService
             $"Spell={spell.Name}, " +
             $"SpellId={spell.Id}, " +
             $"Class={castingClass.ClassType}.");
-
+_shipSpellVfxService.PlayCasterSpellVfx(
+    caster,
+    spell);
         ProcessShipSpell(
             player,
             caster,

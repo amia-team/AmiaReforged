@@ -25,6 +25,8 @@ public sealed class ShipSpellEffectService
     private readonly PhysicalShipService _physicalShipService;
     private readonly HelmService _helmService;
     private readonly ShipEncounterService _shipEncounterService;
+
+private readonly ShipSpellVfxService _shipSpellVfxService;
     private readonly ShipStatePersistenceService _shipStatePersistenceService;
     private readonly ShipSpellEffectStateService _shipSpellEffectStateService;
     private readonly SailingNuiService _sailingNuiService;
@@ -36,6 +38,7 @@ public sealed class ShipSpellEffectService
     ShipStatePersistenceService shipStatePersistenceService,
     ShipSpellEffectStateService shipSpellEffectStateService,
     //ShipCombatNuiService shipCombatNuiService,
+    ShipSpellVfxService shipSpellVfxService,
     SailingNuiService sailingNuiService)
 {
     _physicalShipService =
@@ -58,8 +61,11 @@ public sealed class ShipSpellEffectService
 
     _sailingNuiService =
         sailingNuiService;
+        
+    _shipSpellVfxService =
+    shipSpellVfxService;
 
-    Log.Info(
+        Log.Info(
         "Ship Spell Effect Service initialized.");
 }
     
@@ -82,14 +88,18 @@ public sealed class ShipSpellEffectService
         return false;
     }
 
+    _shipSpellVfxService.PlayCasterSpellVfx(
+        caster,
+        spell);
+
     Log.Info(
         $"Processing sailing spell definition: " +
         $"Spell={definition.DisplayName}, " +
         $"Type={definition.EffectType}.");
 
-    switch (definition.EffectType)
-    {
-        case ShipSpellEffectType.Offensive:
+        switch (definition.EffectType)
+        {
+            case ShipSpellEffectType.Offensive:
 
             if (spell.Id == (int)Spell.Fireball)
             {
@@ -139,14 +149,17 @@ public sealed class ShipSpellEffectService
     // Fireball
     // -------------------------------------------------------------
 
-   public bool ProcessFireball(
+  public bool ProcessFireball(
     NwPlayer player,
     NwCreature caster,
     ShipSpellEffectDefinition definition)
 {
+    
     string? shipName =
         _physicalShipService.GetShipForPlayer(
             player.PlayerName);
+
+    // rest of existing code...
 
     if (shipName == null)
     {
@@ -167,9 +180,9 @@ public sealed class ShipSpellEffectService
             $"Could not resolve ShipState for '{shipName}'.");
 
         return false;
-    }
-
-    ShipState? targetShip = null;
+        }
+       
+        ShipState? targetShip = null;
     ShipEncounter? encounter = null;
 
     if (definition.RequiresEncounter)
@@ -232,14 +245,16 @@ if (definition.MaxRange > 0.0f &&
 
     return false;
 }
-    int previousHull =
+
+        int previousHull =
         targetShip.Hull;
 
     targetShip.Hull =
         Math.Max(
             0,
             targetShip.Hull - definition.HullDamage);
-
+            _shipSpellVfxService.PlayFireball(
+             targetShip);
     if (targetShip.Hull <= 0)
     {
         targetShip.Hull = 0;
@@ -384,7 +399,8 @@ if (definition.MaxRange > 0.0f &&
         Math.Max(
             0,
             targetShip.Hull - damage);
-
+    _shipSpellVfxService.PlayLightningBolt(
+    targetShip);
     if (targetShip.Hull <= 0)
     {
         targetShip.Hull = 0;
