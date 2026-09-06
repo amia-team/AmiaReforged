@@ -73,12 +73,21 @@ public sealed class ShipCombatNuiService
         _shipSpellService =
             shipSpellService;
 
-        shipEncounterService.EncounterStarted +=
-            OnEncounterStarted;
+       // shipEncounterService.EncounterStarted +=
+       //     OnEncounterStarted;
 
-        shipEncounterService.EncounterEnded +=
-            OnEncounterEnded;
+      //  shipEncounterService.EncounterEnded +=
+      //      OnEncounterEnded;
+foreach (NwPlaceable station in
+    NwObject.FindObjectsWithTag<NwPlaceable>(
+        "combat_station"))
+{
+    station.OnLeftClick -=
+        HandleCombatStationClick;
 
+    station.OnLeftClick +=
+        HandleCombatStationClick;
+}
         Log.Info(
             "Ship Combat NUI Service initialized.");
     }
@@ -87,44 +96,7 @@ public sealed class ShipCombatNuiService
     // Encounter Started
     // -----------------------------------------------------------------
 
-    private void OnEncounterStarted(
-        ShipEncounter encounter)
-    {
-        OpenForShip(
-            encounter.ShipA,
-            encounter.ShipB,
-            encounter);
-
-        OpenForShip(
-            encounter.ShipB,
-            encounter.ShipA,
-            encounter);
-
-        Log.Info(
-            $"Ship Combat NUI opened for encounter: " +
-            $"{encounter.ShipA.ShipName} <-> " +
-            $"{encounter.ShipB.ShipName}.");
-    }
-
-    // -----------------------------------------------------------------
-    // Encounter Ended
-    // -----------------------------------------------------------------
-
-    private void OnEncounterEnded(
-        ShipEncounter encounter)
-    {
-        CloseForShip(
-            encounter.ShipA);
-
-        CloseForShip(
-            encounter.ShipB);
-
-        Log.Info(
-            $"Ship Combat NUI closed for encounter: " +
-            $"{encounter.ShipA.ShipName} <-> " +
-            $"{encounter.ShipB.ShipName}.");
-    }
-
+    
     // -----------------------------------------------------------------
     // Open For Ship
     // -----------------------------------------------------------------
@@ -904,5 +876,56 @@ RefreshCombatWindow(
     }
 
     return true;
+}
+private void HandleCombatStationClick(
+    PlaceableEvents.OnLeftClick obj)
+{
+    NwPlayer player =
+        obj.ClickedBy;
+
+    Log.Info(
+        $"Combat station clicked: " +
+        $"Player={player.PlayerName}, " +
+        $"Tag={obj.Placeable.Tag}, " +
+        $"ResRef={obj.Placeable.ResRef}.");
+
+    string? shipName =
+        _physicalShipService.GetShipForPlayer(
+            player.PlayerName);
+
+    if (shipName == null)
+    {
+        player.SendServerMessage(
+            "You are not aboard a ship.",
+            ColorConstants.Orange);
+
+        return;
+    }
+
+    ShipState? ship =
+        _helmService.GetShip(
+            shipName);
+
+    if (ship == null)
+    {
+        Log.Warn(
+            $"Combat station clicked but ship state " +
+            $"could not be found: " +
+            $"Player={player.PlayerName}, " +
+            $"Ship={shipName}.");
+
+        return;
+    }
+
+    _shipEncounterService.TryGetTarget(
+        ship,
+        out ShipState? targetShip,
+        out ShipEncounter? encounter);
+
+    Open(
+        player,
+        ship,
+        targetShip,
+        encounter);
 }
 }
