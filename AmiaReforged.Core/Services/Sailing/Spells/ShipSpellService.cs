@@ -146,10 +146,11 @@ _shipSpellVfxService.PlayCasterSpellVfx(
         $"SpellId={spell.Id}, " +
         $"Class={castingClass.ClassType}.");
 
- _shipSpellEffectService.ProcessSpell(
+_shipSpellEffectService.ProcessSpell(
     player,
     caster,
-    spell);
+    spell,
+    null);
 }
     // ---------------------------------------------------------------------
     // Spell Availability

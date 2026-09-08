@@ -10,16 +10,18 @@ public class ShipNavigationLoopService
         1000;
 
     private readonly HelmService _helmService;
-
+    private readonly ShipCombatNuiService _shipCombatNuiService;
     private static readonly Logger Log =
         LogManager.GetCurrentClassLogger();
 
-    public ShipNavigationLoopService(
-        HelmService helmService)
+  public ShipNavigationLoopService(
+    HelmService helmService,
+    ShipCombatNuiService shipCombatNuiService)
     {
         _helmService =
             helmService;
-
+        _shipCombatNuiService =
+            shipCombatNuiService;
         Log.Info(
             "Ship Navigation Loop Service initialized. " +
             $"Interval={NavigationIntervalMilliseconds}ms.");
@@ -38,7 +40,8 @@ public class ShipNavigationLoopService
 
                 await NwTask.SwitchToMainThread();
 
-               _helmService.NavigateAllShips();
+               _helmService.NavigateAllShips();               
+               _shipCombatNuiService.RefreshAll();
             }
             catch (Exception ex)
             {

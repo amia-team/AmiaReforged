@@ -31,6 +31,8 @@ private readonly Dictionary<string, string> _shipPlaceableTags = new()
 private readonly Dictionary<string, ShipState> _ships = new();
 private readonly ShipSpellEffectStateService _shipSpellEffectStateService;
 private readonly Dictionary<string, string> _playerShips = new();
+private readonly Dictionary<string, string>
+    _selectedTargets = new();
 
 private readonly SailingAreaService _sailingAreaService;
 private readonly MerchantTradeService _merchantTradeService;
@@ -4513,5 +4515,17 @@ RetrieveStoredShip(
     shipName,
     portId,
     player);
+}
+private ShipState? GetSelectedTarget(
+    NwPlayer player)
+{
+    if (!_selectedTargets.TryGetValue(
+            player.PlayerName,
+            out string? targetShipName))
+    {
+        return null;
+    }
+
+    return GetShip(targetShipName);
 }
 }

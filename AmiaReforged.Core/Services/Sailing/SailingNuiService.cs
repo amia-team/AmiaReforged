@@ -51,6 +51,8 @@ private readonly NuiBind<string> _encounterBind =
 private readonly NuiBind<string> _encounterDistanceBind =
     new("ship_encounter_distance");
 
+private readonly NuiBind<string> _nearbyShipsBind =
+    new("ship_nearby_ships");
 
     private readonly NuiBind<string> _boardingBind =
     new("ship_boarding");
@@ -957,45 +959,51 @@ if (nearestContact != null)
         _encounterDistanceBind,
         $"Distance: {distance:0.0}m");
 }
-else if (_shipEncounterService.TryGetTarget(
-             ship,
-             out ShipState? targetShip,
-             out ShipEncounter? encounter) &&
-         targetShip != null &&
-         encounter != null)
-{
-    token.SetBindValue(
-        _statusBind,
-        "Status: ENCOUNTER");
-
-    token.SetBindValue(
-        _encounterBind,
-        $"Target: {targetShip.ShipName}");
-
-    token.SetBindValue(
-        _encounterDistanceBind,
-        $"Distance: {encounter.Distance:0.00}");
-
-    token.SetBindValue(
-    _dockEnabledBind,
-    ship.CanDock);
-            }
 else
 {
-    token.SetBindValue(
-        _statusBind,
-        ship.Underway
-            ? "Status: UNDERWAY"
-            : "Status: STOPPED");
+    List<ShipState> nearbyShips =
+        _shipEncounterService
+            .GetNearbyShips(ship)
+            .ToList();
 
-    token.SetBindValue(
-        _encounterBind,
-        "Target: NONE");
+    if (nearbyShips.Count > 0)
+    {
+        token.SetBindValue(
+            _statusBind,
+            "Status: ENCOUNTER");
 
-    token.SetBindValue(
-        _encounterDistanceBind,
-        "Distance: --");
-}
+        token.SetBindValue(
+            _encounterBind,
+            $"Ships Nearby: {nearbyShips.Count}");
+
+        token.SetBindValue(
+            _encounterDistanceBind,
+            string.Join(
+                "\n",
+                nearbyShips.Select(
+                    nearby =>
+                        nearby.ShipName)));
+
+        token.SetBindValue(
+            _dockEnabledBind,
+            ship.CanDock);
+    }
+    else
+    {
+        token.SetBindValue(
+            _statusBind,
+            ship.Underway
+                ? "Status: UNDERWAY"
+                : "Status: STOPPED");
+
+        token.SetBindValue(
+            _encounterBind,
+            "Target: NONE");
+
+        token.SetBindValue(
+            _encounterDistanceBind,
+            "Distance: --");
+    }
 }
 // -----------------------------------------------------------------
 // Merchant Trade
@@ -1061,6 +1069,8 @@ if (_shipEncounterService.TryGetTarget(
     }
 }
 }
+}
+
 
 // ---------------------------------------------------------------------
 // Live Sailing Map

@@ -30,7 +30,7 @@ private readonly ShipSpellVfxService _shipSpellVfxService;
     private readonly ShipStatePersistenceService _shipStatePersistenceService;
     private readonly ShipSpellEffectStateService _shipSpellEffectStateService;
     private readonly SailingNuiService _sailingNuiService;
-//private readonly ShipCombatNuiService _shipCombatNuiService;
+   // private readonly ShipCombatNuiService _shipCombatNuiService;
     public ShipSpellEffectService(
     PhysicalShipService physicalShipService,
     HelmService helmService,
@@ -44,8 +44,8 @@ private readonly ShipSpellVfxService _shipSpellVfxService;
     _physicalShipService =
         physicalShipService;
 
-   // _shipCombatNuiService =
-   //     shipCombatNuiService;
+    //_shipCombatNuiService =
+     //   shipCombatNuiService;
 
     _helmService =
         helmService;
@@ -73,7 +73,8 @@ private readonly ShipSpellVfxService _shipSpellVfxService;
   public bool ProcessSpell(
     NwPlayer player,
     NwCreature caster,
-    NwSpell spell)
+    NwSpell spell,
+    ShipState? selectedTarget)
 {
     if (!TryGetDefinition(
             spell,
@@ -103,18 +104,20 @@ private readonly ShipSpellVfxService _shipSpellVfxService;
 
             if (spell.Id == (int)Spell.Fireball)
             {
-                return ProcessFireball(
-                    player,
-                    caster,
-                    definition);
+ return ProcessFireball(
+    player,
+    caster,
+    definition,
+    selectedTarget);
             }
 
             if (spell.Id == (int)Spell.LightningBolt)
             {
-                return ProcessLightningBolt(
-                    player,
-                    caster,
-                    definition);
+   return ProcessLightningBolt(
+    player,
+    caster,
+    definition,
+    selectedTarget);
             }
 
             return false;
@@ -152,7 +155,8 @@ private readonly ShipSpellVfxService _shipSpellVfxService;
   public bool ProcessFireball(
     NwPlayer player,
     NwCreature caster,
-    ShipSpellEffectDefinition definition)
+    ShipSpellEffectDefinition definition,
+    ShipState? selectedTarget)
 {
     
     string? shipName =
@@ -182,18 +186,20 @@ private readonly ShipSpellVfxService _shipSpellVfxService;
         return false;
         }
        
-        ShipState? targetShip = null;
-    ShipEncounter? encounter = null;
+       ShipState? targetShip = null;
+ShipEncounter? encounter = null;
 
-    if (definition.RequiresEncounter)
+if (definition.RequiresEncounter)
+{
+    targetShip = selectedTarget;
+
+    if (targetShip == null ||
+        !_shipEncounterService.TryGetEncounter(
+            attackingShip,
+            targetShip,
+            out encounter) ||
+        encounter == null)
     {
-        if (!_shipEncounterService.TryGetTarget(
-                attackingShip,
-                out targetShip,
-                out encounter) ||
-            targetShip == null ||
-            encounter == null)
-        {
             player.SendServerMessage(
                 "There is no enemy ship in range.");
 
@@ -315,7 +321,8 @@ if (definition.MaxRange > 0.0f &&
     public bool ProcessLightningBolt(
     NwPlayer player,
     NwCreature caster,
-    ShipSpellEffectDefinition definition)
+    ShipSpellEffectDefinition definition,
+    ShipState? selectedTarget)
 {
     string? shipName =
         _physicalShipService.GetShipForPlayer(
@@ -342,13 +349,15 @@ if (definition.MaxRange > 0.0f &&
         return false;
     }
 
-    if (!_shipEncounterService.TryGetTarget(
-            attackingShip,
-            out ShipState? targetShip,
-            out ShipEncounter? encounter) ||
-        targetShip == null ||
-        encounter == null)
-    {
+    ShipState? targetShip = selectedTarget;
+
+if (targetShip == null ||
+    !_shipEncounterService.TryGetEncounter(
+        attackingShip,
+        targetShip,
+        out ShipEncounter? encounter) ||
+    encounter == null)
+{
         player.SendServerMessage(
             "There is no enemy ship in range.");
 

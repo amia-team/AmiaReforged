@@ -12,6 +12,8 @@ public sealed class ShipCombatNuiService
     private const string WindowId =
         "ShipCombatNui";
 
+    private readonly Dictionary<string, string> _selectedTargets = new();
+
     private readonly Dictionary<
         string,
         NuiWindowToken>
@@ -22,6 +24,12 @@ public sealed class ShipCombatNuiService
 
     private readonly NuiBind<string> _distanceBind =
         new("combat_distance");
+
+    private readonly NuiBind<string> _targetNames =
+    new("combat_target_names");
+
+    private readonly NuiBind<int> _targetCount =
+    new("combat_target_count");
 
     private readonly NuiBind<string> _hullBind =
         new("combat_hull");
@@ -177,6 +185,11 @@ foreach (NwPlaceable station in
 
             return;
         }
+        if (targetShip != null)
+{
+    _selectedTargets[player.PlayerName] =
+        targetShip.ShipName;
+}
 
         // -------------------------------------------------------------
         // Header
@@ -217,7 +230,41 @@ foreach (NwPlaceable station in
             InfoLabel(
                 NuiProperty<string>.CreateBind(
                     "combat_status"));
+// -------------------------------------------------------------
+// Target Selection
+// -------------------------------------------------------------
 
+List<ShipState> nearbyShips =
+    _shipEncounterService
+        .GetNearbyShips(ship)
+        .ToList();
+
+List<NuiListTemplateCell> targetCells =
+[
+    new(
+        new NuiLabel(_targetNames))
+    {
+        Width = 200f
+    },
+    new(
+        new NuiButton("SELECT")
+        {
+            Id = "btn_combat_target"
+        })
+    {
+        Width = 80f,
+        VariableSize = false
+    }
+];
+
+NuiList targetList =
+    new(
+        targetCells,
+        _targetCount)
+    {
+        Width = 300f,
+        Height = 120f
+    };
         // -------------------------------------------------------------
         // Ship Magic
         // -------------------------------------------------------------
@@ -323,30 +370,44 @@ foreach (NwPlaceable station in
         column.Children.Add(
             Spacer());
 
-        column.Children.Add(
-            SectionHeader(
-                "TARGET"));
+        
+   column.Children.Add(
+    SectionHeader(
+        "TARGET"));
 
-        column.Children.Add(
-            target);
+column.Children.Add(
+    targetList);
 
-        column.Children.Add(
-            distance);
+column.Children.Add(
+    target);
 
-        column.Children.Add(
-            hull);
+column.Children.Add(
+    distance);
 
-        column.Children.Add(
-            Spacer());
+column.Children.Add(
+    hull);
 
-        column.Children.Add(
-            status);
+column.Children.Add(
+    Spacer());
 
-        column.Children.Add(
-            Spacer());
+      column.Children.Add(
+    status);
 
-        column.Children.Add(
-            spellHeader);
+column.Children.Add(
+    Spacer());
+
+column.Children.Add(
+    new NuiButton(
+        "REFRESH")
+    {
+        Id = "btn_combat_refresh"
+    });
+
+column.Children.Add(
+    Spacer());
+
+column.Children.Add(
+    spellHeader);
 
         column.Children.Add(
             spellColumn);
@@ -385,6 +446,15 @@ foreach (NwPlaceable station in
 
         _tokens[player.PlayerName] =
             token;
+token.SetBindValue(
+    _targetCount,
+    nearbyShips.Count);
+
+token.SetBindValues(
+    _targetNames,
+    nearbyShips
+        .Select(s => s.ShipName.ToUpper())
+        .ToList());
 
         player.OnNuiEvent +=
             HandleCombatNuiEvent;
@@ -467,6 +537,25 @@ foreach (NwPlaceable station in
 
     return availableSpells;
 }
+// -----------------------------------------------------------------
+// Selected Combat Target
+// -----------------------------------------------------------------
+
+private ShipState? GetSelectedTarget(NwPlayer player)
+{
+    if (!_selectedTargets.TryGetValue(
+            player.PlayerName,
+            out string? targetShipName))
+    {
+        return null;
+    }
+
+    return _helmService.GetShip(targetShipName);
+}
+public ShipState? GetSelectedCombatTarget(NwPlayer player)
+{
+    return GetSelectedTarget(player);
+}
     // -----------------------------------------------------------------
     // Combat NUI Event
     // -----------------------------------------------------------------
@@ -480,12 +569,26 @@ foreach (NwPlaceable station in
             return;
         }
 
-        if (obj.EventType !=
-            NuiEventType.MouseUp)
-        {
-            return;
-        }
+   if (obj.EventType !=
+    NuiEventType.Click)
+{
+    return;
+}
+if (obj.ElementId == "btn_combat_target")
+{
+    SelectCombatTarget(
+        obj.Player,
+        obj.ArrayIndex);
 
+    return;
+}
+if (obj.ElementId == "btn_combat_refresh")
+{
+    RebuildCombatWindow(
+        obj.Player);
+
+    return;
+}
         if (!obj.ElementId.StartsWith(
                 "ship_spell_",
                 StringComparison.Ordinal))
@@ -512,6 +615,101 @@ foreach (NwPlaceable station in
             obj.Player,
             spellId);
     }
+    //rebuild combat ui
+    private void RebuildCombatWindow(
+    NwPlayer player)
+{
+    string? shipName =
+        _physicalShipService.GetShipForPlayer(
+            player.PlayerName);
+
+    if (shipName == null)
+        return;
+
+    ShipState? ship =
+        _helmService.GetShip(
+            shipName);
+
+    if (ship == null)
+        return;
+
+    ShipState? targetShip =
+        GetSelectedTarget(player);
+
+    ShipEncounter? encounter = null;
+
+    if (targetShip != null)
+    {
+        _shipEncounterService.TryGetEncounter(
+            ship,
+            targetShip,
+            out encounter);
+    }
+
+    if (targetShip == null ||
+        encounter == null)
+    {
+        RefreshCombatWindow(player);
+        return;
+    }
+
+    Close(player);
+
+    Open(
+        player,
+        ship,
+        targetShip,
+        encounter);
+}
+    //target
+    private void SelectCombatTarget(
+    NwPlayer player,
+    int index)
+{
+    string? shipName =
+        _physicalShipService.GetShipForPlayer(
+            player.PlayerName);
+
+    if (shipName == null)
+        return;
+
+    ShipState? ship =
+        _helmService.GetShip(shipName);
+
+    if (ship == null)
+        return;
+
+    List<ShipState> nearbyShips =
+        _shipEncounterService
+            .GetNearbyShips(ship)
+            .ToList();
+
+    if (index < 0 ||
+        index >= nearbyShips.Count)
+    {
+        Log.Warn(
+            $"Invalid combat target index: " +
+            $"Player={player.PlayerName}, " +
+            $"Index={index}, " +
+            $"Available={nearbyShips.Count}.");
+
+        return;
+    }
+
+    ShipState selectedShip =
+        nearbyShips[index];
+
+    _selectedTargets[player.PlayerName] =
+        selectedShip.ShipName;
+
+    Log.Info(
+        $"Combat target selected: " +
+        $"Player={player.PlayerName}, " +
+        $"Ship={ship.ShipName}, " +
+        $"Target={selectedShip.ShipName}.");
+
+    RefreshCombatWindow(player);
+}
 
     // -----------------------------------------------------------------
     // Process Ship Spell
@@ -603,21 +801,26 @@ if (castingClass == null)
         if (ship == null)
             return;
 
-        if (definition.RequiresEncounter)
-        {
-            if (!_shipEncounterService.TryGetTarget(
-                    ship,
-                    out ShipState? targetShip,
-                    out ShipEncounter? encounter) ||
-                targetShip == null ||
-                encounter == null)
-            {
-                player.SendServerMessage(
-                    "There is no enemy ship in range.");
+       ShipState? selectedTarget = null;
 
-                return;
-            }
-        }
+if (definition.RequiresEncounter)
+{
+    selectedTarget =
+        GetSelectedCombatTarget(player);
+
+    if (selectedTarget == null ||
+        !_shipEncounterService.TryGetEncounter(
+            ship,
+            selectedTarget,
+            out ShipEncounter? encounter) ||
+        encounter == null)
+    {
+        player.SendServerMessage(
+            "There is no enemy ship in range.");
+
+        return;
+    }
+}
 
         // -------------------------------------------------------------
         // Execute the sailing effect.
@@ -631,7 +834,8 @@ bool spellSucceeded =
     _shipSpellEffectService.ProcessSpell(
         player,
         caster,
-        spell);
+        spell,
+        selectedTarget);
 
 if (!spellSucceeded)
 {
@@ -695,17 +899,58 @@ RefreshCombatWindow(
 
         if (ship == null)
             return;
+List<ShipState> nearbyShips =
+    _shipEncounterService
+        .GetNearbyShips(ship)
+        .ToList();
 
-        if (!_shipEncounterService.TryGetTarget(
-                ship,
-                out ShipState? targetShip,
-                out ShipEncounter? encounter) ||
-            targetShip == null ||
-            encounter == null)
-        {
-            Close(player);
-            return;
-        }
+NuiWindowToken token =
+    _tokens[player.PlayerName];
+
+token.SetBindValue(
+    _targetCount,
+    nearbyShips.Count);
+
+token.SetBindValues(
+    _targetNames,
+    nearbyShips
+        .Select(s => s.ShipName.ToUpper())
+        .ToList());
+   ShipState? targetShip =
+    GetSelectedTarget(player);
+if (targetShip != null)
+{
+    
+
+    if (!nearbyShips.Contains(targetShip))
+    {
+        _selectedTargets.Remove(
+            player.PlayerName);
+
+        targetShip = null;
+    }
+}
+ShipEncounter? encounter = null;
+
+if (targetShip != null)
+{
+    _shipEncounterService.TryGetEncounter(
+        ship,
+        targetShip,
+        out encounter);
+}
+
+if (targetShip == null ||
+    encounter == null)
+{
+    Update(
+        player,
+        ship,
+        null,
+        null);
+
+    return;
+}
 
         Update(
             player,
@@ -927,5 +1172,25 @@ private void HandleCombatStationClick(
         ship,
         targetShip,
         encounter);
+}
+public void RefreshAll()
+{
+     Log.Info(
+        $"Combat NUI RefreshAll: OpenWindows={_tokens.Count}");
+    foreach (string playerName in _tokens.Keys.ToList())
+    {
+        NwPlayer? player =
+            NwModule.Instance.Players.FirstOrDefault(
+                p =>
+                    string.Equals(
+                        p.PlayerName,
+                        playerName,
+                        StringComparison.Ordinal));
+
+        if (player == null)
+            continue;
+
+        RefreshCombatWindow(player);
+    }
 }
 }
