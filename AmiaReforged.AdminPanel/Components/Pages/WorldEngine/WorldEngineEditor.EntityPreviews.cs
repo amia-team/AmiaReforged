@@ -42,9 +42,6 @@ public partial class WorldEngineEditor
             case WorldEngineEntityType.Interactions when data is InteractionDefinitionDto interaction:
                 RenderInteractionEditor(builder, interaction);
                 break;
-            case WorldEngineEntityType.Coinhouses when data is CoinhouseDto coinhouse:
-                RenderCoinhouseEditor(builder, coinhouse);
-                break;
         }
     };
 
@@ -160,20 +157,6 @@ public partial class WorldEngineEditor
         AddField(b, ref s, "Knowledge Tags", dto.RequiredKnowledgeTags.Count > 0 ? string.Join(", ", dto.RequiredKnowledgeTags) : "—");
         AddField(b, ref s, "Area ResRefs", dto.AllowedAreaResRefs.Count > 0 ? string.Join(", ", dto.AllowedAreaResRefs) : "Any");
         AddField(b, ref s, "Responses", dto.Responses.Count.ToString());
-        b.CloseElement();
-    }
-
-    // ── Coinhouse ───────────────────────────────────────────────────
-    private static void RenderCoinhouseEditor(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b, CoinhouseDto dto)
-    {
-        int s = 0;
-        b.OpenElement(s++, "div"); b.AddAttribute(s++, "class", "we-entity-form");
-        AddField(b, ref s, "Tag", dto.Tag);
-        AddField(b, ref s, "Settlement", dto.Settlement.ToString());
-        AddField(b, ref s, "Stored Gold", dto.StoredGold.ToString("N0"));
-        AddField(b, ref s, "Accounts", dto.AccountCount.ToString());
-        AddField(b, ref s, "Total Deposits", dto.TotalDeposits.ToString("N0"));
-        AddField(b, ref s, "Total Credits", dto.TotalCredits.ToString("N0"));
         b.CloseElement();
     }
 

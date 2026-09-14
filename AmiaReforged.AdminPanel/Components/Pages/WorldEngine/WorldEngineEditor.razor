@@ -585,6 +585,41 @@
                                                OnClosed="@((InteractionEditorResult result) => HandleInteractionTabClosed(activeTab.Id, result))" />
                         </div>
                     }
+                    else if (activeTab.EntityType == WorldEngineEntityType.Coinhouses)
+                    {
+                        @if (activeTab.EntityKey is null)
+                        {
+                            @* Create mode: blank form, no _tabData *@
+                            <CoinhouseEditor @key="activeTab.Id"
+                                             Item="@NewCoinhouseFor(activeTab.Id)"
+                                             IsCreating="true"
+                                             OnSaved="@((CoinhouseDto saved) => HandleCoinhouseSaved(activeTab.Id, saved))"
+                                             OnDeleted="@((string tag) => HandleCoinhouseDeleted(activeTab.Id, tag))"
+                                             OnCancel="@(() => CloseTab(activeTab.Id))" />
+                        }
+                        else if (_tabDataLoading)
+                        {
+                            <div class="we-editor__tab-loading">
+                                <span class="spinner-border spinner-border-sm me-2"></span> Loading…
+                            </div>
+                        }
+                        else if (_tabDataError != null)
+                        {
+                            <div class="we-editor__tab-error">
+                                <span class="bi bi-exclamation-triangle me-1"></span> @_tabDataError
+                                <button class="btn btn-sm btn-outline-warning ms-2" @onclick="() => LoadTabData(activeTab)">Retry</button>
+                            </div>
+                        }
+                        else if (_tabData.TryGetValue(activeTab.Id, out object? coinhouseData) && coinhouseData is CoinhouseDto coinhouse)
+                        {
+                            <CoinhouseEditor @key="activeTab.Id"
+                                             Item="@coinhouse"
+                                             IsCreating="false"
+                                             OnSaved="@((CoinhouseDto saved) => HandleCoinhouseSaved(activeTab.Id, saved))"
+                                             OnDeleted="@((string tag) => HandleCoinhouseDeleted(activeTab.Id, tag))"
+                                             OnCancel="@(() => CloseTab(activeTab.Id))" />
+                        }
+                    }
                     else if (_tabDataLoading)
                     {
                         <div class="we-editor__tab-loading">

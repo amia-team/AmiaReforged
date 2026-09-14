@@ -136,6 +136,7 @@ public partial class WorldEngineEditor
             CloseRegionGraphAsync = CloseRegionGraph,
             IsRegionGraphOpen = () => _regionGraphOpen,
             OpenNewInteractionAsync = OpenNewInteractionEditor,
+            OpenNewCoinhouseAsync = OpenNewCoinhouseTab,
             OpenNewLoreAsync = () => OpenNewCodexEditor(CodexEditor.CodexSubType.Lore),
             OpenNewQuestAsync = () => OpenNewCodexEditor(CodexEditor.CodexSubType.Quest),
         };
@@ -557,6 +558,7 @@ public partial class WorldEngineEditor
         _tabData.Remove(tabId);
         _codexTabSubTypes.Remove(tabId);
         _interactionNewTabs.Remove(tabId);
+        _newCoinhouseDtos.Remove(tabId);
         EditorState.CloseTab(tabId);
     }
 

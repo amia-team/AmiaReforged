@@ -1,0 +1,192 @@
+@inject CoinhouseApiService Api
+@inject ILogger<CoinhouseEditor> Logger
+
+<div class="we-editor__entity-editor">
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+    @if (!string.IsNullOrEmpty(_success))
+    {
+        <div class="alert alert-success">@_success</div>
+    }
+
+    <EditForm Model="@_edit" OnValidSubmit="@SaveAsync">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-group">
+            <label>Tag <small class="text-secondary">(unique identifier, e.g. "cordor_bank")</small></label>
+            <InputText class="form-control" @bind-Value="_edit.Tag" disabled="@(!IsCreating)" placeholder="settlement_bank" />
+        </div>
+
+        <div class="form-group">
+            <label>Settlement ID <small class="text-secondary">(positive integer)</small></label>
+            <InputNumber class="form-control" @bind-Value="_edit.Settlement" min="1" />
+        </div>
+
+        <div class="form-group">
+            <label>Engine ID <small class="text-secondary">(GUID — auto-generated if blank)</small></label>
+            <input class="form-control" @bind="_engineIdText" placeholder="auto-generated" />
+        </div>
+
+        <div class="form-group">
+            <label>Stored Gold <small class="text-secondary">(bank's own reserves)</small></label>
+            <InputNumber class="form-control" @bind-Value="_edit.StoredGold" min="0" />
+        </div>
+
+        <div class="form-group">
+            <label>Persona ID String <small class="text-secondary">(optional, format: "Coinhouse:tag")</small></label>
+            <InputText class="form-control" @bind-Value="_edit.PersonaIdString" placeholder="Coinhouse:settlement_bank" />
+        </div>
+
+        @if (!IsCreating)
+        {
+            <div class="we-entity-form__stats">
+                <span><strong>Accounts:</strong> @_edit.AccountCount</span>
+                <span><strong>Total Deposits:</strong> @_edit.TotalDeposits.ToString("N0") gp</span>
+                <span><strong>Total Credits:</strong> @_edit.TotalCredits.ToString("N0") gp</span>
+            </div>
+        }
+
+        <div class="we-entity-form__actions">
+            <button type="button" class="btn btn-secondary" @onclick="() => OnCancel.InvokeAsync()">Cancel</button>
+            @if (!IsCreating)
+            {
+                <button type="button" class="btn btn-outline-danger" @onclick="() => _showDeleteConfirm = true">Delete</button>
+            }
+            <button type="submit" class="btn btn-primary" disabled="@_isSaving">
+                @(_isSaving ? "Saving..." : "Save")
+            </button>
+        </div>
+    </EditForm>
+
+    @if (_showDeleteConfirm)
+    {
+        <div class="we-entity-form__delete-confirm">
+            <p>Delete coinhouse <strong>@_edit.Tag</strong>?</p>
+            @if (_edit.AccountCount > 0)
+            {
+                <p class="text-danger">
+                    ⚠ This coinhouse has <strong>@_edit.AccountCount account(s)</strong>.
+                    All accounts, holders, and transactions will be permanently removed.
+                </p>
+            }
+            <p class="text-secondary">This action cannot be undone.</p>
+            <button class="btn btn-secondary btn-sm" @onclick="() => _showDeleteConfirm = false">Cancel</button>
+            <button class="btn btn-danger btn-sm" @onclick="DeleteAsync" disabled="@_isSaving">
+                @(_isSaving ? "Deleting..." : "Delete")
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public CoinhouseDto Item { get; set; } = null!;
+
+    [Parameter]
+    public bool IsCreating { get; set; }
+
+    [Parameter]
+    public EventCallback<CoinhouseDto> OnSaved { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnDeleted { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private CoinhouseDto _edit = new();
+    private CoinhouseDto? _source;
+    private string _engineIdText = "";
+    private bool _isSaving;
+    private bool _showDeleteConfirm;
+    private string? _error;
+    private string? _success;
+
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_source, Item))
+        {
+            _source = Item;
+            _edit = new CoinhouseDto
+            {
+                Id = Item.Id,
+                Tag = Item.Tag,
+                Settlement = Item.Settlement,
+                EngineId = Item.EngineId,
+                StoredGold = Item.StoredGold,
+                PersonaIdString = Item.PersonaIdString,
+                AccountCount = Item.AccountCount,
+                TotalDeposits = Item.TotalDeposits,
+                TotalCredits = Item.TotalCredits,
+            };
+            _engineIdText = Item.EngineId == Guid.Empty ? "" : Item.EngineId.ToString();
+            _error = null;
+            _success = null;
+            _showDeleteConfirm = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+        _success = null;
+
+        if (!string.IsNullOrWhiteSpace(_engineIdText))
+        {
+            if (Guid.TryParse(_engineIdText, out Guid engineId))
+                _edit.EngineId = engineId;
+            else
+            {
+                _error = "Engine ID must be a valid GUID or left blank.";
+                return;
+            }
+        }
+        else
+        {
+            _edit.EngineId = Guid.Empty; // Server will auto-generate
+        }
+
+        try
+        {
+            _isSaving = true;
+            CoinhouseDto? saved = IsCreating
+                ? await Api.CreateAsync(_edit)
+                : await Api.UpdateAsync(_edit.Tag, _edit);
+            _success = $"Coinhouse '{_edit.Tag}' {(IsCreating ? "created" : "updated")}.";
+            await OnSaved.InvokeAsync(saved ?? _edit);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Save failed: {ex.Message}";
+            Logger.LogError(ex, "Failed to save coinhouse {Tag}", _edit.Tag);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task DeleteAsync()
+    {
+        _error = null;
+        try
+        {
+            _isSaving = true;
+            await Api.DeleteAsync(_edit.Tag);
+            _showDeleteConfirm = false;
+            await OnDeleted.InvokeAsync(_edit.Tag);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Delete failed: {ex.Message}";
+            Logger.LogError(ex, "Failed to delete coinhouse {Tag}", _edit.Tag);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

@@ -1,0 +1,10 @@
+<button class="btn btn-sm btn-primary"
+        title="Create new coinhouse"
+        @onclick="@Context.OpenNewCoinhouseAsync">
+    + New
+</button>
+
+@code {
+    [CascadingParameter]
+    public WorldEngineEditorHostContext Context { get; set; } = null!;
+}

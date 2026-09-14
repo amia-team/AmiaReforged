@@ -33,6 +33,13 @@ public static class WorldEngineEditorServiceCollectionExtensions
             entityType: WorldEngineEntityType.Interactions,
             requiresEndpoint: true);
 
+        services.AddWorldEngineEditorExtension<CoinhouseNewSidebarAction>(
+            "coinhouse-new",
+            WorldEngineEditorExtensionSlot.SidebarHeaderActions,
+            order: 100,
+            entityType: WorldEngineEntityType.Coinhouses,
+            requiresEndpoint: true);
+
         services.AddWorldEngineEditorExtension<CodexNewSidebarAction>(
             "codex-new",
             WorldEngineEditorExtensionSlot.SidebarHeaderActions,
