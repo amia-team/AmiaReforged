@@ -26,14 +26,8 @@ public partial class WorldEngineEditor
 
     private bool _canDeploy =>
         EditorState.SelectedEndpointId != null
-        && (
-            // Standard tab path
-            (EditorState.ActiveTab is { EntityKey: not null } tab
-             && DeploymentService.SupportedEntityTypes.Contains(tab.EntityType))
-            // Interaction editor path (bypasses tabs)
-            || (_interactionEditorOpen && !_interactionEditorIsCreating
-                && !string.IsNullOrEmpty(_interactionEditorTag))
-        );
+        && EditorState.ActiveTab is { EntityKey: not null } tab
+        && DeploymentService.SupportedEntityTypes.Contains(tab.EntityType);
 
     // ── Entity list state ───────────────────────────────────────────
     private List<EntityListItem> _listItems = [];
@@ -116,18 +110,15 @@ public partial class WorldEngineEditor
     private static readonly string[] _rgPoiTypeOptions = { "Undefined", "Dungeon", "Landmark", "ResourceNode", "House", "Guild", "Temple", "Library", "Shop", "Warehouse", "Bank" };
 
     // ═══════════════════════════════════════════════════════════════════
-    //  Interaction Editor (delegated to standalone component)
+    //  Interaction Editor — tab-driven (InteractionEditor.razor self-loads
+    //  via EntityTag/OpenOnParameters; industries pre-loaded for its dropdown)
     // ═══════════════════════════════════════════════════════════════════
-    private InteractionEditor? _interactionEditorRef;
-    private bool _interactionEditorOpen;
-    private bool _interactionEditorIsCreating;
-    private string? _interactionEditorTag;
     private List<IndustryDefinitionDto> _interactionEditorIndustries = [];
 
     // ═══════════════════════════════════════════════════════════════════
-    //  Codex Editor state (minimal — full state lives in Editors/CodexEditor.razor)
+    //  Codex Editor — tab-driven; per-tab sub-type lives in
+    //  SpecialEditors._codexTabSubTypes (no overlay state here)
     // ═══════════════════════════════════════════════════════════════════
-    private bool _codexEditorOpen;
 
     // ── Dialogue editor state ──
     private DialogueTreeEditor? _dialogueEditor;
@@ -218,11 +209,6 @@ public partial class WorldEngineEditor
             _deployEntityType = tab.EntityType;
             _deployEntityKey = tab.EntityKey!;
         }
-        else if (_interactionEditorOpen && !_interactionEditorIsCreating)
-        {
-            _deployEntityType = WorldEngineEntityType.Interactions;
-            _deployEntityKey = _interactionEditorTag!;
-        }
 
         _deploySourceName = _endpoints
             .FirstOrDefault(ep => ep.Id == EditorState.SelectedEndpointId)?.Name ?? "Unknown";
@@ -249,11 +235,7 @@ public partial class WorldEngineEditor
             await CloseRegionGraph();
         }
 
-        // Close interaction editor if switching away from Interactions
-        if (_interactionEditorOpen && entityType != WorldEngineEntityType.Interactions)
-        {
-            if (_interactionEditorRef != null) await _interactionEditorRef.Close();
-        }
+        // Interaction editors live in tabs now and persist across navigation.
 
         if (EditorState.ActiveEntityType == entityType)
         {
@@ -486,13 +468,14 @@ public partial class WorldEngineEditor
         }
         else if (item.EntityType == WorldEngineEntityType.Interactions)
         {
-            await OpenInteractionEditor(item.Key);
+            EditorState.OpenTab(item.EntityType, item.DisplayName, item.Key);
+            // Data loads inside InteractionEditor; see OnActiveTabChanged skip.
         }
         else if (item.EntityType == WorldEngineEntityType.Codex)
         {
             // Determine sub-type from display name prefix
             CodexEditor.CodexSubType subType = item.DisplayName.StartsWith("[Quest]") ? CodexEditor.CodexSubType.Quest : CodexEditor.CodexSubType.Lore;
-            await OpenCodexEditor(item.Key, subType);
+            OpenCodexTab(item.Key, subType, item.DisplayName);
         }
         else
         {
@@ -510,7 +493,10 @@ public partial class WorldEngineEditor
         _ = InvokeAsync(async () =>
         {
             EditorTab? tab = EditorState.ActiveTab;
-            if (tab != null && !_tabData.ContainsKey(tab.Id))
+            // Codex + Interaction editors self-load (tab params); skip _tabData.
+            if (tab != null && tab.EntityType != WorldEngineEntityType.Codex
+                && tab.EntityType != WorldEngineEntityType.Interactions
+                && !_tabData.ContainsKey(tab.Id))
             {
                 await LoadTabData(tab);
             }
@@ -566,6 +552,8 @@ public partial class WorldEngineEditor
     private void CloseTab(string tabId)
     {
         _tabData.Remove(tabId);
+        _codexTabSubTypes.Remove(tabId);
+        _interactionNewTabs.Remove(tabId);
         EditorState.CloseTab(tabId);
     }
 

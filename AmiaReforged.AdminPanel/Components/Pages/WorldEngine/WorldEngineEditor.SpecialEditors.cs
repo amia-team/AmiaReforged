@@ -14,57 +14,28 @@ namespace AmiaReforged.AdminPanel.Components.Pages.WorldEngine;
 public partial class WorldEngineEditor
 {
     // ═══════════════════════════════════════════════════════════════════
-    //  Interaction Editor — delegated to InteractionEditor.razor
+    //  Interaction Editor — tab-driven (InteractionEditor.razor self-loads
+    //  via EntityTag/OpenOnParameters; no overlay state)
     // ═══════════════════════════════════════════════════════════════════
 
-    private async Task OpenNewInteractionEditor()
+    private Task OpenNewInteractionEditor()
     {
-        if (_interactionEditorOpen && _interactionEditorRef != null)
-            await _interactionEditorRef.Close();
-
-        _interactionEditorOpen = true;
-        _interactionEditorIsCreating = true;
-        _interactionEditorTag = null;
-
-        if (_interactionEditorRef != null)
-            await _interactionEditorRef.OpenCreate();
+        EditorTab tab = EditorState.OpenTab(
+            WorldEngineEntityType.Interactions, "New Interaction", entityKey: null);
+        _interactionNewTabs.Add(tab.Id);
+        return Task.CompletedTask;
     }
 
-    private async Task OpenInteractionEditor(string interactionTag)
+    // Tabs with a null EntityKey are "new" interactions (no tag yet).
+    private readonly HashSet<string> _interactionNewTabs = [];
+
+    private bool IsNewInteractionTab(EditorTab tab) =>
+        tab.EntityKey is null || _interactionNewTabs.Contains(tab.Id);
+
+    private async Task HandleInteractionTabClosed(string tabId, InteractionEditorResult result)
     {
-        if (_interactionEditorOpen && _interactionEditorRef != null)
-            await _interactionEditorRef.Close();
-
-        _interactionEditorOpen = true;
-        _interactionEditorIsCreating = false;
-        _interactionEditorTag = interactionTag;
-
-        try
-        {
-            InteractionDefinitionDto? loaded = await InteractionApi.GetByTagAsync(interactionTag);
-            if (loaded == null)
-            {
-                _interactionEditorOpen = false;
-                StateHasChanged();
-                return;
-            }
-
-            if (_interactionEditorRef != null)
-                await _interactionEditorRef.OpenEdit(loaded);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Failed to open interaction editor for {Tag}", interactionTag);
-            _interactionEditorOpen = false;
-            StateHasChanged();
-        }
-    }
-
-    private async Task HandleInteractionEditorClosed(InteractionEditorResult result)
-    {
-        _interactionEditorOpen = false;
-        _interactionEditorIsCreating = false;
-        _interactionEditorTag = null;
+        _interactionNewTabs.Remove(tabId);
+        CloseTab(tabId);
 
         if (result.Saved && EditorState.ActiveEntityType == WorldEngineEntityType.Interactions)
         {
@@ -75,34 +46,28 @@ public partial class WorldEngineEditor
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    //  Codex Editor — delegated to Editors/CodexEditor.razor
+    //  Codex Editor — tab-driven (Editors/CodexEditor.razor self-loads via
+    //  EntityKey/OpenOnParameters; no overlay state)
     // ═══════════════════════════════════════════════════════════════════
 
-    private CodexEditor? _codexEditorRef;
+    // Lore vs Quest per tab (tabs only carry EntityKey).
+    private readonly Dictionary<string, CodexEditor.CodexSubType> _codexTabSubTypes = new();
 
-    private async Task OpenNewCodexEditor(CodexEditor.CodexSubType subType)
+    private void OpenCodexTab(string? entityKey, CodexEditor.CodexSubType subType, string title)
     {
-        if (_codexEditorOpen) CloseCodexEditor();
-
-        _codexEditorOpen = true;
-        StateHasChanged();
-        await Task.Delay(50);
-        await _codexEditorRef!.OpenNewAsync(subType);
+        EditorTab tab = EditorState.OpenTab(WorldEngineEntityType.Codex, title, entityKey);
+        _codexTabSubTypes[tab.Id] = subType;
+        // Data loads inside CodexEditor; see OnActiveTabChanged skip.
     }
 
-    private async Task OpenCodexEditor(string entityId, CodexEditor.CodexSubType subType)
-    {
-        if (_codexEditorOpen) CloseCodexEditor();
+    private CodexEditor.CodexSubType GetCodexSubType(string tabId) =>
+        _codexTabSubTypes.TryGetValue(tabId, out CodexEditor.CodexSubType subType)
+            ? subType
+            : CodexEditor.CodexSubType.Lore;
 
-        _codexEditorOpen = true;
-        StateHasChanged();
-        await Task.Delay(50);
-        await _codexEditorRef!.OpenExistingAsync(entityId, subType);
-    }
-
-    private void CloseCodexEditor()
+    private Task OpenNewCodexEditor(CodexEditor.CodexSubType subType)
     {
-        _codexEditorOpen = false;
-        StateHasChanged();
+        OpenCodexTab(null, subType, subType == CodexEditor.CodexSubType.Quest ? "New Quest" : "New Lore");
+        return Task.CompletedTask;
     }
 }

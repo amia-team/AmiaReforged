@@ -9,7 +9,7 @@
 
 @if (_isOpen)
 {
-<div class="interaction-editor" style="position:fixed;inset:0;z-index:1040;background:var(--bg-dark);display:flex;flex-direction:column">
+<div class="interaction-editor" style="@(FillParent ? "position:relative;flex:1;min-height:0;background:var(--bg-dark);display:flex;flex-direction:column;overflow:hidden" : "position:fixed;inset:0;z-index:1040;background:var(--bg-dark);display:flex;flex-direction:column")">
     @* ═══════ Toolbar ═══════ *@
     <div style="display:flex;align-items:center;gap:12px;padding:6px 16px;background:var(--bg-card);border-bottom:1px solid var(--border-subtle);flex-shrink:0;height:42px;min-height:42px">
         <h5 style="margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:400px">
@@ -423,9 +423,59 @@
     /// <summary>Raised when the editor is closed (saved or cancelled).</summary>
     [Parameter] public EventCallback<InteractionEditorResult> OnClosed { get; set; }
 
+    /// <summary>
+    /// Tab-mode entry point. When <see cref="OpenOnParameters"/> is true the
+    /// editor auto-opens for <see cref="EntityTag"/> (or a blank new entry
+    /// when <see cref="IsNew"/>) instead of waiting for an imperative
+    /// <c>OpenCreate</c>/<c>OpenEdit</c> call. <see cref="FillParent"/> renders
+    /// in-flow (for tab content) instead of as a fixed full-screen overlay.
+    /// </summary>
+    [Parameter] public string? EntityTag { get; set; }
+    [Parameter] public bool IsNew { get; set; }
+    [Parameter] public bool OpenOnParameters { get; set; }
+    [Parameter] public bool FillParent { get; set; }
+
     // ═══════════════════════════════════════════════════════════════════
     //  State
     // ═══════════════════════════════════════════════════════════════════
+
+    // Tab-mode auto-open tracking (see OpenOnParameters).
+    private bool _autoOpened;
+    private string? _autoOpenedTag;
+    private bool _autoOpenedIsNew;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!OpenOnParameters) return;
+
+        if (_autoOpened && _autoOpenedTag == EntityTag && _autoOpenedIsNew == IsNew) return;
+
+        _autoOpened = true;
+        _autoOpenedTag = EntityTag;
+        _autoOpenedIsNew = IsNew;
+
+        if (IsNew || EntityTag is null)
+        {
+            await OpenCreate();
+            return;
+        }
+
+        try
+        {
+            InteractionDefinitionDto? loaded = await Api.GetByTagAsync(EntityTag);
+            if (loaded == null)
+            {
+                _error = $"Interaction '{EntityTag}' not found.";
+                return;
+            }
+            await OpenEdit(loaded);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to open interaction editor for {Tag}", EntityTag);
+            _error = $"Failed to load: {ex.Message}";
+        }
+    }
 
     private bool _isOpen;
     private bool _isCreating;

@@ -1840,3 +1840,13 @@ a:hover {
 .action-editor .searchable-select {
     min-width: 0;
 }
+
+/* ========== WorldEngine tab-fill container (tab-driven editors) ========== */
+
+.we-editor__tab-fill {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}

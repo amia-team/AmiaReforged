@@ -89,10 +89,7 @@
                   Endpoints="@_endpoints"
                   OnClose="CloseDeployDialog" />
 
-    @* ── Interaction Editor (full-screen overlay, manages its own GL) ── *@
-    <InteractionEditor @ref="_interactionEditorRef"
-                       AvailableIndustries="@_interactionEditorIndustries"
-                       OnClosed="HandleInteractionEditorClosed" />
+    @* ── Interaction editors live in tabs (see editor area below) ── *@
 
     <div class="we-editor__body">
         <WorldEngineEditorSidebar Context="_hostContext"
@@ -110,13 +107,7 @@
 
         @* ── Editor area ─────────────────────────────────────────── *@
         <div class="we-editor__editor-area">
-            @if (_codexEditorOpen)
-            {
-                <CodexEditor @ref="_codexEditorRef"
-                                     OnClose="CloseCodexEditor"
-                                     OnEntityListRefresh="async () => await LoadEntityList(reset: true)" />
-            }
-            else if (_regionGraphOpen)
+            @if (_regionGraphOpen)
             {
                 @* ══════ Region Graph GL Mode ══════ *@
                 <div class="we-editor__region-graph-wrap">
@@ -543,28 +534,11 @@
             else
             {
             @* ══════ Normal Tab Mode ══════ *@
-            @* Tab bar *@
-            @if (EditorState.OpenTabs.Count > 0)
-            {
-                <div class="we-editor__tab-bar">
-                    @foreach (EditorTab tab in EditorState.OpenTabs)
-                    {
-                        bool isActive = tab.Id == EditorState.ActiveTabId;
-                        <div class="we-editor__tab @(isActive ? "we-editor__tab--active" : "")"
-                             @onclick="() => EditorState.ActiveTabId = tab.Id">
-                            <span class="bi @GetEntityIcon(tab.EntityType) me-1"></span>
-                            <span class="we-editor__tab-title">@tab.Title</span>
-                            @if (tab.IsDirty)
-                            {
-                                <span class="we-editor__tab-dirty">●</span>
-                            }
-                            <button class="we-editor__tab-close" @onclick="() => CloseTab(tab.Id)" @onclick:stopPropagation="true">
-                                <span class="bi bi-x"></span>
-                            </button>
-                        </div>
-                    }
-                </div>
-            }
+            <TabStrip Tabs="EditorState.OpenTabs"
+                      ActiveTabId="EditorState.ActiveTabId"
+                      GetIcon="GetEntityIcon"
+                      OnActivate="(id) => EditorState.ActiveTabId = id"
+                      OnClose="CloseTab" />
 
             @* Entity editor content *@
             <div class="we-editor__content">
@@ -577,7 +551,32 @@
                 }
                 else if (EditorState.ActiveTab is { } activeTab)
                 {
-                    @if (_tabDataLoading)
+                    @if (activeTab.EntityType == WorldEngineEntityType.Codex)
+                    {
+                        @* Codex editors are self-loading tabs (no _tabData) *@
+                        <div class="we-editor__tab-fill">
+                            <CodexEditor @key="activeTab.Id"
+                                         EntityKey="activeTab.EntityKey"
+                                         InitialSubType="GetCodexSubType(activeTab.Id)"
+                                         OpenOnParameters="true"
+                                         OnClose="() => CloseTab(activeTab.Id)"
+                                         OnEntityListRefresh="async () => await LoadEntityList(reset: true)" />
+                        </div>
+                    }
+                    else if (activeTab.EntityType == WorldEngineEntityType.Interactions)
+                    {
+                        @* Interaction editors are self-loading tabs (no _tabData) *@
+                        <div class="we-editor__tab-fill">
+                            <InteractionEditor @key="activeTab.Id"
+                                               EntityTag="activeTab.EntityKey"
+                                               IsNew="IsNewInteractionTab(activeTab)"
+                                               OpenOnParameters="true"
+                                               FillParent="true"
+                                               AvailableIndustries="@_interactionEditorIndustries"
+                                               OnClosed="(result) => HandleInteractionTabClosed(activeTab.Id, result)" />
+                        </div>
+                    }
+                    else if (_tabDataLoading)
                     {
                         <div class="we-editor__tab-loading">
                             <span class="spinner-border spinner-border-sm me-2"></span> Loading…

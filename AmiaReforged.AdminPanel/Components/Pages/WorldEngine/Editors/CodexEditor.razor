@@ -906,6 +906,16 @@
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback OnEntityListRefresh { get; set; }
 
+    /// <summary>
+    /// Tab-mode entry point. When <see cref="OpenOnParameters"/> is true the
+    /// editor auto-opens for <see cref="EntityKey"/> (or a blank new entry
+    /// when null) instead of waiting for an imperative
+    /// <c>OpenNewAsync</c>/<c>OpenExistingAsync</c> call.
+    /// </summary>
+    [Parameter] public string? EntityKey { get; set; }
+    [Parameter] public CodexSubType InitialSubType { get; set; } = CodexSubType.Lore;
+    [Parameter] public bool OpenOnParameters { get; set; }
+
     // ═══════════════════════════════════════════════════════════════════
     //  Public enum (shared with parent)
     // ═══════════════════════════════════════════════════════════════════
@@ -979,6 +989,31 @@
     // ═══════════════════════════════════════════════════════════════════
     //  Lifecycle
     // ═══════════════════════════════════════════════════════════════════
+
+    // Tab-mode auto-open tracking (see OpenOnParameters).
+    private bool _autoOpened;
+    private string? _autoOpenedKey;
+    private bool _autoOpenedIsNew;
+    private CodexSubType _autoOpenedSubType;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!OpenOnParameters) return;
+
+        bool isNew = EntityKey is null;
+        if (_autoOpened && _autoOpenedKey == EntityKey && _autoOpenedIsNew == isNew
+            && _autoOpenedSubType == InitialSubType) return;
+
+        _autoOpened = true;
+        _autoOpenedKey = EntityKey;
+        _autoOpenedIsNew = isNew;
+        _autoOpenedSubType = InitialSubType;
+
+        if (isNew)
+            await OpenNewAsync(InitialSubType);
+        else
+            await OpenExistingAsync(EntityKey!, InitialSubType);
+    }
 
     public async Task OpenNewAsync(CodexSubType subType)
     {
