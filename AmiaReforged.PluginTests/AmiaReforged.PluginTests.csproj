@@ -5,13 +5,15 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <EnableDynamicLoading>true</EnableDynamicLoading>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+        <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="DotNetEnv" Version="3.1.1" />
       <PackageReference Include="NWN.Anvil" Version="8193.37.3" />
-      <PackageReference Include="NWN.Anvil.TestRunner" Version="8193.36.1" />
-      <PackageReference Include="NWN.Core" Version="8193.37.4" />
+      <PackageReference Include="NWN.Anvil.TestRunner" Version="8193.37.3" />
+      <PackageReference Include="NWN.Core" Version="8193.37.6" />
     </ItemGroup>
 
 </Project>

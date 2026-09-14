@@ -14,11 +14,13 @@ public class SampleTests
     {
         Location loc = NwModule.Instance.StartingLocation;
 
-        NwCreature creature = NwCreature.Create("nw_bandit001", loc);
+        NwCreature? creature = NwCreature.Create("nw_bandit001", loc);
+
+        Assert.That(creature, Is.Not.Null);
 
         string newName = "Hello there";
 
-        creature.Name = newName;
+        creature!.Name = newName;
 
         Assert.That(creature.Name, Is.EqualTo(newName));
 
