@@ -70,47 +70,4 @@ public class ResourceNodeInstance
         LogManager.GetCurrentClassLogger().Info("Destroy called");
         OnDestroyed?.Invoke(this);
     }
-
-    public HarvestResult Harvest(ICharacter character)
-    {
-        ItemSnapshot? tool = character.GetEquipment()[EquipmentSlots.RightHand];
-        if (Definition.Requirement.RequiredItemType != ItemForm.None &&
-            tool?.Type != Definition.Requirement.RequiredItemType)
-        {
-            return HarvestResult.NoTool;
-        }
-
-        int harvestProgressMod = 0;
-
-        foreach (KnowledgeHarvestEffect effect in character.KnowledgeEffectsForResource(Definition.Tag, Definition.Type)
-                     .Where(r => r.StepModified == HarvestStep.HarvestStepRate))
-        {
-            switch (effect.Operation)
-            {
-                case EffectOperation.Additive:
-                    harvestProgressMod += (int)effect.Value;
-                    break;
-            }
-        }
-
-        HarvestProgress = 1 + HarvestProgress + harvestProgressMod;
-
-        if (HarvestProgress < Definition.BaseHarvestRounds)
-        {
-            return HarvestResult.InProgress;
-        }
-
-        HarvestEventData data = new(character, this);
-        OnHarvest?.Invoke(data);
-        Uses--;
-
-        HarvestProgress = 0;
-
-        if (Uses <= 0)
-        {
-            OnDestroyed?.Invoke(this);
-        }
-
-        return HarvestResult.Finished;
-    }
 }

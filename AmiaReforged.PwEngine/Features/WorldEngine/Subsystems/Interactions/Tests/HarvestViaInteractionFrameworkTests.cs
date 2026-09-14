@@ -24,9 +24,9 @@ using NUnit.Framework;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.Tests;
 
 /// <summary>
-/// Integration tests verifying that <see cref="HarvestInteractionHandler"/> preserves
-/// identical behavior to the original <c>HarvestResourceCommandHandler</c> when
-/// executed through the Interaction Framework dispatcher.
+/// Integration tests verifying harvest behavior through the Interaction
+/// Framework dispatcher: tool checks, multi-round progress, knowledge
+/// modifiers, tree/flora single-yield depletion, and wildcard patterns.
 /// </summary>
 [TestFixture]
 public class HarvestViaInteractionFrameworkTests
@@ -214,6 +214,32 @@ public class HarvestViaInteractionFrameworkTests
 
     #endregion
 
+    #region Wildcard Knowledge Patterns
+
+    [Test]
+    public async Task Wildcard_tag_pattern_applies_yield_bonus()
+    {
+        // Given knowledge with a wildcard harvest effect matching all ore veins
+        Guid nodeId = await RegisterNode(CopperOreTag);
+        Knowledge wildcard = CreateKnowledge("ore_generalist",
+            new KnowledgeHarvestEffect("ore_vein_*", HarvestStep.ItemYield, 2, EffectOperation.Additive));
+        TestCharacter character = CreateCharacterWithKnowledge(ItemForm.ToolPick, wildcard);
+        _characterRepository.Add(character);
+
+        PerformInteractionCommand command = new(character.GetId(), "harvesting", nodeId);
+
+        // When harvesting to completion
+        _publishedEvents.Clear();
+        for (int i = 0; i < 3; i++)
+            await _commandHandler.HandleAsync(command);
+
+        // Then the wildcard bonus applies: 1 (base) + 2 = 3
+        ResourceHarvestedEvent harvestEvent = _publishedEvents.OfType<ResourceHarvestedEvent>().Single();
+        harvestEvent.Items.First().Quantity.Should().Be(3);
+    }
+
+    #endregion
+
     #region Session Lifecycle
 
     [Test]
@@ -255,6 +281,85 @@ public class HarvestViaInteractionFrameworkTests
         _publishedEvents.OfType<InteractionStartedEvent>().Should().HaveCount(1);
         _publishedEvents.OfType<InteractionCompletedEvent>().Should().HaveCount(1);
         _publishedEvents.OfType<ResourceHarvestedEvent>().Should().HaveCount(1);
+    }
+
+    #endregion
+
+    #region Tree And Flora Single-Yield Behavior
+
+    [Test]
+    public async Task Tree_felling_yields_quality_scaled_logs_and_depletes()
+    {
+        // Given a tree with TreeProperties (2-4 logs) and 50 uses
+        ((InMemoryResourceNodeDefinitionRepository)_definitionRepository).Create(
+            new ResourceNodeDefinition(3, ResourceType.Tree, "oak_tree",
+                new HarvestContext(ItemForm.ToolAxe),
+                [new HarvestOutput("oak_log", 1)],
+                Uses: 50, BaseHarvestRounds: 2,
+                TreeProperties: new TreeProperties(2, 4, "oak_log")));
+        Guid nodeId = await RegisterNode("oak_tree");
+        TestCharacter character = CreateCharacter(ItemForm.ToolAxe);
+        _characterRepository.Add(character);
+        PerformInteractionCommand command = new(character.GetId(), "harvesting", nodeId);
+
+        // When harvesting to completion (2 rounds)
+        _publishedEvents.Clear();
+        await _commandHandler.HandleAsync(command);
+        CommandResult completed = await _commandHandler.HandleAsync(command);
+
+        // Then it depletes despite 50 remaining uses, with log yield in range
+        completed.Data!["status"].Should().Be("NodeDepleted");
+        ResourceHarvestedEvent harvestEvent = _publishedEvents.OfType<ResourceHarvestedEvent>().Single();
+        harvestEvent.Items.Should().HaveCount(1);
+        harvestEvent.Items[0].ItemTag.Should().Be("oak_log");
+        harvestEvent.Items[0].Quantity.Should().BeInRange(2, 4);
+        harvestEvent.RemainingUses.Should().Be(0);
+        _publishedEvents.OfType<NodeDepletedEvent>().Should().HaveCount(1);
+        _nodeRepository.GetInstances().Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task Flora_gather_depletes_on_first_completion_regardless_of_uses()
+    {
+        // Given a flora node with 50 uses and instant (0-round) harvest
+        ((InMemoryResourceNodeDefinitionRepository)_definitionRepository).Create(
+            new ResourceNodeDefinition(4, ResourceType.Flora, "wild_herb",
+                new HarvestContext(ItemForm.None),
+                [new HarvestOutput("herb", 1)],
+                Uses: 50, BaseHarvestRounds: 0));
+        Guid nodeId = await RegisterNode("wild_herb");
+        TestCharacter character = CreateCharacter(ItemForm.None);
+        _characterRepository.Add(character);
+
+        // When gathering once
+        _publishedEvents.Clear();
+        CommandResult result = await _commandHandler.HandleAsync(
+            new PerformInteractionCommand(character.GetId(), "harvesting", nodeId));
+
+        // Then the node is gone after a single gather
+        result.Data!["status"].Should().Be("NodeDepleted");
+        _publishedEvents.OfType<ResourceHarvestedEvent>().Should().HaveCount(1);
+        _publishedEvents.OfType<NodeDepletedEvent>().Should().HaveCount(1);
+        _nodeRepository.GetInstances().Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task Ore_node_with_remaining_uses_survives_completion()
+    {
+        // Given copper ore (Uses: 50, 3 rounds) — control case for single-yield logic
+        Guid nodeId = await RegisterNode(CopperOreTag);
+        TestCharacter character = CreateCharacter(ItemForm.ToolPick);
+        _characterRepository.Add(character);
+        PerformInteractionCommand command = new(character.GetId(), "harvesting", nodeId);
+
+        // When harvesting to completion
+        for (int i = 0; i < 3; i++)
+            await _commandHandler.HandleAsync(command);
+
+        // Then the node survives with uses decremented
+        _nodeRepository.GetInstances().Should().HaveCount(1);
+        _publishedEvents.OfType<NodeDepletedEvent>().Should().BeEmpty();
+        _publishedEvents.OfType<ResourceHarvestedEvent>().Single().RemainingUses.Should().Be(49);
     }
 
     #endregion

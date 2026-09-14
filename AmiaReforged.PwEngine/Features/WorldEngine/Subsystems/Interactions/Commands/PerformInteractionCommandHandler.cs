@@ -116,7 +116,16 @@ public sealed class PerformInteractionCommandHandler(
             }
         }
 
-        return CommandResult.OkWith("status", "InProgress");
+        return new CommandResult
+        {
+            Success = true,
+            Data = new Dictionary<string, object>
+            {
+                ["status"] = "InProgress",
+                ["currentProgress"] = session.Progress,
+                ["requiredProgress"] = session.RequiredRounds
+            }
+        };
     }
 
     private static bool IsDifferentInteraction(InteractionSession session, PerformInteractionCommand command)
@@ -243,7 +252,9 @@ public sealed class PerformInteractionCommandHandler(
             ? new Dictionary<string, object>(outcome.Data)
             : new Dictionary<string, object>();
 
-        data["status"] = outcome.Success ? "Completed" : "Failed";
+        // Preserve a handler-provided status (e.g. "NodeDepleted"); default to
+        // the generic Completed/Failed vocabulary when the handler sets none.
+        data.TryAdd("status", outcome.Success ? "Completed" : "Failed");
 
         return new CommandResult
         {

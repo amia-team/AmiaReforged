@@ -15,8 +15,9 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.Han
 
 /// <summary>
 /// Interaction handler for harvesting resource nodes.
-/// Replaces the direct logic in <c>HarvestResourceCommandHandler</c> while preserving
-/// identical game-play behavior: tool check → tick with knowledge rate mods → yield/quality on complete.
+/// Owns all harvest domain logic: tool check → tick with knowledge rate mods →
+/// yield/quality on complete, with Tree <see cref="TreeProperties"/> handling and
+/// single-yield depletion for Tree/Flora node types.
 /// </summary>
 [ServiceBinding(typeof(IInteractionHandler))]
 public sealed class HarvestInteractionHandler(
@@ -36,7 +37,7 @@ public sealed class HarvestInteractionHandler(
             return PreconditionResult.Fail("Resource node not found");
         }
 
-        // Tool check — mirrors original HarvestResourceCommandHandler behavior
+        // Tool check — harvesting requires the node definition's required tool
         if (node.Definition.Requirement.RequiredItemType != ItemForm.None)
         {
             character.GetEquipment().TryGetValue(EquipmentSlots.RightHand, out ItemSnapshot? tool);
@@ -99,13 +100,19 @@ public sealed class HarvestInteractionHandler(
         // Calculate harvest outputs with knowledge modifiers
         List<HarvestedItem> harvestedItems = CalculateHarvestOutputs(node, character);
 
+        // Tree and Flora nodes are single-yield per spawn: one felling/gathering
+        // always depletes the node regardless of remaining Uses. Ore-type nodes
+        // deplete through the Uses counter instead.
+        bool singleYield = node.Definition.Type is ResourceType.Tree or ResourceType.Flora;
+        int remainingAfter = singleYield ? 0 : node.Uses - 1;
+
         // Publish domain event (listened to by item-grant subsystem, etc.)
         await eventBus.PublishAsync(new ResourceHarvestedEvent(
             session.CharacterId,
             node.Id,
             node.Definition.Tag,
             harvestedItems.ToArray(),
-            node.Uses - 1,
+            remainingAfter,
             DateTime.UtcNow), ct);
 
         // Decrement uses and reset for next harvest
@@ -113,7 +120,7 @@ public sealed class HarvestInteractionHandler(
         node.ResetHarvestProgress();
 
         // Check depletion
-        if (node.Uses <= 0)
+        if (singleYield || node.Uses <= 0)
         {
             await eventBus.PublishAsync(new NodeDepletedEvent(
                 node.Id,
@@ -124,6 +131,7 @@ public sealed class HarvestInteractionHandler(
 
             nodeRepository.Delete(node);
             nodeRepository.SaveChanges();
+            node.Destroy();
 
             return InteractionOutcome.Succeeded("Node depleted", new Dictionary<string, object>
             {
@@ -153,6 +161,14 @@ public sealed class HarvestInteractionHandler(
 
     private static List<HarvestedItem> CalculateHarvestOutputs(ResourceNodeInstance node, ICharacter character)
     {
+        // Tree nodes use TreeProperties (quality-scaled log count range) instead of
+        // the standard HarvestOutput array. Ported from the retired TreeFellingStrategy
+        // so the interaction framework is the single owner of harvest yield logic.
+        if (node.Definition.TreeProperties is not null)
+        {
+            return [CalculateTreeYield(node, character)];
+        }
+
         List<HarvestedItem> outputs = [];
         List<KnowledgeHarvestEffect> applicable =
             character.KnowledgeEffectsForResource(node.Definition.Tag, node.Definition.Type);
@@ -196,5 +212,53 @@ public sealed class HarvestInteractionHandler(
         }
 
         return outputs;
+    }
+
+    /// <summary>
+    /// Calculates the log yield for a felled tree: <see cref="TreeProperties"/>
+    /// min/max baseline shifted by node quality (Average = baseline), then by
+    /// additive knowledge yield modifiers. Log quality carries knowledge quality
+    /// modifiers, clamped to the definition bounds.
+    /// </summary>
+    private static HarvestedItem CalculateTreeYield(ResourceNodeInstance node, ICharacter character)
+    {
+        TreeProperties treeProps = node.Definition.TreeProperties!;
+
+        // Quality offset: Average is the baseline (offset = 0); each level
+        // above/below Average shifts the log-count range by 1.
+        int qualityOffset = (int)node.Quality - (int)IPQuality.Average;
+
+        int adjustedMin = Math.Max(1, treeProps.MinLogs + qualityOffset);
+        int adjustedMax = Math.Max(adjustedMin, treeProps.MaxLogs + qualityOffset);
+
+        int yieldMod = 0;
+        foreach (KnowledgeHarvestEffect ye in character
+                     .KnowledgeEffectsForResource(node.Definition.Tag, node.Definition.Type)
+                     .Where(e => e.StepModified == HarvestStep.ItemYield && e.Operation == EffectOperation.Additive))
+        {
+            yieldMod += (int)ye.Value;
+        }
+
+        adjustedMin = Math.Max(1, adjustedMin + yieldMod);
+        adjustedMax = Math.Max(adjustedMin, adjustedMax + yieldMod);
+
+        int logCount = Random.Shared.Next(adjustedMin, adjustedMax + 1);
+
+        int totalQuality = (int)node.Quality;
+        foreach (KnowledgeHarvestEffect qe in character
+                     .KnowledgeEffectsForResource(node.Definition.Tag, node.Definition.Type)
+                     .Where(e => e.StepModified == HarvestStep.Quality))
+        {
+            totalQuality = qe.Operation switch
+            {
+                EffectOperation.Additive => totalQuality + (int)qe.Value,
+                EffectOperation.PercentMult => totalQuality + totalQuality * (int)qe.Value,
+                _ => totalQuality
+            };
+        }
+
+        totalQuality = node.Definition.ClampQuality(totalQuality);
+
+        return new HarvestedItem(treeProps.LogItemTag, logCount, (IPQuality)totalQuality);
     }
 }

@@ -1,13 +1,11 @@
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
-using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting.Nui;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.ResourceNodeData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.Services;
 using Anvil.API;
@@ -18,31 +16,23 @@ using NLog;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting.Strategies;
 
 /// <summary>
-/// Harvest strategy for Tree-type nodes.
-/// Uses the same attack pattern as minerals but with different behavior:
-/// the player chops for <c>BaseHarvestRounds</c> rounds, then the tree is
-/// felled (destroyed) and a quality-scaled random number of logs are granted.
-/// Trees are always single-use — once felled, they're gone.
+/// Ingress adapter for Tree-type nodes: translates the attack-based pattern
+/// (player physically attacks the placeable) into ticks of the character's
+/// "harvesting" interaction session. All domain logic — tool checks, progress,
+/// log yield (<see cref="TreeProperties"/>), depletion — is owned by the
+/// interaction framework. This class owns only NWN event wiring and harvest UI.
 /// </summary>
 [ServiceBinding(typeof(INodeHarvestStrategy))]
 public sealed class TreeFellingStrategy(
     RuntimeCharacterService characterService,
     Lazy<RuntimeNodeService> runtimeNodeService,
-    ICharacterRepository characterRepository,
-    IResourceNodeInstanceRepository nodeRepository,
-    IEventBus eventBus,
+    ICommandDispatcher commandDispatcher,
     WindowDirector windowDirector) : INodeHarvestStrategy
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     /// <summary>
-    /// Tracks chop progress per placeable UUID. Keyed by placeable UUID,
-    /// value is accumulated progress ticks. Cleared when the tree is felled.
-    /// </summary>
-    private readonly Dictionary<Guid, int> _chopProgress = new();
-
-    /// <summary>
-    /// Tracks active harvest progress bars per player.
+    /// Tracks active harvest progress bars per player. One bar at a time per player.
     /// </summary>
     private readonly Dictionary<NwPlayer, HarvestProgressPresenter> _activeProgressBars = new();
 
@@ -58,7 +48,6 @@ public sealed class TreeFellingStrategy(
     public void UnwireEvents(NwPlaceable placeable)
     {
         placeable.OnPhysicalAttacked -= HandleChop;
-        _chopProgress.Remove(placeable.UUID);
     }
 
     private void HandleChop(PlaceableEvents.OnPhysicalAttacked obj)
@@ -75,68 +64,9 @@ public sealed class TreeFellingStrategy(
         if (spawnedNode is null) return;
 
         ResourceNodeInstance node = spawnedNode.Instance;
-        ResourceNodeDefinition def = node.Definition;
 
-        // Tool check
-        if (def.Requirement.RequiredItemType != ItemForm.None)
-        {
-            ItemSnapshot? tool = character.GetEquipment().GetValueOrDefault(EquipmentSlots.RightHand);
-            if (tool?.Type != def.Requirement.RequiredItemType)
-            {
-                player.FloatingTextString("You need the correct tool to chop this tree.");
-                return;
-            }
-        }
-
-        // Calculate progress modifier from knowledge effects
-        int progressMod = 0;
-        foreach (KnowledgeHarvestEffect effect in character
-                     .KnowledgeEffectsForResource(def.Tag, def.Type)
-                     .Where(e => e.StepModified == HarvestStep.HarvestStepRate))
-        {
-            if (effect.Operation == EffectOperation.Additive)
-            {
-                progressMod += (int)effect.Value;
-            }
-        }
-
-        // Accumulate progress
-        _chopProgress.TryGetValue(plc.UUID, out int current);
-        current += 1 + progressMod;
-        _chopProgress[plc.UUID] = current;
-
-        int required = def.BaseHarvestRounds > 0 ? def.BaseHarvestRounds : 1;
-
-        if (current < required)
-        {
-            // Still chopping — show VFX and update progress bar
-            Effect dustEffect = Effect.VisualEffect(VfxType.ImpDustExplosion, false, 0.4f);
-            plc.Location.ApplyEffect(EffectDuration.Instant, dustEffect);
-
-            if (!_activeProgressBars.TryGetValue(player, out HarvestProgressPresenter? presenter))
-            {
-                HarvestProgressView view = new(player, $"Chopping {def.Name}");
-                presenter = view.Presenter;
-                NwPlayer closurePlayer = player;
-                presenter.OnClosed += () => _activeProgressBars.Remove(closurePlayer);
-                windowDirector.OpenWindow(presenter);
-                _activeProgressBars[player] = presenter;
-            }
-
-            presenter.UpdateProgress(current, required);
-            return;
-        }
-
-        // Tree is felled — complete progress bar, compute yield and fire events
-        _chopProgress.Remove(plc.UUID);
-
-        if (_activeProgressBars.TryGetValue(player, out HarvestProgressPresenter? felledPresenter))
-        {
-            felledPresenter.Complete();
-        }
-
-        Guid characterId = character.GetId().Value;
-        Guid nodeId = node.Id;
+        // Each chop drives one tick of the character's "harvesting" session.
+        PerformInteractionCommand command = new(character.GetId(), "harvesting", node.Id);
 
         _ = NwTask.Run(async () =>
         {
@@ -144,146 +74,71 @@ public sealed class TreeFellingStrategy(
             {
                 await NwTask.SwitchToMainThread();
 
-                // Calculate log yield
-                List<HarvestedItem> harvestedItems = CalculateTreeYield(node, character);
-
-                // Publish harvest event — the existing ResourceHarvestedEventHandler will grant items
-                await eventBus.PublishAsync(new ResourceHarvestedEvent(
-                    characterId,
-                    nodeId,
-                    def.Tag,
-                    harvestedItems.ToArray(),
-                    0, // remaining uses — always 0 for trees
-                    DateTime.UtcNow));
-
-                // Publish depletion event — always depleted after one felling
-                await eventBus.PublishAsync(new NodeDepletedEvent(
-                    nodeId,
-                    node.Area,
-                    def.Tag,
-                    characterId,
-                    DateTime.UtcNow));
+                CommandResult result = await commandDispatcher.DispatchAsync(command);
 
                 await NwTask.SwitchToMainThread();
 
-                // Build summary text
-                string summary = string.Join(", ", harvestedItems.Select(h => $"{h.Quantity}x {h.ItemTag}"));
-                player.FloatingTextString($"Timber! Harvested: {summary}");
+                if (!result.Success)
+                {
+                    player.FloatingTextString(result.ErrorMessage ?? "Chopping failed");
+                    return;
+                }
 
-                // Destroy node in repository and game world
-                nodeRepository.Delete(node);
-                nodeRepository.SaveChanges();
-                node.Destroy();
+                string? status = result.Data?.GetValueOrDefault("status") as string;
+
+                switch (status)
+                {
+                    case "InProgress":
+                    {
+                        int current = result.Data?.GetValueOrDefault("currentProgress") is int cp ? cp : 0;
+                        int total = result.Data?.GetValueOrDefault("requiredProgress") is int rp ? rp : 1;
+
+                        if (!_activeProgressBars.TryGetValue(player, out HarvestProgressPresenter? presenter))
+                        {
+                            string nodeName = node.Definition.Name;
+                            HarvestProgressView view = new(player, $"Chopping {nodeName}");
+                            presenter = view.Presenter;
+                            NwPlayer closurePlayer = player;
+                            presenter.OnClosed += () => _activeProgressBars.Remove(closurePlayer);
+                            windowDirector.OpenWindow(presenter);
+                            _activeProgressBars[player] = presenter;
+                        }
+
+                        presenter.UpdateProgress(current, total);
+
+                        Effect dustEffect = Effect.VisualEffect(VfxType.ImpDustExplosion, false, 0.4f);
+                        plc.Location.ApplyEffect(EffectDuration.Instant, dustEffect);
+                        break;
+                    }
+                    case "Completed":
+                    case "NodeDepleted":
+                    {
+                        if (_activeProgressBars.TryGetValue(player, out HarvestProgressPresenter? presenter))
+                        {
+                            presenter.Complete();
+                        }
+
+                        if (result.Data?.GetValueOrDefault("items") is List<HarvestedItem> harvested
+                            && harvested.Count > 0)
+                        {
+                            string summary = string.Join(", ",
+                                harvested.Select(h => $"{h.Quantity}x {h.ItemTag}"));
+                            player.FloatingTextString($"Timber! Harvested: {summary}");
+                        }
+
+                        if (status == "NodeDepleted")
+                        {
+                            node.Uses = 0;
+                        }
+
+                        break;
+                    }
+                }
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Error felling tree");
+                Log.Error(ex, "Error handling tree chop");
             }
         });
-    }
-
-    /// <summary>
-    /// Calculates the number and quality of logs yielded when a tree is felled.
-    /// Uses <see cref="TreeProperties"/> for the baseline min/max, then adjusts
-    /// by the node's quality (richness). Higher quality = more logs.
-    /// </summary>
-    private static List<HarvestedItem> CalculateTreeYield(ResourceNodeInstance node, ICharacter character)
-    {
-        TreeProperties? treeProps = node.Definition.TreeProperties;
-        if (treeProps is null)
-        {
-            // Fallback: use standard HarvestOutput[] if no TreeProperties configured
-            return CalculateFallbackOutputs(node, character);
-        }
-
-        // Quality offset: Average is the baseline (offset = 0)
-        // Each quality level above/below Average shifts the range by 1
-        int qualityOffset = (int)node.Quality - (int)IPQuality.Average;
-
-        int adjustedMin = Math.Max(1, treeProps.MinLogs + qualityOffset);
-        int adjustedMax = Math.Max(adjustedMin, treeProps.MaxLogs + qualityOffset);
-
-        // Apply knowledge yield modifiers
-        int yieldMod = 0;
-        foreach (KnowledgeHarvestEffect effect in character
-                     .KnowledgeEffectsForResource(node.Definition.Tag, node.Definition.Type)
-                     .Where(e => e.StepModified == HarvestStep.ItemYield))
-        {
-            if (effect.Operation == EffectOperation.Additive)
-            {
-                yieldMod += (int)effect.Value;
-            }
-        }
-
-        adjustedMin = Math.Max(1, adjustedMin + yieldMod);
-        adjustedMax = Math.Max(adjustedMin, adjustedMax + yieldMod);
-
-        int logCount = Random.Shared.Next(adjustedMin, adjustedMax + 1);
-
-        // Quality modifiers for the logs themselves
-        int totalQuality = (int)node.Quality;
-        foreach (KnowledgeHarvestEffect qe in character
-                     .KnowledgeEffectsForResource(node.Definition.Tag, node.Definition.Type)
-                     .Where(e => e.StepModified == HarvestStep.Quality))
-        {
-            totalQuality = qe.Operation switch
-            {
-                EffectOperation.Additive => totalQuality + (int)qe.Value,
-                EffectOperation.PercentMult => totalQuality + totalQuality * (int)qe.Value,
-                _ => totalQuality
-            };
-        }
-
-        totalQuality = node.Definition.ClampQuality(totalQuality);
-
-        return [new HarvestedItem(treeProps.LogItemTag, logCount, (IPQuality)totalQuality)];
-    }
-
-    /// <summary>
-    /// Fallback: if no <see cref="TreeProperties"/> is configured, use the standard
-    /// <see cref="HarvestOutput"/> array with the same logic as minerals.
-    /// </summary>
-    private static List<HarvestedItem> CalculateFallbackOutputs(ResourceNodeInstance node, ICharacter character)
-    {
-        List<HarvestedItem> outputs = [];
-        List<KnowledgeHarvestEffect> applicable =
-            character.KnowledgeEffectsForResource(node.Definition.Tag, node.Definition.Type);
-
-        foreach (HarvestOutput harvestOutput in node.Definition.Outputs)
-        {
-            if (harvestOutput.Chance < 100)
-            {
-                int roll = Random.Shared.Next(100);
-                if (roll >= harvestOutput.Chance) continue;
-            }
-
-            int totalQuality = (int)node.Quality;
-            foreach (KnowledgeHarvestEffect qe in applicable.Where(e => e.StepModified == HarvestStep.Quality))
-            {
-                totalQuality = qe.Operation switch
-                {
-                    EffectOperation.Additive => totalQuality + (int)qe.Value,
-                    EffectOperation.PercentMult => totalQuality + totalQuality * (int)qe.Value,
-                    _ => totalQuality
-                };
-            }
-
-            totalQuality = node.Definition.ClampQuality(totalQuality);
-
-            int totalQuantity = harvestOutput.Quantity;
-            foreach (KnowledgeHarvestEffect ye in applicable.Where(e => e.StepModified == HarvestStep.ItemYield))
-            {
-                totalQuantity = ye.Operation switch
-                {
-                    EffectOperation.Additive => totalQuantity + (int)ye.Value,
-                    EffectOperation.PercentMult => totalQuantity + totalQuantity * (int)ye.Value,
-                    _ => totalQuantity
-                };
-            }
-
-            outputs.Add(new HarvestedItem(harvestOutput.ItemDefinitionTag, totalQuantity, (IPQuality)totalQuality));
-        }
-
-        return outputs;
     }
 }

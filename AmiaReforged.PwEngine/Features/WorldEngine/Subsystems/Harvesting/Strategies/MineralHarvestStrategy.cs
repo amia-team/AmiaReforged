@@ -1,8 +1,10 @@
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting.Nui;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.ResourceNodeData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.Services;
 using Anvil.API;
@@ -64,7 +66,10 @@ public sealed class MineralHarvestStrategy(
         SpawnedNode? node = runtimeNodeService.Value.GetSpawnedNode(plc.UUID);
         if (node is null) return;
 
-        HarvestResourceCommand command = new(character.GetId().Value, node.Instance.Id);
+        // Harvesting is an interaction: each attack drives one tick of the
+        // character's "harvesting" session through the interaction framework,
+        // which owns progress, tool checks, yield, and depletion.
+        PerformInteractionCommand command = new(character.GetId(), "harvesting", node.Instance.Id);
 
         _ = NwTask.Run(async () =>
         {
@@ -115,11 +120,14 @@ public sealed class MineralHarvestStrategy(
                             presenter.Complete();
                         }
 
-                        // Sync SpawnedNode's instance with the DB-updated value
-                        int remaining = result.Data?.GetValueOrDefault("remainingUses") is int ru ? ru : node.Instance.Uses;
-                        node.Instance.Uses = remaining;
+                        if (result.Data?.GetValueOrDefault("items") is List<HarvestedItem> harvested
+                            && harvested.Count > 0)
+                        {
+                            string summary = string.Join(", ",
+                                harvested.Select(h => $"{h.Quantity}x {h.ItemTag}"));
+                            player.FloatingTextString($"Harvested: {summary}");
+                        }
 
-                        player.FloatingTextString($"This resource has {remaining} uses left.");
                         Effect completeEffect = Effect.VisualEffect(VfxType.ComChunkStoneMedium);
                         plc.Location.ApplyEffect(EffectDuration.Instant, completeEffect);
                         break;
@@ -132,7 +140,8 @@ public sealed class MineralHarvestStrategy(
                         }
 
                         node.Instance.Uses = 0;
-                        // Node will be destroyed by event handler
+                        player.FloatingTextString("The resource is depleted.");
+                        // Node visuals are destroyed by the depletion event handler
                         break;
                     }
                 }
