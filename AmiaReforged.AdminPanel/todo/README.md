@@ -15,7 +15,10 @@
 | 08 | `08-region-graph-split.md` | Region graph → graph + inspector split | 04, 05, 06 |
 | 09 | `09-interaction-split.md` | Interaction → palette \| canvas \| inspector | 02, 08 |
 | 10 | `10-framework-slots.md` | Retarget `EditorFramework` slots to new shell | 06, 08 |
-| 11 | `11-delete-golden-layout.md` | Delete GL JS/CSS/bridge + dead C# | 08, 09 |
+| 11 | `11-delete-golden-layout.md` | Scrub dead GL refs (rescoped — Codex still needed GL) | 08, 09 |
+| 12 | `12-codex-split.md` | Codex GL → list \| form \| preview splits | 01–06 |
+| 13 | `13-preset-wiring.md` | Collapse persistence via LayoutPresetService | 04, 05, 07 |
+| 14 | `14-delete-golden-layout.md` | True GL deletion (12 unblocked it) | 12 |
 
 Conventions per step file: goal, files touched, checkboxes, **Done when**,
 verify command (`dotnet build`, `dotnet test` where applicable).

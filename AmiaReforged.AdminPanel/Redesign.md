@@ -139,19 +139,14 @@ SelectedEndpointId`. Optionally add `PaletteOpen / InspectorOpen` if
 per-tab rail state is wanted; otherwise rail state lives in
 `LayoutPresetService`.
 
-## 6. Delete list (scoped: region + interaction only — see note)
+## 6. Delete list — DONE (todo 14)
 
-- `wwwroot/js/lib/golden-layout.js` — KEPT: `CodexEditor` still runs its
-  inner GL layout (no todo converts it yet)
-- `wwwroot/js/golden-layout-bridge.js` — KEPT: sole remaining importer is
-  `CodexEditor.razor` (verified via grep)
-- `wwwroot/css/goldenlayout-amia-theme.css` (+ `lib/` GL base/dark theme + img)
-  — KEPT: hosts the entire `we-editor` stylesheet, not just GL theme
-- Scrubbed: `bl-panel-*` ids, `data-gl-panel` attributes,
-  `interaction-editor__gl-host` / `we-region-gl-host` divs,
-  `waitForContainerReady` polling, and View menus from region + interaction
-- Follow-up (not in `todo/` 01–11): convert Codex to splits (same pattern as
-  08/09), then delete the files above
+- Deleted: `wwwroot/js/lib/golden-layout.js`, `wwwroot/js/golden-layout-bridge.js`,
+  `wwwroot/css/goldenlayout-amia-theme.css`, `wwwroot/css/lib/` (base + dark + img)
+- `wwwroot/css/worldengine.css`: 112 editor rules kept, 38 GL-only rules dropped
+- Scrubbed: `bl-panel-*` ids, `data-gl-panel` attributes, GL host divs,
+  `waitForContainerReady` polling, and View menus from region, interaction,
+  and codex editors
 - `regionGraph.destroy` + GL `destroy` in `DisposeAsync`
 - View menu ("re-open closed panels") in `InteractionEditor.razor`
 

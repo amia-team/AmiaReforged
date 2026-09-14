@@ -39,6 +39,10 @@ public class InteractionEditorTests : Bunit.TestContext
         Services.AddSingleton<GlyphApiService>(new GlyphApiService(factory.Object, endpointService.Object));
         Services.AddSingleton<IndustryApiService>(new IndustryApiService(factory.Object, endpointService.Object));
         Services.AddSingleton<IWorldEngineEditorCatalog>(new WorldEngineEditorCatalog([], []));
+        var presetJs = new Mock<IJSRuntime>();
+        presetJs.Setup(s => s.InvokeAsync<IJSObjectReference>("import", It.IsAny<object?[]>()))
+            .ThrowsAsync(new JSException("no js in tests"));
+        Services.AddSingleton<LayoutPresetService>(new LayoutPresetService(presetJs.Object));
         Services.AddSingleton<ILogger<InteractionEditor>>(new Mock<ILogger<InteractionEditor>>().Object);
         Services.AddSingleton<IJSRuntime>(new Mock<IJSRuntime>().Object);
     }

@@ -57,4 +57,27 @@ public class ResizableSplitTests : Bunit.TestContext
 
         cut.FindAll(".we-split__pane").Should().HaveCount(2);
     }
+
+    [Test]
+    public void StartsCollapsed_WhenInitialFlagsSet()
+    {
+        IRenderedComponent<ResizableSplit> cut = RenderComponent<ResizableSplit>(parameters => parameters
+            .Add(p => p.First, "pane one")
+            .Add(p => p.Second, "pane two")
+            .Add(p => p.FirstCollapsedInitial, true));
+
+        cut.FindAll(".we-split__pane").Should().HaveCount(1);
+        cut.Find(".we-split__pane--second").Should().NotBeNull();
+    }
+
+    [Test]
+    public void AppliesSwapOrderClass()
+    {
+        IRenderedComponent<ResizableSplit> cut = RenderComponent<ResizableSplit>(parameters => parameters
+            .Add(p => p.First, "pane one")
+            .Add(p => p.Second, "pane two")
+            .Add(p => p.SwapOrder, true));
+
+        cut.Find(".we-split--swap").Should().NotBeNull();
+    }
 }

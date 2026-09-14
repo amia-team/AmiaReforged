@@ -3,7 +3,7 @@
 @implements IAsyncDisposable
 
 <div @ref="_root" class="we-split @(Direction == "vertical" ? "we-split--vertical" : "we-split--horizontal") @(SwapOrder ? "we-split--swap" : "")">
-    @if (!FirstCollapsed)
+    @if (!_firstCollapsed)
     {
         <div class="we-split__pane we-split__pane--first" style="@FirstPaneStyle">
             @First
@@ -12,7 +12,7 @@
     <div class="we-split__handle" @onclick="ToggleHandle" title="@HandleTitle">
         <span class="we-split__handle-grip"></span>
     </div>
-    @if (!SecondCollapsed)
+    @if (!_secondCollapsed)
     {
         <div class="we-split__pane we-split__pane--second" style="@SecondPaneStyle">
             @Second
@@ -72,14 +72,24 @@
     private bool _jsWired;
     private bool _disposed;
 
-    private bool FirstCollapsed { get; set; }
-    private bool SecondCollapsed { get; set; }
+    private bool _firstCollapsed;
+    private bool _secondCollapsed;
 
     private int _firstWidth;
+
+    /// <summary>Initial collapse state (e.g. from LayoutPresetService).</summary>
+    [Parameter]
+    public bool FirstCollapsedInitial { get; set; }
+
+    /// <summary>Initial collapse state (e.g. from LayoutPresetService).</summary>
+    [Parameter]
+    public bool SecondCollapsedInitial { get; set; }
 
     protected override void OnInitialized()
     {
         _firstWidth = FirstDefaultWidth;
+        _firstCollapsed = FirstCollapsedInitial;
+        _secondCollapsed = SecondCollapsedInitial;
     }
 
     private string FirstPaneStyle =>
@@ -88,27 +98,27 @@
     private string SecondPaneStyle => "flex: 1; min-width: 0; min-height: 0;";
 
     private string HandleTitle =>
-        (SecondCollapsed || FirstCollapsed) ? "Expand" : "Collapse";
+        (_secondCollapsed || _firstCollapsed) ? "Expand" : "Collapse";
 
     private async Task ToggleHandle()
     {
         // Click toggles the collapsible pane (second preferred).
-        if (!FirstCollapsed && !SecondCollapsed)
+        if (!_firstCollapsed && !_secondCollapsed)
         {
-            if (CollapsibleSecond) SecondCollapsed = true;
-            else if (CollapsibleFirst) FirstCollapsed = true;
+            if (CollapsibleSecond) _secondCollapsed = true;
+            else if (CollapsibleFirst) _firstCollapsed = true;
             else return;
         }
         else
         {
-            FirstCollapsed = false;
-            SecondCollapsed = false;
+            _firstCollapsed = false;
+            _secondCollapsed = false;
         }
 
         if (OnFirstCollapsedChanged.HasDelegate)
-            await OnFirstCollapsedChanged.InvokeAsync(FirstCollapsed);
+            await OnFirstCollapsedChanged.InvokeAsync(_firstCollapsed);
         if (OnSecondCollapsedChanged.HasDelegate)
-            await OnSecondCollapsedChanged.InvokeAsync(SecondCollapsed);
+            await OnSecondCollapsedChanged.InvokeAsync(_secondCollapsed);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

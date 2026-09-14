@@ -1468,8 +1468,8 @@ export function arrangeNodes() {
 
 /**
  * Resize the canvas to an explicit width and height.
- * Called by the Golden Layout bridge when the canvas panel is resized,
- * bypassing the ResizeObserver for deterministic sizing.
+ * Called by the split resize observer (splitter.js) when the canvas pane
+ * is resized, bypassing the ResizeObserver for deterministic sizing.
  * @param {number} w  Width in pixels
  * @param {number} h  Height in pixels
  */

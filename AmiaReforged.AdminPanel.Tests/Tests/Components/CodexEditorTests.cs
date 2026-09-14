@@ -162,13 +162,13 @@ public class CodexEditorTests : Bunit.TestContext
     }
 
     [Test]
-    public void RendersToolbar_WithViewMenuButton()
+    public void RendersToolbar_WithoutViewMenuButton()
     {
         IRenderedComponent<CodexEditor> cut = RenderComponent<CodexEditor>(parameters => parameters
             .Add(p => p.OnClose, EventCallback.Factory.Create(this, () => { }))
             .Add(p => p.OnEntityListRefresh, EventCallback.Factory.Create(this, () => { })));
 
-        cut.FindAll("button").Should().Contain(b => b.TextContent.Contains("View"));
+        cut.FindAll("button").Should().NotContain(b => b.TextContent.Contains("View"));
     }
 
     [Test]
@@ -182,13 +182,15 @@ public class CodexEditorTests : Bunit.TestContext
     }
 
     [Test]
-    public void RendersGLContainer()
+    public void RendersSplitLayout_InsteadOfGLContainer()
     {
         IRenderedComponent<CodexEditor> cut = RenderComponent<CodexEditor>(parameters => parameters
             .Add(p => p.OnClose, EventCallback.Factory.Create(this, () => { }))
             .Add(p => p.OnEntityListRefresh, EventCallback.Factory.Create(this, () => { })));
 
-        cut.Find("#we-codex-gl-container").Should().NotBeNull();
+        cut.FindAll("#we-codex-gl-container").Should().BeEmpty();
+        cut.Find(".we-ce-layout-area .we-split").Should().NotBeNull();
+        cut.FindAll(".we-ce-layout-area .we-split__pane").Should().HaveCountGreaterThan(1);
     }
 
     [Test]

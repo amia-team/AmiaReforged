@@ -66,6 +66,15 @@ public partial class WorldEngineEditor
             // Compute layout server-side (reused by InitRegionGraph after render)
             _regionLayoutResult = await RgComputeLayout();
 
+            // Load inspector rail preset (collapse state; widths persist via splitter.js)
+            try
+            {
+                EditorPreset preset = await Presets.GetPresetAsync(WorldEngineEntityType.Regions);
+                _rgInspectorCollapsed = !preset.InspectorOpen;
+                _rgInspectorWidth = Math.Max(240, preset.InspectorWidth);
+            }
+            catch { }
+
             _regionGraphLoadPercent = 85;
             _regionGraphLoadPhase = "Rendering…";
             _regionGraphNeedsInit = true;
@@ -159,6 +168,17 @@ public partial class WorldEngineEditor
         }
         catch { }
         _regionResizeHandle = null;
+    }
+
+    private async Task OnRgInspectorCollapsedChanged(bool collapsed)
+    {
+        _rgInspectorCollapsed = collapsed;
+        try
+        {
+            await Presets.UpdatePresetAsync(
+                WorldEngineEntityType.Regions, p => p with { InspectorOpen = !collapsed });
+        }
+        catch { }
     }
 
     private async Task CloseRegionGraph()

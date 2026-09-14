@@ -9,6 +9,7 @@
 @using System.Text.Json.Serialization
 @attribute [Authorize]
 @inject WorldEngineEditorState EditorState
+@inject LayoutPresetService Presets
 @inject IWorldEngineEditorCatalog EditorCatalog
 @inject IWorldEngineEndpointService EndpointService
 @inject GraphLayoutService LayoutService
@@ -126,9 +127,11 @@
                         </div>
                     }
 
-                    <ResizableSplit Direction="horizontal" FirstDefaultWidth="340" FirstMin="240" SecondMin="400"
+                    <ResizableSplit Direction="horizontal" FirstDefaultWidth="@_rgInspectorWidth" FirstMin="240" SecondMin="400"
                                     PersistKey="regions-inspector" SwapOrder="true"
-                                    CollapsibleFirst="true" CollapsibleSecond="false">
+                                    CollapsibleFirst="true" CollapsibleSecond="false"
+                                    FirstCollapsedInitial="@_rgInspectorCollapsed"
+                                    OnFirstCollapsedChanged="OnRgInspectorCollapsedChanged">
                         <Second>
                         @* Compact graph toolbar *@
                         <div class="we-rg-toolbar">

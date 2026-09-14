@@ -771,6 +771,10 @@
                 }
             </div>
         </div>
+                </First>
+            </ResizableSplit>
+        </Second>
+    </ResizableSplit>
     </div> @* end we-ce-layout-area *@
 
     @* ── Graph Editor Overlay (ClueGraph / StateMachine) ── *@
@@ -908,7 +912,6 @@
     //  State
     // ═══════════════════════════════════════════════════════════════════
 
-    private const string GlInstanceId = "we-codex-editor";
     private bool _loading;
     private string? _editorError;
 
@@ -939,18 +942,7 @@
     private int _graphEditorGroupIdx;
     private int _graphEditorObjIdx;
 
-    // View menu
-    private bool _showViewMenu;
-    private readonly HashSet<string> _openPanels = ["ce-list", "ce-form", "ce-preview"];
-    private static readonly Dictionary<string, string> PanelTitles = new()
-    {
-        ["ce-list"] = "Entity List",
-        ["ce-form"] = "Data Editor Panel",
-        ["ce-preview"] = "Preview",
-    };
-
-    // GL bridge refs
-    private IJSObjectReference? _bridgeModule;
+    // JS interop refs (graph editors)
     private DotNetObjectReference<CodexEditor>? _dotNetRef;
 
     // Inner list state
@@ -1014,9 +1006,6 @@
             await CeLoadList();
             if (subType == CodexSubType.Quest) await CeEnsureIndustriesLoaded();
             StateHasChanged();
-            await Task.Delay(50);
-
-            await CeInitLayout();
 
             _loading = false;
             StateHasChanged();
@@ -1069,9 +1058,6 @@
 
             await CeLoadList();
             StateHasChanged();
-            await Task.Delay(50);
-
-            await CeInitLayout();
 
             _loading = false;
             StateHasChanged();
@@ -1087,141 +1073,16 @@
 
     private async Task CloseInternal()
     {
-        try
-        {
-            if (_bridgeModule != null)
-            {
-                await _bridgeModule.InvokeVoidAsync("destroy", GlInstanceId);
-            }
-        }
-        catch (Exception ex) { Logger.LogWarning(ex, "Error destroying Codex GL layout"); }
-
-        _showViewMenu = false;
         _listItems = [];
         await OnClose.InvokeAsync();
     }
 
     public async ValueTask DisposeAsync()
     {
-        try
-        {
-            if (_bridgeModule != null)
-            {
-                await _bridgeModule.InvokeVoidAsync("destroy", GlInstanceId);
-                await _bridgeModule.DisposeAsync();
-            }
-        }
-        catch { }
         _dotNetRef?.Dispose();
         _searchCts?.Cancel();
         _searchCts?.Dispose();
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    //  GL Layout
-    // ═══════════════════════════════════════════════════════════════════
-
-    private async Task CeInitLayout()
-    {
-        try
-        {
-            _bridgeModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/golden-layout-bridge.js");
-            _dotNetRef ??= DotNetObjectReference.Create(this);
-
-            string layoutConfig = CeBuildDefaultLayoutConfig();
-            await _bridgeModule.InvokeVoidAsync("init", GlInstanceId, "we-codex-gl-container", layoutConfig, _dotNetRef);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Failed to initialize Codex GL layout");
-            _editorError = "Layout initialization failed. Try closing and reopening.";
-        }
-    }
-
-    private static string CeBuildDefaultLayoutConfig()
-    {
-        var config = new
-        {
-            root = new
-            {
-                type = "row",
-                content = new object[]
-                {
-                    new
-                    {
-                        type = "component",
-                        componentType = "ce-form",
-                        title = "Data Editor Panel",
-                        size = "60%",
-                    },
-                    new
-                    {
-                        type = "column",
-                        size = "40%",
-                        content = new object[]
-                        {
-                            new
-                            {
-                                type = "component",
-                                componentType = "ce-preview",
-                                title = "Preview",
-                                size = "50%",
-                            },
-                            new
-                            {
-                                type = "component",
-                                componentType = "ce-list",
-                                title = "Entity List",
-                                size = "50%",
-                            },
-                        },
-                    },
-                },
-            },
-        };
-        return JsonSerializer.Serialize(config);
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    //  View Menu & Panel Toggles
-    // ═══════════════════════════════════════════════════════════════════
-
-    private void CeToggleViewMenu() => _showViewMenu = !_showViewMenu;
-
-    private async Task CeTogglePanel(string panelKey)
-    {
-        _showViewMenu = false;
-        if (_openPanels.Contains(panelKey)) return;
-        _openPanels.Add(panelKey);
-
-        if (_bridgeModule != null)
-        {
-            try
-            {
-                string title = PanelTitles.GetValueOrDefault(panelKey, panelKey);
-                await _bridgeModule.InvokeVoidAsync("addPanel", GlInstanceId, panelKey, title);
-            }
-            catch (Exception ex) { Logger.LogWarning(ex, "Failed to add CE panel {Panel}", panelKey); }
-        }
-        StateHasChanged();
-    }
-
-    private async Task CeResetLayout()
-    {
-        _showViewMenu = false;
-        _openPanels.Clear();
-        foreach (string key in PanelTitles.Keys) _openPanels.Add(key);
-
-        if (_bridgeModule != null)
-        {
-            try
-            {
-                string layoutConfig = CeBuildDefaultLayoutConfig();
-                await _bridgeModule.InvokeVoidAsync("loadLayout", GlInstanceId, layoutConfig);
-            }
-            catch (Exception ex) { Logger.LogWarning(ex, "Failed to reset CE layout"); }
-        }
-        StateHasChanged();
+        await Task.CompletedTask;
     }
 
     // ═══════════════════════════════════════════════════════════════════

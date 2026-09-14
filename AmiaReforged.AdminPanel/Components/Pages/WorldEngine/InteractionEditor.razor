@@ -5,6 +5,7 @@
 @inject GlyphApiService GlyphApi
 @inject IndustryApiService IndustryApi
 @inject IWorldEngineEditorCatalog EditorCatalog
+@inject LayoutPresetService Presets
 @inject ILogger<InteractionEditor> Logger
 @inject IJSRuntime JS
 
@@ -45,8 +46,10 @@
 
     @* ═══════ Workspace (split layout — no layout framework) ═══════ *@
     <div class="interaction-editor__workspace">
-    <ResizableSplit Direction="horizontal" FirstDefaultWidth="240" FirstMin="180" SecondMin="500"
-                    PersistKey="interaction-palette" CollapsibleFirst="true" CollapsibleSecond="false">
+    <ResizableSplit Direction="horizontal" FirstDefaultWidth="@_paletteWidth" FirstMin="180" SecondMin="500"
+                    PersistKey="interaction-palette" CollapsibleFirst="true" CollapsibleSecond="false"
+                    FirstCollapsedInitial="@_paletteCollapsed"
+                    OnFirstCollapsedChanged="OnPaletteCollapsedChanged">
         <First>
     @* ── Node Palette Panel ── *@
     <div style="height:100%;min-height:0">
@@ -82,9 +85,11 @@
     </div>
         </First>
         <Second>
-            <ResizableSplit Direction="horizontal" FirstDefaultWidth="320" FirstMin="260" SecondMin="400"
+            <ResizableSplit Direction="horizontal" FirstDefaultWidth="@_inspectorWidth" FirstMin="260" SecondMin="400"
                             PersistKey="interaction-inspector" SwapOrder="true"
-                            CollapsibleFirst="true" CollapsibleSecond="false">
+                            CollapsibleFirst="true" CollapsibleSecond="false"
+                            FirstCollapsedInitial="@_inspectorCollapsed"
+                            OnFirstCollapsedChanged="OnInspectorCollapsedChanged">
                 <Second>
     @* ── Graph Canvas Panel ── *@
     <div style="height:100%;min-height:0">
@@ -481,6 +486,47 @@
     private bool _isSaving;
     private string? _error;
     private InteractionDefinitionDto _editItem = new();
+
+    // Rail presets (LayoutPresetService; splitter.js persists widths)
+    private bool _paletteCollapsed;
+    private bool _inspectorCollapsed;
+    private int _paletteWidth = 240;
+    private int _inspectorWidth = 320;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            EditorPreset preset = await Presets.GetPresetAsync(WorldEngineEntityType.Interactions);
+            _paletteCollapsed = !preset.PaletteOpen;
+            _inspectorCollapsed = !preset.InspectorOpen;
+            _paletteWidth = Math.Max(180, preset.PaletteWidth);
+            _inspectorWidth = Math.Max(260, preset.InspectorWidth);
+        }
+        catch { }
+    }
+
+    private async Task OnPaletteCollapsedChanged(bool collapsed)
+    {
+        _paletteCollapsed = collapsed;
+        try
+        {
+            await Presets.UpdatePresetAsync(
+                WorldEngineEntityType.Interactions, p => p with { PaletteOpen = !collapsed });
+        }
+        catch { }
+    }
+
+    private async Task OnInspectorCollapsedChanged(bool collapsed)
+    {
+        _inspectorCollapsed = collapsed;
+        try
+        {
+            await Presets.UpdatePresetAsync(
+                WorldEngineEntityType.Interactions, p => p with { InspectorOpen = !collapsed });
+        }
+        catch { }
+    }
 
     // Validity / Context helpers
     private List<IndustryDefinitionDto> _availableIndustries = [];

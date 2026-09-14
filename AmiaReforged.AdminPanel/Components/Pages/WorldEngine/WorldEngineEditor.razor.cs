@@ -60,6 +60,10 @@ public partial class WorldEngineEditor
 
     private AreaGraphDto? _regionGraphData;
     private List<RegionDefinitionDto> _rgRegions = [];
+
+    // Inspector rail preset (LayoutPresetService; splitter.js persists widths)
+    private bool _rgInspectorCollapsed;
+    private int _rgInspectorWidth = 340;
     private List<AreaNodeDto> _rgKnownAreas = [];
     private Dictionary<string, string> _rgRegionColors = new();
     private List<ResourceNodeDefinitionDto> _rgAllResourceDefs = [];
