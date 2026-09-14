@@ -74,32 +74,33 @@ public sealed class OrganizationSubsystem : IOrganizationSubsystem
         return _commands.DispatchAsync(command, ct);
     }
 
-    public Task<CommandResult> RemoveMemberAsync(OrganizationId organizationId, CharacterId characterId, CancellationToken ct = default)
+    public Task<CommandResult> RemoveMemberAsync(OrganizationId organizationId, CharacterId characterId, CharacterId? actedBy = null, CancellationToken ct = default)
     {
-        // API-driven removal uses the character themselves as the remover (self-removal semantics)
+        // Default is self-removal (voluntary departure). Callers performing an
+        // expulsion must pass the acting character explicitly via actedBy.
         RemoveMemberCommand command = new RemoveMemberCommand
         {
             OrganizationId = organizationId,
             CharacterId = characterId,
-            RemovedBy = characterId
+            RemovedBy = actedBy ?? characterId
         };
         return _commands.DispatchAsync(command, ct);
     }
 
-    public Task<CommandResult> UpdateMemberRankAsync(OrganizationId organizationId, CharacterId characterId, string newRank, CancellationToken ct = default)
+    public Task<CommandResult> UpdateMemberRankAsync(OrganizationId organizationId, CharacterId characterId, string newRank, CharacterId? actedBy = null, CancellationToken ct = default)
     {
         if (!Enum.TryParse<OrganizationRank>(newRank, ignoreCase: true, out OrganizationRank parsedRank))
             return Task.FromResult(CommandResult.Fail($"Invalid rank: {newRank}"));
 
-        // API-driven rank change uses the character as the changer
-        // In practice, this will fail authorization checks unless they have sufficient rank.
-        // For admin API usage, consider adding a system-level bypass in ChangeRankHandler.
+        // Default is self-change, which fails authorization unless the target can manage
+        // members. Callers must pass the authorizing character explicitly via actedBy.
+        // (Deliberately no silent system bypass: privilege escalation must be explicit.)
         ChangeRankCommand command = new ChangeRankCommand
         {
             OrganizationId = organizationId,
             CharacterId = characterId,
             NewRank = parsedRank,
-            ChangedBy = characterId
+            ChangedBy = actedBy ?? characterId
         };
         return _commands.DispatchAsync(command, ct);
     }

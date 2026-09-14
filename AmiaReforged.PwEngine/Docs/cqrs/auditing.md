@@ -14,9 +14,9 @@
 > industry/workstation/recipe/node/region/interaction/item/trait/lore/quest/
 > coinhouse/dialogue CRUD, cap profiles, progression config);
 > `IOrganizationRepository.Delete` now exists (EF + in-memory);
-> `ExampleBankingController` (mock data) deleted. Suite: 1890/1890 green,
+> `ExampleBankingController` (mock data) deleted. Suite: 1896/1896 green,
 > including new `ControllerCqrsTests` + `DefinitionCrudBehavior`.
-> Remaining: F-4 self-as-actor identity, F-5 `HarvestingSubsystem`
+> Remaining: F-5 `HarvestingSubsystem`
 > stub, F-6 Codex application services, F-7 Characters/Traits/Regions services.
 > Known response-shape deltas from the fix: interaction DTOs no longer carry
 > `CreatedAt`/`UpdatedAt`; item PUT with missing body on a missing tag returns
@@ -148,7 +148,19 @@ Fix: add `EnrollInIndustryCommand`, `LearnRecipeCommand` (+ handler, membership 
 repos), and `GetIndustryQuery` / `GetMembershipQuery` families; route the subsystem
 through the dispatchers.
 
-## F-4 — `OrganizationSubsystem`: direct repo mutation; missing disband command; self-as-actor
+## F-4 — `OrganizationSubsystem` (FIXED 2026-09-14): explicit actor identity
+
+> Fix applied: `RemoveMemberAsync` / `UpdateMemberRankAsync` (interface +
+> impl) take `CharacterId? actedBy = null`, passed through to `RemovedBy` /
+> `ChangedBy` (default preserves self-semantics). `DELETE members/{id}` accepts
+> `?actedBy=` (asserted, not verified — admin API has no auth; absent/invalid →
+> self). `UpdateOrganizationCommand` / `DisbandOrganizationCommand` already
+> existed with handlers and dispatch; `OrganizationDisbandedEvent` publishes.
+> `Subsystems/Organizations/OrganizationSystem.cs` referenced by the original
+> audit does not exist — no action. Deliberately no silent system bypass in
+> `ChangeRankHandler`. Original finding below for history:
+
+Original finding: direct repo mutation; missing disband command; self-as-actor
 
 File: `Subsystems/Implementations/OrganizationSubsystem.cs` (+
 `Subsystems/Organizations/OrganizationSystem.cs`: `IOrganizationSystem` exposes

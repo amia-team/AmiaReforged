@@ -56,13 +56,17 @@ public interface IOrganizationSubsystem
 
     /// <summary>
     /// Removes a character from an organization.
+    /// <param name="actedBy">Character performing the removal. Defaults to the target (self-removal).
+    /// Pass the acting character explicitly for expulsions so the removal is recorded as such.</param>
     /// </summary>
-    Task<CommandResult> RemoveMemberAsync(OrganizationId organizationId, CharacterId characterId, CancellationToken ct = default);
+    Task<CommandResult> RemoveMemberAsync(OrganizationId organizationId, CharacterId characterId, CharacterId? actedBy = null, CancellationToken ct = default);
 
     /// <summary>
     /// Updates a member's rank within an organization.
+    /// <param name="actedBy">Character authorizing the change. Defaults to the target, which fails
+    /// authorization unless the target can manage members — pass the acting character explicitly.</param>
     /// </summary>
-    Task<CommandResult> UpdateMemberRankAsync(OrganizationId organizationId, CharacterId characterId, string newRank, CancellationToken ct = default);
+    Task<CommandResult> UpdateMemberRankAsync(OrganizationId organizationId, CharacterId characterId, string newRank, CharacterId? actedBy = null, CancellationToken ct = default);
 }
 
 

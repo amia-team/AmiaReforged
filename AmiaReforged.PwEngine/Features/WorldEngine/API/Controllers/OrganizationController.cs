@@ -353,6 +353,16 @@ public class OrganizationController
         OrganizationId orgId = OrganizationId.From(id);
         CharacterId characterId = new CharacterId(charId);
 
+        // Optional actor override (?actedBy=<characterId>) for expulsions.
+        // NOTE: this admin API has no authentication, so the actor is asserted, not verified.
+        // Absent/invalid → self-removal (voluntary departure) semantics.
+        CharacterId removedBy = characterId;
+        string? actedByStr = ctx.GetQueryParam("actedBy");
+        if (Guid.TryParse(actedByStr, out Guid actedById))
+        {
+            removedBy = new CharacterId(actedById);
+        }
+
         IWorldEngineFacade? facade = ctx.ResolveFacade();
         if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
@@ -360,7 +370,7 @@ public class OrganizationController
         {
             OrganizationId = orgId,
             CharacterId = characterId,
-            RemovedBy = characterId
+            RemovedBy = removedBy
         }, ctx.CancellationToken);
 
         if (!result.Success)
