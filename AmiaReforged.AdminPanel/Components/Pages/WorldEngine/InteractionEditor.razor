@@ -4,6 +4,7 @@
 @inject InteractionApiService Api
 @inject GlyphApiService GlyphApi
 @inject IndustryApiService IndustryApi
+@inject IWorldEngineEditorCatalog EditorCatalog
 @inject ILogger<InteractionEditor> Logger
 @inject IJSRuntime JS
 
@@ -30,31 +31,6 @@
 
         <div style="width:1px;height:20px;background:var(--border-subtle)"></div>
 
-        @* View menu — re-open closed panels *@
-        <div class="dropdown" style="position:relative">
-            <button class="btn btn-sm btn-outline-secondary" style="font-size:0.72rem;padding:2px 8px" @onclick="() => _showViewMenu = !_showViewMenu">View ▾</button>
-            @if (_showViewMenu)
-            {
-                <div style="position:absolute;top:100%;right:0;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:4px;padding:4px 0;z-index:1060;min-width:160px;box-shadow:0 4px 12px rgba(0,0,0,0.4)">
-                    @foreach (var kv in _panelTitles)
-                    {
-                        bool isOpen = _openPanels.Contains(kv.Key);
-                        <button style="display:block;width:100%;text-align:left;background:none;border:none;padding:4px 12px;font-size:0.8rem;color:var(--text-primary);cursor:pointer"
-                                @onclick="() => TogglePanel(kv.Key)" disabled="@isOpen">
-                            @(isOpen ? "✓ " : "  ")@kv.Value
-                        </button>
-                    }
-                    <div style="border-top:1px solid var(--border-subtle);margin:4px 0"></div>
-                    <button style="display:block;width:100%;text-align:left;background:none;border:none;padding:4px 12px;font-size:0.8rem;color:var(--text-secondary);cursor:pointer"
-                            @onclick="ResetLayout">
-                        Reset Layout
-                    </button>
-                </div>
-            }
-        </div>
-
-        <div style="width:1px;height:20px;background:var(--border-subtle)"></div>
-
         @* Save / Cancel *@
         @if (!string.IsNullOrEmpty(_error))
         {
@@ -67,17 +43,13 @@
         <button class="btn btn-sm" style="background:none;border:none;color:var(--text-secondary);font-size:1.2rem;padding:0 4px;cursor:pointer" @onclick="Cancel" title="Close">✕</button>
     </div>
 
-    @* ═══════ Workspace (GL host + panels) ═══════ *@
+    @* ═══════ Workspace (split layout — no layout framework) ═══════ *@
     <div class="interaction-editor__workspace">
-        @* ═══════ Golden Layout Host ═══════ *@
-        <div id="gl-container" class="interaction-editor__gl-host">
-        </div>
-
-    @* ═══════ Pre-rendered Blazor Panel Divs ═══════ *@
-    @* These are positioned absolutely by the GL bridge when bound *@
-
+    <ResizableSplit Direction="horizontal" FirstDefaultWidth="240" FirstMin="180" SecondMin="500"
+                    PersistKey="interaction-palette" CollapsibleFirst="true" CollapsibleSecond="false">
+        <First>
     @* ── Node Palette Panel ── *@
-    <div id="bl-panel-palette" class="interaction-editor__panel interaction-editor__panel--scrollable">
+    <div style="height:100%;min-height:0">
         <div style="background:var(--bg-card);height:100%;display:flex;flex-direction:column">
             <div style="padding:8px 12px;border-bottom:1px solid var(--border-subtle);flex-shrink:0">
                 <input type="text" class="form-control form-control-sm" placeholder="Search nodes..."
@@ -108,9 +80,14 @@
             </div>
         </div>
     </div>
-
+        </First>
+        <Second>
+            <ResizableSplit Direction="horizontal" FirstDefaultWidth="320" FirstMin="260" SecondMin="400"
+                            PersistKey="interaction-inspector" SwapOrder="true"
+                            CollapsibleFirst="true" CollapsibleSecond="false">
+                <Second>
     @* ── Graph Canvas Panel ── *@
-    <div id="bl-panel-canvas" class="interaction-editor__panel">
+    <div style="height:100%;min-height:0">
         <div style="width:100%;height:100%;background:#12121f;position:relative">
             <div id="interaction-glyph-canvas" style="width:100%;height:100%"></div>
             @if (!_scriptEditorReady)
@@ -121,9 +98,22 @@
             }
         </div>
     </div>
-
+                </Second>
+                <First>
+                    @{
+                        RenderFragment? interactionInspectorFooter = HasInspectorBottomExtensions
+                            ? @<EditorExtensionPoint Slot="WorldEngineEditorExtensionSlot.InspectorBottom" Context="HostContext!" />
+                            : null;
+                    }
+                    <Inspector Title="Properties" OnClose="Cancel" Footer="@interactionInspectorFooter">
+                        <HeaderActions>
+                            @if (HostContext != null)
+                            {
+                                <EditorExtensionPoint Slot="WorldEngineEditorExtensionSlot.InspectorTop" Context="HostContext" />
+                            }
+                        </HeaderActions>
+                        <Body>
     @* ── Form / Properties Panel ── *@
-    <div id="bl-panel-form" class="interaction-editor__panel interaction-editor__panel--scrollable">
         <div style="background:var(--bg-card);padding:12px;min-height:100%">
             <h5 style="margin:0 0 10px 0;font-size:0.9rem">Interaction Properties</h5>
 
@@ -239,10 +229,8 @@
                 </div>
             </div>
         </div>
-    </div>
 
     @* ── Responses Panel ── *@
-    <div id="bl-panel-responses" class="interaction-editor__panel interaction-editor__panel--scrollable">
         <div style="background:var(--bg-card);padding:12px;min-height:100%">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                 <h5 style="margin:0;font-size:0.9rem">Responses (@_editItem.Responses.Count)</h5>
@@ -333,10 +321,8 @@
                 </div>
             }
         </div>
-    </div>
 
     @* ── Inspector Panel (selected node properties) ── *@
-    <div id="bl-panel-inspector" class="interaction-editor__panel interaction-editor__panel--scrollable">
         <div style="background:var(--bg-card);padding:12px;min-height:100%">
             @if (_scriptSelectedNodeInfo != null)
             {
@@ -407,12 +393,25 @@
                 <p style="color:var(--text-secondary);font-size:0.8rem;margin:0">Select a node on the canvas to view its properties.</p>
             }
         </div>
-    </div>
+                        </Body>
+                    </Inspector>
+                </First>
+            </ResizableSplit>
+        </Second>
+    </ResizableSplit>
     </div>
 </div>
 }
 
 @code {
+    // Host context flows from the WorldEngineEditor shell cascade; null when
+    // rendered standalone (e.g. bUnit tests).
+    [CascadingParameter] public WorldEngineEditorHostContext? HostContext { get; set; }
+
+    private bool HasInspectorBottomExtensions =>
+        HostContext != null
+        && EditorCatalog.GetExtensions(WorldEngineEditorExtensionSlot.InspectorBottom, HostContext).Count > 0;
+
     // ═══════════════════════════════════════════════════════════════════
     //  Parameters
     // ═══════════════════════════════════════════════════════════════════
@@ -488,19 +487,6 @@
     private string _newAreaResRef = "";
     private string _newKnowledgeTag = "";
 
-    // View menu
-    private bool _showViewMenu;
-    private readonly HashSet<string> _openPanels = ["palette", "canvas", "form", "responses", "inspector"];
-
-    private static readonly Dictionary<string, string> _panelTitles = new()
-    {
-        ["palette"] = "Node Palette",
-        ["canvas"] = "Graph Canvas",
-        ["form"] = "Properties",
-        ["responses"] = "Responses",
-        ["inspector"] = "Inspector",
-    };
-
     // Script editor
     private const string PipelineEventType = "InteractionPipeline";
     private string _pipelineGraphJson = "{}";
@@ -511,9 +497,7 @@
     private SelectedNodeInfo? _scriptSelectedNodeInfo;
     private bool _skipInitialScriptEditor;
 
-    // JS module references
-    private const string GlInstanceId = "interaction-editor";
-    private IJSObjectReference? _bridgeModule;
+    // JS module references (glyph canvas + split resize observer)
     private IJSObjectReference? _scriptEditorModule;
     private DotNetObjectReference<InteractionEditor>? _dotNetRef;
 
@@ -589,24 +573,14 @@
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    //  Golden Layout Lifecycle
+    //  Layout Lifecycle (split-based; no layout framework)
     // ═══════════════════════════════════════════════════════════════════
 
     private async Task InitLayout()
     {
         try
         {
-            Logger.LogInformation("[IE] InitLayout: importing GL bridge...");
-            _bridgeModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/golden-layout-bridge.js");
             _dotNetRef ??= DotNetObjectReference.Create(this);
-
-            // Wait for the GL host to be rendered before asking GL to initialise
-            await _bridgeModule.InvokeVoidAsync("waitForContainerReady", "gl-container", 2000);
-
-            string layoutConfig = BuildDefaultLayoutConfig();
-            Logger.LogInformation("[IE] InitLayout: calling GL bridge init(instanceId={Id}, containerId=gl-container)", GlInstanceId);
-            await _bridgeModule.InvokeVoidAsync("init", GlInstanceId, "gl-container", layoutConfig, _dotNetRef);
-            Logger.LogInformation("[IE] InitLayout: GL bridge init completed");
 
             // Load node catalog if needed
             if (_nodeCatalog.Count == 0)
@@ -620,10 +594,10 @@
                 catch (Exception ex) { Logger.LogWarning(ex, "Failed to load node catalog"); }
             }
 
-            // Wait for GL to position the canvas panel, then init the glyph editor
-            Logger.LogInformation("[IE] InitLayout: waiting for container 'interaction-glyph-canvas' to be ready...");
-            await _bridgeModule.InvokeVoidAsync("waitForContainerReady", "interaction-glyph-canvas", 2000);
-            Logger.LogInformation("[IE] InitLayout: container ready, calling InitScriptEditor()");
+            // The flex canvas has size by construction; one frame lets the
+            // browser settle it before the glyph editor measures.
+            await Task.Delay(100);
+            Logger.LogInformation("[IE] InitLayout: calling InitScriptEditor()");
             if (!_skipInitialScriptEditor)
             {
                 await InitScriptEditor();
@@ -639,145 +613,56 @@
 
     private async Task DestroyLayout()
     {
+        await DisposeCanvasResizeObserver();
         await DestroyScriptEditor();
+    }
 
-        if (_bridgeModule != null)
+    // ═══════════════════════════════════════════════════════════════════
+    //  Canvas resize (debounced via splitter.js; glyph-editor.js also
+    //  observes the container itself — this is the deterministic path)
+    // ═══════════════════════════════════════════════════════════════════
+
+    private IJSObjectReference? _splitterModule;
+    private IJSObjectReference? _canvasResizeHandle;
+
+    private async Task ObserveCanvasSize()
+    {
+        if (_canvasResizeHandle != null) return;
+        try
         {
-            try { await _bridgeModule.InvokeVoidAsync("destroy", GlInstanceId); }
-            catch (Exception ex) { Logger.LogWarning(ex, "GL bridge destroy failed"); }
+            _splitterModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/splitter.js");
+            _canvasResizeHandle = await _splitterModule.InvokeAsync<IJSObjectReference?>(
+                "observeResizeById", "interaction-glyph-canvas", _dotNetRef, nameof(OnGlyphCanvasResized), 200);
+        }
+        catch
+        {
+            // Best-effort; the glyph editor observes its container internally.
         }
     }
 
-    private static string BuildDefaultLayoutConfig()
+    private async Task DisposeCanvasResizeObserver()
     {
-        var config = new
+        try
         {
-            root = new
-            {
-                type = "row",
-                content = new object[]
-                {
-                    new
-                    {
-                        type = "component",
-                        componentType = "palette",
-                        title = "Node Palette",
-                        size = "15%",
-                    },
-                    new
-                    {
-                        type = "component",
-                        componentType = "canvas",
-                        title = "Graph",
-                        size = "55%",
-                    },
-                    new
-                    {
-                        type = "column",
-                        size = "30%",
-                        content = new object[]
-                        {
-                            new
-                            {
-                                type = "stack",
-                                size = "65%",
-                                content = new object[]
-                                {
-                                    new
-                                    {
-                                        type = "component",
-                                        componentType = "form",
-                                        title = "Properties",
-                                    },
-                                    new
-                                    {
-                                        type = "component",
-                                        componentType = "responses",
-                                        title = "Responses",
-                                    },
-                                },
-                            },
-                            new
-                            {
-                                type = "component",
-                                componentType = "inspector",
-                                title = "Inspector",
-                                size = "35%",
-                            },
-                        },
-                    },
-                },
-            },
-        };
-        return JsonSerializer.Serialize(config);
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    //  GL Callbacks (from golden-layout-bridge.js)
-    // ═══════════════════════════════════════════════════════════════════
-
-    [JSInvokable]
-    public async Task OnPanelResized(string instanceId, string componentType, double width, double height)
-    {
-        if (componentType == "canvas" && _scriptEditorModule != null && _scriptEditorReady)
-        {
-            try
-            {
-                await _scriptEditorModule.InvokeVoidAsync("resizeCanvasToSize", width, height);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning(ex, "Canvas resize failed");
-            }
+            if (_canvasResizeHandle != null)
+                await _canvasResizeHandle.InvokeVoidAsync("dispose");
         }
+        catch { }
+        _canvasResizeHandle = null;
     }
 
     [JSInvokable]
-    public Task OnPanelRemoved(string instanceId, string componentType)
+    public async Task OnGlyphCanvasResized(double width, double height)
     {
-        _openPanels.Remove(componentType);
-        InvokeAsync(StateHasChanged);
-        return Task.CompletedTask;
-    }
-
-    [JSInvokable]
-    public Task OnPanelVisibilityChanged(string instanceId, string componentType, bool visible)
-    {
-        // Could be used for pausing canvas render when tab is hidden
-        return Task.CompletedTask;
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    //  View Menu / Panel Management
-    // ═══════════════════════════════════════════════════════════════════
-
-    private async Task TogglePanel(string componentType)
-    {
-        _showViewMenu = false;
-        if (_openPanels.Contains(componentType)) return;
-
-        if (_bridgeModule != null)
+        if (_scriptEditorModule == null || !_scriptEditorReady) return;
+        if (width <= 0 || height <= 0) return;
+        try
         {
-            string title = _panelTitles.GetValueOrDefault(componentType, componentType);
-            await _bridgeModule.InvokeVoidAsync("addPanel", GlInstanceId, componentType, title, new { });
-            _openPanels.Add(componentType);
+            await _scriptEditorModule.InvokeVoidAsync("resizeCanvasToSize", width, height);
         }
-    }
-
-    private async Task ResetLayout()
-    {
-        _showViewMenu = false;
-        _openPanels.Clear();
-        _openPanels.UnionWith(["palette", "canvas", "form", "responses", "inspector"]);
-
-        if (_bridgeModule != null)
+        catch (Exception ex)
         {
-            string layoutConfig = BuildDefaultLayoutConfig();
-            await _bridgeModule.InvokeVoidAsync("loadLayout", GlInstanceId, layoutConfig);
-
-            // Re-init the canvas editor since GL will unbind/rebind panels
-            await _bridgeModule.InvokeVoidAsync("waitForContainerReady", "interaction-glyph-canvas", 2000);
-            await InitScriptEditor();
+            Logger.LogWarning(ex, "Canvas resize failed");
         }
     }
 
@@ -851,11 +736,8 @@
         {
             _scriptEditorReady = false;
 
-            if (_bridgeModule != null)
-            {
-                Logger.LogInformation("[IE] InitScriptEditor: waiting for canvas container...");
-                await _bridgeModule.InvokeVoidAsync("waitForContainerReady", "interaction-glyph-canvas", 2000);
-            }
+            // Flex canvas is laid out with the split; no container polling needed.
+            await Task.Delay(50);
 
             Logger.LogInformation("[IE] InitScriptEditor: importing glyph-editor.js...");
             _scriptEditorModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js");
@@ -873,6 +755,7 @@
             await _scriptEditorModule.InvokeVoidAsync("initGlyphEditor", "interaction-glyph-canvas", catalogJson, graphJson, _dotNetRef);
             _scriptEditorReady = true;
             Logger.LogInformation("[IE] InitScriptEditor: glyph editor initialized successfully");
+            await ObserveCanvasSize();
             StateHasChanged();
         }
         catch (Exception ex)
@@ -934,10 +817,7 @@
             // Re-init the glyph editor with the loaded graph
             await DestroyScriptEditor();
 
-            if (_bridgeModule != null)
-            {
-                await _bridgeModule.InvokeVoidAsync("waitForContainerReady", "interaction-glyph-canvas", 2000);
-            }
+            await Task.Delay(50);
             await InitScriptEditor();
         }
         catch (Exception ex) { Logger.LogWarning(ex, "Failed to load interaction scripts for {Tag}", interactionTag); }
@@ -1083,10 +963,7 @@
         await DestroyScriptEditor();
         StateHasChanged();
 
-        if (_bridgeModule != null)
-        {
-            await _bridgeModule.InvokeVoidAsync("waitForContainerReady", "interaction-glyph-canvas", 2000);
-        }
+        await Task.Delay(50);
         await InitScriptEditor();
     }
 
@@ -1311,9 +1188,9 @@
             catch { /* ignore during teardown */ }
         }
 
-        if (_bridgeModule != null)
+        if (_splitterModule != null)
         {
-            try { await _bridgeModule.DisposeAsync(); }
+            try { await _splitterModule.DisposeAsync(); }
             catch { /* ignore during teardown */ }
         }
 

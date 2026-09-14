@@ -1,5 +1,6 @@
 using System.Net;
 using AmiaReforged.AdminPanel.Components.Pages.WorldEngine;
+using AmiaReforged.AdminPanel.Components.Pages.WorldEngine.EditorFramework;
 using AmiaReforged.AdminPanel.Models;
 using AmiaReforged.AdminPanel.Services;
 using Bunit;
@@ -37,6 +38,7 @@ public class InteractionEditorTests : Bunit.TestContext
         Services.AddSingleton<InteractionApiService>(new InteractionApiService(factory.Object, endpointService.Object));
         Services.AddSingleton<GlyphApiService>(new GlyphApiService(factory.Object, endpointService.Object));
         Services.AddSingleton<IndustryApiService>(new IndustryApiService(factory.Object, endpointService.Object));
+        Services.AddSingleton<IWorldEngineEditorCatalog>(new WorldEngineEditorCatalog([], []));
         Services.AddSingleton<ILogger<InteractionEditor>>(new Mock<ILogger<InteractionEditor>>().Object);
         Services.AddSingleton<IJSRuntime>(new Mock<IJSRuntime>().Object);
     }

@@ -49,9 +49,8 @@ public partial class WorldEngineEditor
     // ═══════════════════════════════════════════════════════════════════
 
     // ═══════════════════════════════════════════════════════════════════
-    //  Interaction Editor — Script Editor Lifecycle
+    //  Region Graph — Cytoscape lifecycle (no layout framework)
     // ═══════════════════════════════════════════════════════════════════
-    private const string RegionGlInstanceId = "we-region-graph";
     private bool _regionGraphOpen;
     private bool _regionGraphLoading;
     private bool _regionGraphNeedsInit;
@@ -95,9 +94,9 @@ public partial class WorldEngineEditor
     private List<JsonElement> _rgImportedRegions = [];
     private bool _rgIsExporting;
 
-    // GL bridge refs
-    private IJSObjectReference? _regionBridgeModule;
+    // Cytoscape interop refs (regionGraph global + resize observer)
     private DotNetObjectReference<WorldEngineEditor>? _regionDotNetRef;
+    private GraphLayoutResult? _regionLayoutResult;
 
     private static readonly JsonSerializerOptions RgCamelCase = new()
     {
@@ -583,15 +582,6 @@ public partial class WorldEngineEditor
         if (_regionGraphOpen)
         {
             try { await JS.InvokeVoidAsync("regionGraph.destroy"); } catch { }
-            try
-            {
-                if (_regionBridgeModule != null)
-                {
-                    await _regionBridgeModule.InvokeVoidAsync("destroy", RegionGlInstanceId);
-                    await _regionBridgeModule.DisposeAsync();
-                }
-            }
-            catch { }
         }
         _regionDotNetRef?.Dispose();
     }

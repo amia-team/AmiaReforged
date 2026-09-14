@@ -1,0 +1,43 @@
+@using AmiaReforged.AdminPanel.Models
+
+@if (Tabs.Count > 0)
+{
+    <div class="we-editor__tab-bar">
+        @foreach (EditorTab tab in Tabs)
+        {
+            bool isActive = tab.Id == ActiveTabId;
+            <div class="we-editor__tab @(isActive ? "we-editor__tab--active" : "")"
+                 @onclick="() => OnActivate.InvokeAsync(tab.Id)">
+                @if (GetIcon != null)
+                {
+                    <span class="bi @GetIcon(tab.EntityType) me-1"></span>
+                }
+                <span class="we-editor__tab-title">@tab.Title</span>
+                @if (tab.IsDirty)
+                {
+                    <span class="we-editor__tab-dirty">●</span>
+                }
+                <button class="we-editor__tab-close" @onclick="() => OnClose.InvokeAsync(tab.Id)" @onclick:stopPropagation="true">
+                    <span class="bi bi-x"></span>
+                </button>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<EditorTab> Tabs { get; set; } = [];
+
+    [Parameter]
+    public string? ActiveTabId { get; set; }
+
+    [Parameter]
+    public Func<WorldEngineEntityType, string>? GetIcon { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnActivate { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnClose { get; set; }
+}

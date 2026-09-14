@@ -126,11 +126,10 @@
                         </div>
                     }
 
-                    @* GL container *@
-                    <div id="we-region-gl-container" class="we-editor__region-gl-host"></div>
-
-                    @* Pre-rendered panel: Region Graph (Cytoscape + toolbar) *@
-                    <div id="bl-panel-regiongraph" data-gl-panel="regiongraph" class="we-editor__gl-panel" style="display:none">
+                    <ResizableSplit Direction="horizontal" FirstDefaultWidth="340" FirstMin="240" SecondMin="400"
+                                    PersistKey="regions-inspector" SwapOrder="true"
+                                    CollapsibleFirst="true" CollapsibleSecond="false">
+                        <Second>
                         @* Compact graph toolbar *@
                         <div class="we-rg-toolbar">
                             <div class="we-rg-toolbar__group">
@@ -192,10 +191,13 @@
                         }
                         @* Cytoscape container *@
                         <div id="region-cy-gl" class="we-rg-cytoscape"></div>
-                    </div>
-
-                    @* Pre-rendered panel: Region Properties *@
-                    <div id="bl-panel-regionprops" data-gl-panel="regionprops" class="we-editor__gl-panel" style="display:none">
+                        </Second>
+                        <First>
+                            <Inspector Title="Properties" OnClose="RgCloseEditor">
+                                <HeaderActions>
+                                    <EditorExtensionPoint Slot="WorldEngineEditorExtensionSlot.InspectorTop" Context="_hostContext" />
+                                </HeaderActions>
+                                <Body>
                         <div class="we-rg-props">
                             @* Properties panel header *@
                             <div class="we-rg-props__header">
@@ -512,18 +514,22 @@
                                 }
                             </div>
 
-                            @* Properties panel footer (save buttons) *@
+                            @* Properties panel footer (save buttons) — pinned via Inspector *@
+                        </div>
+                                </Body>
+                                <Footer>
+                            <EditorExtensionPoint Slot="WorldEngineEditorExtensionSlot.InspectorBottom" Context="_hostContext" />
                             @if (_rgPanelMode == RgPanelMode.RegionEditor || _rgPanelMode == RgPanelMode.AreaEditor)
                             {
-                                <div class="we-rg-props__footer">
                                     <button class="btn btn-secondary btn-sm" @onclick="RgCloseEditor">Cancel</button>
                                     <button class="btn btn-primary btn-sm" @onclick="RgSaveCurrentEditor" disabled="@_rgIsSaving">
                                         @(_rgIsSaving ? "Saving…" : "Save")
                                     </button>
-                                </div>
                             }
-                        </div>
-                    </div>
+                                </Footer>
+                            </Inspector>
+                        </First>
+                    </ResizableSplit>
                 </div>
             }
             else if (EditorState.ActiveEntityType == WorldEngineEntityType.Dialogues)

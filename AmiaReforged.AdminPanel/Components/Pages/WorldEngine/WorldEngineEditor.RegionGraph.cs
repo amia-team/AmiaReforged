@@ -63,8 +63,8 @@ public partial class WorldEngineEditor
             _regionGraphLoadPhase = "Computing layout…";
             StateHasChanged();
 
-            // Compute layout server-side
-            GraphLayoutResult layoutResult = await RgComputeLayout();
+            // Compute layout server-side (reused by InitRegionGraph after render)
+            _regionLayoutResult = await RgComputeLayout();
 
             _regionGraphLoadPercent = 85;
             _regionGraphLoadPhase = "Rendering…";
@@ -85,26 +85,23 @@ public partial class WorldEngineEditor
         if (_regionGraphNeedsInit && _regionGraphData != null)
         {
             _regionGraphNeedsInit = false;
-            await InitRegionGraphGl();
+            await InitRegionGraph();
         }
     }
 
-    private async Task InitRegionGraphGl()
+    private async Task InitRegionGraph()
     {
         try
         {
-            // 1. Initialize Golden Layout bridge for this instance
-            _regionBridgeModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/golden-layout-bridge.js");
             _regionDotNetRef?.Dispose();
             _regionDotNetRef = DotNetObjectReference.Create(this);
 
-            string layoutConfig = BuildRegionGlLayoutConfig();
-            await _regionBridgeModule.InvokeVoidAsync("init", RegionGlInstanceId, "we-region-gl-container", layoutConfig, _regionDotNetRef);
+            // The flex container is laid out by the time OnAfterRenderAsync
+            // runs; one frame lets the browser settle dimensions before
+            // Cytoscape measures its container.
+            await Task.Delay(100);
 
-            // 2. Wait a tick for GL to bind the panels, then init Cytoscape
-            await Task.Delay(150);
-
-            GraphLayoutResult layoutResult = await RgComputeLayout();
+            GraphLayoutResult layoutResult = _regionLayoutResult ?? await RgComputeLayout();
 
             string nodesJson = JsonSerializer.Serialize(_regionGraphData!.Nodes, RgCamelCase);
             string edgesJson = JsonSerializer.Serialize(_regionGraphData.Edges, RgCamelCase);
@@ -114,46 +111,60 @@ public partial class WorldEngineEditor
 
             await JS.InvokeVoidAsync("regionGraph.init", "region-cy-gl", nodesJson, edgesJson, disconnectedJson, regionsJson, _regionDotNetRef, positionsJson);
 
+            await ObserveRegionGraphSize();
+
             _regionGraphLoading = false;
             await InvokeAsync(StateHasChanged);
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Failed to initialize region graph GL");
+            Logger.LogError(ex, "Failed to initialize region graph");
             _regionGraphError = $"Failed to initialize: {ex.Message}";
             _regionGraphLoading = false;
             await InvokeAsync(StateHasChanged);
         }
     }
 
-    private static string BuildRegionGlLayoutConfig()
+    // Resize the Cytoscape surface (debounced) when the split moves.
+    private IJSObjectReference? _regionSplitterModule;
+    private IJSObjectReference? _regionResizeHandle;
+
+    private async Task ObserveRegionGraphSize()
     {
-        // Two-panel row: graph (70%) + properties (30%)
-        return JsonSerializer.Serialize(new
+        try
         {
-            root = new
-            {
-                type = "row",
-                content = new object[]
-                {
-                    new { type = "component", componentType = "regiongraph", title = "Region Graph", size = "70%" },
-                    new { type = "component", componentType = "regionprops", title = "Properties", size = "30%" }
-                }
-            }
-        });
+            _regionSplitterModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/splitter.js");
+            _regionResizeHandle = await _regionSplitterModule.InvokeAsync<IJSObjectReference?>(
+                "observeResizeById", "region-cy-gl", _regionDotNetRef, nameof(OnRegionGraphResized), 200);
+        }
+        catch
+        {
+            // Resize observation best-effort; graph still renders.
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnRegionGraphResized(double width, double height)
+    {
+        if (width <= 0 || height <= 0) return;
+        try { await JS.InvokeVoidAsync("regionGraph.resize"); } catch { }
+    }
+
+    private async Task DisposeRegionGraphResizeObserver()
+    {
+        try
+        {
+            if (_regionResizeHandle != null)
+                await _regionResizeHandle.InvokeVoidAsync("dispose");
+        }
+        catch { }
+        _regionResizeHandle = null;
     }
 
     private async Task CloseRegionGraph()
     {
+        await DisposeRegionGraphResizeObserver();
         try { await JS.InvokeVoidAsync("regionGraph.destroy"); } catch { }
-        try
-        {
-            if (_regionBridgeModule != null)
-            {
-                await _regionBridgeModule.InvokeVoidAsync("destroy", RegionGlInstanceId);
-            }
-        }
-        catch { }
 
         _regionGraphOpen = false;
         _regionGraphData = null;
@@ -166,28 +177,6 @@ public partial class WorldEngineEditor
         _rgSuccess = null;
         StateHasChanged();
     }
-
-    // ═══════════════════════════════════════════════════════════════════
-    //  Region Graph — GL Bridge Callbacks
-    // ═══════════════════════════════════════════════════════════════════
-
-    [JSInvokable]
-    public async Task OnPanelResized(string instanceId, string componentType, double width, double height)
-    {
-        if (instanceId == RegionGlInstanceId && componentType == "regiongraph")
-        {
-            try { await JS.InvokeVoidAsync("regionGraph.resize"); } catch { }
-        }
-    }
-
-    [JSInvokable]
-    public Task OnPanelRemoved(string instanceId, string componentType)
-    {
-        return Task.CompletedTask;
-    }
-
-    [JSInvokable]
-    public Task OnPanelVisibilityChanged(string instanceId, string componentType, bool visible) => Task.CompletedTask;
 
     // ═══════════════════════════════════════════════════════════════════
     //  Region Graph — Cytoscape JS Callbacks

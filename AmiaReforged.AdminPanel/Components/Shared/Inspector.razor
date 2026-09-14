@@ -1,0 +1,37 @@
+<div class="we-inspector">
+    <div class="we-inspector__header">
+        <span class="we-inspector__title">@Title</span>
+        <div class="we-inspector__header-actions">
+            @HeaderActions
+            <button class="btn btn-sm btn-link we-inspector__close" @onclick="() => OnClose.InvokeAsync()" title="Close">
+                <span class="bi bi-x"></span>
+            </button>
+        </div>
+    </div>
+    <div class="we-inspector__body">
+        @Body
+    </div>
+    @if (Footer != null)
+    {
+        <div class="we-inspector__footer">
+            @Footer
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = "";
+
+    [Parameter, EditorRequired]
+    public RenderFragment? Body { get; set; }
+
+    [Parameter]
+    public RenderFragment? HeaderActions { get; set; }
+
+    [Parameter]
+    public RenderFragment? Footer { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+}

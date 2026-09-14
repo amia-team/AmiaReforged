@@ -104,6 +104,7 @@ public class Program
 
             // World Engine Editor state (one per circuit)
             builder.Services.AddScoped<WorldEngineEditorState>();
+            builder.Services.AddScoped<LayoutPresetService>();
 
             // World Engine Editor shell metadata and extension points
             builder.Services.AddWorldEngineEditorFramework();

@@ -1,0 +1,161 @@
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div @ref="_root" class="we-split @(Direction == "vertical" ? "we-split--vertical" : "we-split--horizontal") @(SwapOrder ? "we-split--swap" : "")">
+    @if (!FirstCollapsed)
+    {
+        <div class="we-split__pane we-split__pane--first" style="@FirstPaneStyle">
+            @First
+        </div>
+    }
+    <div class="we-split__handle" @onclick="ToggleHandle" title="@HandleTitle">
+        <span class="we-split__handle-grip"></span>
+    </div>
+    @if (!SecondCollapsed)
+    {
+        <div class="we-split__pane we-split__pane--second" style="@SecondPaneStyle">
+            @Second
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public RenderFragment? First { get; set; }
+
+    [Parameter, EditorRequired]
+    public RenderFragment? Second { get; set; }
+
+    /// <summary>"horizontal" (side-by-side) or "vertical" (stacked).</summary>
+    [Parameter]
+    public string Direction { get; set; } = "horizontal";
+
+    /// <summary>Initial width (px) of the first pane. Persisted widths from
+    /// localStorage (see splitter.js) take precedence after JS loads.</summary>
+    [Parameter]
+    public int FirstDefaultWidth { get; set; } = 320;
+
+    [Parameter]
+    public int FirstMin { get; set; } = 180;
+
+    [Parameter]
+    public int SecondMin { get; set; } = 240;
+
+    [Parameter]
+    public bool CollapsibleFirst { get; set; }
+
+    [Parameter]
+    public bool CollapsibleSecond { get; set; } = true;
+
+    /// <summary>localStorage key suffix for persisting the split position.
+    /// Empty disables persistence.</summary>
+    [Parameter]
+    public string PersistKey { get; set; } = "";
+
+    /// <summary>
+    /// When true the fixed First pane renders on the right (horizontal) or
+    /// bottom (vertical) via CSS order; drag direction is inverted to match.
+    /// Use with First = inspector rail content, Second = flex canvas.
+    /// </summary>
+    [Parameter]
+    public bool SwapOrder { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnFirstCollapsedChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnSecondCollapsedChanged { get; set; }
+
+    private ElementReference _root;
+    private IJSObjectReference? _splitterModule;
+    private bool _jsWired;
+    private bool _disposed;
+
+    private bool FirstCollapsed { get; set; }
+    private bool SecondCollapsed { get; set; }
+
+    private int _firstWidth;
+
+    protected override void OnInitialized()
+    {
+        _firstWidth = FirstDefaultWidth;
+    }
+
+    private string FirstPaneStyle =>
+        $"flex: 0 0 {Math.Max(FirstMin, _firstWidth)}px; min-width: {FirstMin}px;";
+
+    private string SecondPaneStyle => "flex: 1; min-width: 0; min-height: 0;";
+
+    private string HandleTitle =>
+        (SecondCollapsed || FirstCollapsed) ? "Expand" : "Collapse";
+
+    private async Task ToggleHandle()
+    {
+        // Click toggles the collapsible pane (second preferred).
+        if (!FirstCollapsed && !SecondCollapsed)
+        {
+            if (CollapsibleSecond) SecondCollapsed = true;
+            else if (CollapsibleFirst) FirstCollapsed = true;
+            else return;
+        }
+        else
+        {
+            FirstCollapsed = false;
+            SecondCollapsed = false;
+        }
+
+        if (OnFirstCollapsedChanged.HasDelegate)
+            await OnFirstCollapsedChanged.InvokeAsync(FirstCollapsed);
+        if (OnSecondCollapsedChanged.HasDelegate)
+            await OnSecondCollapsedChanged.InvokeAsync(SecondCollapsed);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _jsWired) return;
+        _jsWired = true;
+
+        if (string.IsNullOrWhiteSpace(PersistKey))
+            return;
+
+        try
+        {
+            _splitterModule = await JS.InvokeAsync<IJSObjectReference>(
+                "import", "./js/splitter.js");
+            int? stored = await _splitterModule.InvokeAsync<int?>(
+                "initSplit", _root, new
+                {
+                    direction = Direction,
+                    firstMin = FirstMin,
+                    secondMin = SecondMin,
+                    persistKey = PersistKey,
+                    defaultWidth = FirstDefaultWidth,
+                    invert = SwapOrder,
+                });
+            if (stored.HasValue && stored.Value >= FirstMin)
+            {
+                _firstWidth = stored.Value;
+                if (!_disposed) StateHasChanged();
+            }
+        }
+        catch
+        {
+            // JS unavailable (prerender, tests) — static widths stand.
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _disposed = true;
+        try
+        {
+            if (_splitterModule != null)
+                await _splitterModule.DisposeAsync();
+        }
+        catch
+        {
+            // Teardown best-effort.
+        }
+    }
+}

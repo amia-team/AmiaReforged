@@ -1,0 +1,69 @@
+.we-split {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.we-split--horizontal {
+    flex-direction: row;
+}
+
+.we-split--vertical {
+    flex-direction: column;
+}
+
+/* Swap visual order: fixed First pane renders right (row) / bottom (column). */
+.we-split--swap > .we-split__pane--second {
+    order: 0;
+}
+
+.we-split--swap > .we-split__handle {
+    order: 1;
+}
+
+.we-split--swap > .we-split__pane--first {
+    order: 2;
+}
+
+.we-split__pane {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.we-split__handle {
+    flex: 0 0 6px;
+    min-width: 6px;
+    min-height: 6px;
+    background: var(--border-subtle, #3e3a30);
+    cursor: col-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    touch-action: none;
+}
+
+.we-split--vertical .we-split__handle {
+    cursor: row-resize;
+}
+
+.we-split__handle:hover {
+    background: var(--accent, #6b7fd7);
+}
+
+.we-split__handle-grip {
+    width: 2px;
+    height: 24px;
+    border-radius: 1px;
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.we-split--vertical .we-split__handle-grip {
+    width: 24px;
+    height: 2px;
+}

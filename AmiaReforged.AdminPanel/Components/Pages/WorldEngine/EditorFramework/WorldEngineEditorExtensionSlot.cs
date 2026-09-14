@@ -11,4 +11,6 @@ public enum WorldEngineEditorExtensionSlot
     SidebarBeforeList,
     SidebarAfterList,
     SidebarFooter,
+    InspectorTop,
+    InspectorBottom,
 }
