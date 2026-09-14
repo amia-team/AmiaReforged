@@ -31,8 +31,7 @@ public sealed class CodexSubsystem : ICodexSubsystem
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly IPlayerCodexRepository _codexRepository;
     private readonly PwContextFactory _contextFactory;
-    private readonly ICommandHandler<OpenCodexCommand> _openHandler;
-    private readonly ICommandHandler<CloseCodexCommand> _closeHandler;
+    private readonly ICommandDispatcher _commands;
     private readonly WindowDirector _windowDirector;
     private readonly QuestSessionManager _sessionManager;
     private readonly QuestObjectiveResolutionService _resolutionService;
@@ -41,8 +40,7 @@ public sealed class CodexSubsystem : ICodexSubsystem
     public CodexSubsystem(
         IPlayerCodexRepository codexRepository,
         PwContextFactory contextFactory,
-        ICommandHandler<OpenCodexCommand> openHandler,
-        ICommandHandler<CloseCodexCommand> closeHandler,
+        ICommandDispatcher commands,
         WindowDirector windowDirector,
         QuestSessionManager sessionManager,
         QuestObjectiveResolutionService resolutionService,
@@ -50,8 +48,7 @@ public sealed class CodexSubsystem : ICodexSubsystem
     {
         _codexRepository = codexRepository;
         _contextFactory = contextFactory;
-        _openHandler = openHandler;
-        _closeHandler = closeHandler;
+        _commands = commands;
         _windowDirector = windowDirector;
         _sessionManager = sessionManager;
         _resolutionService = resolutionService;
@@ -64,12 +61,12 @@ public sealed class CodexSubsystem : ICodexSubsystem
 
     public Task<CommandResult> OpenCodexAsync(NwPlayer player)
     {
-        return _openHandler.HandleAsync(new OpenCodexCommand { Player = player });
+        return _commands.DispatchAsync(new OpenCodexCommand { Player = player });
     }
 
     public Task<CommandResult> CloseCodexAsync(NwPlayer player)
     {
-        return _closeHandler.HandleAsync(new CloseCodexCommand { Player = player });
+        return _commands.DispatchAsync(new CloseCodexCommand { Player = player });
     }
 
     public bool IsCodexOpen(NwPlayer player)

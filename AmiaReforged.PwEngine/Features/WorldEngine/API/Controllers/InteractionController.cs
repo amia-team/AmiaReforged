@@ -2,7 +2,13 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Features.Glyph.Integration;
+using AmiaReforged.PwEngine.Features.WorldEngine;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.Persistence;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.Queries;
 using Anvil;
 using Microsoft.EntityFrameworkCore;
 
@@ -39,29 +45,22 @@ public class InteractionController
     [HttpGet(BasePath)]
     public static async Task<ApiResult> GetAll(RouteContext ctx)
     {
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
         string? search = ctx.GetQueryParam("search");
         int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
         int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
 
-        using PwEngineContext context = ResolveContext();
+        List<InteractionDefinition> matches = await facade.QueryAsync<SearchInteractionDefinitionsQuery, List<InteractionDefinition>>(
+            new SearchInteractionDefinitionsQuery { SearchTerm = search }, ctx.CancellationToken);
 
-        IQueryable<PersistedInteractionDefinition> query = context.InteractionDefinitions;
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            string term = search.Trim().ToLower();
-            query = query.Where(d =>
-                d.Tag.ToLower().Contains(term) ||
-                d.Name.ToLower().Contains(term));
-        }
-
-        int totalCount = await query.CountAsync();
-
-        List<PersistedInteractionDefinition> items = await query
+        int totalCount = matches.Count;
+        List<InteractionDefinition> items = matches
             .OrderBy(d => d.Name)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToList();
 
         return new ApiResult(200, new
         {
@@ -81,8 +80,11 @@ public class InteractionController
     {
         string tag = ctx.GetRouteValue("tag");
 
-        using PwEngineContext context = ResolveContext();
-        PersistedInteractionDefinition? definition = await context.InteractionDefinitions.FindAsync(tag);
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
+        InteractionDefinition? definition = await facade.QueryAsync<GetInteractionDefinitionQuery, InteractionDefinition?>(
+            new GetInteractionDefinitionQuery { Tag = tag }, ctx.CancellationToken);
 
         if (definition == null)
         {
@@ -112,26 +114,29 @@ public class InteractionController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        using PwEngineContext context = ResolveContext();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        bool exists = await context.InteractionDefinitions.AnyAsync(d => d.Tag == dto.Tag);
-        if (exists)
+        InteractionDefinition definition = FromDto(dto);
+        CommandResult result = await facade.ExecuteAsync(new CreateInteractionDefinitionCommand
         {
-            return new ApiResult(409, new ErrorResponse(
-                "Conflict", $"An interaction definition with tag '{dto.Tag}' already exists"));
+            Definition = definition
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
+        {
+            bool conflict = result.ErrorMessage?.Contains("already exists", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(conflict ? 409 : 400,
+                new ErrorResponse(conflict ? "Conflict" : "Command failed", result.ErrorMessage));
         }
-
-        PersistedInteractionDefinition entity = FromDto(dto);
-        entity.CreatedAt = DateTime.UtcNow;
-        entity.UpdatedAt = DateTime.UtcNow;
-
-        context.InteractionDefinitions.Add(entity);
-        await context.SaveChangesAsync();
 
         // Refresh glyph interaction cache so scripts see the new definition immediately
         if (InteractionHooks != null) await InteractionHooks.RefreshCacheAsync();
 
-        return new ApiResult(201, ToDto(entity));
+        InteractionDefinition? created = await facade.QueryAsync<GetInteractionDefinitionQuery, InteractionDefinition?>(
+            new GetInteractionDefinitionQuery { Tag = definition.Tag }, ctx.CancellationToken);
+
+        return new ApiResult(201, ToDto(created ?? definition));
     }
 
     /// <summary>
@@ -142,15 +147,6 @@ public class InteractionController
     public static async Task<ApiResult> Update(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-
-        using PwEngineContext context = ResolveContext();
-        PersistedInteractionDefinition? existing = await context.InteractionDefinitions.FindAsync(tag);
-
-        if (existing == null)
-        {
-            return new ApiResult(404, new ErrorResponse(
-                "Not found", $"No interaction definition with tag '{tag}'"));
-        }
 
         InteractionDefinitionDto? dto = await ctx.ReadJsonBodyAsync<InteractionDefinitionDto>();
         if (dto == null)
@@ -164,26 +160,30 @@ public class InteractionController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        // Update mutable fields — Tag is immutable
-        existing.Name = dto.Name?.Trim() ?? existing.Name;
-        existing.Description = dto.Description;
-        existing.TargetMode = dto.TargetMode ?? "Trigger";
-        existing.BaseRounds = dto.BaseRounds;
-        existing.MinRounds = dto.MinRounds;
-        existing.ProficiencyReducesRounds = dto.ProficiencyReducesRounds;
-        existing.RequiresIndustryMembership = dto.RequiresIndustryMembership;
-        existing.RequiredIndustryTagsJson = JsonSerializer.Serialize(dto.RequiredIndustryTags ?? [], JsonOptions);
-        existing.AllowedAreaResRefsJson = JsonSerializer.Serialize(dto.AllowedAreaResRefs ?? [], JsonOptions);
-        existing.RequiredKnowledgeTagsJson = JsonSerializer.Serialize(dto.RequiredKnowledgeTags ?? [], JsonOptions);
-        existing.ResponsesJson = SerializeResponses(dto.Responses);
-        existing.UpdatedAt = DateTime.UtcNow;
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        await context.SaveChangesAsync();
+        InteractionDefinition definition = FromDto(dto, tag);
+        CommandResult result = await facade.ExecuteAsync(new UpdateInteractionDefinitionCommand
+        {
+            Tag = tag,
+            Definition = definition
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
+        {
+            bool notFound = result.ErrorMessage?.StartsWith("No interaction definition with tag", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(notFound ? 404 : 400, new ErrorResponse(
+                notFound ? "Not found" : "Command failed", result.ErrorMessage));
+        }
 
         // Refresh glyph interaction cache so scripts pick up the updated definition immediately
         if (InteractionHooks != null) await InteractionHooks.RefreshCacheAsync();
 
-        return new ApiResult(200, ToDto(existing));
+        InteractionDefinition? updated = await facade.QueryAsync<GetInteractionDefinitionQuery, InteractionDefinition?>(
+            new GetInteractionDefinitionQuery { Tag = tag }, ctx.CancellationToken);
+
+        return new ApiResult(200, ToDto(updated ?? definition));
     }
 
     /// <summary>
@@ -195,17 +195,19 @@ public class InteractionController
     {
         string tag = ctx.GetRouteValue("tag");
 
-        using PwEngineContext context = ResolveContext();
-        PersistedInteractionDefinition? existing = await context.InteractionDefinitions.FindAsync(tag);
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        if (existing == null)
+        CommandResult result = await facade.ExecuteAsync(new DeleteInteractionDefinitionCommand
+        {
+            Tag = tag
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
         {
             return new ApiResult(404, new ErrorResponse(
-                "Not found", $"No interaction definition with tag '{tag}'"));
+                "Not found", result.ErrorMessage));
         }
-
-        context.InteractionDefinitions.Remove(existing);
-        await context.SaveChangesAsync();
 
         // Refresh glyph interaction cache to remove any references to the deleted definition
         if (InteractionHooks != null) await InteractionHooks.RefreshCacheAsync();
@@ -222,6 +224,9 @@ public class InteractionController
     [HttpPost(BasePath + "/import")]
     public static async Task<ApiResult> Import(RouteContext ctx)
     {
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
         string? body = null;
         if (ctx.Request != null)
         {
@@ -259,48 +264,23 @@ public class InteractionController
                 "No valid interaction definitions found in request body"));
         }
 
-        using PwEngineContext context = ResolveContext();
-        int succeeded = 0;
         int failed = 0;
         List<string> errors = [];
+        List<(string Tag, UpsertInteractionDefinitionCommand Command)> valid = [];
 
         foreach (InteractionDefinitionDto dto in dtos)
         {
+            string? validationError = ValidateDto(dto);
+            if (validationError != null)
+            {
+                failed++;
+                errors.Add($"{dto.Tag ?? "unknown"}: {validationError}");
+                continue;
+            }
+
             try
             {
-                string? validationError = ValidateDto(dto);
-                if (validationError != null)
-                {
-                    failed++;
-                    errors.Add($"{dto.Tag ?? "unknown"}: {validationError}");
-                    continue;
-                }
-
-                PersistedInteractionDefinition? existing = await context.InteractionDefinitions.FindAsync(dto.Tag);
-                if (existing != null)
-                {
-                    existing.Name = dto.Name?.Trim() ?? existing.Name;
-                    existing.Description = dto.Description;
-                    existing.TargetMode = dto.TargetMode ?? "Trigger";
-                    existing.BaseRounds = dto.BaseRounds;
-                    existing.MinRounds = dto.MinRounds;
-                    existing.ProficiencyReducesRounds = dto.ProficiencyReducesRounds;
-                    existing.RequiresIndustryMembership = dto.RequiresIndustryMembership;
-                    existing.RequiredIndustryTagsJson = JsonSerializer.Serialize(dto.RequiredIndustryTags ?? [], JsonOptions);
-                    existing.AllowedAreaResRefsJson = JsonSerializer.Serialize(dto.AllowedAreaResRefs ?? [], JsonOptions);
-                    existing.RequiredKnowledgeTagsJson = JsonSerializer.Serialize(dto.RequiredKnowledgeTags ?? [], JsonOptions);
-                    existing.ResponsesJson = SerializeResponses(dto.Responses);
-                    existing.UpdatedAt = DateTime.UtcNow;
-                }
-                else
-                {
-                    PersistedInteractionDefinition entity = FromDto(dto);
-                    entity.CreatedAt = DateTime.UtcNow;
-                    entity.UpdatedAt = DateTime.UtcNow;
-                    context.InteractionDefinitions.Add(entity);
-                }
-
-                succeeded++;
+                valid.Add((dto.Tag!, new UpsertInteractionDefinitionCommand { Definition = FromDto(dto) }));
             }
             catch (Exception ex)
             {
@@ -309,7 +289,24 @@ public class InteractionController
             }
         }
 
-        await context.SaveChangesAsync();
+        BatchCommandResult batch = await facade.ExecuteBatchAsync(
+            valid.Select(v => v.Command),
+            BatchExecutionOptions.ContinueOnFailure(),
+            ctx.CancellationToken);
+
+        int succeeded = 0;
+        for (int i = 0; i < batch.Results.Count; i++)
+        {
+            if (batch.Results[i].Success)
+            {
+                succeeded++;
+            }
+            else
+            {
+                failed++;
+                errors.Add($"{valid[i].Tag}: {batch.Results[i].ErrorMessage}");
+            }
+        }
 
         // Refresh glyph interaction cache for any imported/updated definitions
         if (InteractionHooks != null) await InteractionHooks.RefreshCacheAsync();
@@ -326,13 +323,6 @@ public class InteractionController
     // ═══════════════════════════════════════════════════════════════════
     //  Helpers
     // ═══════════════════════════════════════════════════════════════════
-
-    private static PwEngineContext ResolveContext()
-    {
-        PwContextFactory factory = AnvilCore.GetService<PwContextFactory>()
-                                   ?? throw new InvalidOperationException("PwContextFactory service not available");
-        return factory.CreateDbContext();
-    }
 
     private static string? ValidateDto(InteractionDefinitionDto dto)
     {
@@ -359,100 +349,96 @@ public class InteractionController
                     return $"Response[{i}].ResponseTag is required";
                 if (r.Weight < 1)
                     return $"Response[{i}].Weight must be at least 1";
+                if (!string.IsNullOrWhiteSpace(r.MinProficiency) &&
+                    !Enum.TryParse<ProficiencyLevel>(r.MinProficiency, true, out _))
+                    return $"Response[{i}].MinProficiency is not a valid proficiency level";
+                if (r.Effects != null)
+                {
+                    for (int j = 0; j < r.Effects.Count; j++)
+                    {
+                        EffectDto e = r.Effects[j];
+                        if (string.IsNullOrWhiteSpace(e.EffectType) ||
+                            !Enum.TryParse<InteractionResponseEffectType>(e.EffectType, true, out _))
+                            return $"Response[{i}].Effects[{j}].EffectType is not a valid effect type";
+                        if (string.IsNullOrWhiteSpace(e.Value))
+                            return $"Response[{i}].Effects[{j}].Value is required";
+                    }
+                }
             }
         }
 
         return null;
     }
 
-    private static object ToDto(PersistedInteractionDefinition entity)
+    private static object ToDto(InteractionDefinition definition)
     {
-        List<ResponseJsonDto> responses;
-        try
-        {
-            responses = JsonSerializer.Deserialize<List<ResponseJsonDto>>(entity.ResponsesJson, JsonOptions) ?? [];
-        }
-        catch
-        {
-            responses = [];
-        }
-
         return new
         {
-            entity.Tag,
-            entity.Name,
-            entity.Description,
-            entity.TargetMode,
-            entity.BaseRounds,
-            entity.MinRounds,
-            entity.ProficiencyReducesRounds,
-            entity.RequiresIndustryMembership,
-            RequiredIndustryTags = DeserializeStringList(entity.RequiredIndustryTagsJson),
-            AllowedAreaResRefs = DeserializeStringList(entity.AllowedAreaResRefsJson),
-            RequiredKnowledgeTags = DeserializeStringList(entity.RequiredKnowledgeTagsJson),
-            Responses = responses.Select(r => new
+            definition.Tag,
+            definition.Name,
+            definition.Description,
+            TargetMode = definition.TargetMode.ToString(),
+            definition.BaseRounds,
+            definition.MinRounds,
+            definition.ProficiencyReducesRounds,
+            definition.RequiresIndustryMembership,
+            RequiredIndustryTags = definition.RequiredIndustryTags,
+            AllowedAreaResRefs = definition.AllowedAreaResRefs,
+            RequiredKnowledgeTags = definition.RequiredKnowledgeTags,
+            Responses = definition.Responses.Select(r => new
             {
                 r.ResponseTag,
                 r.Weight,
-                r.MinProficiency,
+                MinProficiency = r.MinProficiency?.ToString(),
                 r.Message,
-                Effects = (r.Effects ?? []).Select(e => new
+                Effects = r.Effects.Select(e => new
                 {
-                    e.EffectType,
+                    EffectType = e.EffectType.ToString(),
                     e.Value,
                     e.Metadata
                 }).ToArray()
-            }).ToArray(),
-            entity.CreatedAt,
-            entity.UpdatedAt
+            }).ToArray()
         };
     }
 
-    private static PersistedInteractionDefinition FromDto(InteractionDefinitionDto dto)
+    private static InteractionDefinition FromDto(InteractionDefinitionDto dto, string? tagOverride = null)
     {
-        return new PersistedInteractionDefinition
+        Enum.TryParse<InteractionTargetMode>(dto.TargetMode, true, out InteractionTargetMode targetMode);
+        if (!Enum.IsDefined(typeof(InteractionTargetMode), targetMode))
+            targetMode = InteractionTargetMode.Trigger;
+
+        return new InteractionDefinition
         {
-            Tag = dto.Tag!.Trim(),
+            Tag = (tagOverride ?? dto.Tag)!.Trim(),
             Name = dto.Name!.Trim(),
             Description = dto.Description,
-            TargetMode = dto.TargetMode ?? "Trigger",
+            TargetMode = targetMode,
             BaseRounds = dto.BaseRounds,
             MinRounds = dto.MinRounds,
             ProficiencyReducesRounds = dto.ProficiencyReducesRounds,
             RequiresIndustryMembership = dto.RequiresIndustryMembership,
-            RequiredIndustryTagsJson = JsonSerializer.Serialize(dto.RequiredIndustryTags ?? [], JsonOptions),
-            AllowedAreaResRefsJson = JsonSerializer.Serialize(dto.AllowedAreaResRefs ?? [], JsonOptions),
-            RequiredKnowledgeTagsJson = JsonSerializer.Serialize(dto.RequiredKnowledgeTags ?? [], JsonOptions),
-            ResponsesJson = SerializeResponses(dto.Responses)
-        };
-    }
-
-    private static string SerializeResponses(List<ResponseDto>? responses)
-    {
-        if (responses == null || responses.Count == 0) return "[]";
-
-        List<ResponseJsonDto> jsonDtos = responses.Select(r => new ResponseJsonDto
-        {
-            ResponseTag = r.ResponseTag,
-            Weight = r.Weight,
-            MinProficiency = r.MinProficiency,
-            Message = r.Message,
-            Effects = r.Effects?.Select(e => new EffectJsonDto
+            RequiredIndustryTags = dto.RequiredIndustryTags ?? [],
+            AllowedAreaResRefs = dto.AllowedAreaResRefs ?? [],
+            RequiredKnowledgeTags = dto.RequiredKnowledgeTags ?? [],
+            Responses = (dto.Responses ?? []).Select(r =>
             {
-                EffectType = e.EffectType,
-                Value = e.Value,
-                Metadata = e.Metadata
-            }).ToList() ?? []
-        }).ToList();
-
-        return JsonSerializer.Serialize(jsonDtos, JsonOptions);
-    }
-
-    private static List<string> DeserializeStringList(string? json)
-    {
-        if (string.IsNullOrEmpty(json) || json == "[]") return [];
-        try { return JsonSerializer.Deserialize<List<string>>(json, JsonOptions) ?? []; }
-        catch { return []; }
+                Enum.TryParse<ProficiencyLevel>(r.MinProficiency, true, out ProficiencyLevel minProf);
+                return new InteractionResponse
+                {
+                    ResponseTag = r.ResponseTag!,
+                    Weight = r.Weight,
+                    MinProficiency = string.IsNullOrWhiteSpace(r.MinProficiency) ? null : minProf,
+                    Message = r.Message,
+                    Effects = (r.Effects ?? []).Select(e => new InteractionResponseEffect
+                    {
+                        EffectType = Enum.TryParse<InteractionResponseEffectType>(e.EffectType, true, out InteractionResponseEffectType et)
+                            ? et : InteractionResponseEffectType.Custom,
+                        Value = e.Value ?? string.Empty,
+                        Metadata = e.Metadata ?? new Dictionary<string, object>()
+                    }).ToList()
+                };
+            }).ToList()
+        };
     }
 
     // ═══════════════════════════════════════════════════════════════════

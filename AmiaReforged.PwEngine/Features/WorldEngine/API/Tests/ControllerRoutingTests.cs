@@ -51,52 +51,51 @@ public class ControllerRoutingTests
     }
 
     [Test]
-    public void ScanAssembly_WhenBankingControllerScanned_ShouldDiscoverAllRoutes()
+    public void ScanAssembly_WhenItemControllerScanned_ShouldDiscoverAllRoutes()
     {
         // Arrange & Act
-        _routeTable.ScanType(typeof(Controllers.ExampleBankingController));
+        _routeTable.ScanType(typeof(Controllers.ItemController));
         List<(string Method, string Pattern, string Handler)> routes = _routeTable.GetRoutes().ToList();
 
         // Assert
         Assert.That(routes, Is.Not.Empty);
-        Assert.That(routes.Any(r => r.Pattern.Contains("/treasuries")), Is.True);
-        Assert.That(routes.Any(r => r.Pattern.Contains("/banking")), Is.True);
+        Assert.That(routes.Any(r => r.Pattern.Contains("/items")), Is.True);
     }
 
     [Test]
-    public async Task BankingController_WhenGetTreasuryBalanceCalled_ShouldExtractId()
+    public async Task ItemController_WhenGetAllCalledWithoutFacade_ShouldReturnServiceUnavailable()
     {
         // Arrange
-        _routeTable.ScanType(typeof(Controllers.ExampleBankingController));
+        _routeTable.ScanType(typeof(Controllers.ItemController));
 
-        // Act
+        // Act — no service provider and no Anvil runtime, so the facade guard trips
         ApiResult? result = await _routeTable.DispatchAsync(
             "GET",
-            "/api/worldengine/treasuries/123/balance",
+            "/api/worldengine/items",
             null!,
             CancellationToken.None);
 
         // Assert
         Assert.That(result, Is.Not.Null);
-        Assert.That(result.StatusCode, Is.EqualTo(200));
+        Assert.That(result.StatusCode, Is.EqualTo(503));
     }
 
     [Test]
-    public async Task BankingController_WhenApplyInterestCalled_ShouldReturnBadRequestWithoutBody()
+    public async Task ItemController_WhenGetByTagCalledWithoutFacade_ShouldReturnServiceUnavailable()
     {
         // Arrange
-        _routeTable.ScanType(typeof(Controllers.ExampleBankingController));
+        _routeTable.ScanType(typeof(Controllers.ItemController));
 
         // Act
         ApiResult? result = await _routeTable.DispatchAsync(
-            "POST",
-            "/api/worldengine/banking/apply-interest",
+            "GET",
+            "/api/worldengine/items/some-tag",
             null!,
             CancellationToken.None);
 
-        // Assert - Should return 400 when no body provided (correct behavior)
+        // Assert
         Assert.That(result, Is.Not.Null);
-        Assert.That(result.StatusCode, Is.EqualTo(400));
+        Assert.That(result.StatusCode, Is.EqualTo(503));
     }
 
     [Test]
@@ -104,12 +103,12 @@ public class ControllerRoutingTests
     {
         // Arrange & Act
         _routeTable.ScanType(typeof(Controllers.HealthController));
-        _routeTable.ScanType(typeof(Controllers.ExampleBankingController));
+        _routeTable.ScanType(typeof(Controllers.ItemController));
 
         List<(string Method, string Pattern, string Handler)> routes = _routeTable.GetRoutes().ToList();
 
         // Assert
-        Assert.That(routes.Count, Is.GreaterThanOrEqualTo(3)); // At least health + 2 banking routes
+        Assert.That(routes.Count, Is.GreaterThanOrEqualTo(3)); // At least health + item routes
     }
 
     [Test]

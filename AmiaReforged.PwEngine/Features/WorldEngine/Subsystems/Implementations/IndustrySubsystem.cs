@@ -12,7 +12,8 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Implementations;
 
 /// <summary>
 /// Concrete implementation of the Industry subsystem.
-/// Delegates to existing command and query handlers.
+/// Routes command/query operations through the central dispatchers so writes get
+/// logging, the exception-to-Fail contract, and CommandExecutedEvent publishing.
 /// </summary>
 [ServiceBinding(typeof(IIndustrySubsystem))]
 public sealed class IndustrySubsystem : IIndustrySubsystem
@@ -20,30 +21,21 @@ public sealed class IndustrySubsystem : IIndustrySubsystem
     private readonly IIndustryRepository _industryRepository;
     private readonly IIndustryMembershipRepository _membershipRepository;
     private readonly ICharacterKnowledgeRepository _knowledgeRepository;
-    private readonly ICommandHandler<CraftItemCommand> _craftHandler;
-    private readonly ICommandHandler<AddRecipeToIndustryCommand> _addRecipeHandler;
-    private readonly ICommandHandler<RemoveRecipeFromIndustryCommand> _removeRecipeHandler;
-    private readonly IQueryHandler<GetAvailableRecipesQuery, List<Recipe>> _availableRecipesHandler;
-    private readonly IQueryHandler<GetWorkstationRecipesQuery, List<Recipe>> _workstationRecipesHandler;
+    private readonly ICommandDispatcher _commands;
+    private readonly IQueryDispatcher _queries;
 
     public IndustrySubsystem(
         IIndustryRepository industryRepository,
         IIndustryMembershipRepository membershipRepository,
         ICharacterKnowledgeRepository knowledgeRepository,
-        ICommandHandler<CraftItemCommand> craftHandler,
-        ICommandHandler<AddRecipeToIndustryCommand> addRecipeHandler,
-        ICommandHandler<RemoveRecipeFromIndustryCommand> removeRecipeHandler,
-        IQueryHandler<GetAvailableRecipesQuery, List<Recipe>> availableRecipesHandler,
-        IQueryHandler<GetWorkstationRecipesQuery, List<Recipe>> workstationRecipesHandler)
+        ICommandDispatcher commands,
+        IQueryDispatcher queries)
     {
         _industryRepository = industryRepository;
         _membershipRepository = membershipRepository;
         _knowledgeRepository = knowledgeRepository;
-        _craftHandler = craftHandler;
-        _addRecipeHandler = addRecipeHandler;
-        _removeRecipeHandler = removeRecipeHandler;
-        _availableRecipesHandler = availableRecipesHandler;
-        _workstationRecipesHandler = workstationRecipesHandler;
+        _commands = commands;
+        _queries = queries;
     }
 
     public Task<Industry?> GetIndustryAsync(IndustryTag industryTag, CancellationToken ct = default)
@@ -59,7 +51,7 @@ public sealed class IndustrySubsystem : IIndustrySubsystem
     }
 
     public Task<CommandResult> CraftItemAsync(CraftItemCommand command, CancellationToken ct = default)
-        => _craftHandler.HandleAsync(command, ct);
+        => _commands.DispatchAsync(command, ct);
 
     public Task<List<Recipe>> GetAvailableRecipesAsync(CharacterId characterId, IndustryTag industryTag, CancellationToken ct = default)
     {
@@ -68,7 +60,7 @@ public sealed class IndustrySubsystem : IIndustrySubsystem
             CharacterId = characterId,
             IndustryTag = industryTag
         };
-        return _availableRecipesHandler.HandleAsync(query, ct);
+        return _queries.DispatchAsync<GetAvailableRecipesQuery, List<Recipe>>(query, ct);
     }
 
     public Task<Recipe?> GetRecipeAsync(string recipeId, IndustryTag industryTag, CancellationToken ct = default)
@@ -138,10 +130,10 @@ public sealed class IndustrySubsystem : IIndustrySubsystem
     }
 
     public Task<CommandResult> AddRecipeToIndustryAsync(AddRecipeToIndustryCommand command, CancellationToken ct = default)
-        => _addRecipeHandler.HandleAsync(command, ct);
+        => _commands.DispatchAsync(command, ct);
 
     public Task<CommandResult> RemoveRecipeFromIndustryAsync(RemoveRecipeFromIndustryCommand command, CancellationToken ct = default)
-        => _removeRecipeHandler.HandleAsync(command, ct);
+        => _commands.DispatchAsync(command, ct);
 
     public Task<List<Recipe>> GetWorkstationRecipesAsync(
         CharacterId characterId, WorkstationTag workstationTag, CancellationToken ct = default)
@@ -151,7 +143,7 @@ public sealed class IndustrySubsystem : IIndustrySubsystem
             CharacterId = characterId,
             WorkstationTag = workstationTag
         };
-        return _workstationRecipesHandler.HandleAsync(query, ct);
+        return _queries.DispatchAsync<GetWorkstationRecipesQuery, List<Recipe>>(query, ct);
     }
 }
 

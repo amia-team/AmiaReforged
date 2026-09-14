@@ -35,6 +35,11 @@ public class InMemoryOrganizationRepository : IOrganizationRepository
         }
     }
 
+    public bool Delete(OrganizationId organizationId)
+    {
+        return _organizations.Remove(organizationId);
+    }
+
     public void SaveChanges()
     {
         // No-op for in-memory implementation

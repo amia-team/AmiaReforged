@@ -130,6 +130,27 @@ public class PersistentOrganizationRepository(PwContextFactory factory) : IOrgan
         }
     }
 
+    public bool Delete(OrganizationId id)
+    {
+        using PwEngineContext ctx = factory.CreateDbContext();
+
+        try
+        {
+            OrganizationEntity? existing = ctx.Organizations.FirstOrDefault(o => o.Id == id.Value);
+            if (existing is null)
+                return false;
+
+            ctx.Organizations.Remove(existing);
+            ctx.SaveChanges();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to delete organization {Organization}", id);
+            throw;
+        }
+    }
+
     public void SaveChanges()
     {
         using PwEngineContext ctx = factory.CreateDbContext();

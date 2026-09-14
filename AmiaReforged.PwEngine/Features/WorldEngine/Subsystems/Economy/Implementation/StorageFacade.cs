@@ -10,50 +10,42 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 
 /// <summary>
 /// Implementation of the Storage Gateway.
-/// Delegates to existing command and query handlers for storage operations.
+/// Routes operations through the central command/query dispatchers so writes get
+/// logging, the exception-to-Fail contract, and CommandExecutedEvent publishing.
 /// </summary>
 [ServiceBinding(typeof(IStorageFacade))]
 public sealed class StorageFacade : IStorageFacade
 {
-    private readonly ICommandHandler<StoreItemCommand> _storeItemHandler;
-    private readonly ICommandHandler<WithdrawItemCommand> _withdrawItemHandler;
-    private readonly IQueryHandler<GetStoredItemsQuery, List<StoredItemDto>> _getStoredItemsHandler;
-    private readonly IQueryHandler<GetStorageCapacityQuery, GetStorageCapacityResult> _getCapacityHandler;
-    private readonly ICommandHandler<UpgradeStorageCapacityCommand> _upgradeCapacityHandler;
+    private readonly ICommandDispatcher _commands;
+    private readonly IQueryDispatcher _queries;
 
     public StorageFacade(
-        ICommandHandler<StoreItemCommand> storeItemHandler,
-        ICommandHandler<WithdrawItemCommand> withdrawItemHandler,
-        IQueryHandler<GetStoredItemsQuery, List<StoredItemDto>> getStoredItemsHandler,
-        IQueryHandler<GetStorageCapacityQuery, GetStorageCapacityResult> getCapacityHandler,
-        ICommandHandler<UpgradeStorageCapacityCommand> upgradeCapacityHandler)
+        ICommandDispatcher commands,
+        IQueryDispatcher queries)
     {
-        _storeItemHandler = storeItemHandler;
-        _withdrawItemHandler = withdrawItemHandler;
-        _getStoredItemsHandler = getStoredItemsHandler;
-        _getCapacityHandler = getCapacityHandler;
-        _upgradeCapacityHandler = upgradeCapacityHandler;
+        _commands = commands;
+        _queries = queries;
     }
 
     /// <inheritdoc />
     public Task<CommandResult> StoreItemAsync(StoreItemCommand command, CancellationToken ct = default)
-        => _storeItemHandler.HandleAsync(command, ct);
+        => _commands.DispatchAsync(command, ct);
 
     /// <inheritdoc />
     public Task<CommandResult> WithdrawItemAsync(WithdrawItemCommand command, CancellationToken ct = default)
-        => _withdrawItemHandler.HandleAsync(command, ct);
+        => _commands.DispatchAsync(command, ct);
 
     /// <inheritdoc />
     public Task<List<StoredItemDto>> GetStoredItemsAsync(GetStoredItemsQuery query, CancellationToken ct = default)
-        => _getStoredItemsHandler.HandleAsync(query, ct);
+        => _queries.DispatchAsync<GetStoredItemsQuery, List<StoredItemDto>>(query, ct);
 
     /// <inheritdoc />
     public Task<GetStorageCapacityResult> GetStorageCapacityAsync(GetStorageCapacityQuery query, CancellationToken ct = default)
-        => _getCapacityHandler.HandleAsync(query, ct);
+        => _queries.DispatchAsync<GetStorageCapacityQuery, GetStorageCapacityResult>(query, ct);
 
     /// <inheritdoc />
     public Task<CommandResult> UpgradeStorageCapacityAsync(UpgradeStorageCapacityCommand command, CancellationToken ct = default)
-        => _upgradeCapacityHandler.HandleAsync(command, ct);
+        => _commands.DispatchAsync(command, ct);
 
     // === Convenience Overloads ===
 

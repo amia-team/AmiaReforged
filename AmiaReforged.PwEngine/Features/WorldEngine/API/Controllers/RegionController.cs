@@ -1,6 +1,10 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using AmiaReforged.PwEngine.Features.Encounters.Models;
+using AmiaReforged.PwEngine.Features.WorldEngine;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.Regions.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.Regions.Queries;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions.Persistence;
@@ -28,35 +32,22 @@ public class RegionController
     [HttpGet("/api/worldengine/regions")]
     public static async Task<ApiResult> GetAll(RouteContext ctx)
     {
-        IRegionRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
         string? search = ctx.GetQueryParam("search");
         int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
         int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
 
-        List<RegionDefinition> paged;
-        int totalCount;
+        List<RegionDefinition> matches = await facade.QueryAsync<SearchRegionDefinitionsQuery, List<RegionDefinition>>(
+            new SearchRegionDefinitionsQuery { SearchTerm = search }, ctx.CancellationToken);
 
-        if (repo is DbRegionRepository dbRepo)
-        {
-            paged = dbRepo.Search(search, page, pageSize, out totalCount);
-        }
-        else
-        {
-            List<RegionDefinition> allRegions = repo.All();
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                allRegions = allRegions.Where(r =>
-                    r.Tag.Value.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                    r.Name.Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
-            }
-
-            totalCount = allRegions.Count;
-            paged = allRegions
-                .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
-        }
+        int totalCount = matches.Count;
+        List<RegionDefinition> paged = matches
+            .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
 
         return await Task.FromResult(new ApiResult(200, new
         {
@@ -75,10 +66,11 @@ public class RegionController
     public static async Task<ApiResult> GetByTag(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        IRegionRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        RegionDefinition? region = repo.All().FirstOrDefault(r =>
-            r.Tag.Value.Equals(tag, StringComparison.OrdinalIgnoreCase));
+        RegionDefinition? region = await facade.QueryAsync<GetRegionDefinitionQuery, RegionDefinition?>(
+            new GetRegionDefinitionQuery { Tag = tag }, ctx.CancellationToken);
         if (region == null)
         {
             return await Task.FromResult(new ApiResult(404, new ErrorResponse(
@@ -107,9 +99,17 @@ public class RegionController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        IRegionRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
         RegionDefinition definition = FromDto(dto);
-        repo.Add(definition);
+        CommandResult result = await facade.ExecuteAsync(new UpsertRegionCommand
+        {
+            Definition = definition
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
+            return new ApiResult(400, new ErrorResponse("Command failed", result.ErrorMessage));
 
         return new ApiResult(201, ToDto(definition));
     }
@@ -122,15 +122,6 @@ public class RegionController
     public static async Task<ApiResult> Update(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        IRegionRepository repo = ResolveRepository();
-
-        RegionDefinition? existing = repo.All().FirstOrDefault(r =>
-            r.Tag.Value.Equals(tag, StringComparison.OrdinalIgnoreCase));
-        if (existing == null)
-        {
-            return await Task.FromResult(new ApiResult(404, new ErrorResponse(
-                "Not found", $"No region with tag '{tag}'")));
-        }
 
         RegionDto? dto = await ctx.ReadJsonBodyAsync<RegionDto>();
         if (dto == null)
@@ -144,8 +135,22 @@ public class RegionController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
         RegionDefinition definition = FromDto(dto);
-        repo.Update(definition);
+        CommandResult result = await facade.ExecuteAsync(new UpdateRegionCommand
+        {
+            Tag = tag,
+            Definition = definition
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
+        {
+            bool notFound = result.ErrorMessage?.StartsWith("No region with tag", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(notFound ? 404 : 400, new ErrorResponse(
+                notFound ? "Not found" : "Command failed", result.ErrorMessage));
+        }
 
         return new ApiResult(200, ToDto(definition));
     }
@@ -158,13 +163,18 @@ public class RegionController
     public static async Task<ApiResult> Delete(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        IRegionRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        bool deleted = repo.Delete(new RegionTag(tag));
-        if (!deleted)
+        CommandResult result = await facade.ExecuteAsync(new DeleteRegionCommand
+        {
+            Tag = tag
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
         {
             return await Task.FromResult(new ApiResult(404, new ErrorResponse(
-                "Not found", $"No region with tag '{tag}'")));
+                "Not found", result.ErrorMessage)));
         }
 
         return await Task.FromResult(new ApiResult(204, new { message = "Deleted" }));
@@ -177,16 +187,13 @@ public class RegionController
     [HttpGet("/api/worldengine/regions/export")]
     public static async Task<ApiResult> Export(RouteContext ctx)
     {
-        IRegionRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
         string? search = ctx.GetQueryParam("search");
 
-        List<RegionDefinition> regions = repo.All();
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            regions = regions.Where(r =>
-                r.Tag.Value.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                r.Name.Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
-        }
+        List<RegionDefinition> regions = await facade.QueryAsync<SearchRegionDefinitionsQuery, List<RegionDefinition>>(
+            new SearchRegionDefinitionsQuery { SearchTerm = search }, ctx.CancellationToken);
 
         return await Task.FromResult(new ApiResult(200,
             regions.OrderBy(r => r.Name).Select(ToDto).ToArray()));
@@ -200,7 +207,8 @@ public class RegionController
     [HttpPost("/api/worldengine/regions/import")]
     public static async Task<ApiResult> Import(RouteContext ctx)
     {
-        IRegionRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
         string? body = null;
         if (ctx.Request != null)
@@ -239,30 +247,47 @@ public class RegionController
                 "No valid region definitions found in request body"));
         }
 
-        int succeeded = 0;
         int failed = 0;
         List<string> errors = new();
+        List<(string Tag, UpsertRegionCommand Command)> valid = new();
 
         foreach (RegionDto dto in dtos)
         {
+            string? validationError = ValidateDto(dto);
+            if (validationError != null)
+            {
+                failed++;
+                errors.Add($"{dto.Tag ?? "unknown"}: {validationError}");
+                continue;
+            }
+
             try
             {
-                string? validationError = ValidateDto(dto);
-                if (validationError != null)
-                {
-                    failed++;
-                    errors.Add($"{dto.Tag ?? "unknown"}: {validationError}");
-                    continue;
-                }
-
-                RegionDefinition definition = FromDto(dto);
-                repo.Add(definition); // Acts as upsert — replaces by tag key
-                succeeded++;
+                valid.Add((dto.Tag, new UpsertRegionCommand { Definition = FromDto(dto) }));
             }
             catch (Exception ex)
             {
                 failed++;
                 errors.Add($"{dto.Tag ?? "unknown"}: {ex.Message}");
+            }
+        }
+
+        BatchCommandResult batch = await facade.ExecuteBatchAsync(
+            valid.Select(v => v.Command),
+            BatchExecutionOptions.ContinueOnFailure(),
+            ctx.CancellationToken);
+
+        int succeeded = 0;
+        for (int i = 0; i < batch.Results.Count; i++)
+        {
+            if (batch.Results[i].Success)
+            {
+                succeeded++;
+            }
+            else
+            {
+                failed++;
+                errors.Add($"{valid[i].Tag}: {batch.Results[i].ErrorMessage}");
             }
         }
 
@@ -273,12 +298,6 @@ public class RegionController
             total = dtos.Count,
             errors
         });
-    }
-
-    private static IRegionRepository ResolveRepository()
-    {
-        return AnvilCore.GetService<IRegionRepository>()
-               ?? throw new InvalidOperationException("IRegionRepository service not available");
     }
 
     private static string? ValidateDto(RegionDto dto)

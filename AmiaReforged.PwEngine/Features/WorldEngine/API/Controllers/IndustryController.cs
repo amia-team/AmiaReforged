@@ -1,6 +1,10 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using AmiaReforged.PwEngine.Features.WorldEngine;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
@@ -30,12 +34,18 @@ public class IndustryController
     [HttpGet("/api/worldengine/industries")]
     public static async Task<ApiResult> GetAll(RouteContext ctx)
     {
-        IIndustryRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
         string? search = ctx.GetQueryParam("search");
         int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
         int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
 
-        List<Industry> paged = repo.Search(search, page, pageSize, out int totalCount);
+        List<Industry> matches = await facade.QueryAsync<SearchIndustryDefinitionsQuery, List<Industry>>(
+            new SearchIndustryDefinitionsQuery { SearchTerm = search }, ctx.CancellationToken);
+
+        int totalCount = matches.Count;
+        List<Industry> paged = matches.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
         return await Task.FromResult(new ApiResult(200, new
         {
@@ -54,9 +64,11 @@ public class IndustryController
     public static async Task<ApiResult> GetByTag(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        IIndustryRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        Industry? industry = repo.Get(tag);
+        Industry? industry = await facade.QueryAsync<GetIndustryDefinitionQuery, Industry?>(
+            new GetIndustryDefinitionQuery { Tag = tag }, ctx.CancellationToken);
         if (industry == null)
         {
             return await Task.FromResult(new ApiResult(404, new ErrorResponse(
@@ -85,16 +97,21 @@ public class IndustryController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        IIndustryRepository repo = ResolveRepository();
-
-        if (repo.IndustryExists(dto.Tag))
-        {
-            return new ApiResult(409, new ErrorResponse("Conflict",
-                $"Industry with tag '{dto.Tag}' already exists"));
-        }
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
         Industry industry = FromDto(dto);
-        repo.Add(industry);
+        CommandResult result = await facade.ExecuteAsync(new CreateIndustryCommand
+        {
+            Industry = industry
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
+        {
+            bool conflict = result.ErrorMessage?.Contains("already exists", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(conflict ? 409 : 400,
+                new ErrorResponse(conflict ? "Conflict" : "Command failed", result.ErrorMessage));
+        }
 
         return new ApiResult(201, ToDto(industry));
     }
@@ -107,14 +124,6 @@ public class IndustryController
     public static async Task<ApiResult> Update(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        IIndustryRepository repo = ResolveRepository();
-
-        Industry? existing = repo.Get(tag);
-        if (existing == null)
-        {
-            return await Task.FromResult(new ApiResult(404, new ErrorResponse(
-                "Not found", $"No industry with tag '{tag}'")));
-        }
 
         IndustryDto? dto = await ctx.ReadJsonBodyAsync<IndustryDto>();
         if (dto == null)
@@ -128,10 +137,24 @@ public class IndustryController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
         // Ensure the tag in the body matches the route
         dto = dto with { Tag = tag };
         Industry industry = FromDto(dto);
-        repo.Update(industry);
+        CommandResult result = await facade.ExecuteAsync(new UpdateIndustryCommand
+        {
+            Tag = tag,
+            Industry = industry
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
+        {
+            bool notFound = result.ErrorMessage?.StartsWith("No industry with tag", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(notFound ? 404 : 400, new ErrorResponse(
+                notFound ? "Not found" : "Command failed", result.ErrorMessage));
+        }
 
         return new ApiResult(200, ToDto(industry));
     }
@@ -144,13 +167,18 @@ public class IndustryController
     public static async Task<ApiResult> Delete(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        IIndustryRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        bool deleted = repo.Delete(tag);
-        if (!deleted)
+        CommandResult result = await facade.ExecuteAsync(new DeleteIndustryCommand
+        {
+            Tag = tag
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
         {
             return await Task.FromResult(new ApiResult(404, new ErrorResponse(
-                "Not found", $"No industry with tag '{tag}'")));
+                "Not found", result.ErrorMessage)));
         }
 
         return await Task.FromResult(new ApiResult(204, new { message = "Deleted" }));
@@ -163,16 +191,13 @@ public class IndustryController
     [HttpGet("/api/worldengine/industries/export")]
     public static async Task<ApiResult> Export(RouteContext ctx)
     {
-        IIndustryRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
         string? search = ctx.GetQueryParam("search");
 
-        List<Industry> industries = repo.All();
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            industries = industries.Where(i =>
-                i.Tag.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                i.Name.Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
-        }
+        List<Industry> industries = await facade.QueryAsync<SearchIndustryDefinitionsQuery, List<Industry>>(
+            new SearchIndustryDefinitionsQuery { SearchTerm = search }, ctx.CancellationToken);
 
         return await Task.FromResult(new ApiResult(200,
             industries.OrderBy(i => i.Name).Select(ToDto).ToArray()));
@@ -186,7 +211,8 @@ public class IndustryController
     [HttpPost("/api/worldengine/industries/import")]
     public static async Task<ApiResult> Import(RouteContext ctx)
     {
-        IIndustryRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
         string? body = null;
         if (ctx.Request != null)
@@ -225,30 +251,47 @@ public class IndustryController
                 "No valid industry definitions found in request body"));
         }
 
-        int succeeded = 0;
         int failed = 0;
         List<string> errors = new();
+        List<(string Tag, UpsertIndustryCommand Command)> valid = new();
 
         foreach (IndustryDto dto in dtos)
         {
+            string? validationError = ValidateDto(dto);
+            if (validationError != null)
+            {
+                failed++;
+                errors.Add($"{dto.Tag ?? "unknown"}: {validationError}");
+                continue;
+            }
+
             try
             {
-                string? validationError = ValidateDto(dto);
-                if (validationError != null)
-                {
-                    failed++;
-                    errors.Add($"{dto.Tag ?? "unknown"}: {validationError}");
-                    continue;
-                }
-
-                Industry industry = FromDto(dto);
-                repo.Add(industry); // Acts as upsert
-                succeeded++;
+                valid.Add((dto.Tag, new UpsertIndustryCommand { Industry = FromDto(dto) }));
             }
             catch (Exception ex)
             {
                 failed++;
                 errors.Add($"{dto.Tag ?? "unknown"}: {ex.Message}");
+            }
+        }
+
+        BatchCommandResult batch = await facade.ExecuteBatchAsync(
+            valid.Select(v => v.Command),
+            BatchExecutionOptions.ContinueOnFailure(),
+            ctx.CancellationToken);
+
+        int succeeded = 0;
+        for (int i = 0; i < batch.Results.Count; i++)
+        {
+            if (batch.Results[i].Success)
+            {
+                succeeded++;
+            }
+            else
+            {
+                failed++;
+                errors.Add($"{valid[i].Tag}: {batch.Results[i].ErrorMessage}");
             }
         }
 
@@ -259,12 +302,6 @@ public class IndustryController
             total = dtos.Count,
             errors
         });
-    }
-
-    private static IIndustryRepository ResolveRepository()
-    {
-        return AnvilCore.GetService<IIndustryRepository>()
-               ?? throw new InvalidOperationException("IIndustryRepository service not available");
     }
 
     private static string? ValidateDto(IndustryDto dto)
@@ -549,16 +586,20 @@ public class IndustryController
     [HttpGet("/api/worldengine/industries/progression-config")]
     public static async Task<ApiResult> GetProgressionConfig(RouteContext ctx)
     {
-        IWorldConfigProvider config = AnvilCore.GetService<IWorldConfigProvider>()!;
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
+        ProgressionConfig config = await facade.QueryAsync<GetProgressionConfigQuery, ProgressionConfig>(
+            new GetProgressionConfigQuery(), ctx.CancellationToken);
 
         ProgressionConfigDto dto = new()
         {
-            BaseCost = config.GetInt(WorldConstants.KnowledgeProgressionBaseCost) ?? 100,
-            ScalingFactor = config.GetFloat(WorldConstants.KnowledgeProgressionScalingFactor) ?? 1.15f,
-            CurveType = config.GetString(WorldConstants.KnowledgeProgressionCurveType) ?? "Exponential",
-            SoftCap = config.GetInt(WorldConstants.KnowledgePointDefaultSoftCap) ?? 100,
-            HardCap = config.GetInt(WorldConstants.KnowledgePointDefaultHardCap) ?? 150,
-            SoftCapPenaltyMultiplier = config.GetFloat(WorldConstants.KnowledgeSoftCapPenaltyMultiplier) ?? 3.0f
+            BaseCost = config.BaseCost,
+            ScalingFactor = config.ScalingFactor,
+            CurveType = config.CurveType,
+            SoftCap = config.SoftCap,
+            HardCap = config.HardCap,
+            SoftCapPenaltyMultiplier = config.SoftCapPenaltyMultiplier
         };
 
         return await Task.FromResult(new ApiResult(200, dto));
@@ -594,14 +635,24 @@ public class IndustryController
         if (dto == null)
             return new ApiResult(400, new { error = "Invalid request body" });
 
-        IWorldConfigProvider config = AnvilCore.GetService<IWorldConfigProvider>()!;
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        config.SetInt(WorldConstants.KnowledgeProgressionBaseCost, dto.BaseCost);
-        config.SetFloat(WorldConstants.KnowledgeProgressionScalingFactor, dto.ScalingFactor);
-        config.SetString(WorldConstants.KnowledgeProgressionCurveType, dto.CurveType);
-        config.SetInt(WorldConstants.KnowledgePointDefaultSoftCap, dto.SoftCap);
-        config.SetInt(WorldConstants.KnowledgePointDefaultHardCap, dto.HardCap);
-        config.SetFloat(WorldConstants.KnowledgeSoftCapPenaltyMultiplier, dto.SoftCapPenaltyMultiplier);
+        CommandResult result = await facade.ExecuteAsync(new UpdateProgressionConfigCommand
+        {
+            Config = new ProgressionConfig
+            {
+                BaseCost = dto.BaseCost,
+                ScalingFactor = dto.ScalingFactor,
+                CurveType = dto.CurveType,
+                SoftCap = dto.SoftCap,
+                HardCap = dto.HardCap,
+                SoftCapPenaltyMultiplier = dto.SoftCapPenaltyMultiplier
+            }
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
+            return new ApiResult(400, new { error = result.ErrorMessage });
 
         return new ApiResult(200, dto);
     }
@@ -613,8 +664,11 @@ public class IndustryController
     [HttpGet("/api/worldengine/industries/cap-profiles")]
     public static async Task<ApiResult> GetCapProfiles(RouteContext ctx)
     {
-        IKnowledgeCapProfileRepository repo = AnvilCore.GetService<IKnowledgeCapProfileRepository>()!;
-        List<KnowledgeCapProfile> profiles = repo.GetAll();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
+        List<KnowledgeCapProfile> profiles = await facade.QueryAsync<GetCapProfilesQuery, List<KnowledgeCapProfile>>(
+            new GetCapProfilesQuery(), ctx.CancellationToken);
 
         KnowledgeCapProfileDto[] dtos = profiles.Select(p => new KnowledgeCapProfileDto
         {
@@ -658,10 +712,8 @@ public class IndustryController
         if (dto == null || string.IsNullOrWhiteSpace(dto.Tag))
             return new ApiResult(400, new { error = "Invalid request body. Tag is required." });
 
-        IKnowledgeCapProfileRepository repo = AnvilCore.GetService<IKnowledgeCapProfileRepository>()!;
-
-        if (repo.GetByTag(dto.Tag) != null)
-            return new ApiResult(409, new { error = $"Cap profile '{dto.Tag}' already exists" });
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
         KnowledgeCapProfile profile = new()
         {
@@ -672,7 +724,17 @@ public class IndustryController
             HardCap = dto.HardCap
         };
 
-        repo.Add(profile);
+        CommandResult result = await facade.ExecuteAsync(new CreateCapProfileCommand
+        {
+            Profile = profile
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
+        {
+            bool conflict = result.ErrorMessage?.Contains("already exists", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(conflict ? 409 : 400, new { error = result.ErrorMessage });
+        }
+
         return new ApiResult(201, dto);
     }
 
@@ -708,25 +770,37 @@ public class IndustryController
         if (dto == null)
             return new ApiResult(400, new { error = "Invalid request body" });
 
-        IKnowledgeCapProfileRepository repo = AnvilCore.GetService<IKnowledgeCapProfileRepository>()!;
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        KnowledgeCapProfile? existing = repo.GetByTag(tag);
-        if (existing == null)
-            return new ApiResult(404, new { error = $"Cap profile '{tag}' not found" });
+        KnowledgeCapProfile profile = new()
+        {
+            Tag = tag,
+            Name = dto.Name ?? tag,
+            Description = dto.Description,
+            SoftCap = dto.SoftCap,
+            HardCap = dto.HardCap
+        };
 
-        existing.Name = dto.Name ?? existing.Name;
-        existing.Description = dto.Description;
-        existing.SoftCap = dto.SoftCap;
-        existing.HardCap = dto.HardCap;
+        CommandResult result = await facade.ExecuteAsync(new UpdateCapProfileCommand
+        {
+            Tag = tag,
+            Profile = profile
+        }, ctx.CancellationToken);
 
-        repo.Update(existing);
+        if (!result.Success)
+        {
+            bool notFound = result.ErrorMessage?.Contains("not found", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(notFound ? 404 : 400, new { error = result.ErrorMessage });
+        }
+
         return new ApiResult(200, new KnowledgeCapProfileDto
         {
-            Tag = existing.Tag,
-            Name = existing.Name,
-            Description = existing.Description,
-            SoftCap = existing.SoftCap,
-            HardCap = existing.HardCap
+            Tag = profile.Tag,
+            Name = profile.Name,
+            Description = profile.Description,
+            SoftCap = profile.SoftCap,
+            HardCap = profile.HardCap
         });
     }
 
@@ -738,15 +812,24 @@ public class IndustryController
     public static async Task<ApiResult> DeleteCapProfile(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        IKnowledgeCapProfileRepository repo = AnvilCore.GetService<IKnowledgeCapProfileRepository>()!;
 
-        if (repo.IsInUse(tag))
-            return await Task.FromResult(new ApiResult(409,
-                new { error = $"Cap profile '{tag}' is assigned to one or more characters and cannot be deleted" }));
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        bool deleted = repo.Delete(tag);
-        if (!deleted)
-            return new ApiResult(404, new { error = $"Cap profile '{tag}' not found" });
+        CommandResult result = await facade.ExecuteAsync(new DeleteCapProfileCommand
+        {
+            Tag = tag
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
+        {
+            bool inUse = result.ErrorMessage?.Contains("cannot be deleted", StringComparison.OrdinalIgnoreCase) == true;
+            if (inUse)
+                return await Task.FromResult(new ApiResult(409,
+                    new { error = result.ErrorMessage }));
+
+            return new ApiResult(404, new { error = result.ErrorMessage });
+        }
 
         return new ApiResult(204, null);
     }

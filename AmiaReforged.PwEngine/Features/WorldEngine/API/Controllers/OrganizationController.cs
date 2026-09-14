@@ -1,12 +1,14 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using AmiaReforged.PwEngine.Database.Entities;
+using AmiaReforged.PwEngine.Features.WorldEngine;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.Organizations.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.Organizations.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Organizations;
 using Anvil;
-
-using DomainOrganization = AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Organizations.Organization;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.API.Controllers;
 
@@ -29,20 +31,20 @@ public class OrganizationController
     [HttpGet("/api/worldengine/organizations")]
     public static async Task<ApiResult> GetAll(RouteContext ctx)
     {
-        IOrganizationRepository repo = ResolveOrganizationRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
         string? search = ctx.GetQueryParam("search");
         string? typeFilter = ctx.GetQueryParam("type");
         int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
         int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
 
-        List<IOrganization> orgs;
+        List<IOrganization> orgs = await facade.QueryAsync<GetAllOrganizationsQuery, List<IOrganization>>(
+            new GetAllOrganizationsQuery(), ctx.CancellationToken);
+
         if (!string.IsNullOrWhiteSpace(typeFilter) && Enum.TryParse<OrganizationType>(typeFilter, true, out OrganizationType orgType))
         {
-            orgs = repo.GetByType(orgType);
-        }
-        else
-        {
-            orgs = repo.GetAll();
+            orgs = orgs.Where(o => o.Type == orgType).ToList();
         }
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -82,8 +84,11 @@ public class OrganizationController
                 "Bad request", "Invalid organization ID format")));
         }
 
-        IOrganizationRepository repo = ResolveOrganizationRepository();
-        IOrganization? org = repo.GetById(OrganizationId.From(id));
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
+        IOrganization? org = await facade.QueryAsync<GetOrganizationDetailsQuery, IOrganization?>(
+            new GetOrganizationDetailsQuery { OrganizationId = OrganizationId.From(id) }, ctx.CancellationToken);
         if (org == null)
         {
             return await Task.FromResult(new ApiResult(404, new ErrorResponse(
@@ -117,29 +122,42 @@ public class OrganizationController
                 $"Invalid organization type '{dto.Type}'. Valid types: {string.Join(", ", Enum.GetNames<OrganizationType>())}"));
         }
 
-        IOrganizationRepository repo = ResolveOrganizationRepository();
-
-        // Check for duplicate name
-        bool nameInUse = repo.GetAll()
-            .Any(o => string.Equals(o.Name, dto.Name, StringComparison.OrdinalIgnoreCase));
-        if (nameInUse)
-        {
-            return new ApiResult(409, new ErrorResponse("Conflict",
-                $"Organization with name '{dto.Name}' already exists"));
-        }
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
         OrganizationId? parentId = dto.ParentOrganizationId.HasValue
             ? OrganizationId.From(dto.ParentOrganizationId.Value)
             : null;
 
-        IOrganization org = DomainOrganization.CreateNew(
-            dto.Name,
-            dto.Description ?? string.Empty,
-            orgType,
-            parentId);
+        CommandResult result = await facade.ExecuteAsync(new CreateOrganizationCommand
+        {
+            Name = dto.Name,
+            Description = dto.Description ?? string.Empty,
+            Type = orgType,
+            ParentOrganizationId = parentId
+        }, ctx.CancellationToken);
 
-        repo.Add(org);
-        repo.SaveChanges();
+        if (!result.Success)
+        {
+            bool conflict = result.ErrorMessage?.Contains("already exists", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(conflict ? 409 : 400,
+                new ErrorResponse(conflict ? "Conflict" : "Command failed", result.ErrorMessage));
+        }
+
+        if (result.Data?.TryGetValue("OrganizationId", out object? idObj) != true
+            || idObj is not OrganizationId newId)
+        {
+            return new ApiResult(500, new ErrorResponse("Internal server error",
+                "Organization was created but its id was not returned"));
+        }
+
+        IOrganization? org = await facade.QueryAsync<GetOrganizationDetailsQuery, IOrganization?>(
+            new GetOrganizationDetailsQuery { OrganizationId = newId }, ctx.CancellationToken);
+        if (org == null)
+        {
+            return new ApiResult(500, new ErrorResponse("Internal server error",
+                "Organization was created but could not be loaded"));
+        }
 
         return new ApiResult(201, ToDto(org));
     }
@@ -158,25 +176,36 @@ public class OrganizationController
                 "Bad request", "Invalid organization ID format")));
         }
 
-        IOrganizationRepository repo = ResolveOrganizationRepository();
-        IOrganization? org = repo.GetById(OrganizationId.From(id));
-        if (org == null)
-        {
-            return await Task.FromResult(new ApiResult(404, new ErrorResponse(
-                "Not found", $"No organization with id '{id}'")));
-        }
-
         UpdateOrganizationDto? dto = await ctx.ReadJsonBodyAsync<UpdateOrganizationDto>();
         if (dto == null)
         {
             return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required"));
         }
 
-        if (dto.Name != null) org.Name = dto.Name;
-        if (dto.Description != null) org.Description = dto.Description;
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        repo.Update(org);
-        repo.SaveChanges();
+        CommandResult result = await facade.ExecuteAsync(new UpdateOrganizationCommand
+        {
+            OrganizationId = OrganizationId.From(id),
+            Name = dto.Name,
+            Description = dto.Description
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
+        {
+            bool notFound = result.ErrorMessage?.Contains("not found", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(notFound ? 404 : 400, new ErrorResponse(
+                notFound ? "Not found" : "Command failed", result.ErrorMessage));
+        }
+
+        IOrganization? org = await facade.QueryAsync<GetOrganizationDetailsQuery, IOrganization?>(
+            new GetOrganizationDetailsQuery { OrganizationId = OrganizationId.From(id) }, ctx.CancellationToken);
+        if (org == null)
+        {
+            return new ApiResult(500, new ErrorResponse("Internal server error",
+                "Organization was updated but could not be loaded"));
+        }
 
         return new ApiResult(200, ToDto(org));
     }
@@ -195,31 +224,20 @@ public class OrganizationController
                 "Bad request", "Invalid organization ID format")));
         }
 
-        IOrganizationRepository repo = ResolveOrganizationRepository();
-        OrganizationId orgId = OrganizationId.From(id);
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        IOrganization? org = repo.GetById(orgId);
-        if (org == null)
+        CommandResult result = await facade.ExecuteAsync(new DisbandOrganizationCommand
         {
-            return await Task.FromResult(new ApiResult(404, new ErrorResponse(
-                "Not found", $"No organization with id '{id}'")));
-        }
+            OrganizationId = OrganizationId.From(id)
+        }, ctx.CancellationToken);
 
-        // Remove all members first
-        IOrganizationMemberRepository memberRepo = ResolveMemberRepository();
-        List<OrganizationMember> members = memberRepo.GetByOrganization(orgId);
-        foreach (OrganizationMember member in members)
+        if (!result.Success)
         {
-            memberRepo.Remove(member);
+            bool notFound = result.ErrorMessage?.Contains("not found", StringComparison.OrdinalIgnoreCase) == true;
+            return await Task.FromResult(new ApiResult(notFound ? 404 : 400, new ErrorResponse(
+                notFound ? "Not found" : "Command failed", result.ErrorMessage)));
         }
-        memberRepo.SaveChanges();
-
-        // Remove the organization itself — use update to mark as disbanded
-        // Since there's no Delete method on the repo, we use a convention
-        // For now, we update the description to indicate disbandment
-        // TODO: Add proper Delete to IOrganizationRepository
-        repo.Update(org);
-        repo.SaveChanges();
 
         return await Task.FromResult(new ApiResult(204, new { message = "Disbanded" }));
     }
@@ -242,14 +260,15 @@ public class OrganizationController
 
         bool activeOnly = !bool.TryParse(ctx.GetQueryParam("activeOnly"), out bool ao) || ao;
 
-        IOrganizationMemberRepository memberRepo = ResolveMemberRepository();
-        OrganizationId orgId = OrganizationId.From(id);
-        List<OrganizationMember> members = memberRepo.GetByOrganization(orgId);
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        if (activeOnly)
-        {
-            members = members.Where(m => m.Status == MembershipStatus.Active).ToList();
-        }
+        List<OrganizationMember> members = await facade.QueryAsync<GetOrganizationMembersQuery, List<OrganizationMember>>(
+            new GetOrganizationMembersQuery
+            {
+                OrganizationId = OrganizationId.From(id),
+                ActiveOnly = activeOnly
+            }, ctx.CancellationToken);
 
         return await Task.FromResult(new ApiResult(200, members.Select(ToMemberDto).ToArray()));
     }
@@ -277,28 +296,40 @@ public class OrganizationController
         OrganizationId orgId = OrganizationId.From(id);
         CharacterId characterId = new CharacterId(dto.CharacterId);
 
-        // Check if already a member
-        IOrganizationMemberRepository memberRepo = ResolveMemberRepository();
-        OrganizationMember? existing = memberRepo.GetByCharacterAndOrganization(characterId, orgId);
-        if (existing is { Status: MembershipStatus.Active })
-        {
-            return new ApiResult(409, new ErrorResponse("Conflict", "Character is already an active member"));
-        }
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
         Enum.TryParse<OrganizationRank>(dto.Rank, true, out OrganizationRank rank);
 
-        OrganizationMember member = new OrganizationMember
+        CommandResult result = await facade.ExecuteAsync(new AddMemberCommand
         {
-            Id = Guid.NewGuid(),
-            CharacterId = characterId,
             OrganizationId = orgId,
-            Rank = rank == default ? OrganizationRank.Recruit : rank,
-            Status = MembershipStatus.Active,
-            JoinedDate = DateTime.UtcNow
-        };
+            CharacterId = characterId,
+            InitialRank = rank == default ? OrganizationRank.Recruit : rank
+        }, ctx.CancellationToken);
 
-        memberRepo.Add(member);
-        memberRepo.SaveChanges();
+        if (!result.Success)
+        {
+            bool conflict = result.ErrorMessage?.Contains("already an active member", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(conflict ? 409 : 400,
+                new ErrorResponse(conflict ? "Conflict" : "Command failed", result.ErrorMessage));
+        }
+
+        if (result.Data?.TryGetValue("MembershipId", out object? idObj) != true
+            || idObj is not Guid membershipId)
+        {
+            return new ApiResult(500, new ErrorResponse("Internal server error",
+                "Member was added but its id was not returned"));
+        }
+
+        List<OrganizationMember> members = await facade.QueryAsync<GetOrganizationMembersQuery, List<OrganizationMember>>(
+            new GetOrganizationMembersQuery { OrganizationId = orgId, ActiveOnly = false }, ctx.CancellationToken);
+        OrganizationMember? member = members.FirstOrDefault(m => m.Id == membershipId);
+        if (member == null)
+        {
+            return new ApiResult(500, new ErrorResponse("Internal server error",
+                "Member was added but could not be loaded"));
+        }
 
         return new ApiResult(201, ToMemberDto(member));
     }
@@ -322,36 +353,27 @@ public class OrganizationController
         OrganizationId orgId = OrganizationId.From(id);
         CharacterId characterId = new CharacterId(charId);
 
-        IOrganizationMemberRepository memberRepo = ResolveMemberRepository();
-        OrganizationMember? member = memberRepo.GetByCharacterAndOrganization(characterId, orgId);
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        if (member == null)
+        CommandResult result = await facade.ExecuteAsync(new RemoveMemberCommand
         {
-            return await Task.FromResult(new ApiResult(404, new ErrorResponse(
-                "Not found", "Member not found in organization")));
-        }
+            OrganizationId = orgId,
+            CharacterId = characterId,
+            RemovedBy = characterId
+        }, ctx.CancellationToken);
 
-        member.Status = MembershipStatus.Departed;
-        member.DepartedDate = DateTime.UtcNow;
-        memberRepo.Update(member);
-        memberRepo.SaveChanges();
+        if (!result.Success)
+        {
+            bool notFound = result.ErrorMessage?.Contains("not found", StringComparison.OrdinalIgnoreCase) == true;
+            return await Task.FromResult(new ApiResult(notFound ? 404 : 400, new ErrorResponse(
+                notFound ? "Not found" : "Command failed", result.ErrorMessage)));
+        }
 
         return await Task.FromResult(new ApiResult(204, new { message = "Removed" }));
     }
 
     // ==================== Helpers ====================
-
-    private static IOrganizationRepository ResolveOrganizationRepository()
-    {
-        return AnvilCore.GetService<IOrganizationRepository>()
-               ?? throw new InvalidOperationException("IOrganizationRepository service not available");
-    }
-
-    private static IOrganizationMemberRepository ResolveMemberRepository()
-    {
-        return AnvilCore.GetService<IOrganizationMemberRepository>()
-               ?? throw new InvalidOperationException("IOrganizationMemberRepository service not available");
-    }
 
     private static object ToDto(IOrganization org)
     {

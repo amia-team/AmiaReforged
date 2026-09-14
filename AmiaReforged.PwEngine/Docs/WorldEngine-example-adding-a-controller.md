@@ -2,6 +2,18 @@
 
 A "controller" is just any class under [../../API/Controllers/](../../API/Controllers/) with route-attribute methods. The router auto-discovers it at module load — no registration required.
 
+> **Hard rule: controllers go through the facade.** Resolve `IWorldEngineFacade`
+> via `ctx.ResolveFacade()` and call `ExecuteAsync` / `QueryAsync` /
+> `ExecuteBatchAsync`. Never touch repositories, `PwEngineContext`, or
+> `ICommandHandler<T>` / `IQueryHandler<T,R>` from a controller — that bypasses
+> dispatch logging, the exception-to-`Fail` contract, and `CommandExecutedEvent`
+> (see [F-1](../cqrs/auditing.md)). If no command/query exists for your operation,
+> add one first ([adding-a-command](WorldEngine-example-adding-a-command.md),
+> [adding-a-query](WorldEngine-example-adding-a-query.md)), then wire the route.
+> `ctx.ResolveFacade()` prefers the request's `IServiceProvider` (used in tests)
+> and falls back to Anvil DI in production; it returns `null` when neither is
+> available — answer `503` via `RouteContextExtensions.FacadeUnavailable()`.
+
 ## 1. Create the controller file
 
 Drop a new file in [../../API/Controllers/](../../API/Controllers/) (or a subfolder). Keep handlers `static` when possible so the router can invoke them without instantiating.
@@ -20,9 +32,11 @@ public class WeatherController
     {
         string region = ctx.GetRouteValue("region");
 
-        var world = ctx.Services!.GetRequiredService<IWorldEngineFacade>();
+        var world = ctx.ResolveFacade();
+        if (world is null) return RouteContextExtensions.FacadeUnavailable();
+
         var forecast = await world.QueryAsync<GetWeatherForecastQuery, WeatherForecast>(
-            new GetWeatherForecastQuery { Region = new RegionTag(region) });
+            new GetWeatherForecastQuery { Region = new RegionTag(region) }, ctx.CancellationToken);
 
         if (forecast is null)
             return new ApiResult(404, new ErrorResponse("Not found", $"No forecast for '{region}'"));
@@ -38,12 +52,14 @@ public class WeatherController
         if (body is null)
             return new ApiResult(400, new ErrorResponse("Bad request", "Body required"));
 
-        var world = ctx.Services!.GetRequiredService<IWorldEngineFacade>();
+        var world = ctx.ResolveFacade();
+        if (world is null) return RouteContextExtensions.FacadeUnavailable();
+
         var result = await world.ExecuteAsync(new SeedWeatherCommand
         {
             Region = new RegionTag(ctx.GetRouteValue("region")),
             Seed   = body.Seed
-        });
+        }, ctx.CancellationToken);
 
         return result.Success
             ? new ApiResult(200, new { seeded = true })
@@ -98,9 +114,13 @@ curl -sS http://localhost:8080/api/worldengine/weather/amia \
 Add a test under `API/Tests/` covering:
 
 - Route discovery (`RouteTable.ScanType(typeof(WeatherController))`).
-- Dispatch for a couple of happy / unhappy paths.
+- Dispatch for a couple of happy / unhappy paths, passing a stub
+  `IServiceProvider` that returns a mocked `IWorldEngineFacade` (no Anvil
+  runtime needed) — plus the no-provider `503` guard case.
 
-See [`ControllerRoutingTests.cs`](../../API/Tests/ControllerRoutingTests.cs) and [`EchoControllerTests.cs`](../../API/Tests/EchoControllerTests.cs) for patterns.
+See [`ControllerRoutingTests.cs`](../../API/Tests/ControllerRoutingTests.cs),
+[`ControllerCqrsTests.cs`](../../API/Tests/ControllerCqrsTests.cs), and
+[`EchoControllerTests.cs`](../../API/Tests/EchoControllerTests.cs) for patterns.
 
 ## Gotchas
 

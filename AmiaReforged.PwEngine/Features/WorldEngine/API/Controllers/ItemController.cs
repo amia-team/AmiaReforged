@@ -1,5 +1,9 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using AmiaReforged.PwEngine.Features.WorldEngine;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.Items.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.Items.Queries;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
@@ -28,32 +32,28 @@ public class ItemController
     [HttpGet("/api/worldengine/items")]
     public static async Task<ApiResult> GetAll(RouteContext ctx)
     {
-        IItemDefinitionRepository repo = ResolveRepository();
-        if (repo is DbItemDefinitionRepository dbRepo)
-        {
-            string? search = ctx.GetQueryParam("search");
-            int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
-            int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-            List<ItemBlueprint> items = dbRepo.Search(search, page, pageSize, out int totalCount);
+        string? search = ctx.GetQueryParam("search");
+        int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
+        int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
 
-            return await Task.FromResult(new ApiResult(200, new
-            {
-                items = items.Select(ToDto),
-                totalCount,
-                page,
-                pageSize
-            }));
-        }
+        List<ItemBlueprint> matches = string.IsNullOrWhiteSpace(search)
+            ? await facade.QueryAsync<GetAllItemDefinitionsQuery, List<ItemBlueprint>>(
+                new GetAllItemDefinitionsQuery(), ctx.CancellationToken)
+            : await facade.QueryAsync<SearchItemDefinitionsQuery, List<ItemBlueprint>>(
+                new SearchItemDefinitionsQuery(search), ctx.CancellationToken);
 
-        // Fallback for non-DB repos
-        List<ItemBlueprint> allItems = repo.AllItems();
+        int totalCount = matches.Count;
+        List<ItemBlueprint> paged = matches.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
         return await Task.FromResult(new ApiResult(200, new
         {
-            items = allItems.Select(ToDto),
-            totalCount = allItems.Count,
-            page = 1,
-            pageSize = allItems.Count
+            items = paged.Select(ToDto),
+            totalCount,
+            page,
+            pageSize
         }));
     }
 
@@ -65,9 +65,11 @@ public class ItemController
     public static async Task<ApiResult> GetByTag(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        IItemDefinitionRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        ItemBlueprint? item = repo.GetByTag(tag);
+        ItemBlueprint? item = await facade.QueryAsync<GetItemDefinitionByTagQuery, ItemBlueprint?>(
+            new GetItemDefinitionByTagQuery(tag), ctx.CancellationToken);
         if (item == null)
         {
             return await Task.FromResult(new ApiResult(404, new ErrorResponse(
@@ -96,9 +98,18 @@ public class ItemController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        IItemDefinitionRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
         ItemBlueprint blueprint = FromDto(dto);
-        repo.AddItemDefinition(blueprint);
+        CommandResult result = await facade.ExecuteAsync(new UpsertItemDefinitionCommand
+        {
+            Blueprint = blueprint
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
+            return new ApiResult(400, new ErrorResponse("Command failed", result.ErrorMessage));
+
         InvalidateExpander();
 
         return new ApiResult(201, ToDto(blueprint));
@@ -112,14 +123,6 @@ public class ItemController
     public static async Task<ApiResult> Update(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        IItemDefinitionRepository repo = ResolveRepository();
-
-        ItemBlueprint? existing = repo.GetByTag(tag);
-        if (existing == null)
-        {
-            return await Task.FromResult(new ApiResult(404, new ErrorResponse(
-                "Not found", $"No item with tag '{tag}'")));
-        }
 
         ItemBlueprintDto? dto = await ctx.ReadJsonBodyAsync<ItemBlueprintDto>();
         if (dto == null)
@@ -133,8 +136,26 @@ public class ItemController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
+        ItemBlueprint? existing = await facade.QueryAsync<GetItemDefinitionByTagQuery, ItemBlueprint?>(
+            new GetItemDefinitionByTagQuery(tag), ctx.CancellationToken);
+        if (existing == null)
+        {
+            return await Task.FromResult(new ApiResult(404, new ErrorResponse(
+                "Not found", $"No item with tag '{tag}'")));
+        }
+
         ItemBlueprint blueprint = FromDto(dto);
-        repo.AddItemDefinition(blueprint);
+        CommandResult result = await facade.ExecuteAsync(new UpsertItemDefinitionCommand
+        {
+            Blueprint = blueprint
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
+            return new ApiResult(400, new ErrorResponse("Command failed", result.ErrorMessage));
+
         InvalidateExpander();
 
         return new ApiResult(200, ToDto(blueprint));
@@ -148,21 +169,24 @@ public class ItemController
     public static async Task<ApiResult> Delete(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        IItemDefinitionRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        if (repo is DbItemDefinitionRepository dbRepo)
+        CommandResult result = await facade.ExecuteAsync(new DeleteItemDefinitionCommand
         {
-            bool deleted = dbRepo.DeleteByTag(tag);
-            if (!deleted)
+            Tag = tag
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
+        {
+            if (result.ErrorMessage?.Contains("database-backed", StringComparison.OrdinalIgnoreCase) == true)
             {
-                return await Task.FromResult(new ApiResult(404, new ErrorResponse(
-                    "Not found", $"No item with tag '{tag}'")));
+                return await Task.FromResult(new ApiResult(501, new ErrorResponse(
+                    "Not implemented", result.ErrorMessage)));
             }
-        }
-        else
-        {
-            return await Task.FromResult(new ApiResult(501, new ErrorResponse(
-                "Not implemented", "Delete is only supported with database-backed repositories")));
+
+            return await Task.FromResult(new ApiResult(404, new ErrorResponse(
+                "Not found", result.ErrorMessage)));
         }
 
         InvalidateExpander();
@@ -208,18 +232,16 @@ public class ItemController
     [HttpGet("/api/worldengine/items/export")]
     public static async Task<ApiResult> Export(RouteContext ctx)
     {
-        IItemDefinitionRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
         string? search = ctx.GetQueryParam("search");
 
-        List<ItemBlueprint> items;
-        if (!string.IsNullOrWhiteSpace(search) && repo is DbItemDefinitionRepository dbRepo)
-        {
-            items = dbRepo.Search(search, 1, int.MaxValue, out _);
-        }
-        else
-        {
-            items = repo.AllItems();
-        }
+        List<ItemBlueprint> items = string.IsNullOrWhiteSpace(search)
+            ? await facade.QueryAsync<GetAllItemDefinitionsQuery, List<ItemBlueprint>>(
+                new GetAllItemDefinitionsQuery(), ctx.CancellationToken)
+            : await facade.QueryAsync<SearchItemDefinitionsQuery, List<ItemBlueprint>>(
+                new SearchItemDefinitionsQuery(search), ctx.CancellationToken);
 
         return await Task.FromResult(new ApiResult(200, items.Select(ToDto).ToArray()));
     }
@@ -232,7 +254,8 @@ public class ItemController
     [HttpPost("/api/worldengine/items/import")]
     public static async Task<ApiResult> Import(RouteContext ctx)
     {
-        IItemDefinitionRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
         string? body = null;
         if (ctx.Request != null)
@@ -271,31 +294,44 @@ public class ItemController
             return new ApiResult(400, new ErrorResponse("Bad request", "No valid items found in request body"));
         }
 
-        int succeeded = 0;
         int failed = 0;
         List<string> errors = new();
+        List<(string Tag, UpsertItemDefinitionCommand Command)> valid = new();
 
         foreach (ItemBlueprint item in items)
         {
-            try
-            {
-                string? validationError = ValidateBlueprint(item);
-                if (validationError != null)
-                {
-                    failed++;
-                    errors.Add($"{item.ItemTag ?? item.ResRef ?? "unknown"}: {validationError}");
-                    continue;
-                }
-
-                repo.AddItemDefinition(item);
-                succeeded++;
-            }
-            catch (Exception ex)
+            string? validationError = ValidateBlueprint(item);
+            if (validationError != null)
             {
                 failed++;
-                errors.Add($"{item.ItemTag ?? item.ResRef ?? "unknown"}: {ex.Message}");
+                errors.Add($"{item.ItemTag ?? item.ResRef ?? "unknown"}: {validationError}");
+                continue;
+            }
+
+            valid.Add((item.ItemTag ?? item.ResRef ?? "unknown",
+                new UpsertItemDefinitionCommand { Blueprint = item }));
+        }
+
+        BatchCommandResult batch = await facade.ExecuteBatchAsync(
+            valid.Select(v => v.Command),
+            BatchExecutionOptions.ContinueOnFailure(),
+            ctx.CancellationToken);
+
+        int succeeded = 0;
+        for (int i = 0; i < batch.Results.Count; i++)
+        {
+            if (batch.Results[i].Success)
+            {
+                succeeded++;
+            }
+            else
+            {
+                failed++;
+                errors.Add($"{valid[i].Tag}: {batch.Results[i].ErrorMessage}");
             }
         }
+
+        InvalidateExpander();
 
         return new ApiResult(200, new
         {
@@ -304,12 +340,6 @@ public class ItemController
             total = items.Count,
             errors
         });
-    }
-
-    private static IItemDefinitionRepository ResolveRepository()
-    {
-        return AnvilCore.GetService<IItemDefinitionRepository>()
-               ?? throw new InvalidOperationException("IItemDefinitionRepository service not available");
     }
 
     private static string? ValidateDto(ItemBlueprintDto dto)

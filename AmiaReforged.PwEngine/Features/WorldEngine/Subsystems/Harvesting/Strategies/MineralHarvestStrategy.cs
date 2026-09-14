@@ -22,7 +22,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting.Strat
 public sealed class MineralHarvestStrategy(
     RuntimeCharacterService characterService,
     Lazy<RuntimeNodeService> runtimeNodeService,
-    ICommandHandler<HarvestResourceCommand> harvestCommandHandler,
+    ICommandDispatcher commandDispatcher,
     WindowDirector windowDirector) : INodeHarvestStrategy
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
@@ -72,7 +72,7 @@ public sealed class MineralHarvestStrategy(
             {
                 await NwTask.SwitchToMainThread();
 
-                CommandResult result = await harvestCommandHandler.HandleAsync(command);
+                CommandResult result = await commandDispatcher.DispatchAsync(command);
 
                 await NwTask.SwitchToMainThread();
 

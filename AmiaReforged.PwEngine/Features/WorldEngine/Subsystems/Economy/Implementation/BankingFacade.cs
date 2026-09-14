@@ -12,92 +12,65 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 
 /// <summary>
 /// Implementation of the Banking Gateway.
-/// Delegates to existing command and query handlers for banking operations.
+/// Routes operations through the central command/query dispatchers so writes get
+/// logging, the exception-to-Fail contract, and CommandExecutedEvent publishing.
 /// </summary>
 [ServiceBinding(typeof(IBankingFacade))]
 public sealed class BankingFacade : IBankingFacade
 {
-    private readonly ICommandHandler<OpenCoinhouseAccountCommand> _openAccountHandler;
-    private readonly IQueryHandler<GetCoinhouseAccountQuery, CoinhouseAccountQueryResult?> _getAccountHandler;
-    private readonly IQueryHandler<GetCoinhouseBalancesQuery, IReadOnlyList<BalanceDto>> _getBalancesHandler;
-    private readonly IQueryHandler<GetCoinhouseAccountEligibilityQuery, CoinhouseAccountEligibilityResult> _eligibilityHandler;
-    private readonly ICommandHandler<DepositGoldCommand> _depositHandler;
-    private readonly ICommandHandler<WithdrawGoldCommand> _withdrawHandler;
-    private readonly IQueryHandler<GetBalanceQuery, int?> _getBalanceHandler;
-    private readonly ICommandHandler<JoinCoinhouseAccountCommand> _joinAccountHandler;
-    private readonly ICommandHandler<RemoveCoinhouseAccountHolderCommand> _removeHolderHandler;
-    private readonly ICommandHandler<UpdateCoinhouseAccountHolderRoleCommand> _updateHolderRoleHandler;
-    private readonly IQueryHandler<GetAccessibleAccountsQuery, AccessibleAccountsResult> _getAccessibleAccountsHandler;
+    private readonly ICommandDispatcher _commands;
+    private readonly IQueryDispatcher _queries;
 
     public BankingFacade(
-        ICommandHandler<OpenCoinhouseAccountCommand> openAccountHandler,
-        IQueryHandler<GetCoinhouseAccountQuery, CoinhouseAccountQueryResult?> getAccountHandler,
-        IQueryHandler<GetCoinhouseBalancesQuery, IReadOnlyList<BalanceDto>> getBalancesHandler,
-        IQueryHandler<GetCoinhouseAccountEligibilityQuery, CoinhouseAccountEligibilityResult> eligibilityHandler,
-        ICommandHandler<DepositGoldCommand> depositHandler,
-        ICommandHandler<WithdrawGoldCommand> withdrawHandler,
-        IQueryHandler<GetBalanceQuery, int?> getBalanceHandler,
-        ICommandHandler<JoinCoinhouseAccountCommand> joinAccountHandler,
-        ICommandHandler<RemoveCoinhouseAccountHolderCommand> removeHolderHandler,
-        ICommandHandler<UpdateCoinhouseAccountHolderRoleCommand> updateHolderRoleHandler,
-        IQueryHandler<GetAccessibleAccountsQuery, AccessibleAccountsResult> getAccessibleAccountsHandler)
+        ICommandDispatcher commands,
+        IQueryDispatcher queries)
     {
-        _openAccountHandler = openAccountHandler;
-        _getAccountHandler = getAccountHandler;
-        _getBalancesHandler = getBalancesHandler;
-        _eligibilityHandler = eligibilityHandler;
-        _depositHandler = depositHandler;
-        _withdrawHandler = withdrawHandler;
-        _getBalanceHandler = getBalanceHandler;
-        _joinAccountHandler = joinAccountHandler;
-        _removeHolderHandler = removeHolderHandler;
-        _updateHolderRoleHandler = updateHolderRoleHandler;
-        _getAccessibleAccountsHandler = getAccessibleAccountsHandler;
+        _commands = commands;
+        _queries = queries;
     }
 
     /// <inheritdoc />
     public Task<CommandResult> OpenCoinhouseAccountAsync(OpenCoinhouseAccountCommand command, CancellationToken ct = default)
-        => _openAccountHandler.HandleAsync(command, ct);
+        => _commands.DispatchAsync(command, ct);
 
     /// <inheritdoc />
     public Task<CoinhouseAccountQueryResult?> GetCoinhouseAccountAsync(GetCoinhouseAccountQuery query, CancellationToken ct = default)
-        => _getAccountHandler.HandleAsync(query, ct);
+        => _queries.DispatchAsync<GetCoinhouseAccountQuery, CoinhouseAccountQueryResult?>(query, ct);
 
     /// <inheritdoc />
     public Task<AccessibleAccountsResult> GetAccessibleAccountsAsync(GetAccessibleAccountsQuery query, CancellationToken ct = default)
-        => _getAccessibleAccountsHandler.HandleAsync(query, ct);
+        => _queries.DispatchAsync<GetAccessibleAccountsQuery, AccessibleAccountsResult>(query, ct);
 
     /// <inheritdoc />
     public Task<IReadOnlyList<BalanceDto>> GetCoinhouseBalancesAsync(GetCoinhouseBalancesQuery query, CancellationToken ct = default)
-        => _getBalancesHandler.HandleAsync(query, ct);
+        => _queries.DispatchAsync<GetCoinhouseBalancesQuery, IReadOnlyList<BalanceDto>>(query, ct);
 
     /// <inheritdoc />
     public Task<CoinhouseAccountEligibilityResult> GetCoinhouseAccountEligibilityAsync(
         GetCoinhouseAccountEligibilityQuery query, CancellationToken ct = default)
-        => _eligibilityHandler.HandleAsync(query, ct);
+        => _queries.DispatchAsync<GetCoinhouseAccountEligibilityQuery, CoinhouseAccountEligibilityResult>(query, ct);
 
     /// <inheritdoc />
     public Task<CommandResult> DepositGoldAsync(DepositGoldCommand command, CancellationToken ct = default)
-        => _depositHandler.HandleAsync(command, ct);
+        => _commands.DispatchAsync(command, ct);
 
     /// <inheritdoc />
     public Task<CommandResult> WithdrawGoldAsync(WithdrawGoldCommand command, CancellationToken ct = default)
-        => _withdrawHandler.HandleAsync(command, ct);
+        => _commands.DispatchAsync(command, ct);
 
     /// <inheritdoc />
     public Task<int?> GetBalanceAsync(GetBalanceQuery query, CancellationToken ct = default)
-        => _getBalanceHandler.HandleAsync(query, ct);
+        => _queries.DispatchAsync<GetBalanceQuery, int?>(query, ct);
 
     /// <inheritdoc />
     public Task<CommandResult> JoinCoinhouseAccountAsync(JoinCoinhouseAccountCommand command, CancellationToken ct = default)
-        => _joinAccountHandler.HandleAsync(command, ct);
+        => _commands.DispatchAsync(command, ct);
 
     /// <inheritdoc />
     public Task<CommandResult> RemoveAccountHolderAsync(RemoveCoinhouseAccountHolderCommand command, CancellationToken ct = default)
-        => _removeHolderHandler.HandleAsync(command, ct);
+        => _commands.DispatchAsync(command, ct);
 
     /// <inheritdoc />
     public Task<CommandResult> UpdateAccountHolderRoleAsync(UpdateCoinhouseAccountHolderRoleCommand command, CancellationToken ct = default)
-        => _updateHolderRoleHandler.HandleAsync(command, ct);
+        => _commands.DispatchAsync(command, ct);
 }
-

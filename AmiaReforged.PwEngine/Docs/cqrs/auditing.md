@@ -1,5 +1,22 @@
 # CQRS Audit — WorldEngine subsystems
 
+> **Status 2026-09-14:** F-1 and F-2 are fixed. All 13 domain controllers go
+> through `IWorldEngineFacade` (`API/Controllers/RouteContextExtensions.cs`);
+> the six F-2 facades/subsystems plus `MineralHarvestStrategy` inject
+> dispatchers; missing admin commands/queries were added (org update/disband,
+> industry/workstation/recipe/node/region/interaction/item/trait/lore/quest/
+> coinhouse/dialogue CRUD, cap profiles, progression config);
+> `IOrganizationRepository.Delete` now exists (EF + in-memory);
+> `ExampleBankingController` (mock data) deleted. Suite: 1880/1880 green,
+> including new `ControllerCqrsTests` + `DefinitionCrudBehavior`.
+> Remaining: F-3 repo-direct subsystem methods (`EnrollInIndustryAsync`,
+> `LearnRecipeAsync`, …), F-4 self-as-actor identity, F-5 `HarvestingSubsystem`
+> stub, F-6 Codex application services, F-7 Characters/Traits/Regions services.
+> Known response-shape deltas from the fix: interaction DTOs no longer carry
+> `CreatedAt`/`UpdatedAt`; item PUT with missing body on a missing tag returns
+> 400 instead of 404; org disband now really deletes (previously a no-op
+> update); duplicate resource-node create returns 409 instead of 500.
+
 Scope: `Features/WorldEngine/` (API controllers, `Subsystems/Implementations/*`,
 Economy facades, Industries, Harvesting, Codex, Dialogue, Characters, Regions, Traits).
 Standard being audited against: callers go through `IWorldEngineFacade`

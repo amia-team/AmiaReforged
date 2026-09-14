@@ -1,6 +1,10 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
+using AmiaReforged.PwEngine.Features.WorldEngine;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Banks.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Banks.Queries;
 using Anvil;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,28 +25,21 @@ public class CoinhouseController
     [HttpGet(BasePath)]
     public static async Task<ApiResult> GetAll(RouteContext ctx)
     {
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
         string? search = ctx.GetQueryParam("search");
         int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
         int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
 
-        using PwEngineContext context = ResolveContext();
+        List<CoinHouse> matches = await facade.QueryAsync<SearchCoinhouseDefinitionsQuery, List<CoinHouse>>(
+            new SearchCoinhouseDefinitionsQuery { SearchTerm = search }, ctx.CancellationToken);
 
-        IQueryable<CoinHouse> query = context.CoinHouses;
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            string term = search.Trim().ToLower();
-            query = query.Where(c => c.Tag.ToLower().Contains(term));
-        }
-
-        int totalCount = await query.CountAsync();
-
-        List<CoinHouse> items = await query
-            .OrderBy(c => c.Tag)
+        int totalCount = matches.Count;
+        List<CoinHouse> items = matches
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Include(c => c.Accounts)
-            .ToListAsync();
+            .ToList();
 
         return new ApiResult(200, new
         {
@@ -62,10 +59,11 @@ public class CoinhouseController
     {
         string tag = ctx.GetRouteValue("tag");
 
-        using PwEngineContext context = ResolveContext();
-        CoinHouse? coinhouse = await context.CoinHouses
-            .Include(c => c.Accounts)
-            .FirstOrDefaultAsync(c => c.Tag == tag);
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
+        CoinHouse? coinhouse = await facade.QueryAsync<GetCoinhouseDefinitionQuery, CoinHouse?>(
+            new GetCoinhouseDefinitionQuery { Tag = tag }, ctx.CancellationToken);
 
         if (coinhouse == null)
         {
@@ -95,20 +93,26 @@ public class CoinhouseController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        using PwEngineContext context = ResolveContext();
-
-        bool exists = await context.CoinHouses.AnyAsync(c => c.Tag == dto.Tag);
-        if (exists)
-        {
-            return new ApiResult(409, new ErrorResponse(
-                "Conflict", $"A coinhouse with tag '{dto.Tag}' already exists"));
-        }
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
         CoinHouse coinhouse = FromDto(dto);
-        context.CoinHouses.Add(coinhouse);
-        await context.SaveChangesAsync();
+        CommandResult result = await facade.ExecuteAsync(new CreateCoinhouseCommand
+        {
+            Coinhouse = coinhouse
+        }, ctx.CancellationToken);
 
-        return new ApiResult(201, ToDto(coinhouse));
+        if (!result.Success)
+        {
+            bool conflict = result.ErrorMessage?.Contains("already exists", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(conflict ? 409 : 400,
+                new ErrorResponse(conflict ? "Conflict" : "Command failed", result.ErrorMessage));
+        }
+
+        CoinHouse? created = await facade.QueryAsync<GetCoinhouseDefinitionQuery, CoinHouse?>(
+            new GetCoinhouseDefinitionQuery { Tag = coinhouse.Tag }, ctx.CancellationToken);
+
+        return new ApiResult(201, ToDto(created ?? coinhouse));
     }
 
     /// <summary>
@@ -119,17 +123,6 @@ public class CoinhouseController
     public static async Task<ApiResult> Update(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-
-        using PwEngineContext context = ResolveContext();
-        CoinHouse? existing = await context.CoinHouses
-            .Include(c => c.Accounts)
-            .FirstOrDefaultAsync(c => c.Tag == tag);
-
-        if (existing == null)
-        {
-            return new ApiResult(404, new ErrorResponse(
-                "Not found", $"No coinhouse with tag '{tag}'"));
-        }
 
         CoinhouseApiDto? dto = await ctx.ReadJsonBodyAsync<CoinhouseApiDto>();
         if (dto == null)
@@ -143,15 +136,27 @@ public class CoinhouseController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        // Update mutable fields — Tag is immutable
-        existing.Settlement = dto.Settlement;
-        existing.EngineId = dto.EngineId;
-        existing.StoredGold = dto.StoredGold;
-        existing.PersonaIdString = dto.PersonaIdString;
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        await context.SaveChangesAsync();
+        CoinHouse coinhouse = FromDto(dto);
+        CommandResult result = await facade.ExecuteAsync(new UpdateCoinhouseCommand
+        {
+            Tag = tag,
+            Coinhouse = coinhouse
+        }, ctx.CancellationToken);
 
-        return new ApiResult(200, ToDto(existing));
+        if (!result.Success)
+        {
+            bool notFound = result.ErrorMessage?.StartsWith("No coinhouse with tag", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(notFound ? 404 : 400, new ErrorResponse(
+                notFound ? "Not found" : "Command failed", result.ErrorMessage));
+        }
+
+        CoinHouse? updated = await facade.QueryAsync<GetCoinhouseDefinitionQuery, CoinHouse?>(
+            new GetCoinhouseDefinitionQuery { Tag = tag }, ctx.CancellationToken);
+
+        return new ApiResult(200, ToDto(updated ?? coinhouse));
     }
 
     /// <summary>
@@ -163,38 +168,19 @@ public class CoinhouseController
     {
         string tag = ctx.GetRouteValue("tag");
 
-        using PwEngineContext context = ResolveContext();
-        CoinHouse? existing = await context.CoinHouses
-            .Include(c => c.Accounts)
-            .FirstOrDefaultAsync(c => c.Tag == tag);
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        if (existing == null)
+        CommandResult result = await facade.ExecuteAsync(new DeleteCoinhouseCommand
+        {
+            Tag = tag
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
         {
             return new ApiResult(404, new ErrorResponse(
-                "Not found", $"No coinhouse with tag '{tag}'"));
+                "Not found", result.ErrorMessage));
         }
-
-        // Remove associated accounts, holders, and transactions
-        if (existing.Accounts is { Count: > 0 })
-        {
-            foreach (CoinHouseAccount account in existing.Accounts)
-            {
-                List<CoinHouseAccountHolder> holders = await context.CoinHouseAccountHolders
-                    .Where(h => h.AccountId == account.Id)
-                    .ToListAsync();
-                context.CoinHouseAccountHolders.RemoveRange(holders);
-
-                List<CoinHouseTransaction> transactions = await context.CoinHouseTransactions
-                    .Where(t => t.CoinHouseAccountId == account.Id)
-                    .ToListAsync();
-                context.CoinHouseTransactions.RemoveRange(transactions);
-            }
-
-            context.CoinHouseAccounts.RemoveRange(existing.Accounts);
-        }
-
-        context.CoinHouses.Remove(existing);
-        await context.SaveChangesAsync();
 
         return new ApiResult(204, new { message = "Deleted" });
     }
@@ -202,13 +188,6 @@ public class CoinhouseController
     // ═══════════════════════════════════════════════════════════════════
     //  Helpers
     // ═══════════════════════════════════════════════════════════════════
-
-    private static PwEngineContext ResolveContext()
-    {
-        PwContextFactory factory = AnvilCore.GetService<PwContextFactory>()
-                                   ?? throw new InvalidOperationException("PwContextFactory service not available");
-        return factory.CreateDbContext();
-    }
 
     private static string? ValidateDto(CoinhouseApiDto dto)
     {

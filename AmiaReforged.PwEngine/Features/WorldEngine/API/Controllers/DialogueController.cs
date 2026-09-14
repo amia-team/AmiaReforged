@@ -2,9 +2,12 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
+using AmiaReforged.PwEngine.Features.WorldEngine;
 using AmiaReforged.PwEngine.Features.WorldEngine.API;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Application;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Application.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Application.Queries;
 using Anvil;
 using Microsoft.EntityFrameworkCore;
 using NLog;
@@ -34,30 +37,21 @@ public class DialogueController
     [HttpGet(BasePath)]
     public static async Task<ApiResult> GetAll(RouteContext ctx)
     {
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
         string? search = ctx.GetQueryParam("search");
         int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
         int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
 
-        using PwEngineContext context = ResolveContext();
+        List<PersistedDialogueTree> matches = await facade.QueryAsync<SearchDialogueTreesQuery, List<PersistedDialogueTree>>(
+            new SearchDialogueTreesQuery { SearchTerm = search }, ctx.CancellationToken);
 
-        IQueryable<PersistedDialogueTree> query = context.DialogueTrees;
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            string term = search.Trim().ToLower();
-            query = query.Where(d =>
-                d.DialogueTreeId.ToLower().Contains(term) ||
-                d.Title.ToLower().Contains(term) ||
-                (d.SpeakerTag != null && d.SpeakerTag.ToLower().Contains(term)));
-        }
-
-        int totalCount = await query.CountAsync();
-
-        List<PersistedDialogueTree> items = await query
-            .OrderBy(d => d.Title)
+        int totalCount = matches.Count;
+        List<PersistedDialogueTree> items = matches
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToList();
 
         return new ApiResult(200, new
         {
@@ -77,8 +71,11 @@ public class DialogueController
     {
         string dialogueTreeId = ctx.GetRouteValue("dialogueTreeId");
 
-        using PwEngineContext context = ResolveContext();
-        PersistedDialogueTree? definition = await context.DialogueTrees.FindAsync(dialogueTreeId);
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
+        PersistedDialogueTree? definition = await facade.QueryAsync<GetDialogueTreeQuery, PersistedDialogueTree?>(
+            new GetDialogueTreeQuery { DialogueTreeId = dialogueTreeId }, ctx.CancellationToken);
 
         if (definition == null)
         {
@@ -98,11 +95,11 @@ public class DialogueController
     {
         string speakerTag = ctx.GetRouteValue("speakerTag");
 
-        using PwEngineContext context = ResolveContext();
-        List<PersistedDialogueTree> items = await context.DialogueTrees
-            .Where(d => d.SpeakerTag == speakerTag)
-            .OrderBy(d => d.Title)
-            .ToListAsync();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
+        List<PersistedDialogueTree> items = await facade.QueryAsync<GetDialogueTreesBySpeakerQuery, List<PersistedDialogueTree>>(
+            new GetDialogueTreesBySpeakerQuery { SpeakerTag = speakerTag }, ctx.CancellationToken);
 
         return new ApiResult(200, new
         {
@@ -130,25 +127,29 @@ public class DialogueController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        using PwEngineContext context = ResolveContext();
-
-        bool exists = await context.DialogueTrees.AnyAsync(d => d.DialogueTreeId == dto.DialogueTreeId);
-        if (exists)
-        {
-            return new ApiResult(409, new ErrorResponse(
-                "Conflict", $"A dialogue tree with ID '{dto.DialogueTreeId}' already exists"));
-        }
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
         PersistedDialogueTree entity = FromDto(dto);
-        entity.CreatedUtc = DateTime.UtcNow;
+        CommandResult result = await facade.ExecuteAsync(new CreateDialogueTreeCommand
+        {
+            Tree = entity
+        }, ctx.CancellationToken);
 
-        context.DialogueTrees.Add(entity);
-        await context.SaveChangesAsync();
+        if (!result.Success)
+        {
+            bool conflict = result.ErrorMessage?.Contains("already exists", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(conflict ? 409 : 400,
+                new ErrorResponse(conflict ? "Conflict" : "Command failed", result.ErrorMessage));
+        }
 
         // Dynamically register matching NPCs for conversation hook
         await TryRegisterNpcsAsync(entity.SpeakerTag, entity.DialogueTreeId);
 
-        return new ApiResult(201, ToDto(entity));
+        PersistedDialogueTree? created = await facade.QueryAsync<GetDialogueTreeQuery, PersistedDialogueTree?>(
+            new GetDialogueTreeQuery { DialogueTreeId = entity.DialogueTreeId }, ctx.CancellationToken);
+
+        return new ApiResult(201, ToDto(created ?? entity));
     }
 
     /// <summary>
@@ -159,15 +160,6 @@ public class DialogueController
     public static async Task<ApiResult> Update(RouteContext ctx)
     {
         string dialogueTreeId = ctx.GetRouteValue("dialogueTreeId");
-
-        using PwEngineContext context = ResolveContext();
-        PersistedDialogueTree? existing = await context.DialogueTrees.FindAsync(dialogueTreeId);
-
-        if (existing == null)
-        {
-            return new ApiResult(404, new ErrorResponse(
-                "Not found", $"No dialogue tree with ID '{dialogueTreeId}'"));
-        }
 
         DialogueTreeDto? dto = await ctx.ReadJsonBodyAsync<DialogueTreeDto>();
         if (dto == null)
@@ -181,21 +173,32 @@ public class DialogueController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        // Update mutable fields — DialogueTreeId is immutable
-        existing.Title = dto.Title.Trim();
-        existing.Description = dto.Description ?? string.Empty;
-        existing.RootNodeId = dto.RootNodeId;
-        existing.SpeakerTag = string.IsNullOrWhiteSpace(dto.SpeakerTag) ? null : dto.SpeakerTag.Trim();
-        existing.NodesJson = JsonSerializer.Serialize(dto.Nodes ?? [], JsonOpts);
-        existing.UpdatedUtc = DateTime.UtcNow;
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        await context.SaveChangesAsync();
+        PersistedDialogueTree entity = FromDto(dto);
+        entity.DialogueTreeId = dialogueTreeId;
+        CommandResult result = await facade.ExecuteAsync(new UpdateDialogueTreeCommand
+        {
+            DialogueTreeId = dialogueTreeId,
+            Tree = entity
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
+        {
+            bool notFound = result.ErrorMessage?.StartsWith("No dialogue tree with ID", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(notFound ? 404 : 400, new ErrorResponse(
+                notFound ? "Not found" : "Command failed", result.ErrorMessage));
+        }
 
         // Re-register NPCs — hook resolves old tag from its internal registry
-        await TryUpdateNpcRegistrationAsync(dialogueTreeId, existing.SpeakerTag);
+        await TryUpdateNpcRegistrationAsync(dialogueTreeId, entity.SpeakerTag);
         TryInvalidateStoreCache();
 
-        return new ApiResult(200, ToDto(existing));
+        PersistedDialogueTree? updated = await facade.QueryAsync<GetDialogueTreeQuery, PersistedDialogueTree?>(
+            new GetDialogueTreeQuery { DialogueTreeId = dialogueTreeId }, ctx.CancellationToken);
+
+        return new ApiResult(200, ToDto(updated ?? entity));
     }
 
     /// <summary>
@@ -207,21 +210,23 @@ public class DialogueController
     {
         string dialogueTreeId = ctx.GetRouteValue("dialogueTreeId");
 
-        using PwEngineContext context = ResolveContext();
-        PersistedDialogueTree? existing = await context.DialogueTrees.FindAsync(dialogueTreeId);
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        if (existing == null)
+        CommandResult result = await facade.ExecuteAsync(new DeleteDialogueTreeCommand
+        {
+            DialogueTreeId = dialogueTreeId
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
         {
             return new ApiResult(404, new ErrorResponse(
-                "Not found", $"No dialogue tree with ID '{dialogueTreeId}'"));
+                "Not found", result.ErrorMessage));
         }
 
         // Unregister NPCs before deleting the tree (by treeId — only affects NPCs owned by this tree)
         await TryUnregisterNpcsAsync(dialogueTreeId);
         TryInvalidateStoreCache();
-
-        context.DialogueTrees.Remove(existing);
-        await context.SaveChangesAsync();
 
         return new ApiResult(204, new { message = "Deleted" });
     }
@@ -309,13 +314,6 @@ public class DialogueController
         {
             Log.Warn(ex, "Failed to invalidate dialogue store cache");
         }
-    }
-
-    private static PwEngineContext ResolveContext()
-    {
-        PwContextFactory factory = AnvilCore.GetService<PwContextFactory>()
-                                   ?? throw new InvalidOperationException("PwContextFactory service not available");
-        return factory.CreateDbContext();
     }
 
     private static string? ValidateDto(DialogueTreeDto dto)

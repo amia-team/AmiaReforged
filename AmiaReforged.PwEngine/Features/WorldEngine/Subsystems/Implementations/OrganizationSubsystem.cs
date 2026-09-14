@@ -11,76 +11,54 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Implementations;
 
 /// <summary>
 /// Concrete implementation of the Organization subsystem.
-/// Delegates to existing command and query handlers.
+/// Routes command/query operations through the central dispatchers so writes get
+/// logging, the exception-to-Fail contract, and CommandExecutedEvent publishing.
 /// </summary>
 [ServiceBinding(typeof(IOrganizationSubsystem))]
 public sealed class OrganizationSubsystem : IOrganizationSubsystem
 {
-    private readonly ICommandHandler<CreateOrganizationCommand> _createHandler;
-    private readonly ICommandHandler<AddMemberCommand> _addMemberHandler;
-    private readonly ICommandHandler<RemoveMemberCommand> _removeMemberHandler;
-    private readonly ICommandHandler<ChangeRankCommand> _changeRankHandler;
-    private readonly IQueryHandler<GetOrganizationDetailsQuery, IOrganization?> _getDetailsHandler;
-    private readonly IQueryHandler<GetCharacterOrganizationsQuery, List<OrganizationMember>> _getCharacterOrgsHandler;
-    private readonly IQueryHandler<GetOrganizationMembersQuery, List<OrganizationMember>> _getMembersHandler;
-    private readonly IOrganizationRepository _organizationRepository;
+    private readonly ICommandDispatcher _commands;
+    private readonly IQueryDispatcher _queries;
 
     public OrganizationSubsystem(
-        ICommandHandler<CreateOrganizationCommand> createHandler,
-        ICommandHandler<AddMemberCommand> addMemberHandler,
-        ICommandHandler<RemoveMemberCommand> removeMemberHandler,
-        ICommandHandler<ChangeRankCommand> changeRankHandler,
-        IQueryHandler<GetOrganizationDetailsQuery, IOrganization?> getDetailsHandler,
-        IQueryHandler<GetCharacterOrganizationsQuery, List<OrganizationMember>> getCharacterOrgsHandler,
-        IQueryHandler<GetOrganizationMembersQuery, List<OrganizationMember>> getMembersHandler,
-        IOrganizationRepository organizationRepository)
+        ICommandDispatcher commands,
+        IQueryDispatcher queries)
     {
-        _createHandler = createHandler;
-        _addMemberHandler = addMemberHandler;
-        _removeMemberHandler = removeMemberHandler;
-        _changeRankHandler = changeRankHandler;
-        _getDetailsHandler = getDetailsHandler;
-        _getCharacterOrgsHandler = getCharacterOrgsHandler;
-        _getMembersHandler = getMembersHandler;
-        _organizationRepository = organizationRepository;
+        _commands = commands;
+        _queries = queries;
     }
 
     public Task<CommandResult> CreateOrganizationAsync(CreateOrganizationCommand command, CancellationToken ct = default)
-        => _createHandler.HandleAsync(command, ct);
+        => _commands.DispatchAsync(command, ct);
 
     public Task<CommandResult> DisbandOrganizationAsync(OrganizationId organizationId, CancellationToken ct = default)
     {
-        // TODO: Implement when DisbandOrganizationCommand handler and IOrganizationRepository.Delete exist
-        return Task.FromResult(CommandResult.Fail("Not yet implemented — requires DisbandOrganizationCommand handler"));
+        return _commands.DispatchAsync(new DisbandOrganizationCommand
+        {
+            OrganizationId = organizationId
+        }, ct);
     }
 
     public Task<CommandResult> UpdateOrganizationAsync(OrganizationId organizationId, string? name = null, string? description = null, CancellationToken ct = default)
     {
-        IOrganization? org = _organizationRepository.GetById(organizationId);
-        if (org == null)
-            return Task.FromResult(CommandResult.Fail($"Organization not found: {organizationId}"));
-
-        // Organization uses init-only properties, so we reconstruct via the repo's Update
-        // The underlying EF entity will detect changes through the tracked entity
-        if (name != null) org.Name = name;
-        if (description != null) org.Description = description;
-
-        _organizationRepository.Update(org);
-        _organizationRepository.SaveChanges();
-
-        return Task.FromResult(CommandResult.Ok());
+        return _commands.DispatchAsync(new UpdateOrganizationCommand
+        {
+            OrganizationId = organizationId,
+            Name = name,
+            Description = description
+        }, ct);
     }
 
     public Task<IOrganization?> GetOrganizationDetailsAsync(GetOrganizationDetailsQuery query, CancellationToken ct = default)
-        => _getDetailsHandler.HandleAsync(query, ct);
+        => _queries.DispatchAsync<GetOrganizationDetailsQuery, IOrganization?>(query, ct);
 
     public Task<List<OrganizationMember>> GetCharacterOrganizationsAsync(
         GetCharacterOrganizationsQuery query, CancellationToken ct = default)
-        => _getCharacterOrgsHandler.HandleAsync(query, ct);
+        => _queries.DispatchAsync<GetCharacterOrganizationsQuery, List<OrganizationMember>>(query, ct);
 
     public Task<List<OrganizationMember>> GetOrganizationMembersAsync(
         GetOrganizationMembersQuery query, CancellationToken ct = default)
-        => _getMembersHandler.HandleAsync(query, ct);
+        => _queries.DispatchAsync<GetOrganizationMembersQuery, List<OrganizationMember>>(query, ct);
 
     public Task<CommandResult> AddMemberAsync(OrganizationId organizationId, CharacterId characterId, string rank, CancellationToken ct = default)
     {
@@ -93,7 +71,7 @@ public sealed class OrganizationSubsystem : IOrganizationSubsystem
             CharacterId = characterId,
             InitialRank = parsedRank
         };
-        return _addMemberHandler.HandleAsync(command, ct);
+        return _commands.DispatchAsync(command, ct);
     }
 
     public Task<CommandResult> RemoveMemberAsync(OrganizationId organizationId, CharacterId characterId, CancellationToken ct = default)
@@ -105,7 +83,7 @@ public sealed class OrganizationSubsystem : IOrganizationSubsystem
             CharacterId = characterId,
             RemovedBy = characterId
         };
-        return _removeMemberHandler.HandleAsync(command, ct);
+        return _commands.DispatchAsync(command, ct);
     }
 
     public Task<CommandResult> UpdateMemberRankAsync(OrganizationId organizationId, CharacterId characterId, string newRank, CancellationToken ct = default)
@@ -123,7 +101,7 @@ public sealed class OrganizationSubsystem : IOrganizationSubsystem
             NewRank = parsedRank,
             ChangedBy = characterId
         };
-        return _changeRankHandler.HandleAsync(command, ct);
+        return _commands.DispatchAsync(command, ct);
     }
 }
 

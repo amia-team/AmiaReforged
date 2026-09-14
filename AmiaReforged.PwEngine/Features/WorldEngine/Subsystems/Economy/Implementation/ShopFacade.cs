@@ -7,35 +7,28 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 
 /// <summary>
 /// Implementation of the Shop Gateway.
-/// Delegates to existing command and query handlers for shop operations.
+/// Routes operations through the central command dispatcher so writes get
+/// logging, the exception-to-Fail contract, and CommandExecutedEvent publishing.
 /// </summary>
 [ServiceBinding(typeof(IShopFacade))]
 public sealed class ShopFacade : IShopFacade
 {
-    private readonly ICommandHandler<ClaimPlayerStallCommand> _claimStallHandler;
-    private readonly ICommandHandler<ReleasePlayerStallCommand> _releaseStallHandler;
-    private readonly ICommandHandler<ListStallProductCommand> _listProductHandler;
+    private readonly ICommandDispatcher _commands;
 
-    public ShopFacade(
-        ICommandHandler<ClaimPlayerStallCommand> claimStallHandler,
-        ICommandHandler<ReleasePlayerStallCommand> releaseStallHandler,
-        ICommandHandler<ListStallProductCommand> listProductHandler)
+    public ShopFacade(ICommandDispatcher commands)
     {
-        _claimStallHandler = claimStallHandler;
-        _releaseStallHandler = releaseStallHandler;
-        _listProductHandler = listProductHandler;
+        _commands = commands;
     }
 
     /// <inheritdoc />
     public Task<CommandResult> ClaimPlayerStallAsync(ClaimPlayerStallCommand command, CancellationToken ct = default)
-        => _claimStallHandler.HandleAsync(command, ct);
+        => _commands.DispatchAsync(command, ct);
 
     /// <inheritdoc />
     public Task<CommandResult> ReleasePlayerStallAsync(ReleasePlayerStallCommand command, CancellationToken ct = default)
-        => _releaseStallHandler.HandleAsync(command, ct);
+        => _commands.DispatchAsync(command, ct);
 
     /// <inheritdoc />
     public Task<CommandResult> ListStallProductAsync(ListStallProductCommand command, CancellationToken ct = default)
-        => _listProductHandler.HandleAsync(command, ct);
+        => _commands.DispatchAsync(command, ct);
 }
-

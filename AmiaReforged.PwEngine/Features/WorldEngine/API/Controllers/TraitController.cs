@@ -2,6 +2,10 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
+using AmiaReforged.PwEngine.Features.WorldEngine;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.Traits.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.Traits.Queries;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Effects;
@@ -32,6 +36,9 @@ public class TraitController
     [HttpGet(BasePath)]
     public static async Task<ApiResult> GetAll(RouteContext ctx)
     {
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
         string? search = ctx.GetQueryParam("search");
         string? category = ctx.GetQueryParam("category");
         string? deathBehavior = ctx.GetQueryParam("deathBehavior");
@@ -39,45 +46,22 @@ public class TraitController
         int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
         int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
 
-        using PwEngineContext context = ResolveContext();
+        bool? dmOnlyFilter = bool.TryParse(dmOnly?.Trim(), out bool dm) ? dm : null;
 
-        IQueryable<PersistedTraitDefinition> query = context.TraitDefinitions;
+        List<PersistedTraitDefinition> matches = await facade.QueryAsync<SearchTraitDefinitionsQuery, List<PersistedTraitDefinition>>(
+            new SearchTraitDefinitionsQuery
+            {
+                SearchTerm = search,
+                Category = category,
+                DeathBehavior = deathBehavior,
+                DmOnly = dmOnlyFilter
+            }, ctx.CancellationToken);
 
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            string term = search.Trim().ToLower();
-            query = query.Where(d =>
-                d.Tag.ToLower().Contains(term) ||
-                d.Name.ToLower().Contains(term) ||
-                d.Description.ToLower().Contains(term));
-        }
-
-        if (!string.IsNullOrWhiteSpace(category))
-        {
-            if (Enum.TryParse<TraitCategory>(category.Trim(), true, out TraitCategory cat))
-                query = query.Where(d => d.Category == cat);
-        }
-
-        if (!string.IsNullOrWhiteSpace(deathBehavior))
-        {
-            if (Enum.TryParse<TraitDeathBehavior>(deathBehavior.Trim(), true, out TraitDeathBehavior db))
-                query = query.Where(d => d.DeathBehavior == db);
-        }
-
-        if (!string.IsNullOrWhiteSpace(dmOnly))
-        {
-            if (bool.TryParse(dmOnly.Trim(), out bool dm))
-                query = query.Where(d => d.DmOnly == dm);
-        }
-
-        int totalCount = await query.CountAsync();
-
-        List<PersistedTraitDefinition> items = await query
-            .OrderBy(d => d.Category)
-            .ThenBy(d => d.Name)
+        int totalCount = matches.Count;
+        List<PersistedTraitDefinition> items = matches
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToList();
 
         return new ApiResult(200, new
         {
@@ -97,8 +81,11 @@ public class TraitController
     {
         string tag = ctx.GetRouteValue("tag");
 
-        using PwEngineContext context = ResolveContext();
-        PersistedTraitDefinition? definition = await context.TraitDefinitions.FindAsync(tag);
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
+        PersistedTraitDefinition? definition = await facade.QueryAsync<GetTraitDefinitionQuery, PersistedTraitDefinition?>(
+            new GetTraitDefinitionQuery { Tag = tag }, ctx.CancellationToken);
 
         if (definition == null)
         {
@@ -128,26 +115,26 @@ public class TraitController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        using PwEngineContext context = ResolveContext();
-
-        bool exists = await context.TraitDefinitions.AnyAsync(d => d.Tag == dto.Tag);
-        if (exists)
-        {
-            return new ApiResult(409, new ErrorResponse(
-                "Conflict", $"A trait definition with tag '{dto.Tag}' already exists"));
-        }
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
         PersistedTraitDefinition definition = FromDto(dto);
-        definition.CreatedUtc = DateTime.UtcNow;
-        definition.UpdatedUtc = DateTime.UtcNow;
+        CommandResult result = await facade.ExecuteAsync(new CreateTraitDefinitionCommand
+        {
+            Definition = definition
+        }, ctx.CancellationToken);
 
-        context.TraitDefinitions.Add(definition);
-        await context.SaveChangesAsync();
+        if (!result.Success)
+        {
+            bool conflict = result.ErrorMessage?.Contains("already exists", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(conflict ? 409 : 400,
+                new ErrorResponse(conflict ? "Conflict" : "Command failed", result.ErrorMessage));
+        }
 
-        // Refresh the in-memory cache
-        RefreshInMemoryCache(definition);
+        PersistedTraitDefinition? created = await facade.QueryAsync<GetTraitDefinitionQuery, PersistedTraitDefinition?>(
+            new GetTraitDefinitionQuery { Tag = definition.Tag }, ctx.CancellationToken);
 
-        return new ApiResult(201, ToDto(definition));
+        return new ApiResult(201, ToDto(created ?? definition));
     }
 
     /// <summary>
@@ -158,15 +145,6 @@ public class TraitController
     public static async Task<ApiResult> Update(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-
-        using PwEngineContext context = ResolveContext();
-        PersistedTraitDefinition? existing = await context.TraitDefinitions.FindAsync(tag);
-
-        if (existing == null)
-        {
-            return new ApiResult(404, new ErrorResponse(
-                "Not found", $"No trait definition with tag '{tag}'"));
-        }
 
         TraitDefinitionDto? dto = await ctx.ReadJsonBodyAsync<TraitDefinitionDto>();
         if (dto == null)
@@ -180,31 +158,28 @@ public class TraitController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        // Update mutable fields — Tag is immutable
-        existing.Name = dto.Name;
-        existing.Description = dto.Description;
-        existing.PointCost = dto.PointCost;
-        existing.Category = Enum.TryParse<TraitCategory>(dto.Category, true, out TraitCategory cat)
-            ? cat : TraitCategory.Background;
-        existing.DeathBehavior = Enum.TryParse<TraitDeathBehavior>(dto.DeathBehavior, true, out TraitDeathBehavior db)
-            ? db : TraitDeathBehavior.Persist;
-        existing.RequiresUnlock = dto.RequiresUnlock;
-        existing.DmOnly = dto.DmOnly;
-        existing.EffectsJson = JsonSerializer.Serialize(dto.Effects ?? [], JsonOptions);
-        existing.AllowedRacesJson = JsonSerializer.Serialize(dto.AllowedRaces ?? [], JsonOptions);
-        existing.AllowedClassesJson = JsonSerializer.Serialize(dto.AllowedClasses ?? [], JsonOptions);
-        existing.ForbiddenRacesJson = JsonSerializer.Serialize(dto.ForbiddenRaces ?? [], JsonOptions);
-        existing.ForbiddenClassesJson = JsonSerializer.Serialize(dto.ForbiddenClasses ?? [], JsonOptions);
-        existing.ConflictingTraitsJson = JsonSerializer.Serialize(dto.ConflictingTraits ?? [], JsonOptions);
-        existing.PrerequisiteTraitsJson = JsonSerializer.Serialize(dto.PrerequisiteTraits ?? [], JsonOptions);
-        existing.UpdatedUtc = DateTime.UtcNow;
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        await context.SaveChangesAsync();
+        PersistedTraitDefinition definition = FromDto(dto);
+        definition.Tag = tag;
+        CommandResult result = await facade.ExecuteAsync(new UpdateTraitDefinitionCommand
+        {
+            Tag = tag,
+            Definition = definition
+        }, ctx.CancellationToken);
 
-        // Refresh the in-memory cache
-        RefreshInMemoryCache(existing);
+        if (!result.Success)
+        {
+            bool notFound = result.ErrorMessage?.StartsWith("No trait definition with tag", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(notFound ? 404 : 400, new ErrorResponse(
+                notFound ? "Not found" : "Command failed", result.ErrorMessage));
+        }
 
-        return new ApiResult(200, ToDto(existing));
+        PersistedTraitDefinition? updated = await facade.QueryAsync<GetTraitDefinitionQuery, PersistedTraitDefinition?>(
+            new GetTraitDefinitionQuery { Tag = tag }, ctx.CancellationToken);
+
+        return new ApiResult(200, ToDto(updated ?? definition));
     }
 
     /// <summary>
@@ -216,30 +191,19 @@ public class TraitController
     {
         string tag = ctx.GetRouteValue("tag");
 
-        using PwEngineContext context = ResolveContext();
-        PersistedTraitDefinition? existing = await context.TraitDefinitions.FindAsync(tag);
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        if (existing == null)
+        CommandResult result = await facade.ExecuteAsync(new DeleteTraitDefinitionCommand
+        {
+            Tag = tag
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
         {
             return new ApiResult(404, new ErrorResponse(
-                "Not found", $"No trait definition with tag '{tag}'"));
+                "Not found", result.ErrorMessage));
         }
-
-        // Remove any character trait selections referencing this definition
-        List<PersistentCharacterTrait> characterTraits = await context.CharacterTraits
-            .Where(ct => ct.TraitTag == tag)
-            .ToListAsync();
-
-        if (characterTraits.Count > 0)
-        {
-            context.CharacterTraits.RemoveRange(characterTraits);
-        }
-
-        context.TraitDefinitions.Remove(existing);
-        await context.SaveChangesAsync();
-
-        // Remove from in-memory cache
-        RemoveFromInMemoryCache(tag);
 
         return new ApiResult(204, new { message = "Deleted" });
     }
@@ -292,45 +256,6 @@ public class TraitController
     // ═══════════════════════════════════════════════════════════════════
     //  Helpers
     // ═══════════════════════════════════════════════════════════════════
-
-    private static PwEngineContext ResolveContext()
-    {
-        PwContextFactory factory = AnvilCore.GetService<PwContextFactory>()
-                                   ?? throw new InvalidOperationException("PwContextFactory service not available");
-        return factory.CreateDbContext();
-    }
-
-    private static void RefreshInMemoryCache(PersistedTraitDefinition persisted)
-    {
-        try
-        {
-            TraitDefinitionMapper? mapper = AnvilCore.GetService<TraitDefinitionMapper>();
-            ITraitRepository? repository = AnvilCore.GetService<ITraitRepository>();
-
-            if (mapper != null && repository != null)
-            {
-                Trait trait = mapper.ToDomain(persisted);
-                repository.Add(trait);
-            }
-        }
-        catch
-        {
-            // Best-effort cache refresh — trait will be loaded on next server restart
-        }
-    }
-
-    private static void RemoveFromInMemoryCache(string traitTag)
-    {
-        try
-        {
-            ITraitRepository? repository = AnvilCore.GetService<ITraitRepository>();
-            repository?.Remove(traitTag);
-        }
-        catch
-        {
-            // Best-effort cache removal — trait will be gone on next server restart
-        }
-    }
 
     private static string? ValidateDto(TraitDefinitionDto dto)
     {

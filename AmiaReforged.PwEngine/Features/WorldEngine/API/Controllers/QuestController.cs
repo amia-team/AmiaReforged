@@ -2,6 +2,10 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
+using AmiaReforged.PwEngine.Features.WorldEngine;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application.Queries;
 using Anvil;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,30 +33,21 @@ public class QuestController
     [HttpGet(BasePath)]
     public static async Task<ApiResult> GetAll(RouteContext ctx)
     {
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
         string? search = ctx.GetQueryParam("search");
         int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
         int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
 
-        using PwEngineContext context = ResolveContext();
+        List<PersistedQuestDefinition> matches = await facade.QueryAsync<SearchQuestDefinitionsQuery, List<PersistedQuestDefinition>>(
+            new SearchQuestDefinitionsQuery { SearchTerm = search }, ctx.CancellationToken);
 
-        IQueryable<PersistedQuestDefinition> query = context.CodexQuestDefinitions;
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            string term = search.Trim().ToLower();
-            query = query.Where(d =>
-                d.QuestId.ToLower().Contains(term) ||
-                d.Title.ToLower().Contains(term) ||
-                (d.Keywords != null && d.Keywords.ToLower().Contains(term)));
-        }
-
-        int totalCount = await query.CountAsync();
-
-        List<PersistedQuestDefinition> items = await query
-            .OrderBy(d => d.Title)
+        int totalCount = matches.Count;
+        List<PersistedQuestDefinition> items = matches
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToList();
 
         return new ApiResult(200, new
         {
@@ -72,8 +67,11 @@ public class QuestController
     {
         string questId = ctx.GetRouteValue("questId");
 
-        using PwEngineContext context = ResolveContext();
-        PersistedQuestDefinition? definition = await context.CodexQuestDefinitions.FindAsync(questId);
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
+        PersistedQuestDefinition? definition = await facade.QueryAsync<GetQuestDefinitionQuery, PersistedQuestDefinition?>(
+            new GetQuestDefinitionQuery { QuestId = questId }, ctx.CancellationToken);
 
         if (definition == null)
         {
@@ -103,22 +101,26 @@ public class QuestController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        using PwEngineContext context = ResolveContext();
-
-        bool exists = await context.CodexQuestDefinitions.AnyAsync(d => d.QuestId == dto.QuestId);
-        if (exists)
-        {
-            return new ApiResult(409, new ErrorResponse(
-                "Conflict", $"A quest definition with ID '{dto.QuestId}' already exists"));
-        }
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
         PersistedQuestDefinition definition = FromDto(dto);
-        definition.CreatedUtc = DateTime.UtcNow;
+        CommandResult result = await facade.ExecuteAsync(new CreateQuestDefinitionCommand
+        {
+            Definition = definition
+        }, ctx.CancellationToken);
 
-        context.CodexQuestDefinitions.Add(definition);
-        await context.SaveChangesAsync();
+        if (!result.Success)
+        {
+            bool conflict = result.ErrorMessage?.Contains("already exists", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(conflict ? 409 : 400,
+                new ErrorResponse(conflict ? "Conflict" : "Command failed", result.ErrorMessage));
+        }
 
-        return new ApiResult(201, ToDto(definition));
+        PersistedQuestDefinition? created = await facade.QueryAsync<GetQuestDefinitionQuery, PersistedQuestDefinition?>(
+            new GetQuestDefinitionQuery { QuestId = definition.QuestId }, ctx.CancellationToken);
+
+        return new ApiResult(201, ToDto(created ?? definition));
     }
 
     /// <summary>
@@ -129,15 +131,6 @@ public class QuestController
     public static async Task<ApiResult> Update(RouteContext ctx)
     {
         string questId = ctx.GetRouteValue("questId");
-
-        using PwEngineContext context = ResolveContext();
-        PersistedQuestDefinition? existing = await context.CodexQuestDefinitions.FindAsync(questId);
-
-        if (existing == null)
-        {
-            return new ApiResult(404, new ErrorResponse(
-                "Not found", $"No quest definition with ID '{questId}'"));
-        }
 
         QuestDefinitionDto? dto = await ctx.ReadJsonBodyAsync<QuestDefinitionDto>();
         if (dto == null)
@@ -151,19 +144,28 @@ public class QuestController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        // Update mutable fields — QuestId is immutable
-        existing.Title = dto.Title;
-        existing.Description = dto.Description;
-        existing.StagesJson = SerializeStages(dto.Stages);
-        existing.CompletionRewardJson = SerializeReward(dto.CompletionReward);
-        existing.QuestGiver = string.IsNullOrWhiteSpace(dto.QuestGiver) ? null : dto.QuestGiver.Trim();
-        existing.Location = string.IsNullOrWhiteSpace(dto.Location) ? null : dto.Location.Trim();
-        existing.Keywords = string.IsNullOrWhiteSpace(dto.Keywords) ? null : dto.Keywords.Trim();
-        existing.IsAlwaysAvailable = dto.IsAlwaysAvailable;
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        await context.SaveChangesAsync();
+        PersistedQuestDefinition definition = FromDto(dto);
+        definition.QuestId = questId;
+        CommandResult result = await facade.ExecuteAsync(new UpdateQuestDefinitionCommand
+        {
+            QuestId = questId,
+            Definition = definition
+        }, ctx.CancellationToken);
 
-        return new ApiResult(200, ToDto(existing));
+        if (!result.Success)
+        {
+            bool notFound = result.ErrorMessage?.StartsWith("No quest definition with ID", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(notFound ? 404 : 400, new ErrorResponse(
+                notFound ? "Not found" : "Command failed", result.ErrorMessage));
+        }
+
+        PersistedQuestDefinition? updated = await facade.QueryAsync<GetQuestDefinitionQuery, PersistedQuestDefinition?>(
+            new GetQuestDefinitionQuery { QuestId = questId }, ctx.CancellationToken);
+
+        return new ApiResult(200, ToDto(updated ?? definition));
     }
 
     /// <summary>
@@ -175,17 +177,19 @@ public class QuestController
     {
         string questId = ctx.GetRouteValue("questId");
 
-        using PwEngineContext context = ResolveContext();
-        PersistedQuestDefinition? existing = await context.CodexQuestDefinitions.FindAsync(questId);
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        if (existing == null)
+        CommandResult result = await facade.ExecuteAsync(new DeleteQuestDefinitionCommand
+        {
+            QuestId = questId
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
         {
             return new ApiResult(404, new ErrorResponse(
-                "Not found", $"No quest definition with ID '{questId}'"));
+                "Not found", result.ErrorMessage));
         }
-
-        context.CodexQuestDefinitions.Remove(existing);
-        await context.SaveChangesAsync();
 
         return new ApiResult(204, new { message = "Deleted" });
     }
@@ -193,13 +197,6 @@ public class QuestController
     // ═══════════════════════════════════════════════════════════════════
     //  Helpers
     // ═══════════════════════════════════════════════════════════════════
-
-    private static PwEngineContext ResolveContext()
-    {
-        PwContextFactory factory = AnvilCore.GetService<PwContextFactory>()
-                                   ?? throw new InvalidOperationException("PwContextFactory service not available");
-        return factory.CreateDbContext();
-    }
 
     private static string? ValidateDto(QuestDefinitionDto dto)
     {

@@ -1,5 +1,9 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using AmiaReforged.PwEngine.Features.WorldEngine;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.ResourceNodes.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.ResourceNodes.Queries;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions;
@@ -30,33 +34,26 @@ public class ResourceNodeController
     [HttpGet("/api/worldengine/resource-nodes")]
     public static async Task<ApiResult> GetAll(RouteContext ctx)
     {
-        IResourceNodeDefinitionRepository repo = ResolveRepository();
-        if (repo is DbResourceNodeDefinitionRepository dbRepo)
-        {
-            string? search = ctx.GetQueryParam("search");
-            string? type = ctx.GetQueryParam("type");
-            int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
-            int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-            List<ResourceNodeDefinition> nodes = dbRepo.Search(search, type, page, pageSize, out int totalCount);
+        string? search = ctx.GetQueryParam("search");
+        string? type = ctx.GetQueryParam("type");
+        int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
+        int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
 
-            return await Task.FromResult(new ApiResult(200, new
-            {
-                items = nodes.Select(ToDto),
-                totalCount,
-                page,
-                pageSize
-            }));
-        }
+        List<ResourceNodeDefinition> matches = await facade.QueryAsync<SearchResourceNodeDefinitionsQuery, List<ResourceNodeDefinition>>(
+            new SearchResourceNodeDefinitionsQuery { SearchTerm = search, TypeFilter = type }, ctx.CancellationToken);
 
-        // Fallback for non-DB repos
-        List<ResourceNodeDefinition> allNodes = repo.All();
+        int totalCount = matches.Count;
+        List<ResourceNodeDefinition> paged = matches.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
         return await Task.FromResult(new ApiResult(200, new
         {
-            items = allNodes.Select(ToDto),
-            totalCount = allNodes.Count,
-            page = 1,
-            pageSize = allNodes.Count
+            items = paged.Select(ToDto),
+            totalCount,
+            page,
+            pageSize
         }));
     }
 
@@ -68,9 +65,11 @@ public class ResourceNodeController
     public static async Task<ApiResult> GetByTag(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        IResourceNodeDefinitionRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        ResourceNodeDefinition? node = repo.Get(tag);
+        ResourceNodeDefinition? node = await facade.QueryAsync<GetResourceNodeDefinitionQuery, ResourceNodeDefinition?>(
+            new GetResourceNodeDefinitionQuery { Tag = tag }, ctx.CancellationToken);
         if (node == null)
         {
             return await Task.FromResult(new ApiResult(404, new ErrorResponse(
@@ -99,9 +98,21 @@ public class ResourceNodeController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        IResourceNodeDefinitionRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
         ResourceNodeDefinition definition = FromDto(dto);
-        repo.Create(definition);
+        CommandResult result = await facade.ExecuteAsync(new CreateResourceNodeCommand
+        {
+            Definition = definition
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
+        {
+            bool conflict = result.ErrorMessage?.Contains("already exists", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(conflict ? 409 : 400,
+                new ErrorResponse(conflict ? "Conflict" : "Command failed", result.ErrorMessage));
+        }
 
         return new ApiResult(201, ToDto(definition));
     }
@@ -114,14 +125,6 @@ public class ResourceNodeController
     public static async Task<ApiResult> Update(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        IResourceNodeDefinitionRepository repo = ResolveRepository();
-
-        ResourceNodeDefinition? existing = repo.Get(tag);
-        if (existing == null)
-        {
-            return await Task.FromResult(new ApiResult(404, new ErrorResponse(
-                "Not found", $"No resource node with tag '{tag}'")));
-        }
 
         ResourceNodeDto? dto = await ctx.ReadJsonBodyAsync<ResourceNodeDto>();
         if (dto == null)
@@ -135,8 +138,22 @@ public class ResourceNodeController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
         ResourceNodeDefinition definition = FromDto(dto);
-        repo.Update(definition);
+        CommandResult result = await facade.ExecuteAsync(new UpdateResourceNodeCommand
+        {
+            Tag = tag,
+            Definition = definition
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
+        {
+            bool notFound = result.ErrorMessage?.StartsWith("No resource node with tag", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(notFound ? 404 : 400, new ErrorResponse(
+                notFound ? "Not found" : "Command failed", result.ErrorMessage));
+        }
 
         return new ApiResult(200, ToDto(definition));
     }
@@ -149,13 +166,18 @@ public class ResourceNodeController
     public static async Task<ApiResult> Delete(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        IResourceNodeDefinitionRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        bool deleted = repo.Delete(tag);
-        if (!deleted)
+        CommandResult result = await facade.ExecuteAsync(new DeleteResourceNodeCommand
+        {
+            Tag = tag
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
         {
             return await Task.FromResult(new ApiResult(404, new ErrorResponse(
-                "Not found", $"No resource node with tag '{tag}'")));
+                "Not found", result.ErrorMessage)));
         }
 
         return await Task.FromResult(new ApiResult(204, new { message = "Deleted" }));
@@ -169,7 +191,8 @@ public class ResourceNodeController
     [HttpPost("/api/worldengine/resource-nodes/import")]
     public static async Task<ApiResult> Import(RouteContext ctx)
     {
-        IResourceNodeDefinitionRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
         string? body = null;
         if (ctx.Request != null)
@@ -208,29 +231,39 @@ public class ResourceNodeController
                 "No valid resource node definitions found in request body"));
         }
 
-        int succeeded = 0;
         int failed = 0;
         List<string> errors = new();
+        List<(string Tag, UpsertResourceNodeCommand Command)> valid = new();
 
         foreach (ResourceNodeDefinition node in nodes)
         {
-            try
-            {
-                string? validationError = ValidateDefinition(node);
-                if (validationError != null)
-                {
-                    failed++;
-                    errors.Add($"{node.Tag ?? "unknown"}: {validationError}");
-                    continue;
-                }
-
-                repo.Create(node);
-                succeeded++;
-            }
-            catch (Exception ex)
+            string? validationError = ValidateDefinition(node);
+            if (validationError != null)
             {
                 failed++;
-                errors.Add($"{node.Tag ?? "unknown"}: {ex.Message}");
+                errors.Add($"{node.Tag ?? "unknown"}: {validationError}");
+                continue;
+            }
+
+            valid.Add((node.Tag, new UpsertResourceNodeCommand { Definition = node }));
+        }
+
+        BatchCommandResult batch = await facade.ExecuteBatchAsync(
+            valid.Select(v => v.Command),
+            BatchExecutionOptions.ContinueOnFailure(),
+            ctx.CancellationToken);
+
+        int succeeded = 0;
+        for (int i = 0; i < batch.Results.Count; i++)
+        {
+            if (batch.Results[i].Success)
+            {
+                succeeded++;
+            }
+            else
+            {
+                failed++;
+                errors.Add($"{valid[i].Tag}: {batch.Results[i].ErrorMessage}");
             }
         }
 
@@ -241,12 +274,6 @@ public class ResourceNodeController
             total = nodes.Count,
             errors
         });
-    }
-
-    private static IResourceNodeDefinitionRepository ResolveRepository()
-    {
-        return AnvilCore.GetService<IResourceNodeDefinitionRepository>()
-               ?? throw new InvalidOperationException("IResourceNodeDefinitionRepository service not available");
     }
 
     private static string? ValidateDto(ResourceNodeDto dto)

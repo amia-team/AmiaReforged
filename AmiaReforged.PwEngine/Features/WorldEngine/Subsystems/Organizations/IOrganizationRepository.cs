@@ -10,5 +10,7 @@ public interface IOrganizationRepository
     List<IOrganization> GetAll();
     List<IOrganization> GetByType(OrganizationType type);
     void Update(IOrganization organization);
+    /// <summary>Deletes an organization by id. Returns true if it existed.</summary>
+    bool Delete(OrganizationId id);
     void SaveChanges();
 }

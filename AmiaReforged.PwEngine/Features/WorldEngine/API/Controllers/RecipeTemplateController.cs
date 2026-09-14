@@ -1,6 +1,10 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using AmiaReforged.PwEngine.Features.WorldEngine;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
@@ -28,12 +32,18 @@ public class RecipeTemplateController
     [HttpGet("/api/worldengine/recipe-templates")]
     public static async Task<ApiResult> GetAll(RouteContext ctx)
     {
-        IRecipeTemplateRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
         string? search = ctx.GetQueryParam("search");
         int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
         int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
 
-        List<RecipeTemplate> paged = repo.Search(search, page, pageSize, out int totalCount);
+        List<RecipeTemplate> matches = await facade.QueryAsync<SearchRecipeTemplatesQuery, List<RecipeTemplate>>(
+            new SearchRecipeTemplatesQuery { SearchTerm = search }, ctx.CancellationToken);
+
+        int totalCount = matches.Count;
+        List<RecipeTemplate> paged = matches.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
         return await Task.FromResult(new ApiResult(200, new
         {
@@ -52,9 +62,11 @@ public class RecipeTemplateController
     public static async Task<ApiResult> GetByTag(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        IRecipeTemplateRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        RecipeTemplate? template = repo.GetByTag(tag);
+        RecipeTemplate? template = await facade.QueryAsync<GetRecipeTemplateQuery, RecipeTemplate?>(
+            new GetRecipeTemplateQuery { Tag = tag }, ctx.CancellationToken);
         if (template == null)
         {
             return await Task.FromResult(new ApiResult(404, new ErrorResponse(
@@ -72,9 +84,11 @@ public class RecipeTemplateController
     public static async Task<ApiResult> GetByIndustry(RouteContext ctx)
     {
         string industryTag = ctx.GetRouteValue("industryTag");
-        IRecipeTemplateRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        List<RecipeTemplate> templates = repo.GetByIndustry(new IndustryTag(industryTag));
+        List<RecipeTemplate> templates = await facade.QueryAsync<GetRecipeTemplatesByIndustryQuery, List<RecipeTemplate>>(
+            new GetRecipeTemplatesByIndustryQuery { IndustryTag = new IndustryTag(industryTag) }, ctx.CancellationToken);
 
         return await Task.FromResult(new ApiResult(200, new
         {
@@ -141,16 +155,21 @@ public class RecipeTemplateController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        IRecipeTemplateRepository repo = ResolveRepository();
-
-        if (repo.GetByTag(dto.Tag) != null)
-        {
-            return new ApiResult(409, new ErrorResponse("Conflict",
-                $"Recipe template with tag '{dto.Tag}' already exists"));
-        }
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
         RecipeTemplate template = FromDto(dto);
-        repo.Add(template);
+        CommandResult result = await facade.ExecuteAsync(new CreateRecipeTemplateCommand
+        {
+            Template = template
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
+        {
+            bool conflict = result.ErrorMessage?.Contains("already exists", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(conflict ? 409 : 400,
+                new ErrorResponse(conflict ? "Conflict" : "Command failed", result.ErrorMessage));
+        }
 
         // Invalidate the template expansion cache
         InvalidateExpansionCache();
@@ -166,14 +185,6 @@ public class RecipeTemplateController
     public static async Task<ApiResult> Update(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        IRecipeTemplateRepository repo = ResolveRepository();
-
-        RecipeTemplate? existing = repo.GetByTag(tag);
-        if (existing == null)
-        {
-            return await Task.FromResult(new ApiResult(404, new ErrorResponse(
-                "Not found", $"No recipe template with tag '{tag}'")));
-        }
 
         RecipeTemplateDto? dto = await ctx.ReadJsonBodyAsync<RecipeTemplateDto>();
         if (dto == null)
@@ -187,9 +198,23 @@ public class RecipeTemplateController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
         dto = dto with { Tag = tag };
         RecipeTemplate template = FromDto(dto);
-        repo.Update(template);
+        CommandResult result = await facade.ExecuteAsync(new UpdateRecipeTemplateCommand
+        {
+            Tag = tag,
+            Template = template
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
+        {
+            bool notFound = result.ErrorMessage?.StartsWith("No recipe template with tag", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(notFound ? 404 : 400, new ErrorResponse(
+                notFound ? "Not found" : "Command failed", result.ErrorMessage));
+        }
 
         InvalidateExpansionCache();
 
@@ -204,13 +229,18 @@ public class RecipeTemplateController
     public static async Task<ApiResult> Delete(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        IRecipeTemplateRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        bool deleted = repo.Delete(tag);
-        if (!deleted)
+        CommandResult result = await facade.ExecuteAsync(new DeleteRecipeTemplateCommand
+        {
+            Tag = tag
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
         {
             return await Task.FromResult(new ApiResult(404, new ErrorResponse(
-                "Not found", $"No recipe template with tag '{tag}'")));
+                "Not found", result.ErrorMessage)));
         }
 
         InvalidateExpansionCache();
@@ -276,12 +306,6 @@ public class RecipeTemplateController
     }
 
     // ==================== Helpers ====================
-
-    private static IRecipeTemplateRepository ResolveRepository()
-    {
-        return AnvilCore.GetService<IRecipeTemplateRepository>()
-               ?? throw new InvalidOperationException("IRecipeTemplateRepository service not available");
-    }
 
     private static RecipeTemplateExpander ResolveExpander()
     {

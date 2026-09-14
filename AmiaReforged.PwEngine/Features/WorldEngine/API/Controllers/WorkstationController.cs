@@ -1,6 +1,10 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using AmiaReforged.PwEngine.Features.WorldEngine;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
 using Anvil;
 
@@ -25,12 +29,18 @@ public class WorkstationController
     [HttpGet("/api/worldengine/workstations")]
     public static async Task<ApiResult> GetAll(RouteContext ctx)
     {
-        IWorkstationRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
         string? search = ctx.GetQueryParam("search");
         int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
         int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
 
-        List<Workstation> paged = repo.Search(search, page, pageSize, out int totalCount);
+        List<Workstation> matches = await facade.QueryAsync<SearchWorkstationDefinitionsQuery, List<Workstation>>(
+            new SearchWorkstationDefinitionsQuery { SearchTerm = search }, ctx.CancellationToken);
+
+        int totalCount = matches.Count;
+        List<Workstation> paged = matches.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
         return await Task.FromResult(new ApiResult(200, new
         {
@@ -49,9 +59,11 @@ public class WorkstationController
     public static async Task<ApiResult> GetByTag(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        IWorkstationRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        Workstation? workstation = repo.GetByTag(new WorkstationTag(tag));
+        Workstation? workstation = await facade.QueryAsync<GetWorkstationDefinitionQuery, Workstation?>(
+            new GetWorkstationDefinitionQuery { Tag = tag }, ctx.CancellationToken);
         if (workstation == null)
         {
             return await Task.FromResult(new ApiResult(404, new ErrorResponse(
@@ -80,16 +92,21 @@ public class WorkstationController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        IWorkstationRepository repo = ResolveRepository();
-
-        if (repo.WorkstationExists(dto.Tag))
-        {
-            return new ApiResult(409, new ErrorResponse("Conflict",
-                $"Workstation with tag '{dto.Tag}' already exists"));
-        }
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
         Workstation workstation = FromDto(dto);
-        repo.Add(workstation);
+        CommandResult result = await facade.ExecuteAsync(new CreateWorkstationCommand
+        {
+            Workstation = workstation
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
+        {
+            bool conflict = result.ErrorMessage?.Contains("already exists", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(conflict ? 409 : 400,
+                new ErrorResponse(conflict ? "Conflict" : "Command failed", result.ErrorMessage));
+        }
 
         return new ApiResult(201, ToDto(workstation));
     }
@@ -102,14 +119,6 @@ public class WorkstationController
     public static async Task<ApiResult> Update(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        IWorkstationRepository repo = ResolveRepository();
-
-        Workstation? existing = repo.GetByTag(new WorkstationTag(tag));
-        if (existing == null)
-        {
-            return await Task.FromResult(new ApiResult(404, new ErrorResponse(
-                "Not found", $"No workstation with tag '{tag}'")));
-        }
 
         WorkstationDto? dto = await ctx.ReadJsonBodyAsync<WorkstationDto>();
         if (dto == null)
@@ -123,9 +132,23 @@ public class WorkstationController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
         dto = dto with { Tag = tag };
         Workstation workstation = FromDto(dto);
-        repo.Update(workstation);
+        CommandResult result = await facade.ExecuteAsync(new UpdateWorkstationCommand
+        {
+            Tag = tag,
+            Workstation = workstation
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
+        {
+            bool notFound = result.ErrorMessage?.StartsWith("No workstation with tag", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(notFound ? 404 : 400, new ErrorResponse(
+                notFound ? "Not found" : "Command failed", result.ErrorMessage));
+        }
 
         return new ApiResult(200, ToDto(workstation));
     }
@@ -138,13 +161,18 @@ public class WorkstationController
     public static async Task<ApiResult> Delete(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        IWorkstationRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        bool deleted = repo.Delete(tag);
-        if (!deleted)
+        CommandResult result = await facade.ExecuteAsync(new DeleteWorkstationCommand
+        {
+            Tag = tag
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
         {
             return await Task.FromResult(new ApiResult(404, new ErrorResponse(
-                "Not found", $"No workstation with tag '{tag}'")));
+                "Not found", result.ErrorMessage)));
         }
 
         return await Task.FromResult(new ApiResult(204, new { message = "Deleted" }));
@@ -157,9 +185,11 @@ public class WorkstationController
     [HttpGet("/api/worldengine/workstations/export")]
     public static async Task<ApiResult> Export(RouteContext ctx)
     {
-        IWorkstationRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        List<Workstation> workstations = repo.All();
+        List<Workstation> workstations = await facade.QueryAsync<SearchWorkstationDefinitionsQuery, List<Workstation>>(
+            new SearchWorkstationDefinitionsQuery(), ctx.CancellationToken);
 
         return await Task.FromResult(new ApiResult(200,
             workstations.OrderBy(w => w.Name).Select(ToDto).ToArray()));
@@ -172,7 +202,8 @@ public class WorkstationController
     [HttpPost("/api/worldengine/workstations/import")]
     public static async Task<ApiResult> Import(RouteContext ctx)
     {
-        IWorkstationRepository repo = ResolveRepository();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
         string? body = null;
         if (ctx.Request != null)
@@ -211,30 +242,47 @@ public class WorkstationController
                 "No valid workstation definitions found in request body"));
         }
 
-        int succeeded = 0;
         int failed = 0;
         List<string> errors = new();
+        List<(string Tag, UpsertWorkstationCommand Command)> valid = new();
 
         foreach (WorkstationDto dto in dtos)
         {
+            string? validationError = ValidateDto(dto);
+            if (validationError != null)
+            {
+                failed++;
+                errors.Add($"{dto.Tag ?? "unknown"}: {validationError}");
+                continue;
+            }
+
             try
             {
-                string? validationError = ValidateDto(dto);
-                if (validationError != null)
-                {
-                    failed++;
-                    errors.Add($"{dto.Tag ?? "unknown"}: {validationError}");
-                    continue;
-                }
-
-                Workstation workstation = FromDto(dto);
-                repo.Add(workstation); // Acts as upsert
-                succeeded++;
+                valid.Add((dto.Tag, new UpsertWorkstationCommand { Workstation = FromDto(dto) }));
             }
             catch (Exception ex)
             {
                 failed++;
                 errors.Add($"{dto.Tag ?? "unknown"}: {ex.Message}");
+            }
+        }
+
+        BatchCommandResult batch = await facade.ExecuteBatchAsync(
+            valid.Select(v => v.Command),
+            BatchExecutionOptions.ContinueOnFailure(),
+            ctx.CancellationToken);
+
+        int succeeded = 0;
+        for (int i = 0; i < batch.Results.Count; i++)
+        {
+            if (batch.Results[i].Success)
+            {
+                succeeded++;
+            }
+            else
+            {
+                failed++;
+                errors.Add($"{valid[i].Tag}: {batch.Results[i].ErrorMessage}");
             }
         }
 
@@ -245,12 +293,6 @@ public class WorkstationController
             total = dtos.Count,
             errors
         });
-    }
-
-    private static IWorkstationRepository ResolveRepository()
-    {
-        return AnvilCore.GetService<IWorkstationRepository>()
-               ?? throw new InvalidOperationException("IWorkstationRepository service not available");
     }
 
     private static string? ValidateDto(WorkstationDto dto)

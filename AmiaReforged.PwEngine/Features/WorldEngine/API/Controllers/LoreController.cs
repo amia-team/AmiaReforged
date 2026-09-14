@@ -1,5 +1,9 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
+using AmiaReforged.PwEngine.Features.WorldEngine;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
 using Anvil;
 using Microsoft.EntityFrameworkCore;
@@ -21,38 +25,25 @@ public class LoreController
     [HttpGet(BasePath)]
     public static async Task<ApiResult> GetAll(RouteContext ctx)
     {
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
         string? search = ctx.GetQueryParam("search");
         string? category = ctx.GetQueryParam("category");
         int page = int.TryParse(ctx.GetQueryParam("page"), out int p) ? Math.Max(1, p) : 1;
         int pageSize = int.TryParse(ctx.GetQueryParam("pageSize"), out int ps) ? Math.Clamp(ps, 1, 200) : 50;
 
-        using PwEngineContext context = ResolveContext();
+        int? categoryFilter = int.TryParse(category?.Trim(), out int catInt)
+            && Enum.IsDefined(typeof(LoreCategory), catInt) ? catInt : null;
 
-        IQueryable<PersistedLoreDefinition> query = context.CodexLoreDefinitions;
+        List<PersistedLoreDefinition> matches = await facade.QueryAsync<SearchLoreDefinitionsQuery, List<PersistedLoreDefinition>>(
+            new SearchLoreDefinitionsQuery { SearchTerm = search, Category = categoryFilter }, ctx.CancellationToken);
 
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            string term = search.Trim().ToLower();
-            query = query.Where(d =>
-                d.LoreId.ToLower().Contains(term) ||
-                d.Title.ToLower().Contains(term) ||
-                (d.Keywords != null && d.Keywords.ToLower().Contains(term)));
-        }
-
-        if (!string.IsNullOrWhiteSpace(category))
-        {
-            if (int.TryParse(category.Trim(), out int catInt) && Enum.IsDefined(typeof(LoreCategory), catInt))
-                query = query.Where(d => d.Category == (LoreCategory)catInt);
-        }
-
-        int totalCount = await query.CountAsync();
-
-        List<PersistedLoreDefinition> items = await query
-            .OrderBy(d => d.Category)
-            .ThenBy(d => d.Title)
+        int totalCount = matches.Count;
+        List<PersistedLoreDefinition> items = matches
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToList();
 
         return new ApiResult(200, new
         {
@@ -72,8 +63,11 @@ public class LoreController
     {
         string loreId = ctx.GetRouteValue("loreId");
 
-        using PwEngineContext context = ResolveContext();
-        PersistedLoreDefinition? definition = await context.CodexLoreDefinitions.FindAsync(loreId);
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+
+        PersistedLoreDefinition? definition = await facade.QueryAsync<GetLoreDefinitionQuery, PersistedLoreDefinition?>(
+            new GetLoreDefinitionQuery { LoreId = loreId }, ctx.CancellationToken);
 
         if (definition == null)
         {
@@ -103,23 +97,26 @@ public class LoreController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        using PwEngineContext context = ResolveContext();
-
-        // Check for duplicate ID
-        bool exists = await context.CodexLoreDefinitions.AnyAsync(d => d.LoreId == dto.LoreId);
-        if (exists)
-        {
-            return new ApiResult(409, new ErrorResponse(
-                "Conflict", $"A lore definition with ID '{dto.LoreId}' already exists"));
-        }
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
         PersistedLoreDefinition definition = FromDto(dto);
-        definition.CreatedUtc = DateTime.UtcNow;
+        CommandResult result = await facade.ExecuteAsync(new CreateLoreDefinitionCommand
+        {
+            Definition = definition
+        }, ctx.CancellationToken);
 
-        context.CodexLoreDefinitions.Add(definition);
-        await context.SaveChangesAsync();
+        if (!result.Success)
+        {
+            bool conflict = result.ErrorMessage?.Contains("already exists", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(conflict ? 409 : 400,
+                new ErrorResponse(conflict ? "Conflict" : "Command failed", result.ErrorMessage));
+        }
 
-        return new ApiResult(201, ToDto(definition));
+        PersistedLoreDefinition? created = await facade.QueryAsync<GetLoreDefinitionQuery, PersistedLoreDefinition?>(
+            new GetLoreDefinitionQuery { LoreId = definition.LoreId }, ctx.CancellationToken);
+
+        return new ApiResult(201, ToDto(created ?? definition));
     }
 
     /// <summary>
@@ -130,15 +127,6 @@ public class LoreController
     public static async Task<ApiResult> Update(RouteContext ctx)
     {
         string loreId = ctx.GetRouteValue("loreId");
-
-        using PwEngineContext context = ResolveContext();
-        PersistedLoreDefinition? existing = await context.CodexLoreDefinitions.FindAsync(loreId);
-
-        if (existing == null)
-        {
-            return new ApiResult(404, new ErrorResponse(
-                "Not found", $"No lore definition with ID '{loreId}'"));
-        }
 
         LoreDefinitionDto? dto = await ctx.ReadJsonBodyAsync<LoreDefinitionDto>();
         if (dto == null)
@@ -152,17 +140,28 @@ public class LoreController
             return new ApiResult(400, new ErrorResponse("Validation failed", validationError));
         }
 
-        // Update mutable fields — LoreId is immutable
-        existing.Title = dto.Title;
-        existing.Content = dto.Content;
-        existing.Category = (LoreCategory)dto.Category;
-        existing.Tier = dto.Tier;
-        existing.Keywords = dto.Keywords;
-        existing.IsAlwaysAvailable = dto.IsAlwaysAvailable;
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        await context.SaveChangesAsync();
+        PersistedLoreDefinition definition = FromDto(dto);
+        definition.LoreId = loreId;
+        CommandResult result = await facade.ExecuteAsync(new UpdateLoreDefinitionCommand
+        {
+            LoreId = loreId,
+            Definition = definition
+        }, ctx.CancellationToken);
 
-        return new ApiResult(200, ToDto(existing));
+        if (!result.Success)
+        {
+            bool notFound = result.ErrorMessage?.StartsWith("No lore definition with ID", StringComparison.OrdinalIgnoreCase) == true;
+            return new ApiResult(notFound ? 404 : 400, new ErrorResponse(
+                notFound ? "Not found" : "Command failed", result.ErrorMessage));
+        }
+
+        PersistedLoreDefinition? updated = await facade.QueryAsync<GetLoreDefinitionQuery, PersistedLoreDefinition?>(
+            new GetLoreDefinitionQuery { LoreId = loreId }, ctx.CancellationToken);
+
+        return new ApiResult(200, ToDto(updated ?? definition));
     }
 
     /// <summary>
@@ -174,22 +173,19 @@ public class LoreController
     {
         string loreId = ctx.GetRouteValue("loreId");
 
-        using PwEngineContext context = ResolveContext();
-        PersistedLoreDefinition? existing = await context.CodexLoreDefinitions.FindAsync(loreId);
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        if (existing == null)
+        CommandResult result = await facade.ExecuteAsync(new DeleteLoreDefinitionCommand
+        {
+            LoreId = loreId
+        }, ctx.CancellationToken);
+
+        if (!result.Success)
         {
             return new ApiResult(404, new ErrorResponse(
-                "Not found", $"No lore definition with ID '{loreId}'"));
+                "Not found", result.ErrorMessage));
         }
-
-        // Remove all player unlock records for this lore entry
-        await context.CodexLoreUnlocks
-            .Where(u => u.LoreId == loreId)
-            .ExecuteDeleteAsync();
-
-        context.CodexLoreDefinitions.Remove(existing);
-        await context.SaveChangesAsync();
 
         return new ApiResult(204, new { message = "Deleted" });
     }
@@ -212,13 +208,6 @@ public class LoreController
     // ═══════════════════════════════════════════════════════════════════
     //  Helpers
     // ═══════════════════════════════════════════════════════════════════
-
-    private static PwEngineContext ResolveContext()
-    {
-        PwContextFactory factory = AnvilCore.GetService<PwContextFactory>()
-                                   ?? throw new InvalidOperationException("PwContextFactory service not available");
-        return factory.CreateDbContext();
-    }
 
     private static string? ValidateDto(LoreDefinitionDto dto)
     {

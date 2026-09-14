@@ -7,7 +7,7 @@
 @inject ILogger<CodexEditor> Logger
 @inject IJSRuntime JS
 
-@* ══════ Codex Editor GL Mode ══════ *@
+@* ══════ Codex Editor ══════ *@
 <div class="we-editor__codex-editor-wrap">
     @* ── Toolbar ── *@
     <div class="we-ce-toolbar">
@@ -25,28 +25,6 @@
             @(_subType == CodexSubType.Lore ? "Lore" : "Quest")
         </span>
         <div class="we-ce-toolbar__divider"></div>
-        @* View menu *@
-        <div class="dropdown" style="position:relative">
-            <button class="btn btn-sm btn-outline-secondary" style="font-size:0.72rem;padding:2px 8px" @onclick="CeToggleViewMenu">View ▾</button>
-            @if (_showViewMenu)
-            {
-                <div style="position:absolute;top:100%;right:0;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:4px;padding:4px 0;z-index:1060;min-width:160px;box-shadow:0 4px 12px rgba(0,0,0,0.4)">
-                    @foreach (KeyValuePair<string, string> kv in PanelTitles)
-                    {
-                        bool isOpen = _openPanels.Contains(kv.Key);
-                        <button style="display:block;width:100%;text-align:left;background:none;border:none;padding:4px 12px;font-size:0.8rem;color:var(--text-primary);cursor:pointer"
-                                @onclick="() => CeTogglePanel(kv.Key)" disabled="@isOpen">
-                            @(isOpen ? "✓ " : "  ")@kv.Value
-                        </button>
-                    }
-                    <div style="border-top:1px solid var(--border-subtle);margin:4px 0"></div>
-                    <button style="display:block;width:100%;text-align:left;background:none;border:none;padding:4px 12px;font-size:0.8rem;color:var(--text-secondary);cursor:pointer"
-                            @onclick="CeResetLayout">
-                        Reset Layout
-                    </button>
-                </div>
-            }
-        </div>
         <div style="flex:1"></div>
         @if (!string.IsNullOrEmpty(_error))
         {
@@ -76,13 +54,13 @@
         </div>
     }
 
-    @* ── Layout area: position:relative wrapper for GL + panels ── *@
+    @* ── Layout area: list | form | preview splits ── *@
     <div class="we-ce-layout-area">
-        @* GL container *@
-        <div id="we-codex-gl-container" class="we-ce-gl-host"></div>
-
-        @* ── Pre-rendered Panel: Entity List ── *@
-        <div id="bl-panel-ce-list" class="we-editor__gl-panel" style="display:none">
+    <ResizableSplit Direction="horizontal" FirstDefaultWidth="260" FirstMin="200" SecondMin="600"
+                    PersistKey="codex-list" CollapsibleFirst="true" CollapsibleSecond="false">
+        <First>
+        @* ── Entity List ── *@
+        <div style="height:100%;min-height:0">
             <div style="background:var(--bg-card);height:100%;display:flex;flex-direction:column">
                 <div style="padding:8px 12px;border-bottom:1px solid var(--border-subtle);flex-shrink:0;display:flex;gap:6px;align-items:center">
                     <select class="form-control form-control-sm" style="font-size:0.8rem;flex:0 0 auto;width:auto"
@@ -124,10 +102,14 @@
                     }
                 </div>
             </div>
-        </div>
-
-        @* ── Pre-rendered Panel: Form / Editor ── *@
-        <div id="bl-panel-ce-form" class="we-editor__gl-panel" style="display:none">
+    </div>
+        </First>
+        <Second>
+            <ResizableSplit Direction="horizontal" FirstDefaultWidth="340" FirstMin="260" SecondMin="400"
+                            PersistKey="codex-preview" SwapOrder="true"
+                            CollapsibleFirst="true" CollapsibleSecond="false">
+                <Second>
+        @* ── Form / Editor ── *@
             <div style="background:var(--bg-card);padding:12px;min-height:100%;overflow-y:auto">
                 @if (_subType == CodexSubType.Lore)
                 {
@@ -713,10 +695,10 @@
                     </div>
                 }
             </div>
-        </div>
-
-        @* ── Pre-rendered Panel: Preview ── *@
-        <div id="bl-panel-ce-preview" class="we-editor__gl-panel" style="display:none">
+                </Second>
+                <First>
+        @* ── Preview ── *@
+        <div style="height:100%;min-height:0;overflow-y:auto">
             <div style="background:var(--bg-card);padding:12px;min-height:100%;overflow-y:auto">
                 <h5 style="margin:0 0 10px 0;font-size:0.9rem">Preview</h5>
                 @if (_subType == CodexSubType.Lore)
