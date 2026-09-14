@@ -6,14 +6,17 @@
 > `SharedAccountDocumentService`, `PropertyEvictionService`,
 > `BankAdminWindowView`, `ResourceNodeService`, and
 > `ResourceNodeInstanceSetupService` inject dispatchers (no handler-direct
-> consumers remain outside handler declarations); missing admin commands/queries were added (org update/disband,
+> consumers remain outside handler declarations); F-3 is fixed
+> (`EnrollInIndustryCommand`, `LearnRecipeCommand`, `GetRecipeQuery`,
+> `GetMembershipQuery`, `GetCharacterIndustriesQuery`, `GetKnownRecipesQuery` added;
+> `IndustrySubsystem` is a pure dispatch wrapper with no repositories);
+> missing admin commands/queries were added (org update/disband,
 > industry/workstation/recipe/node/region/interaction/item/trait/lore/quest/
 > coinhouse/dialogue CRUD, cap profiles, progression config);
 > `IOrganizationRepository.Delete` now exists (EF + in-memory);
-> `ExampleBankingController` (mock data) deleted. Suite: 1880/1880 green,
+> `ExampleBankingController` (mock data) deleted. Suite: 1890/1890 green,
 > including new `ControllerCqrsTests` + `DefinitionCrudBehavior`.
-> Remaining: F-3 repo-direct subsystem methods (`EnrollInIndustryAsync`,
-> `LearnRecipeAsync`, …), F-4 self-as-actor identity, F-5 `HarvestingSubsystem`
+> Remaining: F-4 self-as-actor identity, F-5 `HarvestingSubsystem`
 > stub, F-6 Codex application services, F-7 Characters/Traits/Regions services.
 > Known response-shape deltas from the fix: interaction DTOs no longer carry
 > `CreatedAt`/`UpdatedAt`; item PUT with missing body on a missing tag returns
@@ -111,7 +114,20 @@ Fix: inject `ICommandDispatcher` / `IQueryDispatcher` (or the facade) in the six
 classes above and delete the per-handler constructor parameters. One-line change per
 call site (`_xHandler.HandleAsync(cmd, ct)` → `_commands.DispatchAsync(cmd, ct)`).
 
-## F-3 — `IndustrySubsystem`: writes and reads performed on repositories, not commands/queries
+## F-3 — `IndustrySubsystem` (FIXED 2026-09-14): now a pure dispatch wrapper
+
+> Fix applied: `EnrollInIndustryCommand`, `LearnRecipeCommand` (validation-only by
+> design — recipes carry no learnable state; see handler docs), `GetRecipeQuery`
+> (manual-first, template-expansion fallback, matching `CraftItemHandler`), and
+> `GetMembershipQuery` / `GetCharacterIndustriesQuery` / `GetKnownRecipesQuery`
+> added; `GetIndustryAsync` / `GetAllIndustriesAsync` reuse the existing
+> `GetIndustryDefinitionQuery` / `SearchIndustryDefinitionsQuery`. The subsystem holds
+> only the two dispatchers (zero repository references). `EnrollInIndustryHandler`
+> adds the previously missing character-existence check and publishes
+> `MemberJoinedIndustryEvent`; `LearnRecipeHandler` adds the previously missing
+> membership check. Original finding below for history:
+
+Original finding: writes and reads performed on repositories, not commands/queries
 
 File: `Subsystems/Implementations/IndustrySubsystem.cs`. It holds
 `IIndustryRepository`, `IIndustryMembershipRepository`, `ICharacterKnowledgeRepository`

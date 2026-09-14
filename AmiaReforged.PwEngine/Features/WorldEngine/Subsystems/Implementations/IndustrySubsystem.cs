@@ -3,51 +3,40 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Implementations;
 
 /// <summary>
 /// Concrete implementation of the Industry subsystem.
-/// Routes command/query operations through the central dispatchers so writes get
-/// logging, the exception-to-Fail contract, and CommandExecutedEvent publishing.
+/// Thin dispatch wrapper: all operations route through the central dispatchers so
+/// writes get logging, the exception-to-Fail contract, and CommandExecutedEvent publishing.
 /// </summary>
 [ServiceBinding(typeof(IIndustrySubsystem))]
 public sealed class IndustrySubsystem : IIndustrySubsystem
 {
-    private readonly IIndustryRepository _industryRepository;
-    private readonly IIndustryMembershipRepository _membershipRepository;
-    private readonly ICharacterKnowledgeRepository _knowledgeRepository;
     private readonly ICommandDispatcher _commands;
     private readonly IQueryDispatcher _queries;
 
     public IndustrySubsystem(
-        IIndustryRepository industryRepository,
-        IIndustryMembershipRepository membershipRepository,
-        ICharacterKnowledgeRepository knowledgeRepository,
         ICommandDispatcher commands,
         IQueryDispatcher queries)
     {
-        _industryRepository = industryRepository;
-        _membershipRepository = membershipRepository;
-        _knowledgeRepository = knowledgeRepository;
         _commands = commands;
         _queries = queries;
     }
 
     public Task<Industry?> GetIndustryAsync(IndustryTag industryTag, CancellationToken ct = default)
     {
-        Industry? industry = _industryRepository.GetByTag(industryTag);
-        return Task.FromResult(industry);
+        GetIndustryDefinitionQuery query = new() { Tag = industryTag.Value };
+        return _queries.DispatchAsync<GetIndustryDefinitionQuery, Industry?>(query, ct);
     }
 
     public Task<List<Industry>> GetAllIndustriesAsync(CancellationToken ct = default)
     {
-        List<Industry> all = _industryRepository.All();
-        return Task.FromResult(all);
+        SearchIndustryDefinitionsQuery query = new() { SearchTerm = null };
+        return _queries.DispatchAsync<SearchIndustryDefinitionsQuery, List<Industry>>(query, ct);
     }
 
     public Task<CommandResult> CraftItemAsync(CraftItemCommand command, CancellationToken ct = default)
@@ -65,68 +54,38 @@ public sealed class IndustrySubsystem : IIndustrySubsystem
 
     public Task<Recipe?> GetRecipeAsync(string recipeId, IndustryTag industryTag, CancellationToken ct = default)
     {
-        Industry? industry = _industryRepository.GetByTag(industryTag);
-        Recipe? recipe = industry?.Recipes.FirstOrDefault(r => r.RecipeId.Value == recipeId);
-        return Task.FromResult(recipe);
+        GetRecipeQuery query = new() { IndustryTag = industryTag, RecipeId = recipeId };
+        return _queries.DispatchAsync<GetRecipeQuery, Recipe?>(query, ct);
     }
 
     public Task<CommandResult> EnrollInIndustryAsync(CharacterId characterId, IndustryTag industryTag, CancellationToken ct = default)
     {
-        Industry? industry = _industryRepository.GetByTag(industryTag);
-        if (industry == null)
-            return Task.FromResult(CommandResult.Fail($"Industry '{industryTag.Value}' not found"));
-
-        List<IndustryMembership> existing = _membershipRepository.All(characterId.Value);
-        if (existing.Any(m => m.IndustryTag.Value == industryTag.Value))
-            return Task.FromResult(CommandResult.Fail($"Already enrolled in '{industryTag.Value}'"));
-
-        IndustryMembership membership = new IndustryMembership
-        {
-            CharacterId = characterId,
-            IndustryTag = industryTag,
-            Level = ProficiencyLevel.Layman,
-            CharacterKnowledge = []
-        };
-        _membershipRepository.Add(membership);
-        _membershipRepository.SaveChanges();
-        return Task.FromResult(CommandResult.Ok());
+        EnrollInIndustryCommand command = new() { CharacterId = characterId, IndustryTag = industryTag };
+        return _commands.DispatchAsync(command, ct);
     }
 
     public Task<IndustryMembership?> GetMembershipAsync(CharacterId characterId, IndustryTag industryTag, CancellationToken ct = default)
     {
-        List<IndustryMembership> memberships = _membershipRepository.All(characterId.Value);
-        IndustryMembership? membership = memberships.FirstOrDefault(m => m.IndustryTag.Value == industryTag.Value);
-        return Task.FromResult(membership);
+        GetMembershipQuery query = new() { CharacterId = characterId, IndustryTag = industryTag };
+        return _queries.DispatchAsync<GetMembershipQuery, IndustryMembership?>(query, ct);
     }
 
     public Task<List<IndustryMembership>> GetCharacterIndustriesAsync(CharacterId characterId, CancellationToken ct = default)
     {
-        List<IndustryMembership> memberships = _membershipRepository.All(characterId.Value);
-        return Task.FromResult(memberships);
+        GetCharacterIndustriesQuery query = new() { CharacterId = characterId };
+        return _queries.DispatchAsync<GetCharacterIndustriesQuery, List<IndustryMembership>>(query, ct);
     }
 
     public Task<CommandResult> LearnRecipeAsync(CharacterId characterId, IndustryTag industryTag, string recipeId, CancellationToken ct = default)
     {
-        // Verify the recipe exists
-        Industry? industry = _industryRepository.GetByTag(industryTag);
-        Recipe? recipe = industry?.Recipes.FirstOrDefault(r => r.RecipeId.Value == recipeId);
-        if (recipe == null)
-            return Task.FromResult(CommandResult.Fail($"Recipe '{recipeId}' not found in industry '{industryTag.Value}'"));
-
-        // Check if character has the required knowledge prereqs
-        List<Knowledge> known = _knowledgeRepository.GetAllKnowledge(characterId.Value);
-        HashSet<string> knownTags = known.Select(k => k.Tag).ToHashSet();
-        if (!recipe.RequiredKnowledge.All(req => knownTags.Contains(req)))
-            return Task.FromResult(CommandResult.Fail("Missing prerequisite knowledge"));
-
-        return Task.FromResult(CommandResult.Ok());
+        LearnRecipeCommand command = new() { CharacterId = characterId, IndustryTag = industryTag, RecipeId = recipeId };
+        return _commands.DispatchAsync(command, ct);
     }
 
     public Task<List<string>> GetKnownRecipesAsync(CharacterId characterId, IndustryTag industryTag, CancellationToken ct = default)
     {
-        List<CharacterKnowledge> knowledge = _knowledgeRepository.GetKnowledgeForIndustry(industryTag.Value, characterId.Value);
-        List<string> knownTags = knowledge.Select(k => k.Definition.Tag).ToList();
-        return Task.FromResult(knownTags);
+        GetKnownRecipesQuery query = new() { CharacterId = characterId, IndustryTag = industryTag };
+        return _queries.DispatchAsync<GetKnownRecipesQuery, List<string>>(query, ct);
     }
 
     public Task<CommandResult> AddRecipeToIndustryAsync(AddRecipeToIndustryCommand command, CancellationToken ct = default)
@@ -146,4 +105,3 @@ public sealed class IndustrySubsystem : IIndustrySubsystem
         return _queries.DispatchAsync<GetWorkstationRecipesQuery, List<Recipe>>(query, ct);
     }
 }
-
