@@ -1,0 +1,337 @@
+@inject IndustryApiService Api
+@inject ILogger<ProgressionEditor> Logger
+
+<div class="we-editor__entity-editor">
+    @if (_loading)
+    {
+        <div class="we-editor__tab-loading">
+            <span class="spinner-border spinner-border-sm me-2"></span> Loading progression config…
+        </div>
+    }
+    else
+    {
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="alert alert-danger">@_error</div>
+        }
+        @if (!string.IsNullOrEmpty(_success))
+        {
+            <div class="alert alert-success">@_success</div>
+        }
+
+        <h5>Global Progression Curve</h5>
+        <p class="text-secondary small">
+            Controls how many progression points are needed to earn each successive economy knowledge point.
+            Level-up knowledge points (1 per level, max 30) are free and not subject to this curve.
+        </p>
+        <EditForm Model="@_config" OnValidSubmit="@SaveConfigAsync">
+            <DataAnnotationsValidator />
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Base Cost <small class="text-secondary">(points for 1st KP)</small></label>
+                    <InputNumber class="form-control" @bind-Value="_config.BaseCost" />
+                </div>
+                <div class="form-group">
+                    <label>Scaling Factor</label>
+                    <InputNumber class="form-control" @bind-Value="_config.ScalingFactor" step="0.01" />
+                </div>
+                <div class="form-group">
+                    <label>Curve Type</label>
+                    <InputSelect class="form-control" @bind-Value="_config.CurveType">
+                        <option value="Linear">Linear</option>
+                        <option value="Polynomial">Polynomial</option>
+                        <option value="Exponential">Exponential</option>
+                    </InputSelect>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Soft Cap <small class="text-secondary">(economy KP)</small></label>
+                    <InputNumber class="form-control" @bind-Value="_config.SoftCap" />
+                </div>
+                <div class="form-group">
+                    <label>Hard Cap <small class="text-secondary">(economy KP)</small></label>
+                    <InputNumber class="form-control" @bind-Value="_config.HardCap" />
+                </div>
+                <div class="form-group">
+                    <label>Soft Cap Penalty Multiplier</label>
+                    <InputNumber class="form-control" @bind-Value="_config.SoftCapPenaltyMultiplier" step="0.1" />
+                </div>
+            </div>
+            <div class="we-entity-form__actions">
+                <button type="submit" class="btn btn-primary" disabled="@_isSaving">
+                    @(_isSaving ? "Saving..." : "Save Curve Settings")
+                </button>
+            </div>
+        </EditForm>
+
+        <h5 class="mt-3">Cost Preview (first 20 economy KP)</h5>
+        <table class="table table-sm">
+            <thead>
+                <tr><th>Economy KP #</th><th>Points Required</th><th>Cumulative Total</th></tr>
+            </thead>
+            <tbody>
+                @{
+                    int cumulative = 0;
+                    int previewCount = Math.Min(20, _config.HardCap);
+                    for (int n = 1; n <= previewCount; n++)
+                    {
+                        int cost = CalculatePreviewCost(n);
+                        cumulative += cost;
+                        bool pastSoft = n > _config.SoftCap;
+                        <tr>
+                            <td>@n @(pastSoft ? "(past soft cap)" : "")</td>
+                            <td>@cost.ToString("N0")</td>
+                            <td>@cumulative.ToString("N0")</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+
+        <h5 class="mt-3">Cap Profiles
+            <button type="button" class="btn btn-sm btn-outline-info ms-2" @onclick="StartCreateProfile">+ New Profile</button>
+        </h5>
+        <p class="text-secondary small">Named profiles that override the global soft/hard caps for specific characters (e.g. Artisan class).</p>
+        @if (_profiles.Count == 0 && _editingProfile is null)
+        {
+            <p class="text-secondary">No cap profiles defined. All characters use the global caps.</p>
+        }
+        else
+        {
+            <table class="table table-sm">
+                <thead>
+                    <tr><th>Tag</th><th>Name</th><th>Description</th><th>Soft Cap</th><th>Hard Cap</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (KnowledgeCapProfileDto p in _profiles)
+                    {
+                        <tr @key="p.Tag">
+                            <td><code>@p.Tag</code></td>
+                            <td>@p.Name</td>
+                            <td class="text-secondary">@(p.Description ?? "—")</td>
+                            <td>@p.SoftCap</td>
+                            <td>@p.HardCap</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => StartEditProfile(p)">Edit</button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => _deleteTarget = p">Delete</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        @if (_editingProfile is not null)
+        {
+            <div class="we-entity-form__card">
+                <h5>@(_isCreatingProfile ? "Create Cap Profile" : "Edit Cap Profile")</h5>
+                <EditForm Model="@_editingProfile" OnValidSubmit="@SaveProfileAsync">
+                    <DataAnnotationsValidator />
+                    <div class="form-group">
+                        <label>Tag</label>
+                        <InputText class="form-control form-control-sm" @bind-Value="_editingProfile.Tag" disabled="@(!_isCreatingProfile)" />
+                    </div>
+                    <div class="form-group">
+                        <label>Name</label>
+                        <InputText class="form-control form-control-sm" @bind-Value="_editingProfile.Name" />
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <InputText class="form-control form-control-sm" @bind-Value="_editingProfile.Description" />
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Soft Cap</label>
+                            <InputNumber class="form-control form-control-sm" @bind-Value="_editingProfile.SoftCap" />
+                        </div>
+                        <div class="form-group">
+                            <label>Hard Cap</label>
+                            <InputNumber class="form-control form-control-sm" @bind-Value="_editingProfile.HardCap" />
+                        </div>
+                    </div>
+                    <div class="we-entity-form__actions">
+                        <button type="button" class="btn btn-secondary btn-sm" @onclick="() => _editingProfile = null">Cancel</button>
+                        <button type="submit" class="btn btn-primary btn-sm" disabled="@_isSaving">
+                            @(_isSaving ? "Saving..." : "Save")
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        }
+
+        @if (_deleteTarget is not null)
+        {
+            <div class="we-entity-form__delete-confirm">
+                <p>Delete cap profile <strong>@_deleteTarget.Tag</strong>?</p>
+                <p class="text-secondary">This action cannot be undone.</p>
+                <button class="btn btn-secondary btn-sm" @onclick="() => _deleteTarget = null">Cancel</button>
+                <button class="btn btn-danger btn-sm" @onclick="DeleteProfileAsync" disabled="@_isSaving">
+                    @(_isSaving ? "Deleting..." : "Delete")
+                </button>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private ProgressionConfigDto _config = new();
+    private List<KnowledgeCapProfileDto> _profiles = [];
+    private KnowledgeCapProfileDto? _editingProfile;
+    private bool _isCreatingProfile;
+    private KnowledgeCapProfileDto? _deleteTarget;
+    private bool _loading = true;
+    private bool _isSaving;
+    private string? _error;
+    private string? _success;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _loading = true;
+            _error = null;
+            ProgressionConfigDto? config = await Api.GetProgressionConfigAsync();
+            _config = config ?? new ProgressionConfigDto();
+            KnowledgeCapProfileDto[]? profiles = await Api.GetCapProfilesAsync();
+            _profiles = profiles?.ToList() ?? [];
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load progression config: {ex.Message}";
+            Logger.LogError(ex, "Failed to load progression config");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SaveConfigAsync()
+    {
+        try
+        {
+            _isSaving = true;
+            _error = null;
+            ProgressionConfigDto? result = await Api.UpdateProgressionConfigAsync(_config);
+            if (result != null)
+            {
+                _config = result;
+                _success = "Progression curve settings saved successfully.";
+            }
+            else
+            {
+                _error = "Failed to save progression config.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to save progression config: {ex.Message}";
+            Logger.LogError(ex, "Failed to save progression config");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private int CalculatePreviewCost(int n)
+    {
+        double cost = _config.CurveType switch
+        {
+            "Linear" => _config.BaseCost + (_config.ScalingFactor * (n - 1)),
+            "Polynomial" => _config.BaseCost * Math.Pow(n, _config.ScalingFactor),
+            _ => _config.BaseCost * Math.Pow(_config.ScalingFactor, n - 1),
+        };
+        if (n > _config.SoftCap)
+        {
+            cost *= _config.SoftCapPenaltyMultiplier;
+        }
+        return (int)Math.Ceiling(cost);
+    }
+
+    private void StartCreateProfile()
+    {
+        _isCreatingProfile = true;
+        _editingProfile = new KnowledgeCapProfileDto
+        {
+            SoftCap = _config.SoftCap,
+            HardCap = _config.HardCap,
+        };
+        _deleteTarget = null;
+    }
+
+    private void StartEditProfile(KnowledgeCapProfileDto profile)
+    {
+        _isCreatingProfile = false;
+        _editingProfile = new KnowledgeCapProfileDto
+        {
+            Tag = profile.Tag,
+            Name = profile.Name,
+            Description = profile.Description,
+            SoftCap = profile.SoftCap,
+            HardCap = profile.HardCap,
+        };
+        _deleteTarget = null;
+    }
+
+    private async Task SaveProfileAsync()
+    {
+        if (_editingProfile is null) return;
+        try
+        {
+            _isSaving = true;
+            _error = null;
+            KnowledgeCapProfileDto? result = _isCreatingProfile
+                ? await Api.CreateCapProfileAsync(_editingProfile)
+                : await Api.UpdateCapProfileAsync(_editingProfile.Tag, _editingProfile);
+
+            if (result != null)
+            {
+                _success = $"Cap profile '{result.Name}' saved.";
+                _editingProfile = null;
+                await LoadAsync();
+            }
+            else
+            {
+                _error = "Failed to save cap profile.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to save cap profile: {ex.Message}";
+            Logger.LogError(ex, "Failed to save cap profile");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task DeleteProfileAsync()
+    {
+        if (_deleteTarget is null) return;
+        try
+        {
+            _isSaving = true;
+            await Api.DeleteCapProfileAsync(_deleteTarget.Tag);
+            _success = $"Cap profile '{_deleteTarget.Tag}' deleted.";
+            _deleteTarget = null;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Delete failed: {ex.Message}";
+            Logger.LogError(ex, "Failed to delete cap profile");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

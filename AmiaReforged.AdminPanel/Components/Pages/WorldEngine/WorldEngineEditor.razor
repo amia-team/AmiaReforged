@@ -22,6 +22,8 @@
 @inject TraitApiService TraitApi
 @inject GlyphApiService GlyphApi
 @inject IndustryApiService IndustryApi
+@inject WorkstationApiService WorkstationApi
+@inject RecipeTemplateApiService RecipeTemplateApi
 @inject InteractionApiService InteractionApi
 @inject CoinhouseApiService CoinhouseApi
 @inject DialogueApiService DialogueApi
@@ -584,6 +586,116 @@
                                                AvailableIndustries="@_interactionEditorIndustries"
                                                OnClosed="@((InteractionEditorResult result) => HandleInteractionTabClosed(activeTab.Id, result))" />
                         </div>
+                    }
+                    else if (activeTab.EntityType == WorldEngineEntityType.Industries)
+                    {
+                        @if (activeTab.EntityKey == ProgressionSentinel)
+                        {
+                            @* Global progression config: self-loading, keyless *@
+                            <ProgressionEditor @key="activeTab.Id" />
+                        }
+                        else if (activeTab.EntityKey is null)
+                        {
+                            @* Create mode: blank form, no _tabData *@
+                            <IndustryEditor @key="activeTab.Id"
+                                            Item="@NewIndustryFor(activeTab.Id)"
+                                            IsCreating="true"
+                                            OnSaved="@((IndustryDefinitionDto saved) => HandleIndustrySaved(activeTab.Id, saved))"
+                                            OnDeleted="@((string tag) => HandleIndustryDeleted(activeTab.Id, tag))"
+                                            OnCancel="@(() => CloseTab(activeTab.Id))" />
+                        }
+                        else if (_tabDataLoading)
+                        {
+                            <div class="we-editor__tab-loading">
+                                <span class="spinner-border spinner-border-sm me-2"></span> Loading…
+                            </div>
+                        }
+                        else if (_tabDataError != null)
+                        {
+                            <div class="we-editor__tab-error">
+                                <span class="bi bi-exclamation-triangle me-1"></span> @_tabDataError
+                                <button class="btn btn-sm btn-outline-warning ms-2" @onclick="() => LoadTabData(activeTab)">Retry</button>
+                            </div>
+                        }
+                        else if (_tabData.TryGetValue(activeTab.Id, out object? industryData) && industryData is IndustryDefinitionDto industry)
+                        {
+                            <IndustryEditor @key="activeTab.Id"
+                                            Item="@industry"
+                                            IsCreating="false"
+                                            OnSaved="@((IndustryDefinitionDto saved) => HandleIndustrySaved(activeTab.Id, saved))"
+                                            OnDeleted="@((string tag) => HandleIndustryDeleted(activeTab.Id, tag))"
+                                            OnCancel="@(() => CloseTab(activeTab.Id))" />
+                        }
+                    }
+                    else if (activeTab.EntityType == WorldEngineEntityType.Workstations)
+                    {
+                        @if (activeTab.EntityKey is null)
+                        {
+                            @* Create mode: blank form, no _tabData *@
+                            <WorkstationEditor @key="activeTab.Id"
+                                               Item="@NewWorkstationFor(activeTab.Id)"
+                                               IsCreating="true"
+                                               OnSaved="@((WorkstationDefinitionDto saved) => HandleWorkstationSaved(activeTab.Id, saved))"
+                                               OnDeleted="@((string tag) => HandleWorkstationDeleted(activeTab.Id, tag))"
+                                               OnCancel="@(() => CloseTab(activeTab.Id))" />
+                        }
+                        else if (_tabDataLoading)
+                        {
+                            <div class="we-editor__tab-loading">
+                                <span class="spinner-border spinner-border-sm me-2"></span> Loading…
+                            </div>
+                        }
+                        else if (_tabDataError != null)
+                        {
+                            <div class="we-editor__tab-error">
+                                <span class="bi bi-exclamation-triangle me-1"></span> @_tabDataError
+                                <button class="btn btn-sm btn-outline-warning ms-2" @onclick="() => LoadTabData(activeTab)">Retry</button>
+                            </div>
+                        }
+                        else if (_tabData.TryGetValue(activeTab.Id, out object? workstationData) && workstationData is WorkstationDefinitionDto workstation)
+                        {
+                            <WorkstationEditor @key="activeTab.Id"
+                                               Item="@workstation"
+                                               IsCreating="false"
+                                               OnSaved="@((WorkstationDefinitionDto saved) => HandleWorkstationSaved(activeTab.Id, saved))"
+                                               OnDeleted="@((string tag) => HandleWorkstationDeleted(activeTab.Id, tag))"
+                                               OnCancel="@(() => CloseTab(activeTab.Id))" />
+                        }
+                    }
+                    else if (activeTab.EntityType == WorldEngineEntityType.RecipeTemplates)
+                    {
+                        @if (activeTab.EntityKey is null)
+                        {
+                            @* Create mode: blank form, no _tabData *@
+                            <RecipeTemplateEditor @key="activeTab.Id"
+                                                  Item="@NewRecipeTemplateFor(activeTab.Id)"
+                                                  IsCreating="true"
+                                                  OnSaved="@((RecipeTemplateDefinitionDto saved) => HandleRecipeTemplateSaved(activeTab.Id, saved))"
+                                                  OnDeleted="@((string tag) => HandleRecipeTemplateDeleted(activeTab.Id, tag))"
+                                                  OnCancel="@(() => CloseTab(activeTab.Id))" />
+                        }
+                        else if (_tabDataLoading)
+                        {
+                            <div class="we-editor__tab-loading">
+                                <span class="spinner-border spinner-border-sm me-2"></span> Loading…
+                            </div>
+                        }
+                        else if (_tabDataError != null)
+                        {
+                            <div class="we-editor__tab-error">
+                                <span class="bi bi-exclamation-triangle me-1"></span> @_tabDataError
+                                <button class="btn btn-sm btn-outline-warning ms-2" @onclick="() => LoadTabData(activeTab)">Retry</button>
+                            </div>
+                        }
+                        else if (_tabData.TryGetValue(activeTab.Id, out object? templateData) && templateData is RecipeTemplateDefinitionDto template)
+                        {
+                            <RecipeTemplateEditor @key="activeTab.Id"
+                                                  Item="@template"
+                                                  IsCreating="false"
+                                                  OnSaved="@((RecipeTemplateDefinitionDto saved) => HandleRecipeTemplateSaved(activeTab.Id, saved))"
+                                                  OnDeleted="@((string tag) => HandleRecipeTemplateDeleted(activeTab.Id, tag))"
+                                                  OnCancel="@(() => CloseTab(activeTab.Id))" />
+                        }
                     }
                     else if (activeTab.EntityType == WorldEngineEntityType.Coinhouses)
                     {

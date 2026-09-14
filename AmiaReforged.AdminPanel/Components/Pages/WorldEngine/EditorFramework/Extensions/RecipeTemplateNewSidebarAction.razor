@@ -1,0 +1,10 @@
+<button class="btn btn-sm btn-primary"
+        title="Create new recipe template"
+        @onclick="@Context.OpenNewRecipeTemplateAsync">
+    + New
+</button>
+
+@code {
+    [CascadingParameter]
+    public WorldEngineEditorHostContext Context { get; set; } = null!;
+}

@@ -1,0 +1,397 @@
+@inject RecipeTemplateApiService Api
+@inject IndustryApiService IndustryApi
+@inject WorkstationApiService WorkstationApi
+@inject ILogger<RecipeTemplateEditor> Logger
+
+<div class="we-editor__entity-editor">
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+    @if (!string.IsNullOrEmpty(_success))
+    {
+        <div class="alert alert-success">@_success</div>
+    }
+
+    <EditForm Model="@_edit" OnValidSubmit="@SaveAsync">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Tag <small class="text-secondary">(unique identifier)</small></label>
+                <InputText class="form-control" @bind-Value="_edit.Tag" disabled="@(!IsCreating)" placeholder="e.g. plank_from_log" />
+            </div>
+            <div class="form-group">
+                <label>Name</label>
+                <InputText class="form-control" @bind-Value="_edit.Name" placeholder="e.g. Planks from Logs" />
+            </div>
+            <div class="form-group">
+                <label>Industry Tag</label>
+                <SearchableSelect TItem="IndustryDefinitionDto"
+                                  Value="@_edit.IndustryTag"
+                                  ValueChanged="@((string v) => _edit.IndustryTag = v)"
+                                  SearchFunc="@SearchIndustries"
+                                  DisplayFunc="@(i => $"{i.Name} ({i.Tag})")"
+                                  ValueFunc="@(i => i.Tag)"
+                                  Placeholder="Search industries..." />
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Description</label>
+            <InputTextArea class="form-control" @bind-Value="_edit.Description" rows="2" />
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Required Workstation</label>
+                <InputSelect class="form-control" @bind-Value="_edit.RequiredWorkstation">
+                    <option value="">None</option>
+                    @foreach (WorkstationDefinitionDto ws in _workstations)
+                    {
+                        <option value="@ws.Tag">@ws.Name (@ws.Tag)</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="form-group">
+                <label>Crafting Time (rounds)</label>
+                <InputNumber class="form-control" @bind-Value="_edit.CraftingTimeRounds" />
+            </div>
+            <div class="form-group">
+                <label>Progression Points</label>
+                <InputNumber class="form-control" @bind-Value="_edit.ProgressionPointsAwarded" min="0" />
+            </div>
+            <div class="form-group">
+                <label>Proficiency XP</label>
+                <InputNumber class="form-control" @bind-Value="_edit.ProficiencyXpAwarded" min="0" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Required Knowledge <small class="text-secondary">(comma-separated tags)</small></label>
+            <input class="form-control" value="@string.Join(", ", _edit.RequiredKnowledge)"
+                   @onchange="e => _edit.RequiredKnowledge = SplitTags(e.Value?.ToString())" />
+        </div>
+
+        <div class="form-group">
+            <label>Required Tools
+                <button type="button" class="btn btn-sm btn-outline-info ms-1" @onclick="() => _edit.RequiredTools.Add(new ToolRequirementDto())">+ Add</button>
+            </label>
+            @for (int idx = 0; idx < _edit.RequiredTools.Count; idx++)
+            {
+                int i = idx;
+                ToolRequirementDto tr = _edit.RequiredTools[i];
+                bool isExactMode = !string.IsNullOrEmpty(tr.ExactItemTag);
+                <div class="we-entity-form__card" @key="tr">
+                    <div class="form-row">
+                        <label class="small" style="align-self:center;white-space:nowrap">
+                            <input type="checkbox" checked="@isExactMode" @onchange="@(e => ToggleToolReqMode(i, (bool)(e.Value ?? false)))" /> Exact tag
+                        </label>
+                        @if (isExactMode)
+                        {
+                            <input class="form-control form-control-sm" @bind="tr.ExactItemTag" placeholder="e.g. master_smiths_hammer" />
+                        }
+                        else
+                        {
+                            <select class="form-control form-control-sm" @bind="tr.RequiredForm">
+                                <option value="">— Select tool form —</option>
+                                @foreach (EnumOptionDto tf in _toolForms)
+                                {
+                                    <option value="@tf.Value">@tf.Label</option>
+                                }
+                            </select>
+                            <select class="form-control form-control-sm" @bind="tr.RequiredMaterial">
+                                <option value="">Any material</option>
+                                @foreach (var grp in _materials.GroupBy(m => m.Category ?? "Other"))
+                                {
+                                    <optgroup label="@grp.Key">
+                                        @foreach (EnumOptionDto mat in grp)
+                                        {
+                                            <option value="@mat.Value">@mat.Label</option>
+                                        }
+                                    </optgroup>
+                                }
+                            </select>
+                        }
+                        <input type="number" class="form-control form-control-sm" @bind="tr.MinQuality" placeholder="Min Q" />
+                        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => _edit.RequiredTools.RemoveAt(i)">X</button>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="form-group">
+            <label>Ingredients
+                <button type="button" class="btn btn-sm btn-outline-info ms-1" @onclick="() => _edit.Ingredients.Add(new TemplateIngredientDto { Quantity = 1, IsConsumed = true })">+ Add</button>
+            </label>
+            @for (int idx = 0; idx < _edit.Ingredients.Count; idx++)
+            {
+                int i = idx;
+                TemplateIngredientDto ing = _edit.Ingredients[i];
+                <div class="form-row" @key="ing">
+                    <select class="form-control form-control-sm" @bind="ing.RequiredCategory">
+                        <option value="">— Category —</option>
+                        @foreach (EnumOptionDto cat in _materialCategories)
+                        {
+                            <option value="@cat.Value">@cat.Label</option>
+                        }
+                    </select>
+                    <select class="form-control form-control-sm" @bind="ing.RequiredForm">
+                        <option value="">— Form —</option>
+                        @foreach (var grp in _itemForms.GroupBy(f => f.Group ?? "Other"))
+                        {
+                            <optgroup label="@grp.Key">
+                                @foreach (EnumOptionDto form in grp)
+                                {
+                                    <option value="@form.Value">@form.Label</option>
+                                }
+                            </optgroup>
+                        }
+                    </select>
+                    <input type="number" class="form-control form-control-sm" @bind="ing.Quantity" min="1" placeholder="Qty" />
+                    <input type="number" class="form-control form-control-sm" @bind="ing.MinQuality" placeholder="Min Q" />
+                    <input type="number" class="form-control form-control-sm" @bind="ing.SlotIndex" placeholder="Slot" />
+                    <label class="small" style="align-self:center;white-space:nowrap"><input type="checkbox" @bind="ing.IsConsumed" /> Consumed</label>
+                    <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => _edit.Ingredients.RemoveAt(i)">X</button>
+                </div>
+            }
+        </div>
+
+        <div class="form-group">
+            <label>Products
+                <button type="button" class="btn btn-sm btn-outline-info ms-1" @onclick="() => _edit.Products.Add(new TemplateProductDto { Quantity = 1 })">+ Add</button>
+            </label>
+            @for (int idx = 0; idx < _edit.Products.Count; idx++)
+            {
+                int i = idx;
+                TemplateProductDto prod = _edit.Products[i];
+                <div class="form-row" @key="prod">
+                    <select class="form-control form-control-sm" @bind="prod.OutputForm">
+                        <option value="">— Output form —</option>
+                        @foreach (var grp in _itemForms.GroupBy(f => f.Group ?? "Other"))
+                        {
+                            <optgroup label="@grp.Key">
+                                @foreach (EnumOptionDto form in grp)
+                                {
+                                    <option value="@form.Value">@form.Label</option>
+                                }
+                            </optgroup>
+                        }
+                    </select>
+                    <input type="number" class="form-control form-control-sm" @bind="prod.MaterialSourceSlot" placeholder="Src slot" />
+                    <input type="number" class="form-control form-control-sm" @bind="prod.Quantity" min="1" placeholder="Qty" />
+                    <input type="number" step="0.01" class="form-control form-control-sm" @bind="prod.SuccessChance" placeholder="Success %" />
+                    <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => _edit.Products.RemoveAt(i)">X</button>
+                </div>
+            }
+        </div>
+
+        <div class="we-entity-form__actions">
+            <button type="button" class="btn btn-secondary" @onclick="() => OnCancel.InvokeAsync()">Cancel</button>
+            @if (!IsCreating)
+            {
+                <button type="button" class="btn btn-outline-danger" @onclick="() => _showDeleteConfirm = true">Delete</button>
+            }
+            <button type="button" class="btn btn-outline-warning" @onclick="SaveAndInvalidateAsync" disabled="@_isSaving">
+                Save &amp; Invalidate Cache
+            </button>
+            <button type="submit" class="btn btn-primary" disabled="@_isSaving">
+                @(_isSaving ? "Saving..." : (IsCreating ? "Create" : "Save Changes"))
+            </button>
+        </div>
+    </EditForm>
+
+    @if (_showDeleteConfirm)
+    {
+        <div class="we-entity-form__delete-confirm">
+            <p>Delete recipe template <strong>@_edit.Tag</strong>?</p>
+            <p class="text-secondary">This action cannot be undone.</p>
+            <button class="btn btn-secondary btn-sm" @onclick="() => _showDeleteConfirm = false">Cancel</button>
+            <button class="btn btn-danger btn-sm" @onclick="DeleteAsync" disabled="@_isSaving">
+                @(_isSaving ? "Deleting..." : "Delete")
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public RecipeTemplateDefinitionDto Item { get; set; } = null!;
+
+    [Parameter]
+    public bool IsCreating { get; set; }
+
+    [Parameter]
+    public EventCallback<RecipeTemplateDefinitionDto> OnSaved { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnDeleted { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private RecipeTemplateDefinitionDto _edit = new();
+    private RecipeTemplateDefinitionDto? _source;
+    private bool _isSaving;
+    private bool _showDeleteConfirm;
+    private string? _error;
+    private string? _success;
+
+    private List<WorkstationDefinitionDto> _workstations = [];
+    private List<EnumOptionDto> _materialCategories = [];
+    private List<EnumOptionDto> _itemForms = [];
+    private List<EnumOptionDto> _toolForms = [];
+    private List<EnumOptionDto> _materials = [];
+    private bool _lookupsLoaded;
+
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_source, Item))
+        {
+            _source = Item;
+            _edit = DeepCopy(Item);
+            _error = null;
+            _success = null;
+            _showDeleteConfirm = false;
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_lookupsLoaded) return;
+        if (Api.SelectedEndpointId is null && IndustryApi.SelectedEndpointId is null) return;
+        _lookupsLoaded = true;
+        try
+        {
+            RecipeTemplateEnumsDto? enums = await Api.GetEnumsAsync();
+            if (enums != null)
+            {
+                _materialCategories = enums.MaterialCategories;
+                _itemForms = enums.ItemForms;
+                _toolForms = enums.ToolForms;
+                _materials = enums.Materials;
+            }
+            PagedResult<WorkstationDefinitionDto> ws = await WorkstationApi.GetAllAsync(null, 1, 200);
+            _workstations = ws.Items;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load recipe template lookups");
+            _lookupsLoaded = false;
+        }
+    }
+
+    private static RecipeTemplateDefinitionDto DeepCopy(RecipeTemplateDefinitionDto src) => new()
+    {
+        Tag = src.Tag,
+        Name = src.Name,
+        Description = src.Description,
+        IndustryTag = src.IndustryTag,
+        RequiredKnowledge = [.. src.RequiredKnowledge],
+        Ingredients = src.Ingredients.Select(i => new TemplateIngredientDto
+        {
+            RequiredCategory = i.RequiredCategory, RequiredForm = i.RequiredForm,
+            Quantity = i.Quantity, MinQuality = i.MinQuality,
+            IsConsumed = i.IsConsumed, SlotIndex = i.SlotIndex,
+        }).ToList(),
+        Products = src.Products.Select(p => new TemplateProductDto
+        {
+            OutputForm = p.OutputForm, MaterialSourceSlot = p.MaterialSourceSlot,
+            Quantity = p.Quantity, SuccessChance = p.SuccessChance,
+        }).ToList(),
+        CraftingTimeRounds = src.CraftingTimeRounds,
+        ProgressionPointsAwarded = src.ProgressionPointsAwarded,
+        ProficiencyXpAwarded = src.ProficiencyXpAwarded,
+        RequiredWorkstation = src.RequiredWorkstation,
+        RequiredTools = src.RequiredTools.Select(t => new ToolRequirementDto
+        {
+            RequiredForm = t.RequiredForm, RequiredMaterial = t.RequiredMaterial,
+            MinQuality = t.MinQuality, ExactItemTag = t.ExactItemTag,
+        }).ToList(),
+    };
+
+    private static List<string> SplitTags(string? text) =>
+        (text ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+
+    private async Task<IEnumerable<IndustryDefinitionDto>> SearchIndustries(string search)
+    {
+        PagedResult<IndustryDefinitionDto> result = await IndustryApi.GetAllAsync(search, 1, 20);
+        return result.Items;
+    }
+
+    private void ToggleToolReqMode(int index, bool useExactTag)
+    {
+        if (index < 0 || index >= _edit.RequiredTools.Count) return;
+        ToolRequirementDto tr = _edit.RequiredTools[index];
+        if (useExactTag)
+        {
+            tr.RequiredForm = null;
+            tr.RequiredMaterial = null;
+            tr.ExactItemTag = "";
+        }
+        else
+        {
+            tr.ExactItemTag = null;
+            tr.RequiredForm = "";
+            tr.RequiredMaterial = null;
+        }
+    }
+
+    private async Task SaveAsync() => await PersistAsync(invalidateCache: false);
+
+    private async Task SaveAndInvalidateAsync() => await PersistAsync(invalidateCache: true);
+
+    private async Task PersistAsync(bool invalidateCache)
+    {
+        _error = null;
+        _success = null;
+        try
+        {
+            _isSaving = true;
+            // Drop empty tool rows (parity with legacy SaveTemplate cleanup).
+            _edit.RequiredTools = _edit.RequiredTools
+                .Where(tr => !string.IsNullOrEmpty(tr.ExactItemTag) || !string.IsNullOrEmpty(tr.RequiredForm))
+                .ToList();
+
+            RecipeTemplateDefinitionDto? saved = IsCreating
+                ? await Api.CreateAsync(_edit)
+                : await Api.UpdateAsync(_edit.Tag, _edit);
+
+            if (invalidateCache)
+            {
+                await Api.InvalidateCacheAsync();
+            }
+
+            _success = $"Template '{_edit.Tag}' {(IsCreating ? "created" : "updated")}.";
+            await OnSaved.InvokeAsync(saved ?? _edit);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Save failed: {ex.Message}";
+            Logger.LogError(ex, "Failed to save recipe template {Tag}", _edit.Tag);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task DeleteAsync()
+    {
+        _error = null;
+        try
+        {
+            _isSaving = true;
+            await Api.DeleteAsync(_edit.Tag);
+            _showDeleteConfirm = false;
+            await OnDeleted.InvokeAsync(_edit.Tag);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Delete failed: {ex.Message}";
+            Logger.LogError(ex, "Failed to delete recipe template {Tag}", _edit.Tag);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

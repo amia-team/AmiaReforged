@@ -1,0 +1,161 @@
+@inject WorkstationApiService Api
+@inject ILogger<WorkstationEditor> Logger
+
+<div class="we-editor__entity-editor">
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+    @if (!string.IsNullOrEmpty(_success))
+    {
+        <div class="alert alert-success">@_success</div>
+    }
+
+    <EditForm Model="@_edit" OnValidSubmit="@SaveAsync">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-group">
+            <label>Tag <small class="text-secondary">(unique identifier)</small></label>
+            <InputText class="form-control" @bind-Value="_edit.Tag" disabled="@(!IsCreating)" placeholder="workstation_tag" />
+        </div>
+        <div class="form-group">
+            <label>Name</label>
+            <InputText class="form-control" @bind-Value="_edit.Name" placeholder="Workstation name" />
+        </div>
+        <div class="form-group">
+            <label>Description</label>
+            <InputTextArea class="form-control" @bind-Value="_edit.Description" rows="2" />
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Placeable ResRef</label>
+                <InputText class="form-control form-control-sm" @bind-Value="_edit.PlaceableResRef" placeholder="plc_..." />
+            </div>
+            <div class="form-group">
+                <label>Appearance ID</label>
+                <InputNumber class="form-control form-control-sm" @bind-Value="_edit.AppearanceId" placeholder="optional" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Supported Industries <small class="text-secondary">(comma-separated tags)</small></label>
+            <input class="form-control" value="@string.Join(", ", _edit.SupportedIndustries)"
+                   @onchange="e => _edit.SupportedIndustries = SplitTags(e.Value?.ToString())" />
+        </div>
+
+        <div class="we-entity-form__actions">
+            <button type="button" class="btn btn-secondary" @onclick="() => OnCancel.InvokeAsync()">Cancel</button>
+            @if (!IsCreating)
+            {
+                <button type="button" class="btn btn-outline-danger" @onclick="() => _showDeleteConfirm = true">Delete</button>
+            }
+            <button type="submit" class="btn btn-primary" disabled="@_isSaving">
+                @(_isSaving ? "Saving..." : "Save")
+            </button>
+        </div>
+    </EditForm>
+
+    @if (_showDeleteConfirm)
+    {
+        <div class="we-entity-form__delete-confirm">
+            <p>Delete workstation <strong>@_edit.Tag</strong>?</p>
+            <p class="text-secondary">This action cannot be undone.</p>
+            <button class="btn btn-secondary btn-sm" @onclick="() => _showDeleteConfirm = false">Cancel</button>
+            <button class="btn btn-danger btn-sm" @onclick="DeleteAsync" disabled="@_isSaving">
+                @(_isSaving ? "Deleting..." : "Delete")
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public WorkstationDefinitionDto Item { get; set; } = null!;
+
+    [Parameter]
+    public bool IsCreating { get; set; }
+
+    [Parameter]
+    public EventCallback<WorkstationDefinitionDto> OnSaved { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnDeleted { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private WorkstationDefinitionDto _edit = new();
+    private WorkstationDefinitionDto? _source;
+    private bool _isSaving;
+    private bool _showDeleteConfirm;
+    private string? _error;
+    private string? _success;
+
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_source, Item))
+        {
+            _source = Item;
+            _edit = new WorkstationDefinitionDto
+            {
+                Tag = Item.Tag,
+                Name = Item.Name,
+                Description = Item.Description,
+                PlaceableResRef = Item.PlaceableResRef,
+                AppearanceId = Item.AppearanceId,
+                SupportedIndustries = [.. Item.SupportedIndustries],
+            };
+            _error = null;
+            _success = null;
+            _showDeleteConfirm = false;
+        }
+    }
+
+    private static List<string> SplitTags(string? text) =>
+        (text ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+        _success = null;
+        try
+        {
+            _isSaving = true;
+            WorkstationDefinitionDto? saved = IsCreating
+                ? await Api.CreateAsync(_edit)
+                : await Api.UpdateAsync(_edit.Tag, _edit);
+            _success = $"Workstation '{_edit.Tag}' {(IsCreating ? "created" : "updated")}.";
+            await OnSaved.InvokeAsync(saved ?? _edit);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Save failed: {ex.Message}";
+            Logger.LogError(ex, "Failed to save workstation {Tag}", _edit.Tag);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task DeleteAsync()
+    {
+        _error = null;
+        try
+        {
+            _isSaving = true;
+            await Api.DeleteAsync(_edit.Tag);
+            _showDeleteConfirm = false;
+            await OnDeleted.InvokeAsync(_edit.Tag);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Delete failed: {ex.Message}";
+            Logger.LogError(ex, "Failed to delete workstation {Tag}", _edit.Tag);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

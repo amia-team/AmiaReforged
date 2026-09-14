@@ -13,6 +13,8 @@ public enum WorldEngineEntityType
     Traits,
     Glyphs,
     Industries,
+    Workstations,
+    RecipeTemplates,
     Interactions,
     Coinhouses,
     Dialogues,

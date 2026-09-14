@@ -22,6 +22,8 @@ public static class WorldEngineEditorServiceCollectionExtensions
         services.AddWorldEngineEditorFeature(WorldEngineEntityType.Traits, "Traits", "bi-person-badge", 600);
         services.AddWorldEngineEditorFeature(WorldEngineEntityType.Glyphs, "Glyph Scripts", "bi-code", 700);
         services.AddWorldEngineEditorFeature(WorldEngineEntityType.Industries, "Industries", "bi-gear", 800);
+        services.AddWorldEngineEditorFeature(WorldEngineEntityType.Workstations, "Workstations", "bi-hammer", 850);
+        services.AddWorldEngineEditorFeature(WorldEngineEntityType.RecipeTemplates, "Recipe Templates", "bi-card-list", 875);
         services.AddWorldEngineEditorFeature(WorldEngineEntityType.Interactions, "Interactions", "bi-lightning", 900);
         services.AddWorldEngineEditorFeature(WorldEngineEntityType.Coinhouses, "Coinhouses", "bi-bank", 1000);
         services.AddWorldEngineEditorFeature(WorldEngineEntityType.Dialogues, "Dialogues", "bi-chat-dots", 1100);
@@ -38,6 +40,27 @@ public static class WorldEngineEditorServiceCollectionExtensions
             WorldEngineEditorExtensionSlot.SidebarHeaderActions,
             order: 100,
             entityType: WorldEngineEntityType.Coinhouses,
+            requiresEndpoint: true);
+
+        services.AddWorldEngineEditorExtension<WorkstationNewSidebarAction>(
+            "workstation-new",
+            WorldEngineEditorExtensionSlot.SidebarHeaderActions,
+            order: 100,
+            entityType: WorldEngineEntityType.Workstations,
+            requiresEndpoint: true);
+
+        services.AddWorldEngineEditorExtension<RecipeTemplateNewSidebarAction>(
+            "recipe-template-new",
+            WorldEngineEditorExtensionSlot.SidebarHeaderActions,
+            order: 100,
+            entityType: WorldEngineEntityType.RecipeTemplates,
+            requiresEndpoint: true);
+
+        services.AddWorldEngineEditorExtension<IndustryNewSidebarAction>(
+            "industry-new",
+            WorldEngineEditorExtensionSlot.SidebarHeaderActions,
+            order: 100,
+            entityType: WorldEngineEntityType.Industries,
             requiresEndpoint: true);
 
         services.AddWorldEngineEditorExtension<CodexNewSidebarAction>(

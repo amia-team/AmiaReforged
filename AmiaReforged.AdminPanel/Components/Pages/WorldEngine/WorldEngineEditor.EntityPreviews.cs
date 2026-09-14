@@ -36,8 +36,8 @@ public partial class WorldEngineEditor
             case WorldEngineEntityType.Glyphs when data is GlyphDefinitionDto glyph:
                 RenderGlyphEditor(builder, glyph);
                 break;
-            case WorldEngineEntityType.Industries when data is IndustryDefinitionDto industry:
-                RenderIndustryEditor(builder, industry);
+            case WorldEngineEntityType.Industries:
+                // Rendered by the Industries tab arm (Editors/IndustryEditor).
                 break;
             case WorldEngineEntityType.Interactions when data is InteractionDefinitionDto interaction:
                 RenderInteractionEditor(builder, interaction);
@@ -125,18 +125,6 @@ public partial class WorldEngineEditor
         AddField(b, ref s, "Active", dto.IsActive ? "Yes" : "No");
         AddField(b, ref s, "Created", dto.CreatedAt.ToString("yyyy-MM-dd"));
         AddField(b, ref s, "Updated", dto.UpdatedAt.ToString("yyyy-MM-dd"));
-        b.CloseElement();
-    }
-
-    // ── Industry ────────────────────────────────────────────────────
-    private static void RenderIndustryEditor(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b, IndustryDefinitionDto dto)
-    {
-        int s = 0;
-        b.OpenElement(s++, "div"); b.AddAttribute(s++, "class", "we-entity-form");
-        AddField(b, ref s, "Tag", dto.Tag);
-        AddField(b, ref s, "Name", dto.Name);
-        AddField(b, ref s, "Knowledge Entries", dto.Knowledge.Count.ToString());
-        AddField(b, ref s, "Recipes", dto.Recipes.Count.ToString());
         b.CloseElement();
     }
 

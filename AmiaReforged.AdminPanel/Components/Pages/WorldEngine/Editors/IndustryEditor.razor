@@ -1,0 +1,424 @@
+@inject IndustryApiService Api
+@inject ILogger<IndustryEditor> Logger
+
+<div class="we-editor__entity-editor">
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+    @if (!string.IsNullOrEmpty(_success))
+    {
+        <div class="alert alert-success">@_success</div>
+    }
+
+    <EditForm Model="@_edit" OnValidSubmit="@SaveAsync">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <h5>Overview</h5>
+        <div class="form-group">
+            <label>Tag <small class="text-secondary">(unique identifier)</small></label>
+            <InputText class="form-control" @bind-Value="_edit.Tag" disabled="@(!IsCreating)" placeholder="industry_tag" />
+        </div>
+        <div class="form-group">
+            <label>Name</label>
+            <InputText class="form-control" @bind-Value="_edit.Name" placeholder="Industry name" />
+        </div>
+
+        <h5 class="mt-3">Knowledge (@_edit.Knowledge.Count)
+            <button type="button" class="btn btn-sm btn-outline-info ms-2" @onclick="AddKnowledge">+ Add</button>
+        </h5>
+        @foreach (IndustryKnowledgeDto k in _edit.Knowledge)
+        {
+            <div class="we-entity-form__card" @key="k">
+                <div class="we-entity-form__card-header">
+                    <strong>@(string.IsNullOrWhiteSpace(k.Name) ? k.Tag : k.Name)</strong>
+                    <small class="text-secondary">@k.Tag</small>
+                    <span class="flex-spacer"></span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => ToggleKnowledge(k.Tag)">
+                        @(_expandedKnowledge.Contains(k.Tag) ? "Collapse" : "Edit")
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => RemoveKnowledge(k.Tag)">✕</button>
+                </div>
+                @if (_expandedKnowledge.Contains(k.Tag))
+                {
+                    <div class="form-group">
+                        <label>Tag</label>
+                        <input class="form-control form-control-sm" @bind="k.Tag" />
+                    </div>
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input class="form-control form-control-sm" @bind="k.Name" />
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <input class="form-control form-control-sm" @bind="k.Description" />
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Level</label>
+                            <input class="form-control form-control-sm" @bind="k.Level" />
+                        </div>
+                        <div class="form-group">
+                            <label>Point Cost</label>
+                            <input type="number" class="form-control form-control-sm" @bind="k.PointCost" min="0" />
+                        </div>
+                        <div class="form-group">
+                            <label>Branch</label>
+                            <input class="form-control form-control-sm" @bind="k.Branch" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Prerequisites <small class="text-secondary">(comma-separated tags)</small></label>
+                        <input class="form-control form-control-sm" value="@string.Join(", ", k.Prerequisites)"
+                               @onchange="e => k.Prerequisites = SplitTags(e.Value?.ToString())" />
+                    </div>
+                    <div class="form-group">
+                        <label>Harvest Effects
+                            <button type="button" class="btn btn-sm btn-outline-info ms-1" @onclick="() => k.HarvestEffects.Add(new IndustryHarvestEffectDto())">+ Add</button>
+                        </label>
+                        @foreach (IndustryHarvestEffectDto h in k.HarvestEffects)
+                        {
+                            <div class="form-row" @key="h">
+                                <input class="form-control form-control-sm" @bind="h.NodeTag" placeholder="Node tag" />
+                                <input class="form-control form-control-sm" @bind="h.StepModified" placeholder="Step" />
+                                <input type="number" step="any" class="form-control form-control-sm" @bind="h.Value" placeholder="Value" />
+                                <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => k.HarvestEffects.Remove(h)">✕</button>
+                            </div>
+                        }
+                    </div>
+                    <div class="form-group">
+                        <label>Knowledge Effects
+                            <button type="button" class="btn btn-sm btn-outline-info ms-1" @onclick="() => k.Effects.Add(new IndustryKnowledgeEffectDto())">+ Add</button>
+                        </label>
+                        @foreach (IndustryKnowledgeEffectDto e in k.Effects)
+                        {
+                            <div class="form-row" @key="e">
+                                <input class="form-control form-control-sm" @bind="e.EffectType" placeholder="Effect type" />
+                                <input class="form-control form-control-sm" @bind="e.TargetTag" placeholder="Target tag" />
+                                <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => k.Effects.Remove(e)">✕</button>
+                            </div>
+                        }
+                    </div>
+                    <div class="form-group">
+                        <label>Crafting Modifiers
+                            <button type="button" class="btn btn-sm btn-outline-info ms-1" @onclick="() => k.CraftingModifiers.Add(new IndustryCraftingModifierDto())">+ Add</button>
+                        </label>
+                        @foreach (IndustryCraftingModifierDto m in k.CraftingModifiers)
+                        {
+                            <div class="form-row" @key="m">
+                                <input class="form-control form-control-sm" @bind="m.TargetTag" placeholder="Target" />
+                                <input class="form-control form-control-sm" @bind="m.Scope" placeholder="Scope" />
+                                <input class="form-control form-control-sm" @bind="m.StepModified" placeholder="Step" />
+                                <input type="number" step="any" class="form-control form-control-sm" @bind="m.Value" placeholder="Value" />
+                                <input class="form-control form-control-sm" @bind="m.Operation" placeholder="Op" />
+                                <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => k.CraftingModifiers.Remove(m)">✕</button>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+
+        <h5 class="mt-3">Recipes (@_edit.Recipes.Count)
+            <button type="button" class="btn btn-sm btn-outline-info ms-2" @onclick="AddRecipe">+ Add</button>
+        </h5>
+        @foreach (IndustryRecipeDto r in _edit.Recipes)
+        {
+            <div class="we-entity-form__card" @key="r">
+                <div class="we-entity-form__card-header">
+                    <strong>@(string.IsNullOrWhiteSpace(r.Name) ? r.RecipeId : r.Name)</strong>
+                    <small class="text-secondary">@r.RecipeId</small>
+                    <span class="flex-spacer"></span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => ToggleRecipe(r.RecipeId)">
+                        @(_expandedRecipes.Contains(r.RecipeId) ? "Collapse" : "Edit")
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => _edit.Recipes.Remove(r)">✕</button>
+                </div>
+                @if (_expandedRecipes.Contains(r.RecipeId))
+                {
+                    <div class="form-group">
+                        <label>Recipe ID</label>
+                        <input class="form-control form-control-sm" @bind="r.RecipeId" />
+                    </div>
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input class="form-control form-control-sm" @bind="r.Name" />
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <input class="form-control form-control-sm" @bind="r.Description" />
+                    </div>
+                    <div class="form-group">
+                        <label>Required Knowledge <small class="text-secondary">(comma-separated)</small></label>
+                        <input class="form-control form-control-sm" value="@string.Join(", ", r.RequiredKnowledge)"
+                               @onchange="e => r.RequiredKnowledge = SplitTags(e.Value?.ToString())" />
+                    </div>
+                    <div class="form-group">
+                        <label>Ingredients
+                            <button type="button" class="btn btn-sm btn-outline-info ms-1" @onclick="() => r.Ingredients.Add(new IndustryIngredientDto())">+ Add</button>
+                        </label>
+                        @foreach (IndustryIngredientDto ing in r.Ingredients)
+                        {
+                            <div class="form-row" @key="ing">
+                                <input class="form-control form-control-sm" @bind="ing.ItemTag" placeholder="Item tag" />
+                                <input type="number" class="form-control form-control-sm" @bind="ing.Quantity" min="1" placeholder="Qty" />
+                                <input type="number" class="form-control form-control-sm" @bind="ing.MinQuality" placeholder="MinQ" />
+                                <label class="small"><input type="checkbox" @bind="ing.IsConsumed" /> Consumed</label>
+                                <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => r.Ingredients.Remove(ing)">✕</button>
+                            </div>
+                        }
+                    </div>
+                    <div class="form-group">
+                        <label>Products
+                            <button type="button" class="btn btn-sm btn-outline-info ms-1" @onclick="() => r.Products.Add(new IndustryProductDto())">+ Add</button>
+                        </label>
+                        @foreach (IndustryProductDto p in r.Products)
+                        {
+                            <div class="form-row" @key="p">
+                                <input class="form-control form-control-sm" @bind="p.ItemTag" placeholder="Item tag" />
+                                <input type="number" class="form-control form-control-sm" @bind="p.Quantity" min="1" placeholder="Qty" />
+                                <input type="number" step="any" class="form-control form-control-sm" @bind="p.SuccessChance" placeholder="Chance" />
+                                <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => r.Products.Remove(p)">✕</button>
+                            </div>
+                        }
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Rounds</label>
+                            <input type="number" class="form-control form-control-sm" @bind="r.CraftingTimeRounds" min="1" />
+                        </div>
+                        <div class="form-group">
+                            <label>Prog. Points</label>
+                            <input type="number" class="form-control form-control-sm" @bind="r.ProgressionPointsAwarded" min="0" />
+                        </div>
+                        <div class="form-group">
+                            <label>Prof. XP</label>
+                            <input type="number" class="form-control form-control-sm" @bind="r.ProficiencyXpAwarded" min="0" />
+                        </div>
+                        <div class="form-group">
+                            <label>Workstation</label>
+                            <input class="form-control form-control-sm" @bind="r.RequiredWorkstation" placeholder="Workstation tag" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Required Tools
+                            <button type="button" class="btn btn-sm btn-outline-info ms-1" @onclick="() => r.RequiredTools.Add(new ToolRequirementDto())">+ Add</button>
+                        </label>
+                        @foreach (ToolRequirementDto t in r.RequiredTools)
+                        {
+                            <div class="form-row" @key="t">
+                                <input class="form-control form-control-sm" @bind="t.ExactItemTag" placeholder="Exact tag (or form below)" />
+                                <input class="form-control form-control-sm" @bind="t.RequiredForm" placeholder="Form" />
+                                <input class="form-control form-control-sm" @bind="t.RequiredMaterial" placeholder="Material" />
+                                <input type="number" class="form-control form-control-sm" @bind="t.MinQuality" placeholder="MinQ" />
+                                <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => r.RequiredTools.Remove(t)">✕</button>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+
+        <div class="we-entity-form__actions">
+            <button type="button" class="btn btn-secondary" @onclick="() => OnCancel.InvokeAsync()">Cancel</button>
+            @if (!IsCreating)
+            {
+                <button type="button" class="btn btn-outline-danger" @onclick="() => _showDeleteConfirm = true">Delete</button>
+            }
+            <button type="submit" class="btn btn-primary" disabled="@_isSaving">
+                @(_isSaving ? "Saving..." : "Save")
+            </button>
+        </div>
+    </EditForm>
+
+    @if (_showDeleteConfirm)
+    {
+        <div class="we-entity-form__delete-confirm">
+            <p>Delete industry <strong>@_edit.Tag</strong>?</p>
+            <p class="text-secondary">This action cannot be undone.</p>
+            <button class="btn btn-secondary btn-sm" @onclick="() => _showDeleteConfirm = false">Cancel</button>
+            <button class="btn btn-danger btn-sm" @onclick="DeleteAsync" disabled="@_isSaving">
+                @(_isSaving ? "Deleting..." : "Delete")
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public IndustryDefinitionDto Item { get; set; } = null!;
+
+    [Parameter]
+    public bool IsCreating { get; set; }
+
+    [Parameter]
+    public EventCallback<IndustryDefinitionDto> OnSaved { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnDeleted { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private IndustryDefinitionDto _edit = new();
+    private IndustryDefinitionDto? _source;
+    private readonly HashSet<string> _expandedKnowledge = [];
+    private readonly HashSet<string> _expandedRecipes = [];
+    private bool _isSaving;
+    private bool _showDeleteConfirm;
+    private string? _error;
+    private string? _success;
+
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_source, Item))
+        {
+            _source = Item;
+            _edit = DeepCopy(Item);
+            _expandedKnowledge.Clear();
+            _expandedRecipes.Clear();
+            _error = null;
+            _success = null;
+            _showDeleteConfirm = false;
+        }
+    }
+
+    private static IndustryDefinitionDto DeepCopy(IndustryDefinitionDto src) => new()
+    {
+        Tag = src.Tag,
+        Name = src.Name,
+        Knowledge = src.Knowledge.Select(k => new IndustryKnowledgeDto
+        {
+            Tag = k.Tag,
+            Name = k.Name,
+            Description = k.Description,
+            Level = k.Level,
+            PointCost = k.PointCost,
+            Branch = k.Branch,
+            Prerequisites = [.. k.Prerequisites],
+            HarvestEffects = k.HarvestEffects.Select(h => new IndustryHarvestEffectDto
+            {
+                NodeTag = h.NodeTag, StepModified = h.StepModified, Value = h.Value,
+            }).ToList(),
+            Effects = k.Effects.Select(e => new IndustryKnowledgeEffectDto
+            {
+                EffectType = e.EffectType, TargetTag = e.TargetTag,
+                Metadata = new Dictionary<string, object>(e.Metadata),
+            }).ToList(),
+            CraftingModifiers = k.CraftingModifiers.Select(m => new IndustryCraftingModifierDto
+            {
+                TargetTag = m.TargetTag, Scope = m.Scope, StepModified = m.StepModified,
+                Value = m.Value, Operation = m.Operation,
+            }).ToList(),
+        }).ToList(),
+        Recipes = src.Recipes.Select(r => new IndustryRecipeDto
+        {
+            RecipeId = r.RecipeId,
+            Name = r.Name,
+            Description = r.Description,
+            IndustryTag = r.IndustryTag,
+            RequiredKnowledge = [.. r.RequiredKnowledge],
+            Ingredients = r.Ingredients.Select(i => new IndustryIngredientDto
+            {
+                ItemTag = i.ItemTag, Quantity = i.Quantity,
+                MinQuality = i.MinQuality, IsConsumed = i.IsConsumed,
+            }).ToList(),
+            Products = r.Products.Select(p => new IndustryProductDto
+            {
+                ItemTag = p.ItemTag, Quantity = p.Quantity, SuccessChance = p.SuccessChance,
+            }).ToList(),
+            CraftingTimeRounds = r.CraftingTimeRounds,
+            ProgressionPointsAwarded = r.ProgressionPointsAwarded,
+            ProficiencyXpAwarded = r.ProficiencyXpAwarded,
+            RequiredWorkstation = r.RequiredWorkstation,
+            RequiredTools = r.RequiredTools.Select(t => new ToolRequirementDto
+            {
+                RequiredForm = t.RequiredForm, RequiredMaterial = t.RequiredMaterial,
+                MinQuality = t.MinQuality, ExactItemTag = t.ExactItemTag,
+            }).ToList(),
+        }).ToList(),
+    };
+
+    private static List<string> SplitTags(string? text) =>
+        (text ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+
+    private void ToggleKnowledge(string tag)
+    {
+        if (!_expandedKnowledge.Remove(tag)) _expandedKnowledge.Add(tag);
+    }
+
+    private void ToggleRecipe(string id)
+    {
+        if (!_expandedRecipes.Remove(id)) _expandedRecipes.Add(id);
+    }
+
+    private void AddKnowledge()
+    {
+        IndustryKnowledgeDto k = new() { Tag = $"knowledge_{_edit.Knowledge.Count + 1}" };
+        _edit.Knowledge.Add(k);
+        _expandedKnowledge.Add(k.Tag);
+    }
+
+    private void RemoveKnowledge(string tag)
+    {
+        _edit.Knowledge.RemoveAll(k => k.Tag == tag);
+        _expandedKnowledge.Remove(tag);
+    }
+
+    private void AddRecipe()
+    {
+        IndustryRecipeDto r = new()
+        {
+            RecipeId = $"recipe_{_edit.Recipes.Count + 1}",
+            IndustryTag = _edit.Tag,
+        };
+        _edit.Recipes.Add(r);
+        _expandedRecipes.Add(r.RecipeId);
+    }
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+        _success = null;
+        try
+        {
+            _isSaving = true;
+            IndustryDefinitionDto? saved = IsCreating
+                ? await Api.CreateAsync(_edit)
+                : await Api.UpdateAsync(_edit.Tag, _edit);
+            _success = $"Industry '{_edit.Tag}' {(IsCreating ? "created" : "updated")}.";
+            await OnSaved.InvokeAsync(saved ?? _edit);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Save failed: {ex.Message}";
+            Logger.LogError(ex, "Failed to save industry {Tag}", _edit.Tag);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task DeleteAsync()
+    {
+        _error = null;
+        try
+        {
+            _isSaving = true;
+            await Api.DeleteAsync(_edit.Tag);
+            _showDeleteConfirm = false;
+            await OnDeleted.InvokeAsync(_edit.Tag);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Delete failed: {ex.Message}";
+            Logger.LogError(ex, "Failed to delete industry {Tag}", _edit.Tag);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

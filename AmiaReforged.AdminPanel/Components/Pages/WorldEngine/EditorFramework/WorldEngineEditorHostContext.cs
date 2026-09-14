@@ -16,6 +16,9 @@ public sealed class WorldEngineEditorHostContext
     public required Func<bool> IsRegionGraphOpen { get; init; }
     public required Func<Task> OpenNewInteractionAsync { get; init; }
     public required Func<Task> OpenNewCoinhouseAsync { get; init; }
+    public required Func<Task> OpenNewWorkstationAsync { get; init; }
+    public required Func<Task> OpenNewRecipeTemplateAsync { get; init; }
+    public required Func<Task> OpenNewIndustryAsync { get; init; }
     public required Func<Task> OpenNewLoreAsync { get; init; }
     public required Func<Task> OpenNewQuestAsync { get; init; }
 }

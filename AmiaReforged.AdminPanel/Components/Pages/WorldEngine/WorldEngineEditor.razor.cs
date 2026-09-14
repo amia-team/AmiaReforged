@@ -27,6 +27,7 @@ public partial class WorldEngineEditor
     private bool _canDeploy =>
         EditorState.SelectedEndpointId != null
         && EditorState.ActiveTab is { EntityKey: not null } tab
+        && tab.EntityKey != ProgressionSentinel
         && DeploymentService.SupportedEntityTypes.Contains(tab.EntityType);
 
     // ── Entity list state ───────────────────────────────────────────
@@ -137,6 +138,9 @@ public partial class WorldEngineEditor
             IsRegionGraphOpen = () => _regionGraphOpen,
             OpenNewInteractionAsync = OpenNewInteractionEditor,
             OpenNewCoinhouseAsync = OpenNewCoinhouseTab,
+            OpenNewWorkstationAsync = OpenNewWorkstationTab,
+            OpenNewRecipeTemplateAsync = OpenNewRecipeTemplateTab,
+            OpenNewIndustryAsync = OpenNewIndustryTab,
             OpenNewLoreAsync = () => OpenNewCodexEditor(CodexEditor.CodexSubType.Lore),
             OpenNewQuestAsync = () => OpenNewCodexEditor(CodexEditor.CodexSubType.Quest),
         };
@@ -175,6 +179,8 @@ public partial class WorldEngineEditor
         TraitApi.SelectEndpoint(eid);
         GlyphApi.SelectEndpoint(eid);
         IndustryApi.SelectEndpoint(eid);
+        WorkstationApi.SelectEndpoint(eid);
+        RecipeTemplateApi.SelectEndpoint(eid);
         InteractionApi.SelectEndpoint(eid);
         CoinhouseApi.SelectEndpoint(eid);
         DialogueApi.SelectEndpoint(eid);
@@ -335,6 +341,8 @@ public partial class WorldEngineEditor
                 WorldEngineEntityType.Traits => await LoadTraits(search),
                 WorldEngineEntityType.Glyphs => await LoadGlyphs(),
                 WorldEngineEntityType.Industries => await LoadIndustries(search),
+                WorldEngineEntityType.Workstations => await LoadWorkstations(search),
+                WorldEngineEntityType.RecipeTemplates => await LoadRecipeTemplates(search),
                 WorldEngineEntityType.Interactions => await LoadInteractions(search),
                 WorldEngineEntityType.Coinhouses => await LoadCoinhouses(search),
                 WorldEngineEntityType.Dialogues => await LoadDialogues(search),
@@ -436,7 +444,27 @@ public partial class WorldEngineEditor
     {
         PagedResult<IndustryDefinitionDto> result = await IndustryApi.GetAllAsync(search, _listPage, ListPageSize);
         _listHasMore = _listPage * ListPageSize < result.TotalCount;
-        return result.Items.Select(i => new EntityListItem(i.Tag, i.Name, WorldEngineEntityType.Industries)).ToList();
+        List<EntityListItem> items = result.Items.Select(i => new EntityListItem(i.Tag, i.Name, WorldEngineEntityType.Industries)).ToList();
+        if (string.IsNullOrWhiteSpace(search) && _listPage == 1)
+        {
+            // Pinned global row: keyless progression config opens a special tab.
+            items.Insert(0, new EntityListItem(ProgressionSentinel, "⚙ Knowledge Progression", WorldEngineEntityType.Industries));
+        }
+        return items;
+    }
+
+    private async Task<List<EntityListItem>> LoadWorkstations(string? search)
+    {
+        PagedResult<WorkstationDefinitionDto> result = await WorkstationApi.GetAllAsync(search, _listPage, ListPageSize);
+        _listHasMore = _listPage * ListPageSize < result.TotalCount;
+        return result.Items.Select(i => new EntityListItem(i.Tag, i.Name, WorldEngineEntityType.Workstations)).ToList();
+    }
+
+    private async Task<List<EntityListItem>> LoadRecipeTemplates(string? search)
+    {
+        PagedResult<RecipeTemplateDefinitionDto> result = await RecipeTemplateApi.GetAllAsync(search, _listPage, ListPageSize);
+        _listHasMore = _listPage * ListPageSize < result.TotalCount;
+        return result.Items.Select(i => new EntityListItem(i.Tag, i.Name, WorldEngineEntityType.RecipeTemplates)).ToList();
     }
 
     private async Task<List<EntityListItem>> LoadInteractions(string? search)
@@ -510,7 +538,7 @@ public partial class WorldEngineEditor
 
     private async Task LoadTabData(EditorTab tab)
     {
-        if (tab.EntityKey == null) return;
+        if (tab.EntityKey == null || tab.EntityKey == ProgressionSentinel) return;
 
         _tabDataLoading = true;
         _tabDataError = null;
@@ -527,6 +555,8 @@ public partial class WorldEngineEditor
                 WorldEngineEntityType.Traits => await TraitApi.GetByTagAsync(tab.EntityKey),
                 WorldEngineEntityType.Glyphs => await GlyphApi.GetDefinitionAsync(Guid.Parse(tab.EntityKey)),
                 WorldEngineEntityType.Industries => await IndustryApi.GetByTagAsync(tab.EntityKey),
+                WorldEngineEntityType.Workstations => await WorkstationApi.GetByTagAsync(tab.EntityKey),
+                WorldEngineEntityType.RecipeTemplates => await RecipeTemplateApi.GetByTagAsync(tab.EntityKey),
                 WorldEngineEntityType.Interactions => await InteractionApi.GetByTagAsync(tab.EntityKey),
                 WorldEngineEntityType.Coinhouses => await CoinhouseApi.GetByTagAsync(tab.EntityKey),
                 WorldEngineEntityType.AreaGraph => null, // Area graph is a singleton, no per-entity load
@@ -559,6 +589,9 @@ public partial class WorldEngineEditor
         _codexTabSubTypes.Remove(tabId);
         _interactionNewTabs.Remove(tabId);
         _newCoinhouseDtos.Remove(tabId);
+        _newIndustryDtos.Remove(tabId);
+        _newWorkstationDtos.Remove(tabId);
+        _newRecipeTemplateDtos.Remove(tabId);
         EditorState.CloseTab(tabId);
     }
 

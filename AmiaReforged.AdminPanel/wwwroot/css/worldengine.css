@@ -924,3 +924,40 @@
     border: 1px solid var(--danger, #e74c3c);
     border-radius: 8px;
 }
+
+/* ── Nested editor cards (IndustryEditor and kin) ─────────────────── */
+
+.we-entity-form__card {
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.we-entity-form__card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.flex-spacer {
+    flex: 1;
+}
+
+.we-editor__entity-editor .form-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.we-editor__entity-editor .form-row > * {
+    flex: 1;
+    min-width: 0;
+}
+
+.we-editor__entity-editor h5 {
+    font-size: 0.95rem;
+    margin-bottom: 10px;
+}
