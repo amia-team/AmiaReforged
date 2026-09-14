@@ -15,8 +15,8 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.Se
 [ServiceBinding(typeof(ResourceNodeInstanceSetupService))]
 public class ResourceNodeInstanceSetupService(
     IResourceNodeDefinitionRepository resourceRepository,
-    ICommandHandler<ClearAreaNodesCommand> clearNodesCommandHandler,
-    IQueryHandler<GetNodesForAreaQuery, List<ResourceNodeInstance>> getNodesQueryHandler,
+    ICommandDispatcher commandDispatcher,
+    IQueryDispatcher queryDispatcher,
     IRegionRepository regionRepository,
     ResourceNodeService nodeService,
     RuntimeNodeService runtimeNodeService,
@@ -44,7 +44,9 @@ public class ResourceNodeInstanceSetupService(
         {
             // Query for nodes in this area
             GetNodesForAreaQuery query = new GetNodesForAreaQuery(area.ResRef);
-            List<ResourceNodeInstance> nodes = getNodesQueryHandler.HandleAsync(query).GetAwaiter().GetResult();
+            List<ResourceNodeInstance> nodes = queryDispatcher
+                .DispatchAsync<GetNodesForAreaQuery, List<ResourceNodeInstance>>(query)
+                .GetAwaiter().GetResult();
 
             if (nodes.Count == 0) continue;
 
@@ -55,7 +57,7 @@ public class ResourceNodeInstanceSetupService(
 
             // Execute clear command (deletes DB rows)
             ClearAreaNodesCommand command = new ClearAreaNodesCommand(area.ResRef);
-            _ = clearNodesCommandHandler.HandleAsync(command).GetAwaiter().GetResult();
+            _ = commandDispatcher.DispatchAsync(command).GetAwaiter().GetResult();
         }
     }
 

@@ -17,7 +17,7 @@ public sealed class PropertyEvictionService : IDisposable
     private static readonly TimeSpan InitialDelay = TimeSpan.FromSeconds(30); // Run 30 seconds after server starts
 
     private readonly IRentablePropertyRepository _repository;
-    private readonly ICommandHandler<EvictPropertyCommand> _evictCommandHandler;
+    private readonly ICommandDispatcher _commands;
     private readonly PropertyRentalPolicy _policy;
     private readonly Func<DateTimeOffset> _timeProvider;
     
@@ -26,21 +26,21 @@ public sealed class PropertyEvictionService : IDisposable
 
     public PropertyEvictionService(
         IRentablePropertyRepository repository,
-        ICommandHandler<EvictPropertyCommand> evictCommandHandler,
+        ICommandDispatcher commands,
         PropertyRentalPolicy policy)
-        : this(repository, evictCommandHandler, policy, () => DateTimeOffset.UtcNow)
+        : this(repository, commands, policy, () => DateTimeOffset.UtcNow)
     {
     }
 
     // Internal constructor for testing with time injection
     internal PropertyEvictionService(
         IRentablePropertyRepository repository,
-        ICommandHandler<EvictPropertyCommand> evictCommandHandler,
+        ICommandDispatcher commands,
         PropertyRentalPolicy policy,
         Func<DateTimeOffset> timeProvider)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
-        _evictCommandHandler = evictCommandHandler ?? throw new ArgumentNullException(nameof(evictCommandHandler));
+        _commands = commands ?? throw new ArgumentNullException(nameof(commands));
         _policy = policy ?? throw new ArgumentNullException(nameof(policy));
         _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
 
@@ -215,7 +215,7 @@ public sealed class PropertyEvictionService : IDisposable
             property.Definition.Id,
             property.Definition.InternalName);
 
-        CommandResult result = await _evictCommandHandler.HandleAsync(
+        CommandResult result = await _commands.DispatchAsync(
             new EvictPropertyCommand(property), token).ConfigureAwait(false);
 
         if (!result.Success)

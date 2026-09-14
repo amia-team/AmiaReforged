@@ -256,7 +256,7 @@ public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView
     [Inject] private Lazy<Characters.Runtime.RuntimeCharacterService> CharacterService { get; init; } = null!;
     [Inject] private WindowDirector WindowDirector { get; init; } = null!;
     [Inject] private Lazy<IBankingFacade> BankingFacade { get; init; } = null!;
-    [Inject] private ICommandHandler<JoinCoinhouseAccountCommand> JoinAccountHandler { get; init; } = null!;
+    [Inject] private ICommandDispatcher CommandDispatcher { get; init; } = null!;
 
     public BankAdminWindowPresenter(BankAdminWindowView view, NwPlayer player, CoinhouseTag coinhouseTag, string bankDisplayName)
     {
@@ -603,7 +603,7 @@ public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView
 
         try
         {
-            CommandResult result = await JoinAccountHandler.HandleAsync(command);
+            CommandResult result = await CommandDispatcher.DispatchAsync(command);
 
             await NwTask.SwitchToMainThread();
 

@@ -14,7 +14,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.Se
 [ServiceBinding(typeof(ResourceNodeService))]
 public class ResourceNodeService(
     RuntimeNodeService runtimeNodes,
-    ICommandHandler<RegisterNodeCommand> registerNodeCommandHandler,
+    ICommandDispatcher commandDispatcher,
     IResourceNodeInstanceRepository nodeRepository)
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
@@ -44,7 +44,7 @@ public class ResourceNodeService(
         );
 
         // Execute command synchronously to get the created instance
-        CommandResult result = registerNodeCommandHandler.HandleAsync(command).GetAwaiter().GetResult();
+        CommandResult result = commandDispatcher.DispatchAsync(command).GetAwaiter().GetResult();
 
         if (!result.Success)
         {

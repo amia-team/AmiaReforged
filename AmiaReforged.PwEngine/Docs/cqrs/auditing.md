@@ -2,8 +2,11 @@
 
 > **Status 2026-09-14:** F-1 and F-2 are fixed. All 13 domain controllers go
 > through `IWorldEngineFacade` (`API/Controllers/RouteContextExtensions.cs`);
-> the six F-2 facades/subsystems plus `MineralHarvestStrategy` inject
-> dispatchers; missing admin commands/queries were added (org update/disband,
+> the six F-2 facades/subsystems plus `MineralHarvestStrategy`,
+> `SharedAccountDocumentService`, `PropertyEvictionService`,
+> `BankAdminWindowView`, `ResourceNodeService`, and
+> `ResourceNodeInstanceSetupService` inject dispatchers (no handler-direct
+> consumers remain outside handler declarations); missing admin commands/queries were added (org update/disband,
 > industry/workstation/recipe/node/region/interaction/item/trait/lore/quest/
 > coinhouse/dialogue CRUD, cap profiles, progression config);
 > `IOrganizationRepository.Delete` now exists (EF + in-memory);

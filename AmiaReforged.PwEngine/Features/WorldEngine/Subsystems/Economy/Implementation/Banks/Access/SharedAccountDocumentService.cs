@@ -16,16 +16,16 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 public class SharedAccountDocumentService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    private readonly ICommandHandler<JoinCoinhouseAccountCommand> _joinAccountHandler;
+    private readonly ICommandDispatcher _commands;
     private readonly IPersonaDescriptorService _personaDescriptors;
     private readonly RuntimeCharacterService _runtimeCharacterService;
     private const string ShareDocumentResRef = "bank_sharedoc";
 
 
-    public SharedAccountDocumentService(ICommandHandler<JoinCoinhouseAccountCommand> joinAccountHandler,
+    public SharedAccountDocumentService(ICommandDispatcher commands,
         IPersonaDescriptorService personaDescriptors, RuntimeCharacterService runtimeCharacterService)
     {
-        _joinAccountHandler = joinAccountHandler;
+        _commands = commands;
         _personaDescriptors = personaDescriptors;
         _runtimeCharacterService = runtimeCharacterService;
 
@@ -100,7 +100,7 @@ public class SharedAccountDocumentService
             return;
         }
 
-        CommandResult result = await _joinAccountHandler.HandleAsync(command);
+        CommandResult result = await _commands.DispatchAsync(command);
 
         if (!result.Success)
         {

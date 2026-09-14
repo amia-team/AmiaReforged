@@ -14,7 +14,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Tests.Pr
 public class PropertyEvictionServiceTests
 {
     private Mock<IRentablePropertyRepository> _repository = null!;
-    private Mock<ICommandHandler<EvictPropertyCommand>> _evictCommandHandler = null!;
+    private Mock<ICommandDispatcher> _commands = null!;
     private PropertyRentalPolicy _policy = null!;
     private List<RentablePropertySnapshot> _allProperties = null!;
     private DateTimeOffset _currentTime;
@@ -31,16 +31,16 @@ public class PropertyEvictionServiceTests
             .Setup(r => r.GetAllPropertiesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(() => new List<RentablePropertySnapshot>(_allProperties));
 
-        _evictCommandHandler = new Mock<ICommandHandler<EvictPropertyCommand>>(MockBehavior.Strict);
-        _evictCommandHandler
-            .Setup(h => h.HandleAsync(It.IsAny<EvictPropertyCommand>(), It.IsAny<CancellationToken>()))
+        _commands = new Mock<ICommandDispatcher>(MockBehavior.Strict);
+        _commands
+            .Setup(d => d.DispatchAsync(It.IsAny<EvictPropertyCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(CommandResult.Ok());
 
         _policy = new PropertyRentalPolicy(_repository.Object);
 
         _service = new PropertyEvictionService(
             _repository.Object,
-            _evictCommandHandler.Object,
+            _commands.Object,
             _policy,
             () => _currentTime);
     }
@@ -58,8 +58,8 @@ public class PropertyEvictionServiceTests
 
         await _service.ExecuteEvictionCycleAsync(CancellationToken.None);
 
-        _evictCommandHandler.Verify(
-            h => h.HandleAsync(It.IsAny<EvictPropertyCommand>(), It.IsAny<CancellationToken>()),
+        _commands.Verify(
+            d => d.DispatchAsync(It.IsAny<EvictPropertyCommand>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -74,8 +74,8 @@ public class PropertyEvictionServiceTests
 
         await _service.ExecuteEvictionCycleAsync(CancellationToken.None);
 
-        _evictCommandHandler.Verify(
-            h => h.HandleAsync(It.IsAny<EvictPropertyCommand>(), It.IsAny<CancellationToken>()),
+        _commands.Verify(
+            d => d.DispatchAsync(It.IsAny<EvictPropertyCommand>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -90,8 +90,8 @@ public class PropertyEvictionServiceTests
 
         await _service.ExecuteEvictionCycleAsync(CancellationToken.None);
 
-        _evictCommandHandler.Verify(
-            h => h.HandleAsync(It.IsAny<EvictPropertyCommand>(), It.IsAny<CancellationToken>()),
+        _commands.Verify(
+            d => d.DispatchAsync(It.IsAny<EvictPropertyCommand>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -107,8 +107,8 @@ public class PropertyEvictionServiceTests
 
         await _service.ExecuteEvictionCycleAsync(CancellationToken.None);
 
-        _evictCommandHandler.Verify(
-            h => h.HandleAsync(It.IsAny<EvictPropertyCommand>(), It.IsAny<CancellationToken>()),
+        _commands.Verify(
+            d => d.DispatchAsync(It.IsAny<EvictPropertyCommand>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -132,8 +132,8 @@ public class PropertyEvictionServiceTests
 
         await _service.ExecuteEvictionCycleAsync(CancellationToken.None);
 
-        _evictCommandHandler.Verify(
-            h => h.HandleAsync(It.IsAny<EvictPropertyCommand>(), It.IsAny<CancellationToken>()),
+        _commands.Verify(
+            d => d.DispatchAsync(It.IsAny<EvictPropertyCommand>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -159,8 +159,8 @@ public class PropertyEvictionServiceTests
 
         await _service.ExecuteEvictionCycleAsync(CancellationToken.None);
 
-        _evictCommandHandler.Verify(
-            h => h.HandleAsync(It.IsAny<EvictPropertyCommand>(), It.IsAny<CancellationToken>()),
+        _commands.Verify(
+            d => d.DispatchAsync(It.IsAny<EvictPropertyCommand>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -186,8 +186,8 @@ public class PropertyEvictionServiceTests
 
         await _service.ExecuteEvictionCycleAsync(CancellationToken.None);
 
-        _evictCommandHandler.Verify(
-            h => h.HandleAsync(
+        _commands.Verify(
+            d => d.DispatchAsync(
                 It.Is<EvictPropertyCommand>(cmd => cmd.Property == property),
                 It.IsAny<CancellationToken>()),
             Times.Once);
@@ -228,18 +228,18 @@ public class PropertyEvictionServiceTests
 
         await _service.ExecuteEvictionCycleAsync(CancellationToken.None);
 
-        _evictCommandHandler.Verify(
-            h => h.HandleAsync(It.IsAny<EvictPropertyCommand>(), It.IsAny<CancellationToken>()),
+        _commands.Verify(
+            d => d.DispatchAsync(It.IsAny<EvictPropertyCommand>(), It.IsAny<CancellationToken>()),
             Times.Exactly(2));
 
-        _evictCommandHandler.Verify(
-            h => h.HandleAsync(
+        _commands.Verify(
+            d => d.DispatchAsync(
                 It.Is<EvictPropertyCommand>(cmd => cmd.Property == property1),
                 It.IsAny<CancellationToken>()),
             Times.Once);
 
-        _evictCommandHandler.Verify(
-            h => h.HandleAsync(
+        _commands.Verify(
+            d => d.DispatchAsync(
                 It.Is<EvictPropertyCommand>(cmd => cmd.Property == property2),
                 It.IsAny<CancellationToken>()),
             Times.Once);
@@ -288,20 +288,20 @@ public class PropertyEvictionServiceTests
 
         await _service.ExecuteEvictionCycleAsync(CancellationToken.None);
 
-        _evictCommandHandler.Verify(
-            h => h.HandleAsync(
+        _commands.Verify(
+            d => d.DispatchAsync(
                 It.Is<EvictPropertyCommand>(cmd => cmd.Property == evictableProperty),
                 It.IsAny<CancellationToken>()),
             Times.Once);
 
-        _evictCommandHandler.Verify(
-            h => h.HandleAsync(
+        _commands.Verify(
+            d => d.DispatchAsync(
                 It.Is<EvictPropertyCommand>(cmd => cmd.Property == currentProperty),
                 It.IsAny<CancellationToken>()),
             Times.Never);
 
-        _evictCommandHandler.Verify(
-            h => h.HandleAsync(
+        _commands.Verify(
+            d => d.DispatchAsync(
                 It.Is<EvictPropertyCommand>(cmd => cmd.Property == vacantProperty),
                 It.IsAny<CancellationToken>()),
             Times.Never);
@@ -341,16 +341,16 @@ public class PropertyEvictionServiceTests
         _allProperties.Add(property2);
 
         // Configure first call to fail, second to succeed
-        _evictCommandHandler
-            .SetupSequence(h => h.HandleAsync(It.IsAny<EvictPropertyCommand>(), It.IsAny<CancellationToken>()))
+        _commands
+            .SetupSequence(d => d.DispatchAsync(It.IsAny<EvictPropertyCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(CommandResult.Fail("Simulated database error"))
             .ReturnsAsync(CommandResult.Ok());
 
         await _service.ExecuteEvictionCycleAsync(CancellationToken.None);
 
         // Verify both properties were attempted
-        _evictCommandHandler.Verify(
-            h => h.HandleAsync(It.IsAny<EvictPropertyCommand>(), It.IsAny<CancellationToken>()),
+        _commands.Verify(
+            d => d.DispatchAsync(It.IsAny<EvictPropertyCommand>(), It.IsAny<CancellationToken>()),
             Times.Exactly(2));
     }
 
