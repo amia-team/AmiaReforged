@@ -26,10 +26,13 @@ The Simulation Service executes computationally intensive workflows (dominion tu
 
 ---
 
+## 2. Architecture & Technical Direction
+
+- **Vision**: Broad background world simulation running as a sidecar to the NWN server — Dwarf Fortress-like in ambition for persona/actor goals, needs, traits, relationships, and histories/memories that accumulate across turns.
 - **Process Isolation**: Runs as a separate .NET project/container, completely independent from the game server.
 - **Deployment**: Dockerized workload deployed alongside NWN server containers within the same network. Supports horizontal scaling when required.
 - **Technology Stack**: .NET 8 Worker Service, `System.Threading.Channels` for in-process work queues, PostgreSQL via EF Core DbContext (separate database instance), Serilog for structured logging, Polly for resilience patterns, Discord webhooks for event notifications.
-- **Communication**: HTTP/gRPC endpoints for WorldEngine integration, Discord webhooks for notifications and event logging (toggleable at runtime).
+- **Communication**: Hybrid transport. REST against the PwEngine public API contract (`AmiaReforged.PwEngine` WorldEngine HTTP API) for control plane and bulk snapshots (health, turn triggers, definition/snapshot fetch). Message bus (RabbitMQ/Redis) as the primary transport for domain commands/events in both directions. Discord webhooks for notifications and event logging (toggleable at runtime).
 - **Contracts**: Defines its own domain value objects, commands, and events. Communication with WorldEngine happens via agreed-upon DTOs/messages to ensure loose coupling.
 
 ---
@@ -47,10 +50,13 @@ The Simulation Service executes computationally intensive workflows (dominion tu
    - Produce `SettlementCivicStats` snapshots (`LoyaltyScore`, `SecurityScore`, `ManpowerLevel`, `ProsperityScore`, `HappinessIndex`, `MilitaryMight`, `ArcanePower`, `DefenseRating`)
    - Publish `SettlementCivicStatsUpdatedEvent`
 
-3. **Persona Influence System**
+3. **Persona Influence & Actor Simulation System**
    - Maintain `PersonaInfluenceLedger` balances (earn/spend)
+   - Model personas as goal-driven actors: traits, needs/drives, long-term goals, short-term intents
+   - Maintain per-persona histories/memories (participants, location, turn timestamp) that feed future decisions and civic stats
+   - Track relationships/standing between personas, orgs, and settlements, modified by resolved history
    - Validate and queue persona actions (`PersonaActionQueuedEvent`)
-   - Resolve actions (intrigue, diplomacy, etc.), emitting `PersonaActionResolvedEvent`
+   - Each turn: evaluate world snapshot + memories → select intent → resolve actions (intrigue, diplomacy, etc.), emitting `PersonaActionResolvedEvent`
 
 4. **Economic Analytics**
    - Run demand/supply models for import/export routing and pricing adjustments
@@ -105,7 +111,8 @@ The Simulation Service executes computationally intensive workflows (dominion tu
 - Simulation Service persists **only** orchestration metadata and simulation state it owns:
   - `SimulationWorkItem` (work queue entries, status, payloads)
   - `DominionTurnJob` (dominion turn metadata, status, timings, results)
-  - `SimulationOutbox` / `SimulationInbox` (optional) for reliable messaging and retries
+  - `SimulationOutbox` / `SimulationInbox` (required) for reliable bus messaging, retries, and crash-safe write-back
+  - `Persona`, `PersonaGoal/Intent`, `PersonaMemoryEntry`, `PersonaRelationship` (actor state, goals, histories, standings)
   - Future: simulation snapshots, cached projections, event log
 - **Communication with WorldEngine is exclusively through events/commands** (no direct database access).
 - WorldEngine remains the authoritative source for all game domain data. The simulator requests data via commands/queries and receives responses via events.
@@ -204,6 +211,9 @@ The Simulation Service executes computationally intensive workflows (dominion tu
 ## 11. Decisions & Remaining Questions
 
 **Decisions**
+- Domain depends on an `IPwEngineClient` abstraction returning version-stamped snapshots and accepting result batches — never directly on `HttpClient` — so REST → gRPC → bus transports can be swapped without rewriting the sim.
+- Message bus is the primary transport for domain commands/events in both directions (PwEngine → Sim: turn triggers, demand/crime/membership deltas, invalidations; Sim → PwEngine: turn results, civic updates, resolved actions, price adjustments). REST is retained for control plane and bulk snapshot fetch only. Pure REST N+1 per-persona messaging is explicitly rejected at DF scale.
+- `SimulationOutbox/Inbox` are required for crash-safe, exactly-once write-back with retries/DLQ.
 - No automated scale-out is required; each environment (pre-prod, prod) runs its own Simulation Service instance, and they operate on fully separate data sets.
 - Circuit breakers are mandatory to pause job intake and surface alerts when WorldEngine or the portal is unavailable.
 - Simulation validates the inputs of commands it receives (e.g., influence spend) but relies on WorldEngine to enforce broader domain invariants before issuing those commands.
