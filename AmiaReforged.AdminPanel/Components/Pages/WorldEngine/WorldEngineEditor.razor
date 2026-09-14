@@ -70,7 +70,7 @@
 
         <div class="we-editor__toolbar-spacer"></div>
 
-        <EditorExtensionPoint Slot="WorldEngineEditorExtensionSlot.ToolbarActions" Context="_hostContext" />
+        <EditorExtensionPoint Slot="@WorldEngineEditorExtensionSlot.ToolbarActions" Context="@_hostContext" />
 
         @* Deploy button — right-aligned after spacer *@
         <button class="we-editor__toolbar-deploy-btn"
@@ -93,18 +93,18 @@
     @* ── Interaction editors live in tabs (see editor area below) ── *@
 
     <div class="we-editor__body">
-        <WorldEngineEditorSidebar Context="_hostContext"
-                                  IsOpen="_listPanelOpen"
-                                  Items="_listItems"
-                                  HasMore="_listHasMore"
-                                  Loading="_listLoading"
-                                  Error="_listError"
-                                  Search="_listSearch"
-                                  OnFeatureSelected="OnActivityBarClick"
-                                  OnCloseRequested="CloseListPanel"
-                                  OnSearch="OnListSearchInput"
-                                  OnLoadMore="LoadMoreEntities"
-                                  OnItemClick="OnListItemClick" />
+        <WorldEngineEditorSidebar Context="@_hostContext"
+                                  IsOpen="@_listPanelOpen"
+                                  Items="@_listItems"
+                                  HasMore="@_listHasMore"
+                                  Loading="@_listLoading"
+                                  Error="@_listError"
+                                  Search="@_listSearch"
+                                  OnFeatureSelected="@OnActivityBarClick"
+                                  OnCloseRequested="@CloseListPanel"
+                                  OnSearch="@OnListSearchInput"
+                                  OnLoadMore="@LoadMoreEntities"
+                                  OnItemClick="@OnListItemClick" />
 
         @* ── Editor area ─────────────────────────────────────────── *@
         <div class="we-editor__editor-area">
@@ -196,9 +196,9 @@
                         <div id="region-cy-gl" class="we-rg-cytoscape"></div>
                         </Second>
                         <First>
-                            <Inspector Title="Properties" OnClose="RgCloseEditor">
+                            <Inspector Title="Properties" OnClose="@RgCloseEditor">
                                 <HeaderActions>
-                                    <EditorExtensionPoint Slot="WorldEngineEditorExtensionSlot.InspectorTop" Context="_hostContext" />
+                                    <EditorExtensionPoint Slot="@WorldEngineEditorExtensionSlot.InspectorTop" Context="@_hostContext" />
                                 </HeaderActions>
                                 <Body>
                         <div class="we-rg-props">
@@ -521,7 +521,7 @@
                         </div>
                                 </Body>
                                 <Footer>
-                            <EditorExtensionPoint Slot="WorldEngineEditorExtensionSlot.InspectorBottom" Context="_hostContext" />
+                            <EditorExtensionPoint Slot="@WorldEngineEditorExtensionSlot.InspectorBottom" Context="@_hostContext" />
                             @if (_rgPanelMode == RgPanelMode.RegionEditor || _rgPanelMode == RgPanelMode.AreaEditor)
                             {
                                     <button class="btn btn-secondary btn-sm" @onclick="RgCloseEditor">Cancel</button>
@@ -543,11 +543,11 @@
             else
             {
             @* ══════ Normal Tab Mode ══════ *@
-            <TabStrip Tabs="EditorState.OpenTabs"
-                      ActiveTabId="EditorState.ActiveTabId"
-                      GetIcon="GetEntityIcon"
-                      OnActivate="(id) => EditorState.ActiveTabId = id"
-                      OnClose="CloseTab" />
+            <TabStrip Tabs="@EditorState.OpenTabs"
+                      ActiveTabId="@EditorState.ActiveTabId"
+                      GetIcon="@GetEntityIcon"
+                      OnActivate="@((string id) => EditorState.ActiveTabId = id)"
+                      OnClose="@CloseTab" />
 
             @* Entity editor content *@
             <div class="we-editor__content">
@@ -565,11 +565,11 @@
                         @* Codex editors are self-loading tabs (no _tabData) *@
                         <div class="we-editor__tab-fill">
                             <CodexEditor @key="activeTab.Id"
-                                         EntityKey="activeTab.EntityKey"
-                                         InitialSubType="GetCodexSubType(activeTab.Id)"
+                                         EntityKey="@activeTab.EntityKey"
+                                         InitialSubType="@GetCodexSubType(activeTab.Id)"
                                          OpenOnParameters="true"
-                                         OnClose="() => CloseTab(activeTab.Id)"
-                                         OnEntityListRefresh="async () => await LoadEntityList(reset: true)" />
+                                         OnClose="@(() => CloseTab(activeTab.Id))"
+                                         OnEntityListRefresh="@(async () => await LoadEntityList(reset: true))" />
                         </div>
                     }
                     else if (activeTab.EntityType == WorldEngineEntityType.Interactions)
@@ -577,12 +577,12 @@
                         @* Interaction editors are self-loading tabs (no _tabData) *@
                         <div class="we-editor__tab-fill">
                             <InteractionEditor @key="activeTab.Id"
-                                               EntityTag="activeTab.EntityKey"
-                                               IsNew="IsNewInteractionTab(activeTab)"
+                                               EntityTag="@activeTab.EntityKey"
+                                               IsNew="@IsNewInteractionTab(activeTab)"
                                                OpenOnParameters="true"
                                                FillParent="true"
                                                AvailableIndustries="@_interactionEditorIndustries"
-                                               OnClosed="(result) => HandleInteractionTabClosed(activeTab.Id, result)" />
+                                               OnClosed="@((InteractionEditorResult result) => HandleInteractionTabClosed(activeTab.Id, result))" />
                         </div>
                     }
                     else if (_tabDataLoading)

@@ -107,14 +107,14 @@
                 <First>
                     @{
                         RenderFragment? interactionInspectorFooter = HasInspectorBottomExtensions
-                            ? @<EditorExtensionPoint Slot="WorldEngineEditorExtensionSlot.InspectorBottom" Context="HostContext!" />
+                            ? @<EditorExtensionPoint Slot="@WorldEngineEditorExtensionSlot.InspectorBottom" Context="@(HostContext!)" />
                             : null;
                     }
-                    <Inspector Title="Properties" OnClose="Cancel" Footer="@interactionInspectorFooter">
+                    <Inspector Title="Properties" OnClose="@Cancel" Footer="@interactionInspectorFooter">
                         <HeaderActions>
                             @if (HostContext != null)
                             {
-                                <EditorExtensionPoint Slot="WorldEngineEditorExtensionSlot.InspectorTop" Context="HostContext" />
+                                <EditorExtensionPoint Slot="@WorldEngineEditorExtensionSlot.InspectorTop" Context="@HostContext" />
                             }
                         </HeaderActions>
                         <Body>
