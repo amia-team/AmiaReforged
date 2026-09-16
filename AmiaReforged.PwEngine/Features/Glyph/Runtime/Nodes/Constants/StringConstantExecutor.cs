@@ -5,37 +5,25 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Constants;
 /// <summary>
 /// Outputs a constant string value configured via PropertyOverrides.
 /// </summary>
-public class StringConstantExecutor : IGlyphNodeExecutor
+public sealed class StringConstantExecutor : GlyphPureNode
 {
     public const string NodeTypeId = "constant.string";
-    public string TypeId => NodeTypeId;
+    public override string TypeId => NodeTypeId;
 
-    public async Task<GlyphNodeResult> ExecuteAsync(
-        GlyphNodeInstance node, GlyphExecutionContext context, Func<string, Task<object?>> resolveInput)
-    {
-        object? val = await resolveInput("value");
-        string result = val?.ToString() ?? string.Empty;
-
-        return GlyphNodeResult.Data(new Dictionary<string, object?>
+    protected override async Task<Dictionary<string, object?>> RunPureAsync(GlyphNodeContext cx) =>
+        new()
         {
-            ["out"] = result
-        });
-    }
+            ["out"] = await cx.InString("value"),
+        };
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public override GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
         DisplayName = "String Constant",
         Category = "Constants",
         Description = "Outputs a constant string value. Set the value in the property panel.",
         ColorClass = "node-getter",
-        InputPins =
-        [
-            new GlyphPin { Id = "value", Name = "Value", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input, DefaultValue = "" }
-        ],
-        OutputPins =
-        [
-            new GlyphPin { Id = "out", Name = "Value", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output }
-        ]
+        InputPins = [Pins.InString("value", "Value", "")],
+        OutputPins = [Pins.Out("out", "Value", GlyphDataType.String)],
     };
 }

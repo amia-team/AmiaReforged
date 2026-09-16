@@ -5,21 +5,16 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Math;
 /// <summary>
 /// Performs a boolean logic operation (AND, OR, XOR) on two boolean inputs.
 /// </summary>
-public class BooleanOpExecutor : IGlyphNodeExecutor
+public sealed class BooleanOpExecutor : GlyphPureNode
 {
     public const string NodeTypeId = "math.boolean_op";
-    public string TypeId => NodeTypeId;
+    public override string TypeId => NodeTypeId;
 
-    public async Task<GlyphNodeResult> ExecuteAsync(
-        GlyphNodeInstance node, GlyphExecutionContext context, Func<string, Task<object?>> resolveInput)
+    protected override async Task<Dictionary<string, object?>> RunPureAsync(GlyphNodeContext cx)
     {
-        object? aValue = await resolveInput("a");
-        object? bValue = await resolveInput("b");
-        object? opValue = await resolveInput("operator");
-
-        bool a = Convert.ToBoolean(aValue);
-        bool b = Convert.ToBoolean(bValue);
-        string op = opValue?.ToString()?.ToUpperInvariant() ?? "AND";
+        bool a = await cx.InBool("a");
+        bool b = await cx.InBool("b");
+        string op = (await cx.InString("operator", "AND")).ToUpperInvariant();
 
         bool result = op switch
         {
@@ -29,13 +24,13 @@ public class BooleanOpExecutor : IGlyphNodeExecutor
             _ => false
         };
 
-        return GlyphNodeResult.Data(new Dictionary<string, object?>
+        return new Dictionary<string, object?>
         {
             ["result"] = result
-        });
+        };
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public override GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
         DisplayName = "Boolean Op",
@@ -44,13 +39,13 @@ public class BooleanOpExecutor : IGlyphNodeExecutor
         ColorClass = "node-math",
         InputPins =
         [
-            new GlyphPin { Id = "a", Name = "A", DataType = GlyphDataType.Bool, Direction = GlyphPinDirection.Input, DefaultValue = "false" },
-            new GlyphPin { Id = "b", Name = "B", DataType = GlyphDataType.Bool, Direction = GlyphPinDirection.Input, DefaultValue = "false" },
-            new GlyphPin { Id = "operator", Name = "Operator", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input, DefaultValue = "AND" }
+            Pins.InBool("a", "A"),
+            Pins.InBool("b", "B"),
+            Pins.InString("operator", "Operator", "AND"),
         ],
         OutputPins =
         [
-            new GlyphPin { Id = "result", Name = "Result", DataType = GlyphDataType.Bool, Direction = GlyphPinDirection.Output }
+            Pins.Out("result", "Result", GlyphDataType.Bool),
         ]
     };
 }

@@ -11,22 +11,18 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Logic;
 /// within a single execution pass.
 /// </para>
 /// </summary>
-public class StringContainsExecutor : IGlyphNodeExecutor
+public sealed class StringContainsExecutor : GlyphPureNode
 {
     public const string NodeTypeId = "logic.string_contains";
 
     /// <summary>Maximum number of pattern input pins.</summary>
     public const int MaxPatterns = 6;
 
-    public string TypeId => NodeTypeId;
+    public override string TypeId => NodeTypeId;
 
-    public async Task<GlyphNodeResult> ExecuteAsync(
-        GlyphNodeInstance node,
-        GlyphExecutionContext context,
-        Func<string, Task<object?>> resolveInput)
+    protected override async Task<Dictionary<string, object?>> RunPureAsync(GlyphNodeContext cx)
     {
-        object? textValue = await resolveInput("text");
-        string text = textValue?.ToString() ?? string.Empty;
+        string text = await cx.InString("text");
 
         if (string.IsNullOrEmpty(text))
         {
@@ -35,8 +31,7 @@ public class StringContainsExecutor : IGlyphNodeExecutor
 
         for (int i = 0; i < MaxPatterns; i++)
         {
-            object? patternValue = await resolveInput($"pattern_{i}");
-            string pattern = patternValue?.ToString() ?? string.Empty;
+            string pattern = await cx.InString($"pattern_{i}");
 
             if (string.IsNullOrEmpty(pattern)) continue;
 
@@ -49,27 +44,13 @@ public class StringContainsExecutor : IGlyphNodeExecutor
         return Result(false, string.Empty);
     }
 
-    public GlyphNodeDefinition CreateDefinition()
+    public override GlyphNodeDefinition CreateDefinition()
     {
-        List<GlyphPin> inputs =
-        [
-            new GlyphPin
-            {
-                Id = "text", Name = "Text", DataType = GlyphDataType.String,
-                Direction = GlyphPinDirection.Input
-            }
-        ];
+        List<GlyphPin> inputs = [Pins.InString("text", "Text")];
 
         for (int i = 0; i < MaxPatterns; i++)
         {
-            inputs.Add(new GlyphPin
-            {
-                Id = $"pattern_{i}",
-                Name = $"Pattern {i}",
-                DataType = GlyphDataType.String,
-                Direction = GlyphPinDirection.Input,
-                DefaultValue = ""
-            });
+            inputs.Add(Pins.InString($"pattern_{i}", $"Pattern {i}", ""));
         }
 
         return new GlyphNodeDefinition
@@ -86,24 +67,16 @@ public class StringContainsExecutor : IGlyphNodeExecutor
             InputPins = inputs,
             OutputPins =
             [
-                new GlyphPin
-                {
-                    Id = "result", Name = "Result", DataType = GlyphDataType.Bool,
-                    Direction = GlyphPinDirection.Output
-                },
-                new GlyphPin
-                {
-                    Id = "matched", Name = "Matched Pattern", DataType = GlyphDataType.String,
-                    Direction = GlyphPinDirection.Output
-                }
+                Pins.Out("result", "Result", GlyphDataType.Bool),
+                Pins.Out("matched", "Matched Pattern", GlyphDataType.String),
             ]
         };
     }
 
-    private static GlyphNodeResult Result(bool contains, string matchedPattern) =>
-        GlyphNodeResult.Data(new Dictionary<string, object?>
+    private static Dictionary<string, object?> Result(bool contains, string matchedPattern) =>
+        new()
         {
             ["result"] = contains,
             ["matched"] = matchedPattern
-        });
+        };
 }
