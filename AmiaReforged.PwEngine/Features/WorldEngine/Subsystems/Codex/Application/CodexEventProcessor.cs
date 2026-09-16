@@ -13,6 +13,9 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Applicatio
 /// <summary>
 /// Processes codex events from a channel and applies them to PlayerCodex aggregates.
 /// Ensures sequential processing per character to maintain consistency.
+/// Handler-internal plumbing: fed by <see cref="DynamicQuestService"/>,
+/// <see cref="QuestObjectiveResolutionService"/> and dialogue quest hooks, all of
+/// which sit behind command handlers. Not a caller-facing API. (F-6 audit.)
 /// </summary>
 [ServiceBinding(typeof(CodexEventProcessor))]
 public class CodexEventProcessor

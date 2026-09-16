@@ -6,6 +6,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Objecti
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Repositories;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application;
 
@@ -14,7 +15,11 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Applicatio
 /// posting, claiming, sharing, unclaiming, and expiration ticks.
 /// Coordinates between the <see cref="IDynamicQuestRepository"/>, <see cref="QuestSessionManager"/>,
 /// and <see cref="CodexEventProcessor"/>.
+/// Handler-internal implementation detail: game code dispatches the
+/// <c>Post/Claim/Share/Unclaim/ExpireDynamicQuestCommand</c>s instead of calling
+/// this service directly (F-6 audit).
 /// </summary>
+[ServiceBinding(typeof(DynamicQuestService))]
 public class DynamicQuestService
 {
     private readonly IDynamicQuestRepository _dynamicQuestRepository;

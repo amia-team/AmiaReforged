@@ -3,23 +3,27 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueOb
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Aggregates;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Repositories;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application.Queries;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application;
 
 /// <summary>
-/// Query service for read-only codex operations.
-/// Provides DTOs and search capabilities without exposing aggregate internals.
+/// Compatibility shim over the player-codex <see cref="IQuery{TResult}"/> handlers.
+/// Every read routes through <see cref="IQueryDispatcher"/> so callers
+/// (PlayerCodexPresenter, dialogue condition evaluators) stay on the dispatch
+/// path without signature changes. New code should dispatch the queries in
+/// <c>Application/Queries/PlayerCodexQueries.cs</c> directly. (F-6 audit.)
 /// </summary>
 [ServiceBinding(typeof(CodexQueryService))]
 public class CodexQueryService
 {
-    private readonly IPlayerCodexRepository _repository;
+    private readonly IQueryDispatcher _queries;
 
-    public CodexQueryService(IPlayerCodexRepository repository)
+    public CodexQueryService(IQueryDispatcher queries)
     {
-        _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+        _queries = queries ?? throw new ArgumentNullException(nameof(queries));
     }
 
     #region Quest Queries
@@ -27,34 +31,34 @@ public class CodexQueryService
     /// <summary>
     /// Gets all quests for a character
     /// </summary>
-    public async Task<IReadOnlyList<CodexQuestEntry>> GetAllQuestsAsync(CharacterId characterId, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<CodexQuestEntry>> GetAllQuestsAsync(CharacterId characterId, CancellationToken cancellationToken = default)
     {
-        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
-        return codex?.Quests.ToList() ?? new List<CodexQuestEntry>();
+        return _queries.DispatchAsync<GetCodexQuestsQuery, IReadOnlyList<CodexQuestEntry>>(
+            new GetCodexQuestsQuery { CharacterId = characterId }, cancellationToken);
     }
 
     /// <summary>
     /// Gets quests by state
     /// </summary>
-    public async Task<IReadOnlyList<CodexQuestEntry>> GetQuestsByStateAsync(
+    public Task<IReadOnlyList<CodexQuestEntry>> GetQuestsByStateAsync(
         CharacterId characterId,
         QuestState state,
         CancellationToken cancellationToken = default)
     {
-        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
-        return codex?.GetQuestsByState(state).ToList() ?? new List<CodexQuestEntry>();
+        return _queries.DispatchAsync<GetCodexQuestsByStateQuery, IReadOnlyList<CodexQuestEntry>>(
+            new GetCodexQuestsByStateQuery { CharacterId = characterId, State = state }, cancellationToken);
     }
 
     /// <summary>
     /// Searches quests by text
     /// </summary>
-    public async Task<IReadOnlyList<CodexQuestEntry>> SearchQuestsAsync(
+    public Task<IReadOnlyList<CodexQuestEntry>> SearchQuestsAsync(
         CharacterId characterId,
         string searchTerm,
         CancellationToken cancellationToken = default)
     {
-        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
-        return codex?.SearchQuests(searchTerm).ToList() ?? new List<CodexQuestEntry>();
+        return _queries.DispatchAsync<SearchCodexQuestsQuery, IReadOnlyList<CodexQuestEntry>>(
+            new SearchCodexQuestsQuery { CharacterId = characterId, SearchTerm = searchTerm }, cancellationToken);
     }
 
     #endregion
@@ -64,46 +68,46 @@ public class CodexQueryService
     /// <summary>
     /// Gets all lore for a character
     /// </summary>
-    public async Task<IReadOnlyList<CodexLoreEntry>> GetAllLoreAsync(CharacterId characterId, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<CodexLoreEntry>> GetAllLoreAsync(CharacterId characterId, CancellationToken cancellationToken = default)
     {
-        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
-        return codex?.Lore.ToList() ?? new List<CodexLoreEntry>();
+        return _queries.DispatchAsync<GetCodexLoreQuery, IReadOnlyList<CodexLoreEntry>>(
+            new GetCodexLoreQuery { CharacterId = characterId }, cancellationToken);
     }
 
     /// <summary>
     /// Gets lore by tier
     /// </summary>
-    public async Task<IReadOnlyList<CodexLoreEntry>> GetLoreByTierAsync(
+    public Task<IReadOnlyList<CodexLoreEntry>> GetLoreByTierAsync(
         CharacterId characterId,
         LoreTier tier,
         CancellationToken cancellationToken = default)
     {
-        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
-        return codex?.GetLoreByTier(tier).ToList() ?? new List<CodexLoreEntry>();
+        return _queries.DispatchAsync<GetCodexLoreByTierQuery, IReadOnlyList<CodexLoreEntry>>(
+            new GetCodexLoreByTierQuery { CharacterId = characterId, Tier = tier }, cancellationToken);
     }
 
     /// <summary>
     /// Gets lore by category
     /// </summary>
-    public async Task<IReadOnlyList<CodexLoreEntry>> GetLoreByCategoryAsync(
+    public Task<IReadOnlyList<CodexLoreEntry>> GetLoreByCategoryAsync(
         CharacterId characterId,
         LoreCategory category,
         CancellationToken cancellationToken = default)
     {
-        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
-        return codex?.GetLoreByCategory(category).ToList() ?? new List<CodexLoreEntry>();
+        return _queries.DispatchAsync<GetCodexLoreByCategoryQuery, IReadOnlyList<CodexLoreEntry>>(
+            new GetCodexLoreByCategoryQuery { CharacterId = characterId, Category = category }, cancellationToken);
     }
 
     /// <summary>
     /// Searches lore by text
     /// </summary>
-    public async Task<IReadOnlyList<CodexLoreEntry>> SearchLoreAsync(
+    public Task<IReadOnlyList<CodexLoreEntry>> SearchLoreAsync(
         CharacterId characterId,
         string searchTerm,
         CancellationToken cancellationToken = default)
     {
-        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
-        return codex?.SearchLore(searchTerm).ToList() ?? new List<CodexLoreEntry>();
+        return _queries.DispatchAsync<SearchCodexLoreQuery, IReadOnlyList<CodexLoreEntry>>(
+            new SearchCodexLoreQuery { CharacterId = characterId, SearchTerm = searchTerm }, cancellationToken);
     }
 
     #endregion
@@ -113,45 +117,45 @@ public class CodexQueryService
     /// <summary>
     /// Gets all notes for a character
     /// </summary>
-    public async Task<IReadOnlyList<CodexNoteEntry>> GetAllNotesAsync(CharacterId characterId, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<CodexNoteEntry>> GetAllNotesAsync(CharacterId characterId, CancellationToken cancellationToken = default)
     {
-        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
-        return codex?.Notes.ToList() ?? new List<CodexNoteEntry>();
+        return _queries.DispatchAsync<GetCodexNotesQuery, IReadOnlyList<CodexNoteEntry>>(
+            new GetCodexNotesQuery { CharacterId = characterId }, cancellationToken);
     }
 
     /// <summary>
     /// Gets notes by category
     /// </summary>
-    public async Task<IReadOnlyList<CodexNoteEntry>> GetNotesByCategoryAsync(
+    public Task<IReadOnlyList<CodexNoteEntry>> GetNotesByCategoryAsync(
         CharacterId characterId,
         NoteCategory category,
         CancellationToken cancellationToken = default)
     {
-        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
-        return codex?.GetNotesByCategory(category).ToList() ?? new List<CodexNoteEntry>();
+        return _queries.DispatchAsync<GetCodexNotesByCategoryQuery, IReadOnlyList<CodexNoteEntry>>(
+            new GetCodexNotesByCategoryQuery { CharacterId = characterId, Category = category }, cancellationToken);
     }
 
     /// <summary>
     /// Gets DM notes for a character
     /// </summary>
-    public async Task<IReadOnlyList<CodexNoteEntry>> GetDmNotesAsync(
+    public Task<IReadOnlyList<CodexNoteEntry>> GetDmNotesAsync(
         CharacterId characterId,
         CancellationToken cancellationToken = default)
     {
-        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
-        return codex?.GetNotesByCategory(NoteCategory.DmNote).ToList() ?? new List<CodexNoteEntry>();
+        return _queries.DispatchAsync<GetCodexDmNotesQuery, IReadOnlyList<CodexNoteEntry>>(
+            new GetCodexDmNotesQuery { CharacterId = characterId }, cancellationToken);
     }
 
     /// <summary>
     /// Searches notes by text
     /// </summary>
-    public async Task<IReadOnlyList<CodexNoteEntry>> SearchNotesAsync(
+    public Task<IReadOnlyList<CodexNoteEntry>> SearchNotesAsync(
         CharacterId characterId,
         string searchTerm,
         CancellationToken cancellationToken = default)
     {
-        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
-        return codex?.SearchNotes(searchTerm).ToList() ?? new List<CodexNoteEntry>();
+        return _queries.DispatchAsync<SearchCodexNotesQuery, IReadOnlyList<CodexNoteEntry>>(
+            new SearchCodexNotesQuery { CharacterId = characterId, SearchTerm = searchTerm }, cancellationToken);
     }
 
     #endregion
@@ -161,44 +165,44 @@ public class CodexQueryService
     /// <summary>
     /// Gets all faction reputations for a character
     /// </summary>
-    public async Task<IReadOnlyList<FactionReputation>> GetAllReputationsAsync(CharacterId characterId, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<FactionReputation>> GetAllReputationsAsync(CharacterId characterId, CancellationToken cancellationToken = default)
     {
-        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
-        return codex?.Reputations.ToList() ?? new List<FactionReputation>();
+        return _queries.DispatchAsync<GetCodexReputationsQuery, IReadOnlyList<FactionReputation>>(
+            new GetCodexReputationsQuery { CharacterId = characterId }, cancellationToken);
     }
 
     /// <summary>
     /// Gets reputation with a specific faction
     /// </summary>
-    public async Task<FactionReputation?> GetReputationAsync(
+    public Task<FactionReputation?> GetReputationAsync(
         CharacterId characterId,
         FactionId factionId,
         CancellationToken cancellationToken = default)
     {
-        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
-        return codex?.GetReputation(factionId);
+        return _queries.DispatchAsync<GetCodexReputationQuery, FactionReputation?>(
+            new GetCodexReputationQuery { CharacterId = characterId, FactionId = factionId }, cancellationToken);
     }
 
     /// <summary>
     /// Gets all positive faction reputations for a character
     /// </summary>
-    public async Task<IReadOnlyList<FactionReputation>> GetPositiveReputationsAsync(
+    public Task<IReadOnlyList<FactionReputation>> GetPositiveReputationsAsync(
         CharacterId characterId,
         CancellationToken cancellationToken = default)
     {
-        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
-        return codex?.Reputations.Where(r => r.CurrentScore.Value > 0).ToList() ?? new List<FactionReputation>();
+        return _queries.DispatchAsync<GetCodexPositiveReputationsQuery, IReadOnlyList<FactionReputation>>(
+            new GetCodexPositiveReputationsQuery { CharacterId = characterId }, cancellationToken);
     }
 
     /// <summary>
     /// Gets all negative faction reputations for a character
     /// </summary>
-    public async Task<IReadOnlyList<FactionReputation>> GetNegativeReputationsAsync(
+    public Task<IReadOnlyList<FactionReputation>> GetNegativeReputationsAsync(
         CharacterId characterId,
         CancellationToken cancellationToken = default)
     {
-        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
-        return codex?.Reputations.Where(r => r.CurrentScore.Value < 0).ToList() ?? new List<FactionReputation>();
+        return _queries.DispatchAsync<GetCodexNegativeReputationsQuery, IReadOnlyList<FactionReputation>>(
+            new GetCodexNegativeReputationsQuery { CharacterId = characterId }, cancellationToken);
     }
 
     #endregion
@@ -208,34 +212,34 @@ public class CodexQueryService
     /// <summary>
     /// Gets all traits for a character
     /// </summary>
-    public async Task<IReadOnlyList<CodexTraitEntry>> GetAllTraitsAsync(CharacterId characterId, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<CodexTraitEntry>> GetAllTraitsAsync(CharacterId characterId, CancellationToken cancellationToken = default)
     {
-        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
-        return codex?.Traits.ToList() ?? new List<CodexTraitEntry>();
+        return _queries.DispatchAsync<GetCodexTraitsQuery, IReadOnlyList<CodexTraitEntry>>(
+            new GetCodexTraitsQuery { CharacterId = characterId }, cancellationToken);
     }
 
     /// <summary>
     /// Gets traits by category
     /// </summary>
-    public async Task<IReadOnlyList<CodexTraitEntry>> GetTraitsByCategoryAsync(
+    public Task<IReadOnlyList<CodexTraitEntry>> GetTraitsByCategoryAsync(
         CharacterId characterId,
         TraitCategory category,
         CancellationToken cancellationToken = default)
     {
-        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
-        return codex?.GetTraitsByCategory(category).ToList() ?? new List<CodexTraitEntry>();
+        return _queries.DispatchAsync<GetCodexTraitsByCategoryQuery, IReadOnlyList<CodexTraitEntry>>(
+            new GetCodexTraitsByCategoryQuery { CharacterId = characterId, Category = category }, cancellationToken);
     }
 
     /// <summary>
     /// Searches traits by text
     /// </summary>
-    public async Task<IReadOnlyList<CodexTraitEntry>> SearchTraitsAsync(
+    public Task<IReadOnlyList<CodexTraitEntry>> SearchTraitsAsync(
         CharacterId characterId,
         string searchTerm,
         CancellationToken cancellationToken = default)
     {
-        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
-        return codex?.SearchTraits(searchTerm).ToList() ?? new List<CodexTraitEntry>();
+        return _queries.DispatchAsync<SearchCodexTraitsQuery, IReadOnlyList<CodexTraitEntry>>(
+            new SearchCodexTraitsQuery { CharacterId = characterId, SearchTerm = searchTerm }, cancellationToken);
     }
 
     #endregion
@@ -245,34 +249,10 @@ public class CodexQueryService
     /// <summary>
     /// Gets codex statistics
     /// </summary>
-    public async Task<CodexStatistics> GetStatisticsAsync(CharacterId characterId, CancellationToken cancellationToken = default)
+    public Task<CodexStatistics> GetStatisticsAsync(CharacterId characterId, CancellationToken cancellationToken = default)
     {
-        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
-
-        if (codex == null)
-        {
-            return new CodexStatistics(
-                TotalQuests: 0,
-                CompletedQuests: 0,
-                ActiveQuests: 0,
-                TotalLore: 0,
-                TotalNotes: 0,
-                TotalFactions: 0,
-                TotalTraits: 0,
-                LastUpdated: null
-            );
-        }
-
-        return new CodexStatistics(
-            TotalQuests: codex.Quests.Count,
-            CompletedQuests: codex.GetQuestsByState(QuestState.Completed).Count(),
-            ActiveQuests: codex.GetQuestsByState(QuestState.InProgress).Count(),
-            TotalLore: codex.Lore.Count,
-            TotalNotes: codex.Notes.Count,
-            TotalFactions: codex.Reputations.Count,
-            TotalTraits: codex.Traits.Count,
-            LastUpdated: codex.LastUpdated
-        );
+        return _queries.DispatchAsync<GetCodexStatisticsQuery, CodexStatistics>(
+            new GetCodexStatisticsQuery { CharacterId = characterId }, cancellationToken);
     }
 
     #endregion

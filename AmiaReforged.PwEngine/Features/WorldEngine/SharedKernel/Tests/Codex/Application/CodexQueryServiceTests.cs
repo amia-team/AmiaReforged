@@ -2,7 +2,9 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Aggregates;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Infrastructure;
 using NUnit.Framework;
@@ -21,7 +23,32 @@ public class CodexQueryServiceTests
     public void SetUp()
     {
         _repository = new InMemoryPlayerCodexRepository();
-        _queryService = new CodexQueryService(_repository);
+
+        // The query service is a dispatch shim: wire a real dispatcher over the
+        // in-memory repository so these tests exercise the dispatch path (F-6).
+        List<IQueryHandlerMarker> handlers =
+        [
+            new GetCodexQuestsHandler(_repository),
+            new GetCodexQuestsByStateHandler(_repository),
+            new SearchCodexQuestsHandler(_repository),
+            new GetCodexLoreHandler(_repository),
+            new GetCodexLoreByTierHandler(_repository),
+            new GetCodexLoreByCategoryHandler(_repository),
+            new SearchCodexLoreHandler(_repository),
+            new GetCodexNotesHandler(_repository),
+            new GetCodexNotesByCategoryHandler(_repository),
+            new GetCodexDmNotesHandler(_repository),
+            new SearchCodexNotesHandler(_repository),
+            new GetCodexReputationsHandler(_repository),
+            new GetCodexReputationHandler(_repository),
+            new GetCodexPositiveReputationsHandler(_repository),
+            new GetCodexNegativeReputationsHandler(_repository),
+            new GetCodexTraitsHandler(_repository),
+            new GetCodexTraitsByCategoryHandler(_repository),
+            new SearchCodexTraitsHandler(_repository),
+            new GetCodexStatisticsHandler(_repository),
+        ];
+        _queryService = new CodexQueryService(new QueryDispatcher(handlers));
         _characterId = CharacterId.New();
         _codex = new PlayerCodex(_characterId, DateTime.UtcNow);
     }

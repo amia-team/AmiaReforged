@@ -1,6 +1,6 @@
 # CQRS Audit — WorldEngine subsystems
 
-> **Status 2026-09-16 (verified):** F-1 through F-5 are fixed. All 13 domain controllers go
+> **Status 2026-09-16 (verified):** F-1 through F-6 are fixed. All 13 domain controllers go
 > through `IWorldEngineFacade` (`API/Controllers/RouteContextExtensions.cs`);
 > the six F-2 facades/subsystems plus `MineralHarvestStrategy`,
 > `SharedAccountDocumentService`, `PropertyEvictionService`,
@@ -18,16 +18,25 @@
 > `GetNodeState`, harvest ticks→`PerformInteractionCommand` via the interaction
 > framework; `MineralHarvestStrategy` dispatches; `HarvestResourceCommand` retired
 > in favor of `PerformInteractionCommand`);
+> F-6 is fixed (player-state codex commands/queries added — `UnlockLore`,
+> `SetQuestStage`, note add/edit/delete, `AdjustReputation`,
+> `RecordTraitAcquired`, dynamic-quest post/claim/share/unclaim/expire;
+> 19 aggregate-backed `GetCodex*`/`SearchCodex*` queries;
+> `CodexSubsystem` is a pure dispatch wrapper with no repositories/EF;
+> `CodexQueryService` is a dispatch shim; `DynamicQuestService`,
+> `CodexEventProcessor`, `QuestObjectiveResolutionService` are handler-internal);
 > missing admin commands/queries were added (org update/disband,
 > industry/workstation/recipe/node/region/interaction/item/trait/lore/quest/
 > coinhouse/dialogue CRUD, cap profiles, progression config);
 > `IOrganizationRepository.Delete` now exists (EF + in-memory);
-> `ExampleBankingController` (mock data) deleted. Suite: 1896/1896 green,
-> including new `ControllerCqrsTests` + `DefinitionCrudBehavior`
-> (suite not re-run at 2026-09-16 verification; files present).
-> Remaining: F-6 Codex application services, F-7 Characters/Traits/Regions services.
+> `ExampleBankingController` (mock data) deleted. Suite: 1968/1968 green,
+> including new `ControllerCqrsTests` + `DefinitionCrudBehavior` +
+> `CodexPlayerStateBehavior` (8 specs).
+> Remaining: F-7 Characters/Traits/Regions services.
 > Legacy residual: `Subsystems/Organizations/OrganizationSystem.cs` exists
 > (direct-repo `Register`/`SendRequest`/etc., no CQRS) — untouched, out of F-4 scope.
+> Known F-6 response-shape delta: knowledge-entry delete of a missing id now fails
+> with "No lore definition with ID 'x'" (was "Knowledge entry 'x' not found").
 > Known response-shape deltas from the fix: interaction DTOs no longer carry
 > `CreatedAt`/`UpdatedAt`; item PUT with missing body on a missing tag returns
 > 400 instead of 404; org disband now really deletes (previously a no-op
@@ -229,7 +238,25 @@ Fix: wire the subsystem to `ICommandDispatcher`/`IQueryDispatcher` with the exis
 harvest/node commands/queries; make strategies and interaction handlers dispatch
 `HarvestResourceCommand` instead of duplicating it.
 
-## F-6 — Codex: an entire subsystem with (almost) no CQRS
+## F-6 — Codex (FIXED 2026-09-16): player state goes through dispatch
+
+> Fix applied and verified: `UnlockLoreCommand`, `SetQuestStageCommand`
+> (objective resolution stays handler-internal, downstream of advancement —
+> no signal command), `Add/Edit/DeleteNoteCommand`, `AdjustReputationCommand`,
+> `RecordTraitAcquiredCommand`, and dynamic-quest `Post/Claim/Share/Unclaim/
+> ExpireDynamicQuestCommand`s added, each with a handler publishing bus events;
+> `CodexDomainEvent` now implements `IDomainEvent` so handlers can publish.
+> 5 EF-backed knowledge queries + 19 aggregate-backed `GetCodex*`/`SearchCodex*`
+> queries added; `CodexSubsystem` holds only the two dispatchers + `WindowDirector`
+> (zero repositories, zero inline EF); `CodexQueryService` is a dispatch shim
+> (signatures unchanged, presenter/dialogue evaluators untouched);
+> `DynamicQuestService` gained a `ServiceBinding` and is handler-injected
+> (it was unregistered dead code — no callers existed). Suite 1968/1968 green
+> incl. new `CodexPlayerStateBehavior`. Deliberately not added:
+> `RecordCompletionAsync` has no callers (stays a service method).
+> Original finding below for history:
+
+Original finding: an entire subsystem with (almost) no CQRS
 
 Commands in Codex: `OpenCodexCommand`, `CloseCodexCommand` only (window lifecycle).
 Every domain write — lore unlocks, notes, quest sessions, reputation, traits, dynamic

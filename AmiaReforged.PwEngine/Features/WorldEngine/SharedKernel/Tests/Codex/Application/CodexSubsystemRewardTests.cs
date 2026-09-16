@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application.Quests;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Objectives;
@@ -9,8 +10,8 @@ using NUnit.Framework;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Codex.Application;
 
 /// <summary>
-/// Tests for <see cref="CodexSubsystem.GrantFromStageRewardsAsync"/>, verifying that
-/// the SetQuestStageAsync code path correctly grants from-stage rewards.
+/// Tests for <see cref="SetQuestStageHandler.GrantFromStageRewardsAsync"/>, verifying that
+/// the SetQuestStage command path correctly grants from-stage rewards.
 /// </summary>
 [TestFixture]
 public class CodexSubsystemRewardTests
@@ -36,8 +37,8 @@ public class CodexSubsystemRewardTests
             new QuestStage { StageId = 20 });
 
         // Act
-        await CodexSubsystem.GrantFromStageRewardsAsync(
-            _granter, _characterId, _questId, fromStageId: 10, toStageId: 20, entry);
+        await SetQuestStageHandler.GrantFromStageRewardsAsync(
+            _granter, _characterId, _questId, fromStageId: 10, toStageId: 20, entry, eventBus: null, ct: CancellationToken.None);
 
         // Assert
         Assert.That(_granter.Calls, Has.Count.EqualTo(1));
@@ -57,8 +58,8 @@ public class CodexSubsystemRewardTests
             new QuestStage { StageId = 20 });
 
         // Act
-        await CodexSubsystem.GrantFromStageRewardsAsync(
-            _granter, _characterId, _questId, fromStageId: 10, toStageId: 20, entry);
+        await SetQuestStageHandler.GrantFromStageRewardsAsync(
+            _granter, _characterId, _questId, fromStageId: 10, toStageId: 20, entry, eventBus: null, ct: CancellationToken.None);
 
         // Assert
         Assert.That(_granter.Calls, Is.Empty);
@@ -72,8 +73,8 @@ public class CodexSubsystemRewardTests
             new QuestStage { StageId = 10, Rewards = new RewardMix { Xp = 100 } });
 
         // Act — fromStageId == toStageId (idempotent case)
-        await CodexSubsystem.GrantFromStageRewardsAsync(
-            _granter, _characterId, _questId, fromStageId: 10, toStageId: 10, entry);
+        await SetQuestStageHandler.GrantFromStageRewardsAsync(
+            _granter, _characterId, _questId, fromStageId: 10, toStageId: 10, entry, eventBus: null, ct: CancellationToken.None);
 
         // Assert
         Assert.That(_granter.Calls, Is.Empty);
@@ -89,8 +90,8 @@ public class CodexSubsystemRewardTests
 
         // Act & Assert — null granter should no-op
         Assert.DoesNotThrowAsync(async () =>
-            await CodexSubsystem.GrantFromStageRewardsAsync(
-                null, _characterId, _questId, fromStageId: 10, toStageId: 20, entry));
+            await SetQuestStageHandler.GrantFromStageRewardsAsync(
+                null, _characterId, _questId, fromStageId: 10, toStageId: 20, entry, eventBus: null, ct: CancellationToken.None));
     }
 
     [Test]
@@ -101,8 +102,8 @@ public class CodexSubsystemRewardTests
             new QuestStage { StageId = 20 });
 
         // Act
-        await CodexSubsystem.GrantFromStageRewardsAsync(
-            _granter, _characterId, _questId, fromStageId: 10, toStageId: 20, entry);
+        await SetQuestStageHandler.GrantFromStageRewardsAsync(
+            _granter, _characterId, _questId, fromStageId: 10, toStageId: 20, entry, eventBus: null, ct: CancellationToken.None);
 
         // Assert
         Assert.That(_granter.Calls, Is.Empty);
@@ -117,8 +118,8 @@ public class CodexSubsystemRewardTests
             new QuestStage { StageId = 20 });
 
         // Act
-        await CodexSubsystem.GrantFromStageRewardsAsync(
-            _granter, _characterId, _questId, fromStageId: 10, toStageId: 20, entry);
+        await SetQuestStageHandler.GrantFromStageRewardsAsync(
+            _granter, _characterId, _questId, fromStageId: 10, toStageId: 20, entry, eventBus: null, ct: CancellationToken.None);
 
         // Assert
         Assert.That(_granter.Calls, Has.Count.EqualTo(1));
@@ -141,8 +142,8 @@ public class CodexSubsystemRewardTests
             new QuestStage { StageId = 20 });
 
         // Act
-        await CodexSubsystem.GrantFromStageRewardsAsync(
-            _granter, _characterId, _questId, fromStageId: 10, toStageId: 20, entry);
+        await SetQuestStageHandler.GrantFromStageRewardsAsync(
+            _granter, _characterId, _questId, fromStageId: 10, toStageId: 20, entry, eventBus: null, ct: CancellationToken.None);
 
         // Assert
         Assert.That(_granter.Calls, Has.Count.EqualTo(1));

@@ -22,6 +22,9 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Applicatio
 /// and enqueues resulting domain events into <see cref="CodexEventProcessor"/>.
 /// Also manages session lifecycle: creating sessions on login and quest start,
 /// tearing them down on logout and quest completion.
+/// Handler-internal implementation detail: game code reaches this only via the
+/// <c>SetQuestStageCommand</c> handler and the dialogue-entry event handler
+/// (F-6 audit — resolution is always downstream of quest advancement).
 /// </summary>
 [ServiceBinding(typeof(QuestObjectiveResolutionService))]
 public sealed class QuestObjectiveResolutionService
