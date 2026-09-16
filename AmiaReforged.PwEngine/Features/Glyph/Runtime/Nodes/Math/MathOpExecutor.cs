@@ -6,21 +6,16 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Math;
 /// Performs a basic arithmetic operation on two numeric values.
 /// Supports +, -, *, / operators.
 /// </summary>
-public class MathOpExecutor : IGlyphNodeExecutor
+public sealed class MathOpExecutor : GlyphPureNode
 {
     public const string NodeTypeId = "math.math_op";
-    public string TypeId => NodeTypeId;
+    public override string TypeId => NodeTypeId;
 
-    public async Task<GlyphNodeResult> ExecuteAsync(
-        GlyphNodeInstance node, GlyphExecutionContext context, Func<string, Task<object?>> resolveInput)
+    protected override async Task<Dictionary<string, object?>> RunPureAsync(GlyphNodeContext cx)
     {
-        object? aValue = await resolveInput("a");
-        object? bValue = await resolveInput("b");
-        object? opValue = await resolveInput("operator");
-
-        double a = Convert.ToDouble(aValue);
-        double b = Convert.ToDouble(bValue);
-        string op = opValue?.ToString() ?? "+";
+        double a = await cx.InFloat("a");
+        double b = await cx.InFloat("b");
+        string op = await cx.InString("operator", "+");
 
         double result = op switch
         {
@@ -32,13 +27,13 @@ public class MathOpExecutor : IGlyphNodeExecutor
             _ => 0
         };
 
-        return GlyphNodeResult.Data(new Dictionary<string, object?>
+        return new Dictionary<string, object?>
         {
             ["result"] = result
-        });
+        };
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public override GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
         DisplayName = "Math Op",
@@ -47,13 +42,13 @@ public class MathOpExecutor : IGlyphNodeExecutor
         ColorClass = "node-math",
         InputPins =
         [
-            new GlyphPin { Id = "a", Name = "A", DataType = GlyphDataType.Float, Direction = GlyphPinDirection.Input, DefaultValue = "0" },
-            new GlyphPin { Id = "b", Name = "B", DataType = GlyphDataType.Float, Direction = GlyphPinDirection.Input, DefaultValue = "0" },
-            new GlyphPin { Id = "operator", Name = "Operator", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input, DefaultValue = "+" }
+            Pins.InFloat("a", "A"),
+            Pins.InFloat("b", "B"),
+            Pins.InString("operator", "Operator", "+"),
         ],
         OutputPins =
         [
-            new GlyphPin { Id = "result", Name = "Result", DataType = GlyphDataType.Float, Direction = GlyphPinDirection.Output }
+            Pins.Out("result", "Result", GlyphDataType.Float),
         ]
     };
 }

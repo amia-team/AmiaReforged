@@ -1,6 +1,6 @@
 # CQRS Audit — WorldEngine subsystems
 
-> **Status 2026-09-14:** F-1 and F-2 are fixed. All 13 domain controllers go
+> **Status 2026-09-16 (verified):** F-1 through F-5 are fixed. All 13 domain controllers go
 > through `IWorldEngineFacade` (`API/Controllers/RouteContextExtensions.cs`);
 > the six F-2 facades/subsystems plus `MineralHarvestStrategy`,
 > `SharedAccountDocumentService`, `PropertyEvictionService`,
@@ -10,14 +10,24 @@
 > (`EnrollInIndustryCommand`, `LearnRecipeCommand`, `GetRecipeQuery`,
 > `GetMembershipQuery`, `GetCharacterIndustriesQuery`, `GetKnownRecipesQuery` added;
 > `IndustrySubsystem` is a pure dispatch wrapper with no repositories);
+> F-4 is fixed (org update/disband commands with handlers and dispatch,
+> `RemoveMemberAsync` / `UpdateMemberRankAsync` take explicit `actedBy`,
+> `DELETE members/{id}` accepts `?actedBy=`);
+> F-5 is fixed (`HarvestingSubsystem` is a thin dispatch wrapper:
+> despawn→`DestroyNodeCommand`, reads→`GetNodeById`/`GetNodesForArea`/
+> `GetNodeState`, harvest ticks→`PerformInteractionCommand` via the interaction
+> framework; `MineralHarvestStrategy` dispatches; `HarvestResourceCommand` retired
+> in favor of `PerformInteractionCommand`);
 > missing admin commands/queries were added (org update/disband,
 > industry/workstation/recipe/node/region/interaction/item/trait/lore/quest/
 > coinhouse/dialogue CRUD, cap profiles, progression config);
 > `IOrganizationRepository.Delete` now exists (EF + in-memory);
 > `ExampleBankingController` (mock data) deleted. Suite: 1896/1896 green,
-> including new `ControllerCqrsTests` + `DefinitionCrudBehavior`.
-> Remaining: F-5 `HarvestingSubsystem`
-> stub, F-6 Codex application services, F-7 Characters/Traits/Regions services.
+> including new `ControllerCqrsTests` + `DefinitionCrudBehavior`
+> (suite not re-run at 2026-09-16 verification; files present).
+> Remaining: F-6 Codex application services, F-7 Characters/Traits/Regions services.
+> Legacy residual: `Subsystems/Organizations/OrganizationSystem.cs` exists
+> (direct-repo `Register`/`SendRequest`/etc., no CQRS) — untouched, out of F-4 scope.
 > Known response-shape deltas from the fix: interaction DTOs no longer carry
 > `CreatedAt`/`UpdatedAt`; item PUT with missing body on a missing tag returns
 > 400 instead of 404; org disband now really deletes (previously a no-op
@@ -154,10 +164,11 @@ through the dispatchers.
 > impl) take `CharacterId? actedBy = null`, passed through to `RemovedBy` /
 > `ChangedBy` (default preserves self-semantics). `DELETE members/{id}` accepts
 > `?actedBy=` (asserted, not verified — admin API has no auth; absent/invalid →
-> self). `UpdateOrganizationCommand` / `DisbandOrganizationCommand` already
+> `UpdateOrganizationCommand` / `DisbandOrganizationCommand` already
 > existed with handlers and dispatch; `OrganizationDisbandedEvent` publishes.
-> `Subsystems/Organizations/OrganizationSystem.cs` referenced by the original
-> audit does not exist — no action. Deliberately no silent system bypass in
+> Correction 2026-09-16: `Subsystems/Organizations/OrganizationSystem.cs`
+> DOES exist (legacy direct-repo `Register`/`SendRequest`/etc., no command
+> layer) — left untouched as out of F-4 scope. Deliberately no silent system bypass in
 > `ChangeRankHandler`. Original finding below for history:
 
 Original finding: direct repo mutation; missing disband command; self-as-actor
@@ -184,7 +195,21 @@ Fix: add `UpdateOrganizationCommand` + `DisbandOrganizationCommand` (with reposi
 `Delete` — noted `TODO` in `OrganizationController.cs:220`); pass caller identity
 through command fields instead of defaulting to self.
 
-## F-5 — `HarvestingSubsystem`: stub facade while real logic lives outside CQRS reach
+## F-5 — `HarvestingSubsystem` (FIXED 2026-09-16): thin dispatch wrapper
+
+> Fix applied and verified: `HarvestingSubsystem` injects `ICommandDispatcher` /
+> `IQueryDispatcher` (no stub methods except documented no-backing-store cases:
+> `SpawnResourceNodeAsync` honestly fails, history/last-harvest return empty/null).
+> Despawn→`DestroyNodeCommand`; placeable-bound reads→`GetNodeByIdQuery` /
+> `GetNodesForAreaQuery`; `HarvestResourceAsync`→`PerformInteractionCommand`
+> (one tick per call); `CanHarvestAsync`→`GetNodeStateQuery`.
+> `MineralHarvestStrategy` dispatches `PerformInteractionCommand` per attack.
+> `HarvestInteractionHandler` is an `IInteractionHandler` owning tool-check/tick/
+> yield (not a dispatch bypass). Deviation from the original fix text:
+> `HarvestResourceCommand` was retired in favor of `PerformInteractionCommand`
+> rather than dispatched. Original finding below for history:
+
+Original finding: stub facade while real logic lived outside CQRS reach
 
 - `Subsystems/Implementations/HarvestingSubsystem.cs` — every method returns
   `Fail("Not yet implemented")`, `null`, or empty lists, yet a complete

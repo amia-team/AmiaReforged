@@ -7,27 +7,20 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 /// Action node that sends a text message to a creature via a specified channel.
 /// Supports server messages, floating text, and shout.
 /// </summary>
-public class SendMessageExecutor : IGlyphNodeExecutor
+public sealed class SendMessageExecutor : GlyphActionNode
 {
     public const string NodeTypeId = "action.send_message";
 
-    public string TypeId => NodeTypeId;
+    public override string TypeId => NodeTypeId;
 
-    public async Task<GlyphNodeResult> ExecuteAsync(
-        GlyphNodeInstance node,
-        GlyphExecutionContext context,
-        Func<string, Task<object?>> resolveInput)
+    protected override async Task RunActionAsync(GlyphNodeContext cx)
     {
-        object? creatureValue = await resolveInput("creature");
-        object? messageValue = await resolveInput("message");
-        object? channelValue = await resolveInput("channel");
-
-        uint creature = Convert.ToUInt32(creatureValue);
-        string message = messageValue?.ToString() ?? string.Empty;
-        string channel = channelValue?.ToString() ?? "server";
+        uint creature = await cx.InObject("creature");
+        string message = await cx.InString("message");
+        string channel = await cx.InString("channel", "server");
 
         if (creature == NWScript.OBJECT_INVALID || string.IsNullOrEmpty(message))
-            return GlyphNodeResult.Continue("exec_out");
+            return;
 
         switch (channel.ToLowerInvariant())
         {
@@ -44,11 +37,9 @@ public class SendMessageExecutor : IGlyphNodeExecutor
                 NWScript.SendMessageToPC(creature, message);
                 break;
         }
-
-        return GlyphNodeResult.Continue("exec_out");
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public override GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
         DisplayName = "Send Message",
@@ -60,14 +51,14 @@ public class SendMessageExecutor : IGlyphNodeExecutor
         ScriptCategory = GlyphScriptCategory.Interaction,
         InputPins =
         [
-            new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "creature", Name = "Creature", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "message", Name = "Message", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "channel", Name = "Channel", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input, DefaultValue = "server" }
+            Pins.ExecIn(),
+            Pins.InObject("creature", "Creature"),
+            Pins.In("message", "Message", GlyphDataType.String),
+            Pins.InString("channel", "Channel", "server"),
         ],
         OutputPins =
         [
-            new GlyphPin { Id = "exec_out", Name = "Then", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output }
+            Pins.ExecOut("exec_out", "Then"),
         ]
     };
 }

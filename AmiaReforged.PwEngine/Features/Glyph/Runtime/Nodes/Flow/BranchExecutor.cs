@@ -6,27 +6,22 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Flow;
 /// Branch node — the Glyph equivalent of an if/else statement.
 /// Evaluates a boolean condition input and follows either the True or False Exec output.
 /// </summary>
-public class BranchExecutor : IGlyphNodeExecutor
+public sealed class BranchExecutor : GlyphNodeBase
 {
     public const string NodeTypeId = "flow.branch";
 
-    public string TypeId => NodeTypeId;
+    public override string TypeId => NodeTypeId;
 
-    public async Task<GlyphNodeResult> ExecuteAsync(
-        GlyphNodeInstance node,
-        GlyphExecutionContext context,
-        Func<string, Task<object?>> resolveInput)
+    public override async Task<GlyphNodeResult> RunAsync(GlyphNodeContext cx)
     {
-        object? conditionValue = await resolveInput("condition");
-        bool condition = Convert.ToBoolean(conditionValue);
-
+        bool condition = await cx.InBool("condition");
         return GlyphNodeResult.Continue(condition ? "true" : "false");
     }
 
     /// <summary>
     /// Creates the node definition for registration in the registry.
     /// </summary>
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public override GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = NodeTypeId,
         DisplayName = "Branch",
@@ -36,13 +31,13 @@ public class BranchExecutor : IGlyphNodeExecutor
         Archetype = GlyphNodeArchetype.FlowControl,
         InputPins =
         [
-            new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "condition", Name = "Condition", DataType = GlyphDataType.Bool, Direction = GlyphPinDirection.Input, DefaultValue = "false" }
+            Pins.ExecIn(),
+            Pins.InBool("condition", "Condition"),
         ],
         OutputPins =
         [
-            new GlyphPin { Id = "true", Name = "True", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "false", Name = "False", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output }
+            Pins.ExecOut("true", "True"),
+            Pins.ExecOut("false", "False"),
         ]
     };
 }
