@@ -18,7 +18,10 @@ public abstract class GlyphNodeBase : IGlyphNodeExecutor
     /// </summary>
     public abstract Task<GlyphNodeResult> RunAsync(GlyphNodeContext cx);
 
-    Task<GlyphNodeResult> IGlyphNodeExecutor.ExecuteAsync(
+    /// <summary>
+    /// Public (not explicit) so tests and tools can invoke concrete node types directly.
+    /// </summary>
+    public Task<GlyphNodeResult> ExecuteAsync(
         GlyphNodeInstance node,
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput) =>
