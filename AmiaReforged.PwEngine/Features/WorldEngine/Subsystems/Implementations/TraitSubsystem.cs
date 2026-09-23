@@ -1,6 +1,7 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Effects;
 using Anvil.Services;
 using DomainCharacterTrait = AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.CharacterTrait;
@@ -14,13 +15,16 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Implementations;
 [ServiceBinding(typeof(ITraitSubsystem))]
 public sealed class TraitSubsystem : ITraitSubsystem
 {
+    private readonly ICommandDispatcher _commandDispatcher;
     private readonly ITraitRepository _traitRepository;
     private readonly ICharacterTraitRepository _characterTraitRepository;
 
     public TraitSubsystem(
+        ICommandDispatcher commandDispatcher,
         ITraitRepository traitRepository,
         ICharacterTraitRepository characterTraitRepository)
     {
+        _commandDispatcher = commandDispatcher;
         _traitRepository = traitRepository;
         _characterTraitRepository = characterTraitRepository;
     }
@@ -41,28 +45,8 @@ public sealed class TraitSubsystem : ITraitSubsystem
 
     public Task<CommandResult> GrantTraitAsync(CharacterId characterId, TraitTag traitTag, CancellationToken ct = default)
     {
-        Trait? trait = _traitRepository.Get(traitTag);
-        if (trait == null)
-            return Task.FromResult(CommandResult.Fail($"Trait '{traitTag.Value}' does not exist."));
-
-        // Check if character already has this trait
-        List<DomainCharacterTrait> existing = _characterTraitRepository.GetByCharacterId(characterId);
-        if (existing.Any(ct2 => ct2.TraitTag == traitTag))
-            return Task.FromResult(CommandResult.Fail($"Character already has trait '{trait.Name}'."));
-
-        DomainCharacterTrait characterTrait = new DomainCharacterTrait
-        {
-            Id = Guid.NewGuid(),
-            CharacterId = characterId,
-            TraitTag = traitTag,
-            DateAcquired = DateTime.UtcNow,
-            IsConfirmed = true,
-            IsActive = true,
-            IsUnlocked = trait.RequiresUnlock
-        };
-
-        _characterTraitRepository.Add(characterTrait);
-        return Task.FromResult(CommandResult.Ok());
+        GrantTraitCommand command = new(characterId, traitTag);
+        return _commandDispatcher.DispatchAsync(command, ct);
     }
 
     public Task<CommandResult> RemoveTraitAsync(CharacterId characterId, TraitTag traitTag, CancellationToken ct = default)

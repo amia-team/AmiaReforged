@@ -16,6 +16,8 @@ public sealed class InMemoryCharacterRepository : ICharacterRepository
 
     public List<ICharacter> AddedCharacters { get; } = new();
 
+    public List<Guid> DeletedIds { get; } = new();
+
     public void Add(ICharacter character)
     {
         _characters.TryAdd(character.GetId(), character);
@@ -40,5 +42,6 @@ public sealed class InMemoryCharacterRepository : ICharacterRepository
     public void DeleteById(Guid characterId)
     {
         _characters.Remove(characterId);
+        DeletedIds.Add(characterId);
     }
 }

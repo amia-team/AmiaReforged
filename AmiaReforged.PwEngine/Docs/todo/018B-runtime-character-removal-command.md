@@ -1,6 +1,6 @@
 # 018B — Add runtime character removal command
 
-Status: **Open**
+Status: **Done**
 Type: **Implementation**
 Audit area: **F-7 Characters**
 Depends on: None.
