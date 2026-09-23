@@ -8,9 +8,6 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Application;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Application.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Application.Queries;
-using Anvil;
-using Microsoft.EntityFrameworkCore;
-using NLog;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.API.Controllers;
 
@@ -20,7 +17,6 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.API.Controllers;
 /// </summary>
 public class DialogueController
 {
-    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private const string BasePath = "/api/worldengine/dialogue";
 
     private static readonly JsonSerializerOptions JsonOpts = new()
@@ -143,9 +139,6 @@ public class DialogueController
                 new ErrorResponse(conflict ? "Conflict" : "Command failed", result.ErrorMessage));
         }
 
-        // Dynamically register matching NPCs for conversation hook
-        await TryRegisterNpcsAsync(entity.SpeakerTag, entity.DialogueTreeId);
-
         PersistedDialogueTree? created = await facade.QueryAsync<GetDialogueTreeQuery, PersistedDialogueTree?>(
             new GetDialogueTreeQuery { DialogueTreeId = entity.DialogueTreeId }, ctx.CancellationToken);
 
@@ -191,9 +184,6 @@ public class DialogueController
                 notFound ? "Not found" : "Command failed", result.ErrorMessage));
         }
 
-        // Re-register NPCs — hook resolves old tag from its internal registry
-        await TryUpdateNpcRegistrationAsync(dialogueTreeId, entity.SpeakerTag);
-
         PersistedDialogueTree? updated = await facade.QueryAsync<GetDialogueTreeQuery, PersistedDialogueTree?>(
             new GetDialogueTreeQuery { DialogueTreeId = dialogueTreeId }, ctx.CancellationToken);
 
@@ -223,79 +213,12 @@ public class DialogueController
                 "Not found", result.ErrorMessage));
         }
 
-        // Unregister NPCs before deleting the tree (by treeId — only affects NPCs owned by this tree)
-        await TryUnregisterNpcsAsync(dialogueTreeId);
-
         return new ApiResult(204, new { message = "Deleted" });
     }
 
     // ═══════════════════════════════════════════════════════════════════
     //  Helpers
     // ═══════════════════════════════════════════════════════════════════
-
-    // ═══════════════════════════════════════════════════════════════════
-    //  Dynamic NPC registration helpers
-    // ═══════════════════════════════════════════════════════════════════
-
-    private static async Task TryRegisterNpcsAsync(string? speakerTag, string dialogueTreeId)
-    {
-        if (string.IsNullOrWhiteSpace(speakerTag)) return;
-        try
-        {
-            DialogueNpcHook? hook = AnvilCore.GetService<DialogueNpcHook>();
-            if (hook == null)
-            {
-                Log.Warn("DialogueNpcHook service not available — skipping NPC registration");
-                return;
-            }
-
-            int count = await hook.RegisterNpcsForTreeAsync(speakerTag, dialogueTreeId);
-            Log.Info("Registered {Count} NPCs with tag '{Tag}' for dialogue tree '{TreeId}'",
-                count, speakerTag, dialogueTreeId);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Failed to dynamically register NPCs for tag '{Tag}'", speakerTag);
-        }
-    }
-
-    private static async Task TryUnregisterNpcsAsync(string dialogueTreeId)
-    {
-        if (string.IsNullOrWhiteSpace(dialogueTreeId)) return;
-        try
-        {
-            DialogueNpcHook? hook = AnvilCore.GetService<DialogueNpcHook>();
-            if (hook == null) return;
-
-            int count = await hook.UnregisterNpcsForTreeAsync(dialogueTreeId);
-            Log.Info("Unregistered {Count} NPCs for tree '{TreeId}'", count, dialogueTreeId);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Failed to dynamically unregister NPCs for tree '{TreeId}'", dialogueTreeId);
-        }
-    }
-
-    private static async Task TryUpdateNpcRegistrationAsync(
-        string dialogueTreeId, string? newSpeakerTag)
-    {
-        try
-        {
-            DialogueNpcHook? hook = AnvilCore.GetService<DialogueNpcHook>();
-            if (hook == null) return;
-
-            (int unregistered, int registered) = await hook.UpdateNpcRegistrationAsync(
-                dialogueTreeId, newSpeakerTag);
-
-            Log.Info(
-                "Updated NPC registration for tree '{TreeId}': unregistered {Unregistered}, registered {Registered} (new tag '{NewTag}')",
-                dialogueTreeId, unregistered, registered, newSpeakerTag);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Failed to update NPC registration for tree '{TreeId}'", dialogueTreeId);
-        }
-    }
 
     private static string? ValidateDto(DialogueTreeDto dto)
     {

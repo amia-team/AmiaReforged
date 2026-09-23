@@ -22,9 +22,22 @@ public sealed record CommandResult
         new() { Success = false, ErrorMessage = errorMessage };
 
     /// <summary>
+    /// Creates a failed command result with an error message and result data.
+    /// The data is preserved on the result so callers can map the outcome.
+    /// </summary>
+    public static CommandResult Fail(string errorMessage, Dictionary<string, object> data) =>
+        new() { Success = false, ErrorMessage = errorMessage, Data = data };
+
+    /// <summary>
     /// Creates a successful command result with a single data value.
     /// </summary>
     public static CommandResult OkWith(string key, object value) =>
         new() { Success = true, Data = new Dictionary<string, object> { [key] = value } };
+
+    /// <summary>
+    /// Creates a successful command result with supplied result data.
+    /// </summary>
+    public static CommandResult OkWithData(Dictionary<string, object> data) =>
+        new() { Success = true, Data = data };
 }
 
