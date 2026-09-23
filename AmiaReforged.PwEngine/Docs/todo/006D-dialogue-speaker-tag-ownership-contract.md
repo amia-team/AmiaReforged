@@ -1,6 +1,6 @@
 # 006D — Decide shared dialogue SpeakerTag ownership semantics
 
-Status: **Open**
+Status: **Deferred**
 Type: **Decision and contract**
 Audit area: **F-1**
 Depends on: None.
@@ -60,13 +60,7 @@ This ambiguity becomes important when:
 - event delivery order differs from edit order;
 - module-load registration rebuilds the runtime state.
 
-## Required decision
-
-Choose one of the following contracts, or document another explicit contract with equivalent precision.
-
----
-
-## Option A — SpeakerTag is exclusive
+## Invariant A — SpeakerTag is exclusive
 
 Rule:
 
@@ -82,92 +76,13 @@ Consequences:
 
 This is the simplest runtime model.
 
-### Questions to answer if choosing A
-
-1. Is comparison case-insensitive?
-2. Are null/empty tags exempt?
-3. Where is user-facing conflict validation performed?
+1. Comparison is case-sensitive
+2. Null/empty tags are invalid
 4. Is database uniqueness added in this task or a follow-up?
-5. What HTTP status should duplicate ownership map to?
-6. How is existing duplicate data detected/migrated?
+5. What HTTP status should duplicate ownership map to: 409
 
----
 
-## Option B — SpeakerTag may be shared
 
-Rule:
-
-> Multiple dialogue trees may claim the same NPC tag.
-
-This requires a deterministic winner/precedence contract because each NPC's:
-
-```text
-we_dialogue_tree
-```
-
-can contain only one tree ID.
-
-### Required sub-decisions if choosing B
-
-You must define all of these:
-
-1. Which tree wins when multiple trees claim the tag?
-   - newest updated;
-   - oldest created;
-   - lexical tree ID;
-   - explicit priority field;
-   - another deterministic rule.
-
-2. What happens when the winning tree is deleted?
-
-3. What happens when the winning tree changes to another tag?
-
-4. What happens when a non-winning tree is deleted?
-
-5. What happens at module load when all trees are read from the database?
-
-6. Is event ordering allowed to determine the winner?
-   - If yes, document that explicitly.
-   - If no, the synchronizer must resolve authoritative state rather than relying on arrival order.
-
-7. Must the hook remain installed while at least one tree claims the tag?
-
-8. Which tree ID should be restamped onto existing NPCs when ownership falls back?
-
-Without answers to these questions, "delete removes only bindings owned by the deleted tree" is not sufficiently defined.
-
----
-
-## Option C — Shared tag means shared dialogue selection
-
-This would require a larger feature where a speaker tag maps to multiple trees and conversation start chooses among them.
-
-This is **not** the current implementation.
-
-Choose this only if the product actually intends multi-dialogue NPC dispatch. It requires a separate design task and should not be smuggled into 006.
-
-## Files to inspect before deciding
-
-```text
-AmiaReforged.PwEngine/
-  Database/
-    Entities/PersistedDialogueTree.cs
-    EntityConfig/DialogueTreeConfiguration.cs
-  Features/WorldEngine/
-    Subsystems/Dialogue/
-      Application/DialogueNpcHook.cs
-      Application/Commands/DialogueTreeCommands.cs
-```
-
-Also search for all `SpeakerTag` consumers:
-
-```sh
-grep -Rni "SpeakerTag" \
-  AmiaReforged.PwEngine/Features/WorldEngine \
-  AmiaReforged.PwEngine/Database
-```
-
-Do not make the decision based only on the controller.
 
 ## Required written contract
 

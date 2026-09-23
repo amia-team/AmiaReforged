@@ -1,6 +1,6 @@
 # 006E — Verify dialogue NPC synchronization end-to-end
 
-Status: **Open**
+Status: **Deferred**
 Type: **Verification**
 Audit area: **F-1**
 Depends on: **006B, 006C, 006D**
