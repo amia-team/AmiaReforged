@@ -1,6 +1,7 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Queries;
@@ -28,6 +29,11 @@ public record GetRecipeTemplatesByIndustryQuery : IQuery<List<RecipeTemplate>>
 {
     public required IndustryTag IndustryTag { get; init; }
 }
+
+/// <summary>
+/// Gets the concrete recipes expanded from a specific recipe template by tag.
+/// </summary>
+public sealed record GetExpandedRecipesQuery(string TemplateTag) : IQuery<List<Recipe>>;
 
 [ServiceBinding(typeof(IQueryHandler<GetRecipeTemplateQuery, RecipeTemplate?>))]
 public sealed class GetRecipeTemplateHandler : IQueryHandler<GetRecipeTemplateQuery, RecipeTemplate?>
@@ -81,5 +87,22 @@ public sealed class GetRecipeTemplatesByIndustryHandler : IQueryHandler<GetRecip
     public Task<List<RecipeTemplate>> HandleAsync(GetRecipeTemplatesByIndustryQuery query, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(_repository.GetByIndustry(query.IndustryTag));
+    }
+}
+
+[ServiceBinding(typeof(IQueryHandler<GetExpandedRecipesQuery, List<Recipe>>))]
+public sealed class GetExpandedRecipesQueryHandler : IQueryHandler<GetExpandedRecipesQuery, List<Recipe>>
+{
+    private readonly RecipeTemplateExpander _expander;
+
+    public GetExpandedRecipesQueryHandler(RecipeTemplateExpander expander)
+    {
+        _expander = expander;
+    }
+
+    public Task<List<Recipe>> HandleAsync(GetExpandedRecipesQuery query, CancellationToken cancellationToken = default)
+    {
+        List<Recipe> expanded = _expander.GetExpandedRecipesForTemplate(query.TemplateTag);
+        return Task.FromResult(expanded);
     }
 }

@@ -105,9 +105,11 @@ public class RecipeTemplateController
     public static async Task<ApiResult> GetExpanded(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        RecipeTemplateExpander expander = ResolveExpander();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        List<Recipe> expandedRecipes = expander.GetExpandedRecipesForTemplate(tag);
+        List<Recipe> expandedRecipes = await facade.QueryAsync<GetExpandedRecipesQuery, List<Recipe>>(
+            new GetExpandedRecipesQuery(tag), ctx.CancellationToken);
 
         return await Task.FromResult(new ApiResult(200, new
         {

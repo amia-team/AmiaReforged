@@ -1,11 +1,13 @@
 using AmiaReforged.PwEngine.Features.WorldEngine;
 using AmiaReforged.PwEngine.Features.WorldEngine.Application.Items.Queries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Application.Organizations.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Application.Organizations.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Organizations;
 using Moq;
 using NLog;
@@ -44,6 +46,16 @@ public class ControllerCqrsTests
 
     private Task<ApiResult?> DispatchAsync(string method, string path) =>
         _routeTable.DispatchAsync(method, path, null!, CancellationToken.None, _services);
+
+    private static Recipe MakeRecipe(string recipeId) => new()
+    {
+        RecipeId = new RecipeId(recipeId),
+        Name = recipeId,
+        Description = string.Empty,
+        IndustryTag = new IndustryTag("smithing"),
+        Ingredients = [],
+        Products = []
+    };
 
     private static ItemBlueprint Blueprint(string tag) => new(
         tag, tag, $"Name {tag}", $"Desc {tag}",
@@ -99,6 +111,41 @@ public class ControllerCqrsTests
         _facadeMock.Verify(f => f.QueryAsync<GetExpandedItemDefinitionsQuery, List<ItemBlueprint>>(
             It.Is<GetExpandedItemDefinitionsQuery>(q => q.TemplateTag == tag),
             It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task RecipeTemplateController_GetExpanded_WhenCalled_DispatchesTemplateTagThroughQuery()
+    {
+        const string tag = "wpn_sword_template";
+        _routeTable.ScanType(typeof(Controllers.RecipeTemplateController));
+        _facadeMock
+            .Setup(f => f.QueryAsync<GetExpandedRecipesQuery, List<Recipe>>(
+                It.IsAny<GetExpandedRecipesQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Recipe> { MakeRecipe($"{tag}_wood") });
+
+        ApiResult? result = await DispatchAsync("GET", $"/api/worldengine/recipe-templates/{tag}/expanded");
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.StatusCode, Is.EqualTo(200));
+        _facadeMock.Verify(f => f.QueryAsync<GetExpandedRecipesQuery, List<Recipe>>(
+            It.Is<GetExpandedRecipesQuery>(q => q.TemplateTag == tag),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task RecipeTemplateController_GetExpanded_WhenMissing_Returns200WithEmptyRecipes()
+    {
+        const string tag = "nonexistent_template";
+        _routeTable.ScanType(typeof(Controllers.RecipeTemplateController));
+        _facadeMock
+            .Setup(f => f.QueryAsync<GetExpandedRecipesQuery, List<Recipe>>(
+                It.IsAny<GetExpandedRecipesQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Recipe>());
+
+        ApiResult? result = await DispatchAsync("GET", $"/api/worldengine/recipe-templates/{tag}/expanded");
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.StatusCode, Is.EqualTo(200));
     }
 
     [Test]

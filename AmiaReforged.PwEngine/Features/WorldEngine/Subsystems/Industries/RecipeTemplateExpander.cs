@@ -107,7 +107,7 @@ public class RecipeTemplateExpander
     /// <summary>
     /// Gets all expanded concrete recipes from a specific template.
     /// </summary>
-    public List<Recipe> GetExpandedRecipesForTemplate(string templateTag)
+    public virtual List<Recipe> GetExpandedRecipesForTemplate(string templateTag)
     {
         EnsureExpanded();
         return _expandedByTemplate.GetValueOrDefault(templateTag, []);
