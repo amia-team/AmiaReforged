@@ -1,6 +1,6 @@
 # 005 — Remove the dialogue controller's concrete handler lookup
 
-Status: **Open**
+Status: **Done**
 Type: **Implementation**
 Audit area: **F-1 / F-2**
 Depends on: None.
@@ -29,4 +29,3 @@ Have the store-cache owner react to successful dialogue-definition changes throu
 Record the chosen behavior (if a decision), changed files, exact verification command or manual procedure, and observed result here. If deferred or not applicable, link the deciding task and explain why.
 
 See [backlog scope and completion rules](README.md).
-

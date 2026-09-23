@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Domain.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Domain.Enums;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using Anvil.API;
 using Anvil.Services;
 using NLog;
@@ -15,7 +16,11 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Applica
 /// </summary>
 [ServiceBinding(typeof(ICommandHandlerMarker))]
 [ServiceBinding(typeof(ExecuteDialogueActionHandler))]
-public sealed class ExecuteDialogueActionHandler : ICommandHandler<ExecuteDialogueActionCommand>
+public sealed class ExecuteDialogueActionHandler
+    : ICommandHandler<ExecuteDialogueActionCommand>,
+      IEventHandler<CommandExecutedEvent<UpdateDialogueTreeCommand>>,
+      IEventHandler<CommandExecutedEvent<DeleteDialogueTreeCommand>>,
+      IEventHandlerMarker
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -23,7 +28,13 @@ public sealed class ExecuteDialogueActionHandler : ICommandHandler<ExecuteDialog
     /// Cached store references keyed by NPC ObjectId.
     /// Stores the resref, tag, and NwStore reference so repeated opens skip the
     /// <c>GetNearestObjectsByType</c> scan and avoid re-creating the store object.
-    /// Cleared when a dialogue tree is updated or deleted via the admin panel.
+    /// Cleared when a dialogue tree is updated or deleted via the admin panel. The clear is
+    /// triggered asynchronously by the <see cref="CommandExecutedEvent{UpdateDialogueTreeCommand}"/>
+    /// and <see cref="CommandExecutedEvent{DeleteDialogueTreeCommand}"> domain events that the
+    /// command dispatcher publishes for successful mutations (see the two
+    /// <c>HandleAsync</c> event callbacks below). A successful HTTP response therefore does not
+    /// guarantee the cache has been cleared yet — it is cleared once the event subscriber
+    /// completes on the background event-bus thread.
     /// </summary>
     private readonly ConcurrentDictionary<uint, CachedStore> _storeCache = new();
 
@@ -243,8 +254,9 @@ public sealed class ExecuteDialogueActionHandler : ICommandHandler<ExecuteDialog
     }
 
     /// <summary>
-    /// Clears the cached store references. Called when a dialogue tree is updated or deleted
-    /// so that changed store resrefs/tags are picked up on next open.
+    /// Clears the cached store references so that changed store resrefs/tags are picked up on
+    /// next open. Called from the successful update/delete event callbacks only; the cached
+    /// dictionary references are dropped, not the underlying NwStore objects.
     /// </summary>
     public void InvalidateStoreCache()
     {
@@ -254,6 +266,40 @@ public sealed class ExecuteDialogueActionHandler : ICommandHandler<ExecuteDialog
         {
             Log.Info("Dialogue store cache invalidated ({Count} entries cleared)", count);
         }
+    }
+
+    /// <summary>
+    /// Reaction to a successfully updated dialogue tree. The dispatcher only publishes this
+    /// event for a successful result, after the handler returns from persistence, so clearing
+    /// here reflects the committed change. Runs on the background event-bus thread.
+    /// </summary>
+    public Task HandleAsync(
+        CommandExecutedEvent<UpdateDialogueTreeCommand> @event,
+        CancellationToken cancellationToken = default)
+    {
+        if (@event.Result.Success)
+        {
+            InvalidateStoreCache();
+        }
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Reaction to a successfully deleted dialogue tree. The dispatcher only publishes this
+    /// event for a successful result, after the handler returns from persistence, so clearing
+    /// here reflects the committed change. Runs on the background event-bus thread.
+    /// </summary>
+    public Task HandleAsync(
+        CommandExecutedEvent<DeleteDialogueTreeCommand> @event,
+        CancellationToken cancellationToken = default)
+    {
+        if (@event.Result.Success)
+        {
+            InvalidateStoreCache();
+        }
+
+        return Task.CompletedTask;
     }
 
     private CommandResult HandleCustom(DialogueAction action)

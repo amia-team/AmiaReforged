@@ -193,7 +193,6 @@ public class DialogueController
 
         // Re-register NPCs — hook resolves old tag from its internal registry
         await TryUpdateNpcRegistrationAsync(dialogueTreeId, entity.SpeakerTag);
-        TryInvalidateStoreCache();
 
         PersistedDialogueTree? updated = await facade.QueryAsync<GetDialogueTreeQuery, PersistedDialogueTree?>(
             new GetDialogueTreeQuery { DialogueTreeId = dialogueTreeId }, ctx.CancellationToken);
@@ -226,7 +225,6 @@ public class DialogueController
 
         // Unregister NPCs before deleting the tree (by treeId — only affects NPCs owned by this tree)
         await TryUnregisterNpcsAsync(dialogueTreeId);
-        TryInvalidateStoreCache();
 
         return new ApiResult(204, new { message = "Deleted" });
     }
@@ -296,23 +294,6 @@ public class DialogueController
         catch (Exception ex)
         {
             Log.Error(ex, "Failed to update NPC registration for tree '{TreeId}'", dialogueTreeId);
-        }
-    }
-
-    /// <summary>
-    /// Invalidates the cached store references in the dialogue action handler so that
-    /// changed store resrefs/tags are picked up on the next OpenShop action.
-    /// </summary>
-    private static void TryInvalidateStoreCache()
-    {
-        try
-        {
-            ExecuteDialogueActionHandler? handler = AnvilCore.GetService<ExecuteDialogueActionHandler>();
-            handler?.InvalidateStoreCache();
-        }
-        catch (Exception ex)
-        {
-            Log.Warn(ex, "Failed to invalidate dialogue store cache");
         }
     }
 
