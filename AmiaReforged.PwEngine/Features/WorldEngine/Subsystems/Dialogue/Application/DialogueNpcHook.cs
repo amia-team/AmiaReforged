@@ -1,3 +1,4 @@
+using System.Threading;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Domain.ValueObjects;
@@ -23,9 +24,14 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Applica
 /// admin panel API, call <see cref="RegisterNpcsForTreeAsync"/>,
 /// <see cref="UnregisterNpcsForTreeAsync"/>, or <see cref="UpdateNpcRegistrationAsync"/>
 /// to hot-wire NPCs without a server restart.
+///
+/// Implements <see cref="IDialogueNpcSynchronizer"/> as the narrow application-facing boundary
+/// that event subscribers depend on. The interface methods are thin adapters that delegate to
+/// the existing synchronization logic; the NWN main-thread transition stays inside the hook.
 /// </summary>
 [ServiceBinding(typeof(DialogueNpcHook))]
-public sealed class DialogueNpcHook
+[ServiceBinding(typeof(IDialogueNpcSynchronizer))]
+public sealed class DialogueNpcHook : IDialogueNpcSynchronizer
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -172,6 +178,34 @@ public sealed class DialogueNpcHook
     {
         await NwTask.SwitchToMainThread();
         return RegisterNpcsForTree(speakerTag, dialogueTreeId);
+    }
+
+    /// <inheritdoc />
+    public async Task<int> RegisterAsync(string speakerTag, string dialogueTreeId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        await NwTask.SwitchToMainThread();
+        cancellationToken.ThrowIfCancellationRequested();
+        return RegisterNpcsForTree(speakerTag, dialogueTreeId);
+    }
+
+    /// <inheritdoc />
+    public async Task<int> UnregisterAsync(string dialogueTreeId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        await NwTask.SwitchToMainThread();
+        cancellationToken.ThrowIfCancellationRequested();
+        return UnregisterNpcsForTree(dialogueTreeId);
+    }
+
+    /// <inheritdoc />
+    public async Task<(int unregistered, int registered)> UpdateAsync(
+        string dialogueTreeId, string? newSpeakerTag, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        await NwTask.SwitchToMainThread();
+        cancellationToken.ThrowIfCancellationRequested();
+        return await UpdateNpcRegistrationAsync(dialogueTreeId, newSpeakerTag);
     }
 
     /// <summary>
