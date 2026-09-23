@@ -76,7 +76,7 @@ public class RecipeTemplateExpander
     /// Clears the cache and triggers a full re-expansion.
     /// Call this when templates or item blueprints change.
     /// </summary>
-    public void Invalidate()
+    public virtual void Invalidate()
     {
         _isExpanded = false;
         _expandedByTemplate.Clear();

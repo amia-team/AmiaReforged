@@ -173,9 +173,8 @@ public class RecipeTemplateController
                 new ErrorResponse(conflict ? "Conflict" : "Command failed", result.ErrorMessage));
         }
 
-        // Invalidate the template expansion cache
-        InvalidateExpansionCache();
-
+        // Cache invalidation is handled asynchronously by RecipeTemplateCacheInvalidationHandler
+        // in reaction to the CommandExecutedEvent published on success.
         return new ApiResult(201, ToDto(template));
     }
 
@@ -218,8 +217,8 @@ public class RecipeTemplateController
                 notFound ? "Not found" : "Command failed", result.ErrorMessage));
         }
 
-        InvalidateExpansionCache();
-
+        // Cache invalidation is handled asynchronously by RecipeTemplateCacheInvalidationHandler
+        // in reaction to the CommandExecutedEvent published on success.
         return new ApiResult(200, ToDto(template));
     }
 
@@ -245,8 +244,8 @@ public class RecipeTemplateController
                 "Not found", result.ErrorMessage)));
         }
 
-        InvalidateExpansionCache();
-
+        // Cache invalidation is handled asynchronously by RecipeTemplateCacheInvalidationHandler
+        // in reaction to the CommandExecutedEvent published on success.
         return await Task.FromResult(new ApiResult(204, new { message = "Deleted" }));
     }
 
@@ -257,7 +256,7 @@ public class RecipeTemplateController
     [HttpPost("/api/worldengine/recipe-templates/invalidate")]
     public static async Task<ApiResult> InvalidateCache(RouteContext ctx)
     {
-        InvalidateExpansionCache();
+        ResolveExpander().Invalidate();
         return await Task.FromResult(new ApiResult(200, new { message = "Recipe template cache invalidated and rebuilt." }));
     }
 
@@ -313,18 +312,6 @@ public class RecipeTemplateController
     {
         return AnvilCore.GetService<RecipeTemplateExpander>()
                ?? throw new InvalidOperationException("RecipeTemplateExpander service not available");
-    }
-
-    private static void InvalidateExpansionCache()
-    {
-        try
-        {
-            ResolveExpander().Invalidate();
-        }
-        catch
-        {
-            // Template expander may not be initialized yet during startup — silently ignore
-        }
     }
 
     private static string? ValidateDto(RecipeTemplateDto dto)
