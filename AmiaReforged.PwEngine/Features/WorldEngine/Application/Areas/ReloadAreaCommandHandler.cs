@@ -20,6 +20,14 @@ public sealed class ReloadAreaCommandHandler : ICommandHandler<ReloadAreaCommand
 
     public async Task<CommandResult> HandleAsync(ReloadAreaCommand command, CancellationToken cancellationToken = default)
     {
+        // Reject an empty resref before touching the runtime. The API controller already
+        // short-circuits here with a 400, so this guard is defensive for direct dispatch and
+        // keeps the runtime boundary clean.
+        if (string.IsNullOrWhiteSpace(command.ResRef))
+        {
+            return CommandResult.Fail("area_resref_empty");
+        }
+
         AreaReloadResult outcome = await _runtime.ReloadAreaAsync(command.ResRef).ConfigureAwait(false);
 
         return outcome.Status switch
