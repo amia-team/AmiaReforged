@@ -1,6 +1,6 @@
-using AmiaReforged.PwEngine.Database;
-using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
 using Anvil.API;
 using Anvil.API.Events;
@@ -11,13 +11,13 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
 [ServiceBinding(typeof(CharacterRegistrationService))]
 public class CharacterRegistrationService
 {
-    private readonly IPersistentCharacterRepository _characterRepository;
+    private readonly ICommandDispatcher _commandDispatcher;
     private readonly RuntimeCharacterService _runtimeCharacterService;
 
-    public CharacterRegistrationService(IPersistentCharacterRepository characterRepository,
+    public CharacterRegistrationService(ICommandDispatcher commandDispatcher,
         RuntimeCharacterService runtimeCharacterService)
     {
-        _characterRepository = characterRepository;
+        _commandDispatcher = commandDispatcher;
         _runtimeCharacterService = runtimeCharacterService;
         NwArea travelAgency = NwModule.Instance.Areas.First(a => a.ResRef == "core_travelroom");
 
@@ -40,28 +40,11 @@ public class CharacterRegistrationService
             return;
         }
 
-        PersistedCharacter? character = _characterRepository.GetByGuid(pcKey);
-        string personaIdString = CharacterId.From(pcKey).ToPersonaId().ToString();
-
-        if (character is not null)
-        {
-            if (string.IsNullOrWhiteSpace(character.PersonaIdString))
-            {
-                _characterRepository.UpdatePersonaId(character.Id, personaIdString);
-            }
-
-            return;
-        }
-
-        PersistedCharacter newCharacter = new()
-        {
-            Id = pcKey,
-            FirstName = player.LoginCreature.OriginalFirstName,
-            LastName = player.LoginCreature.OriginalLastName,
-            CdKey = player.CDKey,
-            PersonaIdString = personaIdString
-        };
-
-        _characterRepository.AddCharacter(newCharacter);
+        CharacterId characterId = CharacterId.From(pcKey);
+        _commandDispatcher.DispatchAsync(new RegisterCharacterCommand(
+            characterId,
+            player.LoginCreature.OriginalFirstName,
+            player.LoginCreature.OriginalLastName,
+            player.CDKey), CancellationToken.None);
     }
 }

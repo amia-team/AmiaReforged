@@ -5,17 +5,10 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
 
 /// <summary>
-/// Provides access to character-related operations including registration, stats, and reputation.
+/// Provides access to character-related operations including stats, knowledge, and reputation.
 /// </summary>
 public interface ICharacterSubsystem
 {
-    // === Character Registration ===
-
-    /// <summary>
-    /// Registers a new character in the WorldEngine.
-    /// </summary>
-    Task<CommandResult> RegisterCharacterAsync(CharacterId characterId, CancellationToken ct = default);
-
     /// <summary>
     /// Gets character information by ID.
     /// </summary>
