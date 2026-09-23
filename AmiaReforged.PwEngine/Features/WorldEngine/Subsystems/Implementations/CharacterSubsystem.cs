@@ -16,28 +16,15 @@ public sealed class CharacterSubsystem : ICharacterSubsystem
     private readonly ICharacterRepository _characterRepository;
     private readonly ICharacterStatRepository _statRepository;
     private readonly IReputationRepository _reputationRepository;
-    private readonly CharacterRegistrationService _registrationService;
 
     public CharacterSubsystem(
         ICharacterRepository characterRepository,
         ICharacterStatRepository statRepository,
-        IReputationRepository reputationRepository,
-        CharacterRegistrationService registrationService)
+        IReputationRepository reputationRepository)
     {
         _characterRepository = characterRepository;
         _statRepository = statRepository;
         _reputationRepository = reputationRepository;
-        _registrationService = registrationService;
-    }
-
-    public Task<CommandResult> RegisterCharacterAsync(CharacterId characterId, CancellationToken ct = default)
-    {
-        // Registration is event-driven via CharacterRegistrationService (NWN area-enter event).
-        // For API-level registration checks, verify the character exists in the runtime repository.
-        if (_characterRepository.Exists(characterId))
-            return Task.FromResult(CommandResult.Fail("Character is already registered"));
-
-        return Task.FromResult(CommandResult.Fail("Character registration is handled automatically on area entry"));
     }
 
     public Task<ICharacter?> GetCharacterAsync(CharacterId characterId, CancellationToken ct = default)
