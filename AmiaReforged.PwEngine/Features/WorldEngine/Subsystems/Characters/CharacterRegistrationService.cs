@@ -1,6 +1,6 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Application;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
 using Anvil.API;
 using Anvil.API.Events;
