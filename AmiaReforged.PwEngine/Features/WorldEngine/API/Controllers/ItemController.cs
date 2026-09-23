@@ -368,15 +368,11 @@ public class ItemController
     public static async Task<ApiResult> GetExpanded(RouteContext ctx)
     {
         string tag = ctx.GetRouteValue("tag");
-        ItemBlueprintExpander? expander = AnvilCore.GetService<ItemBlueprintExpander>();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        if (expander == null)
-        {
-            return await Task.FromResult(new ApiResult(503, new ErrorResponse(
-                "Service unavailable", "ItemBlueprintExpander is not available")));
-        }
-
-        List<ItemBlueprint> expanded = expander.GetExpandedItemsForTemplate(tag);
+        List<ItemBlueprint> expanded = await facade.QueryAsync<GetExpandedItemDefinitionsQuery, List<ItemBlueprint>>(
+            new GetExpandedItemDefinitionsQuery(tag), ctx.CancellationToken);
         return await Task.FromResult(new ApiResult(200, expanded.Select(ToDto).ToArray()));
     }
 

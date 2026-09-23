@@ -89,7 +89,7 @@ public class ItemBlueprintExpander
     /// <summary>
     /// Gets all expanded concrete items from a specific template.
     /// </summary>
-    public List<ItemBlueprint> GetExpandedItemsForTemplate(string templateTag)
+    public virtual List<ItemBlueprint> GetExpandedItemsForTemplate(string templateTag)
     {
         EnsureExpanded();
         return _expandedByTemplate.GetValueOrDefault(templateTag, []);

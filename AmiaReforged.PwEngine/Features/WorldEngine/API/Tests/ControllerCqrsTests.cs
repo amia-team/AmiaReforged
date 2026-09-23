@@ -83,6 +83,25 @@ public class ControllerCqrsTests
     }
 
     [Test]
+    public async Task ItemController_GetExpanded_WhenCalled_DispatchesTemplateTagThroughQuery()
+    {
+        const string tag = "wpn_sword_template";
+        _routeTable.ScanType(typeof(Controllers.ItemController));
+        _facadeMock
+            .Setup(f => f.QueryAsync<GetExpandedItemDefinitionsQuery, List<ItemBlueprint>>(
+                It.IsAny<GetExpandedItemDefinitionsQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ItemBlueprint> { Blueprint($"{tag}_wood") });
+
+        ApiResult? result = await DispatchAsync("GET", $"/api/worldengine/items/{tag}/expanded");
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.StatusCode, Is.EqualTo(200));
+        _facadeMock.Verify(f => f.QueryAsync<GetExpandedItemDefinitionsQuery, List<ItemBlueprint>>(
+            It.Is<GetExpandedItemDefinitionsQuery>(q => q.TemplateTag == tag),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
     public async Task OrganizationController_GetMembers_WhenCalled_DispatchesQuery()
     {
         _routeTable.ScanType(typeof(Controllers.OrganizationController));
