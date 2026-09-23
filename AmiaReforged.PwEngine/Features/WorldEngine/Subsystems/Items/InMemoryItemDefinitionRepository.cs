@@ -28,6 +28,11 @@ public class InMemoryItemDefinitionRepository : IItemDefinitionRepository
         }
     }
 
+    public void RemoveByTag(string tag)
+    {
+        _itemDefinitions.Remove(tag);
+    }
+
     public ItemData.ItemBlueprint? GetByTag(string harvestOutputItemDefinitionTag)
     {
         // First try exact tag match

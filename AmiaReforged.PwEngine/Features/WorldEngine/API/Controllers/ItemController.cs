@@ -110,7 +110,8 @@ public class ItemController
         if (!result.Success)
             return new ApiResult(400, new ErrorResponse("Command failed", result.ErrorMessage));
 
-        InvalidateExpander();
+        // Cache invalidation is owned by an event subscriber (ItemDefinitionCacheInvalidationHandler)
+        // that reacts to the successful command, so no explicit call is needed here.
 
         return new ApiResult(201, ToDto(blueprint));
     }
@@ -156,7 +157,8 @@ public class ItemController
         if (!result.Success)
             return new ApiResult(400, new ErrorResponse("Command failed", result.ErrorMessage));
 
-        InvalidateExpander();
+        // Cache invalidation is owned by an event subscriber (ItemDefinitionCacheInvalidationHandler)
+        // that reacts to the successful command, so no explicit call is needed here.
 
         return new ApiResult(200, ToDto(blueprint));
     }
@@ -189,7 +191,8 @@ public class ItemController
                 "Not found", result.ErrorMessage)));
         }
 
-        InvalidateExpander();
+        // Cache invalidation is owned by an event subscriber (ItemDefinitionCacheInvalidationHandler)
+        // that reacts to the successful command, so no explicit call is needed here.
         return await Task.FromResult(new ApiResult(204, new { message = "Deleted" }));
     }
 
@@ -331,8 +334,8 @@ public class ItemController
             }
         }
 
-        InvalidateExpander();
-
+        // Cache invalidation is owned by an event subscriber (ItemDefinitionCacheInvalidationHandler)
+        // that reacts to each successful command in the batch, so no separate invalidation path exists.
         return new ApiResult(200, new
         {
             succeeded,
@@ -374,12 +377,6 @@ public class ItemController
         List<ItemBlueprint> expanded = await facade.QueryAsync<GetExpandedItemDefinitionsQuery, List<ItemBlueprint>>(
             new GetExpandedItemDefinitionsQuery(tag), ctx.CancellationToken);
         return await Task.FromResult(new ApiResult(200, expanded.Select(ToDto).ToArray()));
-    }
-
-    private static void InvalidateExpander()
-    {
-        ItemBlueprintExpander? expander = AnvilCore.GetService<ItemBlueprintExpander>();
-        expander?.Invalidate();
     }
 
     private static object ToDto(ItemBlueprint bp)
