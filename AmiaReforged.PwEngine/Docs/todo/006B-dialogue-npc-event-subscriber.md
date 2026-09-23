@@ -1,6 +1,23 @@
 # 006B — Synchronize dialogue NPCs from successful command events
 
-Status: **Open**
+Status: **Done**
+
+## Completion
+
+Implemented and tested. See below.
+
+- **`DialogueNpcSynchronizationHandler.cs`** — implements `IEventHandler<CommandExecutedEvent<CreateDialogueTreeCommand>>`, `Update`, `Delete`, and `IEventHandlerMarker`; injects `IDialogueNpcSynchronizer?` (`[Inject]`, `internal` for testability); each `HandleAsync` has a defensive `if (!@event.Result.Success) return;` check. Create skips registration on null/empty/whitespace tag; Update forwards the immutable tree ID and the new tag (null forwarded, not discarded); Delete forwards only the tree ID. Logs at Info (Debug for the skip case). Registered via `[ServiceBinding(typeof(DialogueNpcSynchronizationHandler))]`.
+- **`DialogueNpcSynchronizationHandlerTests.cs`** (`Features/WorldEngine/Subsystems/Dialogue/Tests/`) — 8 tests: create+tag registers once, create without tag does not register, update forwards tree ID/new tag, update with null tag forwards null, delete unregisters once, defensive ignore of failed-result events, a dispatcher-level rejection test (real `CommandDispatcher` + `InMemoryEventBus` + `EventRecorder`-style `bus.PublishedEvents`), and an interface check. Uses a lightweight `RecordingSynchronizer` fake (no real `NwCreature`).
+
+### Rejection proof
+The test `RejectedCommand_ThroughDispatcher_PublishesNoEvent_AndSubscriberNeverInvoked` dispatches a `CreateDialogueTreeCommand` through a real `CommandDispatcher` seeded with a stub handler returning `CommandResult.Fail(...)`. It asserts `result.Success == false`, `bus.PublishedEvents` has count 0, and the `RecordingSynchronizer` recorded no register call — proving a failed command never publishes the success event and therefore never reaches the subscriber.
+
+### Observed result
+`Passed! - Failed: 0, Passed: 8, Skipped: 0, Total: 8`.
+
+### Deferred observations
+- Minor cosmetic: the Update log line passes the new tag twice (old-tag placeholder and new-tag placeholder are identical since old-tag tracking lives in the hook). This is harmless but could be tightened to log only the new tag.
+- `Synchronizer` is `internal` (with `[Inject]`) so tests can set it directly; this is safe because the PwEngine assembly is also the test assembly.
 Type: **Implementation**
 Audit area: **F-1**
 Depends on: **006A**
