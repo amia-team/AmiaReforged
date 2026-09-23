@@ -1,6 +1,6 @@
 # 018C — Dispatch runtime registration on login and PC-key reacquisition
 
-Status: **Open**
+Status: **Done**
 Type: **Implementation**
 Audit area: **F-7 Characters**
 Depends on: **018A**
@@ -91,9 +91,34 @@ No `_repository.Add(...)` call may remain in `RuntimeCharacterService`.
 
 ## Acceptance
 
-- [ ] Login dispatches `RegisterRuntimeCharacterCommand`.
-- [ ] Reacquisition dispatches the same command.
-- [ ] PC-key UUID is assigned before `RuntimeCharacter.For`.
-- [ ] `CharacterReady` remains after successful cache registration.
-- [ ] Reacquisition does not duplicate cached characters.
-- [ ] No direct `_repository.Add(...)` remains in `RuntimeCharacterService`.
+- [x] Login dispatches `RegisterRuntimeCharacterCommand`.
+- [x] Reacquisition dispatches the same command.
+- [x] PC-key UUID is assigned before `RuntimeCharacter.For`.
+- [x] `CharacterReady` remains after successful cache registration.
+- [x] Reacquisition does not duplicate cached characters.
+- [x] No direct `_repository.Add(...)` remains in `RuntimeCharacterService`.
+
+## Completion evidence
+
+Changed file: `AmiaReforged.PwEngine/Features/WorldEngine/Subsystems/Characters/Runtime/RuntimeCharacterService.cs`
+
+- Added `ICommandDispatcher` (task 018A's `RegisterRuntimeCharacterCommand` + handler already exist),
+  injected via constructor; `ICharacterRepository` retained for reads (`GetRuntimeCharacter`) and
+  removal (`DeleteRuntimeCharacter`).
+- `Register` (login) and `ReCache` (PC-key reacquisition) now:
+  assign the PC-key UUID with `ObjectPlugin.ForceAssignUUID` **before** `RuntimeCharacter.For`,
+  construct the `RuntimeCharacter`, then `await _dispatcher.DispatchAsync(new RegisterRuntimeCharacterCommand(character))`.
+- `CharacterReady` fires only after a successful dispatch (handlers are now `async void`).
+- Reacquisition keeps the `wasEmpty` gate, so `CharacterReady` does not fire on repeated reacquisition
+  of an already-valid key; the handler's idempotent `Exists` check prevents duplicate cache entries.
+- Removed `CreateRuntimeCharacter(...)`; no `_repository.Add(...)` remains in the service.
+
+Verification:
+
+```sh
+dotnet build AmiaReforged.PwEngine/AmiaReforged.PwEngine.csproj -c Debug
+# 0 Warning errors, 0 Error(s)
+
+dotnet test AmiaReforged.PwEngine/AmiaReforged.PwEngine.csproj --filter 'FullyQualifiedName~Characters'
+# Passed! - Failed: 0, Passed: 22, Skipped: 0, Total: 22
+```

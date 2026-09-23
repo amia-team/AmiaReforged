@@ -1,6 +1,8 @@
 using AmiaReforged.Core.UserInterface;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime.Commands;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -16,6 +18,7 @@ public class RuntimeCharacterService
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     private readonly ICharacterRepository _repository;
+    private readonly ICommandDispatcher _dispatcher;
     private readonly IPersistentPlayerPersonaRepository _playerPersonas;
     private readonly Dictionary<NwPlayer, Guid> _playerKeys = new();
 
@@ -31,9 +34,13 @@ public class RuntimeCharacterService
     /// </summary>
     public event Action<CharacterId>? CharacterLeaving;
 
-    public RuntimeCharacterService(ICharacterRepository repository, IPersistentPlayerPersonaRepository playerPersonas)
+    public RuntimeCharacterService(
+        ICharacterRepository repository,
+        ICommandDispatcher dispatcher,
+        IPersistentPlayerPersonaRepository playerPersonas)
     {
         _repository = repository;
+        _dispatcher = dispatcher;
         _playerPersonas = playerPersonas;
         NwModule.Instance.OnAcquireItem += ReCache;
         NwModule.Instance.OnClientEnter += Register;
@@ -58,7 +65,7 @@ public class RuntimeCharacterService
         NWScript.SetLocalInt(obj.Player.LoginCreature, WorldConstants.PcCachedLvar, NWScript.FALSE);
     }
 
-    private void ReCache(ModuleEvents.OnAcquireItem obj)
+    private async void ReCache(ModuleEvents.OnAcquireItem obj)
     {
         NwItem? objItem = obj.Item;
         if (objItem is null) return;
@@ -76,7 +83,12 @@ public class RuntimeCharacterService
         if (player.LoginCreature == null) return;
 
         ObjectPlugin.ForceAssignUUID(player.LoginCreature, key.ToUUIDString());
-        CreateRuntimeCharacter(player.LoginCreature);
+
+        RuntimeCharacter? character = RuntimeCharacter.For(player.LoginCreature);
+        if (character is null) return;
+
+        await _dispatcher.DispatchAsync(new RegisterRuntimeCharacterCommand(character)).ConfigureAwait(false);
+
         SetIsCached(player.LoginCreature);
 
         // If the key just became valid (e.g. pckey item loaded after login), notify subscribers
@@ -86,7 +98,7 @@ public class RuntimeCharacterService
         }
     }
 
-    private void Register(ModuleEvents.OnClientEnter obj)
+    private async void Register(ModuleEvents.OnClientEnter obj)
     {
         if (obj.Player.IsDM) return;
 
@@ -100,20 +112,16 @@ public class RuntimeCharacterService
 
         if (obj.Player.LoginCreature == null) return;
 
-        CreateRuntimeCharacter(obj.Player.LoginCreature);
         ObjectPlugin.ForceAssignUUID(obj.Player.LoginCreature, key.ToUUIDString());
+
+        RuntimeCharacter? character = RuntimeCharacter.For(obj.Player.LoginCreature);
+        if (character is null) return;
+
+        await _dispatcher.DispatchAsync(new RegisterRuntimeCharacterCommand(character)).ConfigureAwait(false);
+
         SetIsCached(obj.Player.LoginCreature);
 
         CharacterReady?.Invoke(CharacterId.From(key));
-    }
-
-    private void CreateRuntimeCharacter(NwCreature creature)
-    {
-        RuntimeCharacter? character = RuntimeCharacter.For(creature);
-        if (character != null)
-        {
-            _repository.Add(character);
-        }
     }
 
     private void DeleteRuntimeCharacter(NwCreature creature)
