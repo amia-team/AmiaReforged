@@ -33,8 +33,9 @@ public class TraitSubsystemTests
         GetAllTraitsQueryHandler getAllTraits = new(traitRepository);
         GetCharacterTraitsQueryHandler getCharacterTraits = new(characterTraitRepository, traitRepository);
         HasTraitAsyncQueryHandler hasTrait = new(characterTraitRepository, traitRepository);
+        CalculateTraitEffectsQueryHandler calculateEffects = new(characterTraitRepository, traitRepository);
 
-        RoutingQueryDispatcher queryDispatcher = new(getDefinition, getAllTraits, getCharacterTraits, hasTrait);
+        RoutingQueryDispatcher queryDispatcher = new(getDefinition, getAllTraits, getCharacterTraits, hasTrait, calculateEffects);
 
         return new TraitSubsystem(
             new StubCommandDispatcher(),
@@ -301,7 +302,9 @@ public class TraitSubsystemTests
         GetTraitDefinitionQueryHandler byTag,
         GetAllTraitsQueryHandler all,
         GetCharacterTraitsQueryHandler characterTraits,
-        HasTraitAsyncQueryHandler hasTrait) : IQueryDispatcher
+        HasTraitAsyncQueryHandler hasTrait,
+        CalculateTraitEffectsQueryHandler effects)
+        : IQueryDispatcher
     {
         public async Task<TResult> DispatchAsync<TQuery, TResult>(TQuery query, CancellationToken cancellationToken = default)
             where TQuery : IQuery<TResult>
@@ -312,10 +315,234 @@ public class TraitSubsystemTests
                 GetAllTraitsQuery q => await all.HandleAsync(q, cancellationToken),
                 GetCharacterTraitsQuery q => await characterTraits.HandleAsync(q, cancellationToken),
                 HasTraitAsyncQuery q => await hasTrait.HandleAsync(q, cancellationToken),
+                CalculateTraitEffectsQuery q => await effects.HandleAsync(q, cancellationToken),
                 _ => throw new InvalidOperationException($"Unexpected query {query?.GetType().Name}")
             };
             return (TResult)result!;
         }
+    }
+
+    #endregion
+
+    #region CalculateTraitEffectsAsync
+
+    [Test]
+    public async Task CalculateTraitEffectsAsync_WithActiveConfirmedTraits_ShouldAggregateModifiers()
+    {
+        // Given - a trait with a skill modifier and a custom ability
+        const string ArchivistTag = "archivist";
+        _traitRepository.Add(new Trait
+        {
+            Tag = ArchivistTag,
+            Name = "Archivist",
+            Description = "A scholar of lore",
+            PointCost = 1,
+            Effects =
+            {
+                Effects.TraitEffect.SkillModifier("Arcana", 3),
+                new Effects.TraitEffect
+                {
+                    EffectType = Effects.TraitEffectType.Custom,
+                    Description = "Reads ancient tomes"
+                }
+            }
+        });
+
+        Guid characterId = Guid.NewGuid();
+        _characterTraitRepository.Add(new CharacterTrait
+        {
+            Id = Guid.NewGuid(),
+            CharacterId = CharacterId.From(characterId),
+            TraitTag = new TraitTag(ArchivistTag),
+            DateAcquired = DateTime.UtcNow,
+            IsConfirmed = true,
+            IsActive = true
+        });
+
+        // When
+        TraitEffectsSummary effects = await _subsystem.CalculateTraitEffectsAsync(CharacterId.From(characterId));
+
+        // Then - the skill modifier is aggregated under its type:target key and the custom ability is listed
+        Assert.That(effects, Is.Not.Null);
+        Assert.That(effects.StatModifiers, Has.Count.EqualTo(1));
+        Assert.That(effects.StatModifiers["SkillModifier:Arcana"], Is.EqualTo(3));
+        Assert.That(effects.SpecialAbilities, Has.Count.EqualTo(1));
+        Assert.That(effects.SpecialAbilities[0], Is.EqualTo("Reads ancient tomes"));
+        Assert.That(effects.Restrictions, Is.Empty);
+    }
+
+    [Test]
+    public async Task CalculateTraitEffectsAsync_SameModifierAcrossTraits_ShouldSumMagnitudes()
+    {
+        // Given - two traits that both grant Arcana, and a trait granting the same key negatively
+        const string FirstTag = "sage";
+        const string SecondTag = "scholar";
+        const string PenaltyTag = "timid";
+        _traitRepository.Add(new Trait
+        {
+            Tag = FirstTag,
+            Name = "Sage",
+            Description = "Wise",
+            PointCost = 1,
+            Effects = { Effects.TraitEffect.SkillModifier("Arcana", 2) }
+        });
+        _traitRepository.Add(new Trait
+        {
+            Tag = SecondTag,
+            Name = "Scholar",
+            Description = "Learned",
+            PointCost = 1,
+            Effects = { Effects.TraitEffect.SkillModifier("Arcana", 2) }
+        });
+        _traitRepository.Add(new Trait
+        {
+            Tag = PenaltyTag,
+            Name = "Timid",
+            Description = "Cautious",
+            PointCost = 1,
+            Effects = { Effects.TraitEffect.SkillModifier("Arcana", -1) }
+        });
+
+        Guid characterId = Guid.NewGuid();
+        foreach (string tag in new[] { FirstTag, SecondTag, PenaltyTag })
+        {
+            _characterTraitRepository.Add(new CharacterTrait
+            {
+                Id = Guid.NewGuid(),
+                CharacterId = CharacterId.From(characterId),
+                TraitTag = new TraitTag(tag),
+                DateAcquired = DateTime.UtcNow,
+                IsConfirmed = true,
+                IsActive = true
+            });
+        }
+
+        // When
+        TraitEffectsSummary effects = await _subsystem.CalculateTraitEffectsAsync(CharacterId.From(characterId));
+
+        // Then - modifiers from all traits combine into the single shared key (2 + 2 - 1)
+        Assert.That(effects.StatModifiers["SkillModifier:Arcana"], Is.EqualTo(3));
+    }
+
+    [Test]
+    public async Task CalculateTraitEffectsAsync_WithInactiveTrait_ShouldExclude()
+    {
+        // Given - a trait that is not active
+        const string CowardTag = "coward";
+        _traitRepository.Add(new Trait
+        {
+            Tag = CowardTag,
+            Name = "Coward",
+            Description = "Easily frightened",
+            PointCost = -1,
+            Effects = { Effects.TraitEffect.AttributeModifier("Strength", -2) }
+        });
+
+        Guid characterId = Guid.NewGuid();
+        _characterTraitRepository.Add(new CharacterTrait
+        {
+            Id = Guid.NewGuid(),
+            CharacterId = CharacterId.From(characterId),
+            TraitTag = new TraitTag(CowardTag),
+            DateAcquired = DateTime.UtcNow,
+            IsConfirmed = true,
+            IsActive = false
+        });
+
+        // When
+        TraitEffectsSummary effects = await _subsystem.CalculateTraitEffectsAsync(CharacterId.From(characterId));
+
+        // Then - inactive traits contribute nothing
+        Assert.That(effects.StatModifiers, Is.Empty);
+        Assert.That(effects.SpecialAbilities, Is.Empty);
+    }
+
+    [Test]
+    public async Task CalculateTraitEffectsAsync_WithUnconfirmedTrait_ShouldExclude()
+    {
+        // Given - a trait that is not yet confirmed
+        const string BraveTag = "brave";
+        _traitRepository.Add(new Trait
+        {
+            Tag = BraveTag,
+            Name = "Brave",
+            Description = "Fearless in combat",
+            PointCost = 1,
+            Effects = { Effects.TraitEffect.SkillModifier("Intimidate", 4) }
+        });
+
+        Guid characterId = Guid.NewGuid();
+        _characterTraitRepository.Add(new CharacterTrait
+        {
+            Id = Guid.NewGuid(),
+            CharacterId = CharacterId.From(characterId),
+            TraitTag = new TraitTag(BraveTag),
+            DateAcquired = DateTime.UtcNow,
+            IsConfirmed = false,
+            IsActive = true
+        });
+
+        // When
+        TraitEffectsSummary effects = await _subsystem.CalculateTraitEffectsAsync(CharacterId.From(characterId));
+
+        // Then - unconfirmed traits contribute nothing
+        Assert.That(effects.StatModifiers, Is.Empty);
+        Assert.That(effects.SpecialAbilities, Is.Empty);
+    }
+
+    [Test]
+    public async Task CalculateTraitEffectsAsync_WithMissingDefinition_ShouldSkip()
+    {
+        // Given - a character trait whose definition was never registered
+        const string GhostTag = "ghost";
+
+        Guid characterId = Guid.NewGuid();
+        _characterTraitRepository.Add(new CharacterTrait
+        {
+            Id = Guid.NewGuid(),
+            CharacterId = CharacterId.From(characterId),
+            TraitTag = new TraitTag(GhostTag),
+            DateAcquired = DateTime.UtcNow,
+            IsConfirmed = true,
+            IsActive = true
+        });
+
+        // When
+        TraitEffectsSummary effects = await _subsystem.CalculateTraitEffectsAsync(CharacterId.From(characterId));
+
+        // Then - a missing definition contributes nothing
+        Assert.That(effects.StatModifiers, Is.Empty);
+        Assert.That(effects.SpecialAbilities, Is.Empty);
+    }
+
+    [Test]
+    public async Task CalculateTraitEffectsAsync_WithNoTraits_ShouldReturnEmptySummary()
+    {
+        // Given - the subsystem's shared repositories hold no owned traits for this id
+        Guid characterId = Guid.NewGuid();
+
+        // When
+        TraitEffectsSummary effects = await _subsystem.CalculateTraitEffectsAsync(CharacterId.From(characterId));
+
+        // Then
+        Assert.That(effects.StatModifiers, Is.Empty);
+        Assert.That(effects.SpecialAbilities, Is.Empty);
+        Assert.That(effects.CharacterId, Is.EqualTo(CharacterId.From(characterId)));
+    }
+
+    [Test]
+    public async Task CalculateTraitEffectsAsync_ThroughDispatcher_WithEmptyRepositories()
+    {
+        // The calculation must flow through the query dispatcher, not read the repositories directly.
+        ITraitRepository emptyTraits = new InMemoryTraitRepository();
+        ICharacterTraitRepository emptyCharacters = new InMemoryCharacterTraitRepository();
+
+        TraitSubsystem subsystem = CreateSubsystem(emptyTraits, emptyCharacters);
+        Guid characterId = Guid.NewGuid();
+
+        TraitEffectsSummary effects = await subsystem.CalculateTraitEffectsAsync(CharacterId.From(characterId));
+        Assert.That(effects, Is.Not.Null);
+        Assert.That(effects.StatModifiers, Is.Empty);
     }
 
     #endregion

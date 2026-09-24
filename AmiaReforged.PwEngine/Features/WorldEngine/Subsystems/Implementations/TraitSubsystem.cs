@@ -83,44 +83,11 @@ public sealed class TraitSubsystem : ITraitSubsystem
         return has;
     }
 
-    public Task<TraitEffectsSummary> CalculateTraitEffectsAsync(CharacterId characterId, CancellationToken ct = default)
+    public async Task<TraitEffectsSummary> CalculateTraitEffectsAsync(CharacterId characterId, CancellationToken ct = default)
     {
-        List<DomainCharacterTrait> characterTraits = _characterTraitRepository.GetByCharacterId(characterId);
-
-        Dictionary<string, int> statModifiers = new();
-        List<string> specialAbilities = [];
-        List<string> restrictions = [];
-
-        foreach (DomainCharacterTrait characterTrait in characterTraits)
-        {
-            if (!characterTrait.IsConfirmed || !characterTrait.IsActive)
-                continue;
-
-            Trait? definition = _traitRepository.Get(characterTrait.TraitTag);
-            if (definition == null)
-                continue;
-
-            foreach (TraitEffect effect in definition.Effects)
-            {
-                switch (effect.EffectType)
-                {
-                    case TraitEffectType.SkillModifier:
-                    case TraitEffectType.AttributeModifier:
-                    case TraitEffectType.KnowledgePoints:
-                        string key = $"{effect.EffectType}:{effect.Target}";
-                        statModifiers[key] = statModifiers.GetValueOrDefault(key) + effect.Magnitude;
-                        break;
-
-                    case TraitEffectType.Custom:
-                        if (!string.IsNullOrWhiteSpace(effect.Description))
-                            specialAbilities.Add(effect.Description);
-                        break;
-                }
-            }
-        }
-
-        return Task.FromResult(new TraitEffectsSummary(
-            characterId, statModifiers, specialAbilities, restrictions));
+        TraitEffectsSummary effects = await _queryDispatcher.DispatchAsync<CalculateTraitEffectsQuery, TraitEffectsSummary>(
+            new CalculateTraitEffectsQuery(characterId), ct);
+        return effects;
     }
 
     private static TraitDefinition MapToDefinition(Trait trait)

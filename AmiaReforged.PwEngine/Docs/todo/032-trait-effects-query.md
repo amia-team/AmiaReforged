@@ -1,6 +1,6 @@
 # 032 — Dispatch trait effect calculations
 
-Status: **Open**
+Status: **Done**
 Type: **Implementation**
 Audit area: **F-7 Traits**
 Depends on: None.

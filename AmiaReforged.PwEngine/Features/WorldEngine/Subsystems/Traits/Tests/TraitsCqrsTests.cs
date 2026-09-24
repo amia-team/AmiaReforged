@@ -3,6 +3,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Application;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Effects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Queries;
 using NUnit.Framework;
@@ -29,6 +30,7 @@ public class TraitsCqrsTests
 
     private GetCharacterTraitsQueryHandler _getTraitsHandler = null!;
     private GetTraitBudgetQueryHandler _getBudgetHandler = null!;
+    private CalculateTraitEffectsQueryHandler _getEffectsHandler = null!;
     private GetTraitDefinitionQueryHandler _getDefinitionHandler = null!;
     private GetAllTraitsQueryHandler _getAllTraitsHandler = null!;
 
@@ -55,6 +57,7 @@ public class TraitsCqrsTests
         // Initialize query handlers
         _getTraitsHandler = new GetCharacterTraitsQueryHandler(_characterTraitRepository, _traitRepository);
         _getBudgetHandler = new GetTraitBudgetQueryHandler(_characterTraitRepository, _traitRepository);
+        _getEffectsHandler = new CalculateTraitEffectsQueryHandler(_characterTraitRepository, _traitRepository);
         _getDefinitionHandler = new GetTraitDefinitionQueryHandler(_traitRepository);
         _getAllTraitsHandler = new GetAllTraitsQueryHandler(_traitRepository);
 
@@ -562,6 +565,131 @@ public class TraitsCqrsTests
         Assert.That(traits.Select(t => t.Tag), Contains.Item(CowardTraitTag));
         Assert.That(traits.Select(t => t.Tag), Contains.Item(HeroTraitTag));
     }
+
+    #region CalculateTraitEffects Query Tests
+
+    [Test]
+    public async Task CalculateTraitEffects_WithActiveConfirmedTraits_ShouldAggregateCombinedModifiers()
+    {
+        // Given - two confirmed, active traits granting the same skill key
+        _traitRepository.Add(new Trait
+        {
+            Tag = "intimidator",
+            Name = "Intimidator",
+            Description = "Daunting presence",
+            PointCost = 0,
+            Effects = { TraitEffect.SkillModifier("Intimidate", 2) }
+        });
+        _traitRepository.Add(new Trait
+        {
+            Tag = "brave",
+            Name = "Brave",
+            Description = "Fearless",
+            PointCost = 0,
+            Effects = { TraitEffect.SkillModifier("Intimidate", 2) }
+        });
+
+        Dictionary<string, bool> unlockedTraits = new();
+        await _selectHandler.HandleAsync(
+            new SelectTraitCommand(_testCharacterId, new TraitTag("intimidator"), unlockedTraits),
+            CancellationToken.None);
+        await _selectHandler.HandleAsync(
+            new SelectTraitCommand(_testCharacterId, new TraitTag("brave"), unlockedTraits),
+            CancellationToken.None);
+        await _confirmHandler.HandleAsync(
+            new ConfirmTraitsCommand(_testCharacterId), CancellationToken.None);
+
+        // When
+        TraitEffectsSummary effects = await _getEffectsHandler.HandleAsync(
+            new CalculateTraitEffectsQuery(_testCharacterId), CancellationToken.None);
+
+        // Then - combined modifiers sum per key
+        Assert.That(effects.StatModifiers["SkillModifier:Intimidate"], Is.EqualTo(4));
+        Assert.That(effects.SpecialAbilities, Is.Empty);
+    }
+
+    [Test]
+    public async Task CalculateTraitEffects_WithInactiveTrait_ShouldExclude()
+    {
+        // Given - a confirmed but inactive trait
+        _traitRepository.Add(new Trait
+        {
+            Tag = "silent",
+            Name = "Silent",
+            Description = "Quiet",
+            PointCost = 0,
+            Effects = { TraitEffect.SkillModifier("Stealth", 3) }
+        });
+        await _selectHandler.HandleAsync(
+            new SelectTraitCommand(_testCharacterId, new TraitTag("silent"), new()),
+            CancellationToken.None);
+        await _confirmHandler.HandleAsync(
+            new ConfirmTraitsCommand(_testCharacterId), CancellationToken.None);
+        await _setActiveHandler.HandleAsync(
+            new SetTraitActiveCommand(_testCharacterId, new TraitTag("silent"), false),
+            CancellationToken.None);
+
+        // When
+        TraitEffectsSummary effects = await _getEffectsHandler.HandleAsync(
+            new CalculateTraitEffectsQuery(_testCharacterId), CancellationToken.None);
+
+        // Then - inactive traits contribute nothing
+        Assert.That(effects.StatModifiers, Is.Empty);
+    }
+
+    [Test]
+    public async Task CalculateTraitEffects_WithUnconfirmedTrait_ShouldExclude()
+    {
+        // Given - a selected but unconfirmed trait
+        _traitRepository.Add(new Trait
+        {
+            Tag = "reckless",
+            Name = "Reckless",
+            Description = "Bold",
+            PointCost = 0,
+            Effects = { TraitEffect.SkillModifier("Daring", 2) }
+        });
+        await _selectHandler.HandleAsync(
+            new SelectTraitCommand(_testCharacterId, new TraitTag("reckless"), new()),
+            CancellationToken.None);
+
+        // When
+        TraitEffectsSummary effects = await _getEffectsHandler.HandleAsync(
+            new CalculateTraitEffectsQuery(_testCharacterId), CancellationToken.None);
+
+        // Then - unconfirmed traits contribute nothing
+        Assert.That(effects.StatModifiers, Is.Empty);
+    }
+
+    [Test]
+    public async Task CalculateTraitEffects_WithMissingDefinition_ShouldSkip()
+    {
+        // Given - a confirmed trait whose definition no longer exists
+        _traitRepository.Add(new Trait
+        {
+            Tag = "ghost",
+            Name = "Ghost",
+            Description = "Ethereal",
+            PointCost = 0,
+            Effects = { TraitEffect.SkillModifier("Phasing", 2) }
+        });
+        await _selectHandler.HandleAsync(
+            new SelectTraitCommand(_testCharacterId, new TraitTag("ghost"), new()),
+            CancellationToken.None);
+        await _confirmHandler.HandleAsync(
+            new ConfirmTraitsCommand(_testCharacterId), CancellationToken.None);
+        _traitRepository.Remove("ghost");
+
+        // When
+        TraitEffectsSummary effects = await _getEffectsHandler.HandleAsync(
+            new CalculateTraitEffectsQuery(_testCharacterId), CancellationToken.None);
+
+        // Then - a missing definition contributes nothing
+        Assert.That(effects.StatModifiers, Is.Empty);
+        Assert.That(effects.SpecialAbilities, Is.Empty);
+    }
+
+    #endregion
 
     #endregion
 
