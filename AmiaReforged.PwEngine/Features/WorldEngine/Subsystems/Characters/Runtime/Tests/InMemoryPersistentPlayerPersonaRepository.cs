@@ -13,6 +13,8 @@ public sealed class InMemoryPersistentPlayerPersonaRepository : IPersistentPlaye
 {
     public List<(string CdKey, string DisplayName, DateTime? ObservedUtc)> UpsertCalls { get; } = new();
 
+    public List<(string CdKey, DateTime ActivatedUtc)> TouchCalls { get; } = new();
+
     public PlayerPersonaRecord Upsert(string cdKey, string displayName, DateTime? observedUtc = null)
     {
         UpsertCalls.Add((cdKey, displayName, observedUtc));
@@ -23,5 +25,6 @@ public sealed class InMemoryPersistentPlayerPersonaRepository : IPersistentPlaye
 
     public void Touch(string cdKey, DateTime observedUtc)
     {
+        TouchCalls.Add((cdKey, observedUtc));
     }
 }

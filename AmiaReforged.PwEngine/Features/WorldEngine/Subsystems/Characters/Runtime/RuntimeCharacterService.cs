@@ -2,7 +2,9 @@ using AmiaReforged.Core.UserInterface;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Queries;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -19,7 +21,7 @@ public class RuntimeCharacterService
 
     private readonly ICharacterRepository _repository;
     private readonly ICommandDispatcher _dispatcher;
-    private readonly IPersistentPlayerPersonaRepository _playerPersonas;
+    private readonly IQueryDispatcher _queries;
     private readonly Dictionary<NwPlayer, Guid> _playerKeys = new();
 
     /// <summary>
@@ -37,11 +39,11 @@ public class RuntimeCharacterService
     public RuntimeCharacterService(
         ICharacterRepository repository,
         ICommandDispatcher dispatcher,
-        IPersistentPlayerPersonaRepository playerPersonas)
+        IQueryDispatcher queries)
     {
         _repository = repository;
         _dispatcher = dispatcher;
-        _playerPersonas = playerPersonas;
+        _queries = queries;
         NwModule.Instance.OnAcquireItem += ReCache;
         NwModule.Instance.OnClientEnter += Register;
         NwModule.Instance.OnClientLeave += Unregister;
@@ -57,7 +59,7 @@ public class RuntimeCharacterService
             CharacterLeaving?.Invoke(CharacterId.From(leavingKey));
         }
 
-        TouchPlayerPersona(obj.Player);
+        await TouchPlayerPersona(obj.Player).ConfigureAwait(false);
         _playerKeys.Remove(obj.Player);
         if (obj.Player.LoginCreature == null) return;
 
@@ -157,7 +159,15 @@ public class RuntimeCharacterService
         }
     }
 
-    private void TouchPlayerPersona(NwPlayer player)
+    /// <summary>
+    /// Marks the persona for <paramref name="player"> active at logout by dispatching
+    /// <see cref="TouchPlayerPersonaCommand"/>. The NWN boundary (player validity /
+    /// empty CD key rejection) stays here as a guard before dispatch, so invalid/
+    /// empty identities are still rejected before any command runs. On a failed
+    /// command result the service logs a warning, matching the prior graceful-failure
+    /// behavior.
+    /// </summary>
+    private async Task TouchPlayerPersona(NwPlayer player)
     {
         if (player is not { IsValid: true })
         {
@@ -170,13 +180,13 @@ public class RuntimeCharacterService
             return;
         }
 
-        try
+        CommandResult result = await _dispatcher.DispatchAsync(
+            new TouchPlayerPersonaCommand(cdKey, DateTime.UtcNow))
+            .ConfigureAwait(false);
+
+        if (!result.Success)
         {
-            _playerPersonas.Touch(cdKey, DateTime.UtcNow);
-        }
-        catch (Exception ex)
-        {
-            Log.Warn(ex, "Failed to mark player persona activity for CD key {CdKey}.", cdKey);
+            Log.Warn("Failed to mark player persona activity for CD key {CdKey}.", cdKey);
         }
     }
 
@@ -205,8 +215,15 @@ public class RuntimeCharacterService
         return false;
     }
 
+    /// <summary>
+    /// Resolves a cached runtime character by dispatching <see cref="GetCharacterQuery"/>.
+    /// The runtime repository is in-memory and the handler completes without
+    /// suspending, so blocking here on an NWN-thread caller does not await any
+    /// continuation (see the compatibility note in <see cref="CharacterSubsystem"/>).
+    /// </summary>
     public RuntimeCharacter? GetRuntimeCharacter(NwCreature creature)
     {
-        return _repository.GetById(creature.UUID) as RuntimeCharacter;
+        return _queries.DispatchAsync<GetCharacterQuery, ICharacter?>(
+            new GetCharacterQuery(CharacterId.From(creature.UUID))).GetAwaiter().GetResult() as RuntimeCharacter;
     }
 }
