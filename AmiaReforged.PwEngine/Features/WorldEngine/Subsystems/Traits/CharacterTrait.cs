@@ -24,6 +24,12 @@ public class CharacterTrait
     public required TraitTag TraitTag { get; init; }
 
     /// <summary>
+    /// Display name for the trait. Derived from the trait definition at read time;
+    /// not persisted (falls back to the tag value when no definition exists).
+    /// </summary>
+    public string? Name { get; set; }
+
+    /// <summary>
     /// When this trait was first selected by the character
     /// </summary>
     public DateTime DateAcquired { get; init; }

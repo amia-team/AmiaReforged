@@ -53,7 +53,7 @@ public class TraitsCqrsTests
         _setActiveHandler = new SetTraitActiveCommandHandler(_characterTraitRepository, _eventBus);
 
         // Initialize query handlers
-        _getTraitsHandler = new GetCharacterTraitsQueryHandler(_characterTraitRepository);
+        _getTraitsHandler = new GetCharacterTraitsQueryHandler(_characterTraitRepository, _traitRepository);
         _getBudgetHandler = new GetTraitBudgetQueryHandler(_characterTraitRepository, _traitRepository);
         _getDefinitionHandler = new GetTraitDefinitionQueryHandler(_traitRepository);
         _getAllTraitsHandler = new GetAllTraitsQueryHandler(_traitRepository);

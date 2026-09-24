@@ -1,10 +1,18 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Effects;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Queries;
 using Anvil.Services;
 using DomainCharacterTrait = AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.CharacterTrait;
+using ITraitRepository = AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.ITraitRepository;
+using ICharacterTraitRepository = AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.ICharacterTraitRepository;
+using Trait = AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Trait;
+
+// The public projection CharacterTrait (in ...Subsystems) is distinct from the
+// entity CharacterTrait (in ...Traits); alias the projection to remove ambiguity.
+using PublicCharacterTrait = AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.CharacterTrait;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Implementations;
 
@@ -16,31 +24,32 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Implementations;
 public sealed class TraitSubsystem : ITraitSubsystem
 {
     private readonly ICommandDispatcher _commandDispatcher;
+    private readonly IQueryDispatcher _queryDispatcher;
     private readonly ITraitRepository _traitRepository;
     private readonly ICharacterTraitRepository _characterTraitRepository;
 
     public TraitSubsystem(
         ICommandDispatcher commandDispatcher,
+        IQueryDispatcher queryDispatcher,
         ITraitRepository traitRepository,
         ICharacterTraitRepository characterTraitRepository)
     {
         _commandDispatcher = commandDispatcher;
+        _queryDispatcher = queryDispatcher;
         _traitRepository = traitRepository;
         _characterTraitRepository = characterTraitRepository;
     }
 
-    public Task<TraitDefinition?> GetTraitAsync(TraitTag traitTag, CancellationToken ct = default)
+    public async Task<TraitDefinition?> GetTraitAsync(TraitTag traitTag, CancellationToken ct = default)
     {
-        Trait? trait = _traitRepository.Get(traitTag);
-        return Task.FromResult(trait != null ? MapToDefinition(trait) : null);
+        Trait? trait = await _queryDispatcher.DispatchAsync<GetTraitDefinitionQuery, Trait?>(new GetTraitDefinitionQuery(traitTag), ct);
+        return trait is null ? null : MapToDefinition(trait);
     }
 
-    public Task<List<TraitDefinition>> GetAllTraitsAsync(CancellationToken ct = default)
+    public async Task<List<TraitDefinition>> GetAllTraitsAsync(CancellationToken ct = default)
     {
-        List<TraitDefinition> definitions = _traitRepository.All()
-            .Select(MapToDefinition)
-            .ToList();
-        return Task.FromResult(definitions);
+        List<Trait> traits = await _queryDispatcher.DispatchAsync<GetAllTraitsQuery, List<Trait>>(new GetAllTraitsQuery(), ct);
+        return traits.Select(MapToDefinition).ToList();
     }
 
     public Task<CommandResult> GrantTraitAsync(CharacterId characterId, TraitTag traitTag, CancellationToken ct = default)
@@ -55,28 +64,23 @@ public sealed class TraitSubsystem : ITraitSubsystem
         return _commandDispatcher.DispatchAsync(command, ct);
     }
 
-    public Task<List<CharacterTrait>> GetCharacterTraitsAsync(CharacterId characterId, CancellationToken ct = default)
+    public async Task<List<PublicCharacterTrait>> GetCharacterTraitsAsync(CharacterId characterId, CancellationToken ct = default)
     {
-        List<DomainCharacterTrait> domainTraits = _characterTraitRepository.GetByCharacterId(characterId);
+        List<DomainCharacterTrait> domainTraits = await _queryDispatcher.DispatchAsync<GetCharacterTraitsQuery, List<DomainCharacterTrait>>(new GetCharacterTraitsQuery(characterId), ct);
 
-        List<CharacterTrait> result = domainTraits.Select(dt =>
-        {
-            Trait? definition = _traitRepository.Get(dt.TraitTag);
-            return new CharacterTrait(
-                dt.TraitTag,
-                definition?.Name ?? dt.TraitTag.Value,
-                dt.DateAcquired,
-                null);
-        }).ToList();
+        List<PublicCharacterTrait> result = domainTraits.Select(dt => new PublicCharacterTrait(
+            dt.TraitTag,
+            dt.Name!,
+            dt.DateAcquired,
+            null)).ToList();
 
-        return Task.FromResult(result);
+        return result;
     }
 
-    public Task<bool> HasTraitAsync(CharacterId characterId, TraitTag traitTag, CancellationToken ct = default)
+    public async Task<bool> HasTraitAsync(CharacterId characterId, TraitTag traitTag, CancellationToken ct = default)
     {
-        List<DomainCharacterTrait> traits = _characterTraitRepository.GetByCharacterId(characterId);
-        bool has = traits.Any(t => t.TraitTag == traitTag && t.IsActive);
-        return Task.FromResult(has);
+        bool has = await _queryDispatcher.DispatchAsync<HasTraitAsyncQuery, bool>(new HasTraitAsyncQuery(characterId, traitTag), ct);
+        return has;
     }
 
     public Task<TraitEffectsSummary> CalculateTraitEffectsAsync(CharacterId characterId, CancellationToken ct = default)
