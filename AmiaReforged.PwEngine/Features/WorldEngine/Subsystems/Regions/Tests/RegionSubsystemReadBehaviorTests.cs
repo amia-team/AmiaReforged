@@ -1,10 +1,17 @@
 using System.Threading;
+using AmiaReforged.PwEngine.Features.Encounters.Models;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.Regions.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Application.Regions.Queries;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Implementations;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions.Application;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.ResourceNodeData;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions.Queries;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions.Tests;
@@ -18,27 +25,52 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions.Tests;
 [TestFixture]
 public class RegionSubsystemReadBehaviorTests
 {
-    private static RegionSubsystem BuildSubsystem(InMemoryRegionRepository repo, out QueryDispatcher dispatcher)
+    private static RegionSubsystem BuildSubsystem(
+        InMemoryRegionRepository repo,
+        out QueryDispatcher dispatcher,
+        ICommandDispatcher? commandDispatcher = null)
     {
         IQueryDispatcher queryDispatcher = new QueryDispatcher(
             new IQueryHandlerMarker[]
             {
                 new GetRegionDefinitionHandler(repo),
-                new SearchRegionDefinitionsHandler(repo)
+                new SearchRegionDefinitionsHandler(repo),
+                new GetChaosForAreaQueryHandler(repo)
             });
         dispatcher = (QueryDispatcher)queryDispatcher;
-        return new RegionSubsystem(repo, queryDispatcher);
+
+        ICommandDispatcher commandDispatcherToUse = commandDispatcher ?? new CommandDispatcher(
+            new ICommandHandlerMarker[]
+            {
+                new UpdateRegionHandler(repo)
+            },
+            new CapturingEventBus(new List<IDomainEvent>()));
+
+        return new RegionSubsystem(repo, queryDispatcher, commandDispatcherToUse);
     }
 
-    private static RegionDefinition Region(string tag, string name, string? description = null, RegionType? type = null)
+    private static RegionDefinition Region(
+        string tag,
+        string name,
+        string? description = null,
+        RegionType? type = null,
+        ChaosState? defaultChaos = null,
+        AreaDefinition? area = null)
         => new()
         {
             Tag = new RegionTag(tag),
             Name = name,
             Description = description,
             Type = type,
-            Areas = []
+            Areas = area is null ? [] : [area],
+            DefaultChaos = defaultChaos
         };
+
+    private static AreaDefinition Area(string resRef, ChaosState? chaos = null)
+        => new(
+            new AreaTag(resRef),
+            ["wilderness"],
+            new EnvironmentData(Climate.Temperate, EconomyQuality.Average, new QualityRange(), chaos));
 
     [Test]
     public async Task GetRegionAsync_KnownTag_ReturnsMappedProjection()
@@ -121,5 +153,194 @@ public class RegionSubsystemReadBehaviorTests
         Assert.That(info, Is.Not.Null);
         Assert.That(info!.Description, Is.EqualTo(string.Empty));
         Assert.That(info.Type, Is.EqualTo(RegionType.Special));
+    }
+
+    #region Update Region Tests (task 035)
+
+    [Test]
+    public async Task UpdateRegionAsync_WithValidData_ChangesFieldsAndIsObservable()
+    {
+        // Given
+        InMemoryRegionRepository repo = new();
+        repo.Add(Region("r1", "Region One", "Old description", RegionType.Wilderness));
+        RegionSubsystem subsystem = BuildSubsystem(repo, out _);
+
+        // When
+        CommandResult result = await subsystem.UpdateRegionAsync(new AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.UpdateRegionCommand("r1", Name: "Renamed"), CancellationToken.None);
+
+        // Then — success (the facade no longer returns "Not yet implemented")
+        Assert.That(result.Success, Is.True);
+
+        // And the change is observable through the read query
+        RegionInfo? info = await subsystem.GetRegionAsync("r1", CancellationToken.None);
+        Assert.That(info, Is.Not.Null);
+        Assert.That(info!.Name, Is.EqualTo("Renamed"));
+        Assert.That(info.Description, Is.EqualTo("Old description")); // untouched field preserved
+        Assert.That(info.Type, Is.EqualTo(RegionType.Wilderness));
+    }
+
+    [Test]
+    public async Task UpdateRegionAsync_MissingRegion_FailsWithoutInsertion()
+    {
+        // Given
+        InMemoryRegionRepository repo = new();
+        RegionSubsystem subsystem = BuildSubsystem(repo, out _);
+
+        // When
+        CommandResult result = await subsystem.UpdateRegionAsync(new AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.UpdateRegionCommand("ghost", Name: "X"), CancellationToken.None);
+
+        // Then — fails, and no region was inserted
+        Assert.That(result.Success, Is.False);
+        Assert.That(repo.All(), Is.Empty);
+    }
+
+    [Test]
+    public async Task UpdateRegionAsync_WithEmptyTag_ReturnsFailWithoutThrowing()
+    {
+        // Given
+        InMemoryRegionRepository repo = new();
+        RegionSubsystem subsystem = BuildSubsystem(repo, out _);
+
+        // When
+        CommandResult result = await subsystem.UpdateRegionAsync(
+            new AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.UpdateRegionCommand("   ", Name: "X"), CancellationToken.None);
+
+        // Then — fails with a validation message rather than throwing (the application handler
+        // would otherwise reject the empty tag before any dispatch)
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.ErrorMessage, Does.Contain("cannot be empty"));
+        Assert.That(repo.All(), Is.Empty);
+    }
+
+    [Test]
+    public async Task UpdateRegionAsync_SuccessfulExecution_PublishesGenericEvent()
+    {
+        // Given
+        InMemoryRegionRepository repo = new();
+        repo.Add(Region("r1", "Region One"));
+        List<IDomainEvent> published = new();
+        IEventBus eventBus = new CapturingEventBus(published);
+        ICommandDispatcher dispatcher = new CommandDispatcher(
+            new ICommandHandlerMarker[] { new UpdateRegionHandler(repo) }, eventBus);
+        RegionSubsystem subsystem = BuildSubsystem(repo, out _, dispatcher);
+
+        // When
+        CommandResult result = await subsystem.UpdateRegionAsync(new AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.UpdateRegionCommand("r1", Name: "Renamed"), CancellationToken.None);
+
+        // Then — the dispatcher publishes the generic CommandExecutedEvent on success
+        Assert.That(
+            published.Any(e => e is CommandExecutedEvent<AmiaReforged.PwEngine.Features.WorldEngine.Application.Regions.Commands.UpdateRegionCommand>),
+            Is.True);
+    }
+
+    #endregion
+
+    #region Chaos Query (task 036)
+
+    [Test]
+    public async Task GetChaosForAreaAsync_AreaOverride_TakesPrecedence()
+    {
+        // Given
+        ChaosState overrideChaos = new() { Danger = 42, Corruption = 10, Density = 20, Mutation = 5 };
+        InMemoryRegionRepository repo = new();
+        repo.Add(Region("r1", "Region One", area: Area("area_a", overrideChaos), defaultChaos: ChaosState.Default));
+        RegionSubsystem subsystem = BuildSubsystem(repo, out _);
+
+        // When
+        ChaosState result = await subsystem.GetChaosForAreaAsync("area_a", CancellationToken.None);
+
+        // Then — area-level override wins over the region default
+        Assert.That(result.Danger, Is.EqualTo(42));
+    }
+
+    [Test]
+    public async Task GetChaosForAreaAsync_NoAreaOverride_FallsBackToRegionDefault()
+    {
+        // Given
+        ChaosState regionDefault = new() { Danger = 30, Corruption = 20, Density = 10, Mutation = 15 };
+        InMemoryRegionRepository repo = new();
+        repo.Add(Region("r1", "Region One", area: Area("area_a"), defaultChaos: regionDefault));
+        RegionSubsystem subsystem = BuildSubsystem(repo, out _);
+
+        // When
+        ChaosState result = await subsystem.GetChaosForAreaAsync("area_a", CancellationToken.None);
+
+        // Then — region default is used when no area override exists
+        Assert.That(result.Density, Is.EqualTo(10));
+        Assert.That(result.Mutation, Is.EqualTo(15));
+    }
+
+    [Test]
+    public async Task GetChaosForAreaAsync_UnregisteredArea_ReturnsDefault()
+    {
+        // Given
+        InMemoryRegionRepository repo = new();
+        repo.Add(Region("r1", "Region One", area: Area("area_a"), defaultChaos: new ChaosState { Danger = 50 }));
+        RegionSubsystem subsystem = BuildSubsystem(repo, out _);
+
+        // When — area not defined in any region
+        ChaosState result = await subsystem.GetChaosForAreaAsync("nowhere", CancellationToken.None);
+
+        // Then — all-zero default
+        Assert.That(result, Is.EqualTo(ChaosState.Default));
+    }
+
+    [Test]
+    public async Task GetChaosForAreaAsync_CaseInsensitive_AreaMatching()
+    {
+        // Given
+        ChaosState overrideChaos = new() { Danger = 77 };
+        InMemoryRegionRepository repo = new();
+        repo.Add(Region("r1", "Region One", area: Area("Area_A", overrideChaos), defaultChaos: ChaosState.Default));
+        RegionSubsystem subsystem = BuildSubsystem(repo, out _);
+
+        // When — different casing
+        ChaosState result = await subsystem.GetChaosForAreaAsync("area_a", CancellationToken.None);
+
+        // Then — match is case-insensitive
+        Assert.That(result.Danger, Is.EqualTo(77));
+    }
+
+    [Test]
+    public async Task GetChaosForAreaAsync_Subsystem_NoLongerReadsRepositoryDirectly()
+    {
+        // Given — a repository-backed handler wired via the dispatcher; the subsystem must route
+        // through it rather than touching the repository itself.
+        ChaosState regionDefault = new() { Corruption = 33 };
+        InMemoryRegionRepository repo = new();
+        repo.Add(Region("r1", "Region One", area: Area("area_a"), defaultChaos: regionDefault));
+        RegionSubsystem subsystem = BuildSubsystem(repo, out _);
+
+        // When
+        ChaosState result = await subsystem.GetChaosForAreaAsync("area_a", CancellationToken.None);
+
+        // Then
+        Assert.That(result.Corruption, Is.EqualTo(33));
+    }
+
+    #endregion
+
+    /// <summary>
+    /// Minimal in-memory event bus that captures published events for assertions.
+    /// </summary>
+    private sealed class CapturingEventBus : IEventBus
+    {
+        private readonly List<IDomainEvent> _events;
+
+        public CapturingEventBus(List<IDomainEvent> events)
+        {
+            _events = events;
+        }
+
+        public Task PublishAsync<TEvent>(TEvent @event, CancellationToken cancellationToken = default)
+            where TEvent : IDomainEvent
+        {
+            _events.Add(@event);
+            return Task.CompletedTask;
+        }
+
+        public void Subscribe<TEvent>(Func<TEvent, CancellationToken, Task> handler) where TEvent : IDomainEvent
+        {
+        }
     }
 }

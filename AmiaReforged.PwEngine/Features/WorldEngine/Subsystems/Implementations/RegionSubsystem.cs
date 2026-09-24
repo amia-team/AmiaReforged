@@ -2,7 +2,9 @@ using AmiaReforged.PwEngine.Features.Encounters.Models;
 using AmiaReforged.PwEngine.Features.WorldEngine.Application.Regions.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions.Queries;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Implementations;
@@ -16,11 +18,16 @@ public sealed class RegionSubsystem : IRegionSubsystem
 {
     private readonly IRegionRepository _regionRepository;
     private readonly IQueryDispatcher _queryDispatcher;
+    private readonly ICommandDispatcher _commandDispatcher;
 
-    public RegionSubsystem(IRegionRepository regionRepository, IQueryDispatcher queryDispatcher)
+    public RegionSubsystem(
+        IRegionRepository regionRepository,
+        IQueryDispatcher queryDispatcher,
+        ICommandDispatcher commandDispatcher)
     {
         _regionRepository = regionRepository;
         _queryDispatcher = queryDispatcher;
+        _commandDispatcher = commandDispatcher;
     }
 
     /// <inheritdoc/>
@@ -59,9 +66,39 @@ public sealed class RegionSubsystem : IRegionSubsystem
             definition.Type ?? RegionType.Special);
     }
 
-    public Task<CommandResult> UpdateRegionAsync(UpdateRegionCommand command, CancellationToken ct = default)
+    public async Task<CommandResult> UpdateRegionAsync(UpdateRegionCommand command, CancellationToken ct = default)
     {
-        return Task.FromResult(CommandResult.Fail("Not yet implemented"));
+        // Translate the reconciled facade request (task 033) into the application persistence
+        // command. The current definition is loaded only to merge partial changes onto it; the
+        // application handler owns existence validation and persistence (task 035).
+        if (string.IsNullOrWhiteSpace(command.RegionTag))
+        {
+            return CommandResult.Fail("Region tag cannot be empty");
+        }
+
+        RegionDefinition? current = await _queryDispatcher
+            .DispatchAsync<GetRegionDefinitionQuery, RegionDefinition?>(
+                new GetRegionDefinitionQuery { Tag = command.RegionTag }, ct);
+
+        RegionDefinition updated = new()
+        {
+            Tag = current?.Tag ?? new RegionTag(command.RegionTag),
+            Name = command.Name ?? current?.Name ?? string.Empty,
+            Description = command.Description ?? current?.Description,
+            Type = command.Type ?? current?.Type,
+            Areas = current?.Areas ?? new List<AreaDefinition>(),
+            DefaultChaos = current?.DefaultChaos
+        };
+
+        Application.Regions.Commands.UpdateRegionCommand appCommand = new()
+        {
+            Tag = command.RegionTag,
+            Definition = updated
+        };
+
+        // Dispatch; the handler fails (without insertion) when the tag is unknown and publishes
+        // the generic CommandExecutedEvent on success.
+        return await _commandDispatcher.DispatchAsync(appCommand, ct);
     }
 
     public Task<CommandResult> ApplyRegionalEffectAsync(string regionTag, string effectId, CancellationToken ct = default)
@@ -86,22 +123,10 @@ public sealed class RegionSubsystem : IRegionSubsystem
     /// </summary>
     public Task<ChaosState> GetChaosForAreaAsync(string areaResRef, CancellationToken ct = default)
     {
-        if (!_regionRepository.TryGetRegionForArea(areaResRef, out RegionDefinition? region) || region is null)
-        {
-            return Task.FromResult(ChaosState.Default);
-        }
-
-        // Look for an area-level chaos override
-        AreaDefinition? areaDef = region.Areas
-            .FirstOrDefault(a => string.Equals(a.ResRef.Value, areaResRef, StringComparison.OrdinalIgnoreCase));
-
-        if (areaDef?.Environment.Chaos is { } areaChaos)
-        {
-            return Task.FromResult(areaChaos);
-        }
-
-        // Fall back to the region's default chaos, or ChaosState.Default
-        return Task.FromResult(region.DefaultChaos ?? ChaosState.Default);
+        // Resolution (area override -> region default -> ChaosState.Default) lives in the query
+        // handler; the subsystem only dispatches (task 036).
+        return _queryDispatcher.DispatchAsync<GetChaosForAreaQuery, ChaosState>(
+            new GetChaosForAreaQuery(areaResRef), ct);
     }
 
     /// <inheritdoc/>
