@@ -139,6 +139,11 @@ public sealed class DialogueTree
             return errors;
         }
 
+        // Node IDs must be unique. Checked before the structural checks below so
+        // duplicates are always reported, even when nodes bypass AddNode() and the
+        // rest of the tree is broken. Read-only: never mutates the tree.
+        errors.AddRange(DuplicateNodeIdErrors());
+
         // Root node must exist
         DialogueNode? root = GetRootNode();
         if (root == null)
@@ -201,6 +206,27 @@ public sealed class DialogueTree
         if (string.IsNullOrWhiteSpace(Title))
         {
             errors.Add("Dialogue tree must have a title");
+        }
+
+        return errors;
+    }
+
+    /// <summary>
+    /// Reports node IDs that appear more than once in <see cref="Nodes"/>. Each
+    /// duplicated ID is reported exactly once, with the ID included in the message.
+    /// Compares <see cref="DialogueNodeId.Value"/> so it detects duplicates created
+    /// by placing nodes directly into <see cref="Nodes"/> (bypassing <see cref="AddNode"/>).
+    /// </summary>
+    private List<string> DuplicateNodeIdErrors()
+    {
+        List<string> errors = [];
+
+        foreach (var group in Nodes.GroupBy(n => n.Id.Value))
+        {
+            if (group.Count() > 1)
+            {
+                errors.Add($"Duplicate node ID '{group.Key}' is used by {group.Count()} nodes");
+            }
         }
 
         return errors;
