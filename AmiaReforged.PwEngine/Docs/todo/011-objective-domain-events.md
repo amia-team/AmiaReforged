@@ -1,33 +1,202 @@
 # 011 — Publish objective-resolution events on the bus
 
-Status: **Open**
-Type: **Implementation**
-Audit area: **F-6**
+Status: **Open**  
+Type: **Implementation**  
+Audit area: **F-6**  
 Depends on: [010 — Publish dynamic-quest domain events on the bus](010-dynamic-quest-domain-events.md).
 
 ## Current gap
 
-Objective resolution directly enqueues its resulting domain events in the private processor.
+`QuestObjectiveResolutionService` routes NWN/dialogue signals through `QuestSessionManager`, receives `CodexDomainEvent` results, and currently fire-and-forgets each result directly into `CodexEventProcessor`.
 
-## Change
+That bypasses the shared `IEventBus`.
 
-Route resolved objective/stage/quest events through the bus using the single aggregate-application path established in task 010. Keep objective evaluation handler-internal; a new signal command is not required merely to rename the existing flow.
+Task 010 establishes the only allowed Codex aggregate application path:
+
+```text
+domain producer
+  -> IEventBus
+  -> selected Codex forwarding subscriber
+  -> CodexEventProcessor
+```
+
+Apply the same rule here.
+
+## Implementation decision
+
+### Replace the direct processor dependency
+
+`QuestObjectiveResolutionService` must inject `IEventBus` instead of `CodexEventProcessor`.
+
+Keep these existing dependencies/roles:
+
+- `RuntimeCharacterService` — player/NWN identity and lifecycle
+- `QuestSessionManager` — objective evaluation and in-memory runtime session state
+- `IPlayerCodexRepository` — login/session reconstruction only
+- `IEventBus` — publication of resulting domain facts
+
+Do not make the service call command handlers.
+
+### Make signal publication awaitable
+
+Replace the private direct-enqueue helper with an async bus-publishing helper, e.g.:
+
+```csharp
+private async Task RouteSignalAndPublishEventsAsync(
+    CharacterId characterId,
+    QuestSignal signal,
+    CancellationToken ct = default)
+{
+    IReadOnlyList<CodexDomainEvent> events =
+        _sessionManager.ProcessSignal(characterId, signal);
+
+    foreach (CodexDomainEvent domainEvent in events)
+        await _eventBus.PublishAsync(domainEvent, ct);
+}
+```
+
+Use equivalent code if naming differs, but keep the behavior.
+
+Convert the production signal entry methods to awaitable methods:
+
+- `ProcessItemAcquiredAsync`
+- `ProcessItemLostAsync`
+- `ProcessDialogueNodeEnteredAsync`
+
+There are no production callers outside this service and `DialogueNodeEnteredEventHandler` that require preserving the current `void` signatures.
+
+Update the NWN event callbacks to await the new methods. `async void` is acceptable only at the actual NWN event-handler boundary because those delegates are event callbacks.
+
+Update `DialogueNodeEnteredEventHandler.HandleAsync` to await/return the task from `ProcessDialogueNodeEnteredAsync`.
+
+Do not add a new "objective signal command". Objective evaluation remains handler-internal/runtime plumbing exactly as it is now.
+
+## Publish every event returned by `QuestSessionManager`
+
+For a signal, preserve the event list and order returned by `QuestSessionManager.ProcessSignal`.
+
+Potential events include:
+
+- `ObjectiveProgressedEvent`
+- `ObjectiveCompletedEvent`
+- `ObjectiveFailedEvent`
+- `QuestObjectiveGroupCompletedEvent`
+- `QuestStageAdvancedEvent`
+- `StageRewardsGrantedEvent`
+- `QuestExpiredEvent`
+
+Publish each event once, in returned order.
+
+Do not translate them into new wrapper events.
+
+## Codex forwarding decision
+
+Extend the single forwarding subscriber established in task 010 only for events that have real behavior in `CodexEventProcessor`.
+
+Forward:
+
+- `QuestStageAdvancedEvent`
+- `StageRewardsGrantedEvent`
+- `QuestExpiredEvent` (already covered by task 010)
+
+Do **not** forward these observability-only objective events into `CodexEventProcessor`:
+
+- `ObjectiveProgressedEvent`
+- `ObjectiveCompletedEvent`
+- `ObjectiveFailedEvent`
+- `QuestObjectiveGroupCompletedEvent`
+
+`CodexEventProcessor` intentionally treats those four as no-ops because objective state is held by `QuestSession`. Publishing them on the shared bus is sufficient and avoids pointless aggregate load/save work.
+
+Do not invent persisted per-objective progress in this task.
+
+## Behavioral invariants
+
+### Objective state
+
+`QuestSession` remains the owner of live objective state.
+
+Do not move evaluator state into `PlayerCodex`.
+
+### Stage advancement
+
+When `QuestSession` emits `QuestStageAdvancedEvent`, the existing `CodexEventProcessor` behavior remains the owner of applying that stage transition to `PlayerCodex`.
+
+Do not separately call `SetQuestStageCommand` from the objective-resolution path. Doing both would double-advance the quest.
+
+### Stage rewards
+
+When `QuestSession` emits `StageRewardsGrantedEvent`, preserve the existing `CodexEventProcessor` path to `IStageRewardGranter`.
+
+Do not grant rewards directly in `QuestObjectiveResolutionService` in addition to forwarding the event.
+
+### Dialogue signals
+
+`DialogueNodeEnteredEventHandler` remains a bus subscriber to `DialogueNodeEnteredEvent`.
+
+It translates the dialogue event into a quest signal through `QuestObjectiveResolutionService`; the service then publishes resulting Codex domain events back to the shared bus.
+
+This is not a publish loop because `DialogueNodeEnteredEvent` and the resulting objective/Codex events are different event types.
+
+### Runtime bus timing
+
+The production event bus is asynchronous. Do not assume a published stage-advance event has already updated persistence when `PublishAsync` returns.
 
 ## Starting points
 
-- [Subsystems/Codex/Application/QuestObjectiveResolutionService.cs](../../Features/WorldEngine/Subsystems/Codex/Application/QuestObjectiveResolutionService.cs)
-- [Subsystems/Codex/Application/CodexEventProcessor.cs](../../Features/WorldEngine/Subsystems/Codex/Application/CodexEventProcessor.cs)
-- [Subsystems/Codex/Application/DialogueNodeEnteredEventHandler.cs](../../Features/WorldEngine/Subsystems/Codex/Application/DialogueNodeEnteredEventHandler.cs)
+- `Features/WorldEngine/Subsystems/Codex/Application/QuestObjectiveResolutionService.cs`
+- `Features/WorldEngine/Subsystems/Codex/Application/CodexEventProcessor.cs`
+- `Features/WorldEngine/Subsystems/Codex/Application/DialogueNodeEnteredEventHandler.cs`
+- `Features/WorldEngine/Subsystems/Codex/Domain/Aggregates/QuestSession.cs`
+- `Features/WorldEngine/Subsystems/Codex/Domain/Events/ObjectiveEvents.cs`
+- `Features/WorldEngine/SharedKernel/Tests/Codex/Application/QuestObjectiveResolutionServiceTests.cs`
+- `Features/WorldEngine/SharedKernel/Tests/Codex/Application/QuestObjectiveTestHelpers.cs`
+
+## Non-goals
+
+Do **not**:
+
+- add an objective-signal command;
+- redesign evaluator interfaces;
+- persist objective counters;
+- change stage-selection rules;
+- move stage reward logic into the resolution service;
+- make the event bus synchronous;
+- directly call `CodexEventProcessor` from `QuestObjectiveResolutionService`;
+- publish a second event copy from the forwarding subscriber.
 
 ## Acceptance checks
 
-- [ ] A dialogue signal that completes an objective produces observable bus events.
-- [ ] The aggregate transition and any rewards occur once, without a publish/consume loop.
-- [ ] No objective-result event is delivered only by a private enqueue.
+- [ ] `QuestObjectiveResolutionService` no longer depends on `CodexEventProcessor`.
+- [ ] Every event returned by `QuestSessionManager.ProcessSignal` is published through `IEventBus` exactly once.
+- [ ] A dialogue signal completing an objective produces bus-observable objective/group/stage events as applicable.
+- [ ] `QuestStageAdvancedEvent` reaches `CodexEventProcessor` through the task-010 forwarding path and updates the Codex once.
+- [ ] `StageRewardsGrantedEvent` reaches the existing reward-granter path once.
+- [ ] Objective progress/completion/failure/group events are bus-observable but are not pointlessly re-applied to `PlayerCodex`.
+- [ ] There is no direct `CodexEventProcessor.EnqueueEventAsync` call in production objective-resolution code.
+- [ ] There is no publish/consume loop.
+- [ ] Existing objective and Codex tests pass.
+
+## Verification
+
+Run:
+
+```bash
+dotnet build AmiaReforged.PwEngine/AmiaReforged.PwEngine.csproj --nologo
+dotnet test AmiaReforged.PwEngine/AmiaReforged.PwEngine.csproj \
+  --filter "FullyQualifiedName~Codex" --no-build --verbosity minimal
+```
+
+Also grep `QuestObjectiveResolutionService.cs` for `CodexEventProcessor` / `EnqueueEventAsync`; neither should remain in the production signal-delivery path.
 
 ## Completion evidence
 
-Record the chosen behavior (if a decision), changed files, exact verification command or manual procedure, and observed result here. If deferred or not applicable, link the deciding task and explain why.
+Record:
+
+- changed files;
+- final signal → bus → Codex path;
+- exact event types forwarded to `CodexEventProcessor`;
+- exact test command/result;
+- confirmation that no objective-result event is delivered only through the old private channel.
 
 See [backlog scope and completion rules](README.md).
-
