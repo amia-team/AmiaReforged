@@ -1,8 +1,11 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.Events;
 using Anvil.API;
 using Anvil.Services;
 using NLog;
@@ -12,9 +15,10 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Applicatio
 /// <summary>
 /// Concrete implementation of <see cref="IStageRewardGranter"/> that applies quest-stage
 /// rewards to a live NWN character via Anvil APIs and WorldEngine subsystem services.
-/// Uses <see cref="Lazy{T}"/> for industry services to break the circular DI chain:
-/// CodexEventProcessor → IStageRewardGranter → IIndustryMembershipService → IEventBus
-/// → DialogueNodeEnteredEventHandler → QuestObjectiveResolutionService → CodexEventProcessor.
+/// Proficiency XP is awarded through the <see cref="AwardProficiencyCommand"/> dispatch
+/// boundary (which loads the membership, calls the calculator, persists, and publishes
+/// <see cref="ProficiencyXpAwardedEvent"/>); the granter itself only needs the repository
+/// to resolve memberships and the dispatcher to route the award.
 /// </summary>
 [ServiceBinding(typeof(IStageRewardGranter))]
 public class NwnStageRewardGranter : IStageRewardGranter
@@ -23,19 +27,19 @@ public class NwnStageRewardGranter : IStageRewardGranter
 
     private readonly RuntimeCharacterService _runtimeCharacterService;
     private readonly ICharacterRepository _characterRepository;
-    private readonly Lazy<IIndustryMembershipService> _membershipService;
-    private readonly Lazy<IProficiencyProgressionService> _proficiencyService;
+    private readonly IIndustryMembershipRepository _membershipRepository;
+    private readonly ICommandDispatcher _commandDispatcher;
 
     public NwnStageRewardGranter(
         RuntimeCharacterService runtimeCharacterService,
         ICharacterRepository characterRepository,
-        Lazy<IIndustryMembershipService> membershipService,
-        Lazy<IProficiencyProgressionService> proficiencyService)
+        IIndustryMembershipRepository membershipRepository,
+        ICommandDispatcher commandDispatcher)
     {
         _runtimeCharacterService = runtimeCharacterService;
         _characterRepository = characterRepository;
-        _membershipService = membershipService;
-        _proficiencyService = proficiencyService;
+        _membershipRepository = membershipRepository;
+        _commandDispatcher = commandDispatcher;
     }
 
     /// <inheritdoc />
@@ -65,7 +69,7 @@ public class NwnStageRewardGranter : IStageRewardGranter
         GrantXp(creature, rewards.Xp, questId, completedStageId);
         GrantGold(creature, rewards.Gold, questId, completedStageId);
         GrantKnowledgePoints(characterId, rewards.KnowledgePoints, questId, completedStageId);
-        GrantProficiencyXp(characterId, rewards.Proficiencies, questId, completedStageId);
+        await GrantProficiencyXp(characterId, rewards.Proficiencies, questId, completedStageId);
 
         Log.Info("Granted stage {StageId} rewards for quest '{QuestId}' to {CharacterId}: " +
                  "XP={Xp}, Gold={Gold}, KP={KP}, Proficiencies={ProfCount}",
@@ -101,7 +105,7 @@ public class NwnStageRewardGranter : IStageRewardGranter
         character.AddKnowledgePoints(points);
     }
 
-    private void GrantProficiencyXp(
+    private async Task GrantProficiencyXp(
         CharacterId characterId,
         List<ProficiencyReward> proficiencies,
         QuestId questId,
@@ -109,31 +113,18 @@ public class NwnStageRewardGranter : IStageRewardGranter
     {
         if (proficiencies.Count == 0) return;
 
-        List<IndustryMembership> memberships = _membershipService.Value.GetMemberships(characterId.Value);
-
+        // Route each award through the dispatch boundary so it gets logging, the
+        // generic CommandExecutedEvent, and the ProficiencyXpAwardedEvent for free.
+        // The handler loads the membership and fails with an explicit result if the
+        // character has no membership in the industry.
         foreach (ProficiencyReward profReward in proficiencies)
         {
-            IndustryTag tag = new(profReward.IndustryTag);
-            IndustryMembership? membership = memberships.FirstOrDefault(m => m.IndustryTag == tag);
-
-            if (membership is null)
+            await _commandDispatcher.DispatchAsync(new AwardProficiencyCommand
             {
-                Log.Warn("Cannot grant proficiency XP for industry '{IndustryTag}' " +
-                          "(quest '{QuestId}' stage {StageId}): " +
-                          "character {CharacterId} has no membership in that industry.",
-                    profReward.IndustryTag, questId.Value, stageId, characterId.Value);
-                continue;
-            }
-
-            ProficiencyXpResult result = _proficiencyService.Value.AwardProficiencyXp(membership, profReward.ProficiencyXp);
-
-            if (result.LevelsGained > 0)
-            {
-                Log.Info("Character {CharacterId} gained {Levels} proficiency level(s) in '{IndustryTag}' " +
-                         "from quest '{QuestId}' stage {StageId} reward.",
-                    characterId.Value, result.LevelsGained, profReward.IndustryTag,
-                    questId.Value, stageId);
-            }
+                CharacterId = characterId,
+                IndustryTag = new(profReward.IndustryTag),
+                Points = profReward.ProficiencyXp
+            }, CancellationToken.None);
         }
     }
 }

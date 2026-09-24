@@ -48,27 +48,21 @@ public record CraftItemCommand : ICommand
 public class CraftItemHandler : ICommandHandler<CraftItemCommand>
 {
     private readonly IIndustryRepository _industryRepository;
-    private readonly IIndustryMembershipRepository _membershipRepository;
     private readonly ICharacterKnowledgeRepository _knowledgeRepository;
     private readonly ICraftingProcessor _craftingProcessor;
-    private readonly IProficiencyProgressionService _proficiencyService;
     private readonly ICommandDispatcher _commandDispatcher;
     private readonly RecipeTemplateExpander _templateExpander;
 
     public CraftItemHandler(
         IIndustryRepository industryRepository,
-        IIndustryMembershipRepository membershipRepository,
         ICharacterKnowledgeRepository knowledgeRepository,
         ICraftingProcessor craftingProcessor,
-        IProficiencyProgressionService proficiencyService,
         ICommandDispatcher commandDispatcher,
         RecipeTemplateExpander templateExpander)
     {
         _industryRepository = industryRepository;
-        _membershipRepository = membershipRepository;
         _knowledgeRepository = knowledgeRepository;
         _craftingProcessor = craftingProcessor;
-        _proficiencyService = proficiencyService;
         _commandDispatcher = commandDispatcher;
         _templateExpander = templateExpander;
     }
@@ -95,14 +89,9 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
                 $"Recipe '{command.RecipeId.Value}' not found in industry '{command.IndustryTag.Value}'");
         }
 
-        // Check character membership
-        List<IndustryMembership> memberships = _membershipRepository.All(command.CharacterId.Value);
-        IndustryMembership? membership =
-            memberships.FirstOrDefault(m => m.IndustryTag.Value == command.IndustryTag.Value);
-        if (membership == null)
-        {
-            return CommandResult.Fail($"Character is not a member of industry '{industry.Name}'");
-        }
+        // Character membership is validated by AwardProficiencyCommand, which loads the
+        // membership, awards the XP, and fails with an explicit result if the character is
+        // not a member of the industry.
 
         // Check required knowledge
         List<Knowledge> characterKnowledge = _knowledgeRepository.GetAllKnowledge(command.CharacterId.Value);
@@ -162,24 +151,25 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
             }
         }
 
-        // Award proficiency XP if successful
+        // Award proficiency XP if successful. Delegated to the dispatch boundary
+        // so the award gets logging, the generic CommandExecutedEvent, and a Fail contract.
         if (craftingResult.ProficiencyXpAwarded > 0)
         {
-            ProficiencyXpResult proficiencyResult =
-                _proficiencyService.AwardProficiencyXp(membership, craftingResult.ProficiencyXpAwarded);
-
-            if (proficiencyResult.Success)
+            CommandResult proficiencyResult = await _commandDispatcher.DispatchAsync(new AwardProficiencyCommand
             {
-                resultData["proficiencyXpLevel"] = proficiencyResult.NewLevel;
-                resultData["proficiencyXpRemaining"] = proficiencyResult.XpRemaining;
-                resultData["proficiencyXpRequired"] = proficiencyResult.XpRequired;
-                resultData["proficiencyLevelsGained"] = proficiencyResult.LevelsGained;
-                resultData["proficiencyAtTierCeiling"] = proficiencyResult.IsAtTierCeiling;
+                CharacterId = command.CharacterId,
+                IndustryTag = command.IndustryTag,
+                Points = craftingResult.ProficiencyXpAwarded
+            }, cancellationToken);
 
-                if (proficiencyResult.LevelsGained > 0)
-                {
-                    _membershipRepository.Update(membership);
-                }
+            if (proficiencyResult is { Success: true })
+            {
+                resultData["proficiencyXpLevel"] = (int)proficiencyResult.Data!["proficiencyXpLevel"];
+                resultData["proficiencyXpRemaining"] = (int)proficiencyResult.Data!["proficiencyXpRemaining"];
+                resultData["proficiencyXpRequired"] = (int)proficiencyResult.Data!["proficiencyXpRequired"];
+                resultData["proficiencyLevelsGained"] = (int)proficiencyResult.Data!["proficiencyLevelsGained"];
+                resultData["proficiencyAtTierCeiling"] = (bool)proficiencyResult.Data!["proficiencyAtTierCeiling"];
+                resultData["message"] = proficiencyResult.Data!["message"];
             }
         }
 

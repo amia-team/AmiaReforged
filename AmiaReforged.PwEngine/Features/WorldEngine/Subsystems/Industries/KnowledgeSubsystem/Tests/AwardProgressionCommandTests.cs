@@ -249,10 +249,8 @@ public class AwardProgressionCommandTests
         // craft award flows through the real dispatch boundary.
         CraftItemHandler craftHandler = new(
             industryRepository: craftIndustryRepository,
-            membershipRepository,
             knowledgeRepository,
             craftingProcessor,
-            proficiencyService,
             commandDispatcher: _dispatcher,
             new RecipeTemplateExpander(
                 new EmptyRecipeTemplateRepository(),
