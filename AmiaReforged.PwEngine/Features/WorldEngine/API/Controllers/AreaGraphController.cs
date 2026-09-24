@@ -1,4 +1,6 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.AreaGraph.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.AreaGraph;
+using Anvil;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.API.Controllers;
 
@@ -8,19 +10,19 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.API.Controllers;
 /// </summary>
 public class AreaGraphController
 {
-    private static AreaGraphCacheService? _cacheService;
-
     /// <summary>
-    /// Get the area connectivity graph. Returns cached version unless ?refresh=true is specified.
+    /// Get the area connectivity graph. Ordinary read dispatches a query through the facade;
+    /// forced refresh (?refresh=true) is handled separately (task 009).
     /// GET /api/worldengine/areas/graph?refresh=false
     /// </summary>
     [HttpGet("/api/worldengine/areas/graph")]
     public static async Task<ApiResult> GetGraph(RouteContext ctx)
     {
-        AreaGraphCacheService cache = ResolveCacheService();
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
 
-        bool refresh = string.Equals(ctx.GetQueryParam("refresh"), "true", StringComparison.OrdinalIgnoreCase);
-        AreaGraphData graph = await cache.GetOrBuildAsync(forceRefresh: refresh);
+        AreaGraphData graph = await facade.QueryAsync<GetAreaGraphQuery, AreaGraphData>(
+            new GetAreaGraphQuery(), ctx.CancellationToken);
 
         return new ApiResult(200, graph);
     }
@@ -28,23 +30,16 @@ public class AreaGraphController
     /// <summary>
     /// Force a full rebuild of the area graph from live module data.
     /// POST /api/worldengine/areas/graph/refresh
+    /// Explicit refresh is kept separate from the ordinary read query and is
+    /// coordinated with task 009 (refresh command/handler).
     /// </summary>
     [HttpPost("/api/worldengine/areas/graph/refresh")]
     public static async Task<ApiResult> RefreshGraph(RouteContext ctx)
     {
-        AreaGraphCacheService cache = ResolveCacheService();
+        AreaGraphCacheService cache = AnvilCore.GetService<AreaGraphCacheService>()
+            ?? throw new InvalidOperationException("AreaGraphCacheService is not available");
         AreaGraphData graph = await cache.RefreshAsync();
 
         return new ApiResult(200, graph);
-    }
-
-    private static AreaGraphCacheService ResolveCacheService()
-    {
-        if (_cacheService != null) return _cacheService;
-
-        // Lazy-initialize: the builder doesn't need Anvil DI since it uses NwModule.Instance directly
-        AreaGraphBuilder builder = new AreaGraphBuilder();
-        _cacheService = new AreaGraphCacheService(builder);
-        return _cacheService;
     }
 }

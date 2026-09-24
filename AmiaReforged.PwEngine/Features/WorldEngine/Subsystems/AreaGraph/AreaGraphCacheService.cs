@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Anvil.Services;
 using NLog;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.AreaGraph;
@@ -7,7 +8,9 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.AreaGraph;
 /// <summary>
 /// Manages caching of the area graph to memory and disk.
 /// The graph is computed on demand and cached until explicitly refreshed.
+/// Registered as a singleton so query/command handlers share one cache instance.
 /// </summary>
+[ServiceBinding(typeof(AreaGraphCacheService))]
 public class AreaGraphCacheService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
@@ -23,7 +26,7 @@ public class AreaGraphCacheService
     private readonly string _cacheFilePath;
     private AreaGraphData? _cached;
 
-    public AreaGraphCacheService(AreaGraphBuilder builder, string? cacheDirectory = null)
+    public AreaGraphCacheService(AreaGraphBuilder builder = null!, string? cacheDirectory = null)
     {
         _builder = builder;
 
@@ -39,7 +42,7 @@ public class AreaGraphCacheService
     /// Returns the current graph, building and caching it if needed.
     /// </summary>
     /// <param name="forceRefresh">When true, rebuilds the graph even if a cache exists.</param>
-    public async Task<AreaGraphData> GetOrBuildAsync(bool forceRefresh = false)
+    public virtual async Task<AreaGraphData> GetOrBuildAsync(bool forceRefresh = false)
     {
         if (!forceRefresh && _cached != null)
         {
@@ -67,7 +70,7 @@ public class AreaGraphCacheService
     /// <summary>
     /// Forces a full rebuild, updates cache, and returns the new graph.
     /// </summary>
-    public async Task<AreaGraphData> RefreshAsync()
+    public virtual async Task<AreaGraphData> RefreshAsync()
     {
         return await GetOrBuildAsync(forceRefresh: true);
     }

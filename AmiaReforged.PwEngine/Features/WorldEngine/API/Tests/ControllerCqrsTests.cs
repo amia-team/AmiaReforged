@@ -1,4 +1,6 @@
 using AmiaReforged.PwEngine.Features.WorldEngine;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.AreaGraph.Queries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.AreaGraph;
 using AmiaReforged.PwEngine.Features.WorldEngine.Application.Items.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Application.Organizations.Commands;
@@ -222,5 +224,27 @@ public class ControllerCqrsTests
 
         Assert.That(result, Is.Not.Null);
         Assert.That(result!.StatusCode, Is.EqualTo(404));
+    }
+
+    [Test]
+    public async Task AreaGraphController_GetGraph_WhenCalled_DispatchesQueryAndReturns200()
+    {
+        _routeTable.ScanType(typeof(Controllers.AreaGraphController));
+        AreaGraphData graph = new AreaGraphData
+        {
+            Nodes = [new AreaNode("area_1", "Area One")],
+            Edges = [new AreaEdge("area_1", "area_2", TransitionType.Door, "door")]
+        };
+        _facadeMock
+            .Setup(f => f.QueryAsync<GetAreaGraphQuery, AreaGraphData>(
+                It.IsAny<GetAreaGraphQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(graph);
+
+        ApiResult? result = await DispatchAsync("GET", "/api/worldengine/areas/graph");
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.StatusCode, Is.EqualTo(200));
+        _facadeMock.Verify(f => f.QueryAsync<GetAreaGraphQuery, AreaGraphData>(
+            It.IsAny<GetAreaGraphQuery>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 }
