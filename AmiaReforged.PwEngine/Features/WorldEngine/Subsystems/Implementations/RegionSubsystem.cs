@@ -1,5 +1,7 @@
 using AmiaReforged.PwEngine.Features.Encounters.Models;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.Regions.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions;
 using Anvil.Services;
 
@@ -13,19 +15,48 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Implementations;
 public sealed class RegionSubsystem : IRegionSubsystem
 {
     private readonly IRegionRepository _regionRepository;
+    private readonly IQueryDispatcher _queryDispatcher;
 
-    public RegionSubsystem(IRegionRepository regionRepository)
+    public RegionSubsystem(IRegionRepository regionRepository, IQueryDispatcher queryDispatcher)
     {
         _regionRepository = regionRepository;
-    }
-    public Task<RegionInfo?> GetRegionAsync(string regionTag, CancellationToken ct = default)
-    {
-        return Task.FromResult<RegionInfo?>(null);
+        _queryDispatcher = queryDispatcher;
     }
 
-    public Task<List<RegionInfo>> GetAllRegionsAsync(CancellationToken ct = default)
+    /// <inheritdoc/>
+    public async Task<RegionInfo?> GetRegionAsync(string regionTag, CancellationToken ct = default)
     {
-        return Task.FromResult(new List<RegionInfo>());
+        // Routes through the existing GetRegionDefinitionQuery (case-insensitive by tag).
+        RegionDefinition? definition = await _queryDispatcher
+            .DispatchAsync<GetRegionDefinitionQuery, RegionDefinition?>(
+                new GetRegionDefinitionQuery { Tag = regionTag }, ct);
+
+        return definition is null ? null : ToRegionInfo(definition);
+    }
+
+    /// <inheritdoc/>
+    public async Task<List<RegionInfo>> GetAllRegionsAsync(CancellationToken ct = default)
+    {
+        // Routes through the existing SearchRegionDefinitionsQuery with an empty term (returns all).
+        List<RegionDefinition> definitions = await _queryDispatcher
+            .DispatchAsync<SearchRegionDefinitionsQuery, List<RegionDefinition>>(
+                new SearchRegionDefinitionsQuery { SearchTerm = null }, ct);
+
+        return definitions.Select(ToRegionInfo).ToList();
+    }
+
+    /// <summary>
+    /// Maps a <see cref="RegionDefinition"/> to the region facade projection.
+    /// Every facade field has defined storage or an explicit compatibility/default rule
+    /// (region contract task 033).
+    /// </summary>
+    private static RegionInfo ToRegionInfo(RegionDefinition definition)
+    {
+        return new RegionInfo(
+            definition.Tag.Value,
+            definition.Name,
+            definition.Description ?? string.Empty,
+            definition.Type ?? RegionType.Special);
     }
 
     public Task<CommandResult> UpdateRegionAsync(UpdateRegionCommand command, CancellationToken ct = default)

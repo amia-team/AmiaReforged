@@ -8,6 +8,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions.Persistence;
+using RegionType = AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.RegionType;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.ResourceNodeData;
 using Anvil;
 
@@ -326,6 +327,8 @@ public class RegionController
         {
             Tag = def.Tag.Value,
             def.Name,
+            Description = def.Description,
+            Type = def.Type?.ToString(),
             DefaultChaos = def.DefaultChaos != null
                 ? new { def.DefaultChaos.Danger, def.DefaultChaos.Corruption, def.DefaultChaos.Density, def.DefaultChaos.Mutation }
                 : null,
@@ -416,10 +419,14 @@ public class RegionController
                 settlement);
         }).ToList();
 
+        RegionType? type = Enum.TryParse<RegionType>(dto.Type, true, out RegionType parsedType) ? parsedType : (RegionType?)null;
+
         return new RegionDefinition
         {
             Tag = new RegionTag(dto.Tag),
             Name = dto.Name,
+            Description = dto.Description,
+            Type = type,
             Areas = areas,
             DefaultChaos = defaultChaos
         };
@@ -431,6 +438,8 @@ public class RegionController
     {
         public string Tag { get; init; } = string.Empty;
         public string Name { get; init; } = string.Empty;
+        public string? Description { get; init; }
+        public string? Type { get; init; }
         public ChaosStateDto? DefaultChaos { get; init; }
         public AreaDto[]? Areas { get; init; }
     }
