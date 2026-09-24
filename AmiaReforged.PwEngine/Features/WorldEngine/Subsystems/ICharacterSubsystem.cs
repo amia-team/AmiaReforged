@@ -19,11 +19,24 @@ public interface ICharacterSubsystem
     /// <summary>
     /// Gets character statistics.
     /// </summary>
+    /// <remarks>
+    /// Returns the truthful statistics projection. Only total <see
+    /// cref="CharacterStats.PlayTime">play time</see> has a backing data source.
+    /// The engine once reported rank-ups as quests, industries joined as crafted
+    /// items, and the current time as last seen; none of those are real, so the
+    /// projection exposes just the one supported field and returns <c>null</c>
+    /// when the character has no statistics record.
+    /// </remarks>
     Task<CharacterStats?> GetCharacterStatsAsync(CharacterId characterId, CancellationToken ct = default);
 
     /// <summary>
     /// Updates character statistics.
     /// </summary>
+    /// <remarks>
+    /// Only <see cref="CharacterStats.PlayTime">play time</see> is a supported,
+    /// writable field. The update is dispatched through the command system and
+    /// fails when the character has no statistics record.
+    /// </remarks>
     Task<CommandResult> UpdateCharacterStatsAsync(CharacterId characterId, CharacterStats stats, CancellationToken ct = default);
 
     // === Reputation Management ===
@@ -57,11 +70,14 @@ public interface ICharacterSubsystem
 }
 
 /// <summary>
-/// Represents character statistics.
+/// The truthful character statistics projection.
+///
+/// Only <see cref="PlayTime"/> is backed by real data. Every other statistic the
+/// engine historically reported was a mislabeled value (rank-ups labelled as
+/// quests, industries joined labelled as crafted items, "now" labelled as last
+/// seen). Rather than continue to surface those approximations, this record
+/// exposes just the single supported, writable field. See task 022 for the
+/// contract decision.
 /// </summary>
-public record CharacterStats(
-    int PlayTime,
-    int QuestsCompleted,
-    int ItemsCrafted,
-    DateTime LastSeen);
+public record CharacterStats(int PlayTime);
 

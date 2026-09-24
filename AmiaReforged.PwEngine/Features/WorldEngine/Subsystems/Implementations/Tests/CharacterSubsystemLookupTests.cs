@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Anvil.API;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
@@ -39,9 +40,9 @@ public class CharacterSubsystemLookupTests
         _queries = new RecordingQueryDispatcher();
         _subsystem = new CharacterSubsystem(
             _repository,
-            new NullCharacterStatRepository(),
             new NullReputationRepository(),
-            _queries);
+            _queries,
+            new NullCommandDispatcher());
     }
 
     [Test]
@@ -190,6 +191,18 @@ public class CharacterSubsystemLookupTests
     private sealed class NullReputationRepository : IReputationRepository
     {
         public Reputation GetReputation(Guid characterId, Guid targetId) => new();
+    }
+
+    private sealed class NullCommandDispatcher : ICommandDispatcher
+    {
+        public Task<CommandResult> DispatchAsync<TCommand>(TCommand command, CancellationToken cancellationToken = default)
+            where TCommand : ICommand => Task.FromResult(CommandResult.Ok());
+
+        public Task<BatchCommandResult> DispatchBatchAsync<TCommand>(
+            IEnumerable<TCommand> commands,
+            BatchExecutionOptions? options = null,
+            CancellationToken cancellationToken = default)
+            where TCommand : ICommand => Task.FromResult(BatchCommandResult.FromResults(new List<CommandResult>()));
     }
 
     private sealed class FakeCharacter : ICharacter

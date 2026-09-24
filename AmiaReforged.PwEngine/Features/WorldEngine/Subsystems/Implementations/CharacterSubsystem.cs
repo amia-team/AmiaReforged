@@ -3,6 +3,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Queries;
 using Anvil.Services;
 
@@ -27,20 +28,20 @@ public sealed class CharacterSubsystem : ICharacterSubsystem
     /// touch the repository directly.
     /// </summary>
     private readonly ICharacterRepository _characterRepository;
-    private readonly ICharacterStatRepository _statRepository;
     private readonly IReputationRepository _reputationRepository;
     private readonly IQueryDispatcher _queries;
+    private readonly ICommandDispatcher _commands;
 
     public CharacterSubsystem(
         ICharacterRepository characterRepository,
-        ICharacterStatRepository statRepository,
         IReputationRepository reputationRepository,
-        IQueryDispatcher queries)
+        IQueryDispatcher queries,
+        ICommandDispatcher commands)
     {
         _characterRepository = characterRepository;
-        _statRepository = statRepository;
         _reputationRepository = reputationRepository;
         _queries = queries;
+        _commands = commands;
     }
 
     public Task<ICharacter?> GetCharacterAsync(CharacterId characterId, CancellationToken ct = default)
@@ -50,29 +51,13 @@ public sealed class CharacterSubsystem : ICharacterSubsystem
 
     public Task<CharacterStats?> GetCharacterStatsAsync(CharacterId characterId, CancellationToken ct = default)
     {
-        CharacterStatistics? stats = _statRepository.GetCharacterStatistics(characterId);
-        if (stats is null)
-            return Task.FromResult<CharacterStats?>(null);
-
-        return Task.FromResult<CharacterStats?>(new CharacterStats(
-            PlayTime: stats.PlayTime,
-            QuestsCompleted: stats.TimesRankedUp, // Best available approximation
-            ItemsCrafted: stats.IndustriesJoined,  // Best available approximation
-            LastSeen: DateTime.UtcNow));
+        return _queries.DispatchAsync<GetCharacterStatsQuery, CharacterStats?>(new GetCharacterStatsQuery(characterId), ct);
     }
 
     public Task<CommandResult> UpdateCharacterStatsAsync(CharacterId characterId, CharacterStats stats, CancellationToken ct = default)
     {
-        CharacterStatistics? existing = _statRepository.GetCharacterStatistics(characterId);
-        if (existing is null)
-            return Task.FromResult(CommandResult.Fail($"No statistics found for character {characterId}"));
-
-        existing.PlayTime = stats.PlayTime;
-
-        _statRepository.UpdateCharacterStatistics(existing);
-        _statRepository.SaveChanges();
-
-        return Task.FromResult(CommandResult.Ok());
+        return _commands.DispatchAsync<UpdateCharacterStatsCommand>(
+            new UpdateCharacterStatsCommand(characterId, stats.PlayTime), ct);
     }
 
     public Task<int> GetReputationAsync(CharacterId characterId, OrganizationId organizationId, CancellationToken ct = default)
