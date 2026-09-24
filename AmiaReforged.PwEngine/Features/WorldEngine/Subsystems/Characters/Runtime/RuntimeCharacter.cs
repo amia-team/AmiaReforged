@@ -55,7 +55,16 @@ public class RuntimeCharacter(
 
     public LearningResult Learn(string knowledgeTag)
     {
-        return membershipService.LearnKnowledge(characterId, knowledgeTag);
+        CommandResult result = dispatcher
+            .DispatchAsync(new LearnKnowledgeCommand
+            {
+                CharacterId = characterId,
+                KnowledgeTag = knowledgeTag
+            }, CancellationToken.None).GetAwaiter().GetResult();
+
+        return result.Data != null && result.Data.TryGetValue("result", out object? value) && value is LearningResult learningResult
+            ? learningResult
+            : LearningResult.CharacterNotFound;
     }
 
     public bool CanLearn(string knowledgeTag)

@@ -61,6 +61,22 @@ public class RuntimeCharacterTests
                 });
                 return CommandResult.Ok();
             });
+
+        // Route knowledge learning through the real membership service so the dispatch boundary
+        // exercised by RuntimeCharacter.Learn actually persists knowledge and returns the outcome.
+        mock.Setup(d => d.DispatchAsync(It.IsAny<LearnKnowledgeCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((LearnKnowledgeCommand cmd, CancellationToken _) =>
+            {
+                LearningResult result = _membershipService.LearnKnowledge(cmd.CharacterId, cmd.KnowledgeTag);
+                Dictionary<string, object> data = new()
+                {
+                    ["result"] = result,
+                    ["success"] = result == LearningResult.Success
+                };
+                return result == LearningResult.Success
+                    ? CommandResult.OkWithData(data)
+                    : CommandResult.Fail($"Could not learn knowledge '{cmd.KnowledgeTag}'", data);
+            });
         return mock.Object;
     }
 
