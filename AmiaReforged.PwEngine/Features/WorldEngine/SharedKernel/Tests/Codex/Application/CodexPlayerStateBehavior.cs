@@ -209,12 +209,47 @@ public class CodexPlayerStateBehavior
 
     // === Dynamic quests (service behind commands) ===
 
-    private DynamicQuestService QuestService(InMemoryDynamicQuestRepository dynRepo)
+    private DynamicQuestService QuestService(InMemoryDynamicQuestRepository dynRepo, IEventBus? eventBus = null)
     {
+        IEventBus bus = eventBus ?? new InMemoryEventBus();
         ObjectiveEvaluatorRegistry registry = new([]);
         QuestSessionManager sessions = new(registry);
         CodexEventProcessor processor = new(_codexRepo);
-        return new DynamicQuestService(dynRepo, sessions, processor);
+        return new DynamicQuestService(dynRepo, sessions, processor, bus);
+    }
+
+    [Test]
+    public async Task DynamicQuest_Post_PublishesDomainEventOnBus()
+    {
+        InMemoryEventBus bus = new();
+        QuestPostedEvent? observed = null;
+        bus.Subscribe<QuestPostedEvent>((@event, _) =>
+        {
+            observed = @event;
+            return Task.CompletedTask;
+        });
+
+        InMemoryDynamicQuestRepository dynRepo = new();
+        DynamicQuestTemplate template = new()
+        {
+            TemplateId = TemplateId.NewId(),
+            Title = "Goblin Scouts",
+            Description = "Clear the goblin camp.",
+        };
+        await dynRepo.SaveTemplateAsync(template);
+
+        CommandDispatcher commands = Commands(new PostDynamicQuestHandler(QuestService(dynRepo, bus)));
+
+        CommandResult result = await commands.DispatchAsync(new PostDynamicQuestCommand
+        {
+            TemplateId = template.TemplateId.Value,
+            PostedBy = _characterId
+        });
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(observed, Is.Not.Null,
+            "A bus subscriber must observe QuestPostedEvent on a successful post");
+        Assert.That(observed!.Title, Is.EqualTo("Goblin Scouts"));
     }
 
     [Test]

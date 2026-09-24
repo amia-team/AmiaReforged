@@ -6,6 +6,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Objecti
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Repositories;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application;
@@ -25,15 +26,35 @@ public class DynamicQuestService
     private readonly IDynamicQuestRepository _dynamicQuestRepository;
     private readonly QuestSessionManager _sessionManager;
     private readonly CodexEventProcessor _eventProcessor;
+    private readonly IEventBus _eventBus;
 
     public DynamicQuestService(
         IDynamicQuestRepository dynamicQuestRepository,
         QuestSessionManager sessionManager,
-        CodexEventProcessor eventProcessor)
+        CodexEventProcessor eventProcessor,
+        IEventBus eventBus)
     {
         _dynamicQuestRepository = dynamicQuestRepository ?? throw new ArgumentNullException(nameof(dynamicQuestRepository));
         _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
         _eventProcessor = eventProcessor ?? throw new ArgumentNullException(nameof(eventProcessor));
+        _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+    }
+
+    /// <summary>
+    /// Publishes a dynamic-quest domain event on the shared <see cref="IEventBus"/>
+    /// for external subscribers and applies it to the Codex aggregate exactly once,
+    /// through the private event channel. The bus carries no Codex subscriber, so the
+    /// channel is the single application path and the aggregate is never mutated twice
+    /// (publishing on the bus and enqueuing to the channel are not two Codex writes).
+    /// The source posting is persisted before either call, so publication timing is
+    /// explicit relative to persistence.
+    /// </summary>
+    private async Task EmitDomainEventAsync<TEvent>(
+        TEvent domainEvent, CancellationToken cancellationToken)
+        where TEvent : CodexDomainEvent
+    {
+        await _eventBus.PublishAsync(domainEvent, cancellationToken).ConfigureAwait(false);
+        await _eventProcessor.EnqueueEventAsync(domainEvent, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -62,7 +83,7 @@ public class DynamicQuestService
 
         await _dynamicQuestRepository.SavePostingAsync(posting, cancellationToken);
 
-        await _eventProcessor.EnqueueEventAsync(
+        await EmitDomainEventAsync(
             new QuestPostedEvent(postedBy, now, posting.PostingId, templateId, template.Title),
             cancellationToken);
 
@@ -145,8 +166,8 @@ public class DynamicQuestService
             deadline,
             now);
 
-        // Emit claimed event → CodexEventProcessor will create the CodexQuestEntry
-        await _eventProcessor.EnqueueEventAsync(
+        // Emit claimed event → published on the bus for observers, applied to Codex once.
+        await EmitDomainEventAsync(
             new QuestClaimedEvent(
                 characterId, now, postingId, questId, template.TemplateId,
                 posting.Title, posting.Description, deadline),
@@ -188,7 +209,7 @@ public class DynamicQuestService
         _sessionManager.AddToSession(questId, claimantId, inviteeId);
 
         // Emit events
-        await _eventProcessor.EnqueueEventAsync(
+        await EmitDomainEventAsync(
             new QuestSharedEvent(claimantId, now, questId, inviteeId),
             cancellationToken);
 
@@ -196,7 +217,7 @@ public class DynamicQuestService
         DateTime? deadline = posting.CalculateDeadline(now);
         DynamicQuestTemplate? template = await _dynamicQuestRepository.GetTemplateAsync(posting.SourceTemplateId, cancellationToken);
 
-        await _eventProcessor.EnqueueEventAsync(
+        await EmitDomainEventAsync(
             new QuestClaimedEvent(
                 inviteeId, now, postingId, questId,
                 posting.SourceTemplateId,
@@ -231,8 +252,8 @@ public class DynamicQuestService
 
         DateTime now = DateTime.UtcNow;
 
-        // Emit unclaim event → removes quest from codex
-        await _eventProcessor.EnqueueEventAsync(
+        // Emit unclaim event → published on the bus, removes quest from codex once.
+        await EmitDomainEventAsync(
             new QuestUnclaimedEvent(characterId, now, postingId, questId),
             cancellationToken);
 
@@ -251,7 +272,14 @@ public class DynamicQuestService
 
         foreach (CodexDomainEvent evt in expirationEvents)
         {
-            await _eventProcessor.EnqueueEventAsync(evt, cancellationToken);
+            // Publish the concrete expiry event on the bus so external observers
+            // receive QuestExpiredEvent, then route to the Codex aggregate once.
+            if (evt is QuestExpiredEvent expired)
+            {
+                await _eventBus.PublishAsync(expired, cancellationToken).ConfigureAwait(false);
+            }
+
+            await _eventProcessor.EnqueueEventAsync(evt, cancellationToken).ConfigureAwait(false);
         }
 
         // Also clean up expired postings from storage
