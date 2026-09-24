@@ -1,6 +1,6 @@
 # 018D — Dispatch runtime removal on logout and verify lifecycle ordering
 
-Status: **Open**
+Status: **Done**
 Type: **Implementation / Verification**
 Audit area: **F-7 Characters**
 Depends on: **018B, 018C**

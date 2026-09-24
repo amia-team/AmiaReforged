@@ -47,7 +47,7 @@ public class RuntimeCharacterService
         NwModule.Instance.OnClientLeave += Unregister;
     }
 
-    private void Unregister(ModuleEvents.OnClientLeave obj)
+    private async void Unregister(ModuleEvents.OnClientLeave obj)
     {
         if (obj.Player.IsDM) return;
 
@@ -61,7 +61,10 @@ public class RuntimeCharacterService
         _playerKeys.Remove(obj.Player);
         if (obj.Player.LoginCreature == null) return;
 
-        DeleteRuntimeCharacter(obj.Player.LoginCreature);
+        await _dispatcher.DispatchAsync(
+            new RemoveRuntimeCharacterCommand(CharacterId.From(obj.Player.LoginCreature.UUID)))
+            .ConfigureAwait(false);
+
         NWScript.SetLocalInt(obj.Player.LoginCreature, WorldConstants.PcCachedLvar, NWScript.FALSE);
     }
 
@@ -122,12 +125,6 @@ public class RuntimeCharacterService
         SetIsCached(obj.Player.LoginCreature);
 
         CharacterReady?.Invoke(CharacterId.From(key));
-    }
-
-    private void DeleteRuntimeCharacter(NwCreature creature)
-    {
-        Guid id = creature.UUID;
-        _repository.DeleteById(id);
     }
 
     private void SetIsCached(NwCreature playerLoginCreature)
