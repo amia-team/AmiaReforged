@@ -51,14 +51,8 @@ public sealed class TraitSubsystem : ITraitSubsystem
 
     public Task<CommandResult> RemoveTraitAsync(CharacterId characterId, TraitTag traitTag, CancellationToken ct = default)
     {
-        List<DomainCharacterTrait> traits = _characterTraitRepository.GetByCharacterId(characterId);
-        DomainCharacterTrait? match = traits.FirstOrDefault(t => t.TraitTag == traitTag);
-
-        if (match == null)
-            return Task.FromResult(CommandResult.Fail($"Character does not have trait '{traitTag.Value}'."));
-
-        _characterTraitRepository.Delete(match.Id);
-        return Task.FromResult(CommandResult.Ok());
+        RemoveTraitCommand command = new(characterId, traitTag);
+        return _commandDispatcher.DispatchAsync(command, ct);
     }
 
     public Task<List<CharacterTrait>> GetCharacterTraitsAsync(CharacterId characterId, CancellationToken ct = default)
