@@ -132,7 +132,7 @@ public class RuntimeCharacterService
         NWScript.SetLocalInt(playerLoginCreature, WorldConstants.PcCachedLvar, NWScript.TRUE);
     }
 
-    private void ObservePlayerPersona(NwPlayer player)
+    private async void ObservePlayerPersona(NwPlayer player)
     {
         if (player is not { IsValid: true })
         {
@@ -147,13 +147,13 @@ public class RuntimeCharacterService
 
         string displayName = string.IsNullOrWhiteSpace(player.PlayerName) ? cdKey : player.PlayerName;
 
-        try
+        CommandResult result = await _dispatcher.DispatchAsync(
+            new ObservePlayerPersonaCommand(cdKey, displayName, DateTime.UtcNow))
+            .ConfigureAwait(false);
+
+        if (!result.Success)
         {
-            _playerPersonas.Upsert(cdKey, displayName, DateTime.UtcNow);
-        }
-        catch (Exception ex)
-        {
-            Log.Warn(ex, "Failed to persist player persona for CD key {CdKey}.", cdKey);
+            Log.Warn("Failed to persist player persona for CD key {CdKey}.", cdKey);
         }
     }
 
