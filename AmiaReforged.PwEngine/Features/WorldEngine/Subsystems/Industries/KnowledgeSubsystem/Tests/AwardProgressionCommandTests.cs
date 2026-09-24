@@ -272,49 +272,6 @@ public class AwardProgressionCommandTests
         Assert.That(processorCalls, Is.EqualTo(1), "Crafting processor must run exactly once per craft");
     }
 
-    // ==================== Test doubles ====================
-
-    /// <summary>
-    /// In-memory <see cref="IKnowledgeProgressionRepository"/>.
-    /// </summary>
-    private sealed class InMemoryKnowledgeProgressionRepository : IKnowledgeProgressionRepository
-    {
-        private readonly Dictionary<Guid, KnowledgeProgression> _store = new();
-
-        public KnowledgeProgression GetOrCreate(Guid characterId)
-        {
-            if (!_store.TryGetValue(characterId, out KnowledgeProgression? existing))
-            {
-                existing = new KnowledgeProgression { CharacterId = characterId };
-                _store[characterId] = existing;
-            }
-
-            return existing;
-        }
-
-        public void Update(KnowledgeProgression progression) =>
-            _store[progression.CharacterId] = progression;
-
-        public void Add(KnowledgeProgression progression) =>
-            _store[progression.CharacterId] = progression;
-
-        public KnowledgeProgression? GetByCharacterId(Guid characterId) =>
-            _store.TryGetValue(characterId, out KnowledgeProgression? existing) ? existing : null;
-    }
-
-    /// <summary>
-    /// Empty <see cref="IKnowledgeCapProfileRepository"/> — forces default caps.
-    /// </summary>
-    private sealed class InMemoryKnowledgeCapProfileRepository : IKnowledgeCapProfileRepository
-    {
-        public List<KnowledgeCapProfile> GetAll() => [];
-        public KnowledgeCapProfile? GetByTag(string tag) => null;
-        public void Add(KnowledgeCapProfile profile) { }
-        public void Update(KnowledgeCapProfile profile) { }
-        public bool Delete(string tag) => false;
-        public bool IsInUse(string tag) => false;
-    }
-
     /// <summary>
     /// <see cref="IWorldConfigProvider"/> returning the progression defaults, overridable per test.
     /// </summary>
