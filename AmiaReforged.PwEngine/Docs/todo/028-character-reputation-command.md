@@ -1,9 +1,9 @@
 # 028 — Dispatch organization reputation adjustments
 
-Status: **Open**
+Status: **Not applicable**
 Type: **Implementation**
 Audit area: **F-7 Characters**
-Depends on: [026 — Implement the agreed organization reputation store](026-character-reputation-storage.md); [027 — Dispatch organization reputation reads](027-character-reputation-query.md).
+Depends on: [026 — Implement the agreed organization reputation store](026-character-reputation-storage.md); [027 — Dispatch organization reputation reads](027-character-reputation-query.md); [025 — Define organization reputation storage and semantics](025-character-reputation-contract.md).
 
 ## Current gap
 
@@ -25,7 +25,7 @@ Add an adjustment command/handler carrying character, organization, delta, and r
 
 ## Completion evidence
 
-Record the chosen behavior (if a decision), changed files, exact verification command or manual procedure, and observed result here. If deferred or not applicable, link the deciding task and explain why.
+**Not applicable — decided by [025](025-character-reputation-contract.md).** The `AdjustReputationAsync` method was removed from `ICharacterSubsystem`/`CharacterSubsystem`; there is no adjustment to dispatch. Real reputation mutation lives in the Codex `AdjustReputationCommand`, which is untouched. See [026](026-character-reputation-storage.md) and [027](027-character-reputation-query.md).
 
 See [backlog scope and completion rules](README.md).
 

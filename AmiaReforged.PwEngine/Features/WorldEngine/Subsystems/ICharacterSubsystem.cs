@@ -39,23 +39,6 @@ public interface ICharacterSubsystem
     /// </remarks>
     Task<CommandResult> UpdateCharacterStatsAsync(CharacterId characterId, CharacterStats stats, CancellationToken ct = default);
 
-    // === Reputation Management ===
-
-    /// <summary>
-    /// Gets a character's reputation with an organization.
-    /// </summary>
-    Task<int> GetReputationAsync(CharacterId characterId, OrganizationId organizationId, CancellationToken ct = default);
-
-    /// <summary>
-    /// Adjusts a character's reputation with an organization.
-    /// </summary>
-    Task<CommandResult> AdjustReputationAsync(
-        CharacterId characterId,
-        OrganizationId organizationId,
-        int adjustment,
-        string reason,
-        CancellationToken ct = default);
-
     // === Character Knowledge (Industry/Recipe knowledge) ===
 
     /// <summary>

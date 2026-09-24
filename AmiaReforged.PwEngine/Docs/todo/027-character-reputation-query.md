@@ -1,9 +1,9 @@
 # 027 — Dispatch organization reputation reads
 
-Status: **Open**
+Status: **Not applicable**
 Type: **Implementation**
 Audit area: **F-7 Characters**
-Depends on: [026 — Implement the agreed organization reputation store](026-character-reputation-storage.md).
+Depends on: [026 — Implement the agreed organization reputation store](026-character-reputation-storage.md); [025 — Define organization reputation storage and semantics](025-character-reputation-contract.md).
 
 ## Current gap
 
@@ -25,7 +25,7 @@ Add a read query over the agreed store and route the subsystem method through th
 
 ## Completion evidence
 
-Record the chosen behavior (if a decision), changed files, exact verification command or manual procedure, and observed result here. If deferred or not applicable, link the deciding task and explain why.
+**Not applicable — decided by [025](025-character-reputation-contract.md).** The `GetReputationAsync(CharacterId, OrganizationId)` method was removed entirely from `ICharacterSubsystem`/`CharacterSubsystem`; there is no subsystem reputation read to route through a query dispatcher. See [026](026-character-reputation-storage.md).
 
 See [backlog scope and completion rules](README.md).
 

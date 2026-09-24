@@ -40,7 +40,6 @@ public class CharacterSubsystemLookupTests
         _queries = new RecordingQueryDispatcher();
         _subsystem = new CharacterSubsystem(
             _repository,
-            new NullReputationRepository(),
             _queries,
             new NullCommandDispatcher());
     }
@@ -186,11 +185,6 @@ public class CharacterSubsystemLookupTests
         public CharacterStatistics? GetCharacterStatistics(Guid characterId) => null;
         public void UpdateCharacterStatistics(CharacterStatistics statistics) { }
         public void SaveChanges() { }
-    }
-
-    private sealed class NullReputationRepository : IReputationRepository
-    {
-        public Reputation GetReputation(Guid characterId, Guid targetId) => new();
     }
 
     private sealed class NullCommandDispatcher : ICommandDispatcher

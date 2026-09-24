@@ -2,7 +2,6 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Queries;
 using Anvil.Services;
@@ -28,18 +27,15 @@ public sealed class CharacterSubsystem : ICharacterSubsystem
     /// touch the repository directly.
     /// </summary>
     private readonly ICharacterRepository _characterRepository;
-    private readonly IReputationRepository _reputationRepository;
     private readonly IQueryDispatcher _queries;
     private readonly ICommandDispatcher _commands;
 
     public CharacterSubsystem(
         ICharacterRepository characterRepository,
-        IReputationRepository reputationRepository,
         IQueryDispatcher queries,
         ICommandDispatcher commands)
     {
         _characterRepository = characterRepository;
-        _reputationRepository = reputationRepository;
         _queries = queries;
         _commands = commands;
     }
@@ -58,25 +54,6 @@ public sealed class CharacterSubsystem : ICharacterSubsystem
     {
         return _commands.DispatchAsync<UpdateCharacterStatsCommand>(
             new UpdateCharacterStatsCommand(characterId, stats.PlayTime), ct);
-    }
-
-    public Task<int> GetReputationAsync(CharacterId characterId, OrganizationId organizationId, CancellationToken ct = default)
-    {
-        Reputation rep = _reputationRepository.GetReputation(characterId, organizationId);
-        return Task.FromResult(rep.Level);
-    }
-
-    public Task<CommandResult> AdjustReputationAsync(
-        CharacterId characterId,
-        OrganizationId organizationId,
-        int adjustment,
-        string reason,
-        CancellationToken ct = default)
-    {
-        // IReputationRepository currently only supports read (GetReputation).
-        // Reputation mutation requires expanding the repository interface.
-        // TODO: Add AdjustReputation(Guid characterId, Guid targetId, int delta, string reason) to IReputationRepository
-        return Task.FromResult(CommandResult.Fail("Reputation adjustment not yet supported — IReputationRepository needs mutation methods"));
     }
 
     public ICharacterKnowledgeContext GetKnowledgeContext(CharacterId characterId)
