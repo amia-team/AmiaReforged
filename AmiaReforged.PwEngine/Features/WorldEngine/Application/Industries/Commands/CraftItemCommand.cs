@@ -51,8 +51,8 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
     private readonly IIndustryMembershipRepository _membershipRepository;
     private readonly ICharacterKnowledgeRepository _knowledgeRepository;
     private readonly ICraftingProcessor _craftingProcessor;
-    private readonly IKnowledgeProgressionService _progressionService;
     private readonly IProficiencyProgressionService _proficiencyService;
+    private readonly ICommandDispatcher _commandDispatcher;
     private readonly RecipeTemplateExpander _templateExpander;
 
     public CraftItemHandler(
@@ -60,16 +60,16 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
         IIndustryMembershipRepository membershipRepository,
         ICharacterKnowledgeRepository knowledgeRepository,
         ICraftingProcessor craftingProcessor,
-        IKnowledgeProgressionService progressionService,
         IProficiencyProgressionService proficiencyService,
+        ICommandDispatcher commandDispatcher,
         RecipeTemplateExpander templateExpander)
     {
         _industryRepository = industryRepository;
         _membershipRepository = membershipRepository;
         _knowledgeRepository = knowledgeRepository;
         _craftingProcessor = craftingProcessor;
-        _progressionService = progressionService;
         _proficiencyService = proficiencyService;
+        _commandDispatcher = commandDispatcher;
         _templateExpander = templateExpander;
     }
 
@@ -140,21 +140,25 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
             ["products"] = craftingResult.ProductsCreated
         };
 
-        // Award progression points if successful
+        // Award progression points if successful. Delegated to the dispatch boundary
+        // so the award gets logging, the generic CommandExecutedEvent, and a Fail contract.
         if (craftingResult.ProgressionPointsAwarded > 0)
         {
-            ProgressionResult progressionResult =
-                _progressionService.AwardProgressionPoints(command.CharacterId, craftingResult.ProgressionPointsAwarded);
-
-            if (progressionResult is { Success: true, KnowledgePointsEarned: > 0 })
+            CommandResult progressionResult = await _commandDispatcher.DispatchAsync(new AwardProgressionCommand
             {
-                resultData["knowledgePointsEarned"] = progressionResult.KnowledgePointsEarned;
-                resultData["newTotalKnowledgePoints"] = progressionResult.NewTotalKnowledgePoints;
-                resultData["progressionPointsRemaining"] = progressionResult.ProgressionPointsRemaining;
-                resultData["progressionPointsRequired"] = progressionResult.ProgressionPointsRequired;
-                resultData["isAtSoftCap"] = progressionResult.IsAtSoftCap;
-                resultData["isAtHardCap"] = progressionResult.IsAtHardCap;
-                resultData["message"] = progressionResult.Message ?? string.Empty;
+                CharacterId = command.CharacterId,
+                Points = craftingResult.ProgressionPointsAwarded
+            }, cancellationToken);
+
+            if (progressionResult is { Success: true })
+            {
+                resultData["knowledgePointsEarned"] = (int)progressionResult.Data!["knowledgePointsEarned"];
+                resultData["newTotalKnowledgePoints"] = (int)progressionResult.Data!["newTotalKnowledgePoints"];
+                resultData["progressionPointsRemaining"] = (int)progressionResult.Data!["progressionPointsRemaining"];
+                resultData["progressionPointsRequired"] = (int)progressionResult.Data!["progressionPointsRequired"];
+                resultData["isAtSoftCap"] = (bool)progressionResult.Data!["isAtSoftCap"];
+                resultData["isAtHardCap"] = (bool)progressionResult.Data!["isAtHardCap"];
+                resultData["message"] = progressionResult.Data!["message"];
             }
         }
 
