@@ -1,6 +1,7 @@
 using System.Text;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Services;
@@ -9,6 +10,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.Knowledge
 using Anvil.API;
 using Anvil.Services;
 using NWN.Core.NWNX;
+using NLog;
 
 namespace AmiaReforged.PwEngine.Features.Chat.Commands;
 
@@ -33,20 +35,24 @@ public class KnowledgeDevCommand : IChatCommand
     private readonly IIndustryMembershipRepository _memberships;
     private readonly ICharacterStatService _statService;
     private readonly RuntimeCharacterService _characters;
+    private readonly ICommandDispatcher _dispatcher;
     private readonly bool _isEnabled;
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     public KnowledgeDevCommand(
         IIndustryRepository industries,
         ICharacterKnowledgeRepository characterKnowledge,
         IIndustryMembershipRepository memberships,
         ICharacterStatService statService,
-        RuntimeCharacterService characters)
+        RuntimeCharacterService characters,
+        ICommandDispatcher dispatcher)
     {
         _industries = industries;
         _characterKnowledge = characterKnowledge;
         _memberships = memberships;
         _statService = statService;
         _characters = characters;
+        _dispatcher = dispatcher;
         _isEnabled = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE") != "live";
     }
 
@@ -54,18 +60,18 @@ public class KnowledgeDevCommand : IChatCommand
     public string Description => "Dev tool — list or grant knowledge (disabled on live)";
     public string AllowedRoles => "All";
 
-    public Task ExecuteCommand(NwPlayer caller, string[] args)
+    public async Task ExecuteCommand(NwPlayer caller, string[] args)
     {
         if (!_isEnabled)
         {
             caller.SendServerMessage("This command is disabled on the live server.", ColorConstants.Red);
-            return Task.CompletedTask;
+            return;
         }
 
         if (args.Length == 0)
         {
             SendUsage(caller);
-            return Task.CompletedTask;
+            return;
         }
 
         string subCommand = args[0].ToLowerInvariant();
@@ -82,7 +88,7 @@ public class KnowledgeDevCommand : IChatCommand
                 GrantKnowledge(caller, args[1]);
                 break;
             case "join" when args.Length >= 2:
-                JoinIndustry(caller, args[1]);
+                await JoinIndustry(caller, args[1]).ConfigureAwait(false);
                 break;
             case "leave" when args.Length >= 2:
                 LeaveIndustry(caller, args[1]);
@@ -98,7 +104,7 @@ public class KnowledgeDevCommand : IChatCommand
                 break;
         }
 
-        return Task.CompletedTask;
+        return;
     }
 
     private void ListAllKnowledge(NwPlayer caller)
@@ -229,7 +235,7 @@ public class KnowledgeDevCommand : IChatCommand
         caller.SendServerMessage(sb.ToString(), ColorConstants.Lime);
     }
 
-    private void JoinIndustry(NwPlayer caller, string industryTag)
+    private async Task JoinIndustry(NwPlayer caller, string industryTag)
     {
         if (!_characters.TryGetPlayerKey(caller, out Guid playerKey))
         {
@@ -237,34 +243,25 @@ public class KnowledgeDevCommand : IChatCommand
             return;
         }
 
-        Industry? industry = _industries.Get(industryTag);
-        if (industry == null)
+        // Route through the shared enrollment command so membership is created exactly once,
+        // through the dispatcher (duplicate/unknown handling stays centralized in the handler).
+        CommandResult result = await _dispatcher.DispatchAsync(
+            new EnrollInIndustryCommand
+            {
+                CharacterId = CharacterId.From(playerKey),
+                IndustryTag = new IndustryTag(industryTag)
+            }).ConfigureAwait(false);
+
+        if (result.Success)
         {
-            caller.SendServerMessage($"Industry '{industryTag}' not found.", ColorConstants.Red);
-            return;
+            Industry? industry = _industries.Get(industryTag);
+            string name = industry?.Name ?? industryTag;
+            caller.SendServerMessage($"Joined industry '{name}' ({industryTag}) at Novice rank.", ColorConstants.Lime);
         }
-
-        // Check if already a member
-        List<IndustryMembership> existing = _memberships.All(playerKey);
-        if (existing.Any(m => m.IndustryTag == industryTag))
+        else
         {
-            caller.SendServerMessage($"You are already a member of '{industry.Name}'.", ColorConstants.Orange);
-            return;
+            caller.SendServerMessage(result.ErrorMessage ?? "Failed to Join Industry.", ColorConstants.Red);
         }
-
-        IndustryMembership membership = new()
-        {
-            Id = Guid.NewGuid(),
-            CharacterId = CharacterId.From(playerKey),
-            IndustryTag = new IndustryTag(industryTag),
-            Level = ProficiencyLevel.Novice,
-            CharacterKnowledge = []
-        };
-
-        _memberships.Add(membership);
-        _memberships.SaveChanges();
-
-        caller.SendServerMessage($"Joined industry '{industry.Name}' ({industryTag}) at Novice rank.", ColorConstants.Lime);
     }
 
     private void LeaveIndustry(NwPlayer caller, string industryTag)

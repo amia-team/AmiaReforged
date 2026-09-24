@@ -19,18 +19,11 @@ public sealed class CommandDispatcher : ICommandDispatcher
     private readonly ConcurrentDictionary<Type, HandlerInvocation> _handlerCache = new();
 
     // Cached handler invocation data
-    private sealed class HandlerInvocation
+    private sealed class HandlerInvocation(object handler, MethodInfo handleMethod, Type commandType)
     {
-        public object Handler { get; }
-        public MethodInfo HandleMethod { get; }
-        public Type CommandType { get; }
-
-        public HandlerInvocation(object handler, MethodInfo handleMethod, Type commandType)
-        {
-            Handler = handler;
-            HandleMethod = handleMethod;
-            CommandType = commandType;
-        }
+        public object Handler { get; } = handler;
+        public MethodInfo HandleMethod { get; } = handleMethod;
+        public Type CommandType { get; } = commandType;
     }
 
     /// <summary>
@@ -197,4 +190,3 @@ public sealed class CommandDispatcher : ICommandDispatcher
         }
     }
 }
-

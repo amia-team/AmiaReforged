@@ -1,4 +1,6 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Services;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
@@ -8,6 +10,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.ResourceNodeData;
 using Anvil;
 using Anvil.API;
+using NLog;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
 
@@ -19,8 +22,11 @@ public class RuntimeCharacter(
     IInventoryPort inventoryPort,
     ICharacterSheetPort characterSheetPort,
     IIndustryMembershipService membershipService,
-    ICharacterStatService statService) : ICharacter
+    ICharacterStatService statService,
+    ICommandDispatcher dispatcher) : ICharacter
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
     private readonly Dictionary<string, List<KnowledgeHarvestEffect>> _nodeEffectCache = new();
     private readonly Dictionary<string, List<CraftingModifier>> _craftingModifierCache = new();
     private HashSet<string>? _unlockedInteractionCache;
@@ -135,15 +141,20 @@ public class RuntimeCharacter(
 
     public void JoinIndustry(string industryTag)
     {
-        IndustryMembership m = new()
-        {
-            IndustryTag = new IndustryTag(industryTag),
-            Level = ProficiencyLevel.Novice,
-            CharacterKnowledge = [],
-            CharacterId = characterId
-        };
+        // Route through the shared enrollment command so membership is created exactly once,
+        // through the dispatcher (duplicate/unknown handling stays centralized in the handler).
+        CommandResult result = dispatcher.DispatchAsync(
+            new EnrollInIndustryCommand
+            {
+                CharacterId = characterId,
+                IndustryTag = new IndustryTag(industryTag)
+            }).GetAwaiter().GetResult();
 
-        membershipService.AddMembership(m);
+        if (!result.Success)
+        {
+            Log.Warn("Industry enrollment failed for character {Character}: {Reason}",
+                characterId, result.ErrorMessage);
+        }
     }
 
     public List<IndustryMembership> AllIndustryMemberships()
@@ -170,9 +181,10 @@ public class RuntimeCharacter(
     {
         IIndustryMembershipService memberships = AnvilCore.GetService<IIndustryMembershipService>()!;
         ICharacterStatService stats = AnvilCore.GetService<ICharacterStatService>()!;
+        ICommandDispatcher dispatcher = AnvilCore.GetService<ICommandDispatcher>()!;
         IInventoryPort inventoryPort = RuntimeInventoryPort.For(creature);
         ICharacterSheetPort characterSheetPort = RuntimeCharacterSheetPort.For(creature);
 
-        return new RuntimeCharacter(CharacterId.From(creature.UUID), inventoryPort, characterSheetPort, memberships, stats);
+        return new RuntimeCharacter(CharacterId.From(creature.UUID), inventoryPort, characterSheetPort, memberships, stats, dispatcher);
     }
 }

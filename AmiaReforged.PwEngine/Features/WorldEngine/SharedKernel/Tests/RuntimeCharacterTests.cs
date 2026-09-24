@@ -1,3 +1,6 @@
+using System;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Helpers;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
@@ -36,6 +39,30 @@ public class RuntimeCharacterTests
     private ICharacterStatService _characterStatService = null!;
 
     private readonly Guid _characterId = Guid.NewGuid();
+
+    /// <summary>
+    /// A dispatcher mock that reports successful enrollment. The runtime enrollment tests use
+    /// <see cref="RuntimeCharacter.JoinIndustry"/> only as setup, so a success result is what they need.
+    /// </summary>
+    private ICommandDispatcher MockDispatcher()
+    {
+        Mock<ICommandDispatcher> mock = new();
+        // Route enrollment through the real membership service so tests that use JoinIndustry as
+        // setup still see the created membership, mirroring what the command handler would do.
+        mock.Setup(d => d.DispatchAsync(It.IsAny<EnrollInIndustryCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((EnrollInIndustryCommand cmd, CancellationToken _) =>
+            {
+                _membershipService.AddMembership(new IndustryMembership
+                {
+                    CharacterId = cmd.CharacterId,
+                    IndustryTag = cmd.IndustryTag,
+                    Level = ProficiencyLevel.Novice,
+                    CharacterKnowledge = []
+                });
+                return CommandResult.Ok();
+            });
+        return mock.Object;
+    }
 
     [SetUp]
     public void SetUp()
@@ -153,7 +180,7 @@ public class RuntimeCharacterTests
     public void Should_Return_Id()
     {
         RuntimeCharacter character = new(CharacterId.From(_characterId), Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
-            _membershipService, _characterStatService);
+            _membershipService, _characterStatService, MockDispatcher());
 
         Assert.That(character.GetId(), Is.EqualTo(CharacterId.From(_characterId)), "ID should have been injected.");
     }
@@ -174,7 +201,7 @@ public class RuntimeCharacterTests
         mockCharacterSheet.Setup(x => x.GetSkills()).Returns(expectedSkills);
 
         RuntimeCharacter character = new(CharacterId.From(_characterId), Mock.Of<IInventoryPort>(), mockCharacterSheet.Object,
-            _membershipService, _characterStatService);
+            _membershipService, _characterStatService, MockDispatcher());
 
         List<SkillData> actualSkills = character.GetSkills();
 
@@ -186,7 +213,7 @@ public class RuntimeCharacterTests
     public void Should_Return_Knowledge()
     {
         RuntimeCharacter character = new(CharacterId.From(_characterId), Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
-            _membershipService, _characterStatService);
+            _membershipService, _characterStatService, MockDispatcher());
 
         _characters.Add(character);
 
@@ -206,7 +233,7 @@ public class RuntimeCharacterTests
     public void Should_Rank_Up_In_Industry()
     {
         RuntimeCharacter character = new(CharacterId.From(_characterId), Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
-            _membershipService, _characterStatService);
+            _membershipService, _characterStatService, MockDispatcher());
 
         _characters.Add(character);
 
@@ -241,7 +268,7 @@ public class RuntimeCharacterTests
     public void Should_Get_All_Memberships()
     {
         RuntimeCharacter character = new(CharacterId.From(_characterId), Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
-            _membershipService, _characterStatService);
+            _membershipService, _characterStatService, MockDispatcher());
 
         _characters.Add(character);
 
@@ -270,7 +297,7 @@ public class RuntimeCharacterTests
         mockInventory.Setup(x => x.GetInventory()).Returns(expectedInventory);
 
         RuntimeCharacter character = new(CharacterId.From(_characterId), mockInventory.Object, Mock.Of<ICharacterSheetPort>(),
-            _membershipService, _characterStatService);
+            _membershipService, _characterStatService, MockDispatcher());
 
         _characters.Add(character);
 
@@ -293,7 +320,7 @@ public class RuntimeCharacterTests
         mockInventory.Setup(x => x.GetEquipment()).Returns(expectedEquipment!);
 
         RuntimeCharacter character = new(CharacterId.From(_characterId), mockInventory.Object, Mock.Of<ICharacterSheetPort>(),
-            _membershipService, _characterStatService);
+            _membershipService, _characterStatService, MockDispatcher());
 
         _characters.Add(character);
 
@@ -306,7 +333,7 @@ public class RuntimeCharacterTests
     public void Should_Get_Knowledge_Points()
     {
         RuntimeCharacter character = new(CharacterId.From(_characterId), Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
-            _membershipService, _characterStatService);
+            _membershipService, _characterStatService, MockDispatcher());
 
         _characters.Add(character);
 
@@ -326,7 +353,7 @@ public class RuntimeCharacterTests
     public void Should_Deduct_Knowledge_Points_After_Learning()
     {
         RuntimeCharacter character = new(CharacterId.From(_characterId), Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
-            _membershipService, _characterStatService);
+            _membershipService, _characterStatService, MockDispatcher());
 
         _characters.Add(character);
 
@@ -347,7 +374,7 @@ public class RuntimeCharacterTests
     public void Should_See_If_Character_Can_Not_Learn_Knowledge()
     {
         RuntimeCharacter character = new(CharacterId.From(_characterId), Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
-            _membershipService, _characterStatService);
+            _membershipService, _characterStatService, MockDispatcher());
 
         _characters.Add(character);
 
@@ -360,7 +387,7 @@ public class RuntimeCharacterTests
     public void Should_See_If_Character_Can_Learn_Knowledge()
     {
         RuntimeCharacter character = new(CharacterId.From(_characterId), Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
-            _membershipService, _characterStatService);
+            _membershipService, _characterStatService, MockDispatcher());
 
         _characters.Add(character);
         character.JoinIndustry(IndustryWithKnowledge);

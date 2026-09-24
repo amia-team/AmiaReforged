@@ -63,7 +63,7 @@ public class EnrollInIndustryHandler : ICommandHandler<EnrollInIndustryCommand>
         {
             CharacterId = command.CharacterId,
             IndustryTag = command.IndustryTag,
-            Level = ProficiencyLevel.Layman,
+            Level = ProficiencyLevel.Novice,
             CharacterKnowledge = []
         };
         _membershipRepository.Add(membership);
