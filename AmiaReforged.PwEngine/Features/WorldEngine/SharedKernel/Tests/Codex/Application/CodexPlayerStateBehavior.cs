@@ -214,8 +214,7 @@ public class CodexPlayerStateBehavior
         IEventBus bus = eventBus ?? new InMemoryEventBus();
         ObjectiveEvaluatorRegistry registry = new([]);
         QuestSessionManager sessions = new(registry);
-        CodexEventProcessor processor = new(_codexRepo);
-        return new DynamicQuestService(dynRepo, sessions, processor, bus);
+        return new DynamicQuestService(dynRepo, sessions, bus);
     }
 
     [Test]

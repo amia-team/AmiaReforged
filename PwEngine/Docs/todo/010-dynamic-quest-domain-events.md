@@ -1,6 +1,6 @@
 # 010 — Publish dynamic-quest domain events on the bus
 
-Status: **Done**  
+Status: **Open**  
 Type: **Implementation**  
 Audit area: **F-6**  
 Depends on: None.
@@ -221,38 +221,12 @@ Also grep the production Codex application code and confirm that dynamic-quest l
 
 ## Completion evidence
 
-- **Changed files:**
-  - `Features/WorldEngine/Subsystems/Codex/Application/DynamicQuestService.cs` — dropped the
-    `CodexEventProcessor` dependency (constructor + field) and removed the dual `EmitDomainEventAsync`
-    helper entirely. All five lifecycle methods publish through `IEventBus` only, in the documented
-    state-transition order; `TickExpirationsAsync` publishes each `QuestExpiredEvent` on the bus.
-    (The intermediate `PublishDomainEventAsync` pass-through wrapper was later deleted per code review
-    — call sites now invoke `_eventBus.PublishAsync(...)` directly, so there is no extra layer.)
-  - `Features/WorldEngine/Subsystems/Codex/Application/DynamicQuests/DynamicQuestCodexEventForwarder.cs`
-    (new) — single Codex forwarding subscriber registered via `IEventHandlerMarker`.
-  - `Features/WorldEngine/SharedKernel/Tests/Codex/Application/CodexPlayerStateBehavior.cs` — dropped
-    the removed `CodexEventProcessor` argument from the `QuestService` test helper.
-  - `Features/WorldEngine/Subsystems/Codex/Application/DynamicQuests/DynamicQuestCommands.cs` —
-    unchanged (thin wrappers, as required).
+Record:
 
-- **Final event path:**
-  `DynamicQuestService -> IEventBus -> DynamicQuestCodexEventForwarder -> CodexEventProcessor`.
-  Production dynamic-quest lifecycle code contains no direct `_eventProcessor.EnqueueEventAsync(...)`.
-
-- **Forwarding subscriber handles:** `QuestClaimedEvent`, `QuestUnclaimedEvent`, `QuestExpiredEvent`.
-  **Not forwarded** (bus-observable only): `QuestPostedEvent`, `QuestSharedEvent`.
-
-- **Test command/result:**
-  ```
-  dotnet build AmiaReforged.PwEngine/AmiaReforged.PwEngine.csproj --nologo   -> 0 Error(s)
-  dotnet test AmiaReforged.PwEngine/AmiaReforged.PwEngine.csproj \
-    --filter "FullyQualifiedName~Codex" --no-build --verbosity minimal       -> Passed! Failed: 0, Passed: 520
-  dotnet test AmiaReforged.PwEngine/AmiaReforged.PwEngine.csproj \
-    --filter "FullyQualifiedName~WorldEngine" --no-build --verbosity minimal -m:1 -> Passed! Failed: 0, Passed: 1856
-  ```
-
-- **Exactly-once confirmation:** grep of `DynamicQuestService.cs` for `EnqueueEventAsync` / `_eventProcessor`
-  returns none. `QuestClaimedEvent` (and the other forwarded events) reach `CodexEventProcessor` only through the
-  bus forwarding subscriber; they are never both directly enqueued and bus-forwarded.
+- changed files;
+- the final event path;
+- which event types the forwarding subscriber handles;
+- exact test command/result;
+- confirmation that no dynamic-quest event is both directly enqueued and bus-forwarded.
 
 See [backlog scope and completion rules](README.md).
