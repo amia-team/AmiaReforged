@@ -16,16 +16,13 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Implementations;
 [ServiceBinding(typeof(IRegionSubsystem))]
 public sealed class RegionSubsystem : IRegionSubsystem
 {
-    private readonly IRegionRepository _regionRepository;
     private readonly IQueryDispatcher _queryDispatcher;
     private readonly ICommandDispatcher _commandDispatcher;
 
     public RegionSubsystem(
-        IRegionRepository regionRepository,
         IQueryDispatcher queryDispatcher,
         ICommandDispatcher commandDispatcher)
     {
-        _regionRepository = regionRepository;
         _queryDispatcher = queryDispatcher;
         _commandDispatcher = commandDispatcher;
     }
@@ -130,16 +127,25 @@ public sealed class RegionSubsystem : IRegionSubsystem
     }
 
     /// <inheritdoc/>
+    // The interface is synchronous; route through the async dispatcher and block on its result.
+    // This keeps the read path off the repository (task 037) and mirrors the blocking boundary
+    // already used for GetChaosForAreaAsync by synchronous callers.
     public bool IsAreaInRegion(string areaResRef)
     {
-        return _regionRepository.IsAreaRegistered(areaResRef);
+        return _queryDispatcher
+            .DispatchAsync<IsAreaInRegionQuery, bool>(
+                new IsAreaInRegionQuery(areaResRef), CancellationToken.None)
+            .GetAwaiter()
+            .GetResult();
     }
 
     /// <inheritdoc/>
     public string? GetRegionTagForArea(string areaResRef)
     {
-        return _regionRepository.TryGetRegionForArea(areaResRef, out RegionDefinition? region) && region is not null
-            ? region.Tag.Value
-            : null;
+        return _queryDispatcher
+            .DispatchAsync<GetRegionTagForAreaQuery, string?>(
+                new GetRegionTagForAreaQuery(areaResRef), CancellationToken.None)
+            .GetAwaiter()
+            .GetResult();
     }
 }

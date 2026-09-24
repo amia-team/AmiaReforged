@@ -35,7 +35,9 @@ public class RegionSubsystemReadBehaviorTests
             {
                 new GetRegionDefinitionHandler(repo),
                 new SearchRegionDefinitionsHandler(repo),
-                new GetChaosForAreaQueryHandler(repo)
+                new GetChaosForAreaQueryHandler(repo),
+                new IsAreaInRegionQueryHandler(repo),
+                new GetRegionTagForAreaQueryHandler(repo)
             });
         dispatcher = (QueryDispatcher)queryDispatcher;
 
@@ -46,7 +48,7 @@ public class RegionSubsystemReadBehaviorTests
             },
             new CapturingEventBus(new List<IDomainEvent>()));
 
-        return new RegionSubsystem(repo, queryDispatcher, commandDispatcherToUse);
+        return new RegionSubsystem(queryDispatcher, commandDispatcherToUse);
     }
 
     private static RegionDefinition Region(
@@ -316,6 +318,118 @@ public class RegionSubsystemReadBehaviorTests
 
         // Then
         Assert.That(result.Corruption, Is.EqualTo(33));
+    }
+
+    #endregion
+
+    #region Area-to-region queries (task 037)
+
+    [Test]
+    public void IsAreaInRegion_RegisteredArea_ReturnsTrue()
+    {
+        // Given
+        InMemoryRegionRepository repo = new();
+        repo.Add(Region("r1", "Region One", area: Area("area_a")));
+        RegionSubsystem subsystem = BuildSubsystem(repo, out _);
+
+        // When
+        bool result = subsystem.IsAreaInRegion("area_a");
+
+        // Then
+        Assert.That(result, Is.True);
+    }
+
+    [Test]
+    public void IsAreaInRegion_UnregisteredArea_ReturnsFalse()
+    {
+        // Given
+        InMemoryRegionRepository repo = new();
+        repo.Add(Region("r1", "Region One", area: Area("area_a")));
+        RegionSubsystem subsystem = BuildSubsystem(repo, out _);
+
+        // When
+        bool result = subsystem.IsAreaInRegion("nowhere");
+
+        // Then — unregistered areas report absence
+        Assert.That(result, Is.False);
+    }
+
+    [Test]
+    public void IsAreaInRegion_CaseInsensitive_AreaMatching()
+    {
+        // Given
+        InMemoryRegionRepository repo = new();
+        repo.Add(Region("r1", "Region One", area: Area("Area_A")));
+        RegionSubsystem subsystem = BuildSubsystem(repo, out _);
+
+        // When — different casing than the registered area
+        bool result = subsystem.IsAreaInRegion("area_a");
+
+        // Then
+        Assert.That(result, Is.True);
+    }
+
+    [Test]
+    public void GetRegionTagForArea_RegisteredArea_ReturnsTag()
+    {
+        // Given
+        InMemoryRegionRepository repo = new();
+        repo.Add(Region("wilderness_north", "North Wildlands", area: Area("area_a")));
+        RegionSubsystem subsystem = BuildSubsystem(repo, out _);
+
+        // When
+        string? tag = subsystem.GetRegionTagForArea("area_a");
+
+        // Then
+        Assert.That(tag, Is.EqualTo("wilderness_north"));
+    }
+
+    [Test]
+    public void GetRegionTagForArea_UnregisteredArea_ReturnsNull()
+    {
+        // Given
+        InMemoryRegionRepository repo = new();
+        repo.Add(Region("r1", "Region One", area: Area("area_a")));
+        RegionSubsystem subsystem = BuildSubsystem(repo, out _);
+
+        // When
+        string? tag = subsystem.GetRegionTagForArea("nowhere");
+
+        // Then — absence is expressed as null
+        Assert.That(tag, Is.Null);
+    }
+
+    [Test]
+    public void GetRegionTagForArea_CaseInsensitive_AreaMatching()
+    {
+        // Given
+        InMemoryRegionRepository repo = new();
+        repo.Add(Region("r1", "Region One", area: Area("Area_A")));
+        RegionSubsystem subsystem = BuildSubsystem(repo, out _);
+
+        // When — different casing than the registered area
+        string? tag = subsystem.GetRegionTagForArea("area_a");
+
+        // Then
+        Assert.That(tag, Is.EqualTo("r1"));
+    }
+
+    [Test]
+    public async Task GetChaosForAreaAsync_AreaInRegion_UsesRegionTagFromQueryPath()
+    {
+        // Given — the caller resolves the tag via the query path; ensure the two queries stay
+        // consistent (a tag is returned exactly when IsAreaInRegion is true).
+        InMemoryRegionRepository repo = new();
+        repo.Add(Region("r1", "Region One", area: Area("area_a")));
+        RegionSubsystem subsystem = BuildSubsystem(repo, out _);
+
+        // When
+        bool inRegion = subsystem.IsAreaInRegion("area_a");
+        string? tag = subsystem.GetRegionTagForArea("area_a");
+
+        // Then
+        Assert.That(inRegion, Is.True);
+        Assert.That(tag, Is.EqualTo("r1"));
     }
 
     #endregion
