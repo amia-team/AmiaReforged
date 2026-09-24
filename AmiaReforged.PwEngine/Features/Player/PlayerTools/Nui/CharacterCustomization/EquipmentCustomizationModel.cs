@@ -783,7 +783,7 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
                 return;
             }
 
-            player.SendServerMessage($"[DEBUG] Found waypoint at {copyWaypoint.Area.Name}", ColorConstants.Yellow);
+            player.SendServerMessage($"[DEBUG] Found waypoint at {copyWaypoint.Area?.Name}", ColorConstants.Yellow);
 
             // Unequip the weapon
             creature.RunUnequip(currentWeapon);

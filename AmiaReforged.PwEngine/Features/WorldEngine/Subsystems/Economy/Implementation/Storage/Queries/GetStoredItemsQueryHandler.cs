@@ -43,7 +43,7 @@ public class GetStoredItemsQueryHandler : IQueryHandler<GetStoredItemsQuery, Lis
 
         List<StoredItemDto> dtos = items.Select(item => new StoredItemDto(
             item.Id,
-            item.Name,
+            item.Name!,
             item.Description ?? "",
             item.ItemData
         )).ToList();

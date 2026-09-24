@@ -153,7 +153,7 @@ public sealed class JobResourceManagerPresenter : ScryPresenter<JobResourceManag
                 ResourceDataRecord resource = _currentResources[_selectedResourceIndex];
 
                 // Get transfer quantity
-                List<string> quantities = Token().GetBindValues(View.TransferQuantities);
+                List<string> quantities = Token().GetBindValues(View.TransferQuantities)!;
                 if (_selectedResourceIndex >= quantities.Count)
                     return;
 
@@ -187,7 +187,7 @@ public sealed class JobResourceManagerPresenter : ScryPresenter<JobResourceManag
                 ResourceDataRecord resource = _currentResources[ev.ArrayIndex];
 
                 // Get the transfer quantity
-                List<string> quantities = Token().GetBindValues(View.TransferQuantities);
+                List<string> quantities = Token().GetBindValues(View.TransferQuantities)!;
 
                 if (ev.ArrayIndex >= quantities.Count)
                     return;
@@ -250,7 +250,7 @@ public sealed class JobResourceManagerPresenter : ScryPresenter<JobResourceManag
         ResourceDataRecord resource = _currentResources[_selectedResourceIndex];
 
         // Get transfer quantity
-        List<string> quantities = Token().GetBindValues(View.TransferQuantities);
+        List<string> quantities = Token().GetBindValues(View.TransferQuantities)!;
         if (_selectedResourceIndex >= quantities.Count)
             return;
 

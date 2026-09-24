@@ -71,7 +71,7 @@ public class DialogueControllerCqrsTests
     [Test]
     public void Create_WhenNoBody_DoesNotDispatchCommand()
     {
-        Controllers.DialogueController.Create(Context("POST", "/api/worldengine/dialogue"));
+        _ = Controllers.DialogueController.Create(Context("POST", "/api/worldengine/dialogue"));
 
         _facadeMock.Verify(f => f.ExecuteAsync(It.IsAny<CreateDialogueTreeCommand>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -82,7 +82,7 @@ public class DialogueControllerCqrsTests
         // The controller must never reference the NPC hook; these tests construct no hook.
         Assert.That(typeof(Controllers.DialogueController), Is.Not.SameAs(typeof(AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Application.DialogueNpcHook)));
 
-        Controllers.DialogueController.Create(Context("POST", "/api/worldengine/dialogue"));
+        _ = Controllers.DialogueController.Create(Context("POST", "/api/worldengine/dialogue"));
     }
 
     // ────────────────────────────────────────────────────────────────────
@@ -104,7 +104,7 @@ public class DialogueControllerCqrsTests
     [Test]
     public void Update_WhenNoBody_DoesNotDispatchCommand()
     {
-        Controllers.DialogueController.Update(Context("PUT", "/api/worldengine/dialogue/dt_1"));
+        _ = Controllers.DialogueController.Update(Context("PUT", "/api/worldengine/dialogue/dt_1"));
 
         _facadeMock.Verify(f => f.ExecuteAsync(It.IsAny<UpdateDialogueTreeCommand>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -115,7 +115,7 @@ public class DialogueControllerCqrsTests
         // The controller must never reference the NPC hook; these tests construct no hook.
         Assert.That(typeof(Controllers.DialogueController), Is.Not.SameAs(typeof(AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Application.DialogueNpcHook)));
 
-        Controllers.DialogueController.Update(Context("PUT", "/api/worldengine/dialogue/dt_1"));
+        _ = Controllers.DialogueController.Update(Context("PUT", "/api/worldengine/dialogue/dt_1"));
     }
 
     // ────────────────────────────────────────────────────────────────────

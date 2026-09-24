@@ -1576,7 +1576,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         ListStallProductRequest serviceRequest = new(
             request.StallId,
             resRef,
-            originalName,
+            originalName!,
             description,
             request.Price,
             quantity,

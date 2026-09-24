@@ -130,33 +130,33 @@ public static class RegionMapper
     // JSON DTOs — these are only used internally for JSONB serialization, not exposed externally
     private class AreaJsonDto
     {
-        public string ResRef { get; set; } = string.Empty;
-        public List<string>? DefinitionTags { get; set; }
-        public int? LinkedSettlement { get; set; }
-        public EnvironmentJsonDto? Environment { get; set; }
-        public List<PoiJsonDto>? PlacesOfInterest { get; set; }
+        public string ResRef { get; init; } = string.Empty;
+        public List<string>? DefinitionTags { get; init; }
+        public int? LinkedSettlement { get; init; }
+        public EnvironmentJsonDto? Environment { get; init; }
+        public List<PoiJsonDto>? PlacesOfInterest { get; init; }
     }
 
     private class EnvironmentJsonDto
     {
-        public string? Climate { get; set; }
-        public string? SoilQuality { get; set; }
-        public QualityRangeJsonDto? MineralQualityRange { get; set; }
-        public ChaosState? Chaos { get; set; }
+        public string? Climate { get; init; }
+        public string? SoilQuality { get; init; }
+        public QualityRangeJsonDto? MineralQualityRange { get; init; }
+        public ChaosState? Chaos { get; init; }
     }
 
     private class QualityRangeJsonDto
     {
-        public string? Min { get; set; }
-        public string? Max { get; set; }
+        public string? Min { get; init; }
+        public string? Max { get; init; }
     }
 
     private class PoiJsonDto
     {
-        public string ResRef { get; set; } = string.Empty;
-        public string Tag { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-        public string? Type { get; set; }
-        public string? Description { get; set; }
+        public string ResRef { get; init; } = string.Empty;
+        public string Tag { get; init; } = string.Empty;
+        public string Name { get; init; } = string.Empty;
+        public string? Type { get; init; }
+        public string? Description { get; init; }
     }
 }

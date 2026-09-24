@@ -415,21 +415,29 @@ public class RegionSubsystemReadBehaviorTests
     }
 
     [Test]
-    public async Task GetChaosForAreaAsync_AreaInRegion_UsesRegionTagFromQueryPath()
+    public Task GetChaosForAreaAsync_AreaInRegion_UsesRegionTagFromQueryPath()
     {
-        // Given — the caller resolves the tag via the query path; ensure the two queries stay
-        // consistent (a tag is returned exactly when IsAreaInRegion is true).
-        InMemoryRegionRepository repo = new();
-        repo.Add(Region("r1", "Region One", area: Area("area_a")));
-        RegionSubsystem subsystem = BuildSubsystem(repo, out _);
+        try
+        {
+            // Given — the caller resolves the tag via the query path; ensure the two queries stay
+            // consistent (a tag is returned exactly when IsAreaInRegion is true).
+            InMemoryRegionRepository repo = new();
+            repo.Add(Region("r1", "Region One", area: Area("area_a")));
+            RegionSubsystem subsystem = BuildSubsystem(repo, out _);
 
-        // When
-        bool inRegion = subsystem.IsAreaInRegion("area_a");
-        string? tag = subsystem.GetRegionTagForArea("area_a");
+            // When
+            bool inRegion = subsystem.IsAreaInRegion("area_a");
+            string? tag = subsystem.GetRegionTagForArea("area_a");
 
-        // Then
-        Assert.That(inRegion, Is.True);
-        Assert.That(tag, Is.EqualTo("r1"));
+            // Then
+            Assert.That(inRegion, Is.True);
+            Assert.That(tag, Is.EqualTo("r1"));
+            return Task.CompletedTask;
+        }
+        catch (Exception exception)
+        {
+            return Task.FromException(exception);
+        }
     }
 
     #endregion

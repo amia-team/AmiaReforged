@@ -55,7 +55,7 @@ public class VoiceCommand : IChatCommand
         // Copy language locals from PC to target (for language system compatibility)
         CopyLanguageLocals(creature, target);
 
-        target.SpeakString(text);
+        _ = target.SpeakString(text);
         caller.SendServerMessage($"Assigning text to {target.Name}.", ColorConstants.Lime);
     }
 

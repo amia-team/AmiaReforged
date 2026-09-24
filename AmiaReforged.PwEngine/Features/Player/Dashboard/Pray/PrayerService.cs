@@ -3885,7 +3885,7 @@ public class PrayerService
 
         // Always add gloves as fallback (for monks, unarmed, etc.)
         NwItem? gloves = creature.GetItemInSlot(InventorySlot.Arms);
-        if (gloves != null && gloves.BaseItem.ItemType == BaseItemType.Gloves || gloves.BaseItem.ItemType == BaseItemType.Bracer )
+        if (gloves != null && gloves.BaseItem.ItemType is BaseItemType.Gloves or BaseItemType.Bracer )
         {
             items.Add(gloves);
         }

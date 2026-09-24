@@ -18,9 +18,9 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Applica
 [ServiceBinding(typeof(ExecuteDialogueActionHandler))]
 public sealed class ExecuteDialogueActionHandler
     : ICommandHandler<ExecuteDialogueActionCommand>,
-      IEventHandler<CommandExecutedEvent<UpdateDialogueTreeCommand>>,
-      IEventHandler<CommandExecutedEvent<DeleteDialogueTreeCommand>>,
-      IEventHandlerMarker
+        IEventHandler<CommandExecutedEvent<UpdateDialogueTreeCommand>>,
+        IEventHandler<CommandExecutedEvent<DeleteDialogueTreeCommand>>,
+        IEventHandlerMarker
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -78,23 +78,37 @@ public sealed class ExecuteDialogueActionHandler
         }
     }
 
-    private async Task<CommandResult> HandleStartQuest(DialogueAction action, Guid characterId)
+    private Task<CommandResult> HandleStartQuest(DialogueAction action, Guid characterId)
     {
-        string questId = action.GetRequiredParam("questId");
-        Log.Info("Dialogue action: Starting quest '{QuestId}' for character {CharacterId}", questId, characterId);
+        try
+        {
+            string questId = action.GetRequiredParam("questId");
+            Log.Info("Dialogue action: Starting quest '{QuestId}' for character {CharacterId}", questId, characterId);
 
-        // TODO: Dispatch to Codex subsystem when quest start command is implemented
-        // For now, log the intent
-        return CommandResult.OkWith("questId", questId);
+            // TODO: Dispatch to Codex subsystem when quest start command is implemented
+            // For now, log the intent
+            return Task.FromResult(CommandResult.OkWith("questId", questId));
+        }
+        catch (Exception exception)
+        {
+            return Task.FromException<CommandResult>(exception);
+        }
     }
 
-    private async Task<CommandResult> HandleCompleteQuest(DialogueAction action, Guid characterId)
+    private Task<CommandResult> HandleCompleteQuest(DialogueAction action, Guid characterId)
     {
-        string questId = action.GetRequiredParam("questId");
-        Log.Info("Dialogue action: Completing quest '{QuestId}' for character {CharacterId}", questId, characterId);
+        try
+        {
+            string questId = action.GetRequiredParam("questId");
+            Log.Info("Dialogue action: Completing quest '{QuestId}' for character {CharacterId}", questId, characterId);
 
-        // TODO: Dispatch to Codex subsystem when quest completion command is implemented
-        return CommandResult.OkWith("questId", questId);
+            // TODO: Dispatch to Codex subsystem when quest completion command is implemented
+            return Task.FromResult(CommandResult.OkWith("questId", questId));
+        }
+        catch (Exception exception)
+        {
+            return Task.FromException<CommandResult>(exception);
+        }
     }
 
     private CommandResult HandleGiveItem(DialogueAction action, NwCreature creature)
@@ -104,6 +118,7 @@ public sealed class ExecuteDialogueActionHandler
 
         for (int i = 0; i < quantity; i++)
         {
+            if (creature.Location == null) continue;
             NwItem? item = NwItem.Create(itemTag, creature.Location);
             if (item != null)
             {

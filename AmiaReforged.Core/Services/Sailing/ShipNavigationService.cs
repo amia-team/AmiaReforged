@@ -34,145 +34,145 @@ public class ShipNavigationService
         _avoidanceHeadings =
             new();
 
- public ShipNavigationService(
-    ShipObstacleService shipObstacleService,
-    SailingAreaService sailingAreaService)
-{
-    _shipObstacleService = shipObstacleService;
-    _sailingAreaService = sailingAreaService;
-}
-
-// -----------------------------------------------------------------
-// Waypoint Route
-// -----------------------------------------------------------------
-
-public void SetRoute(
-    ShipState ship,
-    ShipNavigationRoute route)
-{
-    _routes[ship.ShipName] = route;
-
-    ShipNavigationWaypoint? waypoint =
-        route.CurrentWaypoint;
-
-    if (waypoint != null)
+    public ShipNavigationService(
+       ShipObstacleService shipObstacleService,
+       SailingAreaService sailingAreaService)
     {
-        SetDestination(
-            ship,
-            waypoint.AreaResRef,
-            waypoint.X,
-            waypoint.Y,
-            waypoint.Z);
+        _shipObstacleService = shipObstacleService;
+        _sailingAreaService = sailingAreaService;
     }
 
-    Log.Info(
-        $"Navigation route set: " +
-        $"Ship={ship.ShipName}, " +
-        $"Waypoints={route.Waypoints.Count}");
-}
+    // -----------------------------------------------------------------
+    // Waypoint Route
+    // -----------------------------------------------------------------
 
-public void ClearRoute(
-    ShipState ship)
-{
-    if (_routes.Remove(
-            ship.ShipName))
+    public void SetRoute(
+        ShipState ship,
+        ShipNavigationRoute route)
     {
+        _routes[ship.ShipName] = route;
+
+        ShipNavigationWaypoint? waypoint =
+            route.CurrentWaypoint;
+
+        if (waypoint != null)
+        {
+            SetDestination(
+                ship,
+                waypoint.AreaResRef,
+                waypoint.X,
+                waypoint.Y,
+                waypoint.Z);
+        }
+
         Log.Info(
-            $"Navigation route cleared: " +
-            $"Ship={ship.ShipName}");
-    }
-}
-
-public ShipNavigationRoute?
-GetRoute(
-    ShipState ship)
-{
-    if (_routes.TryGetValue(
-            ship.ShipName,
-            out ShipNavigationRoute? route))
-    {
-        return route;
+            $"Navigation route set: " +
+            $"Ship={ship.ShipName}, " +
+            $"Waypoints={route.Waypoints.Count}");
     }
 
-    return null;
-}
-
-public ShipNavigationWaypoint?
-GetCurrentWaypoint(
-    ShipState ship)
-{
-    return GetRoute(ship)
-        ?.CurrentWaypoint;
-}
-public bool AdvanceWaypoint(
-    ShipState ship)
-{
-    ShipNavigationRoute? route =
-        GetRoute(ship);
-
-    if (route == null)
+    public void ClearRoute(
+        ShipState ship)
     {
+        if (_routes.Remove(
+                ship.ShipName))
+        {
+            Log.Info(
+                $"Navigation route cleared: " +
+                $"Ship={ship.ShipName}");
+        }
+    }
+
+    public ShipNavigationRoute?
+    GetRoute(
+        ShipState ship)
+    {
+        if (_routes.TryGetValue(
+                ship.ShipName,
+                out ShipNavigationRoute? route))
+        {
+            return route;
+        }
+
+        return null;
+    }
+
+    public ShipNavigationWaypoint?
+    GetCurrentWaypoint(
+        ShipState ship)
+    {
+        return GetRoute(ship)
+            ?.CurrentWaypoint;
+    }
+    public bool AdvanceWaypoint(
+        ShipState ship)
+    {
+        ShipNavigationRoute? route =
+            GetRoute(ship);
+
+        if (route == null)
+        {
+            return false;
+        }
+
+        if (route.IsComplete)
+        {
+            return false;
+        }
+
+        ShipNavigationWaypoint? waypoint =
+            route.CurrentWaypoint;
+
+        Log.Info(
+            $"Navigation waypoint reached: " +
+            $"Ship={ship.ShipName}, " +
+            $"Waypoint={route.CurrentWaypointIndex}, " +
+            $"Area={waypoint?.AreaResRef}, " +
+            $"X={waypoint?.X:0.00}, " +
+            $"Y={waypoint?.Y:0.00}");
+
+        route.CurrentWaypointIndex++;
+
+        // -------------------------------------------------------------
+        // Looping merchant route
+        // -------------------------------------------------------------
+
+        if (route.Loop &&
+            route.CurrentWaypointIndex >= route.Waypoints.Count)
+        {
+            route.CurrentWaypointIndex = 0;
+
+            Log.Info(
+                $"Navigation route looping: " +
+                $"Ship={ship.ShipName}");
+        }
+
+        // -------------------------------------------------------------
+        // Non-looping route complete
+        // -------------------------------------------------------------
+
+        if (route.IsComplete)
+        {
+            Log.Info(
+                $"Navigation route complete: " +
+                $"Ship={ship.ShipName}");
+
+            return true;
+        }
+
+        ShipNavigationWaypoint next =
+            route.CurrentWaypoint!;
+
+        Log.Info(
+            $"Navigation advancing to waypoint: " +
+            $"Ship={ship.ShipName}, " +
+            $"Waypoint={route.CurrentWaypointIndex}, " +
+            $"Area={next.AreaResRef}, " +
+            $"X={next.X:0.00}, " +
+            $"Y={next.Y:0.00}");
+
         return false;
-    }
-
-    if (route.IsComplete)
-    {
-        return false;
-    }
-
-    ShipNavigationWaypoint? waypoint =
-        route.CurrentWaypoint;
-
-    Log.Info(
-        $"Navigation waypoint reached: " +
-        $"Ship={ship.ShipName}, " +
-        $"Waypoint={route.CurrentWaypointIndex}, " +
-        $"Area={waypoint?.AreaResRef}, " +
-        $"X={waypoint?.X:0.00}, " +
-        $"Y={waypoint?.Y:0.00}");
-
-    route.CurrentWaypointIndex++;
-
-    // -------------------------------------------------------------
-    // Looping merchant route
-    // -------------------------------------------------------------
-
-    if (route.Loop &&
-        route.CurrentWaypointIndex >= route.Waypoints.Count)
-    {
-        route.CurrentWaypointIndex = 0;
-
-        Log.Info(
-            $"Navigation route looping: " +
-            $"Ship={ship.ShipName}");
-    }
-
-    // -------------------------------------------------------------
-    // Non-looping route complete
-    // -------------------------------------------------------------
-
-    if (route.IsComplete)
-    {
-        Log.Info(
-            $"Navigation route complete: " +
-            $"Ship={ship.ShipName}");
-
-        return true;
-    }
-
-    ShipNavigationWaypoint next =
-        route.CurrentWaypoint!;
-
-    Log.Info(
-        $"Navigation advancing to waypoint: " +
-        $"Ship={ship.ShipName}, " +
-        $"Waypoint={route.CurrentWaypointIndex}, " +
-        $"Area={next.AreaResRef}, " +
-        $"X={next.X:0.00}, " +
-        $"Y={next.Y:0.00}");
-
-    return false;
-}    // -----------------------------------------------------------------
+    }    // -----------------------------------------------------------------
     // Destination
     // -----------------------------------------------------------------
 
@@ -263,136 +263,136 @@ public bool AdvanceWaypoint(
     // Desired Heading
     // -----------------------------------------------------------------
 
-public Heading GetDesiredHeading(
-    ShipState ship)
-{
-    ShipNavigationWaypoint? waypoint =
-        GetCurrentWaypoint(ship);
-
-    // -------------------------------------------------------------
-    // If the current waypoint is in another area,
-    // head toward the boundary that connects to it.
-    // -------------------------------------------------------------
-
-    if (waypoint != null &&
-        !string.Equals(
-            waypoint.AreaResRef,
-            ship.AreaResRef,
-            StringComparison.OrdinalIgnoreCase))
+    public Heading GetDesiredHeading(
+        ShipState ship)
     {
-        if (_sailingAreaService.TryGetArea(
+        ShipNavigationWaypoint? waypoint =
+            GetCurrentWaypoint(ship);
+
+        // -------------------------------------------------------------
+        // If the current waypoint is in another area,
+        // head toward the boundary that connects to it.
+        // -------------------------------------------------------------
+
+        if (waypoint != null &&
+            !string.Equals(
+                waypoint.AreaResRef,
                 ship.AreaResRef,
-                out SailingArea? area))
+                StringComparison.OrdinalIgnoreCase))
         {
-            if (string.Equals(
-                    area.EastAreaResRef,
-                    waypoint.AreaResRef,
-                    StringComparison.OrdinalIgnoreCase))
+            if (_sailingAreaService.TryGetArea(
+                    ship.AreaResRef,
+                    out SailingArea? area))
             {
-                return Heading.East;
-            }
+                if (string.Equals(
+                        area.EastAreaResRef,
+                        waypoint.AreaResRef,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return Heading.East;
+                }
 
-            if (string.Equals(
-                    area.WestAreaResRef,
-                    waypoint.AreaResRef,
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                return Heading.West;
-            }
+                if (string.Equals(
+                        area.WestAreaResRef,
+                        waypoint.AreaResRef,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return Heading.West;
+                }
 
-            if (string.Equals(
-                    area.NorthAreaResRef,
-                    waypoint.AreaResRef,
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                return Heading.North;
-            }
+                if (string.Equals(
+                        area.NorthAreaResRef,
+                        waypoint.AreaResRef,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return Heading.North;
+                }
 
-            if (string.Equals(
-                    area.SouthAreaResRef,
-                    waypoint.AreaResRef,
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                return Heading.South;
+                if (string.Equals(
+                        area.SouthAreaResRef,
+                        waypoint.AreaResRef,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return Heading.South;
+                }
             }
         }
+
+        // -------------------------------------------------------------
+        // Normal same-area navigation.
+        // -------------------------------------------------------------
+
+        float targetX =
+            waypoint?.X ??
+            ship.DestinationX;
+
+        float targetY =
+            waypoint?.Y ??
+            ship.DestinationY;
+
+        float deltaX =
+            targetX - ship.X;
+
+        float deltaY =
+            targetY - ship.Y;
+
+        bool east =
+            deltaX > DestinationThreshold;
+
+        bool west =
+            deltaX < -DestinationThreshold;
+
+        bool north =
+            deltaY > DestinationThreshold;
+
+        bool south =
+            deltaY < -DestinationThreshold;
+
+        if (north && east) return Heading.NorthEast;
+        if (north && west) return Heading.NorthWest;
+        if (south && east) return Heading.SouthEast;
+        if (south && west) return Heading.SouthWest;
+        if (north) return Heading.North;
+        if (south) return Heading.South;
+        if (east) return Heading.East;
+        if (west) return Heading.West;
+
+        return ship.Heading;
     }
 
-    // -------------------------------------------------------------
-    // Normal same-area navigation.
-    // -------------------------------------------------------------
-
-    float targetX =
-        waypoint?.X ??
-        ship.DestinationX;
-
-    float targetY =
-        waypoint?.Y ??
-        ship.DestinationY;
-
-    float deltaX =
-        targetX - ship.X;
-
-    float deltaY =
-        targetY - ship.Y;
-
-    bool east =
-        deltaX > DestinationThreshold;
-
-    bool west =
-        deltaX < -DestinationThreshold;
-
-    bool north =
-        deltaY > DestinationThreshold;
-
-    bool south =
-        deltaY < -DestinationThreshold;
-
-    if (north && east) return Heading.NorthEast;
-    if (north && west) return Heading.NorthWest;
-    if (south && east) return Heading.SouthEast;
-    if (south && west) return Heading.SouthWest;
-    if (north) return Heading.North;
-    if (south) return Heading.South;
-    if (east) return Heading.East;
-    if (west) return Heading.West;
-
-    return ship.Heading;
-}
-
-public bool IsWaitingForAreaTransition(
-    ShipState ship)
-{
-    ShipNavigationWaypoint? waypoint =
-        GetCurrentWaypoint(
-            ship);
-
-    if (waypoint == null)
+    public bool IsWaitingForAreaTransition(
+        ShipState ship)
     {
-        return false;
-    }
+        ShipNavigationWaypoint? waypoint =
+            GetCurrentWaypoint(
+                ship);
 
-    return !string.Equals(
-        ship.AreaResRef,
-        waypoint.AreaResRef,
-        StringComparison.OrdinalIgnoreCase);
-}
+        if (waypoint == null)
+        {
+            return false;
+        }
+
+        return !string.Equals(
+            ship.AreaResRef,
+            waypoint.AreaResRef,
+            StringComparison.OrdinalIgnoreCase);
+    }
     // -----------------------------------------------------------------
     // Current Waypoint
     // -----------------------------------------------------------------
 
     public bool IsCurrentWaypointReached(
     ShipState ship)
-{
-    ShipNavigationWaypoint? waypoint =
-        GetCurrentWaypoint(
-            ship);
-
-    if (waypoint == null)
     {
-        return false;
+        ShipNavigationWaypoint? waypoint =
+            GetCurrentWaypoint(
+                ship);
+
+        if (waypoint == null)
+        {
+            return false;
         }
-        
+
 
         // -------------------------------------------------------------
         // The waypoint must belong to the ship's current area.
@@ -405,26 +405,26 @@ public bool IsWaitingForAreaTransition(
             ship.AreaResRef,
             waypoint.AreaResRef,
             StringComparison.OrdinalIgnoreCase))
-    {
-        return false;
+        {
+            return false;
+        }
+
+        float deltaX =
+            waypoint.X -
+            ship.X;
+
+        float deltaY =
+            waypoint.Y -
+            ship.Y;
+
+        float distance =
+            MathF.Sqrt(
+                deltaX * deltaX +
+                deltaY * deltaY);
+
+        return distance <=
+               DestinationThreshold;
     }
-
-    float deltaX =
-        waypoint.X -
-        ship.X;
-
-    float deltaY =
-        waypoint.Y -
-        ship.Y;
-
-    float distance =
-        MathF.Sqrt(
-            deltaX * deltaX +
-            deltaY * deltaY);
-
-    return distance <=
-           DestinationThreshold;
-}
     //--------------------------------------------------
     // Obstacle-Aware Navigation
     // -----------------------------------------------------------------
@@ -520,8 +520,6 @@ public bool IsWaitingForAreaTransition(
         Heading bestHeading =
             ship.Heading;
 
-        float bestDistance =
-            float.MaxValue;
 
         bool foundClearHeading =
             false;
@@ -544,80 +542,80 @@ public bool IsWaitingForAreaTransition(
                 out float newX,
                 out float newY);
 
-           ShipNavigationWaypoint? waypoint =
-    GetCurrentWaypoint(ship);
+            ShipNavigationWaypoint? waypoint =
+     GetCurrentWaypoint(ship);
 
-float targetX;
-float targetY;
+            float targetX;
+            float targetY;
 
-if (waypoint != null &&
-    !string.Equals(
-        waypoint.AreaResRef,
-        ship.AreaResRef,
-        StringComparison.OrdinalIgnoreCase) &&
-    _sailingAreaService.TryGetArea(
-        ship.AreaResRef,
-        out SailingArea? area))
-{
-    targetX = newX;
-    targetY = newY;
+            if (waypoint != null &&
+                !string.Equals(
+                    waypoint.AreaResRef,
+                    ship.AreaResRef,
+                    StringComparison.OrdinalIgnoreCase) &&
+                _sailingAreaService.TryGetArea(
+                    ship.AreaResRef,
+                    out SailingArea? area))
+            {
+                targetX = newX;
+                targetY = newY;
 
-    if (string.Equals(
-            area.EastAreaResRef,
-            waypoint.AreaResRef,
-            StringComparison.OrdinalIgnoreCase))
-    {
-        targetX = area.MaxX;
-    }
-    else if (string.Equals(
-                 area.WestAreaResRef,
-                 waypoint.AreaResRef,
-                 StringComparison.OrdinalIgnoreCase))
-    {
-        targetX = area.MinX;
-    }
-    else if (string.Equals(
-                 area.NorthAreaResRef,
-                 waypoint.AreaResRef,
-                 StringComparison.OrdinalIgnoreCase))
-    {
-        targetY = area.MaxY;
-    }
-    else if (string.Equals(
-                 area.SouthAreaResRef,
-                 waypoint.AreaResRef,
-                 StringComparison.OrdinalIgnoreCase))
-    {
-        targetY = area.MinY;
-    }
-}
-else
-{
-    targetX =
-        waypoint?.X ??
-        ship.DestinationX;
+                if (string.Equals(
+                        area.EastAreaResRef,
+                        waypoint.AreaResRef,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    targetX = area.MaxX;
+                }
+                else if (string.Equals(
+                             area.WestAreaResRef,
+                             waypoint.AreaResRef,
+                             StringComparison.OrdinalIgnoreCase))
+                {
+                    targetX = area.MinX;
+                }
+                else if (string.Equals(
+                             area.NorthAreaResRef,
+                             waypoint.AreaResRef,
+                             StringComparison.OrdinalIgnoreCase))
+                {
+                    targetY = area.MaxY;
+                }
+                else if (string.Equals(
+                             area.SouthAreaResRef,
+                             waypoint.AreaResRef,
+                             StringComparison.OrdinalIgnoreCase))
+                {
+                    targetY = area.MinY;
+                }
+            }
+            else
+            {
+                targetX =
+                    waypoint?.X ??
+                    ship.DestinationX;
 
-    targetY =
-        waypoint?.Y ??
-        ship.DestinationY;
-}
+                targetY =
+                    waypoint?.Y ??
+                    ship.DestinationY;
+            }
 
-float deltaX =
-    targetX - newX;
+            float deltaX =
+                targetX - newX;
 
-float deltaY =
-    targetY - newY;
+            float deltaY =
+                targetY - newY;
 
-float distance =
-    MathF.Sqrt(
-        deltaX * deltaX +
-        deltaY * deltaY);
+            float distance =
+                MathF.Sqrt(
+                    deltaX * deltaX +
+                    deltaY * deltaY);
         }
-            // -------------------------------------------------------------
-            // Store selected avoidance heading.
-            // -------------------------------------------------------------
+        // -------------------------------------------------------------
+        // Store selected avoidance heading.
+        // -------------------------------------------------------------
 
-            if (foundClearHeading)
+        if (foundClearHeading)
         {
             if (bestHeading !=
                 desiredHeading)
@@ -978,25 +976,25 @@ float distance =
     }
     public bool IsNextWaypointInAnotherArea(
     ShipState ship)
-{
-    if (!_routes.TryGetValue(
-            ship.ShipName,
-            out ShipNavigationRoute? route))
     {
-        return false;
+        if (!_routes.TryGetValue(
+                ship.ShipName,
+                out ShipNavigationRoute? route))
+        {
+            return false;
+        }
+
+        int nextIndex =
+            route.CurrentWaypointIndex + 1;
+
+        if (nextIndex >= route.Waypoints.Count)
+        {
+            return false;
+        }
+
+        return !string.Equals(
+            route.Waypoints[nextIndex].AreaResRef,
+            ship.AreaResRef,
+            StringComparison.OrdinalIgnoreCase);
     }
-
-    int nextIndex =
-        route.CurrentWaypointIndex + 1;
-
-    if (nextIndex >= route.Waypoints.Count)
-    {
-        return false;
-    }
-
-    return !string.Equals(
-        route.Waypoints[nextIndex].AreaResRef,
-        ship.AreaResRef,
-        StringComparison.OrdinalIgnoreCase);
-}
 }

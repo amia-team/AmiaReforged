@@ -22,7 +22,7 @@ public class FetchPlayerCharacterIdentityQueryHandler(
         PersistedCharacter? persistedCharacter = databaseCharacters.GetByPersonaId(query.PersonaId);
         if (persistedCharacter is null)
         {
-            PlayerCharacterIdentity emptyId = new PlayerCharacterIdentity
+            PlayerCharacterIdentity emptyId = new()
             {
                 PersonaId = default,
                 FirstName = "null",
@@ -39,6 +39,7 @@ public class FetchPlayerCharacterIdentityQueryHandler(
 
         PlayerCharacterIdentity identity = new()
         {
+            PersonaId = query.PersonaId,
             CdKey = cdKey,
             FirstName = persistedCharacter.FirstName,
             LastName = persistedCharacter.LastName,

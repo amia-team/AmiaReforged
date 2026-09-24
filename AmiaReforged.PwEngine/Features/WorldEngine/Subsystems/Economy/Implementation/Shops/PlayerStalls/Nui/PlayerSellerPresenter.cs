@@ -5,7 +5,8 @@ using AmiaReforged.PwEngine.Features.WindowingSystem.Scry.GenericWindows;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Time;
-using static AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops.PlayerStalls.NwnColorTagHelper;
+using static AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops.PlayerStalls.
+    NwnColorTagHelper;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -75,7 +76,10 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
 
     [Inject] private PlayerStallEventManager EventManager { get; init; } = null!;
     [Inject] private IHarptosTimeService HarptosTimeService { get; init; } = null!;
-    [Inject] private Lazy<WorldEngine.Subsystems.Characters.Runtime.RuntimeCharacterService> CharacterService { get; init; } = null!;
+
+    [Inject]
+    private Lazy<WorldEngine.Subsystems.Characters.Runtime.RuntimeCharacterService> CharacterService { get; init; } =
+        null!;
 
     public override NuiWindowToken Token() => _token;
 
@@ -133,7 +137,8 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
             return;
         }
 
-        if (eventData.ElementId == PlayerSellerView.HoldEarningsToggleId && eventData.EventType == NuiEventType.MouseDown)
+        if (eventData.ElementId == PlayerSellerView.HoldEarningsToggleId &&
+            eventData.EventType == NuiEventType.MouseDown)
         {
             Log.Info($"Woop {eventData.EventType}");
             _ = HandleHoldEarningsToggleAsync();
@@ -739,6 +744,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
             Token().SetBindValue(View.HoldEarningsChecked, _holdEarningsInStall);
             return;
         }
+
         bool desired = !_holdEarningsInStall;
 
         await SetProcessingStateAsync(true).ConfigureAwait(false);
@@ -836,7 +842,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
 
             await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
                 "We couldn't withdraw stall earnings.",
-                ColorConstants.Red)). ConfigureAwait(false);
+                ColorConstants.Red)).ConfigureAwait(false);
         }
         finally
         {
@@ -1014,7 +1020,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
     private static string FormatLedgerAmount(int amount, string currency)
     {
         string unit = string.IsNullOrWhiteSpace(currency) ? "gp" : currency;
-    return string.Format(CultureInfo.InvariantCulture, "{0:+#,##0;-#,##0;0} {1}", amount, unit);
+        return string.Format(CultureInfo.InvariantCulture, "{0:+#,##0;-#,##0;0} {1}", amount, unit);
     }
 
     private static string BuildLedgerTooltip(string timestampText, string amountText, string descriptionText)
@@ -1192,10 +1198,11 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         {
             // Deserialize the item using the centralized helper that handles both
             // binary GFF (preferred) and legacy JSON formats
-            Location? loginCreatureLocation = _player.LoginCreature.Location;
+            Location? loginCreatureLocation = _player.LoginCreature?.Location;
             if (loginCreatureLocation is null)
             {
-                _player.SendServerMessage("Unable to examine item: your character has no valid location.", ColorConstants.Red);
+                _player.SendServerMessage("Unable to examine item: your character has no valid location.",
+                    ColorConstants.Red);
                 return;
             }
 
@@ -1345,7 +1352,8 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
             if (result.Success)
             {
                 // Close the seller window since the stall is now released
-                _player.SendServerMessage(result.Message ?? "Stall closed successfully.", result.MessageColor ?? ColorConstants.Lime);
+                _player.SendServerMessage(result.Message ?? "Stall closed successfully.",
+                    result.MessageColor ?? ColorConstants.Lime);
                 RequestClose();
             }
             else
@@ -1466,7 +1474,8 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         Token().SetBindValue(View.EarningsRowVisible, _earningsVisible);
         Token().SetBindValue(View.GrossProfitsText, _grossProfitsText);
         Token().SetBindValue(View.AvailableFundsText, _availableFundsText);
-        Token().SetBindValue(View.EarningsBalanceText, FormatEarningsBalance(_escrowBalance, _currentPeriodGrossProfits));
+        Token().SetBindValue(View.EarningsBalanceText,
+            FormatEarningsBalance(_escrowBalance, _currentPeriodGrossProfits));
         Token().SetBindValue(View.EarningsTooltip,
             string.IsNullOrWhiteSpace(_earningsTooltip) ? string.Empty : _earningsTooltip);
         Token().SetBindValue(View.EarningsWithdrawEnabled, _withdrawEnabled && !_isProcessing);
@@ -1734,6 +1743,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         {
             sb.AppendLine("Role: Member");
         }
+
         sb.AppendLine();
         sb.Append("Permissions: ");
         List<string> perms = new();
@@ -1989,7 +1999,8 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         }
     }
 
-    private IEnumerable<PlayerStallSellerInventoryItemView> ApplyInventoryFilters(IReadOnlyList<PlayerStallSellerInventoryItemView> items)
+    private IEnumerable<PlayerStallSellerInventoryItemView> ApplyInventoryFilters(
+        IReadOnlyList<PlayerStallSellerInventoryItemView> items)
     {
         if (string.IsNullOrEmpty(_inventorySearchTerm))
         {
@@ -1998,7 +2009,8 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
 
         return items.Where(i =>
             i.DisplayName.Contains(_inventorySearchTerm, StringComparison.OrdinalIgnoreCase) ||
-            (!string.IsNullOrEmpty(i.ResRef) && i.ResRef.Contains(_inventorySearchTerm, StringComparison.OrdinalIgnoreCase)));
+            (!string.IsNullOrEmpty(i.ResRef) &&
+             i.ResRef.Contains(_inventorySearchTerm, StringComparison.OrdinalIgnoreCase)));
     }
 
     private void RefreshInventoryList()

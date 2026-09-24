@@ -225,14 +225,22 @@ public class ForeclosureStorageServiceTests
     }
 
     [Test]
-    public async Task RemoveForeclosedItemAsync_DoesNotThrow_WhenItemDoesNotExist()
+    public Task RemoveForeclosedItemAsync_DoesNotThrow_WhenItemDoesNotExist()
     {
-        // Arrange
-        long nonExistentItemId = 99999;
+        try
+        {
+            // Arrange
+            long nonExistentItemId = 99999;
 
-        // Act & Assert
-        Assert.DoesNotThrowAsync(async () =>
-            await _service.RemoveForeclosedItemAsync(nonExistentItemId));
+            // Act & Assert
+            Assert.DoesNotThrowAsync(async () =>
+                await _service.RemoveForeclosedItemAsync(nonExistentItemId));
+            return Task.CompletedTask;
+        }
+        catch (Exception exception)
+        {
+            return Task.FromException(exception);
+        }
     }
 
     [Test]

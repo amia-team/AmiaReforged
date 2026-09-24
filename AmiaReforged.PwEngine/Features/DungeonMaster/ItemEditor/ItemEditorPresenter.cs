@@ -927,7 +927,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         string currentName = _model.SelectedItem.Name;
         string currentDesc = _model.SelectedItem.Description;
         string currentTag = _model.SelectedItem.Tag;
-        Location currentLocation = _model.SelectedItem.Location;
+        Location currentLocation = _model.SelectedItem.Location!;
 
         // Check if trying to change to a [NO DAMAGE] item type with weapon properties
         List<int> noDamageItemRows = new() { 93, 15, 94, 113, 222, 223 }; // Trumpet, Torch, Moon, Tools Left, Focus, Umbrella
@@ -1003,7 +1003,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         string currentName = _model.SelectedItem.Name;
         string currentDesc = _model.SelectedItem.Description;
         string currentTag = _model.SelectedItem.Tag;
-        Location currentLocation = _model.SelectedItem.Location;
+        Location currentLocation = _model.SelectedItem.Location!;
 
         CloseConfirmNoDamageModal();
         await PerformItemTypeChange(newType, newResRef, currentName, currentDesc, currentTag, currentLocation);
@@ -1060,7 +1060,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
 
         // Copy all item properties from the old item
         int propertiesCopied = 0;
-        foreach (ItemProperty prop in _model.SelectedItem.ItemProperties)
+        foreach (ItemProperty prop in _model.SelectedItem!.ItemProperties)
         {
             newItem.AddItemProperty(prop, EffectDuration.Permanent);
             propertiesCopied++;
@@ -1304,7 +1304,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         string standardName = itemType.ToString();
 
         // Handle custom base item types (rows 93+)
-        string customName = (int)itemType switch
+        string? customName = (int)itemType switch
         {
             93 => "Trumpet",
             94 => "Moon On A Stick",

@@ -151,7 +151,7 @@ public class PersistentCoinhouseRepository(PwContextFactory factory) : ICoinhous
 
         foreach (CoinhouseAccountHolderDto holderDto in holderDtos)
         {
-            if (holderDto.Id is { } id && id != 0 && existingById.TryGetValue(id, out CoinHouseAccountHolder existing))
+            if (holderDto.Id is { } id && id != 0 && existingById.TryGetValue(id, out CoinHouseAccountHolder? existing))
             {
                 existing.FirstName = holderDto.FirstName;
                 existing.LastName = holderDto.LastName;

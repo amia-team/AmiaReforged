@@ -72,7 +72,7 @@ public class PayStallRentCommandTests
     {
         // Arrange, Act & Assert
         ArgumentException ex = Assert.Throws<ArgumentException>(() =>
-            PayStallRentCommand.Create(-1L, 100, RentChargeSource.StallEscrow, DateTime.UtcNow));
+            PayStallRentCommand.Create(-1L, 100, RentChargeSource.StallEscrow, DateTime.UtcNow))!;
 
         Assert.That(ex.ParamName, Is.EqualTo("stallId"));
     }
@@ -82,7 +82,7 @@ public class PayStallRentCommandTests
     {
         // Arrange, Act & Assert
         ArgumentException ex = Assert.Throws<ArgumentException>(() =>
-            PayStallRentCommand.Create(0L, 100, RentChargeSource.StallEscrow, DateTime.UtcNow));
+            PayStallRentCommand.Create(0L, 100, RentChargeSource.StallEscrow, DateTime.UtcNow))!;
 
         Assert.That(ex.ParamName, Is.EqualTo("stallId"));
     }
@@ -92,7 +92,7 @@ public class PayStallRentCommandTests
     {
         // Arrange, Act & Assert
         ArgumentException ex = Assert.Throws<ArgumentException>(() =>
-            PayStallRentCommand.Create(123L, -100, RentChargeSource.StallEscrow, DateTime.UtcNow));
+            PayStallRentCommand.Create(123L, -100, RentChargeSource.StallEscrow, DateTime.UtcNow))!;
 
         Assert.That(ex.ParamName, Is.EqualTo("rentAmount"));
     }

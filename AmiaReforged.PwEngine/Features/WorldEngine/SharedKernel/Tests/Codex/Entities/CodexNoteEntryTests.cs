@@ -141,7 +141,7 @@ public class CodexNoteEntryTests
             false
         ));
 
-        Assert.That(ex.Message, Does.Contain("Note content cannot be empty"));
+        Assert.That(ex!.Message, Does.Contain("Note content cannot be empty"));
         Assert.That(ex.ParamName, Is.EqualTo("content"));
     }
 
@@ -158,7 +158,7 @@ public class CodexNoteEntryTests
             false
         ));
 
-        Assert.That(ex.Message, Does.Contain("Note content cannot be empty"));
+        Assert.That(ex!.Message, Does.Contain("Note content cannot be empty"));
     }
 
     [Test]
@@ -174,7 +174,7 @@ public class CodexNoteEntryTests
             false
         ));
 
-        Assert.That(ex.Message, Does.Contain("Note content cannot be empty"));
+        Assert.That(ex!.Message, Does.Contain("Note content cannot be empty"));
     }
 
     [Test]
@@ -190,7 +190,7 @@ public class CodexNoteEntryTests
             false
         ));
 
-        Assert.That(ex.Message, Does.Contain("Note ID cannot be empty"));
+        Assert.That(ex!.Message, Does.Contain("Note ID cannot be empty"));
         Assert.That(ex.ParamName, Is.EqualTo("id"));
     }
 
@@ -260,8 +260,8 @@ public class CodexNoteEntryTests
         ArgumentException? ex = Assert.Throws<ArgumentException>(() =>
             note.UpdateContent("", _testDate.AddHours(1)));
 
-        Assert.That(ex.Message, Does.Contain("Note content cannot be empty"));
-        Assert.That(ex.ParamName, Is.EqualTo("newContent"));
+        Assert.That(ex?.Message, Does.Contain("Note content cannot be empty"));
+        Assert.That(ex!.ParamName, Is.EqualTo("newContent"));
     }
 
     [Test]
@@ -281,7 +281,7 @@ public class CodexNoteEntryTests
         ArgumentException? ex = Assert.Throws<ArgumentException>(() =>
             note.UpdateContent("   ", _testDate.AddHours(1)));
 
-        Assert.That(ex.Message, Does.Contain("Note content cannot be empty"));
+        Assert.That(ex?.Message, Does.Contain("Note content cannot be empty"));
     }
 
     [Test]
@@ -301,7 +301,7 @@ public class CodexNoteEntryTests
         ArgumentException? ex = Assert.Throws<ArgumentException>(() =>
             note.UpdateContent(null!, _testDate.AddHours(1)));
 
-        Assert.That(ex.Message, Does.Contain("Note content cannot be empty"));
+        Assert.That(ex?.Message, Does.Contain("Note content cannot be empty"));
     }
 
     [Test]

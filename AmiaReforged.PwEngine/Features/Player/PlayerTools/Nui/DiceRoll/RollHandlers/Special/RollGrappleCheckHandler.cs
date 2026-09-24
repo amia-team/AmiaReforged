@@ -10,7 +10,7 @@ public class RollGrappleCheckHandler : IRollHandler
 {
     public void RollDice(NwPlayer player)
     {
-        NwCreature playerCreature = player.LoginCreature;
+        NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature == null) return;
 
         int diceRoll = NWScript.d20();

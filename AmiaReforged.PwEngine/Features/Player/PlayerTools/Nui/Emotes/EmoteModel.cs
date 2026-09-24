@@ -1,6 +1,8 @@
 using AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.Emotes.EmoteDefinitions;
 using Anvil.API;
 
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
+
 namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.Emotes;
 
 public class EmoteModel
@@ -12,12 +14,8 @@ public class EmoteModel
         _player = player;
     }
 
-    public Dictionary<string, IEmote> Emotes { get; } = new();
+    private Dictionary<string, IEmote> Emotes { get; } = new();
 
-    /// <summary>
-    ///     Uses reflection to fetch all registered emotes and then creates a row with a button for each emote.
-    ///     Emotes are defined in <see cref="AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Emotes.EmoteDefinitions" />
-    /// </summary>
     public void InitAllEmotes()
     {
         IEnumerable<Type> emoteTypes =
@@ -26,7 +24,6 @@ public class EmoteModel
 
         foreach (Type emoteType in emoteTypes)
         {
-            // Create an instance of the emote
             IEmote? emote = (IEmote)Activator.CreateInstance(emoteType);
 
             if (emote == null) continue;

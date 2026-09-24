@@ -5,11 +5,10 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterIdentity.Queries;
 
 public sealed record FetchPlayerCharacterIdentityQuery(PersonaId PersonaId) : IQuery<PlayerCharacterIdentity>;
-public class FetchNonPlayerCharacterIdentity(PersonaId personaId) : IQuery<NonPlayerCharacterIdentity>;
 
 public abstract record CharacterIdentity
 {
-    public PersonaId PersonaId { get; init; }
+    public required PersonaId PersonaId { get; init; }
     public required string FirstName { get; init; }
     public string? LastName { get; init; }
     public required string Description { get; init; }
@@ -17,7 +16,7 @@ public abstract record CharacterIdentity
 
 public sealed record PlayerCharacterIdentity : CharacterIdentity
 {
-    public string CdKey { get; init; }
+    public required string CdKey { get; init; }
     public CharacterId CharacterId { get; init; }
 }
 

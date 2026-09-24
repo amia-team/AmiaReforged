@@ -343,7 +343,7 @@ public sealed class ReeveLockupServiceTests
     {
         public int Invocations { get; private set; }
 
-        public Func<byte[], bool>? ShouldAccept { get; set; }
+        public Func<byte[], bool>? ShouldAccept { get; init; }
 
         public Task<bool> ReceiveItemAsync(byte[] rawItemData, PersonaId persona, CancellationToken cancellationToken, int quantity = 1)
         {

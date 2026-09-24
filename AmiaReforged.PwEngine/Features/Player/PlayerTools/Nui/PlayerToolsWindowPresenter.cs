@@ -93,7 +93,7 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
                 Token().SetBindValue(View.ToolVisibleBinds[i], true);
                 Token().SetBindValue(View.ToolEnabledBinds[i], Model.EnabledWindowIndices.Contains(i));
 
-                string disabledTooltip = Model.DisabledReasons.TryGetValue(i, out string reason)
+                string disabledTooltip = Model.DisabledReasons.TryGetValue(i, out string? reason)
                     ? reason
                     : string.Empty;
                 Token().SetBindValue(View.ToolDisabledTooltipBinds[i], disabledTooltip);

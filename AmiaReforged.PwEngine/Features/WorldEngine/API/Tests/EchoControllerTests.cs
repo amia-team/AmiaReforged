@@ -46,7 +46,7 @@ public class EchoControllerTests
 
         // Assert
         Assert.That(result, Is.Not.Null, "Result should not be null");
-        Assert.That(result.StatusCode, Is.EqualTo(200), "Should return 200 OK");
+        Assert.That(result!.StatusCode, Is.EqualTo(200), "Should return 200 OK");
 
         // Verify response structure
         string jsonResponse = JsonSerializer.Serialize(result.Data);
@@ -74,7 +74,7 @@ public class EchoControllerTests
 
         // Assert
         Assert.That(result, Is.Not.Null, "Result should not be null");
-        Assert.That(result.StatusCode, Is.EqualTo(400), "Should return 400 Bad Request when body is missing");
+        Assert.That(result!.StatusCode, Is.EqualTo(400), "Should return 400 Bad Request when body is missing");
 
         // Verify error response
         string jsonResponse = JsonSerializer.Serialize(result.Data);

@@ -115,10 +115,10 @@ public class AiTalentService
     /// </summary>
     private bool SafeUseFeat(NwCreature creature, NwGameObject target, Feat feat)
     {
-        if (!creature.KnowsFeat(feat)) return false;
-        if (!creature.HasFeatPrepared(feat)) return false;
+        if (!creature.KnowsFeat(feat!)) return false;
+        if (!creature.HasFeatPrepared(feat!)) return false;
 
-        creature.ActionUseFeat(feat, target);
+        creature.ActionUseFeat(feat!, target);
         return true;
     }
 }

@@ -47,7 +47,7 @@ public sealed class OpenCoinhouseAccountCommandHandler : ICommandHandler<OpenCoi
             return CommandResult.Fail("An account already exists for this persona at the selected coinhouse.");
         }
 
-        CommandResult validationResult = await ValidateRequestorAsync(command, cancellationToken);
+        CommandResult validationResult = await ValidateRequestorAsync(command);
         if (!validationResult.Success)
         {
             return validationResult;
@@ -78,77 +78,91 @@ public sealed class OpenCoinhouseAccountCommandHandler : ICommandHandler<OpenCoi
         return CommandResult.OkWith("AccountId", account.Id);
     }
 
-    private async Task<CommandResult> ValidateRequestorAsync(
-        OpenCoinhouseAccountCommand command,
-        CancellationToken cancellationToken)
+    private Task<CommandResult> ValidateRequestorAsync(
+        OpenCoinhouseAccountCommand command)
     {
-        if (command.AccountPersona.Type == PersonaType.Character)
+        try
         {
-            if (!string.Equals(command.Requestor.Value, command.AccountPersona.Value, StringComparison.OrdinalIgnoreCase))
+            if (command.AccountPersona.Type == PersonaType.Character)
             {
-                return CommandResult.Fail("Only the character themselves may open a personal coinhouse account.");
+                if (!string.Equals(command.Requestor.Value, command.AccountPersona.Value, StringComparison.OrdinalIgnoreCase))
+                {
+                    return Task.FromResult(CommandResult.Fail("Only the character themselves may open a personal coinhouse account."));
+                }
+
+                return Task.FromResult(CommandResult.Ok());
             }
 
-            return CommandResult.Ok();
-        }
+            if (command.AccountPersona.Type == PersonaType.Organization)
+            {
+                if (!Guid.TryParse(command.AccountPersona.Value, out Guid organizationGuid))
+                {
+                    return Task.FromResult(CommandResult.Fail("Organization identifier is invalid."));
+                }
 
-        if (command.AccountPersona.Type == PersonaType.Organization)
+                if (!Guid.TryParse(command.Requestor.Value, out Guid requestorGuid))
+                {
+                    return Task.FromResult(CommandResult.Fail("Requestor must be a valid character persona."));
+                }
+
+                OrganizationId organizationId = OrganizationId.From(organizationGuid);
+                CharacterId characterId = CharacterId.From(requestorGuid);
+                OrganizationMember? membership = _organizationMembers
+                    .GetByCharacterAndOrganization(characterId, organizationId);
+
+                if (membership is null || membership.Status != MembershipStatus.Active || !membership.IsLeader())
+                {
+                    return Task.FromResult(CommandResult.Fail("Only active organization leaders may open organization accounts."));
+                }
+
+                return Task.FromResult(CommandResult.Ok());
+            }
+
+            return Task.FromResult(CommandResult.Fail("Only character or organization personas may open coinhouse accounts."));
+        }
+        catch (Exception exception)
         {
-            if (!Guid.TryParse(command.AccountPersona.Value, out Guid organizationGuid))
-            {
-                return CommandResult.Fail("Organization identifier is invalid.");
-            }
-
-            if (!Guid.TryParse(command.Requestor.Value, out Guid requestorGuid))
-            {
-                return CommandResult.Fail("Requestor must be a valid character persona.");
-            }
-
-            OrganizationId organizationId = OrganizationId.From(organizationGuid);
-            CharacterId characterId = CharacterId.From(requestorGuid);
-            OrganizationMember? membership = _organizationMembers
-                .GetByCharacterAndOrganization(characterId, organizationId);
-
-            if (membership is null || membership.Status != MembershipStatus.Active || !membership.IsLeader())
-            {
-                return CommandResult.Fail("Only active organization leaders may open organization accounts.");
-            }
-
-            return CommandResult.Ok();
+            return Task.FromException<CommandResult>(exception);
         }
-
-        return CommandResult.Fail("Only character or organization personas may open coinhouse accounts.");
     }
 
-    private async Task<IReadOnlyList<CoinhouseAccountHolderDto>> BuildHolderListAsync(
+    private Task<IReadOnlyList<CoinhouseAccountHolderDto>> BuildHolderListAsync(
         OpenCoinhouseAccountCommand command,
         CoinhouseDto coinhouse,
         CancellationToken cancellationToken)
     {
-        List<CoinhouseAccountHolderDto> holders = new();
-        HashSet<Guid> holderIds = new();
-
-        if (TryCreatePrimaryHolder(command, coinhouse, out CoinhouseAccountHolderDto? primaryHolder))
+        try
         {
-            holders.Add(primaryHolder);
-            holderIds.Add(primaryHolder.HolderId);
-        }
+            List<CoinhouseAccountHolderDto> holders = new();
+            HashSet<Guid> holderIds = new();
 
-        if (command.AdditionalHolders is { Count: > 0 })
-        {
-            foreach (CoinhouseAccountHolderDto additional in command.AdditionalHolders)
+            // TODO: Fix the semantics of this nonsense.
+            if (TryCreatePrimaryHolder(command, coinhouse, out CoinhouseAccountHolderDto primaryHolder))
             {
-                if (holderIds.Contains(additional.HolderId))
-                {
-                    continue;
-                }
-
-                holders.Add(additional);
-                holderIds.Add(additional.HolderId);
+                holders.Add(primaryHolder!);
+                holderIds.Add(primaryHolder!.HolderId);
             }
-        }
 
-        return holders;
+            if (command.AdditionalHolders is { Count: > 0 })
+            {
+                foreach (CoinhouseAccountHolderDto additional in command.AdditionalHolders)
+                {
+                    if (holderIds.Contains(additional.HolderId))
+                    {
+                        continue;
+                    }
+
+                    holders.Add(additional);
+                    holderIds.Add(additional.HolderId);
+                }
+            }
+
+            return Task.FromResult<IReadOnlyList<CoinhouseAccountHolderDto>>(holders);
+        }
+        catch (Exception exception)
+        {
+            return Task.FromException<IReadOnlyList<CoinhouseAccountHolderDto>>(exception);
+        }
     }
 
     private bool TryCreatePrimaryHolder(

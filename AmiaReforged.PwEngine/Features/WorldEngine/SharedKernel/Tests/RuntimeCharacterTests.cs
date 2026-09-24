@@ -11,6 +11,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 using Anvil.API;
 using Moq;
 using NUnit.Framework;
+#pragma warning disable CS8619 // Nullability of reference types in value doesn't match target type.
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests;
 
@@ -289,7 +290,7 @@ public class RuntimeCharacterTests
         {
             { EquipmentSlots.Boots, new ItemSnapshot("test_boots", "Test Item", "Test Item", IPQuality.Average, [], ItemForm.None, 1, null) }
         };
-        mockInventory.Setup(x => x.GetEquipment()).Returns(expectedEquipment);
+        mockInventory.Setup(x => x.GetEquipment()).Returns(expectedEquipment!);
 
         RuntimeCharacter character = new(CharacterId.From(_characterId), mockInventory.Object, Mock.Of<ICharacterSheetPort>(),
             _membershipService, _characterStatService);

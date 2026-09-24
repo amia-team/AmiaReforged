@@ -23,7 +23,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.Han
 /// <list type="bullet">
 ///   <item><c>"allowedTypes"</c> — comma-separated <see cref="ResourceType"/> names the trigger allows
 ///         (e.g., <c>"Ore,Geode"</c>). If missing, all types from the area's definitions are used.</item>
-///   <item><c>"spawnX"</c>, <c>"spawnY"</c>, <c>"spawnZ"</c> — position within the trigger to place 
+///   <item><c>"spawnX"</c>, <c>"spawnY"</c>, <c>"spawnZ"</c> — position within the trigger to place
 ///         discovered nodes. Defaults to (0, 0, 0) if missing.</item>
 /// </list>
 /// </para>
@@ -39,6 +39,7 @@ public sealed class ProspectInteractionHandler(
 
     /// <summary>Base node count range before proficiency bonus.</summary>
     private const int BaseNodeCountMin = 1;
+
     private const int BaseNodeCountMax = 3;
 
     /// <summary>Default number of rounds to prospect, before proficiency adjustments.</summary>
@@ -139,8 +140,15 @@ public sealed class ProspectInteractionHandler(
 
             try
             {
-                ResourceNodeInstance node = nodeService.CreateNewNode(
+                ResourceNodeInstance? node = nodeService.CreateNewNode(
                     area, definition, spawnPos + offset);
+
+                if (node is null)
+                {
+                    Log.Warn("Failed to spawn prospected node '{Tag}' in area {Area}", definition.Tag, areaResRef);
+                    continue;
+                }
+
                 nodeService.SpawnInstance(node);
 
                 spawnedNodes.Add(new ProspectedNodeInfo(
@@ -225,13 +233,15 @@ public sealed class ProspectInteractionHandler(
             && value is string typesStr && !string.IsNullOrEmpty(typesStr))
         {
             HashSet<ResourceType> types = [];
-            foreach (string part in typesStr.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+            foreach (string part in typesStr.Split(',',
+                         StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
             {
                 if (Enum.TryParse<ResourceType>(part, ignoreCase: true, out ResourceType parsed))
                 {
                     types.Add(parsed);
                 }
             }
+
             return types;
         }
 

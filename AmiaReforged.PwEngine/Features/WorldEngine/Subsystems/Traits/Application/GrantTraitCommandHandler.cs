@@ -11,39 +11,46 @@ public sealed class GrantTraitCommandHandler(
     ITraitRepository traitRepository,
     ICharacterTraitRepository characterTraitRepository) : ICommandHandler<GrantTraitCommand>
 {
-    public async Task<CommandResult> HandleAsync(GrantTraitCommand command, CancellationToken cancellationToken = default)
+    public Task<CommandResult> HandleAsync(GrantTraitCommand command, CancellationToken cancellationToken = default)
     {
-        // Validate the trait definition exists.
-        Trait? trait = traitRepository.Get(command.TraitTag.Value);
-        if (trait == null)
+        try
         {
-            return CommandResult.Fail($"Trait '{command.TraitTag.Value}' does not exist.");
+            // Validate the trait definition exists.
+            Trait? trait = traitRepository.Get(command.TraitTag.Value);
+            if (trait == null)
+            {
+                return Task.FromResult(CommandResult.Fail($"Trait '{command.TraitTag.Value}' does not exist."));
+            }
+
+            // Duplicate grants must fail without creating an extra row.
+            List<CharacterTrait> existing = characterTraitRepository.GetByCharacterId(command.CharacterId);
+            if (existing.Any(ct => ct.TraitTag == command.TraitTag))
+            {
+                return Task.FromResult(CommandResult.Fail($"Character already has trait '{trait.Name}'."));
+            }
+
+            // Granting is not automatically equivalent to selection: the granted
+            // trait is confirmed and active immediately, with its unlock state
+            // seeded from the definition.
+            CharacterTrait characterTrait = new()
+            {
+                Id = Guid.NewGuid(),
+                CharacterId = command.CharacterId,
+                TraitTag = command.TraitTag,
+                DateAcquired = DateTime.UtcNow,
+                IsConfirmed = true,
+                IsActive = true,
+                IsUnlocked = trait.RequiresUnlock
+            };
+
+            characterTraitRepository.Add(characterTrait);
+
+            // The dispatcher publishes the generic CommandExecutedEvent on success.
+            return Task.FromResult(CommandResult.Ok());
         }
-
-        // Duplicate grants must fail without creating an extra row.
-        List<CharacterTrait> existing = characterTraitRepository.GetByCharacterId(command.CharacterId);
-        if (existing.Any(ct => ct.TraitTag == command.TraitTag))
+        catch (Exception exception)
         {
-            return CommandResult.Fail($"Character already has trait '{trait.Name}'.");
+            return Task.FromException<CommandResult>(exception);
         }
-
-        // Granting is not automatically equivalent to selection: the granted
-        // trait is confirmed and active immediately, with its unlock state
-        // seeded from the definition.
-        CharacterTrait characterTrait = new()
-        {
-            Id = Guid.NewGuid(),
-            CharacterId = command.CharacterId,
-            TraitTag = command.TraitTag,
-            DateAcquired = DateTime.UtcNow,
-            IsConfirmed = true,
-            IsActive = true,
-            IsUnlocked = trait.RequiresUnlock
-        };
-
-        characterTraitRepository.Add(characterTrait);
-
-        // The dispatcher publishes the generic CommandExecutedEvent on success.
-        return CommandResult.Ok();
     }
 }

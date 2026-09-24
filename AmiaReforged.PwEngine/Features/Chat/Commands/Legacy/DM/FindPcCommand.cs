@@ -52,7 +52,7 @@ public class FindPcCommand : IChatCommand
                 "deity" => NWScript.GetDeity(creature).ToLowerInvariant().Contains(searchTerm),
                 "level" => creature.Level.ToString() == searchTerm,
                 "name" => creature.Name.ToLowerInvariant().Contains(searchTerm),
-                "race" => creature.Race.Name.ToString().ToLowerInvariant().Contains(searchTerm),
+                "race" => creature.Race.Name!.ToLowerInvariant().Contains(searchTerm),
                 "align" => GetAlignmentString(creature).ToLowerInvariant().Contains(searchTerm),
                 _ => false
             };

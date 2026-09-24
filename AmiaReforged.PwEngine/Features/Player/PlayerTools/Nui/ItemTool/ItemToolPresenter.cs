@@ -159,7 +159,7 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
 
         if (ev.ElementId == "ind_modal_discard_name")
         {
-            _model.RevertNameToInitial();
+            _model!.RevertNameToInitial();
             Token().SetBindValue(View.Name, _model.GetInitialNameOrCurrent());
             ApplyChanges(false);
             if (_nameModalToken.HasValue)
@@ -199,8 +199,8 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
 
         if (ev.ElementId == "ind_modal_discard_desc")
         {
-            _model.RevertDescToInitial();
-            Token().SetBindValue(View.Description, _model.GetInitialDescOrCurrent());
+            _model!.RevertDescToInitial();
+            Token().SetBindValue(View.Description, _model!.GetInitialDescOrCurrent());
             ApplyChanges(false);
             if (_descModalToken.HasValue)
             {
@@ -259,7 +259,7 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
 
     private void UpdateFromModel()
     {
-        NwItem? item = _model.Selected;
+        NwItem? item = _model!.Selected;
         Token().SetBindValue(View.ValidObjectSelected, item != null);
         Token().SetBindValue(View.DescPlaceholder, item != null ? "Edit to View" : "");
 

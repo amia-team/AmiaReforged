@@ -8,7 +8,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Comm
 
 /// <summary>
 /// Command to award progression points to a character.
-/// 
+///
 /// Progression points accumulate toward the economy-knowledge-point threshold and
 /// roll over into economy KP once the cost curve is met. Earning is subject to a
 /// soft cap (tedium multiplier) and a hard cap (blocked). This command provides an
@@ -31,7 +31,7 @@ public record AwardProgressionCommand : ICommand
 
 /// <summary>
 /// Handles awarding progression points through the command dispatcher.
-/// 
+///
 /// Delegates the accumulation, rollover, curve and cap logic to
 /// <see cref="IKnowledgeProgressionService"/> and returns the resulting
 /// <c>ProgressionResult</c> as command data so callers can surface KP totals to the
@@ -52,32 +52,39 @@ public class AwardProgressionHandler : ICommandHandler<AwardProgressionCommand>
         _commandDispatcher = commandDispatcher;
     }
 
-    public async Task<CommandResult> HandleAsync(AwardProgressionCommand command,
+    public Task<CommandResult> HandleAsync(AwardProgressionCommand command,
         CancellationToken cancellationToken = default)
     {
-        if (command.Points <= 0)
+        try
         {
-            return CommandResult.Fail("Cannot award zero or negative progression points.");
+            if (command.Points <= 0)
+            {
+                return Task.FromResult(CommandResult.Fail("Cannot award zero or negative progression points."));
+            }
+
+            ProgressionResult progressionResult =
+                _progressionService.AwardProgressionPoints(command.CharacterId, command.Points);
+
+            Dictionary<string, object> data = new()
+            {
+                ["success"] = progressionResult.Success,
+                ["knowledgePointsEarned"] = progressionResult.KnowledgePointsEarned,
+                ["newTotalKnowledgePoints"] = progressionResult.NewTotalKnowledgePoints,
+                ["newEconomyKnowledgePointTotal"] = progressionResult.NewEconomyKnowledgePointTotal,
+                ["progressionPointsRemaining"] = progressionResult.ProgressionPointsRemaining,
+                ["progressionPointsRequired"] = progressionResult.ProgressionPointsRequired,
+                ["isAtSoftCap"] = progressionResult.IsAtSoftCap,
+                ["isAtHardCap"] = progressionResult.IsAtHardCap,
+                ["message"] = progressionResult.Message ?? string.Empty
+            };
+
+            return Task.FromResult(progressionResult.Success
+                ? CommandResult.OkWithData(data)
+                : CommandResult.Fail(progressionResult.Message ?? string.Empty, data));
         }
-
-        ProgressionResult progressionResult =
-            _progressionService.AwardProgressionPoints(command.CharacterId, command.Points);
-
-        Dictionary<string, object> data = new()
+        catch (Exception exception)
         {
-            ["success"] = progressionResult.Success,
-            ["knowledgePointsEarned"] = progressionResult.KnowledgePointsEarned,
-            ["newTotalKnowledgePoints"] = progressionResult.NewTotalKnowledgePoints,
-            ["newEconomyKnowledgePointTotal"] = progressionResult.NewEconomyKnowledgePointTotal,
-            ["progressionPointsRemaining"] = progressionResult.ProgressionPointsRemaining,
-            ["progressionPointsRequired"] = progressionResult.ProgressionPointsRequired,
-            ["isAtSoftCap"] = progressionResult.IsAtSoftCap,
-            ["isAtHardCap"] = progressionResult.IsAtHardCap,
-            ["message"] = progressionResult.Message ?? string.Empty
-        };
-
-        return progressionResult.Success
-            ? CommandResult.OkWithData(data)
-            : CommandResult.Fail(progressionResult.Message ?? string.Empty, data);
+            return Task.FromException<CommandResult>(exception);
+        }
     }
 }

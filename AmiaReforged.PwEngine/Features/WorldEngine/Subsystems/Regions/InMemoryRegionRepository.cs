@@ -1,4 +1,7 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+#pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions;
 
@@ -21,7 +24,7 @@ public class InMemoryRegionRepository : IRegionRepository
     private readonly Dictionary<string, string> _areaToRegionTag = new(StringComparer.OrdinalIgnoreCase);
 
     // Optimized POI indexes for O(1) direct lookups
-    private readonly Dictionary<string, PlaceOfInterest> _poiByResRef = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, PlaceOfInterest?> _poiByResRef = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, List<string>> _poiByTag = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<PoiType, List<string>> _poiByType = new();
     private readonly Dictionary<string, List<string>> _poiByArea = new(StringComparer.OrdinalIgnoreCase);

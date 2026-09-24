@@ -34,7 +34,7 @@ public class WithdrawItemCommandHandler : ICommandHandler<WithdrawItemCommand>
         }
 
         byte[] itemData = item.ItemData;
-        string itemName = item.Name;
+        string itemName = item.Name!;
         long warehouseId = item.WarehouseId;
 
         _context.WarehouseItems.Remove(item);

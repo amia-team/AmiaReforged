@@ -52,7 +52,7 @@ public class StoreItemCommandTests
 
         // Assert
         Assert.That(result.Success, Is.True, "Should successfully store first item");
-        Assert.That((int)result.Data["UsedSlots"], Is.EqualTo(1), "Should have 1 used slot");
+        Assert.That((int)result.Data!["UsedSlots"], Is.EqualTo(1), "Should have 1 used slot");
         Assert.That((int)result.Data["TotalCapacity"], Is.EqualTo(10), "Should have initial capacity of 10");
 
         // Verify storage was created

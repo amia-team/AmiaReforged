@@ -157,7 +157,6 @@ public class CraftingPropertyData
             BonusSpellSlotProperties.WizardBonusSpellsCostly,
 
             SpellResistanceProperties.SpellResistances
-
         ];
 
 
@@ -403,7 +402,7 @@ public class CraftingPropertyData
 
     public IReadOnlyList<CraftingProperty> UncategorizedPropertiesFor(int baseItemType)
     {
-        List<CraftingProperty?> properties = [];
+        List<CraftingProperty> properties = [];
 
         foreach (CraftingCategory category in Properties[baseItemType])
         {

@@ -31,12 +31,30 @@ public class HttpServerIntegrationSpecs
         WorldEngineApiRouter router = new WorldEngineApiRouter(_logger);
 
         // Add test-specific routes
-        router.AddRoute("GET", "/api/worldengine/test/ping",
-            async ctx => new ApiResult(200, new { message = "pong" }),
+        router.AddRoute("GET", "/api/worldengine/test/ping", ctx =>
+            {
+                try
+                {
+                    return Task.FromResult(new ApiResult(200, new { message = "pong" }));
+                }
+                catch (Exception exception)
+                {
+                    return Task.FromException<ApiResult>(exception);
+                }
+            },
             "TestPing");
 
-        router.AddRoute("GET", "/api/worldengine/test/echo/{value}",
-            async ctx => new ApiResult(200, new { echo = ctx.GetRouteValue("value") }),
+        router.AddRoute("GET", "/api/worldengine/test/echo/{value}", ctx =>
+            {
+                try
+                {
+                    return Task.FromResult(new ApiResult(200, new { echo = ctx.GetRouteValue("value") }));
+                }
+                catch (Exception exception)
+                {
+                    return Task.FromException<ApiResult>(exception);
+                }
+            },
             "TestEcho");
 
         router.AddRoute("POST", "/api/worldengine/test/data",
@@ -190,7 +208,8 @@ public class HttpServerIntegrationSpecs
 
     // Test DTOs
     private record TestData(string Value);
+
     private record EchoResponse(string Echo);
+
     private record DataResponse(string Received);
 }
-

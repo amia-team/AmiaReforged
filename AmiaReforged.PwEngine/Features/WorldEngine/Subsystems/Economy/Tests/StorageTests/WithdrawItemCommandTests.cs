@@ -71,7 +71,7 @@ public class WithdrawItemCommandTests
 
         // Assert
         Assert.That(result.Success, Is.True, "Withdrawal should succeed");
-        Assert.That((byte[])result.Data["ItemData"], Is.EqualTo(expectedData), "Should return original item data");
+        Assert.That((byte[])result.Data!["ItemData"], Is.EqualTo(expectedData), "Should return original item data");
         Assert.That((string)result.Data["ItemName"], Is.EqualTo("Test Item"), "Should return item name");
 
         // Verify item was removed from storage

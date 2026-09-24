@@ -23,7 +23,7 @@ public sealed class PropertyResidentActivityTracker
     public PropertyResidentActivityTracker(IRentablePropertyRepository propertyRepository)
     {
         _propertyRepository = propertyRepository ?? throw new ArgumentNullException(nameof(propertyRepository));
-        
+
         NwModule.Instance.OnModuleLoad += OnModuleLoad;
     }
 
@@ -39,7 +39,7 @@ public sealed class PropertyResidentActivityTracker
             Log.Info("Initializing property resident activity tracker...");
 
             // Load all properties and build area -> properties mapping
-            List<RentablePropertySnapshot> allProperties = 
+            List<RentablePropertySnapshot> allProperties =
                 await _propertyRepository.GetAllPropertiesAsync(default).ConfigureAwait(false);
 
             await NwTask.SwitchToMainThread();
@@ -122,16 +122,22 @@ public sealed class PropertyResidentActivityTracker
             return;
         }
 
-        _ = ProcessAreaEnterAsync(creature, player, areaTag, areaResRef);
+        _ = ProcessAreaEnterAsync(creature, areaTag, areaResRef);
     }
 
-    private async Task ProcessAreaEnterAsync(NwCreature creature, NwPlayer player, string? areaTag, string? areaResRef)
+    private async Task ProcessAreaEnterAsync(NwCreature creature, string? areaTag, string? areaResRef)
     {
         try
         {
             // Try to resolve character persona
             if (!TryGetCharacterPersona(creature, out PersonaId? personaId))
             {
+                return;
+            }
+
+            if(personaId == null)
+            {
+                // TODO: Decide how severe this is.
                 return;
             }
 
@@ -162,7 +168,7 @@ public sealed class PropertyResidentActivityTracker
 
                 // Update last seen timestamp
                 await UpdateLastSeenAsync(property, personaId.Value).ConfigureAwait(false);
-                
+
                 Log.Info("Updated last seen for {Persona} entering property {PropertyId} ({InternalName}).",
                     personaId,
                     property.Definition.Id,
@@ -226,7 +232,7 @@ public sealed class PropertyResidentActivityTracker
     private void UpdateCache(RentablePropertySnapshot updatedProperty)
     {
         string areaKey = updatedProperty.Definition.InternalName;
-        
+
         if (!_areaToPropertiesCache.TryGetValue(areaKey, out List<RentablePropertySnapshot>? properties))
         {
             return;

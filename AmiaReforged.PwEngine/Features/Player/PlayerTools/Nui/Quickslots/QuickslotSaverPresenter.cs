@@ -16,7 +16,7 @@ public class QuickslotSaverPresenter : ScryPresenter<QuickslotSaverView>
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly NwPlayer _player;
 
-    private List<SavedQuickslots> _quickslots;
+    private List<SavedQuickslots> _quickslots = [];
 
     private NuiWindowToken _token;
     private List<SavedQuickslots>? _visibleQuickslots = new();
@@ -31,7 +31,7 @@ public class QuickslotSaverPresenter : ScryPresenter<QuickslotSaverView>
     [Inject] private Lazy<QuickslotLoader> QuickslotLoader { get; set; } = null!;
     [Inject] private Lazy<WindowDirector> WindowDirector { get; set; } = null!;
 
-    [Inject] private Lazy<PlayerDataService> PlayerDataService { get; set; }
+    [Inject] private Lazy<PlayerDataService>? PlayerDataService { get; set; }
 
     public override QuickslotSaverView View { get; }
     public override NuiWindowToken Token() => _token;
@@ -66,7 +66,7 @@ public class QuickslotSaverPresenter : ScryPresenter<QuickslotSaverView>
         {
             Guid playerId = PcKeyUtils.GetPcKey(Token().Player);
 
-            bool exists = await PlayerDataService.Value.CharacterExists(Token().Player.CDKey, playerId);
+            bool exists = await PlayerDataService!.Value.CharacterExists(Token().Player.CDKey, playerId);
             await NwTask.SwitchToMainThread();
             if (!exists)
             {

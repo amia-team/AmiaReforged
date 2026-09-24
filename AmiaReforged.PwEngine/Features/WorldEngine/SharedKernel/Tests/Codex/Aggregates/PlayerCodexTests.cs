@@ -4,6 +4,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueOb
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Aggregates;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
 using NUnit.Framework;
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Codex.Aggregates;
 
@@ -354,8 +355,8 @@ public class PlayerCodexTests
         // Act & Assert
         InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             codex.AddNote(note2, _testDate.AddHours(1)));
-        Assert.That(ex.Message, Does.Contain(noteId.ToString()));
-        Assert.That(ex.Message, Does.Contain("already exists"));
+        Assert.That(ex!.Message, Does.Contain(noteId.ToString()));
+        Assert.That(ex!.Message, Does.Contain("already exists"));
     }
 
     [Test]

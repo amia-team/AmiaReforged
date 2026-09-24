@@ -1534,7 +1534,13 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
 
         try
         {
-            byte[] itemData = item.Serialize();
+            byte[]? itemData = item.Serialize();
+
+            if (itemData is null)
+            {
+                Log.Warn("Failed to serialize item");
+                return;
+            }
 
             StorageResult result = await PersonalStorageService.Value.StoreItemAsync(
                 _coinhouseTag,

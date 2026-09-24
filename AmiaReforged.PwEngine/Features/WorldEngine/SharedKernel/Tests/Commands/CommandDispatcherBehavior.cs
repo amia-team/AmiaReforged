@@ -268,7 +268,7 @@ public class CommandDispatcherBehavior
     private sealed class TestCommand : ICommand
     {
         public string Value { get; set; } = string.Empty;
-        public bool ShouldFail { get; set; }
+        public bool ShouldFail { get; init; }
     }
 
     private sealed class UnhandledCommand : ICommand

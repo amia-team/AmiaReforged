@@ -237,7 +237,7 @@ public sealed class JobSystemResourceModifierPresenter : ScryPresenter<JobSystem
         ResourceDataRecord resource = _currentResources[arrayIndex];
 
         // Get the modify quantity
-        List<string> quantities = Token().GetBindValues(View.ModifyQuantities);
+        List<string> quantities = Token().GetBindValues(View.ModifyQuantities)!;
         if (arrayIndex >= quantities.Count)
             return;
 
@@ -288,7 +288,7 @@ public sealed class JobSystemResourceModifierPresenter : ScryPresenter<JobSystem
         ResourceDataRecord resource = _currentResources[arrayIndex];
 
         // Get the modify quantity
-        List<string> quantities = Token().GetBindValues(View.ModifyQuantities);
+        List<string> quantities = Token().GetBindValues(View.ModifyQuantities)!;
         if (arrayIndex >= quantities.Count)
             return;
 

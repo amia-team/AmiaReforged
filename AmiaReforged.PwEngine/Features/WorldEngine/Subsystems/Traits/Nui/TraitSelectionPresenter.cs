@@ -378,7 +378,7 @@ public sealed class TraitSelectionPresenter : ScryPresenter<TraitSelectionView>
     {
         NwCreature? creature = _player.LoginCreature;
 
-        string raceName = creature?.Race.Name.ToString() ?? "Unknown";
+        string raceName = creature?.Race.Name ?? "Unknown";
 
         List<CharacterClassData> classes = [];
         if (creature != null)

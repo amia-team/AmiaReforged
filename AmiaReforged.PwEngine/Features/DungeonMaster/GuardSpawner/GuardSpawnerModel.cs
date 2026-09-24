@@ -287,77 +287,84 @@ public sealed class GuardSpawnerModel
     /// <summary>
     /// Updates an existing widget in place without destroying and recreating it.
     /// </summary>
-    private async Task<bool> UpdateExistingWidget(NwItem widget, NwWaypoint copyWaypoint)
+    private Task<bool> UpdateExistingWidget(NwItem widget, NwWaypoint copyWaypoint)
     {
-        // First, clear all existing guard JSONs and name variables
-        for (int i = 1; i <= MaxCreatures; i++)
+        try
         {
-            NWScript.DeleteLocalJson(widget, $"guard_critter{i}");
-            string nameVar = i == 1 ? "guardName" : $"guardName{i}";
-            widget.GetObjectVariable<LocalVariableString>(nameVar).Delete();
-        }
-
-        // Process each chosen creature
-        int guardIndex = 1;
-        string firstGuardName = string.Empty;
-
-        foreach (GuardSpawnerData.GuardCreature creatureData in ChosenCreatures)
-        {
-            // Skip placeholder entries from loaded widgets that haven't been replaced
-            if (creatureData.ResRef == "unknown")
+            // First, clear all existing guard JSONs and name variables
+            for (int i = 1; i <= MaxCreatures; i++)
             {
+                NWScript.DeleteLocalJson(widget, $"guard_critter{i}");
+                string nameVar = i == 1 ? "guardName" : $"guardName{i}";
+                widget.GetObjectVariable<LocalVariableString>(nameVar).Delete();
+            }
+
+            // Process each chosen creature
+            int guardIndex = 1;
+            string firstGuardName = string.Empty;
+
+            foreach (GuardSpawnerData.GuardCreature creatureData in ChosenCreatures)
+            {
+                // Skip placeholder entries from loaded widgets that haven't been replaced
+                if (creatureData.ResRef == "unknown")
+                {
+                    guardIndex++;
+                    continue;
+                }
+
+                NwCreature? creature = NwCreature.Create(creatureData.ResRef, copyWaypoint.Location!);
+                if (creature == null)
+                {
+                    Log.Warn($"Failed to create creature with resref: {creatureData.ResRef}");
+                    continue;
+                }
+
+                // Configure the creature
+                ConfigureGuardCreature(creature, creatureData.ResRef);
+
+                // Store first guard name
+                if (guardIndex == 1)
+                {
+                    firstGuardName = creature.Name;
+                }
+
+                // Serialize and store on widget
+                Json creatureJson = NWScript.ObjectToJson(creature, 1);
+                NWScript.SetLocalJson(widget, $"guard_critter{guardIndex}", creatureJson);
+
+                // Store the name for reference
+                string nameVar = guardIndex == 1 ? "guardName" : $"guardName{guardIndex}";
+                widget.GetObjectVariable<LocalVariableString>(nameVar).Value = creature.Name;
+
+                // Destroy the temporary creature
+                creature.Destroy();
+
                 guardIndex++;
-                continue;
             }
 
-            NwCreature? creature = NwCreature.Create(creatureData.ResRef, copyWaypoint.Location!);
-            if (creature == null)
+            // Update widget variables
+            SetWidgetVariables(widget, firstGuardName, guardIndex - 1);
+
+            // Update widget name
+            string settlementName = SelectedSettlement?.DisplayName ?? "Guards";
+            string finalName = $"Summon {settlementName} {WidgetName}";
+            if (IsBeaconMode)
             {
-                Log.Warn($"Failed to create creature with resref: {creatureData.ResRef}");
-                continue;
+                finalName += " (Beacon Settings)";
             }
+            widget.Name = finalName;
 
-            // Configure the creature
-            ConfigureGuardCreature(creature, creatureData.ResRef);
+            _player.SendServerMessage($"Successfully updated widget: {finalName}", ColorConstants.Lime);
 
-            // Store first guard name
-            if (guardIndex == 1)
-            {
-                firstGuardName = creature.Name;
-            }
+            // Clear the editing reference
+            EditingWidget = null;
 
-            // Serialize and store on widget
-            Json creatureJson = NWScript.ObjectToJson(creature, 1);
-            NWScript.SetLocalJson(widget, $"guard_critter{guardIndex}", creatureJson);
-
-            // Store the name for reference
-            string nameVar = guardIndex == 1 ? "guardName" : $"guardName{guardIndex}";
-            widget.GetObjectVariable<LocalVariableString>(nameVar).Value = creature.Name;
-
-            // Destroy the temporary creature
-            creature.Destroy();
-
-            guardIndex++;
+            return Task.FromResult(true);
         }
-
-        // Update widget variables
-        SetWidgetVariables(widget, firstGuardName, guardIndex - 1);
-
-        // Update widget name
-        string settlementName = SelectedSettlement?.DisplayName ?? "Guards";
-        string finalName = $"Summon {settlementName} {WidgetName}";
-        if (IsBeaconMode)
+        catch (Exception exception)
         {
-            finalName += " (Beacon Settings)";
+            return Task.FromException<bool>(exception);
         }
-        widget.Name = finalName;
-
-        _player.SendServerMessage($"Successfully updated widget: {finalName}", ColorConstants.Lime);
-
-        // Clear the editing reference
-        EditingWidget = null;
-
-        return true;
     }
 
     /// <summary>

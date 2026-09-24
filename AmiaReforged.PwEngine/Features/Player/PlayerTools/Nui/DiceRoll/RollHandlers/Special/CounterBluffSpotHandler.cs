@@ -10,6 +10,7 @@ public class CounterBluffSpotHandler : IRollHandler
     public void RollDice(NwPlayer player)
     {
         int roll = NWScript.d20();
+        if (player.LoginCreature == null) return;
         int modifier = player.LoginCreature.GetSkillRank(NwSkill.FromSkillType(Skill.Spot)!);
 
         string charSpot =

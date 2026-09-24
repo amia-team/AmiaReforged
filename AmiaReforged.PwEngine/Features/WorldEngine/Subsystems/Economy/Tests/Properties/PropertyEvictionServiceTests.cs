@@ -355,32 +355,40 @@ public class PropertyEvictionServiceTests
     }
 
     [Test]
-    public async Task ExecuteEvictionCycleAsync_WhenCancellationRequested_StopsProcessing()
+    public Task ExecuteEvictionCycleAsync_WhenCancellationRequested_StopsProcessing()
     {
-        DateOnly rentDue = DateOnly.FromDateTime(_currentTime.DateTime.AddDays(-10));
-        DateTime tenantLastSeen = rentDue.ToDateTime(TimeOnly.MinValue).AddDays(-1);
-
-        // Add many properties
-        for (int i = 0; i < 100; i++)
+        try
         {
-            _allProperties.Add(CreateProperty(
-                propertyId: $"property_{i}",
-                status: PropertyOccupancyStatus.Rented,
-                evictionGraceDays: 2,
-                activeRental: new RentalAgreementSnapshot(
-                     PersonaId.FromCharacter(CharacterId.New()),
-                     rentDue.AddMonths(-1),
-                     rentDue,
-                     GoldAmount.Parse(500),
-                     RentalPaymentMethod.OutOfPocket,
-                     tenantLastSeen)));
+            DateOnly rentDue = DateOnly.FromDateTime(_currentTime.DateTime.AddDays(-10));
+            DateTime tenantLastSeen = rentDue.ToDateTime(TimeOnly.MinValue).AddDays(-1);
+
+            // Add many properties
+            for (int i = 0; i < 100; i++)
+            {
+                _allProperties.Add(CreateProperty(
+                    propertyId: $"property_{i}",
+                    status: PropertyOccupancyStatus.Rented,
+                    evictionGraceDays: 2,
+                    activeRental: new RentalAgreementSnapshot(
+                        PersonaId.FromCharacter(CharacterId.New()),
+                        rentDue.AddMonths(-1),
+                        rentDue,
+                        GoldAmount.Parse(500),
+                        RentalPaymentMethod.OutOfPocket,
+                        tenantLastSeen)));
+            }
+
+            CancellationTokenSource cts = new();
+            cts.Cancel(); // Cancel immediately
+
+            Assert.ThrowsAsync<OperationCanceledException>(
+                async () => await _service.ExecuteEvictionCycleAsync(cts.Token));
+            return Task.CompletedTask;
         }
-
-        CancellationTokenSource cts = new();
-        cts.Cancel(); // Cancel immediately
-
-        Assert.ThrowsAsync<OperationCanceledException>(
-            async () => await _service.ExecuteEvictionCycleAsync(cts.Token));
+        catch (Exception exception)
+        {
+            return Task.FromException(exception);
+        }
     }
 
     private static RentablePropertySnapshot CreateProperty(

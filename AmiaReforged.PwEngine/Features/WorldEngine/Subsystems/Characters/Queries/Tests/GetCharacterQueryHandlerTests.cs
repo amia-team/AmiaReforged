@@ -14,6 +14,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.ResourceNodeData;
 using NUnit.Framework;
+#pragma warning disable CS8603 // Possible null reference return.
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Queries.Tests;
 

@@ -38,7 +38,8 @@ public class ProvisionAreaNodesCommandHandler : ICommandHandler<ProvisionAreaNod
         _eventBus = eventBus;
     }
 
-    public async Task<CommandResult> HandleAsync(ProvisionAreaNodesCommand command, CancellationToken cancellationToken = default)
+    public async Task<CommandResult> HandleAsync(ProvisionAreaNodesCommand command,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -113,7 +114,8 @@ public class ProvisionAreaNodesCommandHandler : ICommandHandler<ProvisionAreaNod
 
                 if (string.IsNullOrWhiteSpace(nodeTypesStr))
                 {
-                    Log.Warn($"Trigger {trigger.Tag} has no '{WorldConstants.LvarNodeTags}' local variable set. Skipping.");
+                    Log.Warn(
+                        $"Trigger {trigger.Tag} has no '{WorldConstants.LvarNodeTags}' local variable set. Skipping.");
                     continue;
                 }
 
@@ -160,7 +162,8 @@ public class ProvisionAreaNodesCommandHandler : ICommandHandler<ProvisionAreaNod
 
                 if (!matchingDefinitionTags.Any())
                 {
-                    Log.Info($"Trigger {trigger.Tag} type filters [{string.Join(", ", typeFilters)}] don't match any area definition Types");
+                    Log.Info(
+                        $"Trigger {trigger.Tag} type filters [{string.Join(", ", typeFilters)}] don't match any area definition Types");
                     continue;
                 }
 
@@ -169,12 +172,13 @@ public class ProvisionAreaNodesCommandHandler : ICommandHandler<ProvisionAreaNod
                 if (maxNodes <= 0)
                     maxNodes = WorldConstants.DefaultMaxNodesPerTrigger;
 
-                Log.Info($"Processing trigger '{trigger.Tag}': type filters=[{string.Join(", ", typeFilters)}], matched {matchingDefinitionTags.Count} definition(s), max={maxNodes}");
+                Log.Info(
+                    $"Processing trigger '{trigger.Tag}': type filters=[{string.Join(", ", typeFilters)}], matched {matchingDefinitionTags.Count} definition(s), max={maxNodes}");
 
                 // Generate spawn locations using the SPECIFIC definition tags (not generic types)
                 List<SpawnLocation> spawnLocations = _triggerSpawnService.GenerateSpawnLocations(
                     trigger,
-                    matchingDefinitionTags,  // Pass specific tags like "ore_vein_copper_native", not "ore"
+                    matchingDefinitionTags, // Pass specific tags like "ore_vein_copper_native", not "ore"
                     maxNodes
                 );
 
@@ -192,7 +196,7 @@ public class ProvisionAreaNodesCommandHandler : ICommandHandler<ProvisionAreaNod
 
                     try
                     {
-                        ResourceNodeInstance node = _nodeService.CreateNewNode(
+                        ResourceNodeInstance? node = _nodeService.CreateNewNode(
                             area,
                             nodeDefinition,
                             location.Position,
@@ -202,10 +206,17 @@ public class ProvisionAreaNodesCommandHandler : ICommandHandler<ProvisionAreaNod
                         // TODO: Store trigger source metadata when ResourceNodeInstance supports it
                         // ...existing code...
 
+                        if (node == null)
+                        {
+                            Log.Warn($"Failed to create node for tag: {location.NodeTag}");
+                            continue;
+                        }
+
                         _nodeService.SpawnInstance(node);
                         provisionedNodes.Add(node);
 
-                        Log.Debug($"  ✓ Spawned {nodeDefinition.Name} (Type: {nodeDefinition.Type}) at ({location.Position.X:F1}, {location.Position.Y:F1})");
+                        Log.Debug(
+                            $"  ✓ Spawned {nodeDefinition.Name} (Type: {nodeDefinition.Type}) at ({location.Position.X:F1}, {location.Position.Y:F1})");
                     }
                     catch (Exception ex)
                     {
@@ -238,4 +249,3 @@ public class ProvisionAreaNodesCommandHandler : ICommandHandler<ProvisionAreaNod
         }
     }
 }
-

@@ -38,7 +38,7 @@ public class InMemoryKnowledgeCapProfileRepository : IKnowledgeCapProfileReposit
     public bool Delete(string tag)
     {
         _deleteCount++;
-        return _profiles.Remove(_profiles.FirstOrDefault(p => p.Tag == tag));
+        return _profiles.Remove(_profiles.FirstOrDefault(p => p.Tag == tag)!);
     }
 
     public bool IsInUse(string tag) => _profiles.Any(p => p.Tag == tag);

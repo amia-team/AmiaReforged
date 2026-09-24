@@ -9,7 +9,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Comm
 
 /// <summary>
 /// Command to award proficiency XP to a character's membership in an industry.
-/// 
+///
 /// Provides an independent dispatch boundary so any activity that grants proficiency
 /// XP (crafting, quest-stage rewards, ...) routes through the command dispatcher and
 /// gets logging, the generic <c>CommandExecutedEvent</c>, and the domain event for free.
@@ -37,7 +37,7 @@ public record AwardProficiencyCommand : ICommand
 
 /// <summary>
 /// Handles awarding proficiency XP through the command dispatcher.
-/// 
+///
 /// Loads the supplied membership, delegates the XP accumulation / auto-level /
 /// tier-ceiling logic to <see cref="IProficiencyProgressionService"/>, persists the
 /// mutated membership, and publishes <see cref="ProficiencyXpAwardedEvent"/> on
@@ -64,61 +64,68 @@ public class AwardProficiencyHandler : ICommandHandler<AwardProficiencyCommand>
         _eventBus = eventBus;
     }
 
-    public async Task<CommandResult> HandleAsync(AwardProficiencyCommand command,
+    public Task<CommandResult> HandleAsync(AwardProficiencyCommand command,
         CancellationToken cancellationToken = default)
     {
-        if (command.Points <= 0)
+        try
         {
-            return CommandResult.Fail("Cannot award zero or negative proficiency XP.");
+            if (command.Points <= 0)
+            {
+                return Task.FromResult(CommandResult.Fail("Cannot award zero or negative proficiency XP."));
+            }
+
+            // Load the membership for this character's membership in the industry.
+            List<IndustryMembership> memberships = _membershipRepository.All(command.CharacterId.Value);
+            IndustryMembership? membership =
+                memberships.FirstOrDefault(m => m.IndustryTag.Value == command.IndustryTag.Value);
+            if (membership is null)
+            {
+                return Task.FromResult(CommandResult.Fail(
+                    $"Character is not a member of industry '{command.IndustryTag.Value}'"));
+            }
+
+            ProficiencyXpResult result = _proficiencyService.AwardProficiencyXp(membership, command.Points);
+
+            // Persist the mutated membership on a successful award so the accumulated XP
+            // and any level-up are durable for independent callers.
+            if (result.Success)
+            {
+                _membershipRepository.Update(membership);
+            }
+
+            Dictionary<string, object> data = new()
+            {
+                ["success"] = result.Success,
+                ["proficiencyXpLevel"] = result.NewLevel,
+                ["proficiencyXpRemaining"] = result.XpRemaining,
+                ["proficiencyXpRequired"] = result.XpRequired,
+                ["proficiencyLevelsGained"] = result.LevelsGained,
+                ["proficiencyAtTierCeiling"] = result.IsAtTierCeiling,
+                ["message"] = result.Message ?? string.Empty
+            };
+
+            if (!result.Success)
+            {
+                return Task.FromResult(CommandResult.Fail(result.Message ?? string.Empty, data));
+            }
+
+            // Publish the agreed domain event.
+            ProficiencyXpAwardedEvent evt = new(
+                command.CharacterId,
+                command.IndustryTag,
+                result.NewLevel,
+                result.XpRemaining,
+                result.XpRequired,
+                result.LevelsGained,
+                result.IsAtTierCeiling,
+                DateTime.UtcNow);
+            _eventBus.PublishAsync(evt).GetAwaiter().GetResult();
+
+            return Task.FromResult(CommandResult.OkWithData(data));
         }
-
-        // Load the membership for this character's membership in the industry.
-        List<IndustryMembership> memberships = _membershipRepository.All(command.CharacterId.Value);
-        IndustryMembership? membership =
-            memberships.FirstOrDefault(m => m.IndustryTag.Value == command.IndustryTag.Value);
-        if (membership is null)
+        catch (Exception exception)
         {
-            return CommandResult.Fail(
-                $"Character is not a member of industry '{command.IndustryTag.Value}'");
+            return Task.FromException<CommandResult>(exception);
         }
-
-        ProficiencyXpResult result = _proficiencyService.AwardProficiencyXp(membership, command.Points);
-
-        // Persist the mutated membership on a successful award so the accumulated XP
-        // and any level-up are durable for independent callers.
-        if (result.Success)
-        {
-            _membershipRepository.Update(membership);
-        }
-
-        Dictionary<string, object> data = new()
-        {
-            ["success"] = result.Success,
-            ["proficiencyXpLevel"] = result.NewLevel,
-            ["proficiencyXpRemaining"] = result.XpRemaining,
-            ["proficiencyXpRequired"] = result.XpRequired,
-            ["proficiencyLevelsGained"] = result.LevelsGained,
-            ["proficiencyAtTierCeiling"] = result.IsAtTierCeiling,
-            ["message"] = result.Message ?? string.Empty
-        };
-
-        if (!result.Success)
-        {
-            return CommandResult.Fail(result.Message ?? string.Empty, data);
-        }
-
-        // Publish the agreed domain event.
-        ProficiencyXpAwardedEvent evt = new(
-            command.CharacterId,
-            command.IndustryTag,
-            result.NewLevel,
-            result.XpRemaining,
-            result.XpRequired,
-            result.LevelsGained,
-            result.IsAtTierCeiling,
-            DateTime.UtcNow);
-        _eventBus.PublishAsync(evt).GetAwaiter().GetResult();
-
-        return CommandResult.OkWithData(data);
     }
 }

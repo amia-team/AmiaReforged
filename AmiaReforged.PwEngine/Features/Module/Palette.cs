@@ -38,7 +38,7 @@ internal sealed class Palette
 
     private void TryLoadPalette(string resRef, string rootPath)
     {
-        using GffResource palette = ResourceManager.GetGenericFile(resRef, ResRefType.ITP);
+        using GffResource? palette = ResourceManager.GetGenericFile(resRef, ResRefType.ITP);
         if (palette == null)
         {
             Log.Error("Failed to load palette {Palette}", resRef);
@@ -47,7 +47,7 @@ internal sealed class Palette
 
         try
         {
-            ProcessList(palette["MAIN"], rootPath);
+            ProcessList(palette["MAIN"]!, rootPath);
         }
         catch (Exception e)
         {
@@ -65,35 +65,37 @@ internal sealed class Palette
 
     private void ProcessStruct(GffResourceField field, string path)
     {
-        if (field.TryGetValue("RESREF", out GffResourceField resRefField))
+        if (field.TryGetValue("RESREF", out GffResourceField? resRefField))
         {
-            string resRef = resRefField.Value<string>();
-            string name = "Unknown";
+            string? resRef = resRefField.Value<string>();
+            string? name = "Unknown";
             float? cr = null;
-            string faction = null;
+            string? faction = null;
 
-            if (field.TryGetValue("NAME", out GffResourceField creatureNameField))
+            if (field.TryGetValue("NAME", out GffResourceField? creatureNameField))
             {
                 name = creatureNameField.Value<string>();
             }
-            else if (field.TryGetValue("STRREF", out GffResourceField creatureNameStrRefField))
+            else if (field.TryGetValue("STRREF", out GffResourceField? creatureNameStrRefField))
             {
                 name = new StrRef(creatureNameStrRefField.Value<uint>()).ToString();
             }
 
-            if (field.TryGetValue("CR", out GffResourceField creatureChallengeRatingField))
+            if (field.TryGetValue("CR", out GffResourceField? creatureChallengeRatingField))
             {
                 cr = creatureChallengeRatingField.Value<float>();
             }
 
-            if (field.TryGetValue("FACTION", out GffResourceField creatureFactionField))
+            if (field.TryGetValue("FACTION", out GffResourceField? creatureFactionField))
             {
                 faction = creatureFactionField.Value<string>();
             }
 
+            if (name is null || faction is null) return;
+
             _blueprints.Add(new PaletteBlueprint
             {
-                ResRef = resRef,
+                ResRef = resRef!,
                 Name = name,
                 Category = path,
                 ChallengeRating = cr,
@@ -104,12 +106,12 @@ internal sealed class Palette
         }
         else
         {
-            if (field.TryGetValue("STRREF", out GffResourceField groupStrRef))
+            if (field.TryGetValue("STRREF", out GffResourceField? groupStrRef))
             {
                 path = Path.Combine(path, new StrRef(groupStrRef.Value<uint>()).ToString());
             }
 
-            if (field.TryGetValue("LIST", out GffResourceField list))
+            if (field.TryGetValue("LIST", out GffResourceField? list))
             {
                 ProcessList(list, path);
             }

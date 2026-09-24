@@ -54,7 +54,7 @@ public class ThousandFacesListener
         }
 
         // Check if the creature already has the feat
-        if (creature.KnowsFeat((Feat)ThousandFacesFeatId))
+        if (creature.KnowsFeat(((Feat)ThousandFacesFeatId)!))
         {
             player.SendServerMessage("You already have the One Thousand Faces ability!", ColorConstants.Orange);
             return;

@@ -204,7 +204,6 @@ public class DbRegionRepository : IRegionRepository
 
     public bool TryGetPointOfInterestByResRef(string poiResRef, out PlaceOfInterest poi)
     {
-        poi = default;
         List<RegionDefinition> all = All();
 
         foreach (RegionDefinition region in all)
@@ -215,14 +214,13 @@ public class DbRegionRepository : IRegionRepository
                 PlaceOfInterest? found = area.PlacesOfInterest.FirstOrDefault(p =>
                     string.Equals(p.ResRef, poiResRef, StringComparison.OrdinalIgnoreCase));
 
-                if (found != default)
-                {
-                    poi = found;
-                    return true;
-                }
+                if (found == null) continue;
+                poi = found;
+                return true;
             }
         }
 
+        poi = default;
         return false;
     }
 

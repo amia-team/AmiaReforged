@@ -525,15 +525,15 @@ public sealed class ThousandFacesModel(NwPlayer player, PlayerNameOverrideServic
 
     private class BackupData
     {
-        public int HeadModel { get; set; }
-        public int AppearanceType { get; set; }
-        public float Scale { get; set; }
-        public int Soundset { get; set; }
-        public string PortraitResRef { get; set; } = "";
-        public int SkinColor { get; set; }
-        public int HairColor { get; set; }
-        public int TattooColor1 { get; set; }
-        public int TattooColor2 { get; set; }
+        public int HeadModel { get; init; }
+        public int AppearanceType { get; init; }
+        public float Scale { get; init; }
+        public int Soundset { get; init; }
+        public string PortraitResRef { get; init; } = "";
+        public int SkinColor { get; init; }
+        public int HairColor { get; init; }
+        public int TattooColor1 { get; init; }
+        public int TattooColor2 { get; init; }
     }
 }
 

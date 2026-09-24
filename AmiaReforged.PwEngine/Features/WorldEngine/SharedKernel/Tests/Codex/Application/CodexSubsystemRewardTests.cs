@@ -16,7 +16,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Codex.Ap
 [TestFixture]
 public class CodexSubsystemRewardTests
 {
-    private StubStageRewardGranter _granter;
+    private StubStageRewardGranter _granter = null!;
     private CharacterId _characterId;
     private QuestId _questId;
 
@@ -81,17 +81,25 @@ public class CodexSubsystemRewardTests
     }
 
     [Test]
-    public async Task Null_granter_does_not_throw()
+    public Task Null_granter_does_not_throw()
     {
-        // Arrange
-        CodexQuestEntry entry = BuildEntry(
-            new QuestStage { StageId = 10, Rewards = new RewardMix { Xp = 100 } },
-            new QuestStage { StageId = 20 });
+        try
+        {
+            // Arrange
+            CodexQuestEntry entry = BuildEntry(
+                new QuestStage { StageId = 10, Rewards = new RewardMix { Xp = 100 } },
+                new QuestStage { StageId = 20 });
 
-        // Act & Assert — null granter should no-op
-        Assert.DoesNotThrowAsync(async () =>
-            await SetQuestStageHandler.GrantFromStageRewardsAsync(
-                null, _characterId, _questId, fromStageId: 10, toStageId: 20, entry, eventBus: null, ct: CancellationToken.None));
+            // Act & Assert — null granter should no-op
+            Assert.DoesNotThrowAsync(async () =>
+                await SetQuestStageHandler.GrantFromStageRewardsAsync(
+                    null, _characterId, _questId, fromStageId: 10, toStageId: 20, entry, eventBus: null, ct: CancellationToken.None));
+            return Task.CompletedTask;
+        }
+        catch (Exception exception)
+        {
+            return Task.FromException(exception);
+        }
     }
 
     [Test]

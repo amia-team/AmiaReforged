@@ -231,78 +231,78 @@ public static class IndustryMapper
 
     private class KnowledgeJsonDto
     {
-        public string Tag { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public string? Level { get; set; }
-        public int PointCost { get; set; }
-        public List<HarvestEffectJsonDto>? HarvestEffects { get; set; }
-        public List<string>? Prerequisites { get; set; }
-        public string? Branch { get; set; }
-        public List<KnowledgeEffectJsonDto>? Effects { get; set; }
-        public List<CraftingModifierJsonDto>? CraftingModifiers { get; set; }
+        public string Tag { get; init; } = string.Empty;
+        public string Name { get; init; } = string.Empty;
+        public string Description { get; init; } = string.Empty;
+        public string? Level { get; init; }
+        public int PointCost { get; init; }
+        public List<HarvestEffectJsonDto>? HarvestEffects { get; init; }
+        public List<string>? Prerequisites { get; init; }
+        public string? Branch { get; init; }
+        public List<KnowledgeEffectJsonDto>? Effects { get; init; }
+        public List<CraftingModifierJsonDto>? CraftingModifiers { get; init; }
     }
 
     private class KnowledgeEffectJsonDto
     {
-        public string EffectType { get; set; } = string.Empty;
-        public string TargetTag { get; set; } = string.Empty;
-        public Dictionary<string, object>? Metadata { get; set; }
+        public string EffectType { get; init; } = string.Empty;
+        public string TargetTag { get; init; } = string.Empty;
+        public Dictionary<string, object>? Metadata { get; init; }
     }
 
     private class HarvestEffectJsonDto
     {
-        public string NodeTag { get; set; } = string.Empty;
-        public string StepModified { get; set; } = string.Empty;
-        public float Value { get; set; }
-        public string Operation { get; set; } = string.Empty;
+        public string NodeTag { get; init; } = string.Empty;
+        public string StepModified { get; init; } = string.Empty;
+        public float Value { get; init; }
+        public string Operation { get; init; } = string.Empty;
     }
 
     private class CraftingModifierJsonDto
     {
-        public string TargetTag { get; set; } = string.Empty;
-        public string Scope { get; set; } = string.Empty;
-        public string StepModified { get; set; } = string.Empty;
-        public float Value { get; set; }
-        public string Operation { get; set; } = string.Empty;
+        public string TargetTag { get; init; } = string.Empty;
+        public string Scope { get; init; } = string.Empty;
+        public string StepModified { get; init; } = string.Empty;
+        public float Value { get; init; }
+        public string Operation { get; init; } = string.Empty;
     }
 
     private class RecipeJsonDto
     {
-        public string RecipeId { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-        public string? Description { get; set; }
-        public string IndustryTag { get; set; } = string.Empty;
-        public List<string>? RequiredKnowledge { get; set; }
-        public List<IngredientJsonDto>? Ingredients { get; set; }
-        public List<ProductJsonDto>? Products { get; set; }
-        public int? CraftingTimeRounds { get; set; }
-        public int ProgressionPointsAwarded { get; set; }
-        public Dictionary<string, object>? Metadata { get; set; }
-        public string? RequiredWorkstation { get; set; }
-        public List<ToolRequirementJsonDto>? RequiredTools { get; set; }
+        public string RecipeId { get; init; } = string.Empty;
+        public string Name { get; init; } = string.Empty;
+        public string? Description { get; init; }
+        public string IndustryTag { get; init; } = string.Empty;
+        public List<string>? RequiredKnowledge { get; init; }
+        public List<IngredientJsonDto>? Ingredients { get; init; }
+        public List<ProductJsonDto>? Products { get; init; }
+        public int? CraftingTimeRounds { get; init; }
+        public int ProgressionPointsAwarded { get; init; }
+        public Dictionary<string, object>? Metadata { get; init; }
+        public string? RequiredWorkstation { get; init; }
+        public List<ToolRequirementJsonDto>? RequiredTools { get; init; }
     }
 
     private class ToolRequirementJsonDto
     {
-        public string RequiredForm { get; set; } = string.Empty;
-        public string? RequiredMaterial { get; set; }
-        public int? MinQuality { get; set; }
-        public string? ExactItemTag { get; set; }
+        public string RequiredForm { get; init; } = string.Empty;
+        public string? RequiredMaterial { get; init; }
+        public int? MinQuality { get; init; }
+        public string? ExactItemTag { get; init; }
     }
 
     private class IngredientJsonDto
     {
-        public string ItemTag { get; set; } = string.Empty;
-        public int Quantity { get; set; }
-        public int? MinQuality { get; set; }
-        public bool IsConsumed { get; set; } = true;
+        public string ItemTag { get; init; } = string.Empty;
+        public int Quantity { get; init; }
+        public int? MinQuality { get; init; }
+        public bool IsConsumed { get; init; } = true;
     }
 
     private class ProductJsonDto
     {
-        public string ItemTag { get; set; } = string.Empty;
-        public int Quantity { get; set; }
-        public float? SuccessChance { get; set; }
+        public string ItemTag { get; init; } = string.Empty;
+        public int Quantity { get; init; }
+        public float? SuccessChance { get; init; }
     }
 }

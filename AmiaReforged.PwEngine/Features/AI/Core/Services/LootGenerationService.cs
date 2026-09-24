@@ -73,10 +73,11 @@ public class LootGenerationService : ILootGenerator
             {
                 return GenerateChestLoot(placeable);
             }
+
             return LootGenerationResult.None();
         }
 
-        List<NwItem> generatedItems = new List<NwItem>();
+        List<NwItem> generatedItems = new();
         NwPlaceable? lootBag = null;
         bool droppedMythal = false;
         bool droppedSpecial = false;
@@ -107,7 +108,7 @@ public class LootGenerationService : ILootGenerator
         }
 
         // Roll for loot
-        Random random = new Random();
+        Random random = new();
         int roll = random.Next(1, 101);
 
         // Resolve killer to player for messages
@@ -223,9 +224,9 @@ public class LootGenerationService : ILootGenerator
         NwItem? copy = template.Clone(chest);
         return new LootGenerationResult
         {
-            LootGenerated = copy != null,
+            LootGenerated = true,
             LootBag = null,
-            GeneratedItems = copy != null ? new[] { copy } : Array.Empty<NwItem>(),
+            GeneratedItems = [copy],
             Tier = tier,
             DroppedMythal = false,
             DroppedSpecialItem = false
@@ -279,7 +280,7 @@ public class LootGenerationService : ILootGenerator
     private NwItem? GenerateLootFromBin(NwPlaceable lootBin, NwCreature creature, ref NwPlaceable? lootBag)
     {
         bool isBoss = creature.GetObjectVariable<LocalVariableInt>(VarIsBoss).Value == 1;
-        Random random = new Random();
+        Random random = new();
 
         // 10% chance for random generated item (non-boss)
         if (random.Next(1, 11) == 5 && !isBoss)
@@ -306,10 +307,7 @@ public class LootGenerationService : ILootGenerator
 
         lootBag = EnsureLootBag(lootBag, creature);
         NwItem? ring = template.Clone(lootBag, copyLocalState: true);
-        if (ring != null)
-        {
-            generatedItems.Add(ring);
-        }
+        generatedItems.Add(ring);
 
         return lootBag;
     }
@@ -318,10 +316,10 @@ public class LootGenerationService : ILootGenerator
     {
         if (existing != null) return existing;
 
-        Random random = new Random();
+        Random random = new();
         string blueprint = LootBagBlueprints[random.Next(0, LootBagBlueprints.Length)];
 
-        return NwPlaceable.Create(blueprint, creature.Location)!;
+        return NwPlaceable.Create(blueprint, creature.Location!)!;
     }
 
     private static NwGameObject ResolveToPlayer(NwGameObject gameObject)

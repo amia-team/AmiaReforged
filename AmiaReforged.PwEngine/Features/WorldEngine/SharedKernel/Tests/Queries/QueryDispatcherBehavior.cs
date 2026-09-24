@@ -111,16 +111,24 @@ public class QueryDispatcherBehavior
     // === Cancellation ===
 
     [Test]
-    public async Task GivenCancelledToken_WhenQueryIsDispatched_ThenCancellationIsRespected()
+    public Task GivenCancelledToken_WhenQueryIsDispatched_ThenCancellationIsRespected()
     {
-        // Given: A query and a cancelled token
-        TestQuery query = new TestQuery { SearchTerm = "cancellable" };
-        CancellationTokenSource cts = new CancellationTokenSource();
-        cts.Cancel();
+        try
+        {
+            // Given: A query and a cancelled token
+            TestQuery query = new TestQuery { SearchTerm = "cancellable" };
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
 
-        // When/Then: Query respects cancellation
-        Assert.ThrowsAsync<OperationCanceledException>(
-            async () => await _dispatcher.DispatchAsync<TestQuery, TestQueryResult>(query, cts.Token));
+            // When/Then: Query respects cancellation
+            Assert.ThrowsAsync<OperationCanceledException>(
+                async () => await _dispatcher.DispatchAsync<TestQuery, TestQueryResult>(query, cts.Token));
+            return Task.CompletedTask;
+        }
+        catch (Exception exception)
+        {
+            return Task.FromException(exception);
+        }
     }
 
     // === Multiple Handler Types ===
@@ -152,13 +160,13 @@ public class QueryDispatcherBehavior
 
     private sealed class TestQuery : IQuery<TestQueryResult>
     {
-        public string SearchTerm { get; set; } = string.Empty;
-        public bool ShouldThrow { get; set; }
+        public string SearchTerm { get; init; } = string.Empty;
+        public bool ShouldThrow { get; init; }
     }
 
     private sealed class TestQueryResult
     {
-        public string Value { get; set; } = string.Empty;
+        public string Value { get; init; } = string.Empty;
     }
 
     private sealed class UnhandledQuery : IQuery<string>
@@ -168,7 +176,7 @@ public class QueryDispatcherBehavior
 
     private sealed class AnotherQuery : IQuery<int>
     {
-        public int Value { get; set; }
+        public int Value { get; init; }
     }
 
     private sealed class TestQueryHandler : IQueryHandler<TestQuery, TestQueryResult>

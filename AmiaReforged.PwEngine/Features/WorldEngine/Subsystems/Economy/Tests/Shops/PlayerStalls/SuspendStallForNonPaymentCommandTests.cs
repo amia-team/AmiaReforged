@@ -88,7 +88,7 @@ public class SuspendStallForNonPaymentCommandTests
         // Arrange, Act & Assert
         ArgumentException ex = Assert.Throws<ArgumentException>(() =>
             SuspendStallForNonPaymentCommand.Create(
-                -1L, "reason", DateTime.UtcNow, TimeSpan.FromHours(1)));
+                -1L, "reason", DateTime.UtcNow, TimeSpan.FromHours(1)))!;
 
         Assert.That(ex.ParamName, Is.EqualTo("stallId"));
     }
@@ -99,7 +99,7 @@ public class SuspendStallForNonPaymentCommandTests
         // Arrange, Act & Assert
         ArgumentException ex = Assert.Throws<ArgumentException>(() =>
             SuspendStallForNonPaymentCommand.Create(
-                123L, "", DateTime.UtcNow, TimeSpan.FromHours(1)));
+                123L, "", DateTime.UtcNow, TimeSpan.FromHours(1)))!;
 
         Assert.That(ex.ParamName, Is.EqualTo("reason"));
     }
@@ -110,7 +110,7 @@ public class SuspendStallForNonPaymentCommandTests
         // Arrange, Act & Assert
         ArgumentException ex = Assert.Throws<ArgumentException>(() =>
             SuspendStallForNonPaymentCommand.Create(
-                123L, "reason", DateTime.UtcNow, TimeSpan.FromHours(-1)));
+                123L, "reason", DateTime.UtcNow, TimeSpan.FromHours(-1)))!;
 
         Assert.That(ex.ParamName, Is.EqualTo("gracePeriod"));
     }

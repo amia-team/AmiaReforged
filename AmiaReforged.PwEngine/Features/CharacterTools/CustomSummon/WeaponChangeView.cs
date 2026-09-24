@@ -20,7 +20,7 @@ public sealed class WeaponChangeView : ScryView<WeaponChangePresenter>
 
     public WeaponChangeView(NwPlayer player, NwCreature targetCreature, NwItem widget)
     {
-        Presenter = new WeaponChangePresenter(this, player, targetCreature, widget);
+        Presenter = new WeaponChangePresenter(this, player, targetCreature);
     }
 
     public override NuiLayout RootLayout()

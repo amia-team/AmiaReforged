@@ -199,13 +199,9 @@ public class CharacterSubsystemLookupTests
             where TCommand : ICommand => Task.FromResult(BatchCommandResult.FromResults(new List<CommandResult>()));
     }
 
-    private sealed class FakeCharacter : ICharacter
+    private sealed class FakeCharacter(CharacterId id) : ICharacter
     {
-        private readonly CharacterId _id;
-
-        public FakeCharacter(CharacterId id) => _id = id;
-
-        public CharacterId GetId() => _id;
+        public CharacterId GetId() => id;
         public List<SkillData> GetSkills() => new();
 
         public int GetKnowledgePoints() => 0;
@@ -218,12 +214,12 @@ public class CharacterSubsystemLookupTests
         public void InvalidateEffectCache() { }
         public List<CraftingModifier> CraftingModifiersForRecipe(string recipeId, string industryTag) => new();
         public bool HasUnlockedInteraction(string interactionTag) => false;
-        public KnowledgeProgression GetProgression() => default;
+        public KnowledgeProgression GetProgression() => null!;
         public void AddItem(ItemDto item) { }
-        public List<ItemSnapshot> GetInventory() => new();
+        public List<ItemSnapshot> GetInventory() => [];
         public Dictionary<EquipmentSlots, ItemSnapshot?> GetEquipment() => new();
         public void JoinIndustry(string industryTag) { }
-        public List<IndustryMembership> AllIndustryMemberships() => new();
+        public List<IndustryMembership> AllIndustryMemberships() => [];
         public RankUpResult RankUp(string industryTag) => default;
     }
 }

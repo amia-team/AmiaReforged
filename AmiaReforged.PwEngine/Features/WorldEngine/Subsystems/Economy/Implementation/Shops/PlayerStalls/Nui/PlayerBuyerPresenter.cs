@@ -241,7 +241,7 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
         {
             // Parse quantity from the text field, defaulting to 1 if invalid
             int quantity = 1;
-            string quantityText = Token().GetBindValue(View.QuantityValue);
+            string quantityText = Token().GetBindValue(View.QuantityValue)!;
             if (!string.IsNullOrWhiteSpace(quantityText) && int.TryParse(quantityText.Trim(), out int parsedQuantity))
             {
                 quantity = Math.Max(1, parsedQuantity);

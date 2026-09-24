@@ -122,7 +122,7 @@ public class ChatToolPresenter : ScryPresenter<ChatToolView>
 
     private void Update()
     {
-        Token().SetBindValue(View.ChatHistory, ToolModel.ChatHistory);
+        Token().SetBindValue(View.ChatHistory!, ToolModel.ChatHistory);
         Token().SetBindValue(View.SelectionName, ToolModel.Selection?.Name ?? "Nobody");
         Token().SetBindValue(View.EmphasizeSelection, ToolModel.Selection == null);
     }

@@ -224,7 +224,8 @@ public sealed class WindowDirector : IDisposable
         OpenWindow(presenter);
     }
 
-    public void OpenPopupWithReaction(NwPlayer nwPlayer, string title, string message, Action outcome, bool ignoreButton = false,  NuiWindowToken linkedToken = default)
+    public void OpenPopupWithReaction(NwPlayer nwPlayer, string title, string message, Action outcome,
+        bool ignoreButton = false, NuiWindowToken linkedToken = default)
     {
         if (IsValidToken(linkedToken))
         {
@@ -262,7 +263,8 @@ public sealed class WindowDirector : IDisposable
         {
             await NwTask.SwitchToMainThread();
 
-            if (!TryGetAutoCloseRegistration(presenter, out AutoCloseRegistration? registration) || registration is null)
+            if (!TryGetAutoCloseRegistration(presenter, out AutoCloseRegistration? registration) ||
+                registration is null)
             {
                 return;
             }
@@ -284,7 +286,7 @@ public sealed class WindowDirector : IDisposable
                 return;
             }
 
-            Location currentLocation = creature.Location;
+            Location? currentLocation = creature.Location;
 
             Location? initialLocation = registration.InitialLocation;
 
@@ -294,7 +296,9 @@ public sealed class WindowDirector : IDisposable
                 return;
             }
 
-            if (HasPlayerMoved(initialLocation, currentLocation, registration.MovementThreshold))
+            // Defensive check. A crashed player can absolutely cause the server to barf here.
+            if (currentLocation != null &&
+                HasPlayerMoved(initialLocation, currentLocation, registration.MovementThreshold))
             {
                 TriggerAutoClose(presenter);
             }

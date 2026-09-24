@@ -335,7 +335,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
         Trace($"HandleSpawnTarget resolved location area={area.Name} position={location?.Position ?? Vector3.Zero}.");
 
-        NwPlaceable? placeable = NwPlaceable.Create(blueprint.ResRef, location);
+        NwPlaceable? placeable = NwPlaceable.Create(blueprint.ResRef, location!);
         if (placeable == null)
         {
             Trace("HandleSpawnTarget failed; NwPlaceable.Create returned null.");
@@ -744,7 +744,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
                     item.Location = NwModule.Instance.StartingLocation;
 
                     // Check if it fits in player's inventory
-                    if (!_player.LoginCreature.Inventory.CheckFit(item))
+                    if (_player.LoginCreature != null && !_player.LoginCreature.Inventory.CheckFit(item))
                     {
                         Log.Info(
                             $"Item from placeable {persistentObject.Id} does not fit in player inventory, destroying.");
@@ -754,7 +754,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
                     }
 
                     // Acquire the item
-                    _player.LoginCreature.AcquireItem(item);
+                    if (_player.LoginCreature != null) _player.LoginCreature.AcquireItem(item);
 
                     // Delete from database
                     await ObjectRepository.Value.DeleteObject(persistentObject.Id);
@@ -864,7 +864,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
                 item.Location = NwModule.Instance.StartingLocation;
 
                 // Check if it fits in player's inventory
-                if (!_player.LoginCreature.Inventory.CheckFit(item))
+                if (_player.LoginCreature != null && !_player.LoginCreature.Inventory.CheckFit(item))
                 {
                     Log.Info($"Item from placeable {persistentObject.Id} does not fit in player inventory, destroying.");
                     item.Destroy();
@@ -873,7 +873,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
                 }
 
                 // Acquire the item
-                _player.LoginCreature.AcquireItem(item);
+                _player.LoginCreature?.AcquireItem(item);
 
                 // Delete from database
                 await ObjectRepository.Value.DeleteObject(persistentObject.Id);
@@ -900,11 +900,11 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
     private NwPlaceable? FindPlaceableByDatabaseId(NwArea area, long databaseId)
     {
-        const string DatabaseIdLocalInt = "db_id";
+        const string databaseIdLocalInt = "db_id";
 
         foreach (NwPlaceable placeable in area.FindObjectsOfTypeInArea<NwPlaceable>())
         {
-            LocalVariableInt dbIdVar = placeable.GetObjectVariable<LocalVariableInt>(DatabaseIdLocalInt);
+            LocalVariableInt dbIdVar = placeable.GetObjectVariable<LocalVariableInt>(databaseIdLocalInt);
             if (dbIdVar.HasValue && dbIdVar.Value == databaseId)
             {
                 return placeable;
@@ -2338,8 +2338,5 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         {
             return;
         }
-
-        string playerName = _player?.PlayerName ?? "<unknown>";
-        Log.Info($"[PlaceableToolPresenter][Player={playerName}] {message}");
     }
 }

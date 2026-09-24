@@ -195,14 +195,21 @@ public class LoreController
     /// GET /api/worldengine/codex/lore/categories
     /// </summary>
     [HttpGet(BasePath + "/categories")]
-    public static async Task<ApiResult> GetCategories(RouteContext ctx)
+    public static Task<ApiResult> GetCategories(RouteContext ctx)
     {
-        var categories = Enum.GetValues<LoreCategory>()
-            .Select(c => new { id = (int)c, name = c.DisplayName() })
-            .OrderBy(c => c.id)
-            .ToList();
+        try
+        {
+            var categories = Enum.GetValues<LoreCategory>()
+                .Select(c => new { id = (int)c, name = c.DisplayName() })
+                .OrderBy(c => c.id)
+                .ToList();
 
-        return new ApiResult(200, categories);
+            return Task.FromResult(new ApiResult(200, categories));
+        }
+        catch (Exception exception)
+        {
+            return Task.FromException<ApiResult>(exception);
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════

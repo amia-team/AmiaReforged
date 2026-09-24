@@ -10,6 +10,8 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits;
 using NUnit.Framework;
 
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Codex.Application;
 
 [TestFixture]
@@ -527,7 +529,8 @@ public class CodexEventProcessorTests
         List<CodexDomainEvent> events = new List<CodexDomainEvent>
         {
             new QuestStartedEvent(_characterId, DateTime.UtcNow, questId, "Quest", "Description"),
-            new LoreDiscoveredEvent(_characterId, DateTime.UtcNow, loreId, "Lore", "Summary", "Source", LoreCategory.History, LoreTier.Common, new List<Keyword>()),
+            new LoreDiscoveredEvent(_characterId, DateTime.UtcNow, loreId, "Lore", "Summary", "Source",
+                LoreCategory.History, LoreTier.Common, new List<Keyword>()),
             new NoteAddedEvent(_characterId, DateTime.UtcNow, noteId, "Note", NoteCategory.General, false, false),
             new ReputationChangedEvent(_characterId, DateTime.UtcNow, factionId, ReputationScore.Parse(10), "Test")
         };
@@ -538,6 +541,7 @@ public class CodexEventProcessorTests
         {
             await _processor.EnqueueEventAsync(evt);
         }
+
         await Task.Delay(200);
         await _processor.StopAsync();
 
@@ -555,8 +559,10 @@ public class CodexEventProcessorTests
         // Given
         CharacterId character1 = CharacterId.New();
         CharacterId character2 = CharacterId.New();
-        QuestStartedEvent quest1 = new QuestStartedEvent(character1, DateTime.UtcNow, QuestId.NewId(), "Quest1", "Desc1");
-        QuestStartedEvent quest2 = new QuestStartedEvent(character2, DateTime.UtcNow, QuestId.NewId(), "Quest2", "Desc2");
+        QuestStartedEvent quest1 =
+            new QuestStartedEvent(character1, DateTime.UtcNow, QuestId.NewId(), "Quest1", "Desc1");
+        QuestStartedEvent quest2 =
+            new QuestStartedEvent(character2, DateTime.UtcNow, QuestId.NewId(), "Quest2", "Desc2");
 
         // When
         _processor.Start();
@@ -583,10 +589,7 @@ public class CodexEventProcessorTests
     public void Given_NullEvent_When_Enqueued_Then_ThrowsArgumentNullException()
     {
         // When/Then
-        Assert.ThrowsAsync<ArgumentNullException>(async () =>
-        {
-            await _processor.EnqueueEventAsync(null!);
-        });
+        Assert.ThrowsAsync<ArgumentNullException>(async () => { await _processor.EnqueueEventAsync(null!); });
     }
 
     [Test]
@@ -879,20 +882,25 @@ internal class StubTraitSubsystem : Subsystems.ITraitSubsystem
     public Task<List<Subsystems.TraitDefinition>> GetAllTraitsAsync(CancellationToken ct = default) =>
         Task.FromResult(_definitions.Values.ToList());
 
-    public Task<CommandResult> GrantTraitAsync(CharacterId characterId, TraitTag traitTag, CancellationToken ct = default) =>
+    public Task<CommandResult> GrantTraitAsync(CharacterId characterId, TraitTag traitTag,
+        CancellationToken ct = default) =>
         Task.FromResult(CommandResult.Ok());
 
-    public Task<CommandResult> RemoveTraitAsync(CharacterId characterId, TraitTag traitTag, CancellationToken ct = default) =>
+    public Task<CommandResult> RemoveTraitAsync(CharacterId characterId, TraitTag traitTag,
+        CancellationToken ct = default) =>
         Task.FromResult(CommandResult.Ok());
 
-    public Task<List<Subsystems.CharacterTrait>> GetCharacterTraitsAsync(CharacterId characterId, CancellationToken ct = default) =>
+    public Task<List<Subsystems.CharacterTrait>> GetCharacterTraitsAsync(CharacterId characterId,
+        CancellationToken ct = default) =>
         Task.FromResult(new List<Subsystems.CharacterTrait>());
 
     public Task<bool> HasTraitAsync(CharacterId characterId, TraitTag traitTag, CancellationToken ct = default) =>
         Task.FromResult(false);
 
-    public Task<Subsystems.TraitEffectsSummary> CalculateTraitEffectsAsync(CharacterId characterId, CancellationToken ct = default) =>
-        Task.FromResult(new Subsystems.TraitEffectsSummary(characterId, new Dictionary<string, int>(), new List<string>(), new List<string>()));
+    public Task<Subsystems.TraitEffectsSummary> CalculateTraitEffectsAsync(CharacterId characterId,
+        CancellationToken ct = default) =>
+        Task.FromResult(new Subsystems.TraitEffectsSummary(characterId, new Dictionary<string, int>(),
+            new List<string>(), new List<string>()));
 }
 
 /// <summary>
@@ -910,4 +918,3 @@ internal class StubStageRewardGranter : IStageRewardGranter
         return Task.CompletedTask;
     }
 }
-

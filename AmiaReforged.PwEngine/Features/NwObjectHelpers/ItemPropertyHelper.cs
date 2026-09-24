@@ -456,7 +456,7 @@ public static class ItemPropertyHelper
                 return false;
             }
 
-            NwItem dummy = NwItem.Create(template: "nw_wswls001", arbitraryWaypoint);
+            NwItem? dummy = NwItem.Create(template: "nw_wswls001", arbitraryWaypoint);
             if (dummy == null)
             {
                 // log this error

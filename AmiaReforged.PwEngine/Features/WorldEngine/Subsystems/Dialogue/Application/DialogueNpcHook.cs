@@ -65,7 +65,7 @@ public sealed class DialogueNpcHook : IDialogueNpcSynchronizer
 
         foreach (NwCreature npc in dialogueNpcs)
         {
-            string treeId = npc.GetObjectVariable<LocalVariableString>(DialogueTreeVarName).Value;
+            string? treeId = npc.GetObjectVariable<LocalVariableString>(DialogueTreeVarName).Value;
             if (!string.IsNullOrEmpty(treeId))
             {
                 lock (_registryLock)

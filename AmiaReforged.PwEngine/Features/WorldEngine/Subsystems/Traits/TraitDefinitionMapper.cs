@@ -130,10 +130,10 @@ public class TraitDefinitionMapper
     /// </summary>
     private class TraitEffectDto
     {
-        public int EffectType { get; set; }
-        public string? Target { get; set; }
-        public int Magnitude { get; set; }
-        public string? Description { get; set; }
+        public int EffectType { get; init; }
+        public string? Target { get; init; }
+        public int Magnitude { get; init; }
+        public string? Description { get; init; }
     }
 
     public static TraitDefinitionMapper Create() => new();

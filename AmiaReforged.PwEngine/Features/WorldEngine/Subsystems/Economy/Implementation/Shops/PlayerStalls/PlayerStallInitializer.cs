@@ -401,17 +401,24 @@ public sealed class PlayerStallInitializer
         }
     }
 
-    private async Task<StallRegistration> ResolveRegistrationAsync(NwPlaceable placeable)
+    private Task<StallRegistration> ResolveRegistrationAsync(NwPlaceable placeable)
     {
-        if (_registrations.TryGetValue(placeable.ObjectId, out StallRegistration existing))
+        try
         {
-            return existing;
-        }
+            if (_registrations.TryGetValue(placeable.ObjectId, out StallRegistration? existing))
+            {
+                return Task.FromResult(existing);
+            }
 
-        TryRegisterPlaceable(placeable, revalidate: true);
-        return _registrations.TryGetValue(placeable.ObjectId, out StallRegistration updated)
-            ? updated
-            : StallRegistration.Misconfigured(null, placeable.Area?.ResRef, StallRegistrationState.MissingLocalTag);
+            TryRegisterPlaceable(placeable, revalidate: true);
+            return Task.FromResult(_registrations.TryGetValue(placeable.ObjectId, out StallRegistration? updated)
+                ? updated
+                : StallRegistration.Misconfigured(null, placeable.Area?.ResRef, StallRegistrationState.MissingLocalTag));
+        }
+        catch (Exception exception)
+        {
+            return Task.FromException<StallRegistration>(exception);
+        }
     }
 
     private static bool IsOwnedByCurrentPersona(

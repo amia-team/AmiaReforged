@@ -29,7 +29,8 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
 
     public override NuiWindowToken Token() => _token;
 
-    public RebuildToolPresenter(RebuildToolView view, NwPlayer player, IRebuildRepository repository, FeatCache featCache)
+    public RebuildToolPresenter(RebuildToolView view, NwPlayer player, IRebuildRepository repository,
+        FeatCache featCache)
     {
         View = view;
         _player = player;
@@ -56,7 +57,8 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
 
         if (_window is null)
         {
-            _player.SendServerMessage("The window could not be created. Screenshot this message and report it to a DM.", ColorConstants.Orange);
+            _player.SendServerMessage("The window could not be created. Screenshot this message and report it to a DM.",
+                ColorConstants.Orange);
             return;
         }
 
@@ -125,7 +127,8 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         if (_model.SelectedCharacter == null) return;
 
         Token().SetBindValue(View.CharacterSelected, true);
-        Token().SetBindValue(View.CharacterInfo, $"Selected: {_model.SelectedCharacter.Name} (Level {_model.SelectedCharacter.Level})");
+        Token().SetBindValue(View.CharacterInfo,
+            $"Selected: {_model.SelectedCharacter.Name} (Level {_model.SelectedCharacter.Level})");
 
         UpdateLevelupInfo();
     }
@@ -174,7 +177,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
             List<string> skillsAtLevel = new();
             foreach (Skill skill in allSkills)
             {
-                sbyte skillRank = levelInfo.GetSkillRank(skill);
+                sbyte skillRank = levelInfo.GetSkillRank(skill!);
                 if (skillRank > 0)
                 {
                     skillsAtLevel.Add($"  - {skill}: +{skillRank}");
@@ -228,6 +231,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
                 {
                     featsWithLevels[feat] = new List<int>();
                 }
+
                 featsWithLevels[feat].Add(level);
             }
         }
@@ -243,7 +247,8 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         }
 
         // Sort feats alphabetically by name
-        IOrderedEnumerable<KeyValuePair<NwFeat, List<int>>> sortedFeats = featsWithLevels.OrderBy(kvp => kvp.Key.Name.ToString());
+        IOrderedEnumerable<KeyValuePair<NwFeat, List<int>>> sortedFeats =
+            featsWithLevels.OrderBy(kvp => kvp.Key.Name.ToString());
         IOrderedEnumerable<NwFeat> sortedUnassignedFeats = unassignedFeats.OrderBy(f => f.Name.ToString());
 
         int totalFeatCount = featsWithLevels.Count + unassignedFeats.Count;
@@ -252,6 +257,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         {
             sb.AppendLine($"(Including {unassignedFeats.Count} unassigned feat(s))");
         }
+
         sb.AppendLine();
 
         // Display feats with assigned levels
@@ -283,8 +289,8 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
 
     private void HandleAddFeat()
     {
-        string featIdStr = Token().GetBindValue(View.FeatId);
-        string levelStr = Token().GetBindValue(View.Level);
+        string featIdStr = Token().GetBindValue(View.FeatId)!;
+        string levelStr = Token().GetBindValue(View.Level)!;
 
         if (!int.TryParse(featIdStr, out int featId))
         {
@@ -315,28 +321,28 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
     {
         try
         {
-        string featIdStr = Token().GetBindValue(View.FeatId);
+            string featIdStr = Token().GetBindValue(View.FeatId)!;
 
-        if (!int.TryParse(featIdStr, out int featId))
-        {
-            _player.SendServerMessage("Invalid Feat ID. Please enter a valid number.");
-            return;
-        }
+            if (!int.TryParse(featIdStr, out int featId))
+            {
+                _player.SendServerMessage("Invalid Feat ID. Please enter a valid number.");
+                return;
+            }
 
-        _model.RemoveFeatFromCharacter(featId);
+            _model.RemoveFeatFromCharacter(featId);
 
-        // Small delay to allow the game engine to update
-        await NwTask.Delay(TimeSpan.FromMilliseconds(100));
+            // Small delay to allow the game engine to update
+            await NwTask.Delay(TimeSpan.FromMilliseconds(100));
 
-        // Refresh the current view (all feats or level-up info)
-        if (_isViewingAllFeats)
-        {
-            DisplayAllFeats();
-        }
-        else
-        {
-            UpdateLevelupInfo();
-        }
+            // Refresh the current view (all feats or level-up info)
+            if (_isViewingAllFeats)
+            {
+                DisplayAllFeats();
+            }
+            else
+            {
+                UpdateLevelupInfo();
+            }
         }
         catch (Exception ex)
         {
@@ -382,7 +388,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
                 break;
 
             case "btn_return_all_xp":
-                HandleReturnAllXP();
+                HandleReturnAllXp();
                 // Keep modal open in case DM wants to do more
                 break;
 
@@ -400,7 +406,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
             return;
         }
 
-        string levelStr = _rebuildModalToken!.Value.GetBindValue(View.RebuildLevel);
+        string levelStr = _rebuildModalToken!.Value.GetBindValue(View.RebuildLevel)!;
 
         if (!int.TryParse(levelStr, out int targetLevel))
         {
@@ -422,7 +428,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         UpdateLevelupInfo();
     }
 
-    private void HandleReturnAllXP()
+    private void HandleReturnAllXp()
     {
         if (_model.SelectedCharacter == null)
         {
@@ -439,7 +445,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         }
 
         // Check if a return to level was specified
-        string returnToLevelStr = _rebuildModalToken!.Value.GetBindValue(View.ReturnToLevel);
+        string returnToLevelStr = _rebuildModalToken!.Value.GetBindValue(View.ReturnToLevel)!;
         int? returnToLevel = null;
 
         if (!string.IsNullOrWhiteSpace(returnToLevelStr))
@@ -450,7 +456,8 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
             }
             else
             {
-                _player.SendServerMessage("Invalid return to level. Please enter a valid number between 2 and 30, or leave empty to return all XP.");
+                _player.SendServerMessage(
+                    "Invalid return to level. Please enter a valid number between 2 and 30, or leave empty to return all XP.");
                 return;
             }
         }
@@ -474,6 +481,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
             {
                 // ignore
             }
+
             _rebuildModalToken = null;
         }
     }
@@ -546,7 +554,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         int selectedRaceIndex = _raceOptionsModalToken.Value.GetBindValue(View.SelectedRaceIndex);
 
         // Get the optional subrace input
-        string subraceInput = _raceOptionsModalToken.Value.GetBindValue(View.SubRaceInput);
+        string subraceInput = _raceOptionsModalToken.Value.GetBindValue(View.SubRaceInput)!;
 
         // Find the player who owns this character
         NwPlayer? targetPlayer = _model.SelectedCharacter.ControllingPlayer;
@@ -597,6 +605,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
             {
                 // ignore
             }
+
             _raceOptionsModalToken = null;
         }
     }
@@ -637,7 +646,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
                 break;
 
             case "btn_full_rebuild_return_xp":
-                HandleFullRebuildReturnXP();
+                HandleFullRebuildReturnXp();
                 break;
 
             case "btn_finish_full_rebuild":
@@ -658,25 +667,26 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
     {
         try
         {
-        if (_model.SelectedCharacter == null)
-        {
-            _player.SendServerMessage("No character selected.");
-            return;
-        }
+            if (_model.SelectedCharacter == null)
+            {
+                _player.SendServerMessage("No character selected.");
+                return;
+            }
 
-        NwPlayer? targetPlayer = _model.SelectedCharacter.ControllingPlayer;
-        if (targetPlayer == null)
-        {
-            _player.SendServerMessage("Could not find the player controlling this character.");
-            return;
-        }
+            NwPlayer? targetPlayer = _model.SelectedCharacter.ControllingPlayer;
+            if (targetPlayer == null)
+            {
+                _player.SendServerMessage("Could not find the player controlling this character.");
+                return;
+            }
 
-        _currentRebuildId = await _model.StartFullRebuild(targetPlayer);
+            _currentRebuildId = await _model.StartFullRebuild(targetPlayer);
 
-        if (_currentRebuildId.HasValue)
-        {
-            _player.SendServerMessage($"Full rebuild started. Rebuild ID: {_currentRebuildId.Value}", ColorConstants.Green);
-        }
+            if (_currentRebuildId.HasValue)
+            {
+                _player.SendServerMessage($"Full rebuild started. Rebuild ID: {_currentRebuildId.Value}",
+                    ColorConstants.Green);
+            }
         }
         catch (Exception ex)
         {
@@ -688,26 +698,26 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
     {
         try
         {
-        if (!_currentRebuildId.HasValue)
-        {
-            _player.SendServerMessage("No active rebuild. Use Find Rebuild to load a pending rebuild.");
-            return;
-        }
+            if (!_currentRebuildId.HasValue)
+            {
+                _player.SendServerMessage("No active rebuild. Use Find Rebuild to load a pending rebuild.");
+                return;
+            }
 
-        if (_model.SelectedCharacter == null)
-        {
-            _player.SendServerMessage("No character selected.");
-            return;
-        }
+            if (_model.SelectedCharacter == null)
+            {
+                _player.SendServerMessage("No character selected.");
+                return;
+            }
 
-        NwPlayer? targetPlayer = _model.SelectedCharacter.ControllingPlayer;
-        if (targetPlayer == null)
-        {
-            _player.SendServerMessage("Could not find the player controlling this character.");
-            return;
-        }
+            NwPlayer? targetPlayer = _model.SelectedCharacter.ControllingPlayer;
+            if (targetPlayer == null)
+            {
+                _player.SendServerMessage("Could not find the player controlling this character.");
+                return;
+            }
 
-        await _model.ReturnInventory(_currentRebuildId.Value, targetPlayer);
+            await _model.ReturnInventory(_currentRebuildId.Value, targetPlayer);
         }
         catch (Exception ex)
         {
@@ -736,39 +746,42 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
     {
         try
         {
-        if (!_currentRebuildId.HasValue)
-        {
-            _player.SendServerMessage("No active rebuild.");
-            return;
-        }
+            if (!_currentRebuildId.HasValue)
+            {
+                _player.SendServerMessage("No active rebuild.");
+                return;
+            }
 
-        if (obj.TargetObject is not NwCreature targetCreature)
-        {
-            _player.SendServerMessage("Invalid target. Please select a player character.");
-            return;
-        }
+            if (obj.TargetObject is not NwCreature targetCreature)
+            {
+                _player.SendServerMessage("Invalid target. Please select a player character.");
+                return;
+            }
 
-        NwPlayer? targetPlayer = targetCreature.ControllingPlayer;
-        if (targetPlayer == null)
-        {
-            _player.SendServerMessage("Selected creature is not a player character.");
-            return;
-        }
+            NwPlayer? targetPlayer = targetCreature.ControllingPlayer;
+            if (targetPlayer == null)
+            {
+                _player.SendServerMessage("Selected creature is not a player character.");
+                return;
+            }
 
-        // Verify PC Key match
-        bool keyMatches = await _model.VerifyPCKeyMatch(_currentRebuildId.Value, targetCreature, _player.ControlledCreature);
+            // Verify PC Key match
+            bool keyMatches =
+                await _model.VerifyPCKeyMatch(_currentRebuildId.Value, targetCreature, _player.ControlledCreature);
 
-        if (!keyMatches)
-        {
-            _player.SendServerMessage("PC Key verification failed! The PC Key in this character's inventory doesn't match the rebuild record.", ColorConstants.Red);
-            return;
-        }
+            if (!keyMatches)
+            {
+                _player.SendServerMessage(
+                    "PC Key verification failed! The PC Key in this character's inventory doesn't match the rebuild record.",
+                    ColorConstants.Red);
+                return;
+            }
 
-        // Update the selected character to the new one
-        _model.SetSelectedCharacter(targetCreature);
+            // Update the selected character to the new one
+            _model.SetSelectedCharacter(targetCreature);
 
-        // Now proceed with returning inventory
-        await _model.ReturnInventory(_currentRebuildId.Value, targetPlayer);
+            // Now proceed with returning inventory
+            await _model.ReturnInventory(_currentRebuildId.Value, targetPlayer);
         }
         catch (Exception ex)
         {
@@ -776,7 +789,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         }
     }
 
-    private void HandleFullRebuildReturnXP()
+    private void HandleFullRebuildReturnXp()
     {
         if (!_currentRebuildId.HasValue)
         {
@@ -798,7 +811,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         }
 
         // Get the optional return to level input
-        string returnToLevelStr = _fullRebuildModalToken!.Value.GetBindValue(View.FullRebuildReturnLevel);
+        string returnToLevelStr = _fullRebuildModalToken!.Value.GetBindValue(View.FullRebuildReturnLevel)!;
         int? returnToLevel = null;
 
         if (!string.IsNullOrWhiteSpace(returnToLevelStr))
@@ -809,7 +822,8 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
             }
             else
             {
-                _player.SendServerMessage("Invalid return to level. Please enter a valid number between 2 and 30, or leave empty to return all XP.");
+                _player.SendServerMessage(
+                    "Invalid return to level. Please enter a valid number between 2 and 30, or leave empty to return all XP.");
                 return;
             }
         }
@@ -825,7 +839,8 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
             return;
         }
 
-        _player.SendServerMessage("Click on the rebuilt character to finalize this rebuild. THIS CANNOT BE UNDONE!", ColorConstants.Yellow);
+        _player.SendServerMessage("Click on the rebuilt character to finalize this rebuild. THIS CANNOT BE UNDONE!",
+            ColorConstants.Yellow);
 
         _player.EnterTargetMode(OnFinishRebuildTargetSelected, new TargetModeSettings
         {
@@ -934,7 +949,8 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         // Load the rebuild (recreates PC Key in DM inventory)
         _model.LoadPendingRebuild(_currentRebuildId.Value);
 
-        _player.SendServerMessage($"Loaded rebuild for: {selectedRebuild.firstName} {selectedRebuild.lastName}", ColorConstants.Green);
+        _player.SendServerMessage($"Loaded rebuild for: {selectedRebuild.firstName} {selectedRebuild.lastName}",
+            ColorConstants.Green);
 
         CloseFindRebuildModal();
     }
@@ -952,6 +968,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
             {
                 // ignore
             }
+
             _findRebuildModalToken = null;
         }
     }
@@ -969,6 +986,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
             {
                 // ignore
             }
+
             _fullRebuildModalToken = null;
         }
     }
@@ -993,7 +1011,9 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         // Show first 10 feats initially
         List<(int id, string name)> displayFeats = allFeats.Take(10).ToList();
 
-        _player.SendServerMessage($"Showing first {displayFeats.Count} of {allFeats.Count} feats. Use the Search feature to find a feat by name.", ColorConstants.Lime);
+        _player.SendServerMessage(
+            $"Showing first {displayFeats.Count} of {allFeats.Count} feats. Use the Search feature to find a feat by name.",
+            ColorConstants.Lime);
 
         // Create and open the modal
         NuiWindow featSearchModal = View.BuildFeatSearchModal(displayFeats);
@@ -1035,7 +1055,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
             if (int.TryParse(featIdStr, out int featId))
             {
                 // Get the current level from the Level input field
-                string levelStr = Token().GetBindValue(View.Level);
+                string levelStr = Token().GetBindValue(View.Level)!;
                 if (!int.TryParse(levelStr, out int level))
                 {
                     level = 1; // Default to level 1 if not specified
@@ -1062,7 +1082,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         if (!_featSearchModalToken.HasValue) return;
 
         // Get search text
-        string searchText = _featSearchModalToken.Value.GetBindValue(View.FeatSearchText);
+        string searchText = _featSearchModalToken.Value.GetBindValue(View.FeatSearchText)!;
 
         if (string.IsNullOrWhiteSpace(searchText))
         {
@@ -1082,7 +1102,9 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         // Limit to 100 results to prevent UI overload
         List<(int id, string name)> displayResults = searchResults.Take(100).ToList();
 
-        _player.SendServerMessage($"Found {searchResults.Count} feat(s) matching '{searchText}'. Showing first {displayResults.Count}.", ColorConstants.Lime);
+        _player.SendServerMessage(
+            $"Found {searchResults.Count} feat(s) matching '{searchText}'. Showing first {displayResults.Count}.",
+            ColorConstants.Lime);
 
         // Close current modal and open new one with filtered results
         CloseFeatSearchModal();
@@ -1115,6 +1137,7 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
             {
                 // ignore
             }
+
             _featSearchModalToken = null;
         }
     }
@@ -1137,4 +1160,3 @@ public sealed class RebuildToolPresenter : ScryPresenter<RebuildToolView>
         }
     }
 }
-

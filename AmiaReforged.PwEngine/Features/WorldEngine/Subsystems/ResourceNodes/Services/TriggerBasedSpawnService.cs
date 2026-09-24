@@ -136,7 +136,6 @@ public class TriggerBasedSpawnService
                     Position = position,
                     Rotation = rotation,
                     NodeTag = nodeTag,
-                    TriggerSource = trigger.Tag,
                     Metadata = new Dictionary<string, object>
                     {
                         ["attempt"] = attempt + 1,

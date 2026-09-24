@@ -58,7 +58,7 @@ public class UpgradeStorageCapacityCommandTests
 
         // Assert
         Assert.That(result.Success, Is.True, "First upgrade should succeed");
-        Assert.That((int)result.Data["UpgradeCost"], Is.EqualTo(50_000), "First upgrade should cost 50k");
+        Assert.That((int)result.Data!["UpgradeCost"], Is.EqualTo(50_000), "First upgrade should cost 50k");
         Assert.That((int)result.Data["NewCapacity"], Is.EqualTo(20), "Capacity should increase to 20");
 
         // Verify in database
@@ -88,7 +88,7 @@ public class UpgradeStorageCapacityCommandTests
 
         // Assert
         Assert.That(result.Success, Is.True);
-        Assert.That((int)result.Data["UpgradeCost"], Is.EqualTo(150_000), "Second upgrade should cost 150k");
+        Assert.That((int)result.Data!["UpgradeCost"], Is.EqualTo(150_000), "Second upgrade should cost 150k");
         Assert.That((int)result.Data["NewCapacity"], Is.EqualTo(30), "Capacity should increase to 30");
     }
 
@@ -113,7 +113,7 @@ public class UpgradeStorageCapacityCommandTests
         CommandResult result = await _handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
-        Assert.That((int)result.Data["UpgradeCost"], Is.EqualTo(250_000), "Third upgrade should cost 250k");
+        Assert.That((int)result.Data!["UpgradeCost"], Is.EqualTo(250_000), "Third upgrade should cost 250k");
         Assert.That((int)result.Data["NewCapacity"], Is.EqualTo(40));
     }
 
@@ -153,7 +153,7 @@ public class UpgradeStorageCapacityCommandTests
 
         // Assert
         Assert.That(result.Success, Is.True, "Should create storage and upgrade");
-        Assert.That((int)result.Data["NewCapacity"], Is.EqualTo(20), "Should start at 10 and upgrade to 20");
+        Assert.That((int)result.Data!["NewCapacity"], Is.EqualTo(20), "Should start at 10 and upgrade to 20");
 
         // Verify storage was created
         Storage? storage = await _context.Warehouses
@@ -198,7 +198,7 @@ public class UpgradeStorageCapacityCommandTests
             CommandResult result = await _handler.HandleAsync(command, CancellationToken.None);
 
             // Assert
-            Assert.That((int)result.Data["UpgradeCost"], Is.EqualTo(expectedCost),
+            Assert.That((int)result.Data!["UpgradeCost"], Is.EqualTo(expectedCost),
                 $"Upgrade from {currentCapacity} should cost {expectedCost}");
         }
     }

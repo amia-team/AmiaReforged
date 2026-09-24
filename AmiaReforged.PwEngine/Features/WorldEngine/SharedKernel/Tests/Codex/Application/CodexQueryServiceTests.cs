@@ -9,6 +9,8 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entitie
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Infrastructure;
 using NUnit.Framework;
 
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Codex.Application;
 
 [TestFixture]
@@ -128,8 +130,10 @@ public class CodexQueryServiceTests
         await _repository.SaveAsync(_codex);
 
         // When
-        IReadOnlyList<CodexQuestEntry> inProgressQuests = await _queryService.GetQuestsByStateAsync(_characterId, QuestState.InProgress);
-        IReadOnlyList<CodexQuestEntry> completedQuests = await _queryService.GetQuestsByStateAsync(_characterId, QuestState.Completed);
+        IReadOnlyList<CodexQuestEntry> inProgressQuests =
+            await _queryService.GetQuestsByStateAsync(_characterId, QuestState.InProgress);
+        IReadOnlyList<CodexQuestEntry> completedQuests =
+            await _queryService.GetQuestsByStateAsync(_characterId, QuestState.Completed);
 
         // Then
         Assert.That(inProgressQuests.Count, Is.EqualTo(1));
@@ -276,8 +280,10 @@ public class CodexQueryServiceTests
         await _repository.SaveAsync(_codex);
 
         // When
-        IReadOnlyList<CodexLoreEntry> history = await _queryService.GetLoreByCategoryAsync(_characterId, LoreCategory.History);
-        IReadOnlyList<CodexLoreEntry> geography = await _queryService.GetLoreByCategoryAsync(_characterId, LoreCategory.Geography);
+        IReadOnlyList<CodexLoreEntry> history =
+            await _queryService.GetLoreByCategoryAsync(_characterId, LoreCategory.History);
+        IReadOnlyList<CodexLoreEntry> geography =
+            await _queryService.GetLoreByCategoryAsync(_characterId, LoreCategory.Geography);
 
         // Then
         Assert.That(history.Count, Is.EqualTo(1));
@@ -329,8 +335,10 @@ public class CodexQueryServiceTests
     public async Task Given_CodexWithNotes_When_GetAllNotes_Then_ReturnsAllNotes()
     {
         // Given
-        CodexNoteEntry note1 = new CodexNoteEntry(Guid.NewGuid(), "Note 1", NoteCategory.General, DateTime.UtcNow, false, false);
-        CodexNoteEntry note2 = new CodexNoteEntry(Guid.NewGuid(), "Note 2", NoteCategory.Quest, DateTime.UtcNow, false, false);
+        CodexNoteEntry note1 =
+            new CodexNoteEntry(Guid.NewGuid(), "Note 1", NoteCategory.General, DateTime.UtcNow, false, false);
+        CodexNoteEntry note2 =
+            new CodexNoteEntry(Guid.NewGuid(), "Note 2", NoteCategory.Quest, DateTime.UtcNow, false, false);
 
         _codex.AddNote(note1, DateTime.UtcNow);
         _codex.AddNote(note2, DateTime.UtcNow);
@@ -347,16 +355,20 @@ public class CodexQueryServiceTests
     public async Task Given_CodexWithNotes_When_GetNotesByCategory_Then_ReturnsFilteredNotes()
     {
         // Given
-        CodexNoteEntry personalNote = new CodexNoteEntry(Guid.NewGuid(), "Personal note", NoteCategory.General, DateTime.UtcNow, false, false);
-        CodexNoteEntry questNote = new CodexNoteEntry(Guid.NewGuid(), "Quest note", NoteCategory.Quest, DateTime.UtcNow, false, false);
+        CodexNoteEntry personalNote = new CodexNoteEntry(Guid.NewGuid(), "Personal note", NoteCategory.General,
+            DateTime.UtcNow, false, false);
+        CodexNoteEntry questNote = new CodexNoteEntry(Guid.NewGuid(), "Quest note", NoteCategory.Quest, DateTime.UtcNow,
+            false, false);
 
         _codex.AddNote(personalNote, DateTime.UtcNow);
         _codex.AddNote(questNote, DateTime.UtcNow);
         await _repository.SaveAsync(_codex);
 
         // When
-        IReadOnlyList<CodexNoteEntry> personal = await _queryService.GetNotesByCategoryAsync(_characterId, NoteCategory.General);
-        IReadOnlyList<CodexNoteEntry> quest = await _queryService.GetNotesByCategoryAsync(_characterId, NoteCategory.Quest);
+        IReadOnlyList<CodexNoteEntry> personal =
+            await _queryService.GetNotesByCategoryAsync(_characterId, NoteCategory.General);
+        IReadOnlyList<CodexNoteEntry> quest =
+            await _queryService.GetNotesByCategoryAsync(_characterId, NoteCategory.Quest);
 
         // Then
         Assert.That(personal.Count, Is.EqualTo(1));
@@ -369,8 +381,10 @@ public class CodexQueryServiceTests
     public async Task Given_CodexWithNotes_When_GetDmNotes_Then_ReturnsOnlyDmNotes()
     {
         // Given
-        CodexNoteEntry playerNote = new CodexNoteEntry(Guid.NewGuid(), "Player note", NoteCategory.General, DateTime.UtcNow, false, false);
-        CodexNoteEntry dmNote = new CodexNoteEntry(Guid.NewGuid(), "DM note", NoteCategory.DmNote, DateTime.UtcNow, true, false);
+        CodexNoteEntry playerNote = new CodexNoteEntry(Guid.NewGuid(), "Player note", NoteCategory.General,
+            DateTime.UtcNow, false, false);
+        CodexNoteEntry dmNote =
+            new CodexNoteEntry(Guid.NewGuid(), "DM note", NoteCategory.DmNote, DateTime.UtcNow, true, false);
 
         _codex.AddNote(playerNote, DateTime.UtcNow);
         _codex.AddNote(dmNote, DateTime.UtcNow);
@@ -490,7 +504,8 @@ public class CodexQueryServiceTests
         await _repository.SaveAsync(_codex);
 
         // When
-        IReadOnlyList<CodexTraitEntry> personality = await _queryService.GetTraitsByCategoryAsync(_characterId, TraitCategory.Personality);
+        IReadOnlyList<CodexTraitEntry> personality =
+            await _queryService.GetTraitsByCategoryAsync(_characterId, TraitCategory.Personality);
 
         // Then
         Assert.That(personality.Count, Is.EqualTo(2));
@@ -534,9 +549,11 @@ public class CodexQueryServiceTests
     public void Given_NullRepository_When_Constructing_Then_ThrowsArgumentNullException()
     {
         // When/Then
-        Assert.Throws<ArgumentNullException>(() => new CodexQueryService(null!));
+        Assert.Throws<ArgumentNullException>(() =>
+        {
+            CodexQueryService unused = new(null!);
+        });
     }
 
     #endregion
 }
-

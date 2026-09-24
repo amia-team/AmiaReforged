@@ -508,19 +508,27 @@ public class BreakExecutorTests
     }
 
     [Test]
-    public async Task Break_definition_has_correct_shape()
+    public Task Break_definition_has_correct_shape()
     {
-        BreakExecutor executor = new();
-        GlyphNodeDefinition def = executor.CreateDefinition();
+        try
+        {
+            BreakExecutor executor = new();
+            GlyphNodeDefinition def = executor.CreateDefinition();
 
-        def.TypeId.Should().Be("flow.break");
-        def.DisplayName.Should().Be("Break");
-        def.Category.Should().Be("Flow Control");
-        def.Archetype.Should().Be(GlyphNodeArchetype.FlowControl);
-        def.InputPins.Should().HaveCount(1);
-        def.InputPins[0].Id.Should().Be("exec_in");
-        def.InputPins[0].DataType.Should().Be(GlyphDataType.Exec);
-        def.OutputPins.Should().BeEmpty("Break has no output pins — it signals the interpreter directly.");
+            def.TypeId.Should().Be("flow.break");
+            def.DisplayName.Should().Be("Break");
+            def.Category.Should().Be("Flow Control");
+            def.Archetype.Should().Be(GlyphNodeArchetype.FlowControl);
+            def.InputPins.Should().HaveCount(1);
+            def.InputPins[0].Id.Should().Be("exec_in");
+            def.InputPins[0].DataType.Should().Be(GlyphDataType.Exec);
+            def.OutputPins.Should().BeEmpty("Break has no output pins — it signals the interpreter directly.");
+            return Task.CompletedTask;
+        }
+        catch (Exception exception)
+        {
+            return Task.FromException(exception);
+        }
     }
 
     [Test]

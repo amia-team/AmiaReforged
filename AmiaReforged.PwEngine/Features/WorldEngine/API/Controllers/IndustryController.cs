@@ -831,7 +831,7 @@ public class IndustryController
             return new ApiResult(404, new { error = result.ErrorMessage });
         }
 
-        return new ApiResult(204, null);
+        return new ApiResult(204, null!);
     }
 
     // ==================== Progression DTOs ====================

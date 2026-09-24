@@ -81,7 +81,7 @@ public class OpenSpellbookPresenter(OpenSpellbookView toolView, NwPlayer player)
     {
         List<NuiImage> spellLevelIcons = SpellbookLayout();
 
-        List<NuiRow> spellRows = PopulateSpellRows(_spellbook.SpellBook, spellLevelIcons);
+        List<NuiRow> spellRows = PopulateSpellRows(_spellbook.SpellBook!, spellLevelIcons);
 
         NuiColumn spells = new()
         {
@@ -223,7 +223,7 @@ public class OpenSpellbookPresenter(OpenSpellbookView toolView, NwPlayer player)
                      let spellIconResRef = s.IconResRef == "" ? "ir_tmp_spawn" : s.IconResRef
                      select new NuiImage(spellIconResRef)
                      {
-                         Tooltip = s.SpellName,
+                         Tooltip = s.SpellName!,
                          Height = 40f,
                          Width = 40f,
                          ImageAspect = NuiAspect.Fill,

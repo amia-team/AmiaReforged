@@ -175,7 +175,7 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
         // Tile Editing
         if (evt.ElementId == View.PickATileButton.Id)
         {
-            _tileHandler?.StartTilePicker(_state.SelectedArea);
+            _tileHandler?.StartTilePicker(_state?.SelectedArea);
             return;
         }
 

@@ -302,7 +302,9 @@ public class GlyphWorldEngineApi : IGlyphWorldEngineApi
             float rotation = (float)(Random.Shared.NextDouble() * 360);
 
             // 8. Create the node instance (persists to DB) and spawn the in-game placeable
-            ResourceNodeInstance node = _nodeService.CreateNewNode(area, selected, position, rotation);
+            ResourceNodeInstance? node = _nodeService.CreateNewNode(area, selected, position, rotation);
+            if (node == null) return new SpawnResourceNodeOutcome(false, "failed_to_create_node", null);
+
             _nodeService.SpawnInstance(node);
 
             string qualityLabel = QualityLabel.QualityLabelForNode(selected.Type, node.Quality);

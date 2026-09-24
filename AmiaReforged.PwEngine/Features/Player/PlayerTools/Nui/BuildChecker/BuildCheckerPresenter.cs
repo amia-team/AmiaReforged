@@ -139,7 +139,7 @@ public sealed class BuildCheckerPresenter : ScryPresenter<BuildCheckerView>
             List<string> skillsAtLevel = new();
             foreach (Skill skill in allSkills)
             {
-                sbyte skillRank = levelInfo.GetSkillRank(skill);
+                sbyte skillRank = levelInfo.GetSkillRank(skill!);
                 if (skillRank > 0)
                 {
                     skillsAtLevel.Add($"  - {skill}: +{skillRank}");
@@ -198,7 +198,6 @@ public sealed class BuildCheckerPresenter : ScryPresenter<BuildCheckerView>
         if (_player.LoginCreature == null) return;
 
         const int MAX_LEVEL = 30;
-        const int MAX_LEVEL_XP = 435000; // XP required for level 30
 
         int currentLevel = _player.LoginCreature.Level;
         int currentXp = _player.LoginCreature.Xp;
@@ -317,7 +316,7 @@ public sealed class BuildCheckerPresenter : ScryPresenter<BuildCheckerView>
             return;
 
         // Get the target level input
-        string targetLevelStr = _autoRebuildModalToken.Value.GetBindValue(View.AutoRebuildLevel);
+        string targetLevelStr = _autoRebuildModalToken.Value.GetBindValue(View.AutoRebuildLevel)!;
 
         if (!int.TryParse(targetLevelStr, out int targetLevel))
         {

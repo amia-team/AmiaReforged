@@ -229,9 +229,9 @@ public class PersonaIdJsonSerializationTests
     // Helper class for testing PersonaId in objects
     private class TestClassWithPersonaId
     {
-        public int Id { get; set; }
-        public PersonaId PersonaId { get; set; }
-        public string? Name { get; set; }
+        public int Id { get; init; }
+        public PersonaId PersonaId { get; init; }
+        public string? Name { get; init; }
     }
 }
 

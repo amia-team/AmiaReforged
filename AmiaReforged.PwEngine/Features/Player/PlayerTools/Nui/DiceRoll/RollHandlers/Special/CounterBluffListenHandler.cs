@@ -10,6 +10,7 @@ public class CounterBluffListenHandler : IRollHandler
     public void RollDice(NwPlayer player)
     {
         int roll = NWScript.d20();
+        if (player.LoginCreature == null) return;
         int modifier = player.LoginCreature.GetSkillRank(NwSkill.FromSkillType(Skill.Listen)!);
 
         string charListen =

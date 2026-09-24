@@ -43,7 +43,8 @@ public sealed class HarvestingSubsystem : IHarvestingSubsystem
         _queries = queries;
     }
 
-    public Task<CommandResult> SpawnResourceNodeAsync(string nodeType, string areaTag, float x, float y, float z, CancellationToken ct = default)
+    public Task<CommandResult> SpawnResourceNodeAsync(string nodeType, string areaTag, float x, float y, float z,
+        CancellationToken ct = default)
     {
         return Task.FromResult(CommandResult.Fail(
             "Not supported: node spawn quality/uses are derived from AreaDefinition via ResourceNodeService; use ProvisionAreaNodesCommand or RegisterNodeCommand directly."));
@@ -85,7 +86,8 @@ public sealed class HarvestingSubsystem : IHarvestingSubsystem
     /// Harvesting is an interaction: multi-round nodes need one call per round,
     /// mirroring how ingress adapters (e.g. one attack = one tick) drive it.
     /// </summary>
-    public async Task<HarvestResult> HarvestResourceAsync(CharacterId characterId, string nodeId, CancellationToken ct = default)
+    public async Task<HarvestResult> HarvestResourceAsync(CharacterId characterId, string nodeId,
+        CancellationToken ct = default)
     {
         if (!Guid.TryParse(nodeId, out Guid instanceId))
         {
@@ -100,11 +102,9 @@ public sealed class HarvestingSubsystem : IHarvestingSubsystem
             return HarvestResult.Failed;
         }
 
-        return result.Data?.GetValueOrDefault("status") as string switch
+        return (result.Data?.GetValueOrDefault("status") as string) switch
         {
             "InProgress" => HarvestResult.InProgress,
-            "Completed" => HarvestResult.Finished,
-            "NodeDepleted" => HarvestResult.Finished,
             _ => HarvestResult.Finished,
         };
     }
@@ -125,7 +125,8 @@ public sealed class HarvestingSubsystem : IHarvestingSubsystem
         return state is not null && state.RemainingUses > 0;
     }
 
-    public async Task<HarvestContext?> GetHarvestContextAsync(CharacterId characterId, string nodeId, CancellationToken ct = default)
+    public async Task<HarvestContext?> GetHarvestContextAsync(CharacterId characterId, string nodeId,
+        CancellationToken ct = default)
     {
         if (!Guid.TryParse(nodeId, out Guid instanceId))
         {
@@ -138,12 +139,14 @@ public sealed class HarvestingSubsystem : IHarvestingSubsystem
         return instance?.Definition.Requirement;
     }
 
-    public Task<List<HarvestHistoryEntry>> GetHarvestHistoryAsync(CharacterId characterId, int limit = 50, CancellationToken ct = default)
+    public Task<List<HarvestHistoryEntry>> GetHarvestHistoryAsync(CharacterId characterId, int limit = 50,
+        CancellationToken ct = default)
     {
         return Task.FromResult(new List<HarvestHistoryEntry>());
     }
 
-    public Task<DateTime?> GetLastHarvestTimeAsync(CharacterId characterId, string nodeId, CancellationToken ct = default)
+    public Task<DateTime?> GetLastHarvestTimeAsync(CharacterId characterId, string nodeId,
+        CancellationToken ct = default)
     {
         return Task.FromResult<DateTime?>(null);
     }

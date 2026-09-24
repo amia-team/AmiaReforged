@@ -223,27 +223,27 @@ public static class RecipeTemplateMapper
 
     private class TemplateIngredientJsonDto
     {
-        public string RequiredCategory { get; set; } = string.Empty;
-        public string RequiredForm { get; set; } = string.Empty;
-        public int Quantity { get; set; }
-        public int? MinQuality { get; set; }
-        public bool IsConsumed { get; set; } = true;
-        public int SlotIndex { get; set; }
+        public string RequiredCategory { get; init; } = string.Empty;
+        public string RequiredForm { get; init; } = string.Empty;
+        public int Quantity { get; init; }
+        public int? MinQuality { get; init; }
+        public bool IsConsumed { get; init; } = true;
+        public int SlotIndex { get; init; }
     }
 
     private class TemplateProductJsonDto
     {
-        public string OutputForm { get; set; } = string.Empty;
-        public int MaterialSourceSlot { get; set; }
-        public int Quantity { get; set; }
-        public float? SuccessChance { get; set; }
+        public string OutputForm { get; init; } = string.Empty;
+        public int MaterialSourceSlot { get; init; }
+        public int Quantity { get; init; }
+        public float? SuccessChance { get; init; }
     }
 
     private class ToolRequirementJsonDto
     {
-        public string RequiredForm { get; set; } = string.Empty;
-        public string? RequiredMaterial { get; set; }
-        public int? MinQuality { get; set; }
-        public string? ExactItemTag { get; set; }
+        public string RequiredForm { get; init; } = string.Empty;
+        public string? RequiredMaterial { get; init; }
+        public int? MinQuality { get; init; }
+        public string? ExactItemTag { get; init; }
     }
 }

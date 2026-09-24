@@ -113,7 +113,7 @@ public class ResourceNodeInstanceSetupService(
 
         HashSet<string> allowedTypes = nodeTypesStr.Split(',')
             .Select(t => t.Trim().ToLower())
-            .Where(t => !string.IsNullOrWhiteSpace(t))  // Skip empty entries
+            .Where(t => !string.IsNullOrWhiteSpace(t)) // Skip empty entries
             .ToHashSet();
 
         if (!allowedTypes.Any())
@@ -131,7 +131,8 @@ public class ResourceNodeInstanceSetupService(
 
         // Filter area's DefinitionTags by matching their Type to trigger's type filters
         List<string> matchingDefinitionTags = new List<string>();
-        Log.Info($"Checking {area.DefinitionTags.Count} definitions in area {area.ResRef} against type filters: [{string.Join(", ", allowedTypes)}]");
+        Log.Info(
+            $"Checking {area.DefinitionTags.Count} definitions in area {area.ResRef} against type filters: [{string.Join(", ", allowedTypes)}]");
 
         foreach (string definitionTag in area.DefinitionTags)
         {
@@ -159,7 +160,8 @@ public class ResourceNodeInstanceSetupService(
 
         if (!matchingDefinitionTags.Any())
         {
-            Log.Info($"Trigger {trigger.Tag} type filters [{string.Join(", ", allowedTypes)}] don't match any area definition Types");
+            Log.Info(
+                $"Trigger {trigger.Tag} type filters [{string.Join(", ", allowedTypes)}] don't match any area definition Types");
             return;
         }
 
@@ -168,7 +170,8 @@ public class ResourceNodeInstanceSetupService(
         if (maxNodes <= 0)
             maxNodes = WorldConstants.DefaultMaxNodesPerTrigger;
 
-        NwModule.Instance.SendMessageToAllDMs($"Trigger '{trigger.Tag}': type filters=[{string.Join(", ", allowedTypes)}], matched {matchingDefinitionTags.Count} definition(s), max={maxNodes}");
+        NwModule.Instance.SendMessageToAllDMs(
+            $"Trigger '{trigger.Tag}': type filters=[{string.Join(", ", allowedTypes)}], matched {matchingDefinitionTags.Count} definition(s), max={maxNodes}");
 
         // Generate spawn locations using the matching definition tags
         List<SpawnLocation> spawnLocations = triggerSpawnService.GenerateSpawnLocations(
@@ -193,17 +196,24 @@ public class ResourceNodeInstanceSetupService(
 
             try
             {
-                ResourceNodeInstance node = nodeService.CreateNewNode(
+                ResourceNodeInstance? node = nodeService.CreateNewNode(
                     area,
                     nodeDefinition,
                     location.Position,
                     location.Rotation
                 );
 
+                if (node == null)
+                {
+                    Log.Warn($"Failed to create node for tag: {location.NodeTag}");
+                    continue;
+                }
+
                 nodeService.SpawnInstance(node);
                 spawned++;
 
-                Log.Debug($"Spawned {nodeDefinition.Name} (Type: {nodeDefinition.Type}) at ({location.Position.X:F1}, {location.Position.Y:F1})");
+                Log.Debug(
+                    $"Spawned {nodeDefinition.Name} (Type: {nodeDefinition.Type}) at ({location.Position.X:F1}, {location.Position.Y:F1})");
             }
             catch (Exception ex)
             {
@@ -214,4 +224,3 @@ public class ResourceNodeInstanceSetupService(
         NwModule.Instance.SendMessageToAllDMs($"✓ Spawned {spawned} node(s) in trigger '{trigger.Tag}'");
     }
 }
-

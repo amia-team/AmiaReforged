@@ -47,7 +47,7 @@ public class ControllerRoutingTests
 
         // Assert
         Assert.That(result, Is.Not.Null);
-        Assert.That(result.StatusCode, Is.EqualTo(200));
+        Assert.That(result!.StatusCode, Is.EqualTo(200));
     }
 
     [Test]
@@ -77,7 +77,7 @@ public class ControllerRoutingTests
 
         // Assert
         Assert.That(result, Is.Not.Null);
-        Assert.That(result.StatusCode, Is.EqualTo(503));
+        Assert.That(result!.StatusCode, Is.EqualTo(503));
     }
 
     [Test]
@@ -95,7 +95,7 @@ public class ControllerRoutingTests
 
         // Assert
         Assert.That(result, Is.Not.Null);
-        Assert.That(result.StatusCode, Is.EqualTo(503));
+        Assert.That(result!.StatusCode, Is.EqualTo(503));
     }
 
     [Test]
@@ -145,7 +145,7 @@ public class ControllerRoutingTests
 
         // Assert
         Assert.That(result, Is.Not.Null);
-        Assert.That(result.StatusCode, Is.EqualTo(200));
+        Assert.That(result!.StatusCode, Is.EqualTo(200));
     }
 
     [Test]

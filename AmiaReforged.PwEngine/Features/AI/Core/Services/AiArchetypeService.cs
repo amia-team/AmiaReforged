@@ -157,7 +157,7 @@ public class AiArchetypeService
         }
 
         // Priority 2: Has Hide in Plain Sight feat → hips
-        if (creature.KnowsFeat(Feat.HideInPlainSight))
+        if (creature.KnowsFeat(Feat.HideInPlainSight!))
         {
             return "hips";
         }
@@ -165,8 +165,8 @@ public class AiArchetypeService
         // Priority 3: High stealth skills relative to HD → sneak
         // Legacy: Hide > HD && Move Silently > HD (first-run only)
         int hitDice = creature.Level;
-        int hideSkill = creature.GetSkillRank(Skill.Hide);
-        int moveSilentlySkill = creature.GetSkillRank(Skill.MoveSilently);
+        int hideSkill = creature.GetSkillRank(Skill.Hide!);
+        int moveSilentlySkill = creature.GetSkillRank(Skill.MoveSilently!);
 
         if (hideSkill > hitDice && moveSilentlySkill > hitDice)
         {

@@ -93,9 +93,6 @@ public class LanguageConfirmationPresenter : ScryPresenter<LanguageConfirmationV
     public override void Close()
     {
         // Unsubscribe from events before closing
-        if (_token != null)
-        {
-            _token.OnNuiEvent -= ProcessEvent;
-        }
+        _token.OnNuiEvent -= ProcessEvent;
     }
 }

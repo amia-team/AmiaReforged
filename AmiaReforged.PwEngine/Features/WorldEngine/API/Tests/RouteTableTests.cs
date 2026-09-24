@@ -27,8 +27,17 @@ public class RouteTableSpecs
     public void AddRoute_WhenSimpleRouteAdded_ShouldRegisterSuccessfully()
     {
         // Arrange & Act
-        _routeTable.AddRoute("GET", "/api/test",
-            async ctx => new ApiResult(200, new { message = "test" }),
+        _routeTable.AddRoute("GET", "/api/test", ctx =>
+            {
+                try
+                {
+                    return Task.FromResult(new ApiResult(200, new { message = "test" }));
+                }
+                catch (Exception exception)
+                {
+                    return Task.FromException<ApiResult>(exception);
+                }
+            },
             "TestRoute");
 
         List<(string Method, string Pattern, string Handler)> routes = _routeTable.GetRoutes().ToList();
@@ -44,8 +53,17 @@ public class RouteTableSpecs
     public void AddRoute_WhenParameterizedRoute_ShouldExtractParameterNames()
     {
         // Arrange & Act
-        _routeTable.AddRoute("GET", "/api/treasuries/{id}/balance",
-            async ctx => new ApiResult(200, new { id = ctx.GetRouteValue("id") }),
+        _routeTable.AddRoute("GET", "/api/treasuries/{id}/balance", ctx =>
+            {
+                try
+                {
+                    return Task.FromResult(new ApiResult(200, new { id = ctx.GetRouteValue("id") }));
+                }
+                catch (Exception exception)
+                {
+                    return Task.FromException<ApiResult>(exception);
+                }
+            },
             "GetBalance");
 
         List<(string Method, string Pattern, string Handler)> routes = _routeTable.GetRoutes().ToList();
@@ -59,12 +77,21 @@ public class RouteTableSpecs
     public void AddRoute_WhenMultipleParameters_ShouldHandleCorrectly()
     {
         // Arrange & Act
-        _routeTable.AddRoute("GET", "/api/regions/{regionId}/areas/{areaId}",
-            async ctx => new ApiResult(200, new
+        _routeTable.AddRoute("GET", "/api/regions/{regionId}/areas/{areaId}", ctx =>
             {
-                regionId = ctx.GetRouteValue("regionId"),
-                areaId = ctx.GetRouteValue("areaId")
-            }),
+                try
+                {
+                    return Task.FromResult(new ApiResult(200, new
+                    {
+                        regionId = ctx.GetRouteValue("regionId"),
+                        areaId = ctx.GetRouteValue("areaId")
+                    }));
+                }
+                catch (Exception exception)
+                {
+                    return Task.FromException<ApiResult>(exception);
+                }
+            },
             "GetArea");
 
         List<(string Method, string Pattern, string Handler)> routes = _routeTable.GetRoutes().ToList();
@@ -80,11 +107,17 @@ public class RouteTableSpecs
     {
         // Arrange
         bool executed = false;
-        _routeTable.AddRoute("GET", "/api/test",
-            async ctx =>
+        _routeTable.AddRoute("GET", "/api/test", ctx =>
             {
-                executed = true;
-                return new ApiResult(200, new { message = "success" });
+                try
+                {
+                    executed = true;
+                    return Task.FromResult(new ApiResult(200, new { message = "success" }));
+                }
+                catch (Exception exception)
+                {
+                    return Task.FromException<ApiResult>(exception);
+                }
             },
             "TestRoute");
 
@@ -104,11 +137,17 @@ public class RouteTableSpecs
     {
         // Arrange
         string? capturedId = null;
-        _routeTable.AddRoute("GET", "/api/treasuries/{id}/balance",
-            async ctx =>
+        _routeTable.AddRoute("GET", "/api/treasuries/{id}/balance", ctx =>
             {
-                capturedId = ctx.GetRouteValue("id");
-                return new ApiResult(200, new { treasuryId = capturedId });
+                try
+                {
+                    capturedId = ctx.GetRouteValue("id");
+                    return Task.FromResult(new ApiResult(200, new { treasuryId = capturedId }));
+                }
+                catch (Exception exception)
+                {
+                    return Task.FromException<ApiResult>(exception);
+                }
             },
             "GetBalance");
 
@@ -130,12 +169,18 @@ public class RouteTableSpecs
         string? capturedRegionId = null;
         string? capturedAreaId = null;
 
-        _routeTable.AddRoute("GET", "/api/regions/{regionId}/areas/{areaId}",
-            async ctx =>
+        _routeTable.AddRoute("GET", "/api/regions/{regionId}/areas/{areaId}", ctx =>
             {
-                capturedRegionId = ctx.GetRouteValue("regionId");
-                capturedAreaId = ctx.GetRouteValue("areaId");
-                return new ApiResult(200, new { regionId = capturedRegionId, areaId = capturedAreaId });
+                try
+                {
+                    capturedRegionId = ctx.GetRouteValue("regionId");
+                    capturedAreaId = ctx.GetRouteValue("areaId");
+                    return Task.FromResult(new ApiResult(200, new { regionId = capturedRegionId, areaId = capturedAreaId }));
+                }
+                catch (Exception exception)
+                {
+                    return Task.FromException<ApiResult>(exception);
+                }
             },
             "GetArea");
 
@@ -154,8 +199,17 @@ public class RouteTableSpecs
     public async Task DispatchAsync_WhenNoMatchingRoute_ShouldReturnNull()
     {
         // Arrange
-        _routeTable.AddRoute("GET", "/api/test",
-            async ctx => new ApiResult(200, new { }),
+        _routeTable.AddRoute("GET", "/api/test", ctx =>
+            {
+                try
+                {
+                    return Task.FromResult(new ApiResult(200, new { }));
+                }
+                catch (Exception exception)
+                {
+                    return Task.FromException<ApiResult>(exception);
+                }
+            },
             "TestRoute");
 
         HttpListenerRequest mockRequest = CreateMockRequest("GET", "/api/notfound");
@@ -171,8 +225,17 @@ public class RouteTableSpecs
     public async Task DispatchAsync_WhenWrongMethod_ShouldReturnNull()
     {
         // Arrange
-        _routeTable.AddRoute("GET", "/api/test",
-            async ctx => new ApiResult(200, new { }),
+        _routeTable.AddRoute("GET", "/api/test", ctx =>
+            {
+                try
+                {
+                    return Task.FromResult(new ApiResult(200, new { }));
+                }
+                catch (Exception exception)
+                {
+                    return Task.FromException<ApiResult>(exception);
+                }
+            },
             "TestRoute");
 
         HttpListenerRequest mockRequest = CreateMockRequest("POST", "/api/test");

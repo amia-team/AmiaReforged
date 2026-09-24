@@ -7,19 +7,9 @@ using WorldConfiguration = AmiaReforged.PwEngine.Database.Entities.WorldConfigur
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 
 [ServiceBinding(typeof(IWorldConfigProvider))]
-public class WorldEngineConfig : IWorldConfigProvider
+public class WorldEngineConfig(PwContextFactory factory) : IWorldConfigProvider
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    private readonly PwEngineContext _ctx;
-
-    public WorldEngineConfig(PwContextFactory factory)
-    {
-        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
-
-        if (environment == "live") return;
-
-        _ctx = factory.CreateDbContext();
-    }
 
     public bool GetBoolean(string key)
     {
@@ -27,7 +17,7 @@ public class WorldEngineConfig : IWorldConfigProvider
 
         try
         {
-            WorldConfiguration? entry = _ctx.WorldConfiguration.FirstOrDefault(b =>
+            WorldConfiguration? entry = factory.CreateDbContext().WorldConfiguration.FirstOrDefault(b =>
                 b.Key == key && b.ValueType == WorldConstants.ConfigTypeBool);
 
             if (entry != null) value = bool.Parse(entry.Value);
@@ -44,7 +34,8 @@ public class WorldEngineConfig : IWorldConfigProvider
     {
         try
         {
-            WorldConfiguration? entry = _ctx.WorldConfiguration.FirstOrDefault(b =>
+            PwEngineContext ctx = factory.CreateDbContext();
+            WorldConfiguration? entry = ctx.WorldConfiguration.FirstOrDefault(b =>
                 b.Key == key && b.ValueType == WorldConstants.ConfigTypeBool);
 
             bool exists = entry != null;
@@ -61,8 +52,8 @@ public class WorldEngineConfig : IWorldConfigProvider
             }
 
             entry!.Value = value.ToString();
-            _ctx.Update(entry);
-            _ctx.SaveChanges();
+            ctx.Update(entry);
+            ctx.SaveChanges();
         }
         catch (Exception e)
         {
@@ -74,8 +65,9 @@ public class WorldEngineConfig : IWorldConfigProvider
     {
         try
         {
-            _ctx.Add(entry);
-            _ctx.SaveChanges();
+            PwEngineContext ctx = factory.CreateDbContext();
+            ctx.Add(entry);
+            ctx.SaveChanges();
         }
         catch (Exception e)
         {
@@ -87,7 +79,7 @@ public class WorldEngineConfig : IWorldConfigProvider
     {
         try
         {
-            WorldConfiguration? entry = _ctx.WorldConfiguration.FirstOrDefault(b =>
+            WorldConfiguration? entry = factory.CreateDbContext().WorldConfiguration.FirstOrDefault(b =>
                 b.Key == key && b.ValueType == WorldConstants.ConfigTypeInt);
 
             if (entry != null && int.TryParse(entry.Value, out int value)) return value;
@@ -104,12 +96,13 @@ public class WorldEngineConfig : IWorldConfigProvider
     {
         try
         {
-            WorldConfiguration? entry = _ctx.WorldConfiguration.FirstOrDefault(b =>
+            PwEngineContext ctx = factory.CreateDbContext();
+            WorldConfiguration? entry = ctx.WorldConfiguration.FirstOrDefault(b =>
                 b.Key == key && b.ValueType == WorldConstants.ConfigTypeInt);
 
             if (entry == null)
             {
-                _ctx.Add(new WorldConfiguration
+                ctx.Add(new WorldConfiguration
                 {
                     Key = key,
                     Value = value.ToString(),
@@ -119,10 +112,10 @@ public class WorldEngineConfig : IWorldConfigProvider
             else
             {
                 entry.Value = value.ToString();
-                _ctx.Update(entry);
+                ctx.Update(entry);
             }
 
-            _ctx.SaveChanges();
+            ctx.SaveChanges();
         }
         catch (Exception e)
         {
@@ -134,10 +127,11 @@ public class WorldEngineConfig : IWorldConfigProvider
     {
         try
         {
-            WorldConfiguration? entry = _ctx.WorldConfiguration.FirstOrDefault(b =>
+            WorldConfiguration? entry = factory.CreateDbContext().WorldConfiguration.FirstOrDefault(b =>
                 b.Key == key && b.ValueType == WorldConstants.ConfigTypeFloat);
 
-            if (entry != null && float.TryParse(entry.Value, System.Globalization.CultureInfo.InvariantCulture, out float value))
+            if (entry != null && float.TryParse(entry.Value, System.Globalization.CultureInfo.InvariantCulture,
+                    out float value))
                 return value;
         }
         catch (Exception e)
@@ -152,12 +146,13 @@ public class WorldEngineConfig : IWorldConfigProvider
     {
         try
         {
-            WorldConfiguration? entry = _ctx.WorldConfiguration.FirstOrDefault(b =>
+            PwEngineContext ctx = factory.CreateDbContext();
+            WorldConfiguration? entry = ctx.WorldConfiguration.FirstOrDefault(b =>
                 b.Key == key && b.ValueType == WorldConstants.ConfigTypeFloat);
 
             if (entry == null)
             {
-                _ctx.Add(new WorldConfiguration
+                ctx.Add(new WorldConfiguration
                 {
                     Key = key,
                     Value = value.ToString(System.Globalization.CultureInfo.InvariantCulture),
@@ -167,10 +162,10 @@ public class WorldEngineConfig : IWorldConfigProvider
             else
             {
                 entry.Value = value.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                _ctx.Update(entry);
+                ctx.Update(entry);
             }
 
-            _ctx.SaveChanges();
+            ctx.SaveChanges();
         }
         catch (Exception e)
         {
@@ -182,7 +177,7 @@ public class WorldEngineConfig : IWorldConfigProvider
     {
         try
         {
-            WorldConfiguration? entry = _ctx.WorldConfiguration.FirstOrDefault(b =>
+            WorldConfiguration? entry = factory.CreateDbContext().WorldConfiguration.FirstOrDefault(b =>
                 b.Key == key && b.ValueType == WorldConstants.ConfigTypeString);
 
             return entry?.Value;
@@ -199,12 +194,13 @@ public class WorldEngineConfig : IWorldConfigProvider
     {
         try
         {
-            WorldConfiguration? entry = _ctx.WorldConfiguration.FirstOrDefault(b =>
+            PwEngineContext ctx = factory.CreateDbContext();
+            WorldConfiguration? entry = ctx.WorldConfiguration.FirstOrDefault(b =>
                 b.Key == key && b.ValueType == WorldConstants.ConfigTypeString);
 
             if (entry == null)
             {
-                _ctx.Add(new WorldConfiguration
+                ctx.Add(new WorldConfiguration
                 {
                     Key = key,
                     Value = value,
@@ -214,10 +210,10 @@ public class WorldEngineConfig : IWorldConfigProvider
             else
             {
                 entry.Value = value;
-                _ctx.Update(entry);
+                ctx.Update(entry);
             }
 
-            _ctx.SaveChanges();
+            ctx.SaveChanges();
         }
         catch (Exception e)
         {

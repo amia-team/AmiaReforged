@@ -157,7 +157,7 @@ public class CodexQuestEntryTests
         // Act & Assert
         InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             quest.MarkCompleted(_testDate.AddHours(2)));
-        Assert.That(ex.Message, Does.Contain("Cannot complete quest in state Completed"));
+        Assert.That(ex!.Message, Does.Contain("Cannot complete quest in state Completed"));
     }
 
     [Test]
@@ -176,7 +176,7 @@ public class CodexQuestEntryTests
         // Act & Assert
         InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             quest.MarkCompleted(_testDate.AddHours(2)));
-        Assert.That(ex.Message, Does.Contain("Cannot complete quest in state Failed"));
+        Assert.That(ex!.Message, Does.Contain("Cannot complete quest in state Failed"));
     }
 
     [Test]
@@ -195,7 +195,7 @@ public class CodexQuestEntryTests
         // Act & Assert
         InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             quest.MarkCompleted(_testDate.AddHours(2)));
-        Assert.That(ex.Message, Does.Contain("Cannot complete quest in state Abandoned"));
+        Assert.That(ex!.Message, Does.Contain("Cannot complete quest in state Abandoned"));
     }
 
     #endregion
@@ -261,7 +261,7 @@ public class CodexQuestEntryTests
         // Act & Assert
         InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             quest.MarkFailed(_testDate.AddHours(2)));
-        Assert.That(ex.Message, Does.Contain("Cannot fail quest in state Completed"));
+        Assert.That(ex!.Message, Does.Contain("Cannot fail quest in state Completed"));
     }
 
     [Test]
@@ -280,7 +280,7 @@ public class CodexQuestEntryTests
         // Act & Assert
         InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             quest.MarkFailed(_testDate.AddHours(2)));
-        Assert.That(ex.Message, Does.Contain("Cannot fail quest in state Failed"));
+        Assert.That(ex!.Message, Does.Contain("Cannot fail quest in state Failed"));
     }
 
     [Test]
@@ -299,7 +299,7 @@ public class CodexQuestEntryTests
         // Act & Assert
         InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             quest.MarkFailed(_testDate.AddHours(2)));
-        Assert.That(ex.Message, Does.Contain("Cannot fail quest in state Abandoned"));
+        Assert.That(ex!.Message, Does.Contain("Cannot fail quest in state Abandoned"));
     }
 
     #endregion
@@ -365,7 +365,7 @@ public class CodexQuestEntryTests
         // Act & Assert
         InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             quest.MarkAbandoned(_testDate.AddHours(2)));
-        Assert.That(ex.Message, Does.Contain("Cannot abandon quest in state Completed"));
+        Assert.That(ex!.Message, Does.Contain("Cannot abandon quest in state Completed"));
     }
 
     [Test]
@@ -384,7 +384,7 @@ public class CodexQuestEntryTests
         // Act & Assert
         InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             quest.MarkAbandoned(_testDate.AddHours(2)));
-        Assert.That(ex.Message, Does.Contain("Cannot abandon quest in state Failed"));
+        Assert.That(ex!.Message, Does.Contain("Cannot abandon quest in state Failed"));
     }
 
     [Test]
@@ -403,7 +403,7 @@ public class CodexQuestEntryTests
         // Act & Assert
         InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             quest.MarkAbandoned(_testDate.AddHours(2)));
-        Assert.That(ex.Message, Does.Contain("Cannot abandon quest in state Abandoned"));
+        Assert.That(ex!.Message, Does.Contain("Cannot abandon quest in state Abandoned"));
     }
 
     #endregion

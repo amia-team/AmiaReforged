@@ -574,7 +574,7 @@ public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView
         }
 
         HolderRole role = (HolderRole)_selectedNewHolderRole;
-        
+
         // Map HolderRole to BankShareType
         BankShareType shareType = role switch
         {
@@ -588,7 +588,7 @@ public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView
         string[] nameParts = holderName.Split(' ', 2);
         string firstName = nameParts.Length > 0 ? nameParts[0] : holderName;
         string lastName = nameParts.Length > 1 ? nameParts[1] : string.Empty;
-        
+
         JoinCoinhouseAccountCommand command = new(
             Requestor: _persona,
             AccountId: _accountData.AccountId,
@@ -727,7 +727,7 @@ public sealed class BankAdminWindowPresenter : ScryPresenter<BankAdminWindowView
         }
 
         // Get the selected new role from the combo
-        List<int> selections = Token().GetBindValues(View.HolderRoleSelection);
+        List<int> selections = Token().GetBindValues(View.HolderRoleSelection)!;
         if (rowIndex >= selections.Count)
         {
             return;

@@ -19,7 +19,7 @@ public class ResourceNodeService(
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    public ResourceNodeInstance CreateNewNode(AreaDefinition area, ResourceNodeDefinition definition, Vector3 position,
+    public ResourceNodeInstance? CreateNewNode(AreaDefinition area, ResourceNodeDefinition definition, Vector3 position,
         float rotation = 0f)
     {
         IPQuality quality = (IPQuality)definition.GetQualityForArea(area);
@@ -52,18 +52,23 @@ public class ResourceNodeService(
             throw new InvalidOperationException($"Failed to create node: {result.ErrorMessage}");
         }
 
-        Guid nodeId = (Guid)result.Data["nodeInstanceId"]!;
-
-        // Retrieve the created instance from repository
-        ResourceNodeInstance? node = nodeRepository.GetInstances().FirstOrDefault(n => n.Id == nodeId);
-
-        if (node == null)
+        if (result.Data != null)
         {
-            Log.Error($"Failed to retrieve created node {nodeId}");
-            throw new InvalidOperationException($"Failed to retrieve created node {nodeId}");
+            Guid nodeId = (Guid)result.Data["nodeInstanceId"]!;
+
+            // Retrieve the created instance from repository
+            ResourceNodeInstance? node = nodeRepository.GetInstances().FirstOrDefault(n => n.Id == nodeId);
+
+            if (node == null)
+            {
+                Log.Error($"Failed to retrieve created node {nodeId}");
+                throw new InvalidOperationException($"Failed to retrieve created node {nodeId}");
+            }
+
+            return node;
         }
 
-        return node;
+        return null;
     }
 
     public void SpawnInstance(ResourceNodeInstance node)

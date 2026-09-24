@@ -508,8 +508,8 @@ public class GenericAiHeartbeat(
     /// </summary>
     private bool TryCurseSong(NwCreature creature, NwGameObject target)
     {
-        if (!creature.KnowsFeat(Feat.CurseSong)) return false;
-        if (!creature.HasFeatPrepared(Feat.CurseSong)) return false;
+        if (!creature.KnowsFeat(Feat.CurseSong!)) return false;
+        if (!creature.HasFeatPrepared(Feat.CurseSong!)) return false;
 
         // 50% chance
         if (Random.Shared.Next(2) == 0) return false;
@@ -526,7 +526,7 @@ public class GenericAiHeartbeat(
             if (alreadyCursed) return false;
         }
 
-        creature.ActionUseFeat(Feat.CurseSong, target);
+        creature.ActionUseFeat(Feat.CurseSong!, target);
         return true;
     }
 

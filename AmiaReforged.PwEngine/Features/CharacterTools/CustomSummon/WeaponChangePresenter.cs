@@ -8,8 +8,7 @@ namespace AmiaReforged.PwEngine.Features.CharacterTools.CustomSummon;
 public sealed class WeaponChangePresenter(
     WeaponChangeView view,
     NwPlayer player,
-    NwCreature targetCreature,
-    NwItem widget)
+    NwCreature targetCreature)
     : ScryPresenter<WeaponChangeView>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();

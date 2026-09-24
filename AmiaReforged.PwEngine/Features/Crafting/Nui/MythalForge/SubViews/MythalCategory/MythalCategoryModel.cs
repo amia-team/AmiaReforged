@@ -176,19 +176,19 @@ public class MythalCategoryModel
 
     public class MythalCategory
     {
-        public string Label { get; set; }
-        public List<MythalProperty> Properties { get; init; }
+        public string Label { get; set; } = null!;
+        public List<MythalProperty> Properties { get; init; } = null!;
         public int BaseDifficulty { get; set; }
     }
 
     public class MythalProperty
     {
-        public string Id { get; set; }
-        public string Label { get; set; }
-        public CraftingProperty Internal { get; set; }
+        public string Id { get; set; } = null!;
+        public string Label { get; set; } = null!;
+        public CraftingProperty Internal { get; set; } = null!;
         public bool Selectable { get; set; }
         public Color Color { get; set; }
-        public string CostLabelTooltip { get; set; }
+        public string CostLabelTooltip { get; set; } = null!;
 
         public int Difficulty { get; set; }
 

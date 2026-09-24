@@ -6,24 +6,16 @@ using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.DiceRoll;
 
-public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
+public class DiceRollWindowPresenter(DiceRollWindowView toolView, NwPlayer player) : ScryPresenter<DiceRollWindowView>
 {
-    private readonly NwPlayer _player;
-
     private NuiWindowToken _token;
     private NuiWindow? _window;
 
     private Dictionary<int, string> _rollButtonIds = new();
 
-    public DiceRollWindowPresenter(DiceRollWindowView toolView, NwPlayer player)
-    {
-        _player = player;
-        View = toolView;
-    }
+    [Inject] private Lazy<DiceRollManager>? DiceRollManager { get; init; }
 
-    [Inject] private Lazy<DiceRollManager> DiceRollManager { get; init; }
-
-    public override DiceRollWindowView View { get; }
+    public override DiceRollWindowView View { get; } = toolView;
     public override NuiWindowToken Token() => _token;
 
     public override void InitBefore()
@@ -54,13 +46,13 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
         // If the window wasn't created, then tell the user we screwed up.
         if (_window == null)
         {
-            _player.SendServerMessage(
+            player.SendServerMessage(
                 message: "The window could not be created. Screenshot this message and report it to a DM.",
                 ColorConstants.Orange);
             return;
         }
 
-        _player.TryCreateNuiWindow(_window, out _token);
+        player.TryCreateNuiWindow(_window, out _token);
         SetDiceRollMode(DiceRollMode.SpecialRoll);
         Token().SetBindValue(View.Selection, 0);
     }
@@ -94,7 +86,7 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
 
             DiceRollType rollType = DiceRollTypeChooser.FromString(_rollButtonIds[selectedRoll]);
 
-            IRollHandler? rollHandler = DiceRollManager.Value.GetRollHandler(rollType);
+            IRollHandler? rollHandler = DiceRollManager?.Value.GetRollHandler(rollType);
 
             if (rollHandler == null) return;
             rollHandler.RollDice(Token().Player);

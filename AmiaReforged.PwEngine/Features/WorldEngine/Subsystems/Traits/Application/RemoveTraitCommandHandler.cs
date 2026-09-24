@@ -10,20 +10,27 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Applicati
 public sealed class RemoveTraitCommandHandler(
     ICharacterTraitRepository characterTraitRepository) : ICommandHandler<RemoveTraitCommand>
 {
-    public async Task<CommandResult> HandleAsync(RemoveTraitCommand command, CancellationToken cancellationToken = default)
+    public Task<CommandResult> HandleAsync(RemoveTraitCommand command, CancellationToken cancellationToken = default)
     {
-        // The character must hold the trait; removing an absent trait fails.
-        List<CharacterTrait> traits = characterTraitRepository.GetByCharacterId(command.CharacterId);
-        CharacterTrait? match = traits.FirstOrDefault(t => t.TraitTag == command.TraitTag);
-        if (match == null)
+        try
         {
-            return CommandResult.Fail($"Character does not have trait '{command.TraitTag.Value}'.");
+            // The character must hold the trait; removing an absent trait fails.
+            List<CharacterTrait> traits = characterTraitRepository.GetByCharacterId(command.CharacterId);
+            CharacterTrait? match = traits.FirstOrDefault(t => t.TraitTag == command.TraitTag);
+            if (match == null)
+            {
+                return Task.FromResult(CommandResult.Fail($"Character does not have trait '{command.TraitTag.Value}'."));
+            }
+
+            // Removal persists: the selection is deleted from the character's trait list.
+            characterTraitRepository.Delete(match.Id);
+
+            // The dispatcher publishes the generic CommandExecutedEvent on success.
+            return Task.FromResult(CommandResult.Ok());
         }
-
-        // Removal persists: the selection is deleted from the character's trait list.
-        characterTraitRepository.Delete(match.Id);
-
-        // The dispatcher publishes the generic CommandExecutedEvent on success.
-        return CommandResult.Ok();
+        catch (Exception exception)
+        {
+            return Task.FromException<CommandResult>(exception);
+        }
     }
 }

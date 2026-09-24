@@ -112,9 +112,9 @@ public static class ItemBlueprintMapper
 
     private class MaterialVariantJsonDto
     {
-        public string Material { get; set; } = string.Empty;
-        public AppearanceData Appearance { get; set; } = new(0, null, null);
-        public int? BaseValueOverride { get; set; }
+        public string Material { get; init; } = string.Empty;
+        public AppearanceData Appearance { get; init; } = new(0, null, null);
+        public int? BaseValueOverride { get; init; }
     }
 
     private static string? SerializeVariants(List<MaterialVariant>? variants)

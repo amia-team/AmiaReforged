@@ -16,7 +16,9 @@ public class ResourceNodeInstance
     public delegate void OnDestroyedHandler(ResourceNodeInstance instance);
 
 
+#pragma warning disable CS0067 // Event is never used
     public event OnHarvestHandler? OnHarvest;
+#pragma warning restore CS0067 // Event is never used
     public event OnDestroyedHandler? OnDestroyed;
 
 

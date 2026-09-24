@@ -37,7 +37,7 @@ public class CommandDispatchIntegrationBehavior
         // Then: The complete flow executes successfully
         Assert.That(result.Success, Is.True);
         Assert.That(result.Data, Contains.Key("NewBalance"));
-        Assert.That((int)result.Data["NewBalance"], Is.EqualTo(1000));
+        Assert.That((int)result.Data!["NewBalance"], Is.EqualTo(1000));
 
         // And: Domain event was published
         eventBusMock.Verify(
@@ -80,8 +80,8 @@ public class CommandDispatchIntegrationBehavior
         // Then: Each command is handled correctly
         Assert.That(depositResult.Success, Is.True);
         Assert.That(withdrawResult.Success, Is.True);
-        Assert.That((int)depositResult.Data["NewBalance"], Is.EqualTo(1000));
-        Assert.That((int)withdrawResult.Data["NewBalance"], Is.EqualTo(500));
+        Assert.That((int)depositResult.Data!["NewBalance"], Is.EqualTo(1000));
+        Assert.That((int)withdrawResult.Data!["NewBalance"], Is.EqualTo(500));
 
         // And: Events were published for both
         eventBusMock.Verify(
@@ -186,15 +186,15 @@ public class CommandDispatchIntegrationBehavior
 
     private sealed class DepositGoldCommand : ICommand
     {
-        public Guid AccountId { get; set; }
-        public int Amount { get; set; }
+        public Guid AccountId { get; init; }
+        public int Amount { get; init; }
         public string Reason { get; set; } = string.Empty;
     }
 
     private sealed class WithdrawGoldCommand : ICommand
     {
-        public Guid AccountId { get; set; }
-        public int Amount { get; set; }
+        public Guid AccountId { get; init; }
+        public int Amount { get; init; }
         public string Reason { get; set; } = string.Empty;
     }
 
@@ -205,8 +205,8 @@ public class CommandDispatchIntegrationBehavior
 
     private sealed class BalanceResult
     {
-        public int Balance { get; set; }
-        public string Currency { get; set; } = "gp";
+        public int Balance { get; init; }
+        public string Currency { get; init; } = "gp";
     }
 
     // === Test Handlers - Simulating Real Behavior ===

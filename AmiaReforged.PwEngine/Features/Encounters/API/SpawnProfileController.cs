@@ -17,7 +17,7 @@ public class SpawnProfileController
 {
     // Static references set by EncounterApiBootstrap at startup
     internal static ISpawnProfileRepository? Repository;
-    internal static DynamicEncounterService? EncounterService;
+    internal static DynamicEncounterService EncounterService = null!;
 
     // ==================== Profile CRUD ====================
 
@@ -201,8 +201,7 @@ public class SpawnProfileController
 
         await Repository.SetActiveAsync(id, false);
 
-        if (EncounterService != null)
-            await EncounterService.RefreshProfileCacheAsync(profile.AreaResRef);
+        await EncounterService.RefreshProfileCacheAsync(profile.AreaResRef);
 
         return new ApiResult(200, new { message = "Profile deactivated.", id });
     }
@@ -269,7 +268,7 @@ public class SpawnProfileController
         await Repository.AddGroupAsync(id, group);
 
         SpawnProfile? profile = await Repository.GetByIdAsync(id);
-        if (profile != null && EncounterService != null)
+        if (profile != null)
             await EncounterService.RefreshProfileCacheAsync(profile.AreaResRef);
 
         return new ApiResult(201, ToDto(group));

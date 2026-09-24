@@ -225,7 +225,13 @@ public sealed class LegacyStoredItemConversionService
             }
 
             // Capture the canonical binary GFF representation.
-            byte[] gffBytes = tempItem.Serialize();
+            byte[]? gffBytes = tempItem.Serialize();
+
+            if (gffBytes is null)
+            {
+                Log.Warn("Legacy conversion: item.Serialize() returned null for StoredItem {ItemId}.", record.Id);
+                return null;
+            }
 
             if (gffBytes.Length == 0)
             {

@@ -1,7 +1,6 @@
 ﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.Services;
-using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 
 namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.DomainChanger;
 

@@ -328,7 +328,7 @@ public class HarvestingSubsystemTests
             new List<SkillData>(),
             CharacterId.From(Guid.NewGuid()),
             _knowledgeRepository,
-            null,
+            null!,
             null);
         _characterRepository.Add(character);
 

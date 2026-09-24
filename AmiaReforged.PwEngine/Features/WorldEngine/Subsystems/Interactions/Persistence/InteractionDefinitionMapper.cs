@@ -142,17 +142,17 @@ public static class InteractionDefinitionMapper
 
     private class ResponseJsonDto
     {
-        public string? ResponseTag { get; set; }
-        public int Weight { get; set; } = 1;
-        public string? MinProficiency { get; set; }
-        public string? Message { get; set; }
-        public List<ResponseEffectJsonDto>? Effects { get; set; }
+        public string? ResponseTag { get; init; }
+        public int Weight { get; init; } = 1;
+        public string? MinProficiency { get; init; }
+        public string? Message { get; init; }
+        public List<ResponseEffectJsonDto>? Effects { get; init; }
     }
 
     private class ResponseEffectJsonDto
     {
-        public string? EffectType { get; set; }
-        public string? Value { get; set; }
-        public Dictionary<string, object>? Metadata { get; set; }
+        public string? EffectType { get; init; }
+        public string? Value { get; init; }
+        public Dictionary<string, object>? Metadata { get; init; }
     }
 }

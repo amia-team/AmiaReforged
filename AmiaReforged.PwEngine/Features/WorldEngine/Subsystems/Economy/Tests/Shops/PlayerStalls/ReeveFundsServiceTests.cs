@@ -72,7 +72,7 @@ public class ReeveFundsServiceTests
         // Deposit funds first
         await svc.DepositHeldFundsAsync(persona, "area1", 120, "test deposit");
 
-        int granted = await svc.ReleaseHeldFundsAsync(persona, "area1", 0, async amt => true);
+        int granted = await svc.ReleaseHeldFundsAsync(persona, "area1", 0, amt => Task.FromResult(true));
         Assert.That(granted, Is.EqualTo(120));
     }
 
@@ -86,11 +86,10 @@ public class ReeveFundsServiceTests
         // Deposit funds first
         await svc.DepositHeldFundsAsync(persona, "area1", 60, "test deposit");
 
-        int granted = await svc.ReleaseHeldFundsAsync(persona, "area1", 50, async amt => false);
+        int granted = await svc.ReleaseHeldFundsAsync(persona, "area1", 50, amt => Task.FromResult(false));
         Assert.That(granted, Is.EqualTo(0));
 
         int bal = await svc.GetHeldFundsAsync(persona, "area1");
         Assert.That(bal, Is.EqualTo(60));
     }
 }
-

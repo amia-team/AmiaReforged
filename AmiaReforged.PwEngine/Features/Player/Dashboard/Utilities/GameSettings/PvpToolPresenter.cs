@@ -11,7 +11,6 @@ public sealed class PvpToolPresenter : ScryPresenter<PvpToolView>
     private NuiWindowToken _token;
     private NuiWindow? _window;
     private NwCreature? _selectedTarget;
-    private bool _targetIsDead;
     private bool _targetIsPvpDeath;
 
     // Geometry bind to force window position
@@ -206,13 +205,11 @@ public sealed class PvpToolPresenter : ScryPresenter<PvpToolView>
         if (myCreature == null) return;
 
         // Reset state
-        _targetIsDead = false;
         _targetIsPvpDeath = false;
 
         // Check if target is dead (potential PvP raise target)
         if (targetCreature.IsDead)
         {
-            _targetIsDead = true;
 
             // Check if they died in PvP mode
             int pvpMode = targetCreature.GetObjectVariable<LocalVariableInt>(DiedDeadMode).Value;
@@ -413,8 +410,7 @@ public sealed class PvpToolPresenter : ScryPresenter<PvpToolView>
         // Remove supernatural visual effects (from original script)
         foreach (Effect effect in _selectedTarget.ActiveEffects)
         {
-            if (effect.SubType == EffectSubType.Supernatural &&
-                effect.EffectType == EffectType.VisualEffect)
+            if (effect is { SubType: EffectSubType.Supernatural, EffectType: EffectType.VisualEffect })
             {
                 _selectedTarget.RemoveEffect(effect);
             }
@@ -427,7 +423,6 @@ public sealed class PvpToolPresenter : ScryPresenter<PvpToolView>
 
         // Reset UI
         _selectedTarget = null;
-        _targetIsDead = false;
         _targetIsPvpDeath = false;
         Token().SetBindValue(View.TargetName, "No target selected");
         Token().SetBindValue(View.TargetStatus, "");
@@ -480,7 +475,6 @@ public sealed class PvpToolPresenter : ScryPresenter<PvpToolView>
     public override void Close()
     {
         _selectedTarget = null;
-        _targetIsDead = false;
         _targetIsPvpDeath = false;
         // Don't call RaiseCloseEvent() here - it causes infinite recursion
         // The WindowDirector handles cleanup when CloseWindow() is called
