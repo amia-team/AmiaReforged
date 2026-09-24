@@ -173,7 +173,20 @@ public class RuntimeCharacter(
 
     public RankUpResult RankUp(string industryTag)
     {
-        return membershipService.RankUp(characterId, industryTag);
+        // Route through the shared rank-up command so membership advancement goes through the
+        // dispatcher (duplicate/unknown and prerequisite handling stays centralized in the
+        // handler). The service still performs the checks, persists the new level and publishes
+        // the ProficiencyGainedEvent exactly once.
+        CommandResult result = dispatcher.DispatchAsync(
+            new RankUpCommand
+            {
+                CharacterId = characterId,
+                IndustryTag = new IndustryTag(industryTag)
+            }).GetAwaiter().GetResult();
+
+        return result.Data != null && result.Data.TryGetValue("result", out object? value) && value is RankUpResult rankUpResult
+            ? rankUpResult
+            : RankUpResult.IndustryNotFound;
     }
 
     public CharacterId GetId()

@@ -77,6 +77,22 @@ public class RuntimeCharacterTests
                     ? CommandResult.OkWithData(data)
                     : CommandResult.Fail($"Could not learn knowledge '{cmd.KnowledgeTag}'", data);
             });
+
+        // Route rank-ups through the real membership service so the dispatch boundary exercised by
+        // RuntimeCharacter.RankUp actually advances the level and returns the outcome.
+        mock.Setup(d => d.DispatchAsync(It.IsAny<RankUpCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((RankUpCommand cmd, CancellationToken _) =>
+            {
+                RankUpResult result = _membershipService.RankUp(cmd.CharacterId.Value, cmd.IndustryTag.Value);
+                Dictionary<string, object> data = new()
+                {
+                    ["result"] = result,
+                    ["success"] = result == RankUpResult.Success
+                };
+                return result == RankUpResult.Success
+                    ? CommandResult.OkWithData(data)
+                    : CommandResult.Fail("Could not rank up", data);
+            });
         return mock.Object;
     }
 
