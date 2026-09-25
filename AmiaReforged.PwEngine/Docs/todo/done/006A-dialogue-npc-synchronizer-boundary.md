@@ -1,6 +1,6 @@
 # 006A — Add a dialogue NPC synchronization boundary
 
-Status: **Open**
+Status: **Done**
 Type: **Implementation**
 Audit area: **F-1**
 Depends on: None.

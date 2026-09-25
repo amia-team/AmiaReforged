@@ -1,6 +1,6 @@
 # 004 — Invalidate recipe expansion caches through events
 
-Status: **Open**
+Status: **Done**
 Type: **Implementation**
 Audit area: **F-1**
 Depends on: None.
