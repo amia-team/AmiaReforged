@@ -1,6 +1,6 @@
 # 013 — Verify successful dynamic-quest claiming
 
-Status: **Open**  
+Status: **Done**  
 Type: **Verification**  
 Audit area: **F-6 verification**  
 Depends on: [010 — Publish dynamic-quest domain events on the bus](010-dynamic-quest-domain-events.md).
@@ -122,6 +122,44 @@ dotnet test AmiaReforged.PwEngine/AmiaReforged.PwEngine.csproj \
 
 ## Completion evidence
 
-Record the test name and exact test command/result.
+- **Added test:**
+  `AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Codex.Application.CodexPlayerStateBehavior.DynamicQuest_Claim_SuccessfulClaim_PersistsSessionEventAndCodexThroughDispatcher`
+  in `Features/WorldEngine/SharedKernel/Tests/Codex/Application/CodexPlayerStateBehavior.cs`.
+
+- **Wiring:** one shared `InMemoryEventBus` in both `DynamicQuestService` and `CommandDispatcher`;
+  the real `DynamicQuestCodexEventForwarder` (task 010) subscribed to `QuestClaimedEvent` on that
+  bus so the production path `service -> InMemoryEventBus -> forwarder -> CodexEventProcessor ->
+  PlayerCodex` is exercised. The claim path only emits `QuestClaimedEvent`, so that is the sole
+  forwarded event subscribed — the forwarder stays the only path into `CodexEventProcessor`. `CodexEventProcessor` applies from its own channel, so the final Codex
+  state is confirmed with a bounded poll helper (`WaitUntilCodexQuestAsync`, 10 ms ticks up to 5 s,
+  no fixed multi-second `Task.Delay`). Real `InMemoryDynamicQuestRepository`, `InMemoryPlayerCodexRepository`,
+  `ObjectiveEvaluatorRegistry`, `QuestSessionManager`, and the real `CommandDispatcher` are used; nothing
+  is mocked.
+
+- **Focused run** (built, then executed):
+
+  ```bash
+  dotnet test AmiaReforged.PwEngine/AmiaReforged.PwEngine.csproj \
+    --filter "FullyQualifiedName~DynamicQuest_Claim_SuccessfulClaim_PersistsSessionEventAndCodexThroughDispatcher" \
+    --verbosity minimal
+  ```
+
+  Result: `Passed!  - Failed: 0, Passed: 1, Skipped: 0, Total: 1`.
+
+- **Full filter run:**
+
+  ```bash
+  dotnet test AmiaReforged.PwEngine/AmiaReforged.PwEngine.csproj \
+    --filter "FullyQualifiedName~Codex" --no-build --verbosity minimal
+  ```
+
+  Result: `Passed!  - Failed: 0, Passed: 522, Skipped: 0, Total: 522`.
+
+- **Exactly-once confirmation:** the test clears the bus after posting, then asserts exactly one
+  `QuestClaimedEvent`, exactly one successful `CommandExecutedEvent<ClaimDynamicQuestCommand>`, and a
+  Codex entry that contains exactly one quest for the generated `QuestId` in `InProgress` state with the
+  template/posting title, description, and source template ID. Because `RecordQuestStarted` throws when a
+  quest already exists, a future implementation that both enqueued `QuestClaimedEvent` directly into
+  `CodexEventProcessor` **and** published it to the bus (double forward) would fail this test.
 
 See [backlog scope and completion rules](README.md).
