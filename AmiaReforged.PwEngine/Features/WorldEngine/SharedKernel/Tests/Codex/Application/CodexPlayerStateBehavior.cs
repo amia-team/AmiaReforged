@@ -252,6 +252,74 @@ public class CodexPlayerStateBehavior
     }
 
     [Test]
+    public async Task DynamicQuest_Post_SuccessfulPost_PersistsAndPublishesThroughDispatcher()
+    {
+        InMemoryDynamicQuestRepository dynRepo = new();
+        InMemoryEventBus bus = new();
+
+        DynamicQuestTemplate template = new()
+        {
+            TemplateId = TemplateId.NewId(),
+            Title = "Goblin Scouts",
+            Description = "Clear the goblin camp.",
+            CreatedAt = DateTime.UtcNow,
+        };
+        await dynRepo.SaveTemplateAsync(template);
+
+        // Share one bus instance between the service and the dispatcher so the test
+        // observes both the domain event and the generic command-executed event.
+        CommandDispatcher commands = new(
+            new[] { new PostDynamicQuestHandler(QuestService(dynRepo, bus)) },
+            bus);
+
+        CommandResult result = await commands.DispatchAsync(new PostDynamicQuestCommand
+        {
+            TemplateId = template.TemplateId.Value,
+            PostedBy = _characterId
+        });
+
+        // 1. Success through the real dispatcher.
+        Assert.That(result.Success, Is.True);
+
+        // 2. Result carries the created posting ID.
+        Assert.That(result.Data, Is.Not.Null, "Result should carry posting data");
+        object? postingValue = result.Data!["postingId"];
+        Assert.That(postingValue, Is.Not.Null, "Result should carry postingId");
+        PostingId postingId = new(Guid.Parse(postingValue.ToString()!));
+
+        // 3. The posting is persisted and matches the returned ID.
+        DynamicQuestPosting? posting = await dynRepo.GetPostingAsync(postingId);
+        Assert.That(posting, Is.Not.Null);
+        Assert.That(posting!.PostingId, Is.EqualTo(postingId));
+
+        // 4. The persisted posting is bound to the source template.
+        Assert.That(posting.SourceTemplateId, Is.EqualTo(template.TemplateId));
+
+        Assert.That(posting.PostedAt, Is.GreaterThan(DateTime.UnixEpoch));
+
+        // 5. Exactly one QuestPostedEvent is observable on the bus.
+        IReadOnlyList<QuestPostedEvent> postedEvents = bus.PublishedEvents.OfType<QuestPostedEvent>().ToList();
+        Assert.That(postedEvents, Has.Count.EqualTo(1));
+
+        // 6. The event carries the actor, posting and template.
+        QuestPostedEvent posted = postedEvents.Single();
+        Assert.That(posted.CharacterId, Is.EqualTo(_characterId));
+        Assert.That(posted.PostingId, Is.EqualTo(postingId));
+        Assert.That(posted.TemplateId, Is.EqualTo(template.TemplateId));
+        Assert.That(posted.OccurredAt, Is.GreaterThan(DateTime.UnixEpoch));
+
+        // 7. Exactly one successful generic command-executed event is observable.
+        IReadOnlyList<CommandExecutedEvent<PostDynamicQuestCommand>> executedEvents =
+            bus.PublishedEvents.OfType<CommandExecutedEvent<PostDynamicQuestCommand>>().ToList();
+        Assert.That(executedEvents, Has.Count.EqualTo(1));
+        Assert.That(executedEvents[0].Result.Success, Is.True);
+
+        // 8. Posting a quest does not create a PlayerCodex entry.
+        PlayerCodex? codex = await _codexRepo.LoadAsync(_characterId);
+        Assert.That(codex, Is.Null, "Publishing a posting must not create a PlayerCodex entry");
+    }
+
+    [Test]
     public async Task DynamicQuest_PostMissingTemplate_ReturnsFail()
     {
         InMemoryDynamicQuestRepository dynRepo = new();

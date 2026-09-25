@@ -1,6 +1,6 @@
 # 012 — Verify successful dynamic-quest posting
 
-Status: **Open**  
+Status: **Completed**  
 Type: **Verification**  
 Audit area: **F-6 verification**  
 Depends on: [010 — Publish dynamic-quest domain events on the bus](010-dynamic-quest-domain-events.md).
@@ -124,6 +124,29 @@ dotnet test AmiaReforged.PwEngine/AmiaReforged.PwEngine.csproj \
 
 ## Completion evidence
 
-Record the test name and exact test command/result.
+Test added in `Features/WorldEngine/SharedKernel/Tests/Codex/Application/CodexPlayerStateBehavior.cs`:
+
+- Test name: `AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Codex.Application.CodexPlayerStateBehavior.DynamicQuest_Post_SuccessfulPost_PersistsAndPublishesThroughDispatcher`
+
+Focused run (built, then executed):
+
+```bash
+dotnet test AmiaReforged.PwEngine/AmiaReforged.PwEngine.csproj \
+  --filter "FullyQualifiedName~DynamicQuest_Post_SuccessfulPost_PersistsAndPublishesThroughDispatcher" \
+  --verbosity minimal
+```
+
+Result: `Passed!  - Failed: 0, Passed: 1, Skipped: 0, Total: 1`.
+
+Full filter run:
+
+```bash
+dotnet test AmiaReforged.PwEngine/AmiaReforged.PwEngine.csproj \
+  --filter "FullyQualifiedName~Codex" --no-build --verbosity minimal
+```
+
+Result: `Passed!  - Failed: 0, Passed: 521, Skipped: 0, Total: 521`.
+
+The test uses a single shared `InMemoryEventBus` in both `DynamicQuestService` and `CommandDispatcher`, dispatches `PostDynamicQuestCommand` through the real `CommandDispatcher`, and asserts persistence (posting ID, template reference, copied title/description), exactly one `QuestPostedEvent` (with `CharacterId == PostedBy`, posting ID, template ID, title), exactly one successful `CommandExecutedEvent<PostDynamicQuestCommand>`, and no created `PlayerCodex` entry.
 
 See [backlog scope and completion rules](README.md).
