@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+
+          <IncludeTestAssembly>true</IncludeTestAssembly>
+
+          <ExcludeByFile>
+            **/Tests/**/*.cs,
+            **/*Tests.cs,
+            **/*Test.cs,
+            **/Nui/**/*.cs,
+            **/Features/WindowingSystem/Scry/**/*.cs,
+            **/*View.cs,
+            **/*Presenter.cs
+          </ExcludeByFile>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
