@@ -37,7 +37,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Application.Items.Events;
 [ServiceBinding(typeof(IEventHandlerMarker))]
 public sealed class ItemDefinitionCacheInvalidationHandler
     : IEventHandler<CommandExecutedEvent<UpsertItemDefinitionCommand>>,
-      IEventHandler<CommandExecutedEvent<DeleteItemDefinitionCommand>>
+      IEventHandler<CommandExecutedEvent<DeleteItemDefinitionCommand>>, IEventHandlerMarker
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
