@@ -26,11 +26,11 @@ public class AreaGraphCacheService
     private readonly string _cacheFilePath;
     private AreaGraphData? _cached;
 
-    public AreaGraphCacheService(AreaGraphBuilder builder = null!, string? cacheDirectory = null)
+    public AreaGraphCacheService(AreaGraphBuilder builder)
     {
         _builder = builder;
 
-        string dir = cacheDirectory ?? Path.Combine(
+        string dir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "AmiaReforged", "WorldEngine");
 

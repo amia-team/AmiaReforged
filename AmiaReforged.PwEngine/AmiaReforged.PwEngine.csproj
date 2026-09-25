@@ -32,6 +32,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Folder Include="Features\WorldEngine\Subsystems\AreaGraph\Tests\" />
         <Folder Include="Features\WorldEngine\Subsystems\Harvesting\Tests\" />
         <Folder Include="Migrations\" />
         <Folder Include="Features\MiniGame\LiarsDice\Nui\" />
