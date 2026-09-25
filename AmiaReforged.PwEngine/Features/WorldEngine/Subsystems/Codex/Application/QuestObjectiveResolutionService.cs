@@ -40,18 +40,17 @@ public sealed class QuestObjectiveResolutionService
 
     private readonly RuntimeCharacterService _characters;
     private readonly QuestSessionManager _sessionManager;
-    private readonly IEventBus _eventBus;
+    [Inject]
+    private Lazy<IEventBus> EventBus { get; init; } = null!;
     private readonly IPlayerCodexRepository _codexRepository;
 
     public QuestObjectiveResolutionService(
         RuntimeCharacterService characters,
         QuestSessionManager sessionManager,
-        IEventBus eventBus,
         IPlayerCodexRepository codexRepository)
     {
         _characters = characters;
         _sessionManager = sessionManager;
-        _eventBus = eventBus;
         _codexRepository = codexRepository;
 
         NwModule.Instance.OnAcquireItem += OnAcquireItem;
@@ -246,7 +245,7 @@ public sealed class QuestObjectiveResolutionService
             signal.SignalType, signal.TargetTag, characterId, events.Count);
         foreach (CodexDomainEvent domainEvent in events)
         {
-            await _eventBus.PublishAsync(domainEvent, ct);
+            await EventBus.Value.PublishAsync(domainEvent, ct);
         }
     }
 

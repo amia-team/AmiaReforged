@@ -36,7 +36,7 @@ public class RuntimeCharacterService
     /// </summary>
     public event Action<CharacterId>? CharacterLeaving;
 
-    [Inject] private Lazy<ICommandDispatcher> _dispatcher { get; init; } = null!;
+    [Inject] private Lazy<ICommandDispatcher> Dispatcher { get; init; } = null!;
 
     public RuntimeCharacterService(
         ICharacterRepository repository,
@@ -63,7 +63,7 @@ public class RuntimeCharacterService
         _playerKeys.Remove(obj.Player);
         if (obj.Player.LoginCreature == null) return;
 
-        await _dispatcher.Value.DispatchAsync(
+        await Dispatcher.Value.DispatchAsync(
             new RemoveRuntimeCharacterCommand(CharacterId.From(obj.Player.LoginCreature.UUID)))
             .ConfigureAwait(false);
 
@@ -92,7 +92,7 @@ public class RuntimeCharacterService
         RuntimeCharacter? character = RuntimeCharacter.For(player.LoginCreature);
         if (character is null) return;
 
-        await _dispatcher.Value.DispatchAsync(new RegisterRuntimeCharacterCommand(character)).ConfigureAwait(false);
+        await Dispatcher.Value.DispatchAsync(new RegisterRuntimeCharacterCommand(character)).ConfigureAwait(false);
 
         SetIsCached(player.LoginCreature);
 
@@ -122,7 +122,7 @@ public class RuntimeCharacterService
         RuntimeCharacter? character = RuntimeCharacter.For(obj.Player.LoginCreature);
         if (character is null) return;
 
-        await _dispatcher.Value.DispatchAsync(new RegisterRuntimeCharacterCommand(character)).ConfigureAwait(false);
+        await Dispatcher.Value.DispatchAsync(new RegisterRuntimeCharacterCommand(character)).ConfigureAwait(false);
 
         SetIsCached(obj.Player.LoginCreature);
 
@@ -149,7 +149,7 @@ public class RuntimeCharacterService
 
         string displayName = string.IsNullOrWhiteSpace(player.PlayerName) ? cdKey : player.PlayerName;
 
-        CommandResult result = await _dispatcher.Value.DispatchAsync(
+        CommandResult result = await Dispatcher.Value.DispatchAsync(
             new ObservePlayerPersonaCommand(cdKey, displayName, DateTime.UtcNow))
             .ConfigureAwait(false);
 
@@ -180,7 +180,7 @@ public class RuntimeCharacterService
             return;
         }
 
-        CommandResult result = await _dispatcher.Value.DispatchAsync(
+        CommandResult result = await Dispatcher.Value.DispatchAsync(
             new TouchPlayerPersonaCommand(cdKey, DateTime.UtcNow))
             .ConfigureAwait(false);
 
