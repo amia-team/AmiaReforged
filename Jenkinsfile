@@ -1,30 +1,42 @@
-pipeline{
+pipeline {
     agent any
 
     parameters {
-        booleanParam(name: 'DeployTest', defaultValue: true, description: 'Deploy to test server')
-        booleanParam(name: 'DeployLive', defaultValue: false, description: 'Deploy to live server')
-        booleanParam(name: 'RestartServer', defaultValue: true, description: 'Stop and restart the server around deploys (disable for hot-reload sessions)')
+        booleanParam(
+            name: 'DeployTest',
+            defaultValue: true,
+            description: 'Deploy to test server'
+        )
+
+        booleanParam(
+            name: 'DeployLive',
+            defaultValue: false,
+            description: 'Deploy to live server'
+        )
+
+        booleanParam(
+            name: 'RestartServer',
+            defaultValue: true,
+            description: 'Stop and restart the server around deploys (disable for hot-reload sessions)'
+        )
     }
 
     stages {
         stage('Deploy Test') {
             when {
-                    expression {
-                        return params.DeployTest == true
-                    }
+                expression {
+                    params.DeployTest
+                }
             }
+
             steps {
                 script {
                     if (!env.TEST_SERVER_BASE?.trim()) {
-                        error "TEST_SERVER_BASE environment variable is required but was not set."
+                        error 'TEST_SERVER_BASE environment variable is required but was not set.'
                     }
-                }
-                echo 'Deploying....'
-                script {
+
                     if (params.RestartServer) {
-                        sh 'chmod +x stop-test.sh'
-                        withEnv(["AMIA_SERVER_DIR=${env.TEST_SERVER_BASE}/..".toString()]) {
+                        withEnv(["AMIA_SERVER_DIR=${env.TEST_SERVER_BASE}/.."]) {
                             sh 'bash stop-test.sh'
                         }
                     } else {
@@ -32,17 +44,35 @@ pipeline{
                     }
                 }
 
-                sh "dotnet publish AmiaReforged.Core --output ${env.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.Core/"
-                sh "dotnet publish AmiaReforged.System --output ${env.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.System/"
-                sh "dotnet publish AmiaReforged.Classes --output ${env.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.Classes/"
-                sh "dotnet publish AmiaReforged.Races --output ${env.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.Races/"
-                sh "dotnet publish AmiaReforged.DMS --output ${env.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.DMS/"
-                sh "dotnet publish AmiaReforged.PwEngine --output ${env.TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.PwEngine/"
+                sh """
+                    dotnet publish AmiaReforged.Core/AmiaReforged.Core.csproj \
+                        -c Release \
+                        -o "${TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.Core"
+
+                    dotnet publish AmiaReforged.System/AmiaReforged.System.csproj \
+                        -c Release \
+                        -o "${TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.System"
+
+                    dotnet publish AmiaReforged.Classes/AmiaReforged.Classes.csproj \
+                        -c Release \
+                        -o "${TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.Classes"
+
+                    dotnet publish AmiaReforged.Races/AmiaReforged.Races.csproj \
+                        -c Release \
+                        -o "${TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.Races"
+
+                    dotnet publish AmiaReforged.DMS/AmiaReforged.DMS.csproj \
+                        -c Release \
+                        -o "${TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.DMS"
+
+                    dotnet publish AmiaReforged.PwEngine/AmiaReforged.PwEngine.csproj \
+                        -c Release \
+                        -o "${TEST_SERVER_BASE}/anvil/Plugins/AmiaReforged.PwEngine"
+                """
 
                 script {
                     if (params.RestartServer) {
-                        sh 'chmod +x start-test.sh'
-                        withEnv(["AMIA_SERVER_DIR=${env.TEST_SERVER_BASE}/..".toString()]) {
+                        withEnv(["AMIA_SERVER_DIR=${env.TEST_SERVER_BASE}/.."]) {
                             sh 'bash start-test.sh'
                         }
                     } else {
@@ -51,23 +81,22 @@ pipeline{
                 }
             }
         }
-		stage('Deploy Live') {
+
+        stage('Deploy Live') {
             when {
-                    expression {
-                        return params.DeployLive == true
-                    }
+                expression {
+                    params.DeployLive
+                }
             }
+
             steps {
                 script {
                     if (!env.LIVE_SERVER_BASE?.trim()) {
-                        error "LIVE_SERVER_BASE environment variable is required but was not set."
+                        error 'LIVE_SERVER_BASE environment variable is required but was not set.'
                     }
-                }
-                echo 'Deploying....'
-                script {
+
                     if (params.RestartServer) {
-                        sh 'chmod +x stop-live.sh'
-                        withEnv(["AMIA_SERVER_DIR=${env.LIVE_SERVER_BASE}/..".toString()]) {
+                        withEnv(["AMIA_SERVER_DIR=${env.LIVE_SERVER_BASE}/.."]) {
                             sh 'bash stop-live.sh'
                         }
                     } else {
@@ -75,17 +104,35 @@ pipeline{
                     }
                 }
 
-                sh "dotnet publish AmiaReforged.Core --output ${env.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.Core/"
-                sh "dotnet publish AmiaReforged.System --output ${env.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.System/"
-                sh "dotnet publish AmiaReforged.Classes --output ${env.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.Classes/"
-                sh "dotnet publish AmiaReforged.Races --output ${env.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.Races/"
-                sh "dotnet publish AmiaReforged.DMS --output ${env.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.DMS/"
-                sh "dotnet publish AmiaReforged.PwEngine --output ${env.LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.PwEngine/"
+                sh """
+                    dotnet publish AmiaReforged.Core/AmiaReforged.Core.csproj \
+                        -c Release \
+                        -o "${LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.Core"
+
+                    dotnet publish AmiaReforged.System/AmiaReforged.System.csproj \
+                        -c Release \
+                        -o "${LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.System"
+
+                    dotnet publish AmiaReforged.Classes/AmiaReforged.Classes.csproj \
+                        -c Release \
+                        -o "${LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.Classes"
+
+                    dotnet publish AmiaReforged.Races/AmiaReforged.Races.csproj \
+                        -c Release \
+                        -o "${LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.Races"
+
+                    dotnet publish AmiaReforged.DMS/AmiaReforged.DMS.csproj \
+                        -c Release \
+                        -o "${LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.DMS"
+
+                    dotnet publish AmiaReforged.PwEngine/AmiaReforged.PwEngine.csproj \
+                        -c Release \
+                        -o "${LIVE_SERVER_BASE}/anvil/Plugins/AmiaReforged.PwEngine"
+                """
 
                 script {
                     if (params.RestartServer) {
-                        sh 'chmod +x start-live.sh'
-                        withEnv(["AMIA_SERVER_DIR=${env.LIVE_SERVER_BASE}/..".toString()]) {
+                        withEnv(["AMIA_SERVER_DIR=${env.LIVE_SERVER_BASE}/.."]) {
                             sh 'bash start-live.sh'
                         }
                     } else {
@@ -95,6 +142,7 @@ pipeline{
             }
         }
     }
+
     post {
         success {
             echo 'Build success'
