@@ -6,7 +6,7 @@ Status: **Done**
 
 Implemented and tested. See below.
 
-- **`DialogueNpcSynchronizationHandler.cs`** — implements `IEventHandler<CommandExecutedEvent<CreateDialogueTreeCommand>>`, `Update`, `Delete`, and `IEventHandlerMarker`; injects `IDialogueNpcSynchronizer?` (`[Inject]`, `internal` for testability); each `HandleAsync` has a defensive `if (!@event.Result.Success) return;` check. Create skips registration on null/empty/whitespace tag; Update forwards the immutable tree ID and the new tag (null forwarded, not discarded); Delete forwards only the tree ID. Logs at Info (Debug for the skip case). Registered via `[ServiceBinding(typeof(DialogueNpcSynchronizationHandler))]`.
+- **`DialogueNpcSynchronizationHandler.cs`** — implements `IEventHandler<CommandExecutedEvent<CreateDialogueTreeCommand>>`, `Update`, `Delete`, and `IEventHandlerMarker`; injects `IDialogueNpcSynchronizer?` (`[Inject]`, `internal` for testability); each `HandleAsync` has a defensive `if (!@event.Result.Success) return;` check. Create skips registration on null/empty/whitespace tag; Update forwards the immutable tree ID and the new tag (null forwarded, not discarded); Delete forwards only the tree ID. Logs at Info (Debug for the skip case). Registered via `[ServiceBinding(typeof(DialogueNpcSynchronizationHandler))]` only.
 - **`DialogueNpcSynchronizationHandlerTests.cs`** (`Features/WorldEngine/Subsystems/Dialogue/Tests/`) — 8 tests: create+tag registers once, create without tag does not register, update forwards tree ID/new tag, update with null tag forwards null, delete unregisters once, defensive ignore of failed-result events, a dispatcher-level rejection test (real `CommandDispatcher` + `InMemoryEventBus` + `EventRecorder`-style `bus.PublishedEvents`), and an interface check. Uses a lightweight `RecordingSynchronizer` fake (no real `NwCreature`).
 
 ### Rejection proof
@@ -16,8 +16,13 @@ The test `RejectedCommand_ThroughDispatcher_PublishesNoEvent_AndSubscriberNeverI
 `Passed! - Failed: 0, Passed: 8, Skipped: 0, Total: 8`.
 
 ### Deferred observations
-- Minor cosmetic: the Update log line passes the new tag twice (old-tag placeholder and new-tag placeholder are identical since old-tag tracking lives in the hook). This is harmless but could be tightened to log only the new tag.
 - `Synchronizer` is `internal` (with `[Inject]`) so tests can set it directly; this is safe because the PwEngine assembly is also the test assembly.
+- **Binding fix applied during completion:** the handler originally carried a second `[ServiceBinding(typeof(IDialogueNpcSynchronizer))]` even though it does not implement that interface. Anvil rejects duplicate service bindings for the same type at startup, so the erroneous binding was removed. The sole `IDialogueNpcSynchronizer` binding now lives on `DialogueNpcHook` (the true implementation, per task 006A). This left `DialogueNpcHook` unchanged, as 006B non-goals require.
+
+### Post-review fixes (thermo-nuclear reviewer, APPROVE-WITH-FOLLOW-UPS)
+- **Misleading Update log (concrete defect, fixed):** the Update log bound the new tag to both the `{OldTag}` and `{NewTag}` placeholders, so a real `npc_old → npc_new` change logged as `(tag 'npc_new' → 'npc_new')`. The subscriber does not own the old tag (the synchronizer's registry does), so the `{OldTag}` placeholder was removed; the log now shows only the accurate new tag plus the correct unregistered/registered counts.
+- **False consistency claim (fixed):** the class summary stated the defensive `Result.Success` guard was "consistent with the store-cache handler." That handler (`RecipeTemplateCacheInvalidationHandler`) has no such guard. The accurate sibling is `ExecuteDialogueActionHandler` (same subsystem, same `CommandExecutedEvent` pattern, does use the guard). The summary now references `ExecuteDialogueActionHandler`. The guard itself was kept: it is required by the `FailedResultEvent_IsDefensivelyIgnored_ForAllEventTypes` test and matches the subsystem's own sibling (the dispatcher cannot publish a non-success event, so the guarded path is unreachable in practice).
+
 Type: **Implementation**
 Audit area: **F-1**
 Depends on: **006A**

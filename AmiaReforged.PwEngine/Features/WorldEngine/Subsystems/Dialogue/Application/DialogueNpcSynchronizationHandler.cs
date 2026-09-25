@@ -19,11 +19,12 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Applica
 /// touches NWN object APIs directly.
 ///
 /// Because the dispatcher only publishes these events for successful results, a failed command
-/// never reaches this subscriber. The defensive <see cref="Result.Success"/> check below is
-/// consistent with the store-cache handler and never turns a valid event into a failure.
+/// never reaches this subscriber. The defensive <see cref="Result.Success"/> check below never
+/// turns a valid event into a failure; it is kept for defensive symmetry with the sibling
+/// <see cref="ExecuteDialogueActionHandler"/> in this same subsystem. The dispatcher cannot
+/// publish a non-success event, so the guarded path is unreachable in practice.
 /// </summary>
 [ServiceBinding(typeof(DialogueNpcSynchronizationHandler))]
-[ServiceBinding(typeof(IDialogueNpcSynchronizer))]
 public sealed class DialogueNpcSynchronizationHandler
     : IEventHandler<CommandExecutedEvent<CreateDialogueTreeCommand>>,
       IEventHandler<CommandExecutedEvent<UpdateDialogueTreeCommand>>,
@@ -82,9 +83,8 @@ public sealed class DialogueNpcSynchronizationHandler
 
         Log.Info(
             "DialogueNpcSynchronizationHandler: updated tree '{TreeId}' " +
-            "(tag '{OldTag}' → '{NewTag}') unregistered {Unregistered}, registered {Registered}",
+            "(tag '{NewTag}') unregistered {Unregistered}, registered {Registered}",
             @event.Command.DialogueTreeId,
-            @event.Command.Tree.SpeakerTag ?? "(none)",
             @event.Command.Tree.SpeakerTag ?? "(none)",
             unregistered, registered);
     }
