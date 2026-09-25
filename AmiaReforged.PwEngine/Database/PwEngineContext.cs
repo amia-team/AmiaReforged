@@ -125,6 +125,11 @@ public class PwEngineContext : DbContext
     public DbSet<PersistedLoreUnlock> CodexLoreUnlocks { get; set; } = null!;
     public DbSet<PersistedQuestDefinition> CodexQuestDefinitions { get; set; } = null!;
 
+    // -- Dynamic Quests
+    public DbSet<PersistedDynamicQuestTemplate> DynamicQuestTemplates { get; set; } = null!;
+    public DbSet<PersistedDynamicQuestPosting> DynamicQuestPostings { get; set; } = null!;
+    public DbSet<PersistedDynamicQuestCompletion> DynamicQuestCompletions { get; set; } = null!;
+
     // === Dialogue ===
 
     public DbSet<PersistedDialogueTree> DialogueTrees { get; set; } = null!;
@@ -271,5 +276,10 @@ public class PwEngineContext : DbContext
         modelBuilder.ApplyConfiguration(new SpawnProfileGlyphBindingConfiguration());
         modelBuilder.ApplyConfiguration(new TraitGlyphBindingConfiguration());
         modelBuilder.ApplyConfiguration(new InteractionGlyphBindingConfiguration());
+
+        // Dynamic Quests
+        modelBuilder.ApplyConfiguration(new PersistedDynamicQuestTemplateConfiguration());
+        modelBuilder.ApplyConfiguration(new PersistedDynamicQuestPostingConfiguration());
+        modelBuilder.ApplyConfiguration(new PersistedDynamicQuestCompletionConfiguration());
     }
 }
