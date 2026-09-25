@@ -20,7 +20,7 @@ public class RuntimeCharacterService
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     private readonly ICharacterRepository _repository;
-    private readonly ICommandDispatcher _dispatcher;
+    // private readonly ICommandDispatcher _dispatcher;
     private readonly IQueryDispatcher _queries;
     private readonly Dictionary<NwPlayer, Guid> _playerKeys = new();
 
@@ -36,13 +36,13 @@ public class RuntimeCharacterService
     /// </summary>
     public event Action<CharacterId>? CharacterLeaving;
 
+    [Inject] private Lazy<ICommandDispatcher> _dispatcher { get; init; } = null!;
+
     public RuntimeCharacterService(
         ICharacterRepository repository,
-        ICommandDispatcher dispatcher,
         IQueryDispatcher queries)
     {
         _repository = repository;
-        _dispatcher = dispatcher;
         _queries = queries;
         NwModule.Instance.OnAcquireItem += ReCache;
         NwModule.Instance.OnClientEnter += Register;
@@ -63,7 +63,7 @@ public class RuntimeCharacterService
         _playerKeys.Remove(obj.Player);
         if (obj.Player.LoginCreature == null) return;
 
-        await _dispatcher.DispatchAsync(
+        await _dispatcher.Value.DispatchAsync(
             new RemoveRuntimeCharacterCommand(CharacterId.From(obj.Player.LoginCreature.UUID)))
             .ConfigureAwait(false);
 
@@ -92,7 +92,7 @@ public class RuntimeCharacterService
         RuntimeCharacter? character = RuntimeCharacter.For(player.LoginCreature);
         if (character is null) return;
 
-        await _dispatcher.DispatchAsync(new RegisterRuntimeCharacterCommand(character)).ConfigureAwait(false);
+        await _dispatcher.Value.DispatchAsync(new RegisterRuntimeCharacterCommand(character)).ConfigureAwait(false);
 
         SetIsCached(player.LoginCreature);
 
@@ -122,7 +122,7 @@ public class RuntimeCharacterService
         RuntimeCharacter? character = RuntimeCharacter.For(obj.Player.LoginCreature);
         if (character is null) return;
 
-        await _dispatcher.DispatchAsync(new RegisterRuntimeCharacterCommand(character)).ConfigureAwait(false);
+        await _dispatcher.Value.DispatchAsync(new RegisterRuntimeCharacterCommand(character)).ConfigureAwait(false);
 
         SetIsCached(obj.Player.LoginCreature);
 
@@ -149,7 +149,7 @@ public class RuntimeCharacterService
 
         string displayName = string.IsNullOrWhiteSpace(player.PlayerName) ? cdKey : player.PlayerName;
 
-        CommandResult result = await _dispatcher.DispatchAsync(
+        CommandResult result = await _dispatcher.Value.DispatchAsync(
             new ObservePlayerPersonaCommand(cdKey, displayName, DateTime.UtcNow))
             .ConfigureAwait(false);
 
@@ -180,7 +180,7 @@ public class RuntimeCharacterService
             return;
         }
 
-        CommandResult result = await _dispatcher.DispatchAsync(
+        CommandResult result = await _dispatcher.Value.DispatchAsync(
             new TouchPlayerPersonaCommand(cdKey, DateTime.UtcNow))
             .ConfigureAwait(false);
 
