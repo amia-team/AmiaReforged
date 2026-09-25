@@ -1,6 +1,9 @@
+using System.Threading;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
-using AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Services;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
@@ -21,9 +24,9 @@ public class RuntimeCharacter(
     CharacterId characterId,
     IInventoryPort inventoryPort,
     ICharacterSheetPort characterSheetPort,
-    IIndustryMembershipService membershipService,
     ICharacterStatService statService,
-    ICommandDispatcher dispatcher) : ICharacter
+    ICommandDispatcher dispatcher,
+    IQueryDispatcher queryDispatcher) : ICharacter
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -50,7 +53,12 @@ public class RuntimeCharacter(
 
     public List<Knowledge> AllKnowledge()
     {
-        return membershipService.AllKnowledge(characterId);
+        // Independent read: route through the knowledge-definitions query instead of calling the
+        // service directly, so this facade entry point stays behind a named query boundary.
+        return queryDispatcher
+            .DispatchAsync<GetKnowledgeDefinitionsQuery, List<Knowledge>>(
+                new GetKnowledgeDefinitionsQuery { CharacterId = characterId }, CancellationToken.None)
+            .GetAwaiter().GetResult();
     }
 
     public LearningResult Learn(string knowledgeTag)
@@ -69,7 +77,14 @@ public class RuntimeCharacter(
 
     public bool CanLearn(string knowledgeTag)
     {
-        return membershipService.CanLearnKnowledge(characterId, knowledgeTag);
+        // Independent read: route through the learning-eligibility query so the check stays behind a
+        // named query boundary. The query handler preserves the service's rank/point/already-known
+        // logic and exposes only the boolean projection.
+        return queryDispatcher
+            .DispatchAsync<CanLearnKnowledgeQuery, bool>(
+                new CanLearnKnowledgeQuery { CharacterId = characterId, KnowledgeTag = knowledgeTag },
+                CancellationToken.None)
+            .GetAwaiter().GetResult();
     }
 
     public List<KnowledgeHarvestEffect> KnowledgeEffectsForResource(string definitionTag, ResourceType resourceType)
@@ -168,7 +183,12 @@ public class RuntimeCharacter(
 
     public List<IndustryMembership> AllIndustryMemberships()
     {
-        return membershipService.GetMemberships(characterId);
+        // Independent read: reuse the existing GetCharacterIndustries query rather than calling the
+        // service's repository-backed read directly.
+        return queryDispatcher
+            .DispatchAsync<GetCharacterIndustriesQuery, List<IndustryMembership>>(
+                new GetCharacterIndustriesQuery { CharacterId = characterId }, CancellationToken.None)
+            .GetAwaiter().GetResult();
     }
 
     public RankUpResult RankUp(string industryTag)
@@ -201,12 +221,13 @@ public class RuntimeCharacter(
 
     public static RuntimeCharacter? For(NwCreature creature)
     {
-        IIndustryMembershipService memberships = AnvilCore.GetService<IIndustryMembershipService>()!;
         ICharacterStatService stats = AnvilCore.GetService<ICharacterStatService>()!;
         ICommandDispatcher dispatcher = AnvilCore.GetService<ICommandDispatcher>()!;
+        IQueryDispatcher queryDispatcher = AnvilCore.GetService<IQueryDispatcher>()!;
         IInventoryPort inventoryPort = RuntimeInventoryPort.For(creature);
         ICharacterSheetPort characterSheetPort = RuntimeCharacterSheetPort.For(creature);
 
-        return new RuntimeCharacter(CharacterId.From(creature.UUID), inventoryPort, characterSheetPort, memberships, stats, dispatcher);
+        return new RuntimeCharacter(
+            CharacterId.From(creature.UUID), inventoryPort, characterSheetPort, stats, dispatcher, queryDispatcher);
     }
 }
