@@ -1,6 +1,6 @@
 # 006C — Remove NPC synchronization from DialogueController
 
-Status: **Open**
+Status: **Done** (implemented in commit `f0843da1d` "WorldEngine: remove NPC synchronization from DialogueController")
 Type: **Implementation**
 Audit area: **F-1**
 Depends on: **006B**
@@ -255,14 +255,14 @@ Do not:
 
 ## Acceptance checks
 
-- [ ] `DialogueController` no longer references `DialogueNpcHook`.
-- [ ] Create no longer directly registers NPCs.
-- [ ] Update no longer directly changes NPC registration.
-- [ ] Delete no longer directly unregisters NPCs.
-- [ ] NPC synchronization helper methods are removed from the controller.
-- [ ] CQRS command dispatch and HTTP response behavior remain intact.
-- [ ] Controller tests do not construct/mock the NPC hook.
-- [ ] Structural grep shows no NPC-hook reference under API controllers.
+- [x] `DialogueController` no longer references `DialogueNpcHook`.
+- [x] Create no longer directly registers NPCs.
+- [x] Update no longer directly changes NPC registration.
+- [x] Delete no longer directly unregisters NPCs.
+- [x] NPC synchronization helper methods are removed from the controller.
+- [x] CQRS command dispatch and HTTP response behavior remain intact.
+- [x] Controller tests do not construct/mock the NPC hook.
+- [x] Structural grep shows no NPC-hook reference under API controllers.
 
 ## Suggested verification
 
@@ -315,32 +315,54 @@ Keep the change small.
 
 ### Removed controller behavior
 
-Record exactly which direct NPC synchronization calls/helpers were deleted.
+The controller no longer resolves `DialogueNpcHook` or calls any NPC
+synchronization service. In commit `f0843da1d` the following were removed from
+`DialogueController.cs` (77 lines deleted):
+
+- `TryRegisterNpcsAsync(...)` call in `Create` (post-command side effect).
+- `TryUpdateNpcRegistrationAsync(...)` call in `Update` (post-command side effect).
+- `TryUnregisterNpcsAsync(...)` call in `Delete` (post-command side effect).
+- The private helper methods `TryRegisterNpcsAsync`, `TryUpdateNpcRegistrationAsync`, `TryUnregisterNpcsAsync`.
+
+`Create`/`Update`/`Delete` now dispatch their CQRS command and return the HTTP
+response without awaiting NPC synchronization.
 
 ### Structural grep
 
 ```sh
-...
+grep -Rni "DialogueNpcHook" \
+  AmiaReforged.PwEngine/Features/WorldEngine/API/Controllers
+grep -RniE \
+  "TryRegisterNpcsAsync|TryUpdateNpcRegistrationAsync|TryUnregisterNpcsAsync" \
+  AmiaReforged.PwEngine/Features/WorldEngine/API/Controllers
 ```
 
 Observed output:
 
-```text
-...
+```
+(no matches — both commands exit 1)
 ```
 
 ### Test command
 
 ```sh
-...
+dotnet build AmiaReforged.PwEngine/AmiaReforged.PwEngine.csproj
+dotnet test AmiaReforged.PwEngine/AmiaReforged.PwEngine.csproj --no-build \
+  --filter 'FullyQualifiedName~ControllerCqrsTests' --verbosity minimal -m:1
+dotnet test AmiaReforged.PwEngine/AmiaReforged.PwEngine.csproj --no-build --no-restore \
+  --filter 'FullyQualifiedName~WorldEngine' --verbosity minimal -m:1
 ```
 
 ### Observed result
 
-Record exact result.
+- Build: `0 Error(s)` (only pre-existing, unrelated nullability warnings).
+- `ControllerCqrsTests`: `Passed! Failed: 0, Passed: 26, Total: 26`.
+- `WorldEngine`: `Passed! Failed: 0, Passed: 1868, Total: 1868`.
 
 ### Changed files
 
-```text
-- ...
+```
+- AmiaReforged.PwEngine/Features/WorldEngine/API/Controllers/DialogueController.cs   (-77: NPC sync calls + helpers)
++ AmiaReforged.PwEngine/Features/WorldEngine/API/Tests/DialogueControllerCqrsTests.cs (+183: CQRS-only controller tests)
+  AmiaReforged.PwEngine/Features/WorldEngine/Subsystems/Dialogue/Application/DialogueNpcSynchronizationHandler.cs (006B event subscriber, present before this task)
 ```
