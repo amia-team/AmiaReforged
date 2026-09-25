@@ -35,6 +35,7 @@ public interface ICharacterKnowledgeContext
 
     /// <summary>
     /// Gets the character's knowledge progression state (economy/level-up KP, accumulated points, caps).
+    /// Returns <c>null</c> when the character has no progression row yet.
     /// </summary>
-    KnowledgeProgression GetProgression();
+    KnowledgeProgression? GetProgression();
 }

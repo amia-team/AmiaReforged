@@ -76,7 +76,7 @@ public class GetCharacterQueryHandlerTests
         public void InvalidateEffectCache() { }
         public List<CraftingModifier> CraftingModifiersForRecipe(string recipeId, string industryTag) => new();
         public bool HasUnlockedInteraction(string interactionTag) => false;
-        public KnowledgeProgression GetProgression() => default;
+        public KnowledgeProgression? GetProgression() => default;
         public void AddItem(ItemDto item) { }
         public List<ItemSnapshot> GetInventory() => new();
         public Dictionary<EquipmentSlots, ItemSnapshot?> GetEquipment() => new();

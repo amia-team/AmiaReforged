@@ -142,7 +142,7 @@ public class RuntimeCharacter(
     }
 
     /// <inheritdoc />
-    public KnowledgeProgression GetProgression()
+    public KnowledgeProgression? GetProgression()
     {
         IKnowledgeProgressionService progressionService = AnvilCore.GetService<IKnowledgeProgressionService>()!;
         return progressionService.GetProgression(characterId);

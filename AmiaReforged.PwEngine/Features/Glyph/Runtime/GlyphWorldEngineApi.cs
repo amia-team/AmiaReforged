@@ -173,7 +173,13 @@ public class GlyphWorldEngineApi : IGlyphWorldEngineApi
         try
         {
             CharacterId charId = new(characterId);
-            KnowledgeProgression progression = _progressionService.GetProgression(charId);
+            KnowledgeProgression? progression = _progressionService.GetProgression(charId);
+
+            if (progression is null)
+            {
+                // No progression row yet: report zeros without creating one.
+                return new KnowledgeProgressionInfo(0, 0, 0, 0);
+            }
 
             return new KnowledgeProgressionInfo(
                 progression.TotalKnowledgePoints,

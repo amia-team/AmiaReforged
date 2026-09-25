@@ -11,9 +11,12 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.Knowl
 public interface IKnowledgeProgressionService
 {
     /// <summary>
-    /// Gets the progression record for a character, creating a default one if needed.
+    /// Reads the character's progression record without creating or persisting anything.
+    /// Returns <c>null</c> when the character has no progression row yet; initialization
+    /// must happen on an explicit write path (award, level-up grant, registration, or a
+    /// dedicated initialization command).
     /// </summary>
-    KnowledgeProgression GetProgression(CharacterId characterId);
+    KnowledgeProgression? GetProgression(CharacterId characterId);
 
     /// <summary>
     /// Awards progression points from crafting/economy activities.
@@ -29,17 +32,23 @@ public interface IKnowledgeProgressionService
     void GrantLevelUpKnowledgePoint(CharacterId characterId);
 
     /// <summary>
-    /// Gets the effective soft cap for a character, considering their cap profile.
+    /// Reads the effective soft cap for a character, considering their cap profile.
+    /// Side-effect-free: reads the existing progression row (if any) and falls back to
+    /// the configured default soft cap when no row exists.
     /// </summary>
     int GetEffectiveSoftCap(CharacterId characterId);
 
     /// <summary>
-    /// Gets the effective hard cap for a character, considering their cap profile.
+    /// Reads the effective hard cap for a character, considering their cap profile.
+    /// Side-effect-free: reads the existing progression row (if any) and falls back to
+    /// the configured default hard cap when no row exists.
     /// </summary>
     int GetEffectiveHardCap(CharacterId characterId);
 
     /// <summary>
-    /// Gets the progression point cost for the character's next economy KP.
+    /// Reads the progression point cost for the character's next economy KP.
+    /// Side-effect-free: reads the existing progression row (if any) and treats a
+    /// missing row as zero economy KP earned.
     /// </summary>
     int GetProgressionCostForNextPoint(CharacterId characterId);
 

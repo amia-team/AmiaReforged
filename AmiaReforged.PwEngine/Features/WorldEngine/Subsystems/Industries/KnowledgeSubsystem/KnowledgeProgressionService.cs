@@ -38,9 +38,13 @@ public class KnowledgeProgressionService : IKnowledgeProgressionService
         _eventBus = eventBus;
     }
 
-    public KnowledgeProgression GetProgression(CharacterId characterId)
+    /// <summary>
+    /// Side-effect-free read. Returns the stored progression or <c>null</c> when the
+    /// character has no row yet; never inserts anything.
+    /// </summary>
+    public KnowledgeProgression? GetProgression(CharacterId characterId)
     {
-        return _progressionRepository.GetOrCreate(characterId.Value);
+        return _progressionRepository.GetByCharacterId(characterId.Value);
     }
 
     public ProgressionResult AwardProgressionPoints(CharacterId characterId, int points)
@@ -147,29 +151,48 @@ public class KnowledgeProgressionService : IKnowledgeProgressionService
                  $"Total KP: {progression.TotalKnowledgePoints}");
     }
 
+    /// <summary>
+    /// Side-effect-free read of the effective soft cap. Uses the character's cap profile
+    /// when a progression row exists, otherwise the configured default.
+    /// </summary>
     public int GetEffectiveSoftCap(CharacterId characterId)
     {
-        KnowledgeProgression progression = _progressionRepository.GetOrCreate(characterId.Value);
-        return GetEffectiveSoftCap(progression);
+        KnowledgeProgression? progression = _progressionRepository.GetByCharacterId(characterId.Value);
+        if (progression != null)
+            return GetEffectiveSoftCap(progression);
+
+        return GetCurveConfig().SoftCap;
     }
 
+    /// <summary>
+    /// Side-effect-free read of the effective hard cap. Uses the character's cap profile
+    /// when a progression row exists, otherwise the configured default.
+    /// </summary>
     public int GetEffectiveHardCap(CharacterId characterId)
     {
-        KnowledgeProgression progression = _progressionRepository.GetOrCreate(characterId.Value);
-        return GetEffectiveHardCap(progression);
+        KnowledgeProgression? progression = _progressionRepository.GetByCharacterId(characterId.Value);
+        if (progression != null)
+            return GetEffectiveHardCap(progression);
+
+        return GetCurveConfig().HardCap;
     }
 
+    /// <summary>
+    /// Side-effect-free read of the cost for the character's next economy KP. Treats a
+    /// missing progression row as zero economy KP earned.
+    /// </summary>
     public int GetProgressionCostForNextPoint(CharacterId characterId)
     {
-        KnowledgeProgression progression = _progressionRepository.GetOrCreate(characterId.Value);
-        int effectiveSoftCap = GetEffectiveSoftCap(progression);
-        int effectiveHardCap = GetEffectiveHardCap(progression);
+        KnowledgeProgression? progression = _progressionRepository.GetByCharacterId(characterId.Value);
+        int economyEarnedKnowledgePoints = progression?.EconomyEarnedKnowledgePoints ?? 0;
+        int effectiveSoftCap = progression is null ? GetCurveConfig().SoftCap : GetEffectiveSoftCap(progression);
+        int effectiveHardCap = progression is null ? GetCurveConfig().HardCap : GetEffectiveHardCap(progression);
 
-        if (progression.EconomyEarnedKnowledgePoints >= effectiveHardCap)
+        if (economyEarnedKnowledgePoints >= effectiveHardCap)
             return int.MaxValue;
 
         ProgressionCurveConfig curve = GetCurveConfig();
-        return curve.CostForNthPoint(progression.EconomyEarnedKnowledgePoints + 1, effectiveSoftCap, effectiveHardCap);
+        return curve.CostForNthPoint(economyEarnedKnowledgePoints + 1, effectiveSoftCap, effectiveHardCap);
     }
 
     public ProgressionCurveConfig GetCurveConfig()

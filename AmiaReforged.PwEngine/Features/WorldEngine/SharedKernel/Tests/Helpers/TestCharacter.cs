@@ -56,7 +56,7 @@ public class TestCharacter(
                       && string.Equals(e.TargetTag, interactionTag, StringComparison.OrdinalIgnoreCase));
     }
 
-    public KnowledgeProgression GetProgression()
+    public KnowledgeProgression? GetProgression()
     {
         // TODO: Implement progression for test character if needed in future tests.
         return new KnowledgeProgression();

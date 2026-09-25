@@ -214,7 +214,7 @@ public class CharacterSubsystemLookupTests
         public void InvalidateEffectCache() { }
         public List<CraftingModifier> CraftingModifiersForRecipe(string recipeId, string industryTag) => new();
         public bool HasUnlockedInteraction(string interactionTag) => false;
-        public KnowledgeProgression GetProgression() => null!;
+        public KnowledgeProgression? GetProgression() => null!;
         public void AddItem(ItemDto item) { }
         public List<ItemSnapshot> GetInventory() => [];
         public Dictionary<EquipmentSlots, ItemSnapshot?> GetEquipment() => new();
