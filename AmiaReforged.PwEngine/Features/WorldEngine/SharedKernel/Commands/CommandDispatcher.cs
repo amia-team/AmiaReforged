@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Reflection;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using Anvil.Services;
+using LightInject;
 using NLog;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
@@ -15,29 +16,47 @@ public sealed class CommandDispatcher : ICommandDispatcher
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    private readonly IEventBus _eventBus;
+    private readonly ServiceContainer? _serviceContainer;
+    private readonly Lazy<IEventBus> _eventBus;
     private readonly ConcurrentDictionary<Type, HandlerInvocation> _handlerCache = new();
 
-    // Cached handler invocation data
-    private sealed class HandlerInvocation(object handler, MethodInfo handleMethod, Type commandType)
+    private sealed class HandlerInvocation(
+        string? serviceName,
+        object? handler,
+        Type handlerType,
+        MethodInfo handleMethod,
+        Type commandType)
     {
-        public object Handler { get; } = handler;
+        public string? ServiceName { get; } = serviceName;
+        public object? Handler { get; } = handler;
+        public Type HandlerType { get; } = handlerType;
         public MethodInfo HandleMethod { get; } = handleMethod;
         public Type CommandType { get; } = commandType;
     }
 
-    /// <summary>
-    /// Initializes the command dispatcher and pre-caches all command handler metadata.
-    /// Handlers are automatically discovered via Anvil DI using the marker interface pattern.
-    /// </summary>
-    /// <param name="commandHandlers">All command handlers discovered via ICommandHandlerMarker.</param>
-    /// <param name="eventBus">Event bus for publishing CommandExecutedEvent on successful commands.</param>
-    /// <exception cref="ArgumentNullException">Thrown if eventBus is null.</exception>
     public CommandDispatcher(
+        IServiceManager serviceManager,
+        Lazy<IEventBus> eventBus)
+    {
+        ArgumentNullException.ThrowIfNull(serviceManager);
+        ArgumentNullException.ThrowIfNull(eventBus);
+
+        _serviceContainer = serviceManager.AnvilServiceContainer;
+        _eventBus = eventBus;
+
+        DiscoverAndCacheHandlers();
+    }
+
+    internal CommandDispatcher(
         IEnumerable<ICommandHandlerMarker> commandHandlers,
         IEventBus eventBus)
     {
-        _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+        ArgumentNullException.ThrowIfNull(commandHandlers);
+        ArgumentNullException.ThrowIfNull(eventBus);
+
+        _serviceContainer = null;
+        _eventBus = new Lazy<IEventBus>(() => eventBus);
+
         DiscoverAndCacheHandlers(commandHandlers);
     }
 
@@ -56,41 +75,53 @@ public sealed class CommandDispatcher : ICommandDispatcher
 
         try
         {
-            // Get cached handler invocation
             if (!_handlerCache.TryGetValue(commandType, out HandlerInvocation? invocation))
             {
-                string errorMessage = $"No handler registered for command type: {commandTypeName}";
+                string errorMessage =
+                    $"No handler registered for command type: {commandTypeName}";
+
                 Log.Error(errorMessage);
                 return CommandResult.Fail(errorMessage);
             }
 
-            // Invoke the cached handler method
-            Task<CommandResult> resultTask = (Task<CommandResult>)invocation.HandleMethod.Invoke(
-                invocation.Handler,
-                new object[] { command, cancellationToken })!;
+            object handler = ResolveHandler(invocation);
 
-            CommandResult result = await resultTask.ConfigureAwait(false);
+            Task<CommandResult> resultTask =
+                (Task<CommandResult>)invocation.HandleMethod.Invoke(
+                    handler,
+                    new object[] { command, cancellationToken })!;
 
-            // Publish domain event if successful
+            CommandResult result =
+                await resultTask.ConfigureAwait(false);
+
             if (result.Success)
             {
-                await PublishCommandExecutedEventAsync(command, result).ConfigureAwait(false);
+                await PublishCommandExecutedEventAsync(command, result)
+                    .ConfigureAwait(false);
             }
 
-            Log.Debug("Command {CommandType} executed: {Success}",
+            Log.Debug(
+                "Command {CommandType} executed: {Success}",
                 commandTypeName,
-                result.Success ? "Success" : $"Failed - {result.ErrorMessage}");
+                result.Success
+                    ? "Success"
+                    : $"Failed - {result.ErrorMessage}");
 
             return result;
-    /// <inheritdoc />
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error dispatching command: {CommandType}", commandTypeName);
-            return CommandResult.Fail($"Command execution failed: {ex.Message}");
+            Log.Error(
+                ex,
+                "Error dispatching command: {CommandType}",
+                commandTypeName);
+
+            return CommandResult.Fail(
+                $"Command execution failed: {ex.Message}");
         }
     }
 
+    /// <inheritdoc />
     public async Task<BatchCommandResult> DispatchBatchAsync<TCommand>(
         IEnumerable<TCommand> commands,
         BatchExecutionOptions? options = null,
@@ -100,10 +131,12 @@ public sealed class CommandDispatcher : ICommandDispatcher
         ArgumentNullException.ThrowIfNull(commands);
 
         options ??= BatchExecutionOptions.Default;
-        List<TCommand> commandsList = commands.ToList();
-        List<CommandResult> results = new List<CommandResult>();
 
-        Log.Debug("Dispatching batch of {Count} commands with options: StopOnFirstFailure={StopOnFirst}",
+        List<TCommand> commandsList = commands.ToList();
+        List<CommandResult> results = new();
+
+        Log.Debug(
+            "Dispatching batch of {Count} commands with options: StopOnFirstFailure={StopOnFirst}",
             commandsList.Count,
             options.StopOnFirstFailure);
 
@@ -111,82 +144,212 @@ public sealed class CommandDispatcher : ICommandDispatcher
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                Log.Warn("Batch execution cancelled after {Executed} of {Total} commands",
+                Log.Warn(
+                    "Batch execution cancelled after {Executed} of {Total} commands",
                     results.Count,
                     commandsList.Count);
 
-                return BatchCommandResult.FromResults(results, cancelled: true);
+                return BatchCommandResult.FromResults(
+                    results,
+                    cancelled: true);
             }
 
-            CommandResult result = await DispatchAsync(command, cancellationToken).ConfigureAwait(false);
+            CommandResult result =
+                await DispatchAsync(command, cancellationToken)
+                    .ConfigureAwait(false);
+
             results.Add(result);
 
             if (!result.Success && options.StopOnFirstFailure)
             {
-                Log.Warn("Batch execution stopped due to failure at command {Index} of {Total}",
+                Log.Warn(
+                    "Batch execution stopped due to failure at command {Index} of {Total}",
                     results.Count,
                     commandsList.Count);
+
                 break;
             }
         }
 
-        BatchCommandResult batchResult = BatchCommandResult.FromResults(results);
+        BatchCommandResult batchResult =
+            BatchCommandResult.FromResults(results);
 
-        Log.Debug("Batch execution completed: {Success}/{Total} succeeded",
+        Log.Debug(
+            "Batch execution completed: {Success}/{Total} succeeded",
             batchResult.SuccessCount,
             batchResult.TotalCount);
 
         return batchResult;
     }
 
-    private void DiscoverAndCacheHandlers(IEnumerable<ICommandHandlerMarker> commandHandlers)
+    private void DiscoverAndCacheHandlers()
+    {
+        if (_serviceContainer == null)
+        {
+            throw new InvalidOperationException(
+                "Cannot discover DI handler registrations without an Anvil service container.");
+        }
+
+        IEnumerable<ServiceRegistration> registrations =
+            _serviceContainer.AvailableServices
+                .Where(registration =>
+                    registration.ServiceType ==
+                    typeof(ICommandHandlerMarker))
+                .OrderBy(
+                    registration => registration.ServiceName,
+                    StringComparer.Ordinal);
+
+        foreach (ServiceRegistration registration in registrations)
+        {
+            Type? handlerType = registration.ImplementingType;
+
+            if (handlerType == null)
+            {
+                Log.Warn(
+                    "Command handler registration {ServiceName} has no implementing type",
+                    registration.ServiceName);
+
+                continue;
+            }
+
+            string? serviceName = registration.ServiceName;
+
+            if (string.IsNullOrWhiteSpace(serviceName))
+            {
+                Log.Warn(
+                    "Command handler {HandlerType} has no named service registration",
+                    handlerType.Name);
+
+                continue;
+            }
+
+            CacheHandlerMetadata(
+                handlerType,
+                serviceName,
+                handler: null);
+        }
+
+        Log.Info(
+            "Command dispatcher initialized with {Count} command handler registration(s)",
+            _handlerCache.Count);
+    }
+
+    private void DiscoverAndCacheHandlers(
+        IEnumerable<ICommandHandlerMarker> commandHandlers)
     {
         foreach (ICommandHandlerMarker handler in commandHandlers)
         {
-            Type handlerType = handler.GetType();
-            IEnumerable<Type> handlerInterfaces = handlerType.GetInterfaces()
-                .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICommandHandler<>));
-
-            foreach (Type handlerInterface in handlerInterfaces)
-            {
-                Type commandType = handlerInterface.GetGenericArguments()[0];
-
-                // Get the specific HandleAsync method for this command type
-                MethodInfo? handleMethod = handlerInterface.GetMethod(nameof(ICommandHandler<ICommand>.HandleAsync));
-
-                if (handleMethod == null)
-                {
-                    Log.Warn("Could not find HandleAsync method on {HandlerType} for {CommandType}",
-                        handlerType.Name,
-                        commandType.Name);
-                    continue;
-                }
-
-                // Cache the handler instance and its method
-                HandlerInvocation invocation = new HandlerInvocation(handler, handleMethod, commandType);
-                _handlerCache[commandType] = invocation;
-
-                Log.Info("Registered and cached command handler {HandlerType} for command {CommandType}",
-                    handlerType.Name,
-                    commandType.Name);
-            }
+            CacheHandlerMetadata(
+                handler.GetType(),
+                serviceName: null,
+                handler);
         }
 
-        Log.Info("Command dispatcher initialized with {Count} command handler(s)", _handlerCache.Count);
+        Log.Debug(
+            "Command dispatcher initialized with {Count} directly supplied test handler(s)",
+            _handlerCache.Count);
     }
 
-    private async Task PublishCommandExecutedEventAsync<TCommand>(TCommand command, CommandResult result)
+    private void CacheHandlerMetadata(
+        Type handlerType,
+        string? serviceName,
+        object? handler)
+    {
+        IEnumerable<Type> handlerInterfaces =
+            handlerType.GetInterfaces()
+                .Where(interfaceType =>
+                    interfaceType.IsGenericType &&
+                    interfaceType.GetGenericTypeDefinition() ==
+                    typeof(ICommandHandler<>));
+
+        foreach (Type handlerInterface in handlerInterfaces)
+        {
+            Type commandType =
+                handlerInterface.GetGenericArguments()[0];
+
+            MethodInfo? handleMethod =
+                handlerInterface.GetMethod(
+                    nameof(ICommandHandler<ICommand>.HandleAsync));
+
+            if (handleMethod == null)
+            {
+                Log.Warn(
+                    "Could not find HandleAsync method on {HandlerType} for {CommandType}",
+                    handlerType.Name,
+                    commandType.Name);
+
+                continue;
+            }
+
+            HandlerInvocation invocation = new(
+                serviceName,
+                handler,
+                handlerType,
+                handleMethod,
+                commandType);
+
+            if (_handlerCache.TryGetValue(
+                    commandType,
+                    out HandlerInvocation? existing))
+            {
+                Log.Warn(
+                    "Multiple command handlers registered for {CommandType}: " +
+                    "{ExistingHandler} and {NewHandler}. " +
+                    "Using {NewHandler}.",
+                    commandType.Name,
+                    existing.HandlerType.Name,
+                    handlerType.Name,
+                    handlerType.Name);
+            }
+
+            _handlerCache[commandType] = invocation;
+        }
+    }
+
+    private object ResolveHandler(HandlerInvocation invocation)
+    {
+        if (invocation.Handler != null)
+        {
+            return invocation.Handler;
+        }
+
+        if (_serviceContainer == null)
+        {
+            throw new InvalidOperationException(
+                $"Handler {invocation.HandlerType.Name} has no service container available.");
+        }
+
+        if (string.IsNullOrWhiteSpace(invocation.ServiceName))
+        {
+            throw new InvalidOperationException(
+                $"Handler {invocation.HandlerType.Name} has no resolvable service registration.");
+        }
+
+        return _serviceContainer.GetInstance(
+            typeof(ICommandHandlerMarker),
+            invocation.ServiceName);
+    }
+
+    private async Task PublishCommandExecutedEventAsync<TCommand>(
+        TCommand command,
+        CommandResult result)
         where TCommand : ICommand
     {
         try
         {
-            CommandExecutedEvent<TCommand> domainEvent = new CommandExecutedEvent<TCommand>(command, result);
-            await _eventBus.PublishAsync(domainEvent).ConfigureAwait(false);
+            CommandExecutedEvent<TCommand> domainEvent =
+                new(command, result);
+
+            await _eventBus.Value
+                .PublishAsync(domainEvent)
+                .ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            // Event publishing failures should not fail the command
-            Log.Warn(ex, "Failed to publish CommandExecutedEvent for command: {CommandType}", typeof(TCommand).Name);
+            Log.Warn(
+                ex,
+                "Failed to publish CommandExecutedEvent for command: {CommandType}",
+                typeof(TCommand).Name);
         }
     }
 }
