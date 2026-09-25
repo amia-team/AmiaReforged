@@ -23,10 +23,9 @@ public class DialogueNodeEnteredEventHandler
         _resolutionService = resolutionService;
     }
 
-    public Task HandleAsync(DialogueNodeEnteredEvent @event, CancellationToken cancellationToken = default)
+    public async Task HandleAsync(DialogueNodeEnteredEvent @event, CancellationToken cancellationToken = default)
     {
         CharacterId characterId = CharacterId.From(@event.CharacterId);
-        _resolutionService.ProcessDialogueNodeEntered(characterId, @event.NodeId);
-        return Task.CompletedTask;
+        await _resolutionService.ProcessDialogueNodeEnteredAsync(characterId, @event.NodeId);
     }
 }

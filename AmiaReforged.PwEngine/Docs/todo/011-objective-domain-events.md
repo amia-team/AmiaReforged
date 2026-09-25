@@ -1,6 +1,6 @@
 # 011 — Publish objective-resolution events on the bus
 
-Status: **Open**  
+Status: **Done**  
 Type: **Implementation**  
 Audit area: **F-6**  
 Depends on: [010 — Publish dynamic-quest domain events on the bus](010-dynamic-quest-domain-events.md).
@@ -198,5 +198,56 @@ Record:
 - exact event types forwarded to `CodexEventProcessor`;
 - exact test command/result;
 - confirmation that no objective-result event is delivered only through the old private channel.
+
+## Completion evidence
+
+- **Changed files:**
+  - `Features/WorldEngine/Subsystems/Codex/Application/QuestObjectiveResolutionService.cs`
+    — replaced `CodexEventProcessor` field with `IEventBus`; private
+    `RouteSignalAndEnqueueEvents` → async `RouteSignalAndPublishEventsAsync`;
+    `ProcessItemAcquired`/`ProcessItemLost`/`ProcessDialogueNodeEntered` →
+    `ProcessItemAcquiredAsync`/`ProcessItemLostAsync`/`ProcessDialogueNodeEnteredAsync`;
+    NWN callbacks `OnAcquireItem`/`OnUnacquireItem` now `async void` and await the new methods;
+    every resulting event is published once, in returned order, via a single
+    `await _eventBus.PublishAsync(domainEvent, ct);` in the loop over
+    `QuestSessionManager.ProcessSignal`'s result (no per-type switch — the bus routes by
+    runtime type, so concrete-type dispatch is implicit).
+  - `Features/WorldEngine/Subsystems/Codex/Application/DialogueNodeEnteredEventHandler.cs`
+    — `HandleAsync` now `async` and awaits `ProcessDialogueNodeEnteredAsync`.
+  - `Features/WorldEngine/Subsystems/Codex/Application/DynamicQuests/DynamicQuestCodexEventForwarder.cs`
+    — extended the single forwarding subscriber with
+    `IEventHandler<QuestStageAdvancedEvent>` and
+    `IEventHandler<StageRewardsGrantedEvent>`.
+
+- **Final signal → bus → Codex path:**
+  NWN/dialogue callback → `QuestObjectiveResolutionService.ProcessItem*Async` /
+  `ProcessDialogueNodeEnteredAsync` → `QuestSessionManager.ProcessSignal` →
+  `_eventBus.PublishAsync(domainEvent, ct)` →
+  `DynamicQuestCodexEventForwarder` → `CodexEventProcessor`.
+  Production objective-resolution code contains no direct `CodexEventProcessor` /
+  `EnqueueEventAsync` reference.
+
+- **Exact event types forwarded to `CodexEventProcessor`:** `QuestStageAdvancedEvent`,
+  `StageRewardsGrantedEvent`, `QuestExpiredEvent`. **Published on the bus but not
+  forwarded** (observability only, `CodexEventProcessor` no-op): `ObjectiveProgressedEvent`,
+  `ObjectiveCompletedEvent`, `ObjectiveFailedEvent`, `QuestObjectiveGroupCompletedEvent`.
+  Objective events are published with their concrete type so the bus is observable, but the
+  forwarding subscriber does not subscribe to them, so they are never re-applied to
+  `PlayerCodex`.
+
+- **Test command/result:**
+  ```
+  dotnet build AmiaReforged.PwEngine/AmiaReforged.PwEngine.csproj --nologo   -> 0 Error(s)
+  dotnet test AmiaReforged.PwEngine/AmiaReforged.PwEngine.csproj \
+    --filter "FullyQualifiedName~Codex" --no-build --verbosity minimal       -> Passed! Failed: 0, Passed: 520
+  ```
+
+- **Exactly-once confirmation:** grep of `QuestObjectiveResolutionService.cs` for
+  `CodexEventProcessor` / `EnqueueEventAsync` returns none. Every event returned by
+  `QuestSessionManager.ProcessSignal` is published through `IEventBus` exactly once via a
+  single `await _eventBus.PublishAsync(domainEvent, ct);` in the loop; objective-result
+  events are delivered only through the bus (the old private enqueue channel no longer
+  exists). The per-type switch the task spec's example hinted at was not needed — the bus
+  routes by runtime type, so there is no wrapper or dispatch layer.
 
 See [backlog scope and completion rules](README.md).

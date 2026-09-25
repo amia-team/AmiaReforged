@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Aggregates;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
@@ -19,12 +20,18 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Applicatio
 /// Bridges NWN runtime events to the quest objective domain layer.
 /// Subscribes to game events (item acquire/lose), translates them into
 /// <see cref="QuestSignal"/> instances, routes them through <see cref="QuestSessionManager"/>,
-/// and enqueues resulting domain events into <see cref="CodexEventProcessor"/>.
+/// and publishes resulting domain events onto the shared <see cref="IEventBus"/>.
 /// Also manages session lifecycle: creating sessions on login and quest start,
 /// tearing them down on logout and quest completion.
-/// Handler-internal implementation detail: game code reaches this only via the
+///
+/// <para>
+/// Resolution is handler-internal plumbing: game code reaches this only via the
 /// <c>SetQuestStageCommand</c> handler and the dialogue-entry event handler
 /// (F-6 audit — resolution is always downstream of quest advancement).
+/// The service never calls command handlers directly; resulting Codex domain events go
+/// onto the bus, and the single task-010 forwarding subscriber routes the events that
+/// carry a Codex mutation to the processor.
+/// </para>
 /// </summary>
 [ServiceBinding(typeof(QuestObjectiveResolutionService))]
 public sealed class QuestObjectiveResolutionService
@@ -33,18 +40,18 @@ public sealed class QuestObjectiveResolutionService
 
     private readonly RuntimeCharacterService _characters;
     private readonly QuestSessionManager _sessionManager;
-    private readonly CodexEventProcessor _eventProcessor;
+    private readonly IEventBus _eventBus;
     private readonly IPlayerCodexRepository _codexRepository;
 
     public QuestObjectiveResolutionService(
         RuntimeCharacterService characters,
         QuestSessionManager sessionManager,
-        CodexEventProcessor eventProcessor,
+        IEventBus eventBus,
         IPlayerCodexRepository codexRepository)
     {
         _characters = characters;
         _sessionManager = sessionManager;
-        _eventProcessor = eventProcessor;
+        _eventBus = eventBus;
         _codexRepository = codexRepository;
 
         NwModule.Instance.OnAcquireItem += OnAcquireItem;
@@ -56,34 +63,48 @@ public sealed class QuestObjectiveResolutionService
         characters.CharacterLeaving += OnCharacterLeaving;
     }
 
-    private void OnAcquireItem(ModuleEvents.OnAcquireItem obj)
+    private async void OnAcquireItem(ModuleEvents.OnAcquireItem obj)
     {
-        NwItem? item = obj.Item;
-        if (item is null) return;
-        if (!obj.AcquiredBy.IsPlayerControlled(out NwPlayer? player)) return;
-        if (player is null) return;
-        if (!_characters.TryGetPlayerKey(player, out Guid key) || key == Guid.Empty) return;
+        try
+        {
+            NwItem? item = obj.Item;
+            if (item is null) return;
+            if (!obj.AcquiredBy.IsPlayerControlled(out NwPlayer? player)) return;
+            if (player is null) return;
+            if (!_characters.TryGetPlayerKey(player, out Guid key) || key == Guid.Empty) return;
 
-        CharacterId characterId = CharacterId.From(key);
-        Log.Info("REMOVE LATER: Detected item acquisition: {Item} by character {CharacterId}", item.Tag, characterId);
-        ProcessItemAcquired(characterId, item.Tag);
+            CharacterId characterId = CharacterId.From(key);
+            Log.Info("REMOVE LATER: Detected item acquisition: {Item} by character {CharacterId}", item.Tag, characterId);
+            await ProcessItemAcquiredAsync(characterId, item.Tag);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to process item acquisition for character {CharacterId}", obj.AcquiredBy);
+        }
     }
 
-    private void OnUnacquireItem(ModuleEvents.OnUnacquireItem obj)
+    private async void OnUnacquireItem(ModuleEvents.OnUnacquireItem obj)
     {
-        NwItem? item = obj.Item;
-        if (item is null) return;
+        try
+        {
+            NwItem? item = obj.Item;
+            if (item is null) return;
 
-        // OnUnacquireItem fires on the creature that lost the item.
-        // The creature reference comes from the module event context.
-        NwCreature? creature = obj.LostBy;
-        if (creature is null) return;
-        if (!creature.IsPlayerControlled(out NwPlayer? player)) return;
-        if (player is null) return;
-        if (!_characters.TryGetPlayerKey(player, out Guid key) || key == Guid.Empty) return;
+            // OnUnacquireItem fires on the creature that lost the item.
+            // The creature reference comes from the module event context.
+            NwCreature? creature = obj.LostBy;
+            if (creature is null) return;
+            if (!creature.IsPlayerControlled(out NwPlayer? player)) return;
+            if (player is null) return;
+            if (!_characters.TryGetPlayerKey(player, out Guid key) || key == Guid.Empty) return;
 
-        CharacterId characterId = CharacterId.From(key);
-        ProcessItemLost(characterId, item.Tag);
+            CharacterId characterId = CharacterId.From(key);
+            await ProcessItemLostAsync(characterId, item.Tag);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to process item loss for character {CharacterId}", obj.LostBy);
+        }
     }
 
     private async void OnCharacterReady(CharacterId characterId)
@@ -106,23 +127,23 @@ public sealed class QuestObjectiveResolutionService
     /// <summary>
     /// Processes an item acquisition event for a character.
     /// Translates to a <see cref="SignalType.ItemAcquired"/> signal and routes it
-    /// through all active quest sessions.
+    /// through all active quest sessions, publishing resulting domain events on the bus.
     /// </summary>
-    public void ProcessItemAcquired(CharacterId characterId, string itemTag)
+    public async Task ProcessItemAcquiredAsync(CharacterId characterId, string itemTag)
     {
         QuestSignal signal = new(SignalType.ItemAcquired, itemTag);
-        RouteSignalAndEnqueueEvents(characterId, signal);
+        await RouteSignalAndPublishEventsAsync(characterId, signal);
     }
 
     /// <summary>
     /// Processes an item loss event for a character.
     /// Translates to a <see cref="SignalType.ItemLost"/> signal and routes it
-    /// through all active quest sessions.
+    /// through all active quest sessions, publishing resulting domain events on the bus.
     /// </summary>
-    public void ProcessItemLost(CharacterId characterId, string itemTag)
+    public async Task ProcessItemLostAsync(CharacterId characterId, string itemTag)
     {
         QuestSignal signal = new(SignalType.ItemLost, itemTag);
-        RouteSignalAndEnqueueEvents(characterId, signal);
+        await RouteSignalAndPublishEventsAsync(characterId, signal);
     }
 
     /// <summary>
@@ -132,13 +153,13 @@ public sealed class QuestObjectiveResolutionService
     /// This is how "speak to NPC" objectives resolve — the objective definition's
     /// TargetTag is set to the short node ID of the dialogue node that completes it.
     /// </summary>
-    public void ProcessDialogueNodeEntered(CharacterId characterId, DialogueNodeId nodeId)
+    public async Task ProcessDialogueNodeEnteredAsync(CharacterId characterId, DialogueNodeId nodeId)
     {
         string shortNodeId = nodeId.ToShortString();
         Log.Info("Processing dialogue node entered: nodeId={NodeId} shortId={ShortId} for character {CharacterId}",
             nodeId.Value, shortNodeId, characterId);
         QuestSignal signal = new(SignalType.DialogChoice, shortNodeId);
-        RouteSignalAndEnqueueEvents(characterId, signal);
+        await RouteSignalAndPublishEventsAsync(characterId, signal);
     }
 
     /// <summary>
@@ -202,7 +223,15 @@ public sealed class QuestObjectiveResolutionService
         }
     }
 
-    private void RouteSignalAndEnqueueEvents(CharacterId characterId, QuestSignal signal)
+    /// <summary>
+    /// Routes a signal through the session manager and publishes every resulting
+    /// domain event onto the shared bus, once, in the order returned by
+    /// <see cref="QuestSessionManager.ProcessSignal"/>.
+    /// </summary>
+    private async Task RouteSignalAndPublishEventsAsync(
+        CharacterId characterId,
+        QuestSignal signal,
+        CancellationToken ct = default)
     {
         IReadOnlyList<CodexDomainEvent> events = _sessionManager.ProcessSignal(characterId, signal);
 
@@ -213,18 +242,12 @@ public sealed class QuestObjectiveResolutionService
             return;
         }
 
-        Log.Info("Routing signal {SignalType}:{TargetTag} for character {CharacterId} produced {EventCount} events",
+        Log.Info("Signal {SignalType}:{TargetTag} for character {CharacterId} produced {EventCount} events",
             signal.SignalType, signal.TargetTag, characterId, events.Count);
         foreach (CodexDomainEvent domainEvent in events)
         {
-            // Fire-and-forget enqueue; the event processor handles persistence asynchronously
-            Log.Info("Enqueuing domain event {EventType} for character {CharacterId}",
-                domainEvent.GetType().Name, characterId);
-            _ = _eventProcessor.EnqueueEventAsync(domainEvent);
+            await _eventBus.PublishAsync(domainEvent, ct);
         }
-
-        Log.Info("Signal {SignalType}:{TargetTag} produced {EventCount} events for character {CharacterId}",
-            signal.SignalType, signal.TargetTag, events.Count, characterId);
     }
 
     /// <summary>
