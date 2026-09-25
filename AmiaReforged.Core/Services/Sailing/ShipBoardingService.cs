@@ -38,8 +38,8 @@ public class ShipBoardingService
     _physicalShipService =
         physicalShipService;
 
-    Log.Info(
-        "Ship Boarding Service initialized.");
+    //Log.Info(
+        //"Ship Boarding Service initialized.");
 }
 
     public bool TryRequestBoarding(
@@ -103,13 +103,13 @@ public class ShipBoardingService
             requestingPlayerName] =
             request;
 
-        Log.Info(
-            $"Boarding request created: " +
-            $"{requestingShip.ShipName} -> " +
-            $"{targetShip.ShipName}, " +
-            $"Requester={requestingPlayerName}, " +
-            $"Target={request.TargetPlayerName}, " +
-            $"Distance={encounter.Distance:0.00}");
+        //Log.Info(
+            //$"Boarding request created: " +
+            //$"{requestingShip.ShipName} -> " +
+            //$"{targetShip.ShipName}, " +
+            //$"Requester={requestingPlayerName}, " +
+            //$"Target={request.TargetPlayerName}, " +
+            //$"Distance={encounter.Distance:0.00}");
 
         NwPlayer? targetPlayer =
             FindPlayer(
@@ -229,10 +229,10 @@ Location boardingLocation =
         requestingPlayer.SendServerMessage(
             $"You board the {foundRequest.TargetShip.ShipName}.");
 
-        Log.Info(
-            $"Boarding accepted: " +
-            $"{foundRequest.RequestingPlayerName} boarded " +
-            $"{foundRequest.TargetShip.ShipName}.");
+        //Log.Info(
+            //$"Boarding accepted: " +
+            //$"{foundRequest.RequestingPlayerName} boarded " +
+            //$"{foundRequest.TargetShip.ShipName}.");
 
         BoardingCompleted?.Invoke(
             foundRequest);
@@ -274,10 +274,10 @@ Location boardingLocation =
             $"You reject the boarding request from the " +
             $"{foundRequest.RequestingShip.ShipName}.");
 
-        Log.Info(
-            $"Boarding rejected: " +
-            $"{foundRequest.RequestingShip.ShipName} -> " +
-            $"{foundRequest.TargetShip.ShipName}");
+        //Log.Info(
+            //$"Boarding rejected: " +
+            //$"{foundRequest.RequestingShip.ShipName} -> " +
+            //$"{foundRequest.TargetShip.ShipName}");
 
         RemoveRequest(
             foundRequest);

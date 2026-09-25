@@ -96,8 +96,8 @@ foreach (NwPlaceable station in
     station.OnLeftClick +=
         HandleCombatStationClick;
 }
-        Log.Info(
-            "Ship Combat NUI Service initialized.");
+        //Log.Info(
+            //"Ship Combat NUI Service initialized.");
     }
 
     // -----------------------------------------------------------------
@@ -465,11 +465,11 @@ token.SetBindValues(
             targetShip,
             encounter);
 
-        Log.Info(
-            $"Ship Combat NUI opened for player " +
-            $"{player.PlayerName}: " +
-            $"{ship.ShipName} -> " +
-            $"{targetShip.ShipName}.");
+        //Log.Info(
+            //$"Ship Combat NUI opened for player " +
+            //$"{player.PlayerName}: " +
+            //$"{ship.ShipName} -> " +
+            //$"{targetShip.ShipName}.");
     }
         
     
@@ -510,11 +510,11 @@ token.SetBindValues(
 
         if (castingClass == null)
         {
-            Log.Info(
-                $"Ship spell not available to caster: " +
-                $"Caster={caster.Name}, " +
-                $"Spell={definition.DisplayName}, " +
-                $"SpellId={definition.SpellId}.");
+            //Log.Info(
+                //$"Ship spell not available to caster: " +
+                //$"Caster={caster.Name}, " +
+                //$"Spell={definition.DisplayName}, " +
+                //$"SpellId={definition.SpellId}.");
 
             continue;
         }
@@ -522,18 +522,18 @@ token.SetBindValues(
         availableSpells.Add(
             definition);
 
-        Log.Info(
-            $"Ship spell available: " +
-            $"Caster={caster.Name}, " +
-            $"Spell={definition.DisplayName}, " +
-            $"SpellId={definition.SpellId}, " +
-            $"Class={castingClass.ClassType}.");
+        //Log.Info(
+            //$"Ship spell available: " +
+            //$"Caster={caster.Name}, " +
+            //$"Spell={definition.DisplayName}, " +
+            //$"SpellId={definition.SpellId}, " +
+            //$"Class={castingClass.ClassType}.");
     }
 
-    Log.Info(
-        $"Ship spell availability complete: " +
-        $"Caster={caster.Name}, " +
-        $"Available={availableSpells.Count}.");
+    //Log.Info(
+        //$"Ship spell availability complete: " +
+        //$"Caster={caster.Name}, " +
+        //$"Available={availableSpells.Count}.");
 
     return availableSpells;
 }
@@ -702,11 +702,11 @@ if (obj.ElementId == "btn_combat_refresh")
     _selectedTargets[player.PlayerName] =
         selectedShip.ShipName;
 
-    Log.Info(
-        $"Combat target selected: " +
-        $"Player={player.PlayerName}, " +
-        $"Ship={ship.ShipName}, " +
-        $"Target={selectedShip.ShipName}.");
+    //Log.Info(
+        //$"Combat target selected: " +
+        //$"Player={player.PlayerName}, " +
+        //$"Ship={ship.ShipName}, " +
+        //$"Target={selectedShip.ShipName}.");
 
     RefreshCombatWindow(player);
 }
@@ -1034,9 +1034,9 @@ if (targetShip == null ||
         player.OnNuiEvent -=
             HandleCombatNuiEvent;
 
-        Log.Info(
-            $"Ship Combat NUI closed for player " +
-            $"{player.PlayerName}.");
+        //Log.Info(
+            //$"Ship Combat NUI closed for player " +
+            //$"{player.PlayerName}.");
     }
 
     // -----------------------------------------------------------------
@@ -1128,11 +1128,11 @@ private void HandleCombatStationClick(
     NwPlayer player =
         obj.ClickedBy;
 
-    Log.Info(
-        $"Combat station clicked: " +
-        $"Player={player.PlayerName}, " +
-        $"Tag={obj.Placeable.Tag}, " +
-        $"ResRef={obj.Placeable.ResRef}.");
+    //Log.Info(
+        //$"Combat station clicked: " +
+        //$"Player={player.PlayerName}, " +
+        //$"Tag={obj.Placeable.Tag}, " +
+        //$"ResRef={obj.Placeable.ResRef}.");
 
     string? shipName =
         _physicalShipService.GetShipForPlayer(
@@ -1175,8 +1175,8 @@ private void HandleCombatStationClick(
 }
 public void RefreshAll()
 {
-     Log.Info(
-        $"Combat NUI RefreshAll: OpenWindows={_tokens.Count}");
+     //Log.Info(
+        //$"Combat NUI RefreshAll: OpenWindows={_tokens.Count}");
     foreach (string playerName in _tokens.Keys.ToList())
     {
         NwPlayer? player =

@@ -14,8 +14,8 @@ public sealed class ShipSpellVfxService
 
     public ShipSpellVfxService()
     {
-        Log.Info(
-            "Ship Spell VFX Service initialized.");
+        //Log.Info(
+            //"Ship Spell VFX Service initialized.");
     }
 
     // -------------------------------------------------------------
@@ -79,12 +79,12 @@ public sealed class ShipSpellVfxService
                     0.0f),
                 0.0f);
 
-        Log.Info(
-            $"Playing ship spell VFX: " +
-            $"VFX={vfx}, " +
-            $"Ship={targetShip.ShipName}, " +
-            $"Deck={targetShip.DeckAreaResRef}, " +
-            $"Location=(42,42,0).");
+        //Log.Info(
+            //$"Playing ship spell VFX: " +
+            //$"VFX={vfx}, " +
+            //$"Ship={targetShip.ShipName}, " +
+            //$"Deck={targetShip.DeckAreaResRef}, " +
+            //$"Location=(42,42,0).");
 
         // VFX implementation goes here.
     }
@@ -98,17 +98,17 @@ public void PlayCasterSpellVfx(
     if (!caster.IsValid)
         return;
 
-    Log.Info(
-        $"CASTER VFX BEFORE ASSIGN: " +
-        $"Caster={caster.Name}, " +
-        $"Spell={spell.Name}");
+    //Log.Info(
+        //$"CASTER VFX BEFORE ASSIGN: " +
+        //$"Caster={caster.Name}, " +
+        //$"Spell={spell.Name}");
 
     NWN.Core.NWScript.AssignCommand(caster, () =>
     {
-        Log.Info(
-            $"CASTER VFX INSIDE ASSIGN: " +
-            $"Caster={caster.Name}, " +
-            $"Spell={spell.Name}");
+        //Log.Info(
+            //$"CASTER VFX INSIDE ASSIGN: " +
+            //$"Caster={caster.Name}, " +
+            //$"Spell={spell.Name}");
 
         NWN.Core.NWScript.ActionPlayAnimation(
             NWN.Core.NWScript.ANIMATION_LOOPING_CONJURE1,

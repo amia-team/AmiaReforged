@@ -75,10 +75,10 @@ public sealed class MerchantTradeService
             return;
         }
 
-        Log.Info(
-            $"Merchant '{ship.ShipName}' trading at " +
-            $"{port.PortId}. " +
-            $"Gold={ship.MerchantGold}");
+        //Log.Info(
+            //$"Merchant '{ship.ShipName}' trading at " +
+            //$"{port.PortId}. " +
+            //$"Gold={ship.MerchantGold}");
 
         // ---------------------------------------------------------
         // SELL CURRENT CARGO
@@ -102,10 +102,10 @@ public sealed class MerchantTradeService
 
             ship.MerchantGold += revenue;
 
-            Log.Info(
-                $"Merchant '{ship.ShipName}' sold " +
-                $"{quantity} {cargo.ItemId} " +
-                $"at {sellPrice} each for {revenue} gold.");
+            //Log.Info(
+                //$"Merchant '{ship.ShipName}' sold " +
+                //$"{quantity} {cargo.ItemId} " +
+                //$"at {sellPrice} each for {revenue} gold.");
 
             cargo.Quantity = 0;
         }
@@ -137,10 +137,10 @@ foreach (KeyValuePair<string, int> item in
 
     if (remainingCapacity <= 0)
     {
-        Log.Info(
-            $"Merchant '{ship.ShipName}' has no cargo space " +
-            $"remaining. " +
-            $"Cargo={currentCargo}/{ship.CargoCapacity}");
+        //Log.Info(
+            //$"Merchant '{ship.ShipName}' has no cargo space " +
+            //$"remaining. " +
+            //$"Cargo={currentCargo}/{ship.CargoCapacity}");
 
         continue;
     }
@@ -167,11 +167,11 @@ foreach (KeyValuePair<string, int> item in
 
         if (purchaseQuantity <= 0)
         {
-            Log.Info(
-                $"Merchant '{ship.ShipName}' cannot afford " +
-                $"{item.Key}. " +
-                $"Price={item.Value}, " +
-                $"Gold={ship.MerchantGold}");
+            //Log.Info(
+                //$"Merchant '{ship.ShipName}' cannot afford " +
+                //$"{item.Key}. " +
+                //$"Price={item.Value}, " +
+                //$"Gold={ship.MerchantGold}");
 
             continue;
         }
@@ -211,14 +211,14 @@ foreach (KeyValuePair<string, int> item in
             purchaseQuantity;
     }
 
-    Log.Info(
-        $"Merchant '{ship.ShipName}' bought " +
-        $"{purchaseQuantity} {item.Key} " +
-        $"at {item.Value} each " +
-        $"for {totalCost} gold. " +
-        $"Cargo={ship.Cargo.Sum(c => c.Quantity)}/" +
-        $"{ship.CargoCapacity}. " +
-        $"RemainingGold={ship.MerchantGold}");
+    //Log.Info(
+        //$"Merchant '{ship.ShipName}' bought " +
+        //$"{purchaseQuantity} {item.Key} " +
+        //$"at {item.Value} each " +
+        //$"for {totalCost} gold. " +
+        //$"Cargo={ship.Cargo.Sum(c => c.Quantity)}/" +
+        //$"{ship.CargoCapacity}. " +
+        //$"RemainingGold={ship.MerchantGold}");
 }
     }
  public bool TryBuy(
@@ -357,15 +357,15 @@ foreach (KeyValuePair<string, int> item in
         $"You bought {quantity} {itemId} " +
         $"for {totalCost} gold.";
 
-    Log.Info(
-        $"Player bought cargo: " +
-        $"Player={buyer.Name}, " +
-        $"Ship={buyerShip.ShipName}, " +
-        $"Merchant={merchant.ShipName}, " +
-        $"Item={itemId}, " +
-        $"Quantity={quantity}, " +
-        $"Cost={totalCost}, " +
-        $"Port={merchant.CurrentTradePortId}");
+    //Log.Info(
+        //$"Player bought cargo: " +
+        //$"Player={buyer.Name}, " +
+        //$"Ship={buyerShip.ShipName}, " +
+        //$"Merchant={merchant.ShipName}, " +
+        //$"Item={itemId}, " +
+        //$"Quantity={quantity}, " +
+        //$"Cost={totalCost}, " +
+        //$"Port={merchant.CurrentTradePortId}");
 
     return true;
 }
@@ -488,15 +488,15 @@ public bool TrySell(
         $"You sold {quantity} {itemId} " +
         $"for {totalRevenue} gold.";
 
-    Log.Info(
-        $"Player sold cargo: " +
-        $"Player={seller.Name}, " +
-        $"Ship={sellerShip.ShipName}, " +
-        $"Merchant={merchant.ShipName}, " +
-        $"Item={itemId}, " +
-        $"Quantity={quantity}, " +
-        $"Revenue={totalRevenue}, " +
-        $"Port={merchant.CurrentTradePortId}");
+    //Log.Info(
+        //$"Player sold cargo: " +
+        //$"Player={seller.Name}, " +
+        //$"Ship={sellerShip.ShipName}, " +
+        //$"Merchant={merchant.ShipName}, " +
+        //$"Item={itemId}, " +
+        //$"Quantity={quantity}, " +
+        //$"Revenue={totalRevenue}, " +
+        //$"Port={merchant.CurrentTradePortId}");
 
     return true;
 }

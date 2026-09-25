@@ -228,11 +228,11 @@ foreach (IslandLocation island in
         shipyard.OnLeftClick +=
             HandleShipyardClick;
 
-        Log.Info(
-            $"Shipyard interaction registered: " +
-            $"Island={island.Id}, " +
-            $"Tag={island.ShipyardTag}, " +
-            $"Area={shipyard.Area?.ResRef}");
+        //Log.Info(
+            //$"Shipyard interaction registered: " +
+            //$"Island={island.Id}, " +
+            //$"Tag={island.ShipyardTag}, " +
+            //$"Area={shipyard.Area?.ResRef}");
     }
 }
 
@@ -263,8 +263,8 @@ public void RegisterShipDefinition(ShipDefinition definition)
     _shipPlaceableTags[definition.ShipName] =
         definition.PlaceableTag;
 
-    Log.Info(
-        $"Registered helm '{definition.HelmTag}' for {definition.ShipName}.");
+    //Log.Info(
+        //$"Registered helm '{definition.HelmTag}' for {definition.ShipName}.");
 }
 
 private readonly ShipRoutePlannerService
@@ -274,10 +274,10 @@ private readonly ShipRoutePlannerService
     private void HandleHelmClick(
     PlaceableEvents.OnLeftClick obj)
 {
-    Log.Info(
-        $"Sailing helm clicked: " +
-        $"Tag={obj.Placeable.Tag}, " +
-        $"ResRef={obj.Placeable.ResRef}");
+    //Log.Info(
+        //$"Sailing helm clicked: " +
+        //$"Tag={obj.Placeable.Tag}, " +
+        //$"ResRef={obj.Placeable.ResRef}");
 
     if (!_helmShips.TryGetValue(
             obj.Placeable.Tag,
@@ -338,9 +338,9 @@ if (tookHelm)
     player.SendServerMessage(
         $"You take the helm of the {shipName}.");
 
-    Log.Info(
-        $"Player {player.PlayerName} " +
-        $"took the helm of the {shipName}.");
+    //Log.Info(
+        //$"Player {player.PlayerName} " +
+        //$"took the helm of the {shipName}.");
 
         
     player.OnNuiEvent -=
@@ -358,10 +358,10 @@ if (tookHelm)
         player.SendServerMessage(
             "Someone is already at the helm.");
 
-        Log.Info(
-            $"Player {player.PlayerName} attempted to take " +
-            $"the helm of the {shipName}, " +
-            $"but it was occupied.");
+        //Log.Info(
+            //$"Player {player.PlayerName} attempted to take " +
+            //$"the helm of the {shipName}, " +
+            //$"but it was occupied.");
     }
 }
 
@@ -440,8 +440,8 @@ private async void HandleBoardTestClick(
         shipName,
         player);
 
-    Log.Info(
-        $"Boarded {shipName}: Player={player.PlayerName}");
+    //Log.Info(
+        //$"Boarded {shipName}: Player={player.PlayerName}");
 }
     private static void NotifyHelmsman(
     ShipState ship,
@@ -493,8 +493,8 @@ private bool UpdateDockingState(
         ship.CanDock = true;
         ship.NearbyIslandId = island.Id;
 
-        Log.Info(
-            $"Ship '{ship.ShipName}' entered docking range of {island.Name}.");
+        //Log.Info(
+            //$"Ship '{ship.ShipName}' entered docking range of {island.Name}.");
     }
 
     return previousCanDock != ship.CanDock ||
@@ -559,11 +559,11 @@ private static string GetRelativeBearing(
     private void HandleSailingNuiEvent(
     ModuleEvents.OnNuiEvent obj)
 {
-    Log.Info(
-        $"Sailing NUI event: " +
-        $"Player={obj.Player.PlayerName}, " +
-        $"Event={obj.EventType}, " +
-        $"Element={obj.ElementId}");
+    //Log.Info(
+        //$"Sailing NUI event: " +
+        //$"Player={obj.Player.PlayerName}, " +
+        //$"Event={obj.EventType}, " +
+        //$"Element={obj.ElementId}");
 
     if (!_playerShips.TryGetValue(
             obj.Player.PlayerName,
@@ -595,8 +595,8 @@ if (ship == null)
         case "ahead_button":
             ship.Underway = true;
 
-            Log.Info(
-                $"Ship '{shipName}' underway.");
+            //Log.Info(
+                //$"Ship '{shipName}' underway.");
 
             UpdateSailingNui(ship);
             break;
@@ -604,8 +604,8 @@ if (ship == null)
         case "stop_button":
             ship.Underway = false;
 
-            Log.Info(
-                $"Ship '{shipName}' stopped.");
+            //Log.Info(
+                //$"Ship '{shipName}' stopped.");
 
             UpdateSailingNui(ship);
             break;
@@ -746,9 +746,9 @@ _chartDiscoveryService.RevealAroundShip(
         obj.Player.OnNuiEvent -=
             HandleSailingNuiEvent;
 
-        Log.Info(
-            $"Player {obj.Player.PlayerName} " +
-            $"left the helm of the {shipName}.");
+        //Log.Info(
+            //$"Player {obj.Player.PlayerName} " +
+            //$"left the helm of the {shipName}.");
 
         return;
     }
@@ -758,8 +758,8 @@ _chartDiscoveryService.RevealAroundShip(
 {
     if (ship.IsDocking)
     {
-        Log.Info(
-            $"Ignoring NUI Close event for '{shipName}' because the ship is docking.");
+        //Log.Info(
+            //$"Ignoring NUI Close event for '{shipName}' because the ship is docking.");
 
         return;
     }
@@ -775,10 +775,10 @@ _chartDiscoveryService.RevealAroundShip(
             obj.Player.SendServerMessage(
                 $"You leave the helm of the {shipName}.");
 
-            Log.Info(
-                $"Player {obj.Player.PlayerName} " +
-                $"closed the sailing window " +
-                $"and left the helm of the {shipName}.");
+            //Log.Info(
+                //$"Player {obj.Player.PlayerName} " +
+                //$"closed the sailing window " +
+                //$"and left the helm of the {shipName}.");
         }
 
         _playerShips.Remove(
@@ -848,11 +848,11 @@ ShipCombatService.ShipAttackResult result =
                 player,
                 message);
 
-            Log.Info(
-                $"Player {playerName} attempted to attack " +
-                $"from '{ship.ShipName}', but weapons are " +
-                $"reloading. " +
-                $"Remaining={result.CooldownRemaining.TotalSeconds:0.00}s.");
+            //Log.Info(
+                //$"Player {playerName} attempted to attack " +
+                //$"from '{ship.ShipName}', but weapons are " +
+                //$"reloading. " +
+                //$"Remaining={result.CooldownRemaining.TotalSeconds:0.00}s.");
 
             return;
         }
@@ -874,9 +874,9 @@ ShipCombatService.ShipAttackResult result =
                 player,
                 message);
 
-            Log.Info(
-                $"Player {playerName} attempted to attack " +
-                $"from '{ship.ShipName}', but no valid target exists.");
+            //Log.Info(
+                //$"Player {playerName} attempted to attack " +
+                //$"from '{ship.ShipName}', but no valid target exists.");
 
             return;
         }
@@ -901,12 +901,12 @@ ShipCombatService.ShipAttackResult result =
                 player,
                 message);
 
-            Log.Info(
-                $"Player {playerName} attempted to attack " +
-                $"from '{ship.ShipName}', but the target was " +
-                $"out of weapon range. " +
-                $"Distance={result.Distance:0.00}, " +
-                $"Range={result.Weapon.MaxRange:0.00}.");
+            //Log.Info(
+                //$"Player {playerName} attempted to attack " +
+                //$"from '{ship.ShipName}', but the target was " +
+                //$"out of weapon range. " +
+                //$"Distance={result.Distance:0.00}, " +
+                //$"Range={result.Weapon.MaxRange:0.00}.");
 
             return;
         }
@@ -932,12 +932,12 @@ ShipCombatService.ShipAttackResult result =
                 player,
                 message);
 
-            Log.Info(
-                $"Player {playerName} attempted to attack " +
-                $"from '{ship.ShipName}', but the target was " +
-                $"outside the weapon firing arc. " +
-                $"Weapon={result.Weapon.DisplayName}, " +
-                $"Arc={result.Weapon.Arc}.");
+            //Log.Info(
+                //$"Player {playerName} attempted to attack " +
+                //$"from '{ship.ShipName}', but the target was " +
+                //$"outside the weapon firing arc. " +
+                //$"Weapon={result.Weapon.DisplayName}, " +
+                //$"Arc={result.Weapon.Arc}.");
 
             return;
         }
@@ -1006,13 +1006,13 @@ ShipCombatService.ShipAttackResult result =
             player,
             combatMessage);
 
-        Log.Info(
-            $"Player {playerName} attacked " +
-            $"'{targetShip.ShipName}' from " +
-            $"'{ship.ShipName}'. " +
-            $"Weapon={result.Weapon.DisplayName}, " +
-            $"Damage={result.Damage}, " +
-            $"Hull={result.PreviousHull}->{targetShip.Hull}.");
+        //Log.Info(
+            //$"Player {playerName} attacked " +
+            //$"'{targetShip.ShipName}' from " +
+            //$"'{ship.ShipName}'. " +
+            //$"Weapon={result.Weapon.DisplayName}, " +
+            //$"Damage={result.Damage}, " +
+            //$"Hull={result.PreviousHull}->{targetShip.Hull}.");
 
         // -----------------------------------------------------------------
         // Target disabled
@@ -1060,9 +1060,9 @@ ShipCombatService.ShipAttackResult result =
                 }
             }
 
-            Log.Info(
-                $"Ship '{targetShip.ShipName}' has been disabled " +
-                $"by '{ship.ShipName}'.");
+            //Log.Info(
+                //$"Ship '{targetShip.ShipName}' has been disabled " +
+                //$"by '{ship.ShipName}'.");
         }
 
         // -----------------------------------------------------------------
@@ -1155,10 +1155,10 @@ private async Task EquipWeapon(
     player.SendServerMessage(
         $"You equip the {weapon.DisplayName}.");
 
-    Log.Info(
-        $"Player {playerName} equipped " +
-        $"'{weapon.DisplayName}' on " +
-        $"ship '{ship.ShipName}'.");
+    //Log.Info(
+        //$"Player {playerName} equipped " +
+        //$"'{weapon.DisplayName}' on " +
+        //$"ship '{ship.ShipName}'.");
 
 _sailingNuiService.Update(
     player,
@@ -1211,9 +1211,9 @@ SpawnOrUpdatePhysicalShip(
     contact.ShipResRef,
     contact.ShipTag);
 
-    Log.Info(
-        $"Spawned NPC ship '{ship.ShipName}' at " +
-        $"{ship.AreaResRef} ({ship.X:0.0}, {ship.Y:0.0}).");
+    //Log.Info(
+        //$"Spawned NPC ship '{ship.ShipName}' at " +
+        //$"{ship.AreaResRef} ({ship.X:0.0}, {ship.Y:0.0}).");
 
     return ship;
 }
@@ -1234,9 +1234,9 @@ SpawnOrUpdatePhysicalShip(
 
     if (ship.IsDocking)
     {
-        Log.Info(
-            $"Dock request ignored for '{shipName}' " +
-            "because it is already docking.");
+        //Log.Info(
+            //$"Dock request ignored for '{shipName}' " +
+            //"because it is already docking.");
 
         return;
     }
@@ -1370,11 +1370,11 @@ if (string.IsNullOrWhiteSpace(
             $"You make landfall at {island.Name}. " +
             $"The {ship.ShipName} is stored here.");
 
-        Log.Info(
-            $"Ship '{ship.ShipName}' stored at " +
-            $"port '{island.Id}'. " +
-            $"Player '{player.PlayerName}' made landfall " +
-            $"at {island.Name}.");
+        //Log.Info(
+            //$"Ship '{ship.ShipName}' stored at " +
+            //$"port '{island.Id}'. " +
+            //$"Player '{player.PlayerName}' made landfall " +
+            //$"at {island.Name}.");
     }
     finally
     {
@@ -1432,8 +1432,8 @@ if (string.IsNullOrWhiteSpace(
 player.SendServerMessage(
     $"You board the {ship.ShipName}.");
 
-Log.Info(
-    $"Player '{player.PlayerName}' boarded '{ship.ShipName}'.");
+//Log.Info(
+    //$"Player '{player.PlayerName}' boarded '{ship.ShipName}'.");
 
 player.LoginCreature
     .GetObjectVariable<LocalVariableString>(
@@ -1511,9 +1511,9 @@ player.LoginCreature
         player.SendServerMessage(
             "There is no ship close enough to hail.");
 
-        Log.Info(
-            $"Player {player.PlayerName} attempted to hail " +
-            $"from '{shipName}', but there is no active encounter.");
+        //Log.Info(
+            //$"Player {player.PlayerName} attempted to hail " +
+            //$"from '{shipName}', but there is no active encounter.");
 
         return;
     }
@@ -1545,12 +1545,12 @@ if (targetShip.ShipType == ShipType.Merchant)
     player.SendServerMessage(
         $"The {targetShip.ShipName} acknowledges your signal.");
 
-    Log.Info(
-        $"Merchant hail: " +
-        $"Player={player.PlayerName}, " +
-        $"Ship={ship.ShipName}, " +
-        $"Merchant={targetShip.ShipName}, " +
-        $"Distance={encounter.Distance:0.00}");
+    //Log.Info(
+        //$"Merchant hail: " +
+        //$"Player={player.PlayerName}, " +
+        //$"Ship={ship.ShipName}, " +
+        //$"Merchant={targetShip.ShipName}, " +
+        //$"Distance={encounter.Distance:0.00}");
 
     _sailingNuiService.Update(
         player,
@@ -1587,10 +1587,10 @@ if (!string.IsNullOrWhiteSpace(
         targetPlayer.SendServerMessage(
             $"The {ship.ShipName} is hailing you.");
 
-       Log.Info(
-    $"Ship hail delivered: " +
-    $"Player={targetPlayer.PlayerName}, " +
-    $"Ship={targetShip.ShipName}");
+       //Log.Info(
+    //$"Ship hail delivered: " +
+    //$"Player={targetPlayer.PlayerName}, " +
+    //$"Ship={targetShip.ShipName}");
     }
     else
     {
@@ -1602,17 +1602,17 @@ if (!string.IsNullOrWhiteSpace(
 }
 else
 {
-    Log.Info(
-        $"Ship '{targetShip.ShipName}' has no helmsman. " +
-        $"Hail from '{ship.ShipName}' was not delivered.");
+    //Log.Info(
+        //$"Ship '{targetShip.ShipName}' has no helmsman. " +
+        //$"Hail from '{ship.ShipName}' was not delivered.");
 }
 
-Log.Info(
-    $"Ship hail: " +
-    $"{ship.ShipName} -> " +
-    $"{targetShip.ShipName}, " +
-    $"Area={encounter.AreaResRef}, " +
-    $"Distance={encounter.Distance:0.00}");
+//Log.Info(
+    //$"Ship hail: " +
+    //$"{ship.ShipName} -> " +
+    //$"{targetShip.ShipName}, " +
+    //$"Area={encounter.AreaResRef}, " +
+    //$"Distance={encounter.Distance:0.00}");
 }
 
 
@@ -1639,10 +1639,10 @@ Log.Info(
             $"You request permission to board the " +
             $"{request.TargetShip.ShipName}.");
 
-        Log.Info(
-            $"Player {player.PlayerName} requested boarding: " +
-            $"{request.RequestingShip.ShipName} -> " +
-            $"{request.TargetShip.ShipName}.");
+        //Log.Info(
+            //$"Player {player.PlayerName} requested boarding: " +
+            //$"{request.RequestingShip.ShipName} -> " +
+            //$"{request.TargetShip.ShipName}.");
 
    _sailingNuiService.Update(
     player,
@@ -1678,9 +1678,9 @@ Log.Info(
     player.SendServerMessage(
         "You cannot request boarding right now.");
 
-    Log.Info(
-        $"Player {player.PlayerName} could not request " +
-        $"boarding from '{shipName}'.");
+    //Log.Info(
+        //$"Player {player.PlayerName} could not request " +
+        //$"boarding from '{shipName}'.");
 }
 
 private void AcceptBoarding(
@@ -1707,9 +1707,9 @@ private void AcceptBoarding(
     _ships.Values);
         }
 
-        Log.Info(
-            $"Player {player.PlayerName} accepted boarding " +
-            $"from '{request.RequestingShip.ShipName}'.");
+        //Log.Info(
+            //$"Player {player.PlayerName} accepted boarding " +
+            //$"from '{request.RequestingShip.ShipName}'.");
     }
     else
     {
@@ -1760,9 +1760,9 @@ private void RejectBoarding(
             }
         }
 
-        Log.Info(
-            $"Player {player.PlayerName} rejected boarding " +
-            $"from '{request.RequestingShip.ShipName}'.");
+        //Log.Info(
+            //$"Player {player.PlayerName} rejected boarding " +
+            //$"from '{request.RequestingShip.ShipName}'.");
     }
     else
     {
@@ -1821,10 +1821,10 @@ private void HandleBoardingCompleted(
     _ships.Values);
     }
 
-    Log.Info(
-        $"Boarding completed: " +
-        $"{request.RequestingPlayerName} is now aboard " +
-        $"{request.TargetShip.ShipName}.");
+    //Log.Info(
+        //$"Boarding completed: " +
+        //$"{request.RequestingPlayerName} is now aboard " +
+        //$"{request.TargetShip.ShipName}.");
 }
 
 public ShipState CreateShip(ShipDefinition definition)
@@ -1847,13 +1847,13 @@ public ShipState CreateShip(ShipDefinition definition)
 
     _ships[definition.ShipName] = ship;
 
-    Log.Info(
-        $"Ship '{definition.ShipName}' created: " +
-        $"Area={ship.AreaResRef}, " +
-        $"X={ship.X}, " +
-        $"Y={ship.Y}, " +
-        $"Z={ship.Z}, " +
-        $"Heading={ship.Heading}.");
+    //Log.Info(
+        //$"Ship '{definition.ShipName}' created: " +
+        //$"Area={ship.AreaResRef}, " +
+        //$"X={ship.X}, " +
+        //$"Y={ship.Y}, " +
+        //$"Z={ship.Z}, " +
+        //$"Heading={ship.Heading}.");
 
     _ = LoadSavedShipState(ship);
 
@@ -1936,10 +1936,10 @@ private async Task RepairShip(
     ship,
     _ships.Values);
 
-    Log.Info(
-        $"Player {playerName} repaired " +
-        $"ship '{ship.ShipName}': " +
-        $"Hull={previousHull}->{ship.Hull}.");
+    //Log.Info(
+        //$"Player {playerName} repaired " +
+        //$"ship '{ship.ShipName}': " +
+        //$"Hull={previousHull}->{ship.Hull}.");
 }
 public void RegisterHelm(
     ShipDefinition definition)
@@ -1959,9 +1959,9 @@ public void RegisterHelm(
 
     if (savedState == null)
     {
-        Log.Info(
-            $"No saved state exists for '{ship.ShipName}'. " +
-            $"Saving current starting state.");
+        //Log.Info(
+            //$"No saved state exists for '{ship.ShipName}'. " +
+            //$"Saving current starting state.");
 
         await _shipStatePersistenceService.SaveState(
             ship);
@@ -1996,15 +1996,15 @@ public void RegisterHelm(
         ? "ship_cannon"
         : savedState.WeaponResRef;
 
-        Log.Info(
-        $"Applied saved state to ship '{ship.ShipName}': " +
-        $"Area={ship.AreaResRef}, " +
-        $"X={ship.X}, " +
-        $"Y={ship.Y}, " +
-        $"Z={ship.Z}, " +
-        $"Heading={ship.Heading}, " +
-        $"Underway={ship.Underway}, " +
-        $"Hull={ship.Hull}.");
+        //Log.Info(
+        //$"Applied saved state to ship '{ship.ShipName}': " +
+        //$"Area={ship.AreaResRef}, " +
+        //$"X={ship.X}, " +
+        //$"Y={ship.Y}, " +
+        //$"Z={ship.Z}, " +
+        //$"Heading={ship.Heading}, " +
+        //$"Underway={ship.Underway}, " +
+        //$"Hull={ship.Hull}.");
 }
 
 public ShipState? GetShip(
@@ -2077,17 +2077,17 @@ public bool TestNavigation(
     float destinationZ =
         ship.Z;
 
-    Log.Info(
-        $"Starting multi-area navigation test: " +
-        $"Ship={ship.ShipName}, " +
-        $"StartArea={ship.AreaResRef}, " +
-        $"Start=(" +
-        $"{ship.X:0.00}, " +
-        $"{ship.Y:0.00}), " +
-        $"DestinationArea={destinationArea}, " +
-        $"Destination=(" +
-        $"{destinationX:0.00}, " +
-        $"{destinationY:0.00})");
+    //Log.Info(
+        //$"Starting multi-area navigation test: " +
+        //$"Ship={ship.ShipName}, " +
+        //$"StartArea={ship.AreaResRef}, " +
+        //$"Start=(" +
+        //$"{ship.X:0.00}, " +
+        //$"{ship.Y:0.00}), " +
+        //$"DestinationArea={destinationArea}, " +
+        //$"Destination=(" +
+        //$"{destinationX:0.00}, " +
+        //$"{destinationY:0.00})");
 
     // -------------------------------------------------------------
     // Set the final destination.
@@ -2140,10 +2140,10 @@ public bool TestNavigation(
         ship,
         route);
 
-    Log.Info(
-        $"Multi-area navigation route created: " +
-        $"Ship={ship.ShipName}, " +
-        $"Waypoints={route.Waypoints.Count}");
+    //Log.Info(
+        //$"Multi-area navigation route created: " +
+        //$"Ship={ship.ShipName}, " +
+        //$"Waypoints={route.Waypoints.Count}");
 
     for (
         int i = 0;
@@ -2153,21 +2153,21 @@ public bool TestNavigation(
         ShipNavigationWaypoint waypoint =
             route.Waypoints[i];
 
-        Log.Info(
-            $"Route waypoint [{i}]: " +
-            $"Description={waypoint.Description}, " +
-            $"Area={waypoint.AreaResRef}, " +
-            $"X={waypoint.X:0.00}, " +
-            $"Y={waypoint.Y:0.00}, " +
-            $"Z={waypoint.Z:0.00}");
+        //Log.Info(
+            //$"Route waypoint [{i}]: " +
+            //$"Description={waypoint.Description}, " +
+            //$"Area={waypoint.AreaResRef}, " +
+            //$"X={waypoint.X:0.00}, " +
+            //$"Y={waypoint.Y:0.00}, " +
+            //$"Z={waypoint.Z:0.00}");
 
-        Log.Info(
-            $"Route generated for '{shipName}': " +
-        string.Join(
-        " -> ",
-        route.Waypoints.Select(
-            wp =>
-         $"{wp.AreaResRef}({wp.X:0},{wp.Y:0})")));
+        //Log.Info(
+            //$"Route generated for '{shipName}': " +
+        //string.Join(
+        //" -> ",
+        //route.Waypoints.Select(
+            //wp =>
+         //$"{wp.AreaResRef}({wp.X:0},{wp.Y:0})")));
         }
 
     return true;
@@ -2297,9 +2297,9 @@ public bool TakeHelm(
     ship.HelmsmanPCKey =
         pcKey;
 
-    Log.Info(
-        $"Ship '{shipName}' helm assigned to " +
-        $"PC '{pcKey}'.");
+    //Log.Info(
+        //$"Ship '{shipName}' helm assigned to " +
+        //$"PC '{pcKey}'.");
 
     return true;
 }
@@ -2318,9 +2318,9 @@ public void LeaveHelm(
     string? playerName =
         ship.HelmsmanPCKey;
 
-    Log.Info(
-        $"Ship '{shipName}' helm released from " +
-        $"PC '{playerName}'.");
+    //Log.Info(
+        //$"Ship '{shipName}' helm released from " +
+        //$"PC '{playerName}'.");
 
     ship.HelmsmanPCKey =
     null;
@@ -2356,9 +2356,9 @@ if (string.IsNullOrWhiteSpace(
                 shipName,
                 player))
         {
-            Log.Info(
-                $"Player {playerName} is no longer " +
-                $"captain of '{shipName}' and is now crew.");
+            //Log.Info(
+                //$"Player {playerName} is no longer " +
+                //$"captain of '{shipName}' and is now crew.");
         }
         }
  
@@ -2479,9 +2479,9 @@ private void TryMoveShip(
 {
     if (ship.Hull <= 0)
     {
-        Log.Info(
-            $"Ship '{ship.ShipName}' " +
-            "cannot move because it is disabled.");
+        //Log.Info(
+            //$"Ship '{ship.ShipName}' " +
+            //"cannot move because it is disabled.");
 
         return;
     }
@@ -2721,11 +2721,11 @@ else
             newX,
             newY))
     {
-        Log.Info(
-            $"Ship '{ship.ShipName}' " +
-            $"cannot move to " +
-            $"({newX:0.00}, {newY:0.00}) " +
-            "because of an obstacle.");
+        //Log.Info(
+            //$"Ship '{ship.ShipName}' " +
+            //$"cannot move to " +
+            //$"({newX:0.00}, {newY:0.00}) " +
+            //"because of an obstacle.");
 
         return;
     }
@@ -2742,11 +2742,11 @@ else
                 newX,
                 newY))
         {
-            Log.Info(
-                $"Ship '{ship.ShipName}' " +
-                $"cannot move to " +
-                $"({newX:0.00}, {newY:0.00}) " +
-                "because of an obstacle.");
+            //Log.Info(
+                //$"Ship '{ship.ShipName}' " +
+                //$"cannot move to " +
+                //$"({newX:0.00}, {newY:0.00}) " +
+                //"because of an obstacle.");
 
             return;
         }
@@ -2825,12 +2825,12 @@ if (ship.ShipType == ShipType.Merchant &&
                 nextWaypoint.Y,
                 nextWaypoint.Z);
 
-            Log.Info(
-                $"Merchant '{ship.ShipName}' departing port and " +
-                $"heading to waypoint: " +
-                $"Area={nextWaypoint.AreaResRef}, " +
-                $"X={nextWaypoint.X:0.00}, " +
-                $"Y={nextWaypoint.Y:0.00}");
+            //Log.Info(
+                //$"Merchant '{ship.ShipName}' departing port and " +
+                //$"heading to waypoint: " +
+                //$"Area={nextWaypoint.AreaResRef}, " +
+                //$"X={nextWaypoint.X:0.00}, " +
+                //$"Y={nextWaypoint.Y:0.00}");
         }
     }
 
@@ -2842,8 +2842,8 @@ if (ship.ShipType == ShipType.Merchant &&
 
     if (ship.Hull <= 0)
     {
-        Log.Info(
-            $"Navigation stopped for ship '{ship.ShipName}': ship is disabled.");
+        //Log.Info(
+            //$"Navigation stopped for ship '{ship.ShipName}': ship is disabled.");
 
         _shipNavigationService.ClearDestination(ship);
         ship.Underway = false;
@@ -2922,11 +2922,11 @@ if (ship.ShipType == ShipType.Merchant &&
                 newWaypoint.Y,
                 newWaypoint.Z);
 
-            Log.Info(
-                $"Ship '{ship.ShipName}' looping to waypoint: " +
-                $"Area={newWaypoint.AreaResRef}, " +
-                $"X={newWaypoint.X:0.00}, " +
-                $"Y={newWaypoint.Y:0.00}");
+            //Log.Info(
+                //$"Ship '{ship.ShipName}' looping to waypoint: " +
+                //$"Area={newWaypoint.AreaResRef}, " +
+                //$"X={newWaypoint.X:0.00}, " +
+                //$"Y={newWaypoint.Y:0.00}");
         }
     }
     else if (
@@ -2969,11 +2969,11 @@ if (ship.ShipType == ShipType.Merchant &&
                     newWaypoint.Y,
                     newWaypoint.Z);
 
-                Log.Info(
-                    $"Ship '{ship.ShipName}' advancing to waypoint: " +
-                    $"Area={newWaypoint.AreaResRef}, " +
-                    $"X={newWaypoint.X:0.00}, " +
-                    $"Y={newWaypoint.Y:0.00}");
+                //Log.Info(
+                    //$"Ship '{ship.ShipName}' advancing to waypoint: " +
+                    //$"Area={newWaypoint.AreaResRef}, " +
+                    //$"X={newWaypoint.X:0.00}, " +
+                    //$"Y={newWaypoint.Y:0.00}");
             }
         }
     }
@@ -2984,11 +2984,11 @@ else
     ShipNavigationWaypoint? nextWaypoint =
         _shipNavigationService.GetCurrentWaypoint(ship);
 
-    Log.Info(
-        $"Ship '{ship.ShipName}' proceeding to next waypoint: " +
-        $"Area={nextWaypoint?.AreaResRef}, " +
-        $"X={nextWaypoint?.X:0.00}, " +
-        $"Y={nextWaypoint?.Y:0.00}");
+    //Log.Info(
+        //$"Ship '{ship.ShipName}' proceeding to next waypoint: " +
+        //$"Area={nextWaypoint?.AreaResRef}, " +
+        //$"X={nextWaypoint?.X:0.00}, " +
+        //$"Y={nextWaypoint?.Y:0.00}");
 
     // Immediately face the new waypoint instead of waiting
     // for the next navigation tick.
@@ -3035,8 +3035,8 @@ if (_shipNavigationService.IsDestinationReached(ship))
 
     ship.Underway = false;
 
-    Log.Info(
-        $"Ship '{ship.ShipName}' arrived at its navigation destination.");
+    //Log.Info(
+        //$"Ship '{ship.ShipName}' arrived at its navigation destination.");
 
     UpdateSailingNui(ship);
 
@@ -3059,8 +3059,8 @@ if (_shipNavigationService.IsDestinationReached(ship))
     {
         ship.Heading = desiredHeading;
 
-        Log.Info(
-            $"Navigation heading changed: Ship={ship.ShipName}, Heading={ship.Heading}");
+        //Log.Info(
+            //$"Navigation heading changed: Ship={ship.ShipName}, Heading={ship.Heading}");
 
         UpdatePhysicalShip(ship);
         UpdateSailingNui(ship);
@@ -3109,8 +3109,8 @@ if (_shipNavigationService.IsDestinationReached(ship))
 
     ship.Underway = false;
 
-    Log.Info(
-        $"Ship '{ship.ShipName}' arrived at its navigation destination.");
+    //Log.Info(
+        //$"Ship '{ship.ShipName}' arrived at its navigation destination.");
 }
 }
 
@@ -3174,11 +3174,11 @@ if (!_sailingAreaService.ContainsArea(
         return false;
     }
 
-    Log.Info(
-        $"Ship '{ship.ShipName}' crossing " +
-        $"{boundary} boundary: " +
-        $"{ship.AreaResRef} -> " +
-        $"{destinationAreaResRef}");
+    //Log.Info(
+        //$"Ship '{ship.ShipName}' crossing " +
+        //$"{boundary} boundary: " +
+        //$"{ship.AreaResRef} -> " +
+        //$"{destinationAreaResRef}");
 
     ship.AreaResRef =
         destinationAreaResRef;
@@ -3222,10 +3222,10 @@ private void SpawnPirateShip(
     _ships[shipName] =
         pirate;
 
-    Log.Info(
-        $"Spawned pirate ship '{shipName}' " +
-        $"at ({contact.X:0.0}, {contact.Y:0.0}) " +
-        $"in {contact.AreaResRef}.");
+    //Log.Info(
+        //$"Spawned pirate ship '{shipName}' " +
+        //$"at ({contact.X:0.0}, {contact.Y:0.0}) " +
+        //$"in {contact.AreaResRef}.");
 
     UpdatePhysicalShip(pirate);
 
@@ -3294,14 +3294,14 @@ private void UpdatePhysicalShip(
         placeable.Location =
             location;
 
-        Log.Info(
-            $"Updated physical ship '{ship.ShipName}': " +
-            $"Tag={placeable.Tag}, " +
-            $"Area={ship.AreaResRef}, " +
-            $"X={ship.X}, " +
-            $"Y={ship.Y}, " +
-            $"Z={ship.Z}, " +
-            $"Rotation={rotation}");
+        //Log.Info(
+            //$"Updated physical ship '{ship.ShipName}': " +
+            //$"Tag={placeable.Tag}, " +
+            //$"Area={ship.AreaResRef}, " +
+            //$"X={ship.X}, " +
+            //$"Y={ship.Y}, " +
+            //$"Z={ship.Z}, " +
+            //$"Rotation={rotation}");
     }
 }
 private void SpawnOrUpdatePhysicalShip(
@@ -3373,15 +3373,15 @@ private void SpawnOrUpdatePhysicalShip(
 private void LogShipState(
     ShipState ship)
 {
-    Log.Info(
-        $"Ship '{ship.ShipName}' state: " +
-        $"Area={ship.AreaResRef}, " +
-        $"X={ship.X}, " +
-        $"Y={ship.Y}, " +
-        $"Z={ship.Z}, " +
-        $"Heading={ship.Heading}, " +
-        $"Underway={ship.Underway}, " +
-        $"Hull={ship.Hull}");
+    //Log.Info(
+        //$"Ship '{ship.ShipName}' state: " +
+        //$"Area={ship.AreaResRef}, " +
+        //$"X={ship.X}, " +
+        //$"Y={ship.Y}, " +
+        //$"Z={ship.Z}, " +
+        //$"Heading={ship.Heading}, " +
+        //$"Underway={ship.Underway}, " +
+        //$"Hull={ship.Hull}");
 }
 
 private void UpdateSailingNui(
@@ -3514,12 +3514,12 @@ private void HandleEncounterForShip(
         $"You have encountered the " +
         $"{targetShip.ShipName}.");
 
-    Log.Info(
-        $"Player encounter notification: " +
-        $"Player={player.PlayerName}, " +
-        $"Ship={ship.ShipName}, " +
-        $"Target={targetShip.ShipName}, " +
-        $"Distance={encounter.Distance:0.00}");
+    //Log.Info(
+        //$"Player encounter notification: " +
+        //$"Player={player.PlayerName}, " +
+        //$"Ship={ship.ShipName}, " +
+        //$"Target={targetShip.ShipName}, " +
+        //$"Distance={encounter.Distance:0.00}");
 
     _sailingNuiService.Update(
         player,
@@ -3575,12 +3575,12 @@ private void HandleEncounterEndedForShip(
         ship,
         _ships.Values);
 
-    Log.Info(
-        $"Player encounter ended: " +
-        $"Player={player.PlayerName}, " +
-        $"Ship={ship.ShipName}, " +
-        $"OtherShip=" +
-        $"{(ReferenceEquals(encounter.ShipA, ship) ? encounter.ShipB.ShipName : encounter.ShipA.ShipName)}");
+    //Log.Info(
+        //$"Player encounter ended: " +
+        //$"Player={player.PlayerName}, " +
+        //$"Ship={ship.ShipName}, " +
+        //$"OtherShip=" +
+        //$"{(ReferenceEquals(encounter.ShipA, ship) ? encounter.ShipB.ShipName : encounter.ShipA.ShipName)}");
 }
 private void TradeWithTarget(
     string shipName,
@@ -3634,11 +3634,11 @@ private void TradeWithTarget(
         ship,
         targetShip);
 
-    Log.Info(
-        $"Merchant trade window opened: " +
-        $"Player={player.PlayerName}, " +
-        $"Merchant={targetShip.ShipName}, " +
-        $"Port={targetShip.CurrentTradePortId}");
+    //Log.Info(
+        //$"Merchant trade window opened: " +
+        //$"Player={player.PlayerName}, " +
+        //$"Merchant={targetShip.ShipName}, " +
+        //$"Port={targetShip.CurrentTradePortId}");
 }
 
     private static string FormatMerchantCargo(
@@ -3835,10 +3835,10 @@ token.SetBindValue(
     $"Merchant Cargo: " +
     $"{merchantCargoUsed}/{merchant.CargoCapacity} " +
     $"| {merchantCargoText}");
-    Log.Info(
-        $"Merchant trade NUI created: " +
-        $"Player={player.PlayerName}, " +
-        $"Merchant={merchant.ShipName}");
+    //Log.Info(
+        //$"Merchant trade NUI created: " +
+        //$"Player={player.PlayerName}, " +
+        //$"Merchant={merchant.ShipName}");
 }
     private void BuyFromMerchant(
         NwPlayer player,
@@ -3915,13 +3915,13 @@ token.SetBindValue(
 
     if (success)
     {
-        Log.Info(
-            $"Player trade completed: " +
-            $"Player={player.PlayerName}, " +
-            $"Ship={playerShip.ShipName}, " +
-            $"Merchant={merchant.ShipName}, " +
-            $"Item=grain, " +
-            $"Quantity={quantity}");
+        //Log.Info(
+            //$"Player trade completed: " +
+            //$"Player={player.PlayerName}, " +
+            //$"Ship={playerShip.ShipName}, " +
+            //$"Merchant={merchant.ShipName}, " +
+            //$"Item=grain, " +
+            //$"Quantity={quantity}");
 RefreshMerchantTradeWindow(
     player);
         _sailingNuiService.Update(
@@ -4175,11 +4175,11 @@ private void StoreShip(
         $"The {ship.ShipName} is now stored at " +
         $"{island.Name}.");
 
-    Log.Info(
-        $"Ship stored: " +
-        $"Ship={ship.ShipName}, " +
-        $"Port={island.Id}, " +
-        $"Player={player.PlayerName}");
+    //Log.Info(
+        //$"Ship stored: " +
+        //$"Ship={ship.ShipName}, " +
+        //$"Port={island.Id}, " +
+        //$"Player={player.PlayerName}");
 
     _ = _shipStatePersistenceService.SaveState(
         ship);
@@ -4314,12 +4314,12 @@ if (!_physicalShipService.AddPlayerAboard(
 _shipStatePersistenceService.SaveState(
     ship);
 
-    Log.Info(
-        $"Stored ship retrieved: " +
-        $"Ship={ship.ShipName}, " +
-        $"Port={portId}, " +
-        $"Player={player.PlayerName}, " +
-        $"Deck={ship.DeckAreaResRef}");
+    //Log.Info(
+        //$"Stored ship retrieved: " +
+        //$"Ship={ship.ShipName}, " +
+        //$"Port={portId}, " +
+        //$"Player={player.PlayerName}, " +
+        //$"Deck={ship.DeckAreaResRef}");
 }
 private void HandleShipyardClick(
     PlaceableEvents.OnLeftClick obj)
@@ -4327,11 +4327,11 @@ private void HandleShipyardClick(
     NwPlayer player =
         obj.ClickedBy;
 
-    Log.Info(
-        $"Shipyard clicked: " +
-        $"Player={player.PlayerName}, " +
-        $"Tag={obj.Placeable.Tag}, " +
-        $"Area={obj.Placeable.Area?.ResRef}");
+    //Log.Info(
+        //$"Shipyard clicked: " +
+        //$"Player={player.PlayerName}, " +
+        //$"Tag={obj.Placeable.Tag}, " +
+        //$"Area={obj.Placeable.Area?.ResRef}");
 
     IslandLocation? island =
         _islandService.GetIslandByShipyardTag(
@@ -4454,10 +4454,10 @@ private void OpenShipRetrievalWindow(
 
 player.OnNuiEvent +=
     HandleShipRetrievalNuiEvent;
-    Log.Info(
-        $"Ship retrieval window opened: " +
-        $"Player={player.PlayerName}, " +
-        $"Port={portId}");
+    //Log.Info(
+        //$"Ship retrieval window opened: " +
+        //$"Player={player.PlayerName}, " +
+        //$"Port={portId}");
 }
 private void HandleShipRetrievalNuiEvent(
     ModuleEvents.OnNuiEvent obj)

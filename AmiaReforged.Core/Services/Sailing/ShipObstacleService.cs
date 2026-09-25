@@ -17,9 +17,9 @@ public class ShipObstacleService
     {
         RegisterObstacles();
 
-        Log.Info(
-            $"Ship Obstacle Service initialized. " +
-            $"Registered {_obstaclesByArea.Values.Sum(x => x.Count)} obstacle(s).");
+        //Log.Info(
+            //$"Ship Obstacle Service initialized. " +
+            //$"Registered {_obstaclesByArea.Values.Sum(x => x.Count)} obstacle(s).");
     }
 
     /// <summary>
@@ -45,12 +45,12 @@ public class ShipObstacleService
                 y >= obstacle.MinY &&
                 y <= obstacle.MaxY)
             {
-                Log.Info(
-                    $"Movement blocked by obstacle: " +
-                    $"Obstacle={obstacle.Name}, " +
-                    $"Area={areaResRef}, " +
-                    $"X={x:0.00}, " +
-                    $"Y={y:0.00}");
+                //Log.Info(
+                    //$"Movement blocked by obstacle: " +
+                    //$"Obstacle={obstacle.Name}, " +
+                    //$"Area={areaResRef}, " +
+                    //$"X={x:0.00}, " +
+                    //$"Y={y:0.00}");
 
                 return false;
             }
@@ -209,11 +209,11 @@ private void RegisterObstacles()
 
         obstacles.Add(obstacle);
 
-        Log.Info(
-            $"Sailing obstacle registered: " +
-            $"Name={obstacle.Name}, " +
-            $"Area={obstacle.AreaResRef}, " +
-            $"X={obstacle.MinX:0.00}-{obstacle.MaxX:0.00}, " +
-            $"Y={obstacle.MinY:0.00}-{obstacle.MaxY:0.00}");
+        //Log.Info(
+            //$"Sailing obstacle registered: " +
+            //$"Name={obstacle.Name}, " +
+            //$"Area={obstacle.AreaResRef}, " +
+            //$"X={obstacle.MinX:0.00}-{obstacle.MaxX:0.00}, " +
+            //$"Y={obstacle.MinY:0.00}-{obstacle.MaxY:0.00}");
     }
 }

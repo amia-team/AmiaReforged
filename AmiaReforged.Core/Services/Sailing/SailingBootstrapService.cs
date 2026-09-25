@@ -145,10 +145,10 @@ goldenGull.Cargo.Add(
             ship.ShipName);
     }
 
-    Log.Info(
-        $"Sailing system initialized. " +
-        $"Registered {StartingFleet.Length} starting ship(s) " +
-        $"and 1 merchant ship.");
+    //Log.Info(
+        //$"Sailing system initialized. " +
+        //$"Registered {StartingFleet.Length} starting ship(s) " +
+        //$"and 1 merchant ship.");
 }
 }
 

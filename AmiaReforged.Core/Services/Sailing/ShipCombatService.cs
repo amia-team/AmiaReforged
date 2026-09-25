@@ -159,9 +159,9 @@ public class ShipCombatService
         _shipCrewService =
             shipCrewService;
 
-        Log.Info(
-            $"Ship Combat Service initialized. " +
-            $"Registered weapons={Weapons.Count}.");
+        //Log.Info(
+            //$"Ship Combat Service initialized. " +
+            //$"Registered weapons={Weapons.Count}.");
     }
 
     // ---------------------------------------------------------------------
@@ -212,10 +212,10 @@ public class ShipCombatService
         ship.WeaponResRef =
             weapon.ResRef;
 
-        Log.Info(
-            $"Ship '{ship.ShipName}' equipped " +
-            $"weapon '{weapon.DisplayName}' " +
-            $"({weapon.ResRef}).");
+        //Log.Info(
+            //$"Ship '{ship.ShipName}' equipped " +
+            //$"weapon '{weapon.DisplayName}' " +
+            //$"({weapon.ResRef}).");
 
         return true;
     }
@@ -246,12 +246,12 @@ public class ShipCombatService
 
         if (role != ShipCrewRole.Captain)
         {
-            Log.Info(
-                $"Combat access denied: " +
-                $"Player={player.PlayerName}, " +
-                $"Ship={shipName}, " +
-                $"Role={role}, " +
-                "Captain required.");
+            //Log.Info(
+                //$"Combat access denied: " +
+                //$"Player={player.PlayerName}, " +
+                //$"Ship={shipName}, " +
+                //$"Role={role}, " +
+                //"Captain required.");
 
             return false;
         }
@@ -276,10 +276,10 @@ public class ShipCombatService
                 GetWeapon(
                     attacker.WeaponResRef);
 
-            Log.Info(
-                $"Ship attack denied: " +
-                $"Ship={attacker.ShipName}, " +
-                $"Player={player.PlayerName}");
+            //Log.Info(
+                //$"Ship attack denied: " +
+                //$"Ship={attacker.ShipName}, " +
+                //$"Player={player.PlayerName}");
 
             return ShipAttackResult.NotAuthorized(
                 weapon);
@@ -307,9 +307,9 @@ public class ShipCombatService
 
         if (attacker.Hull <= 0)
         {
-            Log.Info(
-                $"Ship '{attacker.ShipName}' " +
-                "cannot attack because it is disabled.");
+            //Log.Info(
+                //$"Ship '{attacker.ShipName}' " +
+                //"cannot attack because it is disabled.");
 
             return ShipAttackResult.AttackerDisabledResult(
                 weapon);
@@ -326,10 +326,10 @@ public class ShipCombatService
             targetShip == null ||
             encounter == null)
         {
-            Log.Info(
-                $"Ship '{attacker.ShipName}' " +
-                "cannot attack because it has " +
-                "no encounter target.");
+            //Log.Info(
+                //$"Ship '{attacker.ShipName}' " +
+                //"cannot attack because it has " +
+                //"no encounter target.");
 
             return ShipAttackResult.NoTarget(
                 weapon);
@@ -341,9 +341,9 @@ public class ShipCombatService
 
         if (targetShip.Hull <= 0)
         {
-            Log.Info(
-                $"Ship '{targetShip.ShipName}' " +
-                "is already disabled.");
+            //Log.Info(
+                //$"Ship '{targetShip.ShipName}' " +
+                //"is already disabled.");
 
             return ShipAttackResult.Disabled(
                 targetShip,
@@ -357,12 +357,12 @@ public class ShipCombatService
         if (encounter.Distance >
             weapon.MaxRange)
         {
-            Log.Info(
-                $"Ship '{attacker.ShipName}' " +
-                $"cannot attack " +
-                $"'{targetShip.ShipName}': " +
-                $"distance={encounter.Distance:0.00}, " +
-                $"weapon range={weapon.MaxRange:0.00}.");
+            //Log.Info(
+                //$"Ship '{attacker.ShipName}' " +
+                //$"cannot attack " +
+                //$"'{targetShip.ShipName}': " +
+                //$"distance={encounter.Distance:0.00}, " +
+                //$"weapon range={weapon.MaxRange:0.00}.");
 
             return ShipAttackResult.OutOfRange(
                 targetShip,
@@ -379,12 +379,12 @@ public class ShipCombatService
                 targetShip,
                 weapon))
         {
-            Log.Info(
-                $"Ship '{attacker.ShipName}' " +
-                $"cannot attack " +
-                $"'{targetShip.ShipName}': " +
-                $"target is outside the " +
-                $"{weapon.Arc} firing arc.");
+            //Log.Info(
+                //$"Ship '{attacker.ShipName}' " +
+                //$"cannot attack " +
+                //$"'{targetShip.ShipName}': " +
+                //$"target is outside the " +
+                //$"{weapon.Arc} firing arc.");
 
             return ShipAttackResult.OutOfArc(
                 targetShip,
@@ -410,11 +410,11 @@ public class ShipCombatService
 
                 if (remaining > TimeSpan.Zero)
                 {
-                    Log.Info(
-                        $"Ship '{attacker.ShipName}' " +
-                        $"attack rejected by cooldown. " +
-                        $"Weapon={weapon.DisplayName}, " +
-                        $"Remaining={remaining.TotalSeconds:0.00}s.");
+                    //Log.Info(
+                        //$"Ship '{attacker.ShipName}' " +
+                        //$"attack rejected by cooldown. " +
+                        //$"Weapon={weapon.DisplayName}, " +
+                        //$"Remaining={remaining.TotalSeconds:0.00}s.");
 
                     return ShipAttackResult.Cooldown(
                         weapon,
@@ -439,15 +439,15 @@ public class ShipCombatService
                 targetShip,
                 weapon.Damage);
 
-        Log.Info(
-            $"Ship attack: " +
-            $"{attacker.ShipName} -> " +
-            $"{targetShip.ShipName}, " +
-            $"Weapon={weapon.DisplayName}, " +
-            $"Damage={damage}, " +
-            $"Hull={previousHull}->{targetShip.Hull}, " +
-            $"Distance={encounter.Distance:0.00}, " +
-            $"Arc={weapon.Arc}");
+        //Log.Info(
+            //$"Ship attack: " +
+            //$"{attacker.ShipName} -> " +
+            //$"{targetShip.ShipName}, " +
+            //$"Weapon={weapon.DisplayName}, " +
+            //$"Damage={damage}, " +
+            //$"Hull={previousHull}->{targetShip.Hull}, " +
+            //$"Distance={encounter.Distance:0.00}, " +
+            //$"Arc={weapon.Arc}");
 
         // -----------------------------------------------------------------
         // Disabled state
@@ -461,10 +461,10 @@ public class ShipCombatService
             targetShip.Underway =
                 false;
 
-            Log.Info(
-                $"Ship '{targetShip.ShipName}' " +
-                "has been disabled. " +
-                "Underway=false.");
+            //Log.Info(
+                //$"Ship '{targetShip.ShipName}' " +
+                //"has been disabled. " +
+                //"Underway=false.");
         }
 
         // -----------------------------------------------------------------

@@ -73,9 +73,9 @@ route.Waypoints.Add(
         ship,
         route);
 
-    Log.Info(
-        $"Merchant trade route assigned: " +
-        $"Ship={ship.ShipName}, " +
-        $"Route=Driftwood Isle <-> Southport");
+    //Log.Info(
+        //$"Merchant trade route assigned: " +
+        //$"Ship={ship.ShipName}, " +
+        //$"Route=Driftwood Isle <-> Southport");
 }
 }

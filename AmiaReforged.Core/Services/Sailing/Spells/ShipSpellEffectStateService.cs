@@ -87,12 +87,12 @@ public sealed class ShipSpellEffectStateService
                     DateTime.UtcNow.Add(duration)
             });
 
-        Log.Info(
-            $"Ship spell speed boost applied: " +
-            $"Ship={ship.ShipName}, " +
-            $"Spell={spellName}, " +
-            $"Bonus={bonusPercent:0}%, " +
-            $"Duration={duration.TotalSeconds:0.0}s.");
+        //Log.Info(
+            //$"Ship spell speed boost applied: " +
+            //$"Ship={ship.ShipName}, " +
+            //$"Spell={spellName}, " +
+            //$"Bonus={bonusPercent:0}%, " +
+            //$"Duration={duration.TotalSeconds:0.0}s.");
     }
 
 }

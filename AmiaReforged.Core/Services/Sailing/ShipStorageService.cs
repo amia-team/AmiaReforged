@@ -26,9 +26,9 @@ public sealed class ShipStorageService
 
         if (ship.IsStored)
         {
-            Log.Info(
-                $"Ship '{ship.ShipName}' is already stored " +
-                $"at '{ship.StoredPortId}'.");
+            //Log.Info(
+                //$"Ship '{ship.ShipName}' is already stored " +
+                //$"at '{ship.StoredPortId}'.");
 
             return false;
         }
@@ -40,9 +40,9 @@ public sealed class ShipStorageService
         ship.IsNavigating = false;
         ship.DestinationAreaResRef = null;
 
-        Log.Info(
-            $"Ship '{ship.ShipName}' stored at port " +
-            $"'{portId}'.");
+        //Log.Info(
+            //$"Ship '{ship.ShipName}' stored at port " +
+            //$"'{portId}'.");
 
         return true;
     }
@@ -58,8 +58,8 @@ public sealed class ShipStorageService
 
         if (!ship.IsStored)
         {
-            Log.Info(
-                $"Ship '{ship.ShipName}' is not currently stored.");
+            //Log.Info(
+                //$"Ship '{ship.ShipName}' is not currently stored.");
 
             return false;
         }
@@ -69,9 +69,9 @@ public sealed class ShipStorageService
                 portId,
                 StringComparison.OrdinalIgnoreCase))
         {
-            Log.Info(
-                $"Ship '{ship.ShipName}' is stored at " +
-                $"'{ship.StoredPortId}', not '{portId}'.");
+            //Log.Info(
+                //$"Ship '{ship.ShipName}' is stored at " +
+                //$"'{ship.StoredPortId}', not '{portId}'.");
 
             return false;
         }
@@ -79,9 +79,9 @@ public sealed class ShipStorageService
         ship.IsStored = false;
         ship.StoredPortId = null;
 
-        Log.Info(
-            $"Ship '{ship.ShipName}' retrieved from port " +
-            $"'{portId}'.");
+        //Log.Info(
+            //$"Ship '{ship.ShipName}' retrieved from port " +
+            //$"'{portId}'.");
 
         return true;
     }

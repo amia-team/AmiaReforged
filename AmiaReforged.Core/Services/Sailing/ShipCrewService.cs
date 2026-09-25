@@ -31,8 +31,8 @@ public class ShipCrewService
       //  _physicalShipService.PlayerLeft +=
        //     HandlePlayerLeft;
 
-        Log.Info(
-            "Ship Crew Service initialized.");
+        //Log.Info(
+            //"Ship Crew Service initialized.");
     }
 
     // -----------------------------------------------------------------
@@ -43,10 +43,10 @@ public class ShipCrewService
         string shipName,
         NwPlayer player)
     {
-        Log.Info(
-            $"Ship crew received boarding event: " +
-            $"Ship={shipName}, " +
-            $"Player={player.PlayerName}");
+        //Log.Info(
+            //$"Ship crew received boarding event: " +
+            //$"Ship={shipName}, " +
+            //$"Player={player.PlayerName}");
 
         AddPassenger(
             shipName,
@@ -57,10 +57,10 @@ public class ShipCrewService
         string shipName,
         NwPlayer player)
     {
-        Log.Info(
-            $"Ship crew received departure event: " +
-            $"Ship={shipName}, " +
-            $"Player={player.PlayerName}");
+        //Log.Info(
+            //$"Ship crew received departure event: " +
+            //$"Ship={shipName}, " +
+            //$"Player={player.PlayerName}");
 
         RemoveMember(
             shipName,
@@ -97,10 +97,10 @@ public class ShipCrewService
         if (existingMember.Role ==
             ShipCrewRole.Captain)
         {
-            Log.Info(
-                $"Player '{player.PlayerName}' " +
-                $"is already captain of '{shipName}'. " +
-                "Preserving captain role.");
+            //Log.Info(
+                //$"Player '{player.PlayerName}' " +
+                //$"is already captain of '{shipName}'. " +
+                //"Preserving captain role.");
 
             return true;
         }
@@ -108,10 +108,10 @@ public class ShipCrewService
         if (existingMember.Role ==
             ShipCrewRole.Crew)
         {
-            Log.Info(
-                $"Player '{player.PlayerName}' " +
-                $"is already crew of '{shipName}'. " +
-                "Preserving crew role.");
+            //Log.Info(
+                //$"Player '{player.PlayerName}' " +
+                //$"is already crew of '{shipName}'. " +
+                //"Preserving crew role.");
 
             return true;
         }
@@ -182,10 +182,10 @@ public class ShipCrewService
                 member.Role =
                     ShipCrewRole.Crew;
 
-                Log.Info(
-                    $"Previous captain changed to crew: " +
-                    $"Ship={shipName}, " +
-                    $"Player={member.PlayerName}");
+                //Log.Info(
+                    //$"Previous captain changed to crew: " +
+                    //$"Ship={shipName}, " +
+                    //$"Player={member.PlayerName}");
             }
         }
 
@@ -232,11 +232,11 @@ public class ShipCrewService
                 member;
         }
 
-        Log.Info(
-            $"Ship crew role assigned: " +
-            $"Ship={shipName}, " +
-            $"Player={playerName}, " +
-            $"Role={role}");
+        //Log.Info(
+            //$"Ship crew role assigned: " +
+            //$"Ship={shipName}, " +
+            //$"Player={playerName}, " +
+            //$"Role={role}");
 
         return true;
     }
@@ -263,10 +263,10 @@ public class ShipCrewService
 
         if (removed)
         {
-            Log.Info(
-                $"Ship crew member removed: " +
-                $"Ship={shipName}, " +
-                $"Player={playerName}");
+            //Log.Info(
+                //$"Ship crew member removed: " +
+                //$"Ship={shipName}, " +
+                //$"Player={playerName}");
 
             if (crew.Count == 0)
             {

@@ -40,7 +40,7 @@ public class PhysicalShipService
 
 public PhysicalShipService()
 {
-    Log.Info("Physical Ship Service initialized.");
+    //Log.Info("Physical Ship Service initialized.");
 }
 
     // -----------------------------------------------------------------
@@ -60,12 +60,12 @@ public void RegisterPhysicalShip(ShipDefinition definition)
 
     _physicalShips[ship.ShipName] = ship;
 
-    Log.Info(
-        $"Registered physical ship: " +
-        $"Ship={ship.ShipName}, " +
-        $"Tag={ship.PlaceableTag}, " +
-        $"Deck={ship.DeckAreaResRef}, " +
-        $"Cabin={ship.CabinAreaResRef}");
+    //Log.Info(
+        //$"Registered physical ship: " +
+        //$"Ship={ship.ShipName}, " +
+        //$"Tag={ship.PlaceableTag}, " +
+        //$"Deck={ship.DeckAreaResRef}, " +
+        //$"Cabin={ship.CabinAreaResRef}");
 }
     // -----------------------------------------------------------------
     // Physical Ship Interaction Registration
@@ -86,11 +86,11 @@ public void RegisterPhysicalShip(ShipDefinition definition)
                 placeable.OnLeftClick +=
                     HandlePhysicalShipClick;
 
-                Log.Info(
-                    $"Physical ship interaction registered: " +
-                    $"Ship={physicalShip.ShipName}, " +
-                    $"Tag={placeable.Tag}, " +
-                    $"ResRef={placeable.ResRef}");
+                //Log.Info(
+                    //$"Physical ship interaction registered: " +
+                    //$"Ship={physicalShip.ShipName}, " +
+                    //$"Tag={placeable.Tag}, " +
+                    //$"ResRef={placeable.ResRef}");
             }
 
             List<NwPlaceable> exitPlaceables =
@@ -104,11 +104,11 @@ public void RegisterPhysicalShip(ShipDefinition definition)
                 exitPlaceable.OnLeftClick +=
                     HandleShipExitClick;
 
-                Log.Info(
-                    $"Ship exit registered: " +
-                    $"Ship={physicalShip.ShipName}, " +
-                    $"Tag={exitPlaceable.Tag}, " +
-                    $"ResRef={exitPlaceable.ResRef}");
+                //Log.Info(
+                    //$"Ship exit registered: " +
+                    //$"Ship={physicalShip.ShipName}, " +
+                    //$"Tag={exitPlaceable.Tag}, " +
+                    //$"ResRef={exitPlaceable.ResRef}");
             }
         }
     }
@@ -172,20 +172,20 @@ public void RegisterPhysicalShip(ShipDefinition definition)
                 .OfType<NwPlaceable>()
                 .ToList();
 
-        Log.Info(
-            $"Physical ship lookup: " +
-            $"Ship={shipName}, " +
-            $"Tag={physicalShip.PlaceableTag}, " +
-            $"Found={placeables.Count}");
+        //Log.Info(
+            //$"Physical ship lookup: " +
+            //$"Ship={shipName}, " +
+            //$"Tag={physicalShip.PlaceableTag}, " +
+            //$"Found={placeables.Count}");
 
         foreach (NwPlaceable placeable
             in placeables)
         {
-            Log.Info(
-                $"Physical ship found: " +
-                $"Ship={shipName}, " +
-                $"Tag={placeable.Tag}, " +
-                $"ResRef={placeable.ResRef}");
+            //Log.Info(
+                //$"Physical ship found: " +
+                //$"Ship={shipName}, " +
+                //$"Tag={placeable.Tag}, " +
+                //$"ResRef={placeable.ResRef}");
         }
 
         return placeables;
@@ -239,9 +239,9 @@ public void RegisterPhysicalShip(ShipDefinition definition)
                     shipName,
                     StringComparison.Ordinal))
             {
-                Log.Info(
-                    $"Player {player.PlayerName} " +
-                    $"is already aboard {shipName}.");
+                //Log.Info(
+                    //$"Player {player.PlayerName} " +
+                    //$"is already aboard {shipName}.");
 
                 return false;
             }
@@ -270,10 +270,10 @@ public void RegisterPhysicalShip(ShipDefinition definition)
         players.Add(
             player.PlayerName);
 
-        Log.Info(
-            $"Player {player.PlayerName} " +
-            $"is now aboard {shipName}. " +
-            $"Aboard={players.Count}");
+        //Log.Info(
+            //$"Player {player.PlayerName} " +
+            //$"is now aboard {shipName}. " +
+            //$"Aboard={players.Count}");
 
         // Notify interested services that the player
         // has successfully boarded the ship.
@@ -292,10 +292,10 @@ public void RegisterPhysicalShip(ShipDefinition definition)
                 shipName,
                 out HashSet<string>? players))
         {
-            Log.Info(
-                $"Player {player.PlayerName} " +
-                $"was not being tracked aboard " +
-                $"{shipName}.");
+            //Log.Info(
+                //$"Player {player.PlayerName} " +
+                //$"was not being tracked aboard " +
+                //$"{shipName}.");
 
             return false;
         }
@@ -306,10 +306,10 @@ public void RegisterPhysicalShip(ShipDefinition definition)
 
         if (removed)
         {
-            Log.Info(
-                $"Player {player.PlayerName} " +
-                $"left {shipName}. " +
-                $"Aboard={players.Count}");
+            //Log.Info(
+                //$"Player {player.PlayerName} " +
+                //$"left {shipName}. " +
+                //$"Aboard={players.Count}");
 
             // Notify interested services that the player
             // has successfully left the ship.
@@ -399,9 +399,9 @@ public void RegisterPhysicalShip(ShipDefinition definition)
             player.SendServerMessage(
                 $"You are already aboard the {shipName}.");
 
-            Log.Info(
-                $"Player {player.PlayerName} attempted " +
-                $"to board '{shipName}', but is already aboard.");
+            //Log.Info(
+                //$"Player {player.PlayerName} attempted " +
+                //$"to board '{shipName}', but is already aboard.");
 
             return false;
         }
@@ -419,10 +419,10 @@ public void RegisterPhysicalShip(ShipDefinition definition)
             player.SendServerMessage(
                 $"You are already aboard the {existingShip}.");
 
-            Log.Info(
-                $"Player {player.PlayerName} attempted " +
-                $"to board '{shipName}', but is already " +
-                $"aboard '{existingShip}'.");
+            //Log.Info(
+                //$"Player {player.PlayerName} attempted " +
+                //$"to board '{shipName}', but is already " +
+                //$"aboard '{existingShip}'.");
 
             return false;
         }
@@ -496,14 +496,14 @@ public void RegisterPhysicalShip(ShipDefinition definition)
         player.SendServerMessage(
             $"You board the {shipName}.");
 
-        Log.Info(
-            $"Player {player.PlayerName} boarded " +
-            $"the {shipName}. " +
-            $"Deck={physicalShip.DeckAreaResRef}, " +
-            $"Position=(" +
-            $"{DeckSpawnX:0.00}, " +
-            $"{DeckSpawnY:0.00}, " +
-            $"{DeckSpawnZ:0.00})");
+        //Log.Info(
+            //$"Player {player.PlayerName} boarded " +
+            //$"the {shipName}. " +
+            //$"Deck={physicalShip.DeckAreaResRef}, " +
+            //$"Position=(" +
+            //$"{DeckSpawnX:0.00}, " +
+            //$"{DeckSpawnY:0.00}, " +
+            //$"{DeckSpawnZ:0.00})");
 
         return true;
     }
@@ -593,14 +593,14 @@ public void RegisterPhysicalShip(ShipDefinition definition)
         player.SendServerMessage(
             $"You leave the {shipName}.");
 
-        Log.Info(
-            $"Player {player.PlayerName} left " +
-            $"the {shipName}. " +
-            $"Area={area.ResRef}, " +
-            $"Position=(" +
-            $"{position.X:0.00}, " +
-            $"{position.Y:0.00}, " +
-            $"{position.Z:0.00})");
+        //Log.Info(
+            //$"Player {player.PlayerName} left " +
+            //$"the {shipName}. " +
+            //$"Area={area.ResRef}, " +
+            //$"Position=(" +
+            //$"{position.X:0.00}, " +
+            //$"{position.Y:0.00}, " +
+            //$"{position.Z:0.00})");
 
         return true;
     }
@@ -618,11 +618,11 @@ public void RegisterPhysicalShip(ShipDefinition definition)
         NwPlaceable placeable =
             obj.Placeable;
 
-        Log.Info(
-            $"Physical ship clicked: " +
-            $"Player={player.PlayerName}, " +
-            $"Tag={placeable.Tag}, " +
-            $"ResRef={placeable.ResRef}");
+        //Log.Info(
+            //$"Physical ship clicked: " +
+            //$"Player={player.PlayerName}, " +
+            //$"Tag={placeable.Tag}, " +
+            //$"ResRef={placeable.ResRef}");
 
         PhysicalShip? physicalShip =
             _physicalShips.Values.FirstOrDefault(
@@ -655,11 +655,11 @@ public void RegisterPhysicalShip(ShipDefinition definition)
         NwPlaceable placeable =
             obj.Placeable;
 
-        Log.Info(
-            $"Ship exit clicked: " +
-            $"Player={player.PlayerName}, " +
-            $"Tag={placeable.Tag}, " +
-            $"ResRef={placeable.ResRef}");
+        //Log.Info(
+            //$"Ship exit clicked: " +
+            //$"Player={player.PlayerName}, " +
+            //$"Tag={placeable.Tag}, " +
+            //$"ResRef={placeable.ResRef}");
 
         PhysicalShip? physicalShip =
             _physicalShips.Values.FirstOrDefault(
@@ -702,15 +702,15 @@ public void SpawnPhysicalShip(string shipName)
             return false;
         }
 
-        Log.Info(
-            $"Physical ship test successful: " +
-            $"Ship={shipName}, " +
-            $"Tag={placeable.Tag}, " +
-            $"ResRef={placeable.ResRef}, " +
-            $"Position=(" +
-            $"{placeable.Position.X:0.00}, " +
-            $"{placeable.Position.Y:0.00}, " +
-            $"{placeable.Position.Z:0.00})");
+        //Log.Info(
+            //$"Physical ship test successful: " +
+            //$"Ship={shipName}, " +
+            //$"Tag={placeable.Tag}, " +
+            //$"ResRef={placeable.ResRef}, " +
+            //$"Position=(" +
+            //$"{placeable.Position.X:0.00}, " +
+            //$"{placeable.Position.Y:0.00}, " +
+            //$"{placeable.Position.Z:0.00})");
 
         return true;
     }
@@ -733,13 +733,13 @@ public void SpawnPhysicalShip(string shipName)
     placeable.Location =
         location;
 
-    Log.Info(
-        $"Physical ship '{shipName}' moved to " +
-        $"Area={location.Area?.ResRef}, " +
-        $"Position=(" +
-        $"{location.Position.X:0.00}, " +
-        $"{location.Position.Y:0.00}, " +
-        $"{location.Position.Z:0.00})");
+    //Log.Info(
+        //$"Physical ship '{shipName}' moved to " +
+        //$"Area={location.Area?.ResRef}, " +
+        //$"Position=(" +
+        //$"{location.Position.X:0.00}, " +
+        //$"{location.Position.Y:0.00}, " +
+        //$"{location.Position.Z:0.00})");
 
     return true;
 }

@@ -25,9 +25,9 @@ public class ShipEncounterService
 
     public ShipEncounterService()
     {
-        Log.Info(
-            $"Ship Encounter Service initialized. " +
-            $"Encounter distance={EncounterDistance}.");
+        //Log.Info(
+            //$"Ship Encounter Service initialized. " +
+            //$"Encounter distance={EncounterDistance}.");
     }
 
     public void CheckEncounters(
@@ -235,14 +235,14 @@ public class ShipEncounterService
             EncounterStarted?.Invoke(
                 encounter);
 
-            Log.Info(
-                $"Ship encounter started: " +
-                $"{shipA.ShipName} <-> " +
-                $"{shipB.ShipName}, " +
-                $"Area={shipA.AreaResRef}, " +
-                $"Distance={distance:0.00}, " +
-                $"A=({shipA.X:0.00}, {shipA.Y:0.00}), " +
-                $"B=({shipB.X:0.00}, {shipB.Y:0.00})");
+            //Log.Info(
+                //$"Ship encounter started: " +
+                //$"{shipA.ShipName} <-> " +
+                //$"{shipB.ShipName}, " +
+                //$"Area={shipA.AreaResRef}, " +
+                //$"Distance={distance:0.00}, " +
+                //$"A=({shipA.X:0.00}, {shipA.Y:0.00}), " +
+                //$"B=({shipB.X:0.00}, {shipB.Y:0.00})");
         }
         else
         {
@@ -272,10 +272,10 @@ public class ShipEncounterService
             EncounterEnded?.Invoke(
                 encounter);
 
-            Log.Info(
-                $"Ship encounter ended: " +
-                $"{encounter.ShipA.ShipName} <-> " +
-                $"{encounter.ShipB.ShipName}");
+            //Log.Info(
+                //$"Ship encounter ended: " +
+                //$"{encounter.ShipA.ShipName} <-> " +
+                //$"{encounter.ShipB.ShipName}");
         }
     }
 

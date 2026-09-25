@@ -22,9 +22,9 @@ public class ShipNavigationLoopService
             helmService;
         _shipCombatNuiService =
             shipCombatNuiService;
-        Log.Info(
-            "Ship Navigation Loop Service initialized. " +
-            $"Interval={NavigationIntervalMilliseconds}ms.");
+        //Log.Info(
+            //"Ship Navigation Loop Service initialized. " +
+            //$"Interval={NavigationIntervalMilliseconds}ms.");
 
         _ = NavigationLoop();
     }

@@ -65,8 +65,8 @@ private readonly ShipSpellVfxService _shipSpellVfxService;
     _shipSpellVfxService =
     shipSpellVfxService;
 
-        Log.Info(
-        "Ship Spell Effect Service initialized.");
+        //Log.Info(
+        //"Ship Spell Effect Service initialized.");
 }
     
     //process spell
@@ -93,10 +93,10 @@ private readonly ShipSpellVfxService _shipSpellVfxService;
         caster,
         spell);
 
-    Log.Info(
-        $"Processing sailing spell definition: " +
-        $"Spell={definition.DisplayName}, " +
-        $"Type={definition.EffectType}.");
+    //Log.Info(
+        //$"Processing sailing spell definition: " +
+        //$"Spell={definition.DisplayName}, " +
+        //$"Type={definition.EffectType}.");
 
         switch (definition.EffectType)
         {
@@ -203,10 +203,10 @@ if (definition.RequiresEncounter)
             player.SendServerMessage(
                 "There is no enemy ship in range.");
 
-            Log.Info(
-                $"Fireball failed: " +
-                $"Ship={attackingShip.ShipName} " +
-                $"requires an encounter target.");
+            //Log.Info(
+                //$"Fireball failed: " +
+                //$"Ship={attackingShip.ShipName} " +
+                //$"requires an encounter target.");
 
             return false;
         }
@@ -242,12 +242,12 @@ if (definition.MaxRange > 0.0f &&
         $"Range: {definition.MaxRange:0.0}, " +
         $"Distance: {encounter.Distance:0.0}.");
 
-    Log.Info(
-        $"{definition.DisplayName} rejected: " +
-        $"Ship={attackingShip.ShipName}, " +
-        $"Target={targetShip.ShipName}, " +
-        $"Distance={encounter.Distance:0.00}, " +
-        $"MaxRange={definition.MaxRange:0.00}.");
+    //Log.Info(
+        //$"{definition.DisplayName} rejected: " +
+        //$"Ship={attackingShip.ShipName}, " +
+        //$"Target={targetShip.ShipName}, " +
+        //$"Distance={encounter.Distance:0.00}, " +
+        //$"MaxRange={definition.MaxRange:0.00}.");
 
     return false;
 }
@@ -307,13 +307,13 @@ if (definition.MaxRange > 0.0f &&
             $"Hull: {previousHull}% → {targetShip.Hull}%");
     }
 
-    Log.Info(
-        $"Ship Fireball hit: " +
-        $"Attacker={attackingShip.ShipName}, " +
-        $"Target={targetShip.ShipName}, " +
-        $"Distance={encounter?.Distance:0.00}, " +
-        $"Damage={definition.HullDamage}, " +
-        $"Hull={previousHull}->{targetShip.Hull}.");
+    //Log.Info(
+        //$"Ship Fireball hit: " +
+        //$"Attacker={attackingShip.ShipName}, " +
+        //$"Target={targetShip.ShipName}, " +
+        //$"Distance={encounter?.Distance:0.00}, " +
+        //$"Damage={definition.HullDamage}, " +
+        //$"Hull={previousHull}->{targetShip.Hull}.");
 
         return true;
     }
@@ -361,9 +361,9 @@ if (targetShip == null ||
         player.SendServerMessage(
             "There is no enemy ship in range.");
 
-        Log.Info(
-            $"Lightning Bolt failed: " +
-            $"Ship={attackingShip.ShipName} has no encounter target.");
+        //Log.Info(
+            //$"Lightning Bolt failed: " +
+            //$"Ship={attackingShip.ShipName} has no encounter target.");
 
         return false;
     }
@@ -389,12 +389,12 @@ if (definition.MaxRange > 0.0f &&
         $"Range: {definition.MaxRange:0.0}, " +
         $"Distance: {encounter.Distance:0.0}.");
 
-    Log.Info(
-        $"{definition.DisplayName} rejected: " +
-        $"Ship={attackingShip.ShipName}, " +
-        $"Target={targetShip.ShipName}, " +
-        $"Distance={encounter.Distance:0.00}, " +
-        $"MaxRange={definition.MaxRange:0.00}.");
+    //Log.Info(
+        //$"{definition.DisplayName} rejected: " +
+        //$"Ship={attackingShip.ShipName}, " +
+        //$"Target={targetShip.ShipName}, " +
+        //$"Distance={encounter.Distance:0.00}, " +
+        //$"MaxRange={definition.MaxRange:0.00}.");
 
     return false;
 }
@@ -456,13 +456,13 @@ if (definition.MaxRange > 0.0f &&
             $"Hull: {previousHull}% → {targetShip.Hull}%");
     }
 
-    Log.Info(
-        $"Ship Lightning Bolt hit: " +
-        $"Attacker={attackingShip.ShipName}, " +
-        $"Target={targetShip.ShipName}, " +
-        $"Distance={encounter.Distance:0.00}, " +
-        $"Damage={damage}, " +
-        $"Hull={previousHull}->{targetShip.Hull}.");
+    //Log.Info(
+        //$"Ship Lightning Bolt hit: " +
+        //$"Attacker={attackingShip.ShipName}, " +
+        //$"Target={targetShip.ShipName}, " +
+        //$"Distance={encounter.Distance:0.00}, " +
+        //$"Damage={damage}, " +
+        //$"Hull={previousHull}->{targetShip.Hull}.");
 
         return true;
     }
@@ -517,12 +517,12 @@ if (definition.MaxRange > 0.0f &&
 
      
 
-        Log.Info(
-            $"Ship Gust of Wind applied: " +
-            $"Ship={ship.ShipName}, " +
-            $"Caster={player.PlayerName}, " +
-            $"Multiplier=2.0x, " +
-            $"Duration=60s.");
+        //Log.Info(
+            //$"Ship Gust of Wind applied: " +
+            //$"Ship={ship.ShipName}, " +
+            //$"Caster={player.PlayerName}, " +
+            //$"Multiplier=2.0x, " +
+            //$"Duration=60s.");
 
             return true;
     }

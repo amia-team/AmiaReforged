@@ -45,7 +45,7 @@ public ShipSpellService(
     NwModule.Instance.OnSpellCast += eventData =>
         HandleSpellCast(eventData);
 
-    Log.Info("Ship Spell Service initialized.");
+    //Log.Info("Ship Spell Service initialized.");
 }
 
     // ---------------------------------------------------------------------
@@ -109,13 +109,13 @@ public ShipSpellService(
         // This is simply the sailing-system detection point.
         // -------------------------------------------------------------
 
-        Log.Info(
-            $"Ship spell detected: " +
-            $"Player={player.PlayerName}, " +
-            $"Ship={shipName}, " +
-            $"Spell={spell.Name}, " +
-            $"SpellId={spell.Id}, " +
-            $"Class={castingClass.ClassType}.");
+        //Log.Info(
+            //$"Ship spell detected: " +
+            //$"Player={player.PlayerName}, " +
+            //$"Ship={shipName}, " +
+            //$"Spell={spell.Name}, " +
+            //$"SpellId={spell.Id}, " +
+            //$"Class={castingClass.ClassType}.");
 _shipSpellVfxService.PlayCasterSpellVfx(
     caster,
     spell);
@@ -260,13 +260,13 @@ public bool ConsumeMemorizedSpell(
 
             slot.IsReady = false;
 
-            Log.Info(
-                $"Sailing spell slot consumed: " +
-                $"Caster={caster.Name}, " +
-                $"Spell={spell.Name}, " +
-                $"SpellId={spell.Id}, " +
-                $"Class={classInfo.Class.ClassType}, " +
-                $"SpellLevel={spellLevel}.");
+            //Log.Info(
+                //$"Sailing spell slot consumed: " +
+                //$"Caster={caster.Name}, " +
+                //$"Spell={spell.Name}, " +
+                //$"SpellId={spell.Id}, " +
+                //$"Class={classInfo.Class.ClassType}, " +
+                //$"SpellLevel={spellLevel}.");
 
             return true;
         }

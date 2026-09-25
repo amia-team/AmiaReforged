@@ -41,8 +41,8 @@ private readonly OceanContactService _oceanContactService;
     _oceanContactService =
         oceanContactService;
 
-    Log.Info(
-        "Horizon Contact Service initialized.");
+    //Log.Info(
+        //"Horizon Contact Service initialized.");
 }
 
     public void UpdateContacts(
@@ -74,13 +74,13 @@ float distance =
         pirate.X,
         pirate.Y);
 
-Log.Info(
-    $"Horizon update: " +
-    $"Ship={ship.ShipName}, " +
-    $"Heading={ship.Heading}, " +
-    $"Pirate={pirate.Id}, " +
-    $"Distance={distance:0.0}, " +
-    $"X={x:0.0}");
+//Log.Info(
+    //$"Horizon update: " +
+    //$"Ship={ship.ShipName}, " +
+    //$"Heading={ship.Heading}, " +
+    //$"Pirate={pirate.Id}, " +
+    //$"Distance={distance:0.0}, " +
+    //$"X={x:0.0}");
   
 }
 

@@ -48,27 +48,27 @@ public class ShipStatePersistenceService
 
             if (state != null)
             {
-                Log.Info(
-                    "Loaded saved ship state: " +
-                    "Ship={ShipName}, Area={Area}, " +
-                    "X={X}, Y={Y}, Z={Z}, " +
-                    "Heading={Heading}, Underway={Underway}, " +
-                    "Hull={Hull}, Weapon={Weapon}",
-                    state.ShipName,
-                    state.AreaResRef,
-                    state.X,
-                    state.Y,
-                    state.Z,
-                    state.Heading,
-                    state.Underway,
-                    state.Hull,
-                    state.WeaponResRef);
+                //Log.Info(
+                    //"Loaded saved ship state: " +
+                    //"Ship={ShipName}, Area={Area}, " +
+                    //"X={X}, Y={Y}, Z={Z}, " +
+                    //"Heading={Heading}, Underway={Underway}, " +
+                    //"Hull={Hull}, Weapon={Weapon}",
+                    //state.ShipName,
+                    //state.AreaResRef,
+                    //state.X,
+                    //state.Y,
+                    //state.Z,
+                    //state.Heading,
+                    //state.Underway,
+                    //state.Hull,
+                    //state.WeaponResRef);
             }
             else
             {
-                Log.Info(
-                    "No saved ship state found for '{ShipName}'.",
-                    shipName);
+                //Log.Info(
+                    //"No saved ship state found for '{ShipName}'.",
+                    //shipName);
             }
 
             return state;
@@ -145,9 +145,9 @@ public class ShipStatePersistenceService
                 await context.SavedShipStates
                     .AddAsync(existingState);
 
-                Log.Info(
-                    "Creating saved ship state for '{ShipName}'.",
-                    shipState.ShipName);
+                //Log.Info(
+                    //"Creating saved ship state for '{ShipName}'.",
+                    //shipState.ShipName);
             }
             else
             {
@@ -178,28 +178,28 @@ public class ShipStatePersistenceService
                         ? "ship_cannon"
                         : shipState.WeaponResRef;
 
-                Log.Info(
-                    "Updating saved ship state for '{ShipName}'.",
-                    shipState.ShipName);
+                //Log.Info(
+                    //"Updating saved ship state for '{ShipName}'.",
+                    //shipState.ShipName);
             }
 
             await context.SaveChangesAsync();
 
-            Log.Info(
-                "Saved ship state: " +
-                "Ship={ShipName}, Area={Area}, " +
-                "X={X}, Y={Y}, Z={Z}, " +
-                "Heading={Heading}, Underway={Underway}, " +
-                "Hull={Hull}, Weapon={Weapon}",
-                shipState.ShipName,
-                shipState.AreaResRef,
-                shipState.X,
-                shipState.Y,
-                shipState.Z,
-                shipState.Heading,
-                shipState.Underway,
-                shipState.Hull,
-                shipState.WeaponResRef);
+            //Log.Info(
+                //"Saved ship state: " +
+                //"Ship={ShipName}, Area={Area}, " +
+                //"X={X}, Y={Y}, Z={Z}, " +
+                //"Heading={Heading}, Underway={Underway}, " +
+                //"Hull={Hull}, Weapon={Weapon}",
+                //shipState.ShipName,
+                //shipState.AreaResRef,
+                //shipState.X,
+                //shipState.Y,
+                //shipState.Z,
+                //shipState.Heading,
+                //shipState.Underway,
+                //shipState.Hull,
+                //shipState.WeaponResRef);
         }
         catch (Exception e)
         {

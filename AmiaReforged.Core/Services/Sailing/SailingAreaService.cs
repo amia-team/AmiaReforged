@@ -26,9 +26,9 @@ public class SailingAreaService
     {
         RegisterSailingAreas();
 
-        Log.Info(
-            "Sailing Area Service initialized. " +
-            $"Registered {_sailingAreas.Count} sailing area(s).");
+        //Log.Info(
+            //"Sailing Area Service initialized. " +
+            //$"Registered {_sailingAreas.Count} sailing area(s).");
     }
 
     // -----------------------------------------------------------------
@@ -165,10 +165,10 @@ SouthEntry = CreateLocation(
             ocean05.AreaResRef] =
             ocean05;
 
-        Log.Info(
-            "Sailing areas registered: " +
-            "ocean_01, ocean_002, ocean_003, " +
-            "ocean_004, ocean_005.");
+        //Log.Info(
+            //"Sailing areas registered: " +
+            //"ocean_01, ocean_002, ocean_003, " +
+            //"ocean_004, ocean_005.");
     }
 
     // -----------------------------------------------------------------

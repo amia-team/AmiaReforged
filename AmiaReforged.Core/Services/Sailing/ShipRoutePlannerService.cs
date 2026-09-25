@@ -19,8 +19,8 @@ public class ShipRoutePlannerService
         _sailingAreaService =
             sailingAreaService;
 
-        Log.Info(
-            "Ship Route Planner Service initialized.");
+        //Log.Info(
+            //"Ship Route Planner Service initialized.");
     }
 
     // -----------------------------------------------------------------

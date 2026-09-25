@@ -174,8 +174,8 @@ public class SailingNuiService
 
         _chartLandmarkService = chartLandmarkService;
 
-        Log.Info(
-        "Sailing NUI Service initialized.");
+        //Log.Info(
+        //"Sailing NUI Service initialized.");
     }
     private static string GetShipImage(Heading heading)
     {
@@ -804,9 +804,9 @@ Button(
             player,
             ship);
 
-        Log.Info(
-            $"Sailing NUI opened for player " +
-            $"{player.PlayerName}.");
+        //Log.Info(
+            //$"Sailing NUI opened for player " +
+            //$"{player.PlayerName}.");
 
 
     }
@@ -834,14 +834,14 @@ Button(
             return;
         }
 
-        Log.Info(
-            $"Sailing NUI updating: " +
-            $"Player={player.PlayerName}, " +
-            $"Ship={ship.ShipName}, " +
-            $"Area={ship.AreaResRef}, " +
-            $"X={ship.X:0.00}, " +
-            $"Y={ship.Y:0.00}, " +
-            $"Heading={ship.Heading}");
+        //Log.Info(
+            //$"Sailing NUI updating: " +
+            //$"Player={player.PlayerName}, " +
+            //$"Ship={ship.ShipName}, " +
+            //$"Area={ship.AreaResRef}, " +
+            //$"X={ship.X:0.00}, " +
+            //$"Y={ship.Y:0.00}, " +
+            //$"Heading={ship.Heading}");
 
         // -----------------------------------------------------------------
         // Navigation
@@ -1090,8 +1090,8 @@ Button(
         IReadOnlyCollection<ShipState>? ships = null)
     {
         ships ??= Array.Empty<ShipState>();
-        Log.Info(
-            $"BuildMapCanvas: Viewer={ship.ShipName}, ShipCount={ships.Count}");
+        //Log.Info(
+            //$"BuildMapCanvas: Viewer={ship.ShipName}, ShipCount={ships.Count}");
         float playerDrawX =
             (ship.X / MapWorldSize) * 800.0f;
 
@@ -1238,7 +1238,7 @@ Button(
                 // Draw other visible ships first.
                 // -------------------------------------------------------------
 
-        Log.Info($"BuildMapCanvas: Viewer={ship.ShipName}, ShipCount={ships.Count}");
+        //Log.Info($"BuildMapCanvas: Viewer={ship.ShipName}, ShipCount={ships.Count}");
 
         foreach (VisibleShipContact contact in
                  _shipVisibilityService.GetVisibleShips(ship, ships))

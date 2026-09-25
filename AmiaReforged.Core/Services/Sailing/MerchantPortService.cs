@@ -57,10 +57,10 @@ ship.CurrentTradePortId =
             ship,
             waypoint.PortId);
 
-        Log.Info(
-            $"Merchant '{ship.ShipName}' docked at " +
-            $"{waypoint.PortId}. " +
-            $"Departure={ship.PortDepartureTime:O}");
+        //Log.Info(
+            //$"Merchant '{ship.ShipName}' docked at " +
+            //$"{waypoint.PortId}. " +
+            //$"Departure={ship.PortDepartureTime:O}");
 
         return true;
     }
@@ -83,8 +83,8 @@ ship.CurrentTradePortId =
 
 ship.CurrentTradePortId = null;
 
-        Log.Info(
-            $"Merchant '{ship.ShipName}' departing port.");
+        //Log.Info(
+            //$"Merchant '{ship.ShipName}' departing port.");
 
         return false;
     }
