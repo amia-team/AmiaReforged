@@ -12,6 +12,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.AreaGraph;
 /// Builds an <see cref="AreaGraphData"/> by scanning all areas in the module
 /// and discovering transitions via doors and triggers.
 /// </summary>
+[ServiceBinding(typeof(AreaGraphBuilder))]
 public class AreaGraphBuilder
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
