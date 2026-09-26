@@ -1,5 +1,7 @@
 # Ticket 001 — Add GrantTraitCommandHandler behavior tests
 
+** DONE **
+
 ## Goal
 
 Add direct unit coverage for the domain behavior implemented by:
