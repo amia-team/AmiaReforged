@@ -25,7 +25,7 @@ private readonly Dictionary<string, string> _shipPlaceableTags = new()
 {
     ["Sea Sprite"] = "sea_sprite",
     ["Black Pearl"] = "black_pearl",
- 
+
 };
 
 private readonly Dictionary<string, ShipState> _ships = new();
@@ -193,7 +193,7 @@ public HelmService(
 
 _shipEncounterService.EncounterEnded +=
     HandleShipEncounterEnded;
-    
+
         _shipBoardingService.BoardingCompleted -=
     HandleBoardingCompleted;
 
@@ -251,8 +251,8 @@ foreach (NwPlaceable boardingPoint in
 {
     boardTest.OnLeftClick -= HandleBoardTestClick;
     boardTest.OnLeftClick += HandleBoardTestClick;
-}  
-    }    
+}
+    }
 
 
 public void RegisterShipDefinition(ShipDefinition definition)
@@ -342,7 +342,7 @@ if (tookHelm)
         //$"Player {player.PlayerName} " +
         //$"took the helm of the {shipName}.");
 
-        
+
     player.OnNuiEvent -=
         HandleSailingNuiEvent;
 
@@ -651,7 +651,7 @@ case "merchant_trade_sell_1":
         obj.Player,
         1);
     break;
-                    
+
                 case "dock_button":
             DockShip(
                 shipName,
@@ -2072,7 +2072,7 @@ public bool TestNavigation(
     // We deliberately send it into ocean_002.
     // -------------------------------------------------------------
 
-    
+
 
     float destinationZ =
         ship.Z;
@@ -2223,7 +2223,7 @@ if (string.IsNullOrWhiteSpace(ship.HelmsmanPCKey))
             }
 
         _horizonContactService.UpdateContacts(ship);
-        
+
 
         OceanContact? contact =
             _oceanContactService.GetClosestContact(ship);
@@ -2361,7 +2361,7 @@ if (string.IsNullOrWhiteSpace(
                 //$"captain of '{shipName}' and is now crew.");
         }
         }
- 
+
     }
 
 private void TurnLeft(
@@ -3005,7 +3005,7 @@ else
 
     UpdateSailingNui(ship);
     _ = _shipStatePersistenceService.SaveState(ship);
-}   
+}
 
 // -------------------------------------------------------------
 // Final destination reached
@@ -3239,9 +3239,9 @@ private void UpdatePhysicalShip(
             ship.ShipName,
             out string? placeableTag))
     {
-        Log.Warn(
-            $"No physical placeable tag configured " +
-            $"for ship '{ship.ShipName}'.");
+        // Log.Warn(
+            // $"No physical placeable tag configured " +
+            // $"for ship '{ship.ShipName}'.");
 
         return;
     }
@@ -4073,7 +4073,7 @@ private void RefreshMerchantTradeWindow(
     }
 
     int playerGold =
-        
+
         (int)creature.Gold;
 
     int playerCargoUsed =
@@ -4448,7 +4448,7 @@ private void OpenShipRetrievalWindow(
     _shipRetrievalTokens[player.PlayerName] =
         token;
     _shipRetrievalPorts[player.PlayerName] =
-    portId;   
+    portId;
         player.OnNuiEvent -=
     HandleShipRetrievalNuiEvent;
 
