@@ -21,12 +21,14 @@ public sealed class CommandDispatcher : ICommandDispatcher
     private readonly ConcurrentDictionary<Type, HandlerInvocation> _handlerCache = new();
 
     private sealed class HandlerInvocation(
+        Type? serviceType,
         string? serviceName,
         object? handler,
         Type handlerType,
         MethodInfo handleMethod,
         Type commandType)
     {
+        public Type? ServiceType { get; } = serviceType;
         public string? ServiceName { get; } = serviceName;
         public object? Handler { get; } = handler;
         public Type HandlerType { get; } = handlerType;
@@ -190,42 +192,25 @@ public sealed class CommandDispatcher : ICommandDispatcher
                 "Cannot discover DI handler registrations without an Anvil service container.");
         }
 
-        IEnumerable<ServiceRegistration> registrations =
+        IEnumerable<IGrouping<Type, ServiceRegistration>> handlerRegistrationGroups =
             _serviceContainer.AvailableServices
                 .Where(registration =>
-                    registration.ServiceType ==
-                    typeof(ICommandHandlerMarker))
+                    registration.ImplementingType != null &&
+                    typeof(ICommandHandlerMarker).IsAssignableFrom(
+                        registration.ImplementingType))
+                .GroupBy(registration => registration.ImplementingType!)
                 .OrderBy(
-                    registration => registration.ServiceName,
+                    group => group.Key.FullName,
                     StringComparer.Ordinal);
 
-        foreach (ServiceRegistration registration in registrations)
+        foreach (IGrouping<Type, ServiceRegistration> registrationGroup
+                 in handlerRegistrationGroups)
         {
-            Type? handlerType = registration.ImplementingType;
-
-            if (handlerType == null)
-            {
-                Log.Warn(
-                    "Command handler registration {ServiceName} has no implementing type",
-                    registration.ServiceName);
-
-                continue;
-            }
-
-            string? serviceName = registration.ServiceName;
-
-            if (string.IsNullOrWhiteSpace(serviceName))
-            {
-                Log.Warn(
-                    "Command handler {HandlerType} has no named service registration",
-                    handlerType.Name);
-
-                continue;
-            }
+            Type handlerType = registrationGroup.Key;
 
             CacheHandlerMetadata(
                 handlerType,
-                serviceName,
+                registrationGroup.ToArray(),
                 handler: null);
         }
 
@@ -241,7 +226,7 @@ public sealed class CommandDispatcher : ICommandDispatcher
         {
             CacheHandlerMetadata(
                 handler.GetType(),
-                serviceName: null,
+                registrations: null,
                 handler);
         }
 
@@ -252,7 +237,7 @@ public sealed class CommandDispatcher : ICommandDispatcher
 
     private void CacheHandlerMetadata(
         Type handlerType,
-        string? serviceName,
+        IReadOnlyCollection<ServiceRegistration>? registrations,
         object? handler)
     {
         IEnumerable<Type> handlerInterfaces =
@@ -281,7 +266,34 @@ public sealed class CommandDispatcher : ICommandDispatcher
                 continue;
             }
 
+            Type? serviceType = null;
+            string? serviceName = null;
+
+            if (handler == null)
+            {
+                ServiceRegistration? registration =
+                    SelectBestRegistration(
+                        registrations,
+                        handlerInterface,
+                        handlerType);
+
+                if (registration == null)
+                {
+                    Log.Warn(
+                        "Command handler {HandlerType} implements {HandlerInterface} " +
+                        "but has no usable DI registration",
+                        handlerType.Name,
+                        handlerInterface.Name);
+
+                    continue;
+                }
+
+                serviceType = registration.ServiceType;
+                serviceName = registration.ServiceName;
+            }
+
             HandlerInvocation invocation = new(
+                serviceType,
                 serviceName,
                 handler,
                 handlerType,
@@ -306,6 +318,56 @@ public sealed class CommandDispatcher : ICommandDispatcher
         }
     }
 
+    private static ServiceRegistration? SelectBestRegistration(
+        IReadOnlyCollection<ServiceRegistration>? registrations,
+        Type handlerInterface,
+        Type handlerType)
+    {
+        if (registrations == null || registrations.Count == 0)
+        {
+            return null;
+        }
+
+        return registrations
+            .OrderBy(registration =>
+                GetRegistrationPriority(
+                    registration,
+                    handlerInterface,
+                    handlerType))
+            .ThenBy(
+                registration => registration.ServiceName,
+                StringComparer.Ordinal)
+            .First();
+    }
+
+    private static int GetRegistrationPriority(
+        ServiceRegistration registration,
+        Type handlerInterface,
+        Type handlerType)
+    {
+        // Prefer the exact strongly typed command-handler registration.
+        if (registration.ServiceType == handlerInterface)
+        {
+            return 0;
+        }
+
+        // Then prefer the explicit marker registration used by older handlers.
+        if (registration.ServiceType == typeof(ICommandHandlerMarker))
+        {
+            return 1;
+        }
+
+        // A concrete self-registration is also sufficient to resolve the handler.
+        if (registration.ServiceType == handlerType)
+        {
+            return 2;
+        }
+
+        // The implementing type is known to be an ICommandHandlerMarker, so any
+        // remaining registration for that implementation can still resolve it.
+        return 3;
+    }
+
     private object ResolveHandler(HandlerInvocation invocation)
     {
         if (invocation.Handler != null)
@@ -319,14 +381,20 @@ public sealed class CommandDispatcher : ICommandDispatcher
                 $"Handler {invocation.HandlerType.Name} has no service container available.");
         }
 
-        if (string.IsNullOrWhiteSpace(invocation.ServiceName))
+        if (invocation.ServiceType == null)
         {
             throw new InvalidOperationException(
                 $"Handler {invocation.HandlerType.Name} has no resolvable service registration.");
         }
 
+        if (string.IsNullOrWhiteSpace(invocation.ServiceName))
+        {
+            return _serviceContainer.GetInstance(
+                invocation.ServiceType);
+        }
+
         return _serviceContainer.GetInstance(
-            typeof(ICommandHandlerMarker),
+            invocation.ServiceType,
             invocation.ServiceName);
     }
 
