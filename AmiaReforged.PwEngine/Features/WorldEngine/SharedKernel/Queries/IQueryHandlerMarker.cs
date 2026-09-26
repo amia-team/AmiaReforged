@@ -1,12 +1,11 @@
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 
 /// <summary>
-/// Marker interface for query handler auto-discovery via Anvil DI.
-/// All query handlers are automatically injected via this marker.
+/// Non-generic marker for query-handler discovery.
+/// IQueryHandler&lt;TQuery, TResult&gt; implementations inherit this marker so
+/// the CQRS registry can identify handler implementation types without requiring
+/// every handler to be separately registered under the marker service type.
 /// </summary>
 public interface IQueryHandlerMarker
 {
-    // Marker interface - no members required
-    // Used by Anvil DI to collect all query handler implementations
 }
-

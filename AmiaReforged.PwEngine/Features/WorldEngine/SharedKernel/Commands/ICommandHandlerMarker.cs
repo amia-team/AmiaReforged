@@ -1,12 +1,11 @@
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 
 /// <summary>
-/// Marker interface for command handler auto-discovery via Anvil DI.
-/// All command handlers are automatically injected via this marker.
+/// Non-generic marker for command-handler discovery.
+/// ICommandHandler&lt;TCommand&gt; implementations inherit this marker so the
+/// CQRS registry can identify handler implementation types without requiring
+/// every handler to be separately registered under the marker service type.
 /// </summary>
 public interface ICommandHandlerMarker
 {
-    // Marker interface - no members required
-    // Used by Anvil DI to collect all command handler implementations
 }
-
