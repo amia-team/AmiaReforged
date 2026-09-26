@@ -705,6 +705,204 @@ public class BackgroundTraitTests
         Assert.That(traitsAfterDeath[0].IsActive, Is.False, "Trait should be deactivated");
     }
 
+    [Test]
+    public void TraitWithRemoveOnDeathBehavior_IsDeletedOnDeath()
+    {
+        // Arrange
+        ITraitRepository traitRepo = InMemoryTraitRepository.Create();
+        traitRepo.Add(new Trait
+        {
+            Tag = "temporary",
+            Name = "Temporary",
+            Description = "Trait removed on death",
+            PointCost = 1,
+            DeathBehavior = TraitDeathBehavior.RemoveOnDeath
+        });
+
+        ICharacterTraitRepository charTraitRepo = InMemoryCharacterTraitRepository.Create();
+        Guid characterId = Guid.NewGuid();
+
+        CharacterTrait temporaryTrait = new()
+        {
+            Id = Guid.NewGuid(),
+            CharacterId = CharacterId.From(characterId),
+            TraitTag = new TraitTag("temporary"),
+            DateAcquired = DateTime.UtcNow,
+            IsConfirmed = true,
+            IsActive = true
+        };
+        charTraitRepo.Add(temporaryTrait);
+
+        TraitDeathHandler deathHandler = TraitDeathHandler.Create(charTraitRepo, traitRepo);
+
+        // Act - Character dies
+        bool permadeath = deathHandler.ProcessDeath(CharacterId.From(characterId));
+        List<CharacterTrait> traitsAfterDeath = charTraitRepo.GetByCharacterId(CharacterId.From(characterId));
+
+        // Assert
+        Assert.That(permadeath, Is.False);
+        Assert.That(traitsAfterDeath, Is.Empty, "RemoveOnDeath trait should be deleted");
+    }
+
+    [Test]
+    public void RemoveOnDeath_RemovesOnlyTheMatchingTrait()
+    {
+        // Arrange
+        ITraitRepository traitRepo = InMemoryTraitRepository.Create();
+        traitRepo.Add(new Trait
+        {
+            Tag = "temporary",
+            Name = "Temporary",
+            Description = "Trait removed on death",
+            PointCost = 1,
+            DeathBehavior = TraitDeathBehavior.RemoveOnDeath
+        });
+        traitRepo.Add(new Trait
+        {
+            Tag = "brave",
+            Name = "Brave",
+            Description = "Fearless",
+            PointCost = 1,
+            DeathBehavior = TraitDeathBehavior.Persist
+        });
+
+        ICharacterTraitRepository charTraitRepo = InMemoryCharacterTraitRepository.Create();
+        Guid characterId = Guid.NewGuid();
+
+        CharacterTrait temporaryTrait = new()
+        {
+            Id = Guid.NewGuid(),
+            CharacterId = CharacterId.From(characterId),
+            TraitTag = new TraitTag("temporary"),
+            DateAcquired = DateTime.UtcNow,
+            IsConfirmed = true,
+            IsActive = true
+        };
+        CharacterTrait braveTrait = new()
+        {
+            Id = Guid.NewGuid(),
+            CharacterId = CharacterId.From(characterId),
+            TraitTag = new TraitTag("brave"),
+            DateAcquired = DateTime.UtcNow,
+            IsConfirmed = true,
+            IsActive = true
+        };
+        charTraitRepo.Add(temporaryTrait);
+        charTraitRepo.Add(braveTrait);
+
+        TraitDeathHandler deathHandler = TraitDeathHandler.Create(charTraitRepo, traitRepo);
+
+        // Act - Character dies
+        deathHandler.ProcessDeath(CharacterId.From(characterId));
+        List<CharacterTrait> traitsAfterDeath = charTraitRepo.GetByCharacterId(CharacterId.From(characterId));
+
+        // Assert
+        Assert.That(traitsAfterDeath, Has.Count.EqualTo(1), "Only the matching trait should be removed");
+        Assert.That(traitsAfterDeath[0].TraitTag.Value, Is.EqualTo("brave"), "Persist trait should remain active");
+    }
+
+    [Test]
+    public void ProcessDeath_WhenCharacterTraitDefinitionIsMissing_LeavesTraitUnchanged()
+    {
+        // Arrange
+        ITraitRepository traitRepo = InMemoryTraitRepository.Create();
+
+        ICharacterTraitRepository charTraitRepo = InMemoryCharacterTraitRepository.Create();
+        Guid characterId = Guid.NewGuid();
+
+        CharacterTrait orphanedTrait = new()
+        {
+            Id = Guid.NewGuid(),
+            CharacterId = CharacterId.From(characterId),
+            TraitTag = new TraitTag("orphaned"),
+            DateAcquired = DateTime.UtcNow,
+            IsConfirmed = true,
+            IsActive = true,
+            CustomData = "{\"someData\": \"important value\"}"
+        };
+        charTraitRepo.Add(orphanedTrait);
+
+        TraitDeathHandler deathHandler = TraitDeathHandler.Create(charTraitRepo, traitRepo);
+
+        // Act - Character dies
+        bool permadeath = deathHandler.ProcessDeath(CharacterId.From(characterId));
+        CharacterTrait? afterDeath = charTraitRepo.GetByCharacterId(CharacterId.From(characterId)).First();
+
+        // Assert
+        Assert.That(permadeath, Is.False);
+        Assert.That(afterDeath, Is.Not.Null, "Trait should remain in the character repository");
+        Assert.That(afterDeath!.IsActive, Is.True, "IsActive should be unchanged");
+        Assert.That(afterDeath.CustomData, Is.EqualTo("{\"someData\": \"important value\"}"), "CustomData should be unchanged");
+    }
+
+    [Test]
+    public void ReactivateResettableTraits_DoesNotReactivateNonResettableTrait()
+    {
+        // Arrange
+        ITraitRepository traitRepo = InMemoryTraitRepository.Create();
+        traitRepo.Add(new Trait
+        {
+            Tag = "brave",
+            Name = "Brave",
+            Description = "Fearless",
+            PointCost = 1,
+            DeathBehavior = TraitDeathBehavior.Persist
+        });
+
+        ICharacterTraitRepository charTraitRepo = InMemoryCharacterTraitRepository.Create();
+        Guid characterId = Guid.NewGuid();
+
+        CharacterTrait braveTrait = new()
+        {
+            Id = Guid.NewGuid(),
+            CharacterId = CharacterId.From(characterId),
+            TraitTag = new TraitTag("brave"),
+            DateAcquired = DateTime.UtcNow,
+            IsConfirmed = true,
+            IsActive = false // Inactive
+        };
+        charTraitRepo.Add(braveTrait);
+
+        TraitDeathHandler deathHandler = TraitDeathHandler.Create(charTraitRepo, traitRepo);
+
+        // Act - Reactivate resettable traits
+        deathHandler.ReactivateResettableTraits(CharacterId.From(characterId));
+        List<CharacterTrait> traitsAfterReactivation = charTraitRepo.GetByCharacterId(CharacterId.From(characterId));
+
+        // Assert
+        Assert.That(traitsAfterReactivation[0].IsActive, Is.False, "Non-resettable trait should remain inactive");
+    }
+
+    [Test]
+    public void ReactivateResettableTraits_WhenDefinitionIsMissing_LeavesTraitInactive()
+    {
+        // Arrange
+        ITraitRepository traitRepo = InMemoryTraitRepository.Create();
+
+        ICharacterTraitRepository charTraitRepo = InMemoryCharacterTraitRepository.Create();
+        Guid characterId = Guid.NewGuid();
+
+        CharacterTrait orphanedTrait = new()
+        {
+            Id = Guid.NewGuid(),
+            CharacterId = CharacterId.From(characterId),
+            TraitTag = new TraitTag("orphaned"),
+            DateAcquired = DateTime.UtcNow,
+            IsConfirmed = true,
+            IsActive = false // Inactive
+        };
+        charTraitRepo.Add(orphanedTrait);
+
+        TraitDeathHandler deathHandler = TraitDeathHandler.Create(charTraitRepo, traitRepo);
+
+        // Act - Reactivate resettable traits
+        deathHandler.ReactivateResettableTraits(CharacterId.From(characterId));
+        List<CharacterTrait> traitsAfterReactivation = charTraitRepo.GetByCharacterId(CharacterId.From(characterId));
+
+        // Assert
+        Assert.That(traitsAfterReactivation[0].IsActive, Is.False, "Trait with no matching definition should remain inactive");
+    }
+
     #endregion
 
     #region Trait Categories and Types
