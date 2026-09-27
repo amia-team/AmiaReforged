@@ -1,0 +1,394 @@
+@inject ResourceNodeApiService Api
+@inject ILogger<ResourceNodeEditor> Logger
+
+<div class="we-editor__entity-editor">
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+    @if (!string.IsNullOrEmpty(_success))
+    {
+        <div class="alert alert-success">@_success</div>
+    }
+
+    <EditForm Model="@_edit" OnValidSubmit="@SaveAsync">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Tag <small class="text-secondary">(unique identifier, max 50 chars)</small></label>
+                <InputText class="form-control" @bind-Value="_edit.Tag" disabled="@(!IsCreating)" placeholder="e.g. oak_tree" />
+            </div>
+            <div class="form-group">
+                <label>Name</label>
+                <InputText class="form-control" @bind-Value="_edit.Name" placeholder="e.g. Oak Tree" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Description</label>
+            <InputTextArea class="form-control" @bind-Value="_edit.Description" rows="3" placeholder="Full description of the resource node..." />
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Type</label>
+                <select class="form-control" @bind="_edit.Type" @bind:event="onchange">
+                    <option value="">— Select —</option>
+                    <option value="Undefined">Undefined</option>
+                    <option value="Ore">Ore</option>
+                    <option value="Geode">Geode</option>
+                    <option value="Boulder">Boulder</option>
+                    <option value="Tree">Tree</option>
+                    <option value="Flora">Flora</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>PLC Appearance (int)</label>
+                <InputNumber class="form-control" @bind-Value="_edit.PlcAppearance" />
+            </div>
+        </div>
+
+        @{ bool isTree = string.Equals(_edit.Type, "Tree", StringComparison.OrdinalIgnoreCase); }
+        @{ bool isFlora = string.Equals(_edit.Type, "Flora", StringComparison.OrdinalIgnoreCase); }
+
+        @if (!isTree && !isFlora)
+        {
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Uses</label>
+                    <InputNumber class="form-control" @bind-Value="_edit.Uses" />
+                </div>
+                <div class="form-group">
+                    <label>Base Harvest Rounds</label>
+                    <InputNumber class="form-control" @bind-Value="_edit.BaseHarvestRounds" />
+                </div>
+            </div>
+        }
+        else if (isTree)
+        {
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Base Harvest Rounds</label>
+                    <InputNumber class="form-control" @bind-Value="_edit.BaseHarvestRounds" />
+                </div>
+            </div>
+        }
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Min Quality (optional)</label>
+                <select class="form-control" @bind="_edit.MinQuality" @bind:event="onchange">
+                    <option value="">— Use Default —</option>
+                    @foreach (string q in _qualityOptions)
+                    {
+                        <option value="@q">@q</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Max Quality (optional)</label>
+                <select class="form-control" @bind="_edit.MaxQuality" @bind:event="onchange">
+                    <option value="">— Use Default —</option>
+                    @foreach (string q in _qualityOptions)
+                    {
+                        <option value="@q">@q</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <div class="panel-section__header">
+                <strong>Harvest Requirement</strong>
+                @if (_edit.Requirement == null)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-info" @onclick="AddRequirement">Add Requirement</button>
+                }
+                else
+                {
+                    <button type="button" class="btn btn-sm btn-outline-danger" @onclick="RemoveRequirement">Remove</button>
+                }
+            </div>
+            @if (_edit.Requirement != null)
+            {
+                <div class="form-row" style="margin-top:8px">
+                    <div class="form-group">
+                        <label>Required Item Type</label>
+                        <InputText class="form-control" @bind-Value="_edit.Requirement.RequiredItemType" placeholder="e.g. Axe" />
+                    </div>
+                    <div class="form-group">
+                        <label>Required Item Material</label>
+                        <InputText class="form-control" @bind-Value="_edit.Requirement.RequiredItemMaterial" placeholder="e.g. Iron" />
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (!isTree)
+        {
+            <div class="panel-section">
+                <div class="panel-section__header">
+                    <strong>Harvest Outputs (@_editOutputs.Count)</strong>
+                    <button type="button" class="btn btn-sm btn-outline-primary" @onclick="AddOutput">+ Add Output</button>
+                </div>
+                @if (_editOutputs.Count == 0)
+                {
+                    <p class="text-secondary" style="text-align:center;margin:10px 0">No outputs defined.</p>
+                }
+                else
+                {
+                    @for (int i = 0; i < _editOutputs.Count; i++)
+                    {
+                        int idx = i;
+                        <div class="we-entity-form__card" style="display:flex;gap:8px;align-items:end;margin-bottom:8px">
+                            <div class="form-group" style="flex:1;margin:0">
+                                <label style="font-size:0.8rem">Item Tag</label>
+                                <InputText class="form-control form-control-sm" @bind-Value="_editOutputs[idx].ItemDefinitionTag" placeholder="e.g. log_oak" />
+                            </div>
+                            <div class="form-group" style="width:90px;margin:0">
+                                <label style="font-size:0.8rem">Quantity</label>
+                                <InputNumber class="form-control form-control-sm" @bind-Value="_editOutputs[idx].Quantity" />
+                            </div>
+                            <div class="form-group" style="width:90px;margin:0">
+                                <label style="font-size:0.8rem">Chance (%)</label>
+                                <InputNumber class="form-control form-control-sm" @bind-Value="_editOutputs[idx].Chance" min="0" max="100" />
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger" style="margin-bottom:0" @onclick="() => RemoveOutput(idx)">✕</button>
+                        </div>
+                    }
+                }
+            </div>
+        }
+
+        @if (isFlora)
+        {
+            <div class="panel-section">
+                <div class="panel-section__header">
+                    <strong>Flora Properties</strong>
+                    @if (_edit.FloraProperties == null)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-info" @onclick="AddFloraProperties">Add</button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="RemoveFloraProperties">Remove</button>
+                    }
+                </div>
+                @if (_edit.FloraProperties != null)
+                {
+                    <div class="form-row" style="margin-top:8px">
+                        <div class="form-group">
+                            <label>Preferred Climate</label>
+                            <InputText class="form-control" @bind-Value="_edit.FloraProperties.PreferredClimate" placeholder="e.g. Temperate" />
+                        </div>
+                        <div class="form-group">
+                            <label>Required Soil Quality</label>
+                            <InputText class="form-control" @bind-Value="_edit.FloraProperties.RequiredSoilQuality" placeholder="e.g. Fertile" />
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (isTree)
+        {
+            <div class="panel-section">
+                <div class="panel-section__header">
+                    <strong>Tree Properties</strong>
+                    @if (_edit.TreeProperties == null)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-info" @onclick="AddTreeProperties">Add</button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="RemoveTreeProperties">Remove</button>
+                    }
+                </div>
+                @if (_edit.TreeProperties != null)
+                {
+                    <div class="form-row" style="margin-top:8px">
+                        <div class="form-group">
+                            <label>Min Logs</label>
+                            <InputNumber class="form-control" @bind-Value="_edit.TreeProperties.MinLogs" min="1" />
+                        </div>
+                        <div class="form-group">
+                            <label>Max Logs</label>
+                            <InputNumber class="form-control" @bind-Value="_edit.TreeProperties.MaxLogs" min="1" />
+                        </div>
+                        <div class="form-group">
+                            <label>Log Item Tag</label>
+                            <InputText class="form-control" @bind-Value="_edit.TreeProperties.LogItemTag" placeholder="e.g. log_oak" />
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        <div class="we-entity-form__actions">
+            <button type="button" class="btn btn-secondary" @onclick="() => OnCancel.InvokeAsync()">Cancel</button>
+            @if (!IsCreating)
+            {
+                <button type="button" class="btn btn-outline-danger" @onclick="() => _showDeleteConfirm = true">Delete</button>
+            }
+            <button type="submit" class="btn btn-primary" disabled="@_isSaving">
+                @(_isSaving ? "Saving..." : (IsCreating ? "Create" : "Save Changes"))
+            </button>
+        </div>
+    </EditForm>
+
+    @if (_showDeleteConfirm)
+    {
+        <div class="we-entity-form__delete-confirm">
+            <p>Delete resource node <strong>@_edit.Name</strong> (<code>@_edit.Tag</code>)?</p>
+            <p class="text-secondary">This cannot be undone.</p>
+            <button class="btn btn-secondary btn-sm" @onclick="() => _showDeleteConfirm = false">Cancel</button>
+            <button class="btn btn-danger btn-sm" @onclick="DeleteAsync" disabled="@_isSaving">
+                @(_isSaving ? "Deleting..." : "Delete")
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public ResourceNodeDefinitionDto Item { get; set; } = null!;
+
+    [Parameter]
+    public bool IsCreating { get; set; }
+
+    [Parameter]
+    public EventCallback<ResourceNodeDefinitionDto> OnSaved { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnDeleted { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private ResourceNodeDefinitionDto _edit = new();
+    private ResourceNodeDefinitionDto? _source;
+    private List<HarvestOutputDto> _editOutputs = [];
+    private bool _isSaving;
+    private bool _showDeleteConfirm;
+    private string? _error;
+    private string? _success;
+
+    private static readonly string[] _qualityOptions =
+    [
+        "VeryPoor", "Poor", "BelowAverage", "Average",
+        "AboveAverage", "Good", "VeryGood", "Excellent", "Masterwork"
+    ];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!ReferenceEquals(_source, Item))
+        {
+            _source = Item;
+            _edit = new ResourceNodeDefinitionDto
+            {
+                Tag = Item.Tag,
+                Name = Item.Name,
+                Description = Item.Description,
+                PlcAppearance = Item.PlcAppearance,
+                Type = Item.Type,
+                Uses = Item.Uses,
+                BaseHarvestRounds = Item.BaseHarvestRounds,
+                Requirement = Item.Requirement != null ? new HarvestContextDto
+                {
+                    RequiredItemType = Item.Requirement.RequiredItemType,
+                    RequiredItemMaterial = Item.Requirement.RequiredItemMaterial,
+                } : null,
+                FloraProperties = Item.FloraProperties != null ? new FloraPropertiesDto
+                {
+                    PreferredClimate = Item.FloraProperties.PreferredClimate,
+                    RequiredSoilQuality = Item.FloraProperties.RequiredSoilQuality,
+                } : null,
+                TreeProperties = Item.TreeProperties != null ? new TreePropertiesDto
+                {
+                    MinLogs = Item.TreeProperties.MinLogs,
+                    MaxLogs = Item.TreeProperties.MaxLogs,
+                    LogItemTag = Item.TreeProperties.LogItemTag,
+                } : null,
+                MinQuality = Item.MinQuality,
+                MaxQuality = Item.MaxQuality,
+            };
+            _editOutputs = (Item.Outputs?.Select(o => new HarvestOutputDto
+            {
+                ItemDefinitionTag = o.ItemDefinitionTag,
+                Quantity = o.Quantity,
+                Chance = o.Chance,
+            }).ToList()) ?? [];
+
+            _error = null;
+            _success = null;
+            _showDeleteConfirm = false;
+        }
+    }
+
+    private void AddOutput() => _editOutputs.Add(new HarvestOutputDto { Chance = 100 });
+
+    private void RemoveOutput(int index)
+    {
+        if (index >= 0 && index < _editOutputs.Count)
+            _editOutputs.RemoveAt(index);
+    }
+
+    private void AddRequirement() => _edit.Requirement = new HarvestContextDto();
+    private void RemoveRequirement() => _edit.Requirement = null;
+    private void AddFloraProperties() => _edit.FloraProperties = new FloraPropertiesDto();
+    private void RemoveFloraProperties() => _edit.FloraProperties = null;
+    private void AddTreeProperties() => _edit.TreeProperties = new TreePropertiesDto();
+    private void RemoveTreeProperties() => _edit.TreeProperties = null;
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+        _success = null;
+        _edit.Outputs = _editOutputs.ToArray();
+        try
+        {
+            _isSaving = true;
+            ResourceNodeDefinitionDto? saved = IsCreating
+                ? await Api.CreateAsync(_edit)
+                : await Api.UpdateAsync(_edit.Tag, _edit);
+            _success = IsCreating
+                ? $"Resource node '{_edit.Name ?? _edit.Tag}' created."
+                : $"Resource node '{_edit.Name ?? _edit.Tag}' updated.";
+            await OnSaved.InvokeAsync(saved ?? _edit);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to save resource node {_edit.Tag}");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task DeleteAsync()
+    {
+        _error = null;
+        _success = null;
+        try
+        {
+            _isSaving = true;
+            await Api.DeleteAsync(_edit.Tag);
+            _showDeleteConfirm = false;
+            _success = $"Deleted resource node '{_edit.Name ?? _edit.Tag}'.";
+            await OnDeleted.InvokeAsync(_edit.Tag);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to delete resource node {_edit.Tag}");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

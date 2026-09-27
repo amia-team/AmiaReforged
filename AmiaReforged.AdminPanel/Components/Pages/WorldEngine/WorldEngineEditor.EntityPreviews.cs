@@ -24,8 +24,8 @@ public partial class WorldEngineEditor
             case WorldEngineEntityType.Items when data is ItemBlueprintDto item:
                 RenderItemEditor(builder, item);
                 break;
-            case WorldEngineEntityType.ResourceNodes when data is ResourceNodeDefinitionDto node:
-                RenderResourceNodeEditor(builder, node);
+            case WorldEngineEntityType.ResourceNodes:
+                // Rendered by the dedicated ResourceNode tab arm (Editors/ResourceNodeEditor).
                 break;
             case WorldEngineEntityType.Regions when data is RegionDefinitionDto region:
                 RenderRegionEditor(builder, region);
@@ -60,23 +60,6 @@ public partial class WorldEngineEditor
         AddField(b, ref s, "Materials", dto.Materials != null ? string.Join(", ", dto.Materials) : "—");
         AddField(b, ref s, "Is Template", dto.IsTemplate ? "Yes" : "No");
         AddField(b, ref s, "Variants", dto.Variants?.Count.ToString() ?? "0");
-        b.CloseElement();
-    }
-
-    // ── Resource Node ───────────────────────────────────────────────
-    private static void RenderResourceNodeEditor(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b, ResourceNodeDefinitionDto dto)
-    {
-        int s = 0;
-        b.OpenElement(s++, "div"); b.AddAttribute(s++, "class", "we-entity-form");
-        AddField(b, ref s, "Tag", dto.Tag);
-        AddField(b, ref s, "Name", dto.Name);
-        AddField(b, ref s, "Type", dto.Type);
-        AddField(b, ref s, "Description", dto.Description);
-        AddField(b, ref s, "Uses", dto.Uses.ToString());
-        AddField(b, ref s, "Harvest Rounds", dto.BaseHarvestRounds.ToString());
-        AddField(b, ref s, "PLC Appearance", dto.PlcAppearance.ToString());
-        AddField(b, ref s, "Quality", $"{dto.MinQuality ?? "—"} → {dto.MaxQuality ?? "—"}");
-        AddField(b, ref s, "Outputs", dto.Outputs?.Length.ToString() ?? "0");
         b.CloseElement();
     }
 

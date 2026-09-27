@@ -767,6 +767,41 @@
                                            OnCancel="@(() => CloseTab(activeTab.Id))" />
                         }
                     }
+                    else if (activeTab.EntityType == WorldEngineEntityType.ResourceNodes)
+                    {
+                        if (activeTab.EntityKey is null)
+                        {
+                            @* Create mode: blank form, no _tabData *@
+                            <ResourceNodeEditor @key="activeTab.Id"
+                                           Item="@NewResourceNodeFor(activeTab.Id)"
+                                           IsCreating="true"
+                                           OnSaved="@((ResourceNodeDefinitionDto saved) => HandleResourceNodeSaved(activeTab.Id, saved))"
+                                           OnDeleted="@((string tag) => HandleResourceNodeDeleted(activeTab.Id, tag))"
+                                           OnCancel="@(() => CloseTab(activeTab.Id))" />
+                        }
+                        else if (_tabDataLoading)
+                        {
+                            <div class="we-editor__tab-loading">
+                                <span class="spinner-border spinner-border-sm me-2"></span> Loading…
+                            </div>
+                        }
+                        else if (_tabDataError != null)
+                        {
+                            <div class="we-editor__tab-error">
+                                <span class="bi bi-exclamation-triangle me-1"></span> @_tabDataError
+                                <button class="btn btn-sm btn-outline-warning ms-2" @onclick="() => LoadTabData(activeTab)">Retry</button>
+                            </div>
+                        }
+                        else if (_tabData.TryGetValue(activeTab.Id, out object? nodeData) && nodeData is ResourceNodeDefinitionDto node)
+                        {
+                            <ResourceNodeEditor @key="activeTab.Id"
+                                           Item="@node"
+                                           IsCreating="false"
+                                           OnSaved="@((ResourceNodeDefinitionDto saved) => HandleResourceNodeSaved(activeTab.Id, saved))"
+                                           OnDeleted="@((string tag) => HandleResourceNodeDeleted(activeTab.Id, tag))"
+                                           OnCancel="@(() => CloseTab(activeTab.Id))" />
+                        }
+                    }
                     else if (_tabDataLoading)
                     {
                         <div class="we-editor__tab-loading">

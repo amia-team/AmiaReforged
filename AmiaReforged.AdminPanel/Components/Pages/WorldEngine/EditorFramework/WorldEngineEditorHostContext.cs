@@ -22,4 +22,6 @@ public sealed class WorldEngineEditorHostContext
     public required Func<Task> OpenNewLoreAsync { get; init; }
     public required Func<Task> OpenNewQuestAsync { get; init; }
     public required Func<Task> OpenNewTraitAsync { get; init; }
+    public required Func<Task> OpenNewResourceNodeAsync { get; init; }
+    public required Func<string?, Task> SetResourceNodeTypeFilterAsync { get; init; }
 }

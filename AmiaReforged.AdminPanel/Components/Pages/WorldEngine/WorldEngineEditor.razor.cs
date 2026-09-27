@@ -35,6 +35,7 @@ public partial class WorldEngineEditor
     private bool _listLoading;
     private string? _listError;
     private string _listSearch = "";
+    private string _resourceNodeTypeFilter = "";
     private int _listPage = 1;
     private bool _listHasMore;
     private const int ListPageSize = 50;
@@ -144,6 +145,8 @@ public partial class WorldEngineEditor
             OpenNewLoreAsync = () => OpenNewCodexEditor(CodexEditor.CodexSubType.Lore),
             OpenNewQuestAsync = () => OpenNewCodexEditor(CodexEditor.CodexSubType.Quest),
             OpenNewTraitAsync = OpenNewTraitTab,
+            OpenNewResourceNodeAsync = OpenNewResourceNodeTab,
+            SetResourceNodeTypeFilterAsync = SetResourceNodeTypeFilter,
         };
 
         EditorState.OnEndpointChanged += OnEditorEndpointChanged;
@@ -335,7 +338,7 @@ public partial class WorldEngineEditor
             List<EntityListItem> fetched = type switch
             {
                 WorldEngineEntityType.Items => await LoadItems(search),
-                WorldEngineEntityType.ResourceNodes => await LoadResourceNodes(search),
+                WorldEngineEntityType.ResourceNodes => await LoadResourceNodes(search, string.IsNullOrWhiteSpace(_resourceNodeTypeFilter) ? null : _resourceNodeTypeFilter),
                 WorldEngineEntityType.Regions => await LoadRegions(search),
                 WorldEngineEntityType.AreaGraph => await LoadAreaGraph(),
                 WorldEngineEntityType.Codex => await LoadCodex(search),
@@ -375,11 +378,19 @@ public partial class WorldEngineEditor
         return result.Items.Select(i => new EntityListItem(i.ItemTag, i.Name, WorldEngineEntityType.Items)).ToList();
     }
 
-    private async Task<List<EntityListItem>> LoadResourceNodes(string? search)
+    private async Task<List<EntityListItem>> LoadResourceNodes(string? search, string? type)
     {
-        PagedResult<ResourceNodeDefinitionDto> result = await ResourceNodeApi.GetAllAsync(search, page: _listPage, pageSize: ListPageSize);
+        PagedResult<ResourceNodeDefinitionDto> result = await ResourceNodeApi.GetAllAsync(search, type, _listPage, ListPageSize);
         _listHasMore = _listPage * ListPageSize < result.TotalCount;
         return result.Items.Select(i => new EntityListItem(i.Tag, i.Name ?? i.Tag, WorldEngineEntityType.ResourceNodes)).ToList();
+    }
+
+    private async Task SetResourceNodeTypeFilter(string? type)
+    {
+        _resourceNodeTypeFilter = type ?? "";
+        _listPage = 1;
+        _listItems.Clear();
+        await LoadResourceNodes(_listSearch, string.IsNullOrWhiteSpace(_resourceNodeTypeFilter) ? null : _resourceNodeTypeFilter);
     }
 
     private async Task<List<EntityListItem>> LoadRegions(string? search)

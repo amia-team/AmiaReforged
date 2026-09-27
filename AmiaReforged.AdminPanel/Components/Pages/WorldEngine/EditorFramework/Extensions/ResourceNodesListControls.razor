@@ -1,0 +1,188 @@
+@inject ResourceNodeApiService Api
+@inject ILogger<ResourceNodesListControls> Logger
+
+@using System.IO.Compression
+@using System.Text.Json
+
+<div class="we-editor__resource-node-controls">
+    <div class="we-editor__resource-node-controls__row">
+        <label class="we-editor__resource-node-controls__label">Type</label>
+        <select class="form-control form-control-sm" style="width:auto" @onchange="OnTypeFilterChanged">
+            <option value="">All Types</option>
+            <option value="Undefined">Undefined</option>
+            <option value="Ore">Ore</option>
+            <option value="Geode">Geode</option>
+            <option value="Boulder">Boulder</option>
+            <option value="Tree">Tree</option>
+            <option value="Flora">Flora</option>
+        </select>
+        <button class="btn btn-sm btn-info" style="margin-left:6px" @onclick="() => _showImportModal = true" title="Import resource node definitions">
+            <span class="bi bi-cloud-download me-1"></span> Import
+        </button>
+    </div>
+</div>
+
+@if (_showImportModal)
+{
+    <div class="we-editor__modal-backdrop" @onclick="() => CloseImportModal()"></div>
+    <div class="we-editor__modal" role="dialog" aria-modal="true">
+        <div class="we-editor__modal-content">
+            <div class="we-editor__modal-header">
+                <strong>Import Resource Nodes</strong>
+                <button class="btn btn-link btn-sm" @onclick="() => CloseImportModal()"><span class="bi bi-x"></span></button>
+            </div>
+            <div class="we-editor__modal-body">
+                <p class="text-secondary small">
+                    Upload one or more <code>.json</code> or <code>.zip</code> (containing <code>.json</code>) files. Files are
+                    accumulated; click Import once you've selected everything.
+                </p>
+                <div class="form-group">
+                    <label>Select Files</label>
+                    <InputFile OnChange="OnImportFileSelected" accept=".json,.zip" multiple class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>Preview (JSON)</label>
+                    <textarea class="form-control" rows="10" @bind="_importJson"
+                              placeholder='[{"Tag":"oak_tree","Name":"Oak Tree","Type":"Flora",...}]'></textarea>
+                </div>
+                @if (_importResult != null)
+                {
+                    <div class="alert @(_importResult.Failed > 0 ? "alert-warning" : "alert-success")">
+                        <strong>Import complete:</strong> @_importResult.Succeeded succeeded, @_importResult.Failed failed out of @_importResult.Total total.
+                        @if (_importResult.Errors.Count > 0)
+                        {
+                            <ul style="margin-top:6px;max-height:120px;overflow:auto">
+                                @foreach (string err in _importResult.Errors.Take(10))
+                                {
+                                    <li style="font-size:0.85rem">@err</li>
+                                }
+                                @if (_importResult.Errors.Count > 10)
+                                {
+                                    <li style="font-size:0.85rem">...and @(_importResult.Errors.Count - 10) more</li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                }
+            </div>
+            <div class="we-editor__modal-footer">
+                <button class="btn btn-secondary" @onclick="() => CloseImportModal()">Close</button>
+                <button class="btn btn-primary" @onclick="RunImport" disabled="@(_isImporting || string.IsNullOrWhiteSpace(_importJson))">
+                    @(_isImporting ? "Importing…" : "Import")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [CascadingParameter]
+    public WorldEngineEditorHostContext Context { get; set; } = null!;
+
+    private async Task OnTypeFilterChanged(ChangeEventArgs e)
+    {
+        string? val = e.Value?.ToString();
+        await Context.SetResourceNodeTypeFilterAsync(string.IsNullOrEmpty(val) ? null : val);
+    }
+    private bool _showImportModal;
+    private string _importJson = "";
+    private bool _isImporting;
+    private ImportResult? _importResult;
+    private List<JsonElement> _importedNodes = new();
+
+    private async Task OnImportFileSelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            foreach (IBrowserFile file in e.GetMultipleFiles(100))
+            {
+                if (file.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                {
+                    await ProcessZipFile(file);
+                }
+                else
+                {
+                    await ProcessJsonFile(file);
+                }
+            }
+
+            _importJson = JsonSerializer.Serialize(_importedNodes);
+            _importResult = null;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to read import file(s)");
+        }
+    }
+
+    private async Task ProcessJsonFile(IBrowserFile file)
+    {
+        using StreamReader reader = new StreamReader(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
+        string content = await reader.ReadToEndAsync();
+        ParseJson(content);
+    }
+
+    private async Task ProcessZipFile(IBrowserFile file)
+    {
+        using MemoryStream ms = new MemoryStream();
+        await file.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024).CopyToAsync(ms);
+        ms.Position = 0;
+        using ZipArchive archive = new ZipArchive(ms, ZipArchiveMode.Read);
+        foreach (ZipArchiveEntry entry in archive.Entries)
+        {
+            if (!entry.FullName.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) continue;
+            using Stream entryStream = entry.Open();
+            using StreamReader reader = new StreamReader(entryStream);
+            string content = await reader.ReadToEndAsync();
+            ParseJson(content);
+        }
+    }
+
+    private void ParseJson(string content)
+    {
+        using JsonDocument doc = JsonDocument.Parse(content);
+        if (doc.RootElement.ValueKind == JsonValueKind.Array)
+        {
+            foreach (JsonElement node in doc.RootElement.EnumerateArray())
+            {
+                _importedNodes.Add(node.Clone());
+            }
+        }
+        else if (doc.RootElement.ValueKind == JsonValueKind.Object)
+        {
+            _importedNodes.Add(doc.RootElement.Clone());
+        }
+    }
+
+    private async Task RunImport()
+    {
+        if (string.IsNullOrWhiteSpace(_importJson)) return;
+        _isImporting = true;
+        _importResult = null;
+        StateHasChanged();
+        try
+        {
+            _importResult = await Api.ImportJsonAsync(_importJson);
+            if (_importResult is { Failed: 0 })
+                StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to import resource nodes");
+        }
+        finally
+        {
+            _isImporting = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseImportModal()
+    {
+        _showImportModal = false;
+        _importJson = "";
+        _importResult = null;
+        _importedNodes.Clear();
+    }
+}

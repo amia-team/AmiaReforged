@@ -77,6 +77,20 @@ public static class WorldEngineEditorServiceCollectionExtensions
             entityType: WorldEngineEntityType.Traits,
             requiresEndpoint: true);
 
+        services.AddWorldEngineEditorExtension<ResourceNodesNewSidebarAction>(
+            "resource-nodes-new",
+            WorldEngineEditorExtensionSlot.SidebarHeaderActions,
+            order: 100,
+            entityType: WorldEngineEntityType.ResourceNodes,
+            requiresEndpoint: true);
+
+        services.AddWorldEngineEditorExtension<ResourceNodesListControls>(
+            "resource-nodes-list-controls",
+            WorldEngineEditorExtensionSlot.SidebarBeforeList,
+            order: 50,
+            entityType: WorldEngineEntityType.ResourceNodes,
+            requiresEndpoint: true);
+
         services.AddWorldEngineEditorExtension<RegionGraphSidebarAction>(
             "region-graph",
             WorldEngineEditorExtensionSlot.SidebarBeforeList,
