@@ -83,7 +83,6 @@ public sealed class TraitOnboardingPromptPresenter : ScryPresenter<TraitOnboardi
         _token.Close();
     }
 
-    // ──────────────────── Actions ────────────────────
 
     /// <summary>
     ///     Handles the Yes control: closes the prompt and invokes only the Yes callback.
