@@ -49,8 +49,8 @@ public class TraitSelectionModel
         List<Trait> allTraits = _traitRepository.All();
 
         AvailableTraits = ActiveCategory.HasValue
-            ? allTraits.Where(t => t.Category == ActiveCategory.Value && !t.DmOnly).ToList()
-            : allTraits.Where(t => !t.DmOnly).ToList();
+            ? [.. allTraits.Where(t => t.Category == ActiveCategory.Value && !t.DmOnly)]
+            : [.. allTraits.Where(t => !t.DmOnly)];
     }
 
     public bool IsTraitSelected(string traitTag)
