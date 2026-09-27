@@ -100,8 +100,8 @@ public sealed class TraitSelectionView : ScryView<TraitSelectionPresenter>, IToo
                 new NuiRow
                 {
                     Height = bodyH,
-                    Children = new List<NuiElement>
-                    {
+                    Children =
+                    [
                         // Category sidebar
                         new NuiGroup
                         {
@@ -126,15 +126,15 @@ public sealed class TraitSelectionView : ScryView<TraitSelectionPresenter>, IToo
 
                         // Detail pane with select/deselect actions
                         BuildDetailPane()
-                    }
+                    ]
                 },
 
                 // Bottom bar
                 new NuiRow
                 {
                     Height = 36f,
-                    Children = new List<NuiElement>
-                    {
+                    Children =
+                    [
                         new NuiSpacer(),
                         new NuiButton("Close")
                         {
@@ -142,7 +142,7 @@ public sealed class TraitSelectionView : ScryView<TraitSelectionPresenter>, IToo
                             Width = 90f,
                             Height = 32f
                         }
-                    }
+                    ]
                 }
             }
         };
@@ -174,8 +174,8 @@ public sealed class TraitSelectionView : ScryView<TraitSelectionPresenter>, IToo
                     new NuiRow
                     {
                         Height = 36f,
-                        Children = new List<NuiElement>
-                        {
+                        Children =
+                        [
                             new NuiSpacer(),
                             new NuiButton("Select")
                             {
@@ -194,7 +194,7 @@ public sealed class TraitSelectionView : ScryView<TraitSelectionPresenter>, IToo
                                 Tooltip = "Remove this unconfirmed trait"
                             },
                             new NuiSpacer()
-                        }
+                        ]
                     }
                 }
             }
@@ -211,12 +211,12 @@ public sealed class TraitSelectionView : ScryView<TraitSelectionPresenter>, IToo
             {
                 Height = 52f,
                 Visible = EntryRowVisible[i],
-                Children = new List<NuiElement>
-                {
+                Children =
+                [
                     new NuiColumn
                     {
-                        Children = new List<NuiElement>
-                        {
+                        Children =
+                        [
                             new NuiLabel(EntryNames[i])
                             {
                                 Height = 28f,
@@ -230,7 +230,7 @@ public sealed class TraitSelectionView : ScryView<TraitSelectionPresenter>, IToo
                                 VerticalAlign = NuiVAlign.Top,
                                 ForegroundColor = new Color(160, 140, 100)
                             }
-                        }
+                        ]
                     },
                     new NuiButton(">")
                     {
@@ -239,7 +239,7 @@ public sealed class TraitSelectionView : ScryView<TraitSelectionPresenter>, IToo
                         Height = 32f,
                         Tooltip = "View details"
                     }
-                }
+                ]
             });
         }
 
@@ -247,8 +247,8 @@ public sealed class TraitSelectionView : ScryView<TraitSelectionPresenter>, IToo
         children.Add(new NuiRow
         {
             Height = 35f,
-            Children = new List<NuiElement>
-            {
+            Children =
+            [
                 new NuiButton("<")
                 {
                     Id = "btn_prev_page",
@@ -273,7 +273,7 @@ public sealed class TraitSelectionView : ScryView<TraitSelectionPresenter>, IToo
                     Visible = ShowNextPage,
                     Tooltip = "Next page"
                 }
-            }
+            ]
         });
 
         return new NuiColumn { Children = children };
