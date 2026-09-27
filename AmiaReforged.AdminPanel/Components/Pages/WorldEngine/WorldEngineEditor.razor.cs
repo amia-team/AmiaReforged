@@ -146,6 +146,7 @@ public partial class WorldEngineEditor
             OpenNewQuestAsync = () => OpenNewCodexEditor(CodexEditor.CodexSubType.Quest),
             OpenNewTraitAsync = OpenNewTraitTab,
             OpenNewResourceNodeAsync = OpenNewResourceNodeTab,
+            OpenNewItemAsync = OpenNewItemTab,
             SetResourceNodeTypeFilterAsync = SetResourceNodeTypeFilter,
         };
 
@@ -604,6 +605,7 @@ public partial class WorldEngineEditor
         _newIndustryDtos.Remove(tabId);
         _newWorkstationDtos.Remove(tabId);
         _newRecipeTemplateDtos.Remove(tabId);
+        _newItemDtos.Remove(tabId);
         EditorState.CloseTab(tabId);
     }
 

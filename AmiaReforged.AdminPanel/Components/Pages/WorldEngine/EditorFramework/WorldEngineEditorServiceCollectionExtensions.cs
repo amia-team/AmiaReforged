@@ -84,6 +84,13 @@ public static class WorldEngineEditorServiceCollectionExtensions
             entityType: WorldEngineEntityType.ResourceNodes,
             requiresEndpoint: true);
 
+        services.AddWorldEngineEditorExtension<ItemNewSidebarAction>(
+            "item-new",
+            WorldEngineEditorExtensionSlot.SidebarHeaderActions,
+            order: 100,
+            entityType: WorldEngineEntityType.Items,
+            requiresEndpoint: true);
+
         services.AddWorldEngineEditorExtension<ResourceNodesListControls>(
             "resource-nodes-list-controls",
             WorldEngineEditorExtensionSlot.SidebarBeforeList,

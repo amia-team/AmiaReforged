@@ -802,6 +802,41 @@
                                            OnCancel="@(() => CloseTab(activeTab.Id))" />
                         }
                     }
+                    else if (activeTab.EntityType == WorldEngineEntityType.Items)
+                    {
+                        if (activeTab.EntityKey is null)
+                        {
+                            @* Create mode: blank form, no _tabData *@
+                            <ItemEditor @key="activeTab.Id"
+                                        Item="@NewItemFor(activeTab.Id)"
+                                        IsCreating="true"
+                                        OnSaved="((ItemBlueprintDto saved) => HandleItemSaved(activeTab.Id, saved))"
+                                        OnDeleted="((string tag) => HandleItemDeleted(activeTab.Id, tag))"
+                                        OnCancel="(() => CloseTab(activeTab.Id))" />
+                        }
+                        else if (_tabDataLoading)
+                        {
+                            <div class="we-editor__tab-loading">
+                                <span class="spinner-border spinner-border-sm me-2"></span> Loading…
+                            </div>
+                        }
+                        else if (_tabDataError != null)
+                        {
+                            <div class="we-editor__tab-error">
+                                <span class="bi bi-exclamation-triangle me-1"></span> @_tabDataError
+                                <button class="btn btn-sm btn-outline-warning ms-2" @onclick="() => LoadTabData(activeTab)">Retry</button>
+                            </div>
+                        }
+                        else if (_tabData.TryGetValue(activeTab.Id, out object? itemData) && itemData is ItemBlueprintDto item)
+                        {
+                            <ItemEditor @key="activeTab.Id"
+                                        Item="@item"
+                                        IsCreating="false"
+                                        OnSaved="((ItemBlueprintDto saved) => HandleItemSaved(activeTab.Id, saved))"
+                                        OnDeleted="((string tag) => HandleItemDeleted(activeTab.Id, tag))"
+                                        OnCancel="(() => CloseTab(activeTab.Id))" />
+                        }
+                    }
                     else if (_tabDataLoading)
                     {
                         <div class="we-editor__tab-loading">

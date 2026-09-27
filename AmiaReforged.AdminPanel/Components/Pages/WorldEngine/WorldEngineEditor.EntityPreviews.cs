@@ -21,9 +21,6 @@ public partial class WorldEngineEditor
     {
         switch (tab.EntityType)
         {
-            case WorldEngineEntityType.Items when data is ItemBlueprintDto item:
-                RenderItemEditor(builder, item);
-                break;
             case WorldEngineEntityType.ResourceNodes:
                 // Rendered by the dedicated ResourceNode tab arm (Editors/ResourceNodeEditor).
                 break;
@@ -44,24 +41,6 @@ public partial class WorldEngineEditor
                 break;
         }
     };
-
-    // ── Item ────────────────────────────────────────────────────────
-    private static void RenderItemEditor(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b, ItemBlueprintDto dto)
-    {
-        int s = 0;
-        b.OpenElement(s++, "div"); b.AddAttribute(s++, "class", "we-entity-form");
-        AddField(b, ref s, "Tag", dto.ItemTag);
-        AddField(b, ref s, "Name", dto.Name);
-        AddField(b, ref s, "ResRef", dto.ResRef);
-        AddField(b, ref s, "Description", dto.Description);
-        AddField(b, ref s, "Base Item Type", dto.BaseItemType.ToString());
-        AddField(b, ref s, "Base Value", dto.BaseValue.ToString());
-        AddField(b, ref s, "Item Form", dto.ItemForm);
-        AddField(b, ref s, "Materials", dto.Materials != null ? string.Join(", ", dto.Materials) : "—");
-        AddField(b, ref s, "Is Template", dto.IsTemplate ? "Yes" : "No");
-        AddField(b, ref s, "Variants", dto.Variants?.Count.ToString() ?? "0");
-        b.CloseElement();
-    }
 
     // ── Region ──────────────────────────────────────────────────────
     private static void RenderRegionEditor(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b, RegionDefinitionDto dto)

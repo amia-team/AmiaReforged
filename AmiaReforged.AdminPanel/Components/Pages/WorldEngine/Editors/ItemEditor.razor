@@ -1,0 +1,958 @@
+@using System.IO.Compression
+@using System.Text.Json
+@using AmiaReforged.AdminPanel.Models
+@using AmiaReforged.AdminPanel.Services
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
+
+@inject ItemApiService Api
+@inject ILogger<ItemEditor> Logger
+@inject IJSRuntime JS
+
+<div class="we-editor__entity-editor">
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+    @if (!string.IsNullOrEmpty(_success))
+    {
+        <div class="alert alert-success">@_success</div>
+    }
+
+    <EditForm Model="@_edit" OnValidSubmit="@SaveAsync">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-row" style="display:flex;gap:10px">
+            <div class="form-group" style="flex:1">
+                <label>ResRef <small class="text-secondary">(in-game template, max 16 chars)</small></label>
+                <InputText class="form-control" @bind-Value="_edit.ResRef" maxlength="16" />
+            </div>
+            <div class="form-group" style="flex:1">
+                <label>Item Tag <small class="text-secondary">(unique identifier)</small></label>
+                <InputText class="form-control" @bind-Value="_edit.ItemTag" disabled="@(!IsCreating)" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Name</label>
+            <InputText class="form-control" @bind-Value="_edit.Name" />
+        </div>
+
+        <div class="form-group">
+            <label>Description</label>
+            <textarea class="form-control" rows="3" @bind="_edit.Description"></textarea>
+        </div>
+
+        <div class="form-row" style="display:flex;gap:10px">
+            <div class="form-group" style="flex:1">
+                <label>Item Form</label>
+                <select class="form-control" @bind="_edit.ItemForm">
+                    <option value="">— Select —</option>
+                    <option value="None">None</option>
+                    @foreach (IGrouping<string, EnumOptionDto> grp in _allItemForms.GroupBy(f => f.Group ?? "Other"))
+                    {
+                        <optgroup label="@grp.Key">
+                            @foreach (EnumOptionDto form in grp)
+                            {
+                                <option value="@form.Value">@form.Label</option>
+                            }
+                        </optgroup>
+                    }
+                </select>
+            </div>
+            <div class="form-group" style="flex:1">
+                <label>Base Item Type (int)</label>
+                <InputNumber class="form-control" @bind-Value="_edit.BaseItemType" />
+            </div>
+        </div>
+
+        <div class="form-row" style="display:flex;gap:10px">
+            <div class="form-group" style="flex:1">
+                <label>Base Value</label>
+                <InputNumber class="form-control" @bind-Value="_edit.BaseValue" min="0" />
+            </div>
+            <div class="form-group" style="flex:1">
+                <label>Weight Increase Constant</label>
+                <InputNumber class="form-control" @bind-Value="_edit.WeightIncreaseConstant" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Is Template</label>
+            <div class="form-check" style="display:flex;align-items:center;gap:6px">
+                <InputCheckbox class="form-check-input" @bind-Value="_edit.IsTemplate" />
+            </div>
+        </div>
+
+        @* ===== Materials ===== *@
+        <div class="form-group">
+            <label>Materials</label>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">
+                @if (_edit.Materials is { Length: > 0 })
+                {
+                    @for (int idx = 0; idx < _edit.Materials.Length; idx++)
+                    {
+                        int i = idx;
+                        string mat = _edit.Materials[i];
+                        <span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg-secondary);padding:2px 8px;border-radius:12px;font-size:0.85rem">
+                            @GetMaterialLabel(mat)
+                            <button type="button" style="border:none;background:none;color:var(--text-secondary);cursor:pointer;font-size:0.9rem;padding:0 2px" @onclick="() => RemoveMaterial(i)">✕</button>
+                        </span>
+                    }
+                }
+            </div>
+            <div style="position:relative">
+                <input class="form-control" placeholder="Search materials..." value="@_materialSearch"
+                       @oninput="OnMaterialSearchInput"
+                       @onfocus="OnMaterialSearchFocus" @onblur="DismissMaterialDropdownDelayed" />
+                @if (_showMaterialDropdown && _filteredMaterials.Count > 0)
+                {
+                    <div style="position:absolute;top:100%;left:0;right:0;max-height:220px;overflow-y:auto;background:var(--bg-card);border:1px solid var(--border-color);border-radius:6px;z-index:1060;box-shadow:0 4px 12px rgba(0,0,0,0.3)">
+                        @{ string? lastCategory = null; }
+                        @foreach (EnumOptionDto mat in _filteredMaterials)
+                        {
+                            string cat = mat.Category ?? "Other";
+                            @if (cat != lastCategory)
+                            {
+                                lastCategory = cat;
+                                <div style="padding:4px 10px;font-size:0.75rem;font-weight:600;color:var(--text-secondary);background:var(--bg-secondary);border-bottom:1px solid var(--border-color)">@cat</div>
+                            }
+                            <div style="padding:6px 10px;cursor:pointer;font-size:0.9rem" class="dropdown-item" @onmousedown="() => AddMaterial(mat.Value)">
+                                @mat.Label
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* ===== Appearance Section ===== *@
+        <div style="border:1px solid var(--border-color);border-radius:8px;padding:15px;margin-top:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <h4 style="margin:0">Appearance</h4>
+                @if (_edit.Appearance == null)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-info" @onclick="AddAppearance">Add Appearance</button>
+                }
+                else
+                {
+                    <button type="button" class="btn btn-sm btn-outline-danger" @onclick="RemoveAppearance">Remove</button>
+                }
+            </div>
+
+            @if (_edit.Appearance != null)
+            {
+                <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+                    <div class="form-row" style="display:flex;gap:10px">
+                        <div class="form-group" style="flex:1">
+                            <label>Model Type</label>
+                            <InputNumber class="form-control" @bind-Value="_edit.Appearance.ModelType" />
+                        </div>
+                        <div class="form-group" style="flex:1">
+                            <label>Simple Model Number</label>
+                            <input class="form-control" type="number" value="@(_edit.Appearance.SimpleModelNumber)"
+                                   @onchange="OnSimpleModelChanged" />
+                        </div>
+                    </div>
+
+                    @* Weapon Part Data *@
+                    <div style="border:1px solid var(--border-color);border-radius:6px;padding:10px;margin-top:5px">
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <strong>Weapon Parts</strong>
+                            @if (_edit.Appearance.Data == null)
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-info" @onclick="AddWeaponParts">Add</button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-danger" @onclick="RemoveWeaponParts">Remove</button>
+                            }
+                        </div>
+                        @if (_edit.Appearance.Data != null)
+                        {
+                            <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+                                <div class="form-group">
+                                    <label>Top Model</label>
+                                    <InputNumber class="form-control" @bind-Value="_edit.Appearance.Data.TopPartModel" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Middle Model</label>
+                                    <InputNumber class="form-control" @bind-Value="_edit.Appearance.Data.MiddlePartModel" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Bottom Model</label>
+                                    <InputNumber class="form-control" @bind-Value="_edit.Appearance.Data.BottomPartModel" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Top Color</label>
+                                    <InputNumber class="form-control" @bind-Value="_edit.Appearance.Data.TopPartColor" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Middle Color</label>
+                                    <InputNumber class="form-control" @bind-Value="_edit.Appearance.Data.MiddlePartColor" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Bottom Color</label>
+                                    <InputNumber class="form-control" @bind-Value="_edit.Appearance.Data.BottomPartColor" />
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        @* ===== Local Variables Section ===== *@
+        <div style="border:1px solid var(--border-color);border-radius:8px;padding:15px;margin-top:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <h4 style="margin:0">Local Variables</h4>
+                <button type="button" class="btn btn-sm btn-outline-info" @onclick="AddLocalVariable">+ Add</button>
+            </div>
+
+            @if (_edit.LocalVariables is { Count: > 0 })
+            {
+                <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
+                    @for (int idx = 0; idx < _edit.LocalVariables.Count; idx++)
+                    {
+                        int i = idx;
+                        <div style="display:flex;gap:8px;align-items:center">
+                            <div class="form-group" style="flex:2">
+                                <input class="form-control form-control-sm" placeholder="Name"
+                                       @bind="_edit.LocalVariables[i].Name" />
+                            </div>
+                            <div class="form-group" style="flex:1">
+                                <select class="form-control form-control-sm" @bind="_edit.LocalVariables[i].Type">
+                                    <option value="Int">Int</option>
+                                    <option value="String">String</option>
+                                    <option value="Json">Json</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex:2">
+                                <input class="form-control form-control-sm" placeholder="Value"
+                                       value="@GetLocalVarDisplayValue(_edit.LocalVariables[i])"
+                                       @onchange="e => SetLocalVarValue(_edit.LocalVariables[i], e.Value?.ToString() ?? string.Empty)" />
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => RemoveLocalVariable(i)">✕</button>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p style="color:var(--text-secondary);margin:10px 0 0">No local variables defined.</p>
+            }
+        </div>
+
+        @* ===== Material Variants Section ===== *@
+        <div style="border:1px solid var(--border-color);border-radius:8px;padding:15px;margin-top:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <h4 style="margin:0">
+                    Material Variants
+                    @if (_edit.Variants is { Count: > 0 })
+                    {
+                        <small style="color:var(--text-secondary);font-weight:normal"> (@_edit.Variants.Count)</small>
+                    }
+                </h4>
+                <button type="button" class="btn btn-sm btn-outline-info" @onclick="AddVariant">+ Add Variant</button>
+            </div>
+
+            @if (_edit.IsTemplate)
+            {
+                <p style="color:var(--accent-primary);font-size:0.8rem;margin:6px 0 0">
+                    This item is a template. Each variant generates a concrete item at runtime:
+                    <strong>@(_edit.ItemTag)_&lt;material&gt;</strong>
+                </p>
+            }
+
+            @if (_edit.Variants is { Count: > 0 })
+            {
+                <div style="margin-top:10px;display:flex;flex-direction:column;gap:10px">
+                    @for (int idx = 0; idx < _edit.Variants.Count; idx++)
+                    {
+                        int vi = idx;
+                        MaterialVariantDto variant = _edit.Variants[vi];
+                        <div style="border:1px solid var(--border-color);border-radius:6px;padding:12px;background:var(--bg-secondary)">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                                <strong style="font-size:0.9rem">
+                                    Variant @(vi + 1):
+                                    @(string.IsNullOrEmpty(variant.Material) ? "(no material)" : GetMaterialLabel(variant.Material))
+                                </strong>
+                                <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => RemoveVariant(vi)">✕ Remove</button>
+                            </div>
+
+                            <div class="form-row" style="display:flex;gap:10px">
+                                <div class="form-group" style="flex:2">
+                                    <label>Material</label>
+                                    <select class="form-control form-control-sm" value="@variant.Material"
+                                            @onchange="e => OnVariantMaterialChanged(vi, e)">
+                                        <option value="">— Select —</option>
+                                        @foreach (IGrouping<string, EnumOptionDto> grp in _allMaterials.GroupBy(m => m.Category ?? "Other"))
+                                        {
+                                            <optgroup label="@grp.Key">
+                                                @foreach (EnumOptionDto mat in grp)
+                                                {
+                                                    <option value="@mat.Value">@mat.Label</option>
+                                                }
+                                            </optgroup>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="form-group" style="flex:1">
+                                    <label>Base Value Override</label>
+                                    <input class="form-control form-control-sm" type="number"
+                                           value="@variant.BaseValueOverride"
+                                           @onchange="e => OnVariantBaseValueChanged(vi, e)"
+                                           placeholder="default" />
+                                </div>
+                            </div>
+
+                            @* Variant Appearance *@
+                            <div style="margin-top:8px">
+                                <div style="display:flex;justify-content:space-between;align-items:center">
+                                    <label style="font-size:0.85rem;margin:0">Appearance</label>
+                                    @if (variant.Appearance == null)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-outline-info" style="font-size:0.75rem;padding:1px 8px" @onclick="() => AddVariantAppearance(vi)">Add</button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="btn btn-sm btn-outline-danger" style="font-size:0.75rem;padding:1px 8px" @onclick="() => RemoveVariantAppearance(vi)">Remove</button>
+                                    }
+                                </div>
+                                @if (variant.Appearance != null)
+                                {
+                                    <div style="margin-top:6px;display:flex;flex-direction:column;gap:6px">
+                                        <div class="form-row" style="display:flex;gap:8px">
+                                            <div class="form-group" style="flex:1">
+                                                <label style="font-size:0.8rem">Model Type</label>
+                                                <InputNumber class="form-control form-control-sm" @bind-Value="variant.Appearance.ModelType" />
+                                            </div>
+                                            <div class="form-group" style="flex:1">
+                                                <label style="font-size:0.8rem">Simple Model #</label>
+                                                <input class="form-control form-control-sm" type="number"
+                                                       value="@variant.Appearance.SimpleModelNumber"
+                                                       @onchange="e => OnVariantSimpleModelChanged(vi, e)" />
+                                            </div>
+                                        </div>
+
+                                        @* Variant Weapon Parts *@
+                                        <div style="border:1px solid var(--border-color);border-radius:4px;padding:8px">
+                                            <div style="display:flex;justify-content:space-between;align-items:center">
+                                                <small style="font-weight:600">Weapon Parts</small>
+                                                @if (variant.Appearance.Data == null)
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-outline-info" style="font-size:0.7rem;padding:1px 6px" @onclick="() => AddVariantWeaponParts(vi)">Add</button>
+                                                }
+                                                else
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" style="font-size:0.7rem;padding:1px 6px" @onclick="() => RemoveVariantWeaponParts(vi)">Remove</button>
+                                                }
+                                            </div>
+                                            @if (variant.Appearance.Data != null)
+                                            {
+                                                <div style="margin-top:6px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+                                                    <div class="form-group">
+                                                        <label style="font-size:0.75rem">Top Model</label>
+                                                        <InputNumber class="form-control form-control-sm" @bind-Value="variant.Appearance.Data.TopPartModel" />
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label style="font-size:0.75rem">Mid Model</label>
+                                                        <InputNumber class="form-control form-control-sm" @bind-Value="variant.Appearance.Data.MiddlePartModel" />
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label style="font-size:0.75rem">Bot Model</label>
+                                                        <InputNumber class="form-control form-control-sm" @bind-Value="variant.Appearance.Data.BottomPartModel" />
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label style="font-size:0.75rem">Top Color</label>
+                                                        <InputNumber class="form-control form-control-sm" @bind-Value="variant.Appearance.Data.TopPartColor" />
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label style="font-size:0.75rem">Mid Color</label>
+                                                        <InputNumber class="form-control form-control-sm" @bind-Value="variant.Appearance.Data.MiddlePartColor" />
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label style="font-size:0.75rem">Bot Color</label>
+                                                        <InputNumber class="form-control form-control-sm" @bind-Value="variant.Appearance.Data.BottomPartColor" />
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p style="color:var(--text-secondary);margin:10px 0 0;font-size:0.9rem">No variants defined. Add variants to turn this into a template that expands per material.</p>
+            }
+        </div>
+
+        <div class="we-entity-form__actions">
+            @if (!IsCreating)
+            {
+                <button type="button" class="btn btn-secondary" @onclick="() => _showImportModal = true">Import JSON</button>
+                <button type="button" class="btn btn-secondary" @onclick="ExportAsync" disabled="@_isExporting">
+                    @(_isExporting ? "Exporting..." : "Export JSON")
+                </button>
+                <button type="button" class="btn btn-outline-danger ms-auto" @onclick="() => _showDeleteConfirm = true">Delete</button>
+            }
+            <button type="submit" class="btn btn-primary" disabled="@_isSaving">
+                @(_isSaving ? "Saving..." : (IsCreating ? "Create" : "Save Changes"))
+            </button>
+        </div>
+    </EditForm>
+
+    @* ===== Import Modal ===== *@
+    @if (_showImportModal)
+    {
+        <div class="modal-backdrop" @onclick="() => _showImportModal = false">
+        <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:600px;max-height:80vh;overflow-y:auto;margin:10vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+            <h2>Import Item Blueprints</h2>
+            <p style="color:var(--text-secondary);font-size:0.9rem">
+                Paste or upload a JSON file containing item blueprint definitions. The JSON should be an array of item objects
+                matching the existing item definition format.
+            </p>
+
+            <div class="form-group" style="margin-top:15px">
+                <label>Upload JSON File</label>
+                <InputFile OnChange="OnImportFileSelected" accept=".json,.zip" multiple class="form-control" />
+                <small class="text-secondary" style="margin-top:4px;display:block">Select .json files or a .zip containing .json files. You can add more files by clicking again — they will be appended.</small>
+            </div>
+
+            <div class="form-group" style="margin-top:10px">
+                <label>Or paste JSON directly</label>
+                <textarea class="form-control" rows="10" @bind="_importJson"
+                          placeholder='[{"ResRef":"my_item","ItemTag":"my_tag","Name":"My Item",...}]'
+                          style="font-family:monospace;font-size:0.85rem"></textarea>
+            </div>
+
+            @if (_importResult != null)
+            {
+                <div class="alert @(_importResult.Failed > 0 ? "alert-warning" : "alert-success")" style="margin-top:15px">
+                    <strong>Import complete:</strong> @_importResult.Succeeded succeeded, @_importResult.Failed failed out of @_importResult.Total total.
+                    @if (_importResult.Errors.Count > 0)
+                    {
+                        <ul style="margin-top:8px;margin-bottom:0">
+                            @foreach (string err in _importResult.Errors.Take(10))
+                            {
+                                <li style="font-size:0.85rem">@err</li>
+                            }
+                            @if (_importResult.Errors.Count > 10)
+                            {
+                                <li style="font-size:0.85rem;color:var(--text-secondary)">...and @(_importResult.Errors.Count - 10) more</li>
+                            }
+                        </ul>
+                    }
+                </div>
+            }
+
+            <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+                <button type="button" class="btn btn-secondary" @onclick="CloseImportModal">Close</button>
+                <button type="button" class="btn btn-primary" @onclick="RunImport" disabled="@(_isSaving || string.IsNullOrWhiteSpace(_importJson))">
+                    @(_isSaving ? "Importing..." : "Import")
+                </button>
+            </div>
+        </div>
+        </div>
+    }
+
+    @* ===== Delete Confirmation ===== *@
+    @if (_showDeleteConfirm)
+    {
+        <div class="modal-backdrop" @onclick="() => _showDeleteConfirm = false">
+        <div class="admin-modal" @onclick:stopPropagation="true" style="max-width:450px;margin:15vh auto;background:var(--bg-card);border-radius:12px;padding:30px;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1050;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+            <h3>Confirm Delete</h3>
+            <p>Are you sure you want to delete item <strong>@_edit?.Name</strong> (<code>@_edit?.ItemTag</code>)?</p>
+            <p style="color:var(--text-secondary);font-size:0.9rem">This action cannot be undone.</p>
+            <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+                <button type="button" class="btn btn-secondary" @onclick="() => _showDeleteConfirm = false">Cancel</button>
+                <button type="button" class="btn btn-danger" @onclick="DeleteAsync" disabled="@_isSaving">
+                    @(_isSaving ? "Deleting..." : "Delete")
+                </button>
+            </div>
+        </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public ItemBlueprintDto? Item { get; set; }
+
+    [Parameter]
+    public bool IsCreating { get; set; }
+
+    [Parameter]
+    public EventCallback<ItemBlueprintDto> OnSaved { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnDeleted { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private ItemBlueprintDto _edit = new();
+    private ItemBlueprintDto? _source;
+
+    private bool _isSaving;
+    private bool _isExporting;
+    private bool _showDeleteConfirm;
+    private bool _showImportModal;
+    private string _importJson = "";
+    private ImportResult? _importResult;
+
+    private string? _error;
+    private string? _success;
+
+    // Enums
+    private List<EnumOptionDto> _allMaterials = [];
+    private List<EnumOptionDto> _allItemForms = [];
+    private bool _enumsLoaded;
+
+    // Material search dropdown
+    private List<EnumOptionDto> _filteredMaterials = [];
+    private string _materialSearch = "";
+    private bool _showMaterialDropdown;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadEnums();
+
+        if (!ReferenceEquals(_source, Item))
+        {
+            _source = Item;
+            _edit = Item is null
+                ? new ItemBlueprintDto { BaseValue = 1, WeightIncreaseConstant = -1 }
+                : new ItemBlueprintDto
+                {
+                    ResRef = Item.ResRef,
+                    ItemTag = Item.ItemTag,
+                    Name = Item.Name,
+                    Description = Item.Description,
+                    Materials = Item.Materials?.ToArray(),
+                    ItemForm = Item.ItemForm,
+                    BaseItemType = Item.BaseItemType,
+                    BaseValue = Item.BaseValue,
+                    WeightIncreaseConstant = Item.WeightIncreaseConstant,
+                    Appearance = Item.Appearance != null ? new AppearanceDataDto
+                    {
+                        ModelType = Item.Appearance.ModelType,
+                        SimpleModelNumber = Item.Appearance.SimpleModelNumber,
+                        Data = Item.Appearance.Data != null ? new WeaponPartDataDto
+                        {
+                            TopPartModel = Item.Appearance.Data.TopPartModel,
+                            MiddlePartModel = Item.Appearance.Data.MiddlePartModel,
+                            BottomPartModel = Item.Appearance.Data.BottomPartModel,
+                            TopPartColor = Item.Appearance.Data.TopPartColor,
+                            MiddlePartColor = Item.Appearance.Data.MiddlePartColor,
+                            BottomPartColor = Item.Appearance.Data.BottomPartColor,
+                        } : null,
+                    } : null,
+                    LocalVariables = Item.LocalVariables?.Select(lv => new LocalVariableDto
+                    {
+                        Name = lv.Name,
+                        Type = lv.Type,
+                        Value = lv.Value,
+                    }).ToList(),
+                    Variants = Item.Variants?.Select(v => new MaterialVariantDto
+                    {
+                        Material = v.Material,
+                        BaseValueOverride = v.BaseValueOverride,
+                        Appearance = v.Appearance != null ? new AppearanceDataDto
+                        {
+                            ModelType = v.Appearance.ModelType,
+                            SimpleModelNumber = v.Appearance.SimpleModelNumber,
+                            Data = v.Appearance.Data != null ? new WeaponPartDataDto
+                            {
+                                TopPartModel = v.Appearance.Data.TopPartModel,
+                                MiddlePartModel = v.Appearance.Data.MiddlePartModel,
+                                BottomPartModel = v.Appearance.Data.BottomPartModel,
+                                TopPartColor = v.Appearance.Data.TopPartColor,
+                                MiddlePartColor = v.Appearance.Data.MiddlePartColor,
+                                BottomPartColor = v.Appearance.Data.BottomPartColor,
+                            } : null,
+                        } : null,
+                    }).ToList(),
+                    IsTemplate = Item.IsTemplate,
+                };
+            _materialSearch = "";
+            _showMaterialDropdown = false;
+            _filteredMaterials = [];
+            _error = null;
+            _success = null;
+            _showDeleteConfirm = false;
+            _showImportModal = false;
+            _importJson = "";
+            _importResult = null;
+        }
+    }
+
+    private async Task LoadEnums()
+    {
+        if (_enumsLoaded) return;
+        try
+        {
+            ItemEnumsDto? enums = await Api.GetEnumsAsync();
+            if (enums != null)
+            {
+                _allMaterials = enums.Materials;
+                _allItemForms = enums.ItemForms;
+                _enumsLoaded = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Could not load item enums (server may not be selected yet)");
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+        _success = null;
+        _isSaving = true;
+        try
+        {
+            ItemBlueprintDto? saved = IsCreating
+                ? await Api.CreateAsync(_edit)
+                : await Api.UpdateAsync(_edit.ItemTag, _edit);
+
+            _success = IsCreating
+                ? $"Item '{_edit.Name}' created."
+                : $"Item '{_edit.Name}' updated.";
+            await OnSaved.InvokeAsync(saved ?? _edit);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to save item");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task DeleteAsync()
+    {
+        _error = null;
+        _showDeleteConfirm = false;
+        _isSaving = true;
+        try
+        {
+            await Api.DeleteAsync(_edit.ItemTag);
+            _success = $"Deleted item '{_edit.Name}'.";
+            await OnDeleted.InvokeAsync(_edit.ItemTag);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to delete item");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    // ===== Appearance Helpers =====
+    private void AddAppearance() => _edit.Appearance = new AppearanceDataDto();
+    private void RemoveAppearance() => _edit.Appearance = null;
+    private void AddWeaponParts() { if (_edit.Appearance != null) _edit.Appearance.Data = new WeaponPartDataDto(); }
+    private void RemoveWeaponParts() { if (_edit.Appearance != null) _edit.Appearance.Data = null; }
+
+    // ===== Local Variable Helpers =====
+    private string GetLocalVarDisplayValue(LocalVariableDto lv)
+    {
+        return lv.Value switch
+        {
+            JsonElement je => je.ValueKind == JsonValueKind.String ? je.GetString() ?? "" : je.GetRawText(),
+            _ => lv.Value?.ToString() ?? ""
+        };
+    }
+
+    private void SetLocalVarValue(LocalVariableDto lv, string text)
+    {
+        if (lv.Type == "Int" && int.TryParse(text, out int intVal))
+            lv.Value = intVal;
+        else if (lv.Type == "Json")
+        {
+            try { lv.Value = JsonDocument.Parse(text).RootElement.Clone(); }
+            catch { lv.Value = text; }
+        }
+        else
+            lv.Value = text;
+    }
+
+    private void AddLocalVariable()
+    {
+        _edit.LocalVariables ??= new List<LocalVariableDto>();
+        _edit.LocalVariables.Add(new LocalVariableDto());
+    }
+
+    private void RemoveLocalVariable(int index)
+    {
+        if (_edit.LocalVariables != null && index >= 0 && index < _edit.LocalVariables.Count)
+            _edit.LocalVariables.RemoveAt(index);
+    }
+
+    private void OnSimpleModelChanged(ChangeEventArgs e)
+    {
+        if (_edit.Appearance == null) return;
+        _edit.Appearance.SimpleModelNumber = int.TryParse(e.Value?.ToString(), out int v) ? v : null;
+    }
+
+    // ===== Material Dropdown Helpers =====
+    private void OnMaterialSearchInput(ChangeEventArgs e)
+    {
+        _materialSearch = e.Value?.ToString() ?? "";
+        _showMaterialDropdown = true;
+        RefreshFilteredMaterials();
+    }
+
+    private void OnMaterialSearchFocus()
+    {
+        _showMaterialDropdown = true;
+        RefreshFilteredMaterials();
+    }
+
+    private void AddMaterial(string materialValue)
+    {
+        List<string> current = _edit.Materials?.ToList() ?? new();
+        if (!current.Contains(materialValue))
+        {
+            current.Add(materialValue);
+            _edit.Materials = current.ToArray();
+        }
+        _materialSearch = "";
+        _showMaterialDropdown = false;
+        RefreshFilteredMaterials();
+    }
+
+    private void RemoveMaterial(int index)
+    {
+        if (_edit.Materials == null || index < 0 || index >= _edit.Materials.Length) return;
+        List<string> current = _edit.Materials.ToList();
+        current.RemoveAt(index);
+        _edit.Materials = current.Count > 0 ? current.ToArray() : null;
+        RefreshFilteredMaterials();
+    }
+
+    private void RefreshFilteredMaterials()
+    {
+        HashSet<string> selected = new(_edit.Materials ?? []);
+        _filteredMaterials = _allMaterials
+            .Where(m => !selected.Contains(m.Value))
+            .Where(m => string.IsNullOrEmpty(_materialSearch) ||
+                        m.Label.Contains(_materialSearch, StringComparison.OrdinalIgnoreCase) ||
+                        (m.Category ?? "").Contains(_materialSearch, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(m => m.Category ?? "ZZZ")
+            .ThenBy(m => m.Label)
+            .Take(30)
+            .ToList();
+    }
+
+    private async Task DismissMaterialDropdownDelayed()
+    {
+        await Task.Delay(200);
+        await InvokeAsync(() =>
+        {
+            _showMaterialDropdown = false;
+        });
+    }
+
+    private string GetMaterialLabel(string value) =>
+        _allMaterials.FirstOrDefault(m => m.Value == value)?.Label ?? value;
+
+    // ===== Variant Helpers =====
+    private void AddVariant()
+    {
+        _edit.Variants ??= new List<MaterialVariantDto>();
+        _edit.Variants.Add(new MaterialVariantDto
+        {
+            Appearance = new AppearanceDataDto()
+        });
+    }
+
+    private void RemoveVariant(int index)
+    {
+        if (_edit.Variants == null || index < 0 || index >= _edit.Variants.Count) return;
+        _edit.Variants.RemoveAt(index);
+        if (_edit.Variants.Count == 0) _edit.Variants = null;
+    }
+
+    private void OnVariantMaterialChanged(int index, ChangeEventArgs e)
+    {
+        if (_edit.Variants == null || index < 0 || index >= _edit.Variants.Count) return;
+        _edit.Variants[index].Material = e.Value?.ToString() ?? "";
+    }
+
+    private void OnVariantBaseValueChanged(int index, ChangeEventArgs e)
+    {
+        if (_edit.Variants == null || index < 0 || index >= _edit.Variants.Count) return;
+        _edit.Variants[index].BaseValueOverride = int.TryParse(e.Value?.ToString(), out int v) ? v : null;
+    }
+
+    private void OnVariantSimpleModelChanged(int index, ChangeEventArgs e)
+    {
+        if (_edit.Variants?[index].Appearance == null) return;
+        _edit.Variants[index].Appearance!.SimpleModelNumber = int.TryParse(e.Value?.ToString(), out int v) ? v : null;
+    }
+
+    private void AddVariantAppearance(int index)
+    {
+        if (_edit.Variants != null && index >= 0 && index < _edit.Variants.Count)
+            _edit.Variants[index].Appearance = new AppearanceDataDto();
+    }
+
+    private void RemoveVariantAppearance(int index)
+    {
+        if (_edit.Variants != null && index >= 0 && index < _edit.Variants.Count)
+            _edit.Variants[index].Appearance = null;
+    }
+
+    private void AddVariantWeaponParts(int index)
+    {
+        if (_edit.Variants?[index].Appearance != null)
+            _edit.Variants[index].Appearance!.Data = new WeaponPartDataDto();
+    }
+
+    private void RemoveVariantWeaponParts(int index)
+    {
+        if (_edit.Variants?[index].Appearance != null)
+            _edit.Variants[index].Appearance!.Data = null;
+    }
+
+    // ===== Import =====
+    private List<JsonElement> _importedItems = new();
+
+    private async Task OnImportFileSelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            foreach (IBrowserFile file in e.GetMultipleFiles(100))
+            {
+                if (file.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                {
+                    await ProcessZipItems(file);
+                }
+                else
+                {
+                    await ProcessJsonFileItems(file);
+                }
+            }
+
+            _importJson = JsonSerializer.Serialize(_importedItems);
+            _importResult = null;
+            _success = $"Loaded {_importedItems.Count} item(s) total. Pick more files to add more, or click Import.";
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to read file(s): {ex.Message}";
+        }
+    }
+
+    private async Task ProcessJsonFileItems(IBrowserFile file)
+    {
+        using StreamReader reader = new StreamReader(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
+        string content = await reader.ReadToEndAsync();
+        ParseJsonItems(content);
+    }
+
+    private async Task ProcessZipItems(IBrowserFile file)
+    {
+        using MemoryStream ms = new MemoryStream();
+        await file.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024).CopyToAsync(ms);
+        ms.Position = 0;
+        using ZipArchive archive = new ZipArchive(ms, ZipArchiveMode.Read);
+        foreach (ZipArchiveEntry entry in archive.Entries)
+        {
+            if (!entry.FullName.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) continue;
+            using Stream entryStream = entry.Open();
+            using StreamReader reader = new StreamReader(entryStream);
+            string content = await reader.ReadToEndAsync();
+            ParseJsonItems(content);
+        }
+    }
+
+    private void ParseJsonItems(string content)
+    {
+        using JsonDocument doc = JsonDocument.Parse(content);
+        if (doc.RootElement.ValueKind == JsonValueKind.Array)
+        {
+            foreach (JsonElement item in doc.RootElement.EnumerateArray())
+            {
+                _importedItems.Add(item.Clone());
+            }
+        }
+        else if (doc.RootElement.ValueKind == JsonValueKind.Object)
+        {
+            _importedItems.Add(doc.RootElement.Clone());
+        }
+    }
+
+    private async Task RunImport()
+    {
+        if (string.IsNullOrWhiteSpace(_importJson)) return;
+        _isSaving = true;
+        _error = null;
+        try
+        {
+            _importResult = await Api.ImportJsonAsync(_importJson);
+            if (_importResult is { Failed: 0 })
+                _success = $"Successfully imported {_importResult.Succeeded} items.";
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to import items");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void CloseImportModal()
+    {
+        _showImportModal = false;
+        _importJson = "";
+        _importResult = null;
+        _importedItems.Clear();
+    }
+
+    // ===== Export =====
+    private async Task ExportAsync()
+    {
+        _isExporting = true;
+        _error = null;
+        try
+        {
+            string json = await Api.ExportJsonAsync(null);
+            string fileName = $"items-export-{DateTime.UtcNow:yyyyMMdd-HHmmss}.json";
+            await DownloadFileAsync(fileName, json);
+            _success = "Export downloaded successfully.";
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to export items");
+        }
+        finally
+        {
+            _isExporting = false;
+        }
+    }
+
+    private async Task DownloadFileAsync(string fileName, string content)
+    {
+        byte[] bytes = System.Text.Encoding.UTF8.GetBytes(content);
+        string base64 = Convert.ToBase64String(bytes);
+        await JS.InvokeVoidAsync("adminPanelDownloadFile", fileName, base64);
+    }
+}
