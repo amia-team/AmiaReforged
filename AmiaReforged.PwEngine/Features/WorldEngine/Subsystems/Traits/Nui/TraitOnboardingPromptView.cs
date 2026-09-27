@@ -22,13 +22,13 @@ public sealed class TraitOnboardingPromptView : ScryView<TraitOnboardingPromptPr
     /// <summary>
     ///     Exact body text shown in the popup.
     /// </summary>
-    public const string Body =
+    private const string Body =
         "You have not selected traits for this character. Would you like to select them now?";
 
     /// <summary>
     ///     Exact label for the suppression checkbox.
     /// </summary>
-    public const string CheckboxLabel = "Don't show this reminder again";
+    private const string CheckboxLabel = "Don't show this reminder again";
 
     /// <summary>
     ///     NUI element id for the Yes button.
@@ -43,7 +43,7 @@ public sealed class TraitOnboardingPromptView : ScryView<TraitOnboardingPromptPr
     /// <summary>
     ///     Bind key backing the "Don't show this reminder again" checkbox.
     /// </summary>
-    public const string CheckboxKey = "trait_onboarding_suppress";
+    private const string CheckboxKey = "trait_onboarding_suppress";
 
     public readonly NuiBind<bool> SuppressReminder = new(CheckboxKey);
 

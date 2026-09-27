@@ -43,7 +43,7 @@ public sealed class TraitOnboardingPromptPresenter : ScryPresenter<TraitOnboardi
     {
         _window = new NuiWindow(View.RootLayout(), TraitOnboardingPromptView.Title)
         {
-            Geometry = new NuiRect(400f, 300f, 380f, 200f),
+            Geometry = new NuiRect(480f, 380f, 380f, 200f),
             Resizable = false
         };
     }
