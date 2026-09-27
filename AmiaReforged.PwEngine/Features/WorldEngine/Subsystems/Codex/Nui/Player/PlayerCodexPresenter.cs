@@ -5,6 +5,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -28,6 +29,7 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
     [Inject] private Lazy<CodexQueryService>? QueryService { get; init; }
     [Inject] private Lazy<IIndustryMembershipService>? MembershipService { get; init; }
     [Inject] private Lazy<IIndustryRepository>? IndustryRepository { get; init; }
+    [Inject] private Lazy<TraitSelectionWindowService>? SelectionWindowService { get; init; }
 
     // State
     private CodexTab _activeTab = CodexTab.Knowledge;
@@ -131,6 +133,10 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
                 SwitchTab(CodexTab.Economy);
                 break;
 
+            case "btn_select_traits":
+                SelectionWindowService?.Value?.Open(_player);
+                break;
+
             case "btn_prev_page":
                 if (_currentPage > 0) { _currentPage--; RefreshEntryList(); }
                 break;
@@ -180,6 +186,8 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
         if (_activeTab == CodexTab.Economy)
             RefreshProficiencyDisplay();
 
+        SetSelectTraitsVisible(_activeTab == CodexTab.Traits);
+
         SetDetailContent("Select an Entry", "Choose an entry from the list to view its details.");
     }
 
@@ -197,6 +205,8 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
 
         if (_activeTab == CodexTab.Economy)
             RefreshProficiencyDisplay();
+
+        SetSelectTraitsVisible(_activeTab == CodexTab.Traits);
 
         SetDetailContent("Select an Entry", "Choose an entry from the list to view its details.");
     }
@@ -388,6 +398,11 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
     {
         _token.SetBindValue(View.DetailTitle, title);
         _token.SetBindValue(View.DetailBody, body);
+    }
+
+    private void SetSelectTraitsVisible(bool visible)
+    {
+        _token.SetBindValue(View.ShowSelectTraits, visible);
     }
 
     // ──────────────────────── Category sidebar ────────────────────────

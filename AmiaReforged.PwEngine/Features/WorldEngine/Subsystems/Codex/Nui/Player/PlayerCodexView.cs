@@ -38,6 +38,9 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
     public readonly NuiBind<bool> ShowPrevPage = new("codex_show_prev");
     public readonly NuiBind<bool> ShowNextPage = new("codex_show_next");
 
+    // --- Select Traits action (Traits tab only) ---
+    public readonly NuiBind<bool> ShowSelectTraits = new("codex_show_select_traits");
+
     // --- Per-row binds (8 rows) ---
     public readonly List<NuiBind<string>> EntryNames = new();
     public readonly List<NuiBind<string>> EntrySubtitles = new();
@@ -130,7 +133,9 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
                 new NuiButton("Notes") { Id = "tab_notes", Height = 35f },
                 new NuiButton("Reputation") { Id = "tab_reputation", Height = 35f },
                 new NuiButton("Traits") { Id = "tab_traits", Height = 35f },
-                new NuiButton("Economy") { Id = "tab_economy", Height = 35f }
+                new NuiButton("Economy") { Id = "tab_economy", Height = 35f },
+
+                new NuiButton("Select Traits") { Id = "btn_select_traits", Height = 35f, Visible = ShowSelectTraits }
             }
         };
     }
