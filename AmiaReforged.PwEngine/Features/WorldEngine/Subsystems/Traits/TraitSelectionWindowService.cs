@@ -10,12 +10,6 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits;
 ///     <c>/traits</c> behavior so both the command and the onboarding Yes path open exactly one
 ///     window.
 /// </summary>
-/// <remarks>
-///     This is the service that Story 002 provides; it is referenced by
-///     <see cref="TraitOnboardingService" />. The <see cref="TraitSelectionView" /> constructor
-///     performs presenter injection, so this service only guards against duplicates and opens the
-///     window through the <see cref="WindowDirector" />.
-/// </remarks>
 [ServiceBinding(typeof(TraitSelectionWindowService))]
 public class TraitSelectionWindowService
 {

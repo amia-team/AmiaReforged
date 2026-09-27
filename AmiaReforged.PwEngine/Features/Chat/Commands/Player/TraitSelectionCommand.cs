@@ -1,5 +1,4 @@
-using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Nui;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits;
 using Anvil;
 using Anvil.API;
 using Anvil.Services;
@@ -12,11 +11,11 @@ namespace AmiaReforged.PwEngine.Features.Chat.Commands.Player;
 [ServiceBinding(typeof(IChatCommand))]
 public class TraitSelectionCommand : IChatCommand
 {
-    private readonly WindowDirector _director;
+    private readonly TraitSelectionWindowService _selectionWindowService;
 
-    public TraitSelectionCommand(WindowDirector director)
+    public TraitSelectionCommand(TraitSelectionWindowService selectionWindowService)
     {
-        _director = director;
+        _selectionWindowService = selectionWindowService;
     }
 
     public string Command => "./traits";
@@ -27,17 +26,7 @@ public class TraitSelectionCommand : IChatCommand
     {
         if (caller.IsDM) return Task.CompletedTask;
 
-        if (_director.IsWindowOpen(caller, typeof(TraitSelectionPresenter)))
-            return Task.CompletedTask;
-
-        TraitSelectionView view = new(caller);
-        IScryPresenter presenter = view.Presenter;
-
-        InjectionService? injector = AnvilCore.GetService<InjectionService>();
-        if (injector != null)
-            injector.Inject(presenter);
-
-        _director.OpenWindow(presenter);
+        _selectionWindowService.Open(caller);
         return Task.CompletedTask;
     }
 }
