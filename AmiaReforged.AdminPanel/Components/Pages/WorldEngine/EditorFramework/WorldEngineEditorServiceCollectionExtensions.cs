@@ -70,6 +70,13 @@ public static class WorldEngineEditorServiceCollectionExtensions
             entityType: WorldEngineEntityType.Codex,
             requiresEndpoint: true);
 
+        services.AddWorldEngineEditorExtension<TraitNewSidebarAction>(
+            "trait-new",
+            WorldEngineEditorExtensionSlot.SidebarHeaderActions,
+            order: 100,
+            entityType: WorldEngineEntityType.Traits,
+            requiresEndpoint: true);
+
         services.AddWorldEngineEditorExtension<RegionGraphSidebarAction>(
             "region-graph",
             WorldEngineEditorExtensionSlot.SidebarBeforeList,

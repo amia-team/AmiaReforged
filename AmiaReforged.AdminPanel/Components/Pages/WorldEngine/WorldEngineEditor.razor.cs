@@ -143,6 +143,7 @@ public partial class WorldEngineEditor
             OpenNewIndustryAsync = OpenNewIndustryTab,
             OpenNewLoreAsync = () => OpenNewCodexEditor(CodexEditor.CodexSubType.Lore),
             OpenNewQuestAsync = () => OpenNewCodexEditor(CodexEditor.CodexSubType.Quest),
+            OpenNewTraitAsync = OpenNewTraitTab,
         };
 
         EditorState.OnEndpointChanged += OnEditorEndpointChanged;

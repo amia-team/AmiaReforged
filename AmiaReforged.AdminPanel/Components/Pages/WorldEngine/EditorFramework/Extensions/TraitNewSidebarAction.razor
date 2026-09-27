@@ -1,0 +1,10 @@
+<button class="btn btn-sm btn-primary"
+        title="Create new trait"
+        @onclick="@Context.OpenNewTraitAsync">
+    + New
+</button>
+
+@code {
+    [CascadingParameter]
+    public WorldEngineEditorHostContext Context { get; set; } = null!;
+}

@@ -1,0 +1,509 @@
+@inject TraitApiService TraitApi
+@inject GlyphApiService GlyphApi
+@inject ILogger<TraitEditor> Logger
+
+<div class="we-editor__entity-editor">
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+    @if (!string.IsNullOrEmpty(_success))
+    {
+        <div class="alert alert-success">@_success</div>
+    }
+
+    <EditForm Model="@_edit" OnValidSubmit="@SaveAsync">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Tag <small class="text-secondary">(unique identifier, max 50 chars)</small></label>
+                <InputText class="form-control" @bind-Value="_edit.Tag" disabled="@(!IsCreating)" placeholder="e.g. trait_brave" />
+            </div>
+            <div class="form-group">
+                <label>Name</label>
+                <InputText class="form-control" @bind-Value="_edit.Name" placeholder="e.g. Brave" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Description</label>
+            <InputTextArea class="form-control" @bind-Value="_edit.Description" rows="4" placeholder="Full description of the trait..." />
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Category</label>
+                <select class="form-control" @bind="_edit.Category" @bind:event="onchange">
+                    @foreach (EnumValueDto cat in _categories)
+                    {
+                        <option value="@cat.Name">@cat.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Death Behavior</label>
+                <select class="form-control" @bind="_edit.DeathBehavior" @bind:event="onchange">
+                    @foreach (EnumValueDto db in _deathBehaviors)
+                    {
+                        <option value="@db.Name">@db.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Point Cost</label>
+                <InputNumber class="form-control" @bind-Value="_edit.PointCost" />
+            </div>
+        </div>
+
+        <div class="form-row" style="gap:20px">
+            <div class="form-check form-group" style="margin:0">
+                <input class="form-check-input" type="checkbox" id="traitRequiresUnlock" @bind="_edit.RequiresUnlock" />
+                <label class="form-check-label" for="traitRequiresUnlock">
+                    Requires Unlock
+                    <small class="text-secondary">Cannot be selected at character creation; must be earned.</small>
+                </label>
+            </div>
+            <div class="form-check form-group" style="margin:0">
+                <input class="form-check-input" type="checkbox" id="traitDmOnly" @bind="_edit.DmOnly" />
+                <label class="form-check-label" for="traitDmOnly">
+                    DM Only
+                    <small class="text-secondary">Can only be assigned by a DM.</small>
+                </label>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <div class="panel-section__header">
+                <strong>Effects</strong>
+                <button type="button" class="btn btn-sm btn-outline-primary" @onclick="AddEffect">+ Add Effect</button>
+            </div>
+
+            @if (_edit.Effects.Count == 0)
+            {
+                <p class="text-secondary" style="text-align:center;margin:10px 0">No effects defined. This trait is flavor-only.</p>
+            }
+            else
+            {
+                @for (int i = 0; i < _edit.Effects.Count; i++)
+                {
+                    int idx = i;
+                    <div class="we-entity-form__card" style="display:flex;gap:8px;align-items:end;margin-bottom:8px">
+                        <div class="form-group" style="width:160px;margin:0">
+                            <label style="font-size:0.8rem">Type</label>
+                            <select class="form-control form-control-sm" @bind="_edit.Effects[idx].EffectType" @bind:event="onchange">
+                                @foreach (EnumValueDto et in _effectTypes)
+                                {
+                                    <option value="@et.Id">@et.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex:1;margin:0">
+                            <label style="font-size:0.8rem">Target</label>
+                            <InputText class="form-control form-control-sm" @bind-Value="_edit.Effects[idx].Target" placeholder="e.g. Persuade, Strength" />
+                        </div>
+                        <div class="form-group" style="width:90px;margin:0">
+                            <label style="font-size:0.8rem">Magnitude</label>
+                            <InputNumber class="form-control form-control-sm" @bind-Value="_edit.Effects[idx].Magnitude" />
+                        </div>
+                        <div class="form-group" style="flex:1;margin:0">
+                            <label style="font-size:0.8rem">Description</label>
+                            <InputText class="form-control form-control-sm" @bind-Value="_edit.Effects[idx].Description" placeholder="e.g. +2 to Persuade" />
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger" style="margin-bottom:0" @onclick="() => RemoveEffect(idx)">✕</button>
+                    </div>
+                }
+            }
+        </div>
+
+        <div class="panel-section">
+            <strong>Race &amp; Class Restrictions</strong>
+            <div class="form-row" style="margin-top:8px">
+                <div class="form-group">
+                    <label>Allowed Races <small class="text-secondary">(comma-separated, empty = all)</small></label>
+                    <InputText class="form-control" @bind-Value="_allowedRacesText" placeholder="e.g. Human, Elf, Half-Elf" />
+                </div>
+                <div class="form-group">
+                    <label>Forbidden Races <small class="text-secondary">(comma-separated)</small></label>
+                    <InputText class="form-control" @bind-Value="_forbiddenRacesText" placeholder="e.g. Construct" />
+                </div>
+            </div>
+            <div class="form-row" style="margin-top:8px">
+                <div class="form-group">
+                    <label>Allowed Classes <small class="text-secondary">(comma-separated, empty = all)</small></label>
+                    <InputText class="form-control" @bind-Value="_allowedClassesText" placeholder="e.g. Fighter, Paladin" />
+                </div>
+                <div class="form-group">
+                    <label>Forbidden Classes <small class="text-secondary">(comma-separated)</small></label>
+                    <InputText class="form-control" @bind-Value="_forbiddenClassesText" placeholder="e.g. Monk" />
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <strong>Trait Dependencies</strong>
+            <div class="form-row" style="margin-top:8px">
+                <div class="form-group">
+                    <label>Prerequisite Traits <small class="text-secondary">(tags, comma-separated)</small></label>
+                    <InputText class="form-control" @bind-Value="_prerequisiteTraitsText" placeholder="e.g. trait_basic_magic" />
+                </div>
+                <div class="form-group">
+                    <label>Conflicting Traits <small class="text-secondary">(tags, comma-separated)</small></label>
+                    <InputText class="form-control" @bind-Value="_conflictingTraitsText" placeholder="e.g. trait_cowardly" />
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <div class="panel-section__header">
+                <strong>Glyph Scripts (@_traitGlyphBindings.Count)</strong>
+                <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => _showAddTraitGlyphBinding = !_showAddTraitGlyphBinding">
+                    @(_showAddTraitGlyphBinding ? "Cancel" : "+ Attach Script")
+                </button>
+            </div>
+
+            @if (_showAddTraitGlyphBinding)
+            {
+                <div class="we-entity-form__card" style="display:flex;gap:8px;align-items:end;margin-bottom:8px">
+                    <div class="form-group" style="flex:2;margin:0">
+                        <label style="font-size:0.8rem">Script</label>
+                        <select class="form-control form-control-sm" @bind="_newTraitGlyphDefinitionId" @bind:event="onchange">
+                            <option value="">— Select Script —</option>
+                            @foreach (GlyphDefinitionDto def in _glyphDefinitions.Where(d => d.IsActive))
+                            {
+                                <option value="@def.Id">@def.Name (@def.EventType)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group" style="width:90px;margin:0">
+                        <label style="font-size:0.8rem">Priority</label>
+                        <InputNumber class="form-control form-control-sm" @bind-Value="_newTraitGlyphPriority" />
+                    </div>
+                    <button type="button" class="btn btn-sm btn-success" style="margin-bottom:0" @onclick="AddTraitGlyphBinding" disabled="@_isSaving">Add</button>
+                </div>
+            }
+
+            @if (_traitGlyphBindings.Count == 0)
+            {
+                <p class="text-secondary" style="text-align:center;margin:10px 0">No Glyph scripts attached. Scripts run when this trait is granted or removed.</p>
+            }
+            else
+            {
+                @foreach (TraitGlyphBindingDto binding in _traitGlyphBindings)
+                {
+                    <div class="we-entity-form__card" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding:6px 8px">
+                        <span style="flex:1;font-size:0.9rem">@binding.GlyphName</span>
+                        <span class="badge bg-info" style="font-size:0.75rem">@binding.EventType</span>
+                        <span class="text-secondary" style="font-size:0.8rem">P: @binding.Priority</span>
+                        <button type="button" class="btn btn-sm btn-outline-danger" style="font-size:0.7rem;padding:1px 6px" @onclick="() => RemoveTraitGlyphBinding(binding.Id)">✕</button>
+                    </div>
+                }
+            }
+        </div>
+
+        <div class="we-entity-form__actions">
+            <button type="button" class="btn btn-secondary" @onclick="() => OnCancel.InvokeAsync()">Cancel</button>
+            @if (!IsCreating)
+            {
+                <button type="button" class="btn btn-outline-danger" @onclick="() => _showDeleteConfirm = true">Delete</button>
+            }
+            <button type="submit" class="btn btn-primary" disabled="@_isSaving">
+                @(_isSaving ? "Saving..." : (IsCreating ? "Create" : "Save Changes"))
+            </button>
+        </div>
+    </EditForm>
+
+    @if (_showDeleteConfirm)
+    {
+        <div class="we-entity-form__delete-confirm">
+            <p>Delete trait <strong>@_edit.Name</strong> (<code>@_edit.Tag</code>)?</p>
+            <p class="text-secondary">This cannot be undone. If any characters currently have this trait, deletion will be blocked.</p>
+            <button class="btn btn-secondary btn-sm" @onclick="() => _showDeleteConfirm = false">Cancel</button>
+            <button class="btn btn-danger btn-sm" @onclick="DeleteAsync" disabled="@_isSaving">
+                @(_isSaving ? "Deleting..." : "Delete")
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public TraitDefinitionDto Item { get; set; } = null!;
+
+    [Parameter]
+    public bool IsCreating { get; set; }
+
+    [Parameter]
+    public EventCallback<TraitDefinitionDto> OnSaved { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnDeleted { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private TraitDefinitionDto _edit = new();
+    private TraitDefinitionDto? _source;
+    private bool _isSaving;
+    private bool _showDeleteConfirm;
+    private string? _error;
+    private string? _success;
+
+    // Enum lookups
+    private List<EnumValueDto> _categories = [];
+    private List<EnumValueDto> _deathBehaviors = [];
+    private List<EnumValueDto> _effectTypes = [];
+
+    // Comma-separated text fields for list properties
+    private string _allowedRacesText = "";
+    private string _forbiddenRacesText = "";
+    private string _allowedClassesText = "";
+    private string _forbiddenClassesText = "";
+    private string _prerequisiteTraitsText = "";
+    private string _conflictingTraitsText = "";
+
+    // Glyph script bindings
+    private List<TraitGlyphBindingDto> _traitGlyphBindings = [];
+    private List<GlyphDefinitionDto> _glyphDefinitions = [];
+    private bool _showAddTraitGlyphBinding;
+    private string _newTraitGlyphDefinitionId = "";
+    private int _newTraitGlyphPriority;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!ReferenceEquals(_source, Item))
+        {
+            _source = Item;
+            _edit = new TraitDefinitionDto
+            {
+                Tag = Item.Tag,
+                Name = Item.Name,
+                Description = Item.Description,
+                PointCost = Item.PointCost,
+                Category = Item.Category,
+                DeathBehavior = Item.DeathBehavior,
+                RequiresUnlock = Item.RequiresUnlock,
+                DmOnly = Item.DmOnly,
+                Effects = Item.Effects.Select(e => new TraitEffectDto
+                {
+                    EffectType = e.EffectType,
+                    Target = e.Target,
+                    Magnitude = e.Magnitude,
+                    Description = e.Description
+                }).ToList(),
+                AllowedRaces = [.. Item.AllowedRaces],
+                AllowedClasses = [.. Item.AllowedClasses],
+                ForbiddenRaces = [.. Item.ForbiddenRaces],
+                ForbiddenClasses = [.. Item.ForbiddenClasses],
+                ConflictingTraits = [.. Item.ConflictingTraits],
+                PrerequisiteTraits = [.. Item.PrerequisiteTraits],
+            };
+            _allowedRacesText = string.Join(", ", _edit.AllowedRaces);
+            _forbiddenRacesText = string.Join(", ", _edit.ForbiddenRaces);
+            _allowedClassesText = string.Join(", ", _edit.AllowedClasses);
+            _forbiddenClassesText = string.Join(", ", _edit.ForbiddenClasses);
+            _prerequisiteTraitsText = string.Join(", ", _edit.PrerequisiteTraits);
+            _conflictingTraitsText = string.Join(", ", _edit.ConflictingTraits);
+
+            _error = null;
+            _success = null;
+            _showDeleteConfirm = false;
+            _showAddTraitGlyphBinding = false;
+            _newTraitGlyphDefinitionId = "";
+            _newTraitGlyphPriority = 0;
+
+            await LoadAsync();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            List<EnumValueDto>[] enums = await Task.WhenAll(
+                TraitApi.GetCategoriesAsync(),
+                TraitApi.GetDeathBehaviorsAsync(),
+                TraitApi.GetEffectTypesAsync());
+            _categories = enums[0];
+            _deathBehaviors = enums[1];
+            _effectTypes = enums[2];
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load trait enum values, using fallback");
+            FallbackEnums();
+        }
+
+        try
+        {
+            _glyphDefinitions = await GlyphApi.GetAllDefinitionsAsync();
+        }
+        catch
+        {
+            _glyphDefinitions = [];
+        }
+
+        if (!IsCreating && !string.IsNullOrWhiteSpace(_edit.Tag))
+        {
+            try
+            {
+                _traitGlyphBindings = await GlyphApi.GetTraitBindingsAsync(_edit.Tag);
+            }
+            catch
+            {
+                _traitGlyphBindings = [];
+            }
+        }
+    }
+
+    private void FallbackEnums()
+    {
+        if (_categories.Count == 0)
+        {
+            _categories =
+            [
+                new() { Id = 0, Name = "Background" },
+                new() { Id = 1, Name = "Personality" },
+                new() { Id = 2, Name = "Physical" },
+                new() { Id = 3, Name = "Mental" },
+                new() { Id = 4, Name = "Social" },
+                new() { Id = 5, Name = "Supernatural" },
+                new() { Id = 6, Name = "Curse" },
+                new() { Id = 7, Name = "Blessing" },
+            ];
+        }
+        if (_deathBehaviors.Count == 0)
+        {
+            _deathBehaviors =
+            [
+                new() { Id = 0, Name = "Persist" },
+                new() { Id = 1, Name = "ResetOnDeath" },
+                new() { Id = 2, Name = "Permadeath" },
+                new() { Id = 3, Name = "RemoveOnDeath" },
+            ];
+        }
+        if (_effectTypes.Count == 0)
+        {
+            _effectTypes =
+            [
+                new() { Id = 0, Name = "None" },
+                new() { Id = 1, Name = "SkillModifier" },
+                new() { Id = 2, Name = "AttributeModifier" },
+                new() { Id = 3, Name = "KnowledgePoints" },
+                new() { Id = 99, Name = "Custom" },
+            ];
+        }
+    }
+
+    private void AddEffect() => _edit.Effects.Add(new TraitEffectDto());
+
+    private void RemoveEffect(int index)
+    {
+        if (index >= 0 && index < _edit.Effects.Count)
+            _edit.Effects.RemoveAt(index);
+    }
+
+    private async Task AddTraitGlyphBinding()
+    {
+        if (string.IsNullOrWhiteSpace(_edit.Tag) || string.IsNullOrEmpty(_newTraitGlyphDefinitionId)) return;
+        if (!Guid.TryParse(_newTraitGlyphDefinitionId, out Guid defId)) return;
+
+        _isSaving = true;
+        _error = null;
+        try
+        {
+            await GlyphApi.CreateTraitBindingAsync(new CreateTraitGlyphBindingRequest(_edit.Tag, defId, _newTraitGlyphPriority));
+            _traitGlyphBindings = await GlyphApi.GetTraitBindingsAsync(_edit.Tag);
+            _showAddTraitGlyphBinding = false;
+            _newTraitGlyphDefinitionId = "";
+            _newTraitGlyphPriority = 0;
+            _success = "Glyph script attached to trait.";
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to attach script: {ex.Message}";
+            Logger.LogError(ex, "Failed to add trait glyph binding");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task RemoveTraitGlyphBinding(Guid bindingId)
+    {
+        _error = null;
+        try
+        {
+            await GlyphApi.DeleteTraitBindingAsync(bindingId);
+            if (!string.IsNullOrEmpty(_edit.Tag))
+                _traitGlyphBindings = await GlyphApi.GetTraitBindingsAsync(_edit.Tag);
+            _success = "Glyph script detached from trait.";
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to detach script: {ex.Message}";
+            Logger.LogError(ex, "Failed to remove trait glyph binding");
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+        _success = null;
+        try
+        {
+            _edit.AllowedRaces = SplitTags(_allowedRacesText);
+            _edit.ForbiddenRaces = SplitTags(_forbiddenRacesText);
+            _edit.AllowedClasses = SplitTags(_allowedClassesText);
+            _edit.ForbiddenClasses = SplitTags(_forbiddenClassesText);
+            _edit.PrerequisiteTraits = SplitTags(_prerequisiteTraitsText);
+            _edit.ConflictingTraits = SplitTags(_conflictingTraitsText);
+
+            _isSaving = true;
+            TraitDefinitionDto? saved = IsCreating
+                ? await TraitApi.CreateAsync(_edit)
+                : await TraitApi.UpdateAsync(_edit.Tag, _edit);
+            _success = IsCreating
+                ? $"Trait '{_edit.Name}' created."
+                : $"Trait '{_edit.Name}' updated.";
+            await OnSaved.InvokeAsync(saved ?? _edit);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to save trait definition {_edit.Tag}");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task DeleteAsync()
+    {
+        _error = null;
+        _success = null;
+        try
+        {
+            _isSaving = true;
+            await TraitApi.DeleteAsync(_edit.Tag);
+            _showDeleteConfirm = false;
+            _success = $"Deleted trait '{_edit.Name}'.";
+            await OnDeleted.InvokeAsync(_edit.Tag);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Logger.LogError(ex, "Failed to delete trait definition {_edit.Tag}");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private static List<string> SplitTags(string? text) =>
+        (text ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+}

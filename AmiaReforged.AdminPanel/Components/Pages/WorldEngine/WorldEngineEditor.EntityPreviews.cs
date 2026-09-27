@@ -30,8 +30,8 @@ public partial class WorldEngineEditor
             case WorldEngineEntityType.Regions when data is RegionDefinitionDto region:
                 RenderRegionEditor(builder, region);
                 break;
-            case WorldEngineEntityType.Traits when data is TraitDefinitionDto trait:
-                RenderTraitEditor(builder, trait);
+            case WorldEngineEntityType.Traits:
+                // Rendered by the dedicated Traits tab arm (Editors/TraitEditor).
                 break;
             case WorldEngineEntityType.Glyphs when data is GlyphDefinitionDto glyph:
                 RenderGlyphEditor(builder, glyph);
@@ -92,23 +92,6 @@ public partial class WorldEngineEditor
         {
             AddField(b, ref s, "Default Chaos", $"D:{dto.DefaultChaos.Danger} C:{dto.DefaultChaos.Corruption} N:{dto.DefaultChaos.Density} M:{dto.DefaultChaos.Mutation}");
         }
-        b.CloseElement();
-    }
-
-    // ── Trait ────────────────────────────────────────────────────────
-    private static void RenderTraitEditor(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b, TraitDefinitionDto dto)
-    {
-        int s = 0;
-        b.OpenElement(s++, "div"); b.AddAttribute(s++, "class", "we-entity-form");
-        AddField(b, ref s, "Tag", dto.Tag);
-        AddField(b, ref s, "Name", dto.Name);
-        AddField(b, ref s, "Category", dto.Category);
-        AddField(b, ref s, "Point Cost", dto.PointCost.ToString());
-        AddField(b, ref s, "Death Behavior", dto.DeathBehavior);
-        AddField(b, ref s, "DM Only", dto.DmOnly ? "Yes" : "No");
-        AddField(b, ref s, "Requires Unlock", dto.RequiresUnlock ? "Yes" : "No");
-        AddField(b, ref s, "Effects", dto.Effects.Count.ToString());
-        AddField(b, ref s, "Description", dto.Description);
         b.CloseElement();
     }
 
