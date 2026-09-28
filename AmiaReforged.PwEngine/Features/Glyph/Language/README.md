@@ -82,10 +82,47 @@ The callable vocabulary is intentionally curated in `GlyphLanguageCatalog`. Exam
 `heal`, `damage`, `distance`, `random`, `floating_text`, `message`, `play_vfx`, `set_name`,
 `spawn.modify_count`, `spawn.cancel`, `spawn.skip_bonuses`, `spawn.skip_mutations`,
 `has_trait`, `has_item`, `has_knowledge`, `industry.is_member`, `industry.level`,
-`spawn_resource_node`, `store_session_object`, and `session_object`.
+`spawn_resource_node`, `store_session_object`, and `session_object`, plus the curated NWN object surface `Object.nearest_object_by_type` and `Object.is_player`.
 Parameters, default values, result types, and event/category restrictions come from the
 registered runtime definitions. Adding an alias does not require another binder switch.
 Operations not exposed by this catalog are deliberately unavailable in v1.
+
+## Curated object API (`Object.*`)
+
+Glyph exposes a small, curated NWN/Anvil object surface under the `Object.` namespace. These
+are ordinary Glyph intrinsics backed by registered node executors — not arbitrary .NET member
+dispatch, reflection, or general Anvil property access. Returned values are ordinary Glyph
+`NwObject` values and compose with the rest of the vocabulary (distance, tags, resrefs, session
+storage, foreach, etc.).
+
+```glyph
+let nearest_door = Object.nearest_object_by_type(player, "door")
+let nearest_creature = Object.nearest_object_by_type(player, "creature")
+
+if Object.is_player(nearest_creature) {
+    message(player, "Another player is nearby.")
+}
+```
+
+| Intrinsic | Returns | Description |
+| --- | --- | --- |
+| `Object.nearest_object_by_type(origin, type)` | `Object` | The nearest object of `type` from `origin`, ordered by distance. |
+| `Object.is_player(object)` | `Bool` | Whether `object` is a player character (`NWScript.GetIsPC`). |
+
+Supported object types for `Object.nearest_object_by_type` (case-insensitive; **lowercase is
+canonical**): `trigger`, `door`, `placeable`, `creature`, `waypoint`.
+
+- `Object.nearest_object_by_type` takes an explicit `origin`. Glyph runs in several contexts
+  (encounters, creature/trait events, interactions), so there is no implicit current object —
+  pass any `NwObject`, including a foreach element or the result of another query.
+- When the origin is invalid or unresolvable, the type is unsupported, or nothing matches, the
+  function returns the NWN invalid-object value (`NWScript.OBJECT_INVALID`). Invalid types are
+  accepted by the compiler and rejected at runtime, keeping the binder generic.
+- `Object.is_player` returns `false` for invalid or unresolvable objects. It is a read-only query
+  with no side effects.
+
+This is a deliberately restricted subset of NWN/Anvil functionality, not a general-purpose object
+facility. Other intrinsics are added incrementally as this curated standard library grows.
 
 ## Interactions
 

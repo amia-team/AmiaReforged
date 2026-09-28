@@ -39,6 +39,10 @@ public sealed class GlyphLanguageCatalog
         Add("creature.name", "getter.creature_name", "name");
         Add("creature.ac", "getter.creature_ac", "ac");
         Add("has_item", "getter.has_item", "has_item");
+        // Curated NWN object surface (see Language/README.md). Dotted names resolve
+        // through the binder's path lookup; each is backed by a registered getter.
+        Add("Object.nearest_object_by_type", "getter.nearest_object_by_type", "object");
+        Add("Object.is_player", "getter.is_player", "result");
         Add("has_knowledge", "knowledge.has", "result");
         Add("industry.is_member", "industry.is_member", "result");
         Add("industry.level", "industry.get_level", "level_value");

@@ -53,7 +53,9 @@ public class GetNearestObjectsByTypeExecutor : IGlyphNodeExecutor
             return EmptyResult();
         }
 
-        List<uint> objectIds = CollectNearbyObjects(origin, objectType, maxCount, tag);
+        // Type dispatch lives in the shared <see cref="NwObjectQuery"/> so the list and
+        // singular nearest executors do not duplicate the object-type switch.
+        List<uint> objectIds = NwObjectQuery.Collect(origin, objectType, maxCount, tag);
 
         return GlyphNodeResult.Data(new Dictionary<string, object?>
         {
@@ -67,41 +69,6 @@ public class GetNearestObjectsByTypeExecutor : IGlyphNodeExecutor
         ["objects"] = new List<uint>(),
         ["count"] = 0
     });
-
-    /// <summary>
-    /// Dispatches to the appropriate generic <c>GetNearestObjectsByType&lt;T&gt;</c> call
-    /// based on the type name string, optionally filtering by tag.
-    /// </summary>
-    internal static List<uint> CollectNearbyObjects(NwGameObject origin, string objectType, int maxCount, string tag)
-    {
-        return objectType switch
-        {
-            "Creature" => Collect<NwCreature>(origin, maxCount, tag),
-            "Placeable" => Collect<NwPlaceable>(origin, maxCount, tag),
-            "Door" => Collect<NwDoor>(origin, maxCount, tag),
-            "Trigger" => Collect<NwTrigger>(origin, maxCount, tag),
-            "AreaOfEffect" => Collect<NwAreaOfEffect>(origin, maxCount, tag),
-            "Waypoint" => Collect<NwWaypoint>(origin, maxCount, tag),
-            "Store" => Collect<NwStore>(origin, maxCount, tag),
-            "Item" => Collect<NwItem>(origin, maxCount, tag),
-            _ => []
-        };
-    }
-
-    private static List<uint> Collect<T>(NwGameObject origin, int maxCount, string tag) where T : NwGameObject
-    {
-        IEnumerable<T> query = origin.GetNearestObjectsByType<T>();
-
-        if (!string.IsNullOrEmpty(tag))
-        {
-            query = query.Where(obj => string.Equals(obj.Tag, tag, StringComparison.OrdinalIgnoreCase));
-        }
-
-        return query
-            .Take(maxCount)
-            .Select(obj => obj.ObjectId)
-            .ToList();
-    }
 
     public GlyphNodeDefinition CreateDefinition() => new()
     {

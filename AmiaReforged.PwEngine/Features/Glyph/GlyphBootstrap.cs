@@ -125,6 +125,8 @@ public class GlyphBootstrap
         new GetSpawnGroupInfoExecutor(),
         new GetTriggeringPlayerExecutor(),
         new GetNearestObjectsByTypeExecutor(),
+        new GetNearestObjectByTypeExecutor(),
+        new IsPlayerExecutor(),
         new GetObjectsOfTypeInAreaExecutor(),
         new IsResourceNodeTypeExecutor(),
         new GetTagExecutor(),
