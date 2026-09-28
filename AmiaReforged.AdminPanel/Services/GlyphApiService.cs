@@ -17,6 +17,38 @@ public class GlyphApiService : ApiServiceBase
     {
     }
 
+    private Task<GlyphLanguageMetadataDto?>? _languageMetadata;
+    private int _endpointGeneration;
+
+    public override void SelectEndpoint(Guid? endpointId)
+    {
+        if (SelectedEndpointId != endpointId)
+        {
+            _languageMetadata = null;
+            _endpointGeneration++;
+        }
+        base.SelectEndpoint(endpointId);
+    }
+
+    public async Task<GlyphLanguageMetadataDto?> GetLanguageMetadataAsync()
+    {
+        int generation = _endpointGeneration;
+        var request = _languageMetadata ??= GetAsync<GlyphLanguageMetadataDto>($"{DefinitionsBase}/language-metadata");
+        try
+        {
+            var result = await request;
+            if (generation != _endpointGeneration)
+                throw new OperationCanceledException("The selected WorldEngine endpoint changed while loading Glyph metadata.");
+            if (result == null && ReferenceEquals(_languageMetadata, request)) _languageMetadata = null;
+            return result;
+        }
+        catch
+        {
+            if (ReferenceEquals(_languageMetadata, request)) _languageMetadata = null;
+            throw;
+        }
+    }
+
     // ==================== Definitions ====================
 
     public async Task<List<GlyphDefinitionDto>> GetAllDefinitionsAsync()

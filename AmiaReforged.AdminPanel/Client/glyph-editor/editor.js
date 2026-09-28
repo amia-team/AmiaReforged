@@ -1,7 +1,11 @@
-import { Compartment, EditorState } from '@codemirror/state';
+import { Compartment, EditorState, EditorSelection } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers, highlightActiveLine, drawSelection } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 
+import { autocompletion, closeCompletion } from '@codemirror/autocomplete';
+import { lintGutter, setDiagnostics, setDiagnosticsEffect } from '@codemirror/lint';
+import { glyphCompletions } from './glyph-completion.js';
+import { compilerDiagnostics, diagnosticRange } from './glyph-diagnostics.js';
 import { glyph } from './glyph-language.js';
 
 const editors = new WeakMap();
@@ -23,18 +27,25 @@ const theme = EditorView.theme({
     '.glyph-comment': { color: '#a7a18f', fontStyle: 'italic' },
     '.glyph-operator': { color: '#e5b992' },
     '.glyph-punctuation': { color: '#d0ccc2' },
+    '.cm-tooltip': { backgroundColor: 'var(--bg-card, #26241f)', color: 'var(--text-primary, #d0ccc2)' },
+    '.cm-tooltip-autocomplete ul li[aria-selected]': { backgroundColor: '#756432', color: '#fff' },
     '.cm-cursor': { borderLeftColor: 'var(--text-primary, #d0ccc2)' }
 }, { dark: true });
 
 export function create(host, callback, source, readOnly) {
     destroy(host);
     const editable = new Compartment();
-    const entry = { revision: 0, disposed: false, editable, view: null, observer: null };
+    const completion = new Compartment();
+    const entry = { revision: 0, disposed: false, editable, completion, view: null, observer: null };
     try {
         entry.view = new EditorView({ parent: host, state: EditorState.create({
             doc: source,
             extensions: [
-                glyph(), lineNumbers(), history(), drawSelection(), highlightActiveLine(),
+                glyph(), lintGutter(),
+                completion.of(autocompletion({ override: [glyphCompletions(null)] })),
+                EditorState.transactionExtender.of(transaction => transaction.docChanged
+                    ? { effects: setDiagnosticsEffect.of([]) } : null),
+                lineNumbers(), history(), drawSelection(), highlightActiveLine(),
                 keymap.of([...defaultKeymap, ...historyKeymap]), theme,
                 EditorState.tabSize.of(4),
                 EditorView.contentAttributes.of({ 'aria-label': 'Glyph source', 'spellcheck': 'false' }),
@@ -64,6 +75,7 @@ export function create(host, callback, source, readOnly) {
 export function setReadOnly(host, readOnly) {
     const entry = editors.get(host);
     if (!entry) return;
+    if (readOnly) closeCompletion(entry.view);
     entry.view.dispatch({ effects: entry.editable.reconfigure([
         EditorState.readOnly.of(readOnly), EditorView.editable.of(!readOnly)
     ]) });
@@ -84,4 +96,27 @@ export function destroy(host) {
     entry.observer?.disconnect();
     entry.view.destroy();
     editors.delete(host);
+}
+
+export function setMetadata(host, metadata) {
+    const entry = editors.get(host);
+    if (!entry) return;
+    closeCompletion(entry.view);
+    entry.view.dispatch({ effects: entry.completion.reconfigure(autocompletion({
+        override: [glyphCompletions(metadata)]
+    })) });
+}
+
+export function showDiagnostics(host, source, diagnostics) {
+    const entry = editors.get(host);
+    if (!entry || entry.view.state.doc.toString() !== source) return;
+    entry.view.dispatch(setDiagnostics(entry.view.state, compilerDiagnostics(diagnostics, entry.view.state.doc.length)));
+}
+
+export function focusDiagnostic(host, source, span) {
+    const entry = editors.get(host);
+    if (!entry || entry.view.state.doc.toString() !== source) return;
+    const { from, to } = diagnosticRange(span, entry.view.state.doc.length);
+    entry.view.dispatch({ selection: EditorSelection.single(from, to), effects: EditorView.scrollIntoView(from) });
+    entry.view.focus();
 }

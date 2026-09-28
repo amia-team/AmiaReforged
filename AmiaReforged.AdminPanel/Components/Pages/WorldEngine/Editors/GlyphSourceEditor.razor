@@ -1,10 +1,25 @@
 @using AmiaReforged.AdminPanel.Models
 @using AmiaReforged.AdminPanel.Services
 @inject GlyphApiService Api
+@implements IDisposable
 
 <div class="glyph-source-editor" style="padding:12px;overflow:auto">
-    <GlyphCodeEditor @key="_documentVersion" @ref="_editor" InitialSource="@_source"
-                     SourceChanged="OnSourceChanged" ReadOnly="@_busy" />
+    @if (_loading)
+    {
+        <p role="status">Loading Glyph source…</p>
+    }
+    else
+    {
+        <GlyphCodeEditor @key="_documentVersion" @ref="_editor" InitialSource="@_source"
+                         SourceChanged="OnSourceChanged" ReadOnly="@_busy" Metadata="_metadata"
+                         Diagnostics="_diagnostics" DiagnosticSource="@_diagnosticSource" />
+    }
+    @if (_metadataUnavailable)
+    {
+        <p role="status">Function suggestions are unavailable.
+            <button class="btn btn-sm btn-link" @onclick="RetryMetadata" disabled="@_metadataLoading">Retry suggestions</button>
+        </p>
+    }
     <div class="d-flex gap-2 my-2">
         <button class="btn btn-secondary" disabled="@_busy" @onclick="Validate">Compile / validate</button>
         <button class="btn btn-secondary" disabled="@_busy" @onclick="SaveDraft">Save draft</button>
@@ -18,7 +33,9 @@
         <ul aria-label="Compiler diagnostics">
             @foreach (var diagnostic in _diagnostics)
             {
-                <li><strong>@diagnostic.Code</strong> — line @diagnostic.Span.Line, column @diagnostic.Span.Column: @diagnostic.Message</li>
+                <li><button class="btn btn-link text-start p-0" @onclick="() => FocusDiagnostic(diagnostic)">
+                    <strong>@diagnostic.Code</strong> — line @diagnostic.Span.Line, column @diagnostic.Span.Column: @diagnostic.Message
+                </button></li>
             }
         </ul>
     }
@@ -52,100 +69,181 @@
     [Parameter] public string InitialSource { get; set; } = "glyph new_program : interaction {\n    attempted { }\n    started { }\n    tick { }\n    completed { }\n}";
     [Parameter] public EventCallback<GlyphDefinitionDto> Created { get; set; }
     private GlyphCodeEditor? _editor;
-    private int _documentVersion;
-    private Guid? _id, _loadedParameter;
-    private bool _initialized, _busy, _valid;
-    private string _source = "", _validatedSource = "";
+    private int _documentVersion, _generation, _editRevision;
+    private Guid? _id, _loadedParameter, _loadedEndpoint;
+    private bool _initialized, _busy, _valid, _loading, _disposed, _metadataUnavailable, _metadataLoading;
+    private string _source = "", _validatedSource = "", _diagnosticSource = "";
     private string? _notice, _error;
+    private GlyphLanguageMetadataDto? _metadata;
     private List<GlyphDiagnosticDto> _diagnostics = [];
     private List<GlyphVersionDto> _versions = [];
     private List<GlyphTraceDto> _traces = [];
+
     protected override async Task OnParametersSetAsync()
     {
-        if (_initialized && (_loadedParameter == DefinitionId || _id == DefinitionId))
+        if (_initialized && _loadedEndpoint == Api.SelectedEndpointId &&
+            (_loadedParameter == DefinitionId || _id == DefinitionId))
         { _loadedParameter = DefinitionId; return; }
+        int generation = ++_generation;
         _initialized = true; _loadedParameter = DefinitionId; _id = DefinitionId;
-        _valid = false; _diagnostics = []; _versions = []; _traces = [];
-        await Run(async () =>
+        _loadedEndpoint = Api.SelectedEndpointId;
+        _documentVersion++; _editRevision = 0; _editor = null;
+        _loading = true; _busy = true; _valid = false;
+        _diagnostics = []; _versions = []; _traces = []; _metadata = null;
+        _notice = null; _error = null; _metadataUnavailable = false;
+        _source = InitialSource;
+        _ = LoadMetadata(generation);
+        try
         {
             if (_id is { } id)
             {
                 var definition = await Api.GetDefinitionAsync(id);
+                CheckCurrent(generation);
+                var versions = await Api.GetVersionsAsync(id);
+                CheckCurrent(generation);
                 _source = definition?.SourceText ?? InitialSource;
-                _versions = await Api.GetVersionsAsync(id);
+                _versions = versions;
             }
-            else _source = InitialSource;
-            _documentVersion++;
-        });
+        }
+        catch (OperationCanceledException) when (!IsCurrent(generation)) { }
+        catch (Exception ex) { if (IsCurrent(generation)) _error = ex.Message; }
+        finally { if (IsCurrent(generation)) { _loading = false; _busy = false; } }
     }
+
+    private bool IsCurrent(int generation) => !_disposed && generation == _generation && _loadedEndpoint == Api.SelectedEndpointId;
+    private void CheckCurrent(int generation)
+    {
+        if (!IsCurrent(generation)) throw new OperationCanceledException();
+    }
+    private async Task LoadMetadata(int generation)
+    {
+        _metadataLoading = true;
+        try
+        {
+            var metadata = await Api.GetLanguageMetadataAsync();
+            if (IsCurrent(generation))
+            {
+                _metadata = metadata is { LanguageVersion: 1, Functions: not null, Events: not null, Contexts: not null } ? metadata : null;
+                _metadataUnavailable = _metadata == null;
+            }
+        }
+        catch (Exception) { if (IsCurrent(generation)) _metadataUnavailable = true; }
+        finally
+        {
+            if (IsCurrent(generation))
+            {
+                _metadataLoading = false;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+    private Task RetryMetadata() => LoadMetadata(_generation);
     private void OnSourceChanged(string source)
     {
-        if (_source == source) return;
-        _source = source;
-        _valid = false;
-        _diagnostics = [];
+        if (_disposed || _loading || _source == source) return;
+        _source = source; _editRevision++;
+        _valid = false; _notice = null; _diagnostics = [];
+        _diagnosticSource = source;
     }
-    private async Task<string> CaptureSource()
+    private async Task<string> CaptureSource(int generation)
     {
         string source = _editor == null ? _source : await _editor.CaptureAsync();
+        CheckCurrent(generation);
         OnSourceChanged(source);
         return source;
     }
-    private async Task Run(Func<Task> action)
+    private async Task Run(Func<int, Task> action)
     {
+        if (_busy || _disposed) return;
+        int generation = _generation;
         _busy = true; _error = null;
-        try { await action(); }
-        catch (Exception ex) { _error = ex.Message; }
-        finally { _busy = false; }
+        try { await action(generation); }
+        catch (OperationCanceledException) when (!IsCurrent(generation)) { }
+        catch (Exception ex) { if (IsCurrent(generation)) _error = ex.Message; }
+        finally { if (IsCurrent(generation)) _busy = false; }
     }
-    private Task Validate() => Run(async () =>
+    private Task Validate() => Run(async generation =>
     {
-        string source = await CaptureSource();
+        string source = await CaptureSource(generation);
+        int revision = _editRevision;
         var result = await Api.CompileAsync(source);
-        _diagnostics = result?.Diagnostics ?? [];
+        CheckCurrent(generation);
+        if (revision != _editRevision) return;
+        _diagnostics = result?.Diagnostics ?? []; _diagnosticSource = source;
         _valid = result?.Success == true; _validatedSource = source;
         _notice = _valid ? "Compilation succeeded. Ready to activate." : "Compilation failed. Active behavior is unchanged.";
     });
-    private async Task EnsureDraft(string source)
+    private async Task<Guid> EnsureDraft(string source, int generation)
     {
-        if (_id == null)
+        if (_id is { } id) return id;
+        var check = await Api.CompileAsync(source);
+        CheckCurrent(generation);
+        if (check?.Success != true)
         {
-            var check = await Api.CompileAsync(source);
-            _diagnostics = check?.Diagnostics ?? [];
-            if (check?.Success != true) throw new InvalidOperationException("Correct compilation errors before creating the first draft.");
-            var created = await Api.CreateDefinitionAsync(new(Name, "", SourceText: source));
-            if (created == null || created.Id == Guid.Empty) throw new InvalidOperationException("Draft was not created.");
-            _id = created.Id;
-            await Created.InvokeAsync(created);
+            if (_source == source) { _diagnostics = check?.Diagnostics ?? []; _diagnosticSource = source; }
+            throw new InvalidOperationException("Correct compilation errors before creating the first draft.");
         }
+        var created = await Api.CreateDefinitionAsync(new(Name, "", SourceText: source));
+        CheckCurrent(generation);
+        if (created == null || created.Id == Guid.Empty) throw new InvalidOperationException("Draft was not created.");
+        _id = created.Id;
+        await Created.InvokeAsync(created);
+        CheckCurrent(generation);
+        return created.Id;
     }
-    private Task SaveDraft() => Run(async () =>
+    private Task SaveDraft() => Run(async generation =>
     {
-        string source = await CaptureSource();
-        await EnsureDraft(source);
-        await Api.UpdateDefinitionAsync(_id!.Value, new(SourceText: source));
+        string source = await CaptureSource(generation);
+        Guid id = await EnsureDraft(source, generation);
+        CheckCurrent(generation);
+        await Api.UpdateDefinitionAsync(id, new(SourceText: source));
+        CheckCurrent(generation);
         _notice = "Draft saved. Active behavior is unchanged.";
     });
-    private Task Activate() => Run(async () =>
+    private Task Activate() => Run(async generation =>
     {
-        string source = await CaptureSource();
+        string source = await CaptureSource(generation);
         if (!_valid || _validatedSource != source)
             throw new InvalidOperationException("Compile / validate the current source before activating it.");
-        await EnsureDraft(source);
-        var result = await Api.ActivateAsync(_id!.Value, source);
-        _diagnostics = result?.Diagnostics ?? [];
-        _notice = result?.Success == true ? "Activated. New events use this version." : "Activation failed. Previous behavior remains active.";
-        _versions = await Api.GetVersionsAsync(_id.Value);
+        int revision = _editRevision;
+        Guid id = await EnsureDraft(source, generation);
+        CheckCurrent(generation);
+        if (revision != _editRevision || !_valid || _validatedSource != source)
+            throw new InvalidOperationException("Compile / validate the current source before activating it.");
+        var result = await Api.ActivateAsync(id, source);
+        CheckCurrent(generation);
+        if (revision == _editRevision)
+        {
+            _diagnostics = result?.Diagnostics ?? []; _diagnosticSource = source;
+            _notice = result?.Success == true ? "Activated. New events use this version." : "Activation failed. Previous behavior remains active.";
+        }
+        var versions = await Api.GetVersionsAsync(id);
+        CheckCurrent(generation);
+        _versions = versions;
     });
-    private Task Rollback() => Run(async () =>
+    private Task Rollback() => Run(async generation =>
     {
-        var result = await Api.RollbackAsync(_id!.Value);
+        Guid id = _id!.Value;
+        var result = await Api.RollbackAsync(id);
+        CheckCurrent(generation);
         if (result?.Success != true) throw new InvalidOperationException("Rollback did not succeed.");
-        var definition = await Api.GetDefinitionAsync(_id.Value);
-        _source = definition!.SourceText; _valid = false;
-        _diagnostics = []; _documentVersion++;
-        _versions = await Api.GetVersionsAsync(_id.Value);
+        _valid = false; _diagnostics = [];
+        var definition = await Api.GetDefinitionAsync(id);
+        CheckCurrent(generation);
+        _source = definition!.SourceText; _editRevision++;
+        _diagnosticSource = _source; _documentVersion++;
+        var versions = await Api.GetVersionsAsync(id);
+        CheckCurrent(generation);
+        _versions = versions;
         _notice = "Previous executable restored.";
     });
-    private Task LoadTraces() => Run(async () => _traces = await Api.GetTracesAsync(_id!.Value));
+    private Task LoadTraces() => Run(async generation =>
+    {
+        var traces = await Api.GetTracesAsync(_id!.Value);
+        CheckCurrent(generation);
+        _traces = traces;
+    });
+    private Task FocusDiagnostic(GlyphDiagnosticDto diagnostic) =>
+        _editor?.FocusDiagnosticAsync(_diagnosticSource, diagnostic.Span) ?? Task.CompletedTask;
+    public void Dispose() { _disposed = true; _generation++; }
 }

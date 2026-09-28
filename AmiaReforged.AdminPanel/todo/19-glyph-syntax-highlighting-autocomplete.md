@@ -1,6 +1,6 @@
 # 19 — Glyph editor syntax highlighting and autocomplete
 
-Status: steps 19.1–19.2 implemented; steps 19.3–19.5 remain planned.
+Status: complete — steps 19.1–19.5 implemented and verified.
 
 ## Approach
 
@@ -43,46 +43,46 @@ defines aliases and context access that autocomplete must reflect.
 
 ### 19.3 — Expose compiler-owned completion metadata
 
-- [ ] Add a read-only language-metadata endpoint to the Glyph API and consume it
+- [x] Add a read-only language-metadata endpoint to the Glyph API and consume it
   through `GlyphApiService` and dedicated Admin Panel DTOs.
-- [ ] Generate function names, parameter types, return types, documentation,
+- [x] Generate function names, parameter types, return types, documentation,
   and event/category/stage restrictions from `GlyphLanguageCatalog` and runtime
   node definitions.
-- [ ] Include available context fields and centralize aliases currently handled
+- [x] Include available context fields and centralize aliases currently handled
   by the binder, such as `player.has_item`, so compilation and completion share
   their definitions.
-- [ ] Cache metadata per selected WorldEngine endpoint and invalidate it when
+- [x] Cache metadata per selected WorldEngine endpoint and invalidate it when
   the endpoint changes.
 
 ### 19.4 — Add context-aware autocomplete and diagnostics
 
-- [ ] Offer keywords, stage/event names, function snippets, named arguments,
+- [x] Offer keywords, stage/event names, function snippets, named arguments,
   and visible `let`/`foreach` variables.
-- [ ] Suggest appropriate members after `player.`, `creature.`, and `context.`;
+- [x] Suggest appropriate members after `player.`, `creature.`, and `context.`;
   filter by event and stage when known.
-- [ ] Respect local scopes and suppress suggestions inside comments and strings.
-- [ ] Display signatures beside suggestions and support explicit completion
+- [x] Respect local scopes and suppress suggestions inside comments and strings.
+- [x] Display signatures beside suggestions and support explicit completion
   through Ctrl+Space as well as automatic suggestions.
-- [ ] Map existing compiler spans to inline errors and make diagnostic list
+- [x] Map existing compiler spans to inline errors and make diagnostic list
   entries navigate to the corresponding source location.
-- [ ] Keep explicit **Compile / validate** for the initial release. Background
+- [x] Keep explicit **Compile / validate** for the initial release. Background
   validation is a separate follow-up.
 
 ### 19.5 — Preserve source consistency and verify behavior
 
-- [ ] Flush the browser's latest text before Save, Validate, or Activate.
-- [ ] Recheck activation eligibility against that exact source, including
+- [x] Flush the browser's latest text before Save, Validate, or Activate.
+- [x] Recheck activation eligibility against that exact source, including
   handler-level checks when browser-to-Blazor updates are pending.
-- [ ] Associate asynchronous results with document revisions so stale responses
+- [x] Associate asynchronous results with document revisions so stale responses
   cannot validate newer edits or replace another document's diagnostics.
-- [ ] Apply loaded and rolled-back source to the editor without update loops or
+- [x] Apply loaded and rolled-back source to the editor without update loops or
   accidental overwrites from delayed callbacks.
-- [ ] Extend existing `GlyphSourceEditorTests` with interop-aware coverage of
+- [x] Extend existing `GlyphSourceEditorTests` with interop-aware coverage of
   source synchronization and validation/activation gating.
-- [ ] Test metadata against compiler signatures, restrictions, and aliases.
-- [ ] Add browser coverage for highlighting, completion insertion, local scope,
+- [x] Test metadata against compiler signatures, restrictions, and aliases.
+- [x] Add browser coverage for highlighting, completion insertion, local scope,
   undo, rollback, navigation, and rapid typing followed immediately by activation.
-- [ ] Run the Admin Panel build and relevant component/compiler tests; smoke-test
+- [x] Run the Admin Panel build and relevant component/compiler tests; smoke-test
   keyboard navigation, theme contrast, and editor initialization failure.
 
 ## Acceptance criteria
@@ -138,3 +138,53 @@ coverage as autocomplete and diagnostics are added.
   language tests cover precedence, keyword parity, Unicode identifiers, shorthand,
   highlighting, and incremental edits. Chromium tests check rendered colors and
   continued editing of incomplete strings, alongside the existing editor smoke test.
+
+## Step 19.3 implementation notes
+
+- Added authenticated `GET /api/worldengine/glyphs/language-metadata`. It uses the
+  active compiler catalog, requires no repository access, and returns 503 if the
+  Glyph runtime is unavailable. The route exposes source-language metadata only.
+- The response contains `LanguageVersion`, `Functions`, `Events`, `Contexts`, and
+  `Indexers`. Functions include canonical names, documentation, source type names,
+  ordered parameters, required/default values, lowering kind, restrictions, and
+  explicit event/stage availability. Defaults retain the runtime pins' JSON strings.
+- `AvailableIn.Event` and `Contexts.Event` use Glyph source spellings (for example
+  `encounter.on_creature_spawn`); `RestrictToEventType` and `ScriptCategory` retain
+  runtime enum names. A null stage denotes an event without interaction stages.
+- Shared `GlyphLanguageAliases` definitions now drive binder receiver calls,
+  property shorthand, context names, interaction setters, and metadata indexing.
+  Receiver aliases omit the injected parameter from their public signature.
+  Context fields include valid aliases and writable setter names where available.
+- `GlyphApiService.GetLanguageMetadataAsync()` deserializes dedicated Admin Panel
+  DTOs and reuses the selected endpoint's in-flight/completed request. Endpoint
+  changes (including deselection) invalidate the cache; old in-flight responses
+  are rejected, and failed or empty responses are retryable.
+- Tests cover catalog/signature parity, compilation of every advertised context
+  field, receiver aliases, API routing/read-only behavior, and endpoint cache races.
+  The completion UI will consume this service in step 19.4.
+
+## Steps 19.4–19.5 implementation notes
+
+- Added automatic and Ctrl+Space completion using the language metadata, with
+  function signatures, documentation, required-argument snippets, named arguments,
+  event/stage snippets, context members, and scoped local/loop variables. Named
+  arguments omit already supplied parameters. Strings and comments suppress
+  completion, and incomplete declarations do not expose their own binding.
+- Metadata loads independently of source editing. If it is unavailable, syntax
+  highlighting and basic language suggestions continue; a retry button reloads
+  function suggestions. Endpoint-scoped service caching remains in effect.
+- Explicit compiler validation now adds inline error ranges and gutter markers.
+  Clicking a diagnostic selects and scrolls to its source range. UTF-16 offsets
+  preserve non-ASCII and multiline locations; zero-length EOF spans are supported.
+  Editing clears markers immediately, and stale source results cannot restore them.
+- Document generations and edit revisions protect asynchronous validation, loading,
+  creation, activation, rollback, and trace refresh. Actions capture current browser
+  text; activation checks the captured source again before publication. Navigation
+  and disposal discard old responses, and rollback replaces the editor document.
+- Final verification: 22 JavaScript language/browser tests and 24 relevant Admin
+  Panel component/service tests passed. Coverage includes actual completion
+  insertion, signatures, named arguments, scopes, diagnostic ranges/navigation,
+  undo, read-only snapshots, disposal, metadata failure/retry, delayed validation
+  and document loads, rapid-edit activation gating, rollback/history, and traces.
+  Existing compiler corpus tests and the step 19.3 metadata/binder tests cover
+  language parity. The local bundle and license notices were rebuilt (cache v3).

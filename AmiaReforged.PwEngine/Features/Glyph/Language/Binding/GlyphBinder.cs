@@ -28,7 +28,7 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog)
                 stages.Add(new(_entry, Block(stage.Body), stage.Span));
             }
             // Omitted stages remain independent no-op entry points.
-            foreach (string name in new[] { "attempted", "started", "tick", "completed" })
+            foreach (string name in GlyphLanguageAliases.Stages)
                 if (!seen.Contains(name)) stages.Add(new("stage.interaction_" + name, new([], syntax.Span), syntax.Span));
         }
         else
@@ -91,12 +91,12 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog)
     private BoundStatement? Assignment(AssignmentStatementSyntax assignment)
     {
         string? name = Path(assignment.Target);
-        string? setter = name switch { "progress" => "set_progress", "required_rounds" => "set_required_rounds", "status" => "set_status", _ => null };
+        string? setter = name == null ? null : GlyphLanguageAliases.Setters.GetValueOrDefault(name);
         List<ArgumentSyntax> args = [];
         ExpressionSyntax value = assignment.Value;
         if (assignment.Operator != "=") value = new BinaryExpressionSyntax(assignment.Target, assignment.Operator[..1], value, assignment.Span);
-        if (assignment.Target is IndexExpressionSyntax { Receiver: NameExpressionSyntax { Name: "metadata" } } index)
-        { setter = "set_metadata"; args.Add(new(null, index.Index, index.Span)); }
+        if (assignment.Target is IndexExpressionSyntax { Receiver: NameExpressionSyntax { Name: GlyphLanguageAliases.MetadataName } } index)
+        { setter = GlyphLanguageAliases.MetadataSetter; args.Add(new(null, index.Index, index.Span)); }
         if (setter == null)
         { Error("GLYPH2008", "let bindings are immutable; only interaction state and metadata support assignment.", assignment.Span); return null; }
         args.Add(new(null, value, value.Span));
@@ -124,25 +124,19 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog)
                 else if (!left.Type.IsNumeric || !right.Type.IsNumeric)
                     Error("GLYPH2005", "This operator requires numeric operands.", binary.Span);
                 return new BoundBinary(left, binary.Operator, right, boolean || binary.Operator is "==" or "!=" or "<" or "<=" or ">" or ">=" ? GlyphTypeSymbol.Bool : GlyphTypeSymbol.Float, binary.Span);
-            case IndexExpressionSyntax { Receiver: NameExpressionSyntax { Name: "metadata" } } index:
-                return Call(new(new NameExpressionSyntax("metadata", index.Span), [new(null, index.Index, index.Span)], index.Span));
+            case IndexExpressionSyntax { Receiver: NameExpressionSyntax { Name: GlyphLanguageAliases.MetadataName } } index:
+                return Call(new(new NameExpressionSyntax(GlyphLanguageAliases.MetadataGetter, index.Span), [new(null, index.Index, index.Span)], index.Span));
         }
         string? path = Path(syntax);
         if (path != null)
         {
             foreach (var scope in _scopes) if (scope.TryGetValue(path, out var local)) return local;
-            if (path is "creature.hp" or "creature.max_hp" or "creature.name" or "creature.ac")
-                return Call(new(new NameExpressionSyntax(path, syntax.Span), [new(null, new NameExpressionSyntax("creature", syntax.Span), syntax.Span)], syntax.Span));
-            if (path == "party.members") return Call(new(new NameExpressionSyntax(path, syntax.Span), [], syntax.Span));
-            string pin = path switch
-            {
-                "party.size" => "party_size", "time.hour" => "game_time", "spawn.count" => "spawn_count",
-                "player" => _event == GlyphEventType.InteractionPipeline ? "creature" : "triggering_player",
-                "creature" when _event.GetCategory() == GlyphScriptCategory.Trait => "target_creature",
-                _ when path.StartsWith("context.") => path[8..],
-                _ when path.StartsWith("chaos.") => path[6..],
-                _ => path
-            };
+            var property = GlyphLanguageAliases.Properties.FirstOrDefault(a => a.Name == path);
+            if (property != null)
+                return Call(new(new NameExpressionSyntax(property.Target, syntax.Span),
+                    property.ImplicitArgument == null ? [] :
+                    [new(null, new NameExpressionSyntax(property.ImplicitArgument, syntax.Span), syntax.Span)], syntax.Span));
+            string pin = GlyphLanguageAliases.ContextPin(path, _event);
             GlyphPin? context = catalog.Registry.Get(_entry)?.OutputPins.FirstOrDefault(p => p.Id == pin && p.DataType != GlyphDataType.Exec);
             if (context != null)
             {
@@ -161,11 +155,12 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog)
         string? name = Path(syntax.Function);
         List<ArgumentSyntax> arguments = syntax.Arguments.ToList();
         // Receiver sugar injects real context parameters; it never invokes .NET members.
-        if (name is "player.has_knowledge" or "player.has_item")
+        var alias = GlyphLanguageAliases.Calls.FirstOrDefault(a => a.Name == name);
+        if (alias != null)
         {
-            string context = name == "player.has_knowledge" ? "context.character_id" : "player";
-            name = name == "player.has_knowledge" ? "has_knowledge" : "has_item";
-            arguments.Insert(0, new(null, new NameExpressionSyntax(context, syntax.Span), syntax.Span));
+            name = alias.Target;
+            if (alias.ImplicitArgument != null)
+                arguments.Insert(0, new(null, new NameExpressionSyntax(alias.ImplicitArgument, syntax.Span), syntax.Span));
         }
         GlyphLanguageSymbol? symbol = name == null ? null : catalog.Find(name);
         if (symbol == null) { Error("GLYPH2002", $"Unknown function '{name}'.", syntax.Span); return new BoundError(syntax.Span); }

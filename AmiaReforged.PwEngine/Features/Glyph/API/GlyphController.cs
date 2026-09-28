@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Language.Binding;
 using AmiaReforged.PwEngine.Features.Glyph.Persistence;
 using AmiaReforged.PwEngine.Features.Glyph.Language.Compilation;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Programs;
@@ -99,6 +100,10 @@ public class GlyphController
         }
         finally { Mutations.Release(); }
     }
+
+    [HttpGet("/api/worldengine/glyphs/language-metadata")]
+    public static Task<ApiResult> LanguageMetadata(RouteContext ctx) => Task.FromResult(
+        Runtime == null ? ServiceUnavailable() : new ApiResult(200, GlyphLanguageMetadata.Create(Runtime.Compiler.Catalog)));
 
     [HttpPost("/api/worldengine/glyphs/compile")]
     public static async Task<ApiResult> Compile(RouteContext ctx)

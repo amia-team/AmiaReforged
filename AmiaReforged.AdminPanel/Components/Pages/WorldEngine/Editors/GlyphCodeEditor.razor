@@ -19,6 +19,12 @@
     [Parameter] public string InitialSource { get; set; } = "";
     [Parameter] public EventCallback<string> SourceChanged { get; set; }
     [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public GlyphLanguageMetadataDto? Metadata { get; set; }
+    [Parameter] public IReadOnlyList<GlyphDiagnosticDto> Diagnostics { get; set; } = [];
+    [Parameter] public string DiagnosticSource { get; set; } = "";
+    private GlyphLanguageMetadataDto? _sentMetadata;
+    private IReadOnlyList<GlyphDiagnosticDto>? _sentDiagnostics;
+    private string? _sentDiagnosticSource;
     private ElementReference _host;
     private IJSObjectReference? _module;
     private DotNetObjectReference<GlyphCodeEditor>? _callback;
@@ -36,7 +42,7 @@
             _attempted = true;
             try
             {
-                _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js?v=2");
+                _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js?v=3");
                 if (_disposed) { await ReleaseAsync(); return; }
                 _callback = DotNetObjectReference.Create(this);
                 await _module.InvokeVoidAsync("create", _host, _callback, _source, ReadOnly);
@@ -51,7 +57,22 @@
             if (!_disposed) StateHasChanged();
         }
         if (_ready && !_disposed)
-            await _module!.InvokeVoidAsync("setReadOnly", _host, ReadOnly);
+        {
+            var module = _module!;
+            await module.InvokeVoidAsync("setReadOnly", _host, ReadOnly);
+            if (_disposed) return;
+            if (!ReferenceEquals(Metadata, _sentMetadata))
+            {
+                _sentMetadata = Metadata;
+                await module.InvokeVoidAsync("setMetadata", _host, Metadata);
+            }
+            if (_disposed) return;
+            if (!ReferenceEquals(Diagnostics, _sentDiagnostics) || DiagnosticSource != _sentDiagnosticSource)
+            {
+                _sentDiagnostics = Diagnostics; _sentDiagnosticSource = DiagnosticSource;
+                await module.InvokeVoidAsync("showDiagnostics", _host, DiagnosticSource, Diagnostics);
+            }
+        }
     }
 
     [JSInvokable]
@@ -82,6 +103,11 @@
             }
         }
         return _source;
+    }
+
+    public async Task FocusDiagnosticAsync(string source, GlyphSourceSpanDto span)
+    {
+        if (_ready && !_disposed) await _module!.InvokeVoidAsync("focusDiagnostic", _host, source, span);
     }
 
     public sealed record EditorSnapshot(string Source, long Revision);

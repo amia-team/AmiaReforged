@@ -4,6 +4,7 @@ using Microsoft.JSInterop;
 using NUnit.Framework;
 using Moq;
 using Microsoft.Extensions.DependencyInjection;
+using AmiaReforged.AdminPanel.Models;
 
 namespace AmiaReforged.AdminPanel.Tests.Tests.Components;
 
@@ -14,7 +15,7 @@ public class GlyphCodeEditorTests
     public async Task Capture_rejects_delayed_callbacks_and_disposal_destroys_editor()
     {
         using var context = new Bunit.TestContext();
-        var module = context.JSInterop.SetupModule("./js/glyph-editor.js?v=2");
+        var module = context.JSInterop.SetupModule("./js/glyph-editor.js?v=3");
         module.Mode = JSRuntimeMode.Loose;
         module.Setup<GlyphCodeEditor.EditorSnapshot>("capture", _ => true)
             .SetResult(new("latest browser text", 3));
@@ -35,10 +36,29 @@ public class GlyphCodeEditorTests
     }
 
     [Test]
+    public async Task Metadata_and_diagnostics_reach_the_browser_with_the_validated_source()
+    {
+        using var context = new Bunit.TestContext();
+        var module = context.JSInterop.SetupModule("./js/glyph-editor.js?v=3");
+        module.Mode = JSRuntimeMode.Loose;
+        var metadata = new GlyphLanguageMetadataDto(1, [], [], [], []);
+        var span = new GlyphSourceSpanDto("test.glyph", 3, 2, 1, 4);
+        var cut = context.RenderComponent<GlyphCodeEditor>(p => p
+            .Add(c => c.InitialSource, "source")
+            .Add(c => c.Metadata, metadata)
+            .Add(c => c.DiagnosticSource, "source")
+            .Add(c => c.Diagnostics, new[] { new GlyphDiagnosticDto("GLYPH2002", "Unknown", span) }));
+        Assert.That(module.VerifyInvoke("setMetadata").Arguments[1], Is.SameAs(metadata));
+        Assert.That(module.VerifyInvoke("showDiagnostics").Arguments[1], Is.EqualTo("source"));
+        await cut.InvokeAsync(() => cut.Instance.FocusDiagnosticAsync("source", span));
+        Assert.That(module.VerifyInvoke("focusDiagnostic").Arguments[2], Is.SameAs(span));
+    }
+
+    [Test]
     public async Task Failed_creation_cleans_up_module_and_allows_disposal()
     {
         using var context = new Bunit.TestContext();
-        var module = context.JSInterop.SetupModule("./js/glyph-editor.js?v=2");
+        var module = context.JSInterop.SetupModule("./js/glyph-editor.js?v=3");
         module.Mode = JSRuntimeMode.Loose;
         module.SetupVoid("create", _ => true).SetException(new JSException("initialization failed"));
         var cut = context.RenderComponent<GlyphCodeEditor>(p => p.Add(c => c.InitialSource, "preserved"));

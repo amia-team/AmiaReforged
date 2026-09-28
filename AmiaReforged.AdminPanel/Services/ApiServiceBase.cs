@@ -30,7 +30,7 @@ public abstract class ApiServiceBase
 
     public Guid? SelectedEndpointId => _selectedEndpointId;
 
-    public void SelectEndpoint(Guid? endpointId) => _selectedEndpointId = endpointId;
+    public virtual void SelectEndpoint(Guid? endpointId) => _selectedEndpointId = endpointId;
 
     // ==================== HTTP Helpers ====================
 

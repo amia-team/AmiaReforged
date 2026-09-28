@@ -25,6 +25,21 @@ public class GlyphActivationApiTests
     }
     [TearDown] public void Cleanup() { GlyphController.Repository = null; GlyphController.Runtime = null; }
     private static bool Success(ApiResult result) => JsonSerializer.SerializeToElement(result.Data).GetProperty("Success").GetBoolean();
+    [Test] public async Task Language_metadata_is_read_only_and_available_without_repository()
+    {
+        GlyphController.Repository = null;
+        RouteTable routes = new(NLog.LogManager.GetCurrentClassLogger());
+        routes.ScanAssembly(typeof(GlyphController).Assembly);
+        var result = await routes.DispatchAsync("GET", "/api/worldengine/glyphs/language-metadata", null!, CancellationToken.None);
+        Assert.That(result!.StatusCode, Is.EqualTo(200));
+        var json = JsonSerializer.SerializeToElement(result.Data);
+        Assert.That(json.GetProperty("LanguageVersion").GetInt32(), Is.EqualTo(1));
+        Assert.That(json.GetProperty("Functions").EnumerateArray().Any(f => f.GetProperty("Name").GetString() == "player.has_item"), Is.True);
+        _repository.VerifyNoOtherCalls();
+        GlyphController.Runtime = null;
+        Assert.That((await GlyphController.LanguageMetadata(Context)).StatusCode, Is.EqualTo(503));
+    }
+
     [Test] public async Task Compile_failure_preserves_last_published_version_and_database_history()
     {
         Assert.That(Success(await GlyphController.Activate(Context)), Is.True);
