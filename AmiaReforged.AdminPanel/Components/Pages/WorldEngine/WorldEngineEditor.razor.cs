@@ -128,6 +128,9 @@ public partial class WorldEngineEditor
     // ── Dialogue editor state ──
     private DialogueTreeEditor? _dialogueEditor;
 
+    // ── Glyph editor state ──
+    private GlyphScriptEditor? _glyphEditor;
+
     protected override void OnInitialized()
     {
         _hostContext = new WorldEngineEditorHostContext
@@ -191,6 +194,7 @@ public partial class WorldEngineEditor
         DialogueApi.SelectEndpoint(eid);
         OrganizationApi.SelectEndpoint(eid);
         _dialogueEditor?.SelectEndpoint(eid);
+        _glyphEditor?.SelectEndpoint(eid);
 
         // Reload the current entity list
         _ = InvokeAsync(async () =>
@@ -273,9 +277,16 @@ public partial class WorldEngineEditor
             // Auto-load dialogue editor when Dialogues type is selected
             if (EditorState.ActiveEntityType == WorldEngineEntityType.Dialogues && _dialogueEditor != null)
             {
-                _dialogueEditor.SelectEndpoint(EditorState.SelectedEndpointId);
-                await _dialogueEditor.LoadListAsync();
-            }
+            _dialogueEditor.SelectEndpoint(EditorState.SelectedEndpointId);
+            await _dialogueEditor.LoadListAsync();
+        }
+
+         // Auto-load glyph editor when Glyphs type is selected
+         if (EditorState.ActiveEntityType == WorldEngineEntityType.Glyphs && _glyphEditor != null)
+         {
+             _glyphEditor.SelectEndpoint(EditorState.SelectedEndpointId);
+             await _glyphEditor.LoadListAsync();
+         }
 
             StateHasChanged();
         });

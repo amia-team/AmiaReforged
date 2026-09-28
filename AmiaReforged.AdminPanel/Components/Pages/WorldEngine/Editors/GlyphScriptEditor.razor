@@ -1,44 +1,31 @@
-@page "/worldengine/glyphs"
-@using Microsoft.AspNetCore.Authorization
+@*
+    GlyphScriptEditor.razor
+    Visual (Rete.js) script editor for Glyph definitions.
+    Shown inline in the WorldEngineEditor when the Glyphs entity type is selected.
+    Uses the editor's shared endpoint-selection model (EditorState.SelectedEndpointId);
+    the host calls SelectEndpoint(...) then LoadListAsync(...) via @ref.
+*@
 @using AmiaReforged.AdminPanel.Models
 @using AmiaReforged.AdminPanel.Services
 @using System.Text.Json
 @using System.Text.Json.Serialization
-@attribute [Authorize]
 @inject GlyphApiService Api
 @inject EncounterApiService EncounterApi
 @inject TraitApiService TraitApi
-@inject IWorldEngineEndpointService EndpointService
 @inject IJSRuntime JS
-@inject ILogger<GlyphEditor> Logger
-@rendermode InteractiveServer
+@inject ILogger<GlyphScriptEditor> Logger
 @implements IAsyncDisposable
 
-<PageTitle>Glyph Scripts - World Engine</PageTitle>
 
-<div class="encounters-page">
+<div class="encounters-page h-100 d-flex flex-column">
     <div class="dashboard-header">
         <h1>Glyph Visual Scripts</h1>
         <div class="header-actions">
-            @if (_endpoints.Count > 0)
-            {
-                <div class="instance-selector">
-                    <label class="instance-label">Server:</label>
-                    <select class="form-control form-control-sm" value="@(_selectedEndpoint?.Id.ToString() ?? "")" @onchange="OnEndpointChanged">
-                        <option value="">— Select —</option>
-                        @foreach (WorldEngineEndpoint ep in _endpoints)
-                        {
-                            <option value="@ep.Id">@ep.Name</option>
-                        }
-                    </select>
-                </div>
-            }
-            @if (_selectedEndpoint != null)
+            @if (_selectedEndpointId != null)
             {
                 <button class="btn btn-secondary btn-sm" @onclick="RefreshDefinitions">Refresh</button>
                 <button class="btn btn-primary btn-sm" @onclick="ShowCreateModal">+ New Script</button>
             }
-            <a href="/" class="btn btn-secondary btn-sm">← Dashboard</a>
         </div>
     </div>
 
@@ -51,20 +38,12 @@
         <div class="alert alert-success">@_success <button class="btn btn-sm btn-secondary" style="margin-left:10px" @onclick="() => _success = null">Dismiss</button></div>
     }
 
-    @if (_selectedEndpoint == null)
+    @if (_selectedEndpointId == null)
     {
         <div class="section" style="text-align:center;padding:60px 20px">
-            @if (_endpoints.Count == 0)
-            {
-                <p style="color:var(--text-secondary);font-size:1.1rem">
-                    No WorldEngine servers configured. Go to
-                    <a href="/encounters">Encounters</a> to add one.
-                </p>
-            }
-            else
-            {
-                <p style="color:var(--text-secondary);font-size:1.1rem">Select a server from the dropdown above to manage Glyph scripts.</p>
-            }
+            <p style="color:var(--text-secondary);font-size:1.1rem">
+                Select a server from the World Engine toolbar to manage Glyph scripts.
+            </p>
         </div>
     }
     else if (_isLoading)
@@ -487,8 +466,7 @@
 
 @code {
     // ==================== State ====================
-    private List<WorldEngineEndpoint> _endpoints = [];
-    private WorldEngineEndpoint? _selectedEndpoint;
+    private Guid? _selectedEndpointId;
     private List<GlyphDefinitionDto> _definitions = [];
     private List<GlyphNodeCatalogEntryDto> _nodeCatalog = [];
     private GlyphDefinitionDto? _editingDefinition;
@@ -513,7 +491,7 @@
 
     // JS interop reference for cleanup
     private IJSObjectReference? _editorModule;
-    private DotNetObjectReference<GlyphEditor>? _dotNetRef;
+    private DotNetObjectReference<GlyphScriptEditor>? _dotNetRef;
 
     // Selected node (from JS callback)
     private SelectedNodeInfo? _selectedNodeInfo;
@@ -571,11 +549,6 @@
 
     // ==================== Lifecycle ====================
 
-    protected override async Task OnInitializedAsync()
-    {
-        await RefreshEndpoints();
-    }
-
     public async ValueTask DisposeAsync()
     {
         try
@@ -596,45 +569,36 @@
 
     // ==================== Endpoint Management ====================
 
-    private async Task RefreshEndpoints()
-    {
-        try
-        {
-            IReadOnlyList<WorldEngineEndpoint> all = await EndpointService.GetEnabledEndpointsAsync();
-            _endpoints = all.ToList();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Failed to load endpoints");
-            _error = "Failed to load endpoints.";
-        }
-    }
+    // ==================== Host entry points (shared endpoint model) ====================
 
-    private async Task OnEndpointChanged(ChangeEventArgs e)
+    /// <summary>
+    /// Called by the host WorldEngineEditor when the shared endpoint selection changes.
+    /// Does not render its own server dropdown — the host owns endpoint selection.
+    /// </summary>
+    public void SelectEndpoint(Guid? endpointId)
     {
         _error = null;
         _success = null;
         _editingDefinition = null;
 
-        string val = e.Value?.ToString() ?? "";
-        if (Guid.TryParse(val, out Guid id))
+        _selectedEndpointId = endpointId;
+        Api.SelectEndpoint(endpointId);
+        EncounterApi.SelectEndpoint(endpointId);
+        TraitApi.SelectEndpoint(endpointId);
+
+        if (endpointId == null)
         {
-            _selectedEndpoint = _endpoints.FirstOrDefault(ep => ep.Id == id);
-            Api.SelectEndpoint(id);
-            EncounterApi.SelectEndpoint(id);
-            TraitApi.SelectEndpoint(id);
-            await LoadData();
-        }
-        else
-        {
-            _selectedEndpoint = null;
-            Api.SelectEndpoint(null);
-            EncounterApi.SelectEndpoint(null);
-            TraitApi.SelectEndpoint(null);
             _definitions = [];
             _nodeCatalog = [];
             _availableProfiles = [];
         }
+    }
+
+    /// <summary>Load the glyph definitions list for the selected endpoint.</summary>
+    public async Task LoadListAsync()
+    {
+        if (_selectedEndpointId == null) return;
+        await LoadData();
     }
 
     // ==================== Data Loading ====================
@@ -661,6 +625,7 @@
         finally
         {
             _isLoading = false;
+            StateHasChanged();
         }
     }
 

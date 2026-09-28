@@ -1,0 +1,15 @@
+@page "/worldengine/glyphs"
+@inject NavigationManager Navigation
+
+@*
+    Legacy redirect.
+    The standalone Glyph Scripts page (/worldengine/glyphs) has been rolled into the
+    unified World Engine Editor. This thin redirect keeps old bookmarks/deep links
+    working by sending them to the editor (no duplicate editing UI).
+*@
+@code {
+    protected override void OnInitialized()
+    {
+        Navigation.NavigateTo("/worldengine/editor", forceLoad: false);
+    }
+}

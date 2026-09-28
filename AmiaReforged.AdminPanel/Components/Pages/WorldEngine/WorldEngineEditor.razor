@@ -542,6 +542,11 @@
                 @* ══════ Dialogue Tree Editor ══════ *@
                 <DialogueTreeEditor @ref="_dialogueEditor" />
             }
+            else if (EditorState.ActiveEntityType == WorldEngineEntityType.Glyphs)
+            {
+                @* ══════ Glyph Visual Script Editor ══════ *@
+                <GlyphScriptEditor @ref="_glyphEditor" />
+            }
             else
             {
             @* ══════ Normal Tab Mode ══════ *@

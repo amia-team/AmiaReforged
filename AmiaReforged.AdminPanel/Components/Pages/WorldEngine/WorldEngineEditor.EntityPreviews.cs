@@ -30,9 +30,6 @@ public partial class WorldEngineEditor
             case WorldEngineEntityType.Traits:
                 // Rendered by the dedicated Traits tab arm (Editors/TraitEditor).
                 break;
-            case WorldEngineEntityType.Glyphs when data is GlyphDefinitionDto glyph:
-                RenderGlyphEditor(builder, glyph);
-                break;
             case WorldEngineEntityType.Industries:
                 // Rendered by the Industries tab arm (Editors/IndustryEditor).
                 break;
@@ -54,22 +51,6 @@ public partial class WorldEngineEditor
         {
             AddField(b, ref s, "Default Chaos", $"D:{dto.DefaultChaos.Danger} C:{dto.DefaultChaos.Corruption} N:{dto.DefaultChaos.Density} M:{dto.DefaultChaos.Mutation}");
         }
-        b.CloseElement();
-    }
-
-    // ── Glyph ───────────────────────────────────────────────────────
-    private static void RenderGlyphEditor(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b, GlyphDefinitionDto dto)
-    {
-        int s = 0;
-        b.OpenElement(s++, "div"); b.AddAttribute(s++, "class", "we-entity-form");
-        AddField(b, ref s, "ID", dto.Id.ToString());
-        AddField(b, ref s, "Name", dto.Name);
-        AddField(b, ref s, "Description", dto.Description);
-        AddField(b, ref s, "Event Type", dto.EventType);
-        AddField(b, ref s, "Category", dto.Category);
-        AddField(b, ref s, "Active", dto.IsActive ? "Yes" : "No");
-        AddField(b, ref s, "Created", dto.CreatedAt.ToString("yyyy-MM-dd"));
-        AddField(b, ref s, "Updated", dto.UpdatedAt.ToString("yyyy-MM-dd"));
         b.CloseElement();
     }
 
