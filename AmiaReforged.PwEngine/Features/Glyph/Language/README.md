@@ -121,6 +121,65 @@ canonical**): `trigger`, `door`, `placeable`, `creature`, `waypoint`.
 - `Object.is_player` returns `false` for invalid or unresolvable objects. It is a read-only query
   with no side effects.
 
+### Receiver-style calls
+
+Any Glyph expression whose type is `Object` can invoke these same intrinsics in receiver form.
+Receiver syntax is **compiler sugar only**: it lowers to exactly the same curated intrinsic and the
+same runtime node as the static form, with the receiver expression injected as the first argument.
+There is a single executor for each operation — no duplicate runtime behavior.
+
+```glyph
+// Static
+let target = Object.nearest_object_by_type(player, "creature")
+if Object.is_player(target) {
+    message(player, "PC")
+}
+
+// Receiver style — equivalent
+let target = player.get_nearest_object_by_type("creature")
+if target.is_player() {
+    message(player, "PC")
+}
+```
+
+| Receiver method | Equivalent static call |
+| --- | --- |
+| `object.get_nearest_object_by_type(type)` | `Object.nearest_object_by_type(object, type)` |
+| `object.is_player()` | `Object.is_player(object)` |
+
+The receiver may be any Object-typed expression — a context pin (`context.object`), `player`,
+a `let`, a foreach element, or the result of another Object query. It is bound exactly once and
+stays an expression; the compiler does not stringify it. Chaining works because the first call
+returns `Object`:
+
+```glyph
+let nearest_door = context.object.get_nearest_object_by_type("door")
+if nearest_door.is_player() { message(player, "A player owns the nearest door.") }
+
+if player.get_nearest_object_by_type("creature").is_player() { message(player, "PC nearby") }
+```
+
+```glyph
+foreach member in party.members {
+    if member.is_player() { damage(member, 1) }
+}
+```
+
+Receiver calls are statically type checked and fail at compile time — not runtime — when the
+receiver is not an `Object` (for example `party.size.is_player()`), when an argument has the wrong
+type (for example `player.get_nearest_object_by_type(42)`), or when the injected parameter is
+supplied again (for example `player.get_nearest_object_by_type(origin: creature, type: "door")`
+or `player.is_player(player)`). Named remaining parameters are still allowed:
+`player.get_nearest_object_by_type(type: "door")`.
+
+`receiver.method(args...)` does **not** expose arbitrary .NET, Anvil, or `NwGameObject` members.
+Only the Glyph receiver methods registered in `GlyphLanguageCatalog` exist (currently
+`get_nearest_object_by_type` and `is_player`). Reflection, CLR/Anvil member lookup, duck typing,
+and runtime string-based dispatch are unavailable. For example `player.Destroy()`, `player.Area`,
+and `player.GetObjectVariable(...)` remain uncallable. Adding a future curated Object member is a
+matter of registering its metadata — receiver type, member name, and target intrinsic — rather
+than writing another binder branch.
+
 This is a deliberately restricted subset of NWN/Anvil functionality, not a general-purpose object
 facility. Other intrinsics are added incrementally as this curated standard library grows.
 

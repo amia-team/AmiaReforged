@@ -2,6 +2,16 @@ using AmiaReforged.PwEngine.Features.Glyph.Core;
 namespace AmiaReforged.PwEngine.Features.Glyph.Language.Binding;
 
 public enum GlyphLoweringStrategy { Value, Action, PredicateBranch }
+
+/// <summary>
+/// Curated receiver-method sugar: <c>receiver.method(args)</c> where <c>receiver</c> is an
+/// Object-typed Glyph expression. It lowers to the static catalog intrinsic <c>Target</c> with
+/// the bound receiver injected as parameter zero — no new executor is introduced. The receiver
+/// type is the Glyph value type of the expression (here <see cref="GlyphDataType.NwObject"/>),
+/// not the capitalized <c>Object.</c> namespace spelling.
+/// </summary>
+public sealed record GlyphReceiverMethod(GlyphDataType ReceiverType, string Name, string Target);
+
 public sealed record GlyphLanguageSymbol(string Name, GlyphNodeDefinition Definition, string? OutputPin,
     GlyphLoweringStrategy Strategy, string[]? AllowedStages = null)
 {
@@ -14,8 +24,16 @@ public sealed record GlyphLanguageSymbol(string Name, GlyphNodeDefinition Defini
 public sealed class GlyphLanguageCatalog
 {
     private readonly Dictionary<string, GlyphLanguageSymbol> _symbols = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, GlyphReceiverMethod> _receiverMethods = new(StringComparer.Ordinal);
     public IReadOnlyCollection<GlyphLanguageSymbol> Symbols => _symbols.Values;
+    public IReadOnlyCollection<GlyphReceiverMethod> ReceiverMethods => _receiverMethods.Values;
     public GlyphLanguageSymbol? Find(string name) => _symbols.GetValueOrDefault(name);
+    /// <summary>
+    /// Resolves a registered receiver method by its terminal member name. The caller binds the
+    /// receiver expression first, then verifies its Glyph type matches <c>receiverType</c>.
+    /// </summary>
+    public bool TryResolveReceiverMethod(string name, out GlyphReceiverMethod method)
+        => _receiverMethods.TryGetValue(name, out method!);
     public IGlyphNodeDefinitionRegistry Registry { get; }
     public GlyphLanguageCatalog(IGlyphNodeDefinitionRegistry registry)
     {
@@ -43,6 +61,10 @@ public sealed class GlyphLanguageCatalog
         // through the binder's path lookup; each is backed by a registered getter.
         Add("Object.nearest_object_by_type", "getter.nearest_object_by_type", "object");
         Add("Object.is_player", "getter.is_player", "result");
+        // Curated Object receiver sugar. Each lowers to the static intrinsic above with the
+        // bound receiver injected as parameter zero. Add future curated Object members here.
+        AddReceiverMethod(GlyphDataType.NwObject, "get_nearest_object_by_type", "Object.nearest_object_by_type");
+        AddReceiverMethod(GlyphDataType.NwObject, "is_player", "Object.is_player");
         Add("has_knowledge", "knowledge.has", "result");
         Add("industry.is_member", "industry.is_member", "result");
         Add("industry.level", "industry.get_level", "level_value");
@@ -57,6 +79,9 @@ public sealed class GlyphLanguageCatalog
         Add("session_object", "interaction.retrieve_session_object", "object", stages: ["started", "tick", "completed"]);
         Add("skill_check", "interaction.skill_check", strategy: GlyphLoweringStrategy.PredicateBranch);
     }
+    private void AddReceiverMethod(GlyphDataType receiverType, string name, string target)
+        => _receiverMethods.Add(name, new GlyphReceiverMethod(receiverType, name, target));
+
     private void Add(string name, string type, string? output = null, string[]? stages = null, GlyphLoweringStrategy? strategy = null)
     {
         GlyphNodeDefinition def = Registry.Get(type) ?? throw new InvalidOperationException($"Missing runtime intrinsic {type}.");

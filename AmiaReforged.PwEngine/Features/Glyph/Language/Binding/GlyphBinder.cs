@@ -163,21 +163,46 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog)
                 arguments.Insert(0, new(null, new NameExpressionSyntax(alias.ImplicitArgument, syntax.Span), syntax.Span));
         }
         GlyphLanguageSymbol? symbol = name == null ? null : catalog.Find(name);
-        if (symbol == null) { Error("GLYPH2002", $"Unknown function '{name}'.", syntax.Span); return new BoundError(syntax.Span); }
+        if (symbol == null)
+        {
+            // Receiver-method sugar: `receiver.method(args)` where `method` is a registered
+            // Object-typed receiver. The receiver is a real expression bound once and injected
+            // as parameter zero; it lowers to the same static intrinsic as `method(receiver, args)`.
+            BoundExpression? receiverCall = TryResolveReceiverCall(syntax, arguments, allowAction, allowPredicate);
+            if (receiverCall != null) return receiverCall;
+            Error("GLYPH2002", $"Unknown function '{name}'.", syntax.Span);
+            return new BoundError(syntax.Span);
+        }
+        CheckSymbolConstraints(symbol, name!, syntax.Span, allowAction, allowPredicate);
+        List<LogicalArgument> logical = arguments
+            .Select(a => new LogicalArgument(a.Name, Expression(a.Value), a.Span)).ToList();
+        Dictionary<string, BoundExpression> bound = BindArguments(symbol, logical, syntax.Span);
+        if (name == "set_status" && bound.GetValueOrDefault("status") is BoundLiteral { Value: string status } &&
+            status is not ("Active" or "Completed" or "Cancelled" or "Failed"))
+            Error("GLYPH2004", "Status must be Active, Completed, Cancelled, or Failed.", syntax.Span);
+        return new BoundCall(symbol, bound, syntax.Span);
+    }
+    private sealed record LogicalArgument(string? Name, BoundExpression Value, SourceSpan Span);
+    private void CheckSymbolConstraints(GlyphLanguageSymbol symbol, string name, SourceSpan span, bool allowAction, bool allowPredicate)
+    {
         if (symbol.Definition.RestrictToEventType is { } evt && evt != _event ||
             symbol.Definition.ScriptCategory is { } cat && cat != _event.GetCategory())
-            Error("GLYPH3001", $"'{name}' is unavailable for {_event}.", syntax.Span);
+            Error("GLYPH3001", $"'{name}' is unavailable for {_event}.", span);
         if (symbol.AllowedStages != null && !symbol.AllowedStages.Contains(_stage))
-            Error("GLYPH3003", $"'{name}' is unavailable in stage '{_stage}'.", syntax.Span);
+            Error("GLYPH3003", $"'{name}' is unavailable in stage '{_stage}'.", span);
         if (name == "fail" && _loops > 0)
-            Error("GLYPH3003", "fail inside foreach is not supported; fail before or after the loop.", syntax.Span);
+            Error("GLYPH3003", "fail inside foreach is not supported; fail before or after the loop.", span);
         if (symbol.Strategy == GlyphLoweringStrategy.Action && !allowAction ||
             symbol.Strategy == GlyphLoweringStrategy.PredicateBranch && !allowPredicate)
-            Error("GLYPH2007", $"'{name}' requires {(symbol.Strategy == GlyphLoweringStrategy.Action ? "an action statement" : "a direct if condition")}.", syntax.Span);
+            Error("GLYPH2007", $"'{name}' requires {(symbol.Strategy == GlyphLoweringStrategy.Action ? "an action statement" : "a direct if condition")}.", span);
+    }
+    /// <summary>Binds supplied arguments against a symbol's parameters, reusing the generic diagnostics.</summary>
+    private Dictionary<string, BoundExpression> BindArguments(GlyphLanguageSymbol symbol, IReadOnlyList<LogicalArgument> arguments, SourceSpan span)
+    {
         Dictionary<string, BoundExpression> bound = new();
         int position = 0;
         bool namedSeen = false;
-        foreach (ArgumentSyntax arg in arguments)
+        foreach (LogicalArgument arg in arguments)
         {
             GlyphPin? parameter;
             if (arg.Name != null) { namedSeen = true; parameter = symbol.Parameters.FirstOrDefault(p => p.Id == arg.Name); }
@@ -186,19 +211,38 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog)
                 if (namedSeen) Error("GLYPH2003", "Positional arguments must precede named arguments.", arg.Span);
                 parameter = position < symbol.Parameters.Count ? symbol.Parameters[position++] : null;
             }
-            BoundExpression value = Expression(arg.Value);
             if (parameter == null || bound.ContainsKey(parameter.Id))
             { Error("GLYPH2003", "Unknown, excess, or duplicate argument.", arg.Span); continue; }
-            Require(value, GlyphTypeSymbol.From(parameter.DataType));
-            bound[parameter.Id] = value;
+            Require(arg.Value, GlyphTypeSymbol.From(parameter.DataType));
+            bound[parameter.Id] = arg.Value;
         }
         foreach (GlyphPin parameter in symbol.Parameters)
             if (!bound.ContainsKey(parameter.Id) && parameter.DefaultValue == null)
-                Error("GLYPH2003", $"Missing argument '{parameter.Id}'.", syntax.Span);
-        if (name == "set_status" && bound.GetValueOrDefault("status") is BoundLiteral { Value: string status } &&
-            status is not ("Active" or "Completed" or "Cancelled" or "Failed"))
-            Error("GLYPH2004", "Status must be Active, Completed, Cancelled, or Failed.", syntax.Span);
-        return new BoundCall(symbol, bound, syntax.Span);
+                Error("GLYPH2003", $"Missing argument '{parameter.Id}'.", span);
+        return bound;
+    }
+    /// <summary>
+    /// Lowers <c>receiver.method(args)</c> to the registered static intrinsic with the bound
+    /// receiver injected as parameter zero. The receiver is bound once through normal expression
+    /// binding and stays an expression; no .NET/Anvil member is ever dispatched.
+    /// </summary>
+    private BoundExpression? TryResolveReceiverCall(InvocationExpressionSyntax syntax, List<ArgumentSyntax> suppliedArguments, bool allowAction, bool allowPredicate)
+    {
+        if (syntax.Function is not MemberAccessExpressionSyntax member) return null;
+        if (!catalog.TryResolveReceiverMethod(member.Name, out GlyphReceiverMethod receiverMethod)) return null;
+        GlyphLanguageSymbol symbol = catalog.Find(receiverMethod.Target)
+            ?? throw new InvalidOperationException($"Registered receiver method '{member.Name}' has no target '{receiverMethod.Target}'.");
+        // Bind the receiver exactly once through normal expression binding; it remains an expression.
+        BoundExpression boundReceiver = Expression(member.Receiver);
+        if (boundReceiver.Type.RuntimeType != receiverMethod.ReceiverType)
+            Require(boundReceiver, GlyphTypeSymbol.From(receiverMethod.ReceiverType));
+        // The receiver supplies parameter zero; explicitly supplied arguments follow it. Reusing
+        // the generic binder rejects an explicit origin and any excess argument as GLYPH2003.
+        List<LogicalArgument> arguments = new(suppliedArguments.Count + 1) { };
+        arguments.Add(new LogicalArgument(null, boundReceiver, member.Receiver.Span));
+        arguments.AddRange(suppliedArguments.Select(a => new LogicalArgument(a.Name, Expression(a.Value), a.Span)));
+        CheckSymbolConstraints(symbol, receiverMethod.Target, syntax.Span, allowAction, allowPredicate);
+        return new BoundCall(symbol, BindArguments(symbol, arguments, syntax.Span), syntax.Span);
     }
     private void Require(BoundExpression value, GlyphTypeSymbol type)
     {
