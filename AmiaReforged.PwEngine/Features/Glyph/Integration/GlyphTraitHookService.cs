@@ -30,9 +30,9 @@ public class GlyphTraitHookService
     private readonly ITraitSubsystem _traitSubsystem;
 
     /// <summary>
-    /// Cache of active trait bindings keyed by (TraitTag, EventType).
+    /// Cache of trait binding identities keyed by (TraitTag, EventType).
     /// </summary>
-    private Dictionary<(string TraitTag, GlyphEventType EventType), List<GlyphGraph>> _traitBindingCache = new();
+    private volatile Dictionary<(string TraitTag, GlyphEventType EventType), List<Guid>> _traitBindingCache = new();
 
     public GlyphTraitHookService(
         GlyphBootstrap bootstrap,
@@ -53,11 +53,11 @@ public class GlyphTraitHookService
     public async Task RefreshCacheAsync()
     {
         List<TraitGlyphBinding> bindings = await _repository.GetAllTraitBindingsAsync();
-        Dictionary<(string, GlyphEventType), List<GlyphGraph>> newCache = new();
+        Dictionary<(string, GlyphEventType), List<Guid>> newCache = new();
 
-        foreach (TraitGlyphBinding binding in bindings)
+        foreach (TraitGlyphBinding binding in bindings.OrderBy(b => b.Priority))
         {
-            if (binding.GlyphDefinition is not { IsActive: true }) continue;
+            if (binding.GlyphDefinition is null) continue;
 
             if (!Enum.TryParse<GlyphEventType>(binding.GlyphDefinition.EventType, out GlyphEventType eventType))
             {
@@ -66,17 +66,16 @@ public class GlyphTraitHookService
                 continue;
             }
 
-            GlyphGraph? graph = DeserializeGraph(binding.GlyphDefinition);
-            if (graph == null) continue;
+            _bootstrap.RestorePublished(binding.GlyphDefinition);
 
             (string TraitTag, GlyphEventType eventType) key = (binding.TraitTag, eventType);
-            if (!newCache.TryGetValue(key, out List<GlyphGraph>? list))
+            if (!newCache.TryGetValue(key, out List<Guid>? list))
             {
                 list = [];
                 newCache[key] = list;
             }
 
-            list.Add(graph);
+            list.Add(binding.GlyphDefinitionId);
         }
 
         _traitBindingCache = newCache;
@@ -116,7 +115,7 @@ public class GlyphTraitHookService
         CancellationToken ct)
     {
         (string Value, GlyphEventType eventType) key = (traitTag.Value, eventType);
-        if (!_traitBindingCache.TryGetValue(key, out List<GlyphGraph>? graphs)) return;
+        if (!_traitBindingCache.TryGetValue(key, out List<Guid>? graphs)) return;
 
         // Collect the character's current traits for the context
         List<string> characterTraits = [];
@@ -130,8 +129,11 @@ public class GlyphTraitHookService
             Log.Warn(ex, "Failed to fetch character traits for {CharacterId}.", characterId);
         }
 
-        foreach (GlyphGraph graph in graphs)
+        foreach (Guid definitionId in graphs)
         {
+            var program = _bootstrap.Programs.GetActive(definitionId);
+            if (program == null) continue;
+            GlyphGraph graph = program.CreateExecutionGraph();
             GlyphExecutionContext ctx = new()
             {
                 Graph = graph,
@@ -140,7 +142,7 @@ public class GlyphTraitHookService
                 TargetCreature = 0, // Set by caller if creature is known
                 CancellationToken = ct,
                 MaxExecutionSteps = 10_000,
-                EnableTracing = false
+                EnableTracing = true
             };
 
             // Populate the variable store with character traits
@@ -156,10 +158,5 @@ public class GlyphTraitHookService
                     eventType, graph.Name, traitTag.Value);
             }
         }
-    }
-
-    private GlyphGraph? DeserializeGraph(GlyphDefinition definition)
-    {
-        return GlyphGraphSerializer.Deserialize(definition);
     }
 }

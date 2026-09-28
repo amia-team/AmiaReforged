@@ -12,17 +12,18 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Persistence;
 public class GlyphRepository : IGlyphRepository
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    private readonly PwEngineContext _db;
+    private readonly IDbContextFactory<PwEngineContext> _factory;
 
-    public GlyphRepository(PwEngineContext db)
+    public GlyphRepository(IDbContextFactory<PwEngineContext> factory)
     {
-        _db = db;
+        _factory = factory;
     }
 
     // === Definitions ===
 
     public async Task<List<GlyphDefinition>> GetAllDefinitionsAsync()
     {
+        await using PwEngineContext _db = await _factory.CreateDbContextAsync();
         return await _db.GlyphDefinitions
             .AsNoTracking()
             .OrderBy(d => d.Name)
@@ -31,6 +32,7 @@ public class GlyphRepository : IGlyphRepository
 
     public async Task<GlyphDefinition?> GetDefinitionByIdAsync(Guid id)
     {
+        await using PwEngineContext _db = await _factory.CreateDbContextAsync();
         return await _db.GlyphDefinitions
             .Include(d => d.Bindings)
             .FirstOrDefaultAsync(d => d.Id == id);
@@ -38,6 +40,7 @@ public class GlyphRepository : IGlyphRepository
 
     public async Task CreateDefinitionAsync(GlyphDefinition definition)
     {
+        await using PwEngineContext _db = await _factory.CreateDbContextAsync();
         _db.GlyphDefinitions.Add(definition);
         await _db.SaveChangesAsync();
         Log.Info("Created Glyph definition '{Name}' ({Id}).", definition.Name, definition.Id);
@@ -45,6 +48,7 @@ public class GlyphRepository : IGlyphRepository
 
     public async Task UpdateDefinitionAsync(GlyphDefinition definition)
     {
+        await using PwEngineContext _db = await _factory.CreateDbContextAsync();
         definition.UpdatedAt = DateTime.UtcNow;
         _db.GlyphDefinitions.Update(definition);
         await _db.SaveChangesAsync();
@@ -53,6 +57,7 @@ public class GlyphRepository : IGlyphRepository
 
     public async Task DeleteDefinitionAsync(Guid id)
     {
+        await using PwEngineContext _db = await _factory.CreateDbContextAsync();
         GlyphDefinition? definition = await _db.GlyphDefinitions.FindAsync(id);
         if (definition == null) return;
 
@@ -65,6 +70,7 @@ public class GlyphRepository : IGlyphRepository
 
     public async Task<List<SpawnProfileGlyphBinding>> GetBindingsForProfileAsync(Guid profileId)
     {
+        await using PwEngineContext _db = await _factory.CreateDbContextAsync();
         return await _db.SpawnProfileGlyphBindings
             .Include(b => b.GlyphDefinition)
             .Where(b => b.SpawnProfileId == profileId)
@@ -75,6 +81,7 @@ public class GlyphRepository : IGlyphRepository
 
     public async Task<List<SpawnProfileGlyphBinding>> GetAllBindingsAsync()
     {
+        await using PwEngineContext _db = await _factory.CreateDbContextAsync();
         return await _db.SpawnProfileGlyphBindings
             .Include(b => b.GlyphDefinition)
             .AsNoTracking()
@@ -83,6 +90,7 @@ public class GlyphRepository : IGlyphRepository
 
     public async Task<SpawnProfileGlyphBinding?> GetBindingByIdAsync(Guid id)
     {
+        await using PwEngineContext _db = await _factory.CreateDbContextAsync();
         return await _db.SpawnProfileGlyphBindings
             .Include(b => b.GlyphDefinition)
             .FirstOrDefaultAsync(b => b.Id == id);
@@ -90,6 +98,7 @@ public class GlyphRepository : IGlyphRepository
 
     public async Task CreateBindingAsync(SpawnProfileGlyphBinding binding)
     {
+        await using PwEngineContext _db = await _factory.CreateDbContextAsync();
         _db.SpawnProfileGlyphBindings.Add(binding);
         await _db.SaveChangesAsync();
         Log.Info("Created Glyph binding: profile={ProfileId}, definition={DefId}, priority={Priority}.",
@@ -98,6 +107,7 @@ public class GlyphRepository : IGlyphRepository
 
     public async Task DeleteBindingAsync(Guid id)
     {
+        await using PwEngineContext _db = await _factory.CreateDbContextAsync();
         SpawnProfileGlyphBinding? binding = await _db.SpawnProfileGlyphBindings.FindAsync(id);
         if (binding == null) return;
 
@@ -110,6 +120,7 @@ public class GlyphRepository : IGlyphRepository
 
     public async Task<List<TraitGlyphBinding>> GetTraitBindingsForTagAsync(string traitTag)
     {
+        await using PwEngineContext _db = await _factory.CreateDbContextAsync();
         return await _db.TraitGlyphBindings
             .Include(b => b.GlyphDefinition)
             .Where(b => b.TraitTag == traitTag)
@@ -120,6 +131,7 @@ public class GlyphRepository : IGlyphRepository
 
     public async Task<List<TraitGlyphBinding>> GetAllTraitBindingsAsync()
     {
+        await using PwEngineContext _db = await _factory.CreateDbContextAsync();
         return await _db.TraitGlyphBindings
             .Include(b => b.GlyphDefinition)
             .AsNoTracking()
@@ -128,6 +140,7 @@ public class GlyphRepository : IGlyphRepository
 
     public async Task CreateTraitBindingAsync(TraitGlyphBinding binding)
     {
+        await using PwEngineContext _db = await _factory.CreateDbContextAsync();
         _db.TraitGlyphBindings.Add(binding);
         await _db.SaveChangesAsync();
         Log.Info("Created Glyph trait binding: tag={TraitTag}, definition={DefId}, priority={Priority}.",
@@ -136,6 +149,7 @@ public class GlyphRepository : IGlyphRepository
 
     public async Task DeleteTraitBindingAsync(Guid id)
     {
+        await using PwEngineContext _db = await _factory.CreateDbContextAsync();
         TraitGlyphBinding? binding = await _db.TraitGlyphBindings.FindAsync(id);
         if (binding == null) return;
 
@@ -148,6 +162,7 @@ public class GlyphRepository : IGlyphRepository
 
     public async Task<List<SpawnProfileGlyphBinding>> GetSpawnBindingsForDefinitionAsync(Guid definitionId)
     {
+        await using PwEngineContext _db = await _factory.CreateDbContextAsync();
         return await _db.SpawnProfileGlyphBindings
             .Include(b => b.GlyphDefinition)
             .Where(b => b.GlyphDefinitionId == definitionId)
@@ -158,6 +173,7 @@ public class GlyphRepository : IGlyphRepository
 
     public async Task<List<TraitGlyphBinding>> GetTraitBindingsForDefinitionAsync(Guid definitionId)
     {
+        await using PwEngineContext _db = await _factory.CreateDbContextAsync();
         return await _db.TraitGlyphBindings
             .Include(b => b.GlyphDefinition)
             .Where(b => b.GlyphDefinitionId == definitionId)
@@ -170,6 +186,7 @@ public class GlyphRepository : IGlyphRepository
 
     public async Task<List<InteractionGlyphBinding>> GetInteractionBindingsForTagAsync(string interactionTag)
     {
+        await using PwEngineContext _db = await _factory.CreateDbContextAsync();
         return await _db.InteractionGlyphBindings
             .Include(b => b.GlyphDefinition)
             .Where(b => b.InteractionTag == interactionTag)
@@ -180,6 +197,7 @@ public class GlyphRepository : IGlyphRepository
 
     public async Task<List<InteractionGlyphBinding>> GetAllInteractionBindingsAsync()
     {
+        await using PwEngineContext _db = await _factory.CreateDbContextAsync();
         return await _db.InteractionGlyphBindings
             .Include(b => b.GlyphDefinition)
             .AsNoTracking()
@@ -188,6 +206,7 @@ public class GlyphRepository : IGlyphRepository
 
     public async Task CreateInteractionBindingAsync(InteractionGlyphBinding binding)
     {
+        await using PwEngineContext _db = await _factory.CreateDbContextAsync();
         _db.InteractionGlyphBindings.Add(binding);
         await _db.SaveChangesAsync();
         Log.Info("Created Glyph interaction binding: tag={InteractionTag}, area={AreaResRef}, definition={DefId}, priority={Priority}.",
@@ -196,6 +215,7 @@ public class GlyphRepository : IGlyphRepository
 
     public async Task DeleteInteractionBindingAsync(Guid id)
     {
+        await using PwEngineContext _db = await _factory.CreateDbContextAsync();
         InteractionGlyphBinding? binding = await _db.InteractionGlyphBindings.FindAsync(id);
         if (binding == null) return;
 
@@ -206,6 +226,7 @@ public class GlyphRepository : IGlyphRepository
 
     public async Task<List<InteractionGlyphBinding>> GetInteractionBindingsForDefinitionAsync(Guid definitionId)
     {
+        await using PwEngineContext _db = await _factory.CreateDbContextAsync();
         return await _db.InteractionGlyphBindings
             .Include(b => b.GlyphDefinition)
             .Where(b => b.GlyphDefinitionId == definitionId)

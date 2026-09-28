@@ -1,7 +1,7 @@
 namespace AmiaReforged.AdminPanel.Models;
 
 /// <summary>
-/// A saved Glyph visual script definition.
+/// A saved Glyph source script definition.
 /// </summary>
 public record GlyphDefinitionDto(
     Guid Id,
@@ -9,7 +9,7 @@ public record GlyphDefinitionDto(
     string? Description,
     string EventType,
     string Category,
-    string GraphJson,
+    string SourceText,
     bool IsActive,
     DateTime CreatedAt,
     DateTime UpdatedAt);
@@ -26,43 +26,6 @@ public record GlyphBindingDto(
     int Priority);
 
 /// <summary>
-/// A node definition entry from the Glyph node catalog (for the editor palette).
-/// </summary>
-public record GlyphNodeCatalogEntryDto(
-    string TypeId,
-    string DisplayName,
-    string Category,
-    string Description,
-    string ColorClass,
-    bool IsSingleton,
-    string? RestrictToEventType,
-    string? ScriptCategory,
-    List<GlyphPinDto> InputPins,
-    List<GlyphPinDto> OutputPins,
-    List<GlyphPropertyDefinitionDto> Properties,
-    string? ContextSourceTypeId = null);
-
-/// <summary>
-/// A configurable property on a Glyph node (dropdown or free-text, shown in the property panel).
-/// </summary>
-public record GlyphPropertyDefinitionDto(
-    string Id,
-    string DisplayName,
-    string DefaultValue,
-    List<string> AllowedValues);
-
-/// <summary>
-/// A pin on a Glyph node definition.
-/// </summary>
-public record GlyphPinDto(
-    string Id,
-    string Name,
-    string DataType,
-    string Direction,
-    string? DefaultValue,
-    bool AllowMultipleConnections);
-
-/// <summary>
 /// Request to create a new Glyph definition.
 /// </summary>
 public record CreateGlyphRequest(
@@ -70,7 +33,7 @@ public record CreateGlyphRequest(
     string EventType,
     string Category = "Encounter",
     string? Description = null,
-    string? GraphJson = null,
+    string? SourceText = null,
     bool IsActive = false);
 
 /// <summary>
@@ -81,7 +44,7 @@ public record UpdateGlyphRequest(
     string? Description = null,
     string? EventType = null,
     string? Category = null,
-    string? GraphJson = null,
+    string? SourceText = null,
     bool? IsActive = null);
 
 /// <summary>
@@ -139,3 +102,11 @@ public record CreateInteractionGlyphBindingRequest(
     Guid GlyphDefinitionId,
     string? AreaResRef = null,
     int Priority = 0);
+
+public record GlyphSourceSpanDto(string SourceId, int Start, int Length, int Line, int Column);
+public record GlyphDiagnosticDto(string Code, string Message, GlyphSourceSpanDto Span);
+public record CompileGlyphRequest(string SourceText, string? SourceId = null, int LanguageVersion = 1);
+public record GlyphCompilationDto(bool Success, List<GlyphDiagnosticDto> Diagnostics, string? SourceHash = null);
+public record GlyphVersionDto(Guid VersionId, Guid DefinitionId, DateTime ActivatedAt, Guid? PreviousVersionId,
+    string SourceHash, int LanguageVersion, bool IsActive);
+public record GlyphTraceDto(Guid DefinitionId, Guid VersionId, DateTime RecordedAt, string? Stage, int Steps, List<string> Entries);

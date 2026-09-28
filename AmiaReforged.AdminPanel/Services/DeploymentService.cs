@@ -143,7 +143,7 @@ public class DeploymentService
             WorldEngineEntityType.Regions => ["Self-contained (areas and environment data are embedded)"],
             WorldEngineEntityType.ResourceNodes => ["Self-contained (no additional dependencies)"],
             WorldEngineEntityType.Interactions => [
-                "Glyph pipeline scripts (visual script graphs bound to the interaction)",
+                "Glyph source programs bound to the interaction",
                 "Interaction-glyph bindings"
             ],
             _ => ["Not supported"]
@@ -317,7 +317,7 @@ public class DeploymentService
             $"/api/worldengine/glyphs/interaction-bindings?interactionTag={Uri.EscapeDataString(interactionTag)}");
         sourceBindings ??= [];
 
-        // 3. For each binding, fetch the full GlyphDefinition (with GraphJson) from source
+        // 3. For each binding, fetch the full GlyphDefinition (with SourceText) from source
         List<(InteractionGlyphBindingDto Binding, GlyphDefinitionDto Definition)> sourceGlyphs = [];
         foreach (InteractionGlyphBindingDto binding in sourceBindings)
         {
@@ -356,9 +356,10 @@ public class DeploymentService
                     InteractionGlyphBindingDto? matchingTarget = targetBindings
                         .FirstOrDefault(b => b.EventType == srcDef.EventType);
 
+                    Guid? deployedGlyphId = matchingTarget?.GlyphDefinitionId;
                     if (matchingTarget != null)
                     {
-                        // Update existing glyph definition on target with source's graph data
+                        // Update existing glyph definition on target with source draft
                         await PutJsonAsync<GlyphDefinitionDto>(targetUri, targetKey,
                             $"/api/worldengine/glyphs/{matchingTarget.GlyphDefinitionId}",
                             new UpdateGlyphRequest(
@@ -366,8 +367,8 @@ public class DeploymentService
                                 Description: srcDef.Description,
                                 EventType: srcDef.EventType,
                                 Category: srcDef.Category,
-                                GraphJson: srcDef.GraphJson,
-                                IsActive: srcDef.IsActive));
+                                SourceText: srcDef.SourceText,
+                                IsActive: srcDef.IsActive ? null : false));
                     }
                     else
                     {
@@ -379,11 +380,14 @@ public class DeploymentService
                                 EventType: srcDef.EventType,
                                 Category: srcDef.Category,
                                 Description: srcDef.Description,
-                                GraphJson: srcDef.GraphJson,
-                                IsActive: srcDef.IsActive));
+                                SourceText: srcDef.SourceText,
+                                IsActive: false));
 
+                        if (created == null || created.Id == Guid.Empty)
+                            throw new InvalidOperationException("Target did not create the Glyph source draft.");
                         if (created != null)
                         {
+                            deployedGlyphId = created.Id;
                             // Create the interaction-glyph binding on target
                             await PostJsonAsync<InteractionGlyphBindingDto>(targetUri, targetKey,
                                 "/api/worldengine/glyphs/interaction-bindings",
@@ -395,6 +399,14 @@ public class DeploymentService
                         }
                     }
 
+                    if (srcDef.IsActive && deployedGlyphId is { } glyphId)
+                    {
+                        var activation = await PostJsonAsync<GlyphCompilationDto>(targetUri, targetKey,
+                            $"/api/worldengine/glyphs/{glyphId}/activate", new CompileGlyphRequest(srcDef.SourceText));
+                        if (activation?.Success != true)
+                            throw new InvalidOperationException("Glyph source failed target validation: " +
+                                string.Join("; ", activation?.Diagnostics.Select(d => d.Message) ?? []));
+                    }
                     glyphsDeployed++;
                 }
                 catch (Exception ex)

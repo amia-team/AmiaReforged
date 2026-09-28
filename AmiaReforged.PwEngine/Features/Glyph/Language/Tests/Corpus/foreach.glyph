@@ -1,0 +1,7 @@
+glyph heal_party : encounter.after_group_spawn {
+    foreach member in party.members {
+        if random(1, 10) > 5 { break }
+        heal(member, 5)
+    }
+    foreach spawned in context.spawned_creatures { heal(spawned, 2) }
+}

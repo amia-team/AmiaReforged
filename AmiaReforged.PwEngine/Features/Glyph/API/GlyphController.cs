@@ -1,6 +1,7 @@
-using System.Text.Json;
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using AmiaReforged.PwEngine.Features.Glyph.Persistence;
+using AmiaReforged.PwEngine.Features.Glyph.Language.Compilation;
+using AmiaReforged.PwEngine.Features.Glyph.Runtime.Programs;
 using AmiaReforged.PwEngine.Features.WorldEngine.API;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.API;
@@ -13,14 +14,11 @@ namespace AmiaReforged.PwEngine.Features.Glyph.API;
 public class GlyphController
 {
     internal static IGlyphRepository? Repository;
-    internal static IGlyphNodeDefinitionRegistry? NodeRegistry;
+    internal static GlyphBootstrap? Runtime;
+    private static readonly SemaphoreSlim Mutations = new(1, 1);
     internal static Integration.GlyphEncounterHookService? EncounterHooks;
     internal static Integration.GlyphTraitHookService? TraitHooks;
     internal static Integration.GlyphInteractionHookService? InteractionHooks;
-
-    private static JsonSerializerOptions JsonOptions => GlyphJsonDefaults.Options;
-
-    private const string BasePath = "/api/worldengine/glyphs";
 
     // ==================== Definitions ====================
 
@@ -37,7 +35,7 @@ public class GlyphController
     }
 
     /// <summary>
-    /// GET /api/worldengine/glyphs/{id} — Get a single definition with full graph JSON.
+    /// GET /api/worldengine/glyphs/{id} — Get a single definition with source draft.
     /// </summary>
     [HttpGet("/api/worldengine/glyphs/{id}")]
     public static async Task<ApiResult> GetDefinition(RouteContext ctx)
@@ -59,107 +57,142 @@ public class GlyphController
     [HttpPost("/api/worldengine/glyphs")]
     public static async Task<ApiResult> CreateDefinition(RouteContext ctx)
     {
-        if (Repository == null) return ServiceUnavailable();
-
+        if (Repository == null || Runtime == null) return ServiceUnavailable();
         CreateGlyphRequest? req = await ctx.ReadJsonBodyAsync<CreateGlyphRequest>();
-        if (req == null || string.IsNullOrWhiteSpace(req.Name) || string.IsNullOrWhiteSpace(req.EventType))
-            return new ApiResult(400, new ErrorResponse("Bad request", "Name and EventType are required."));
-
-        string graphJson = req.GraphJson ?? "{}";
-
-        // For Interaction category, auto-populate the graph with 4 pipeline stage nodes
-        // only when the caller hasn't supplied a real graph (e.g. deployment sends the
-        // source graph and must not have it overwritten by the template).
-        bool isInteractionCategory =
-            string.Equals(req.Category, "Interaction", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(req.EventType, nameof(GlyphEventType.InteractionPipeline), StringComparison.OrdinalIgnoreCase);
-        bool callerSuppliedGraph = !string.IsNullOrWhiteSpace(req.GraphJson) && req.GraphJson != "{}";
-
-        if (isInteractionCategory && !callerSuppliedGraph)
-        {
-            graphJson = BuildInteractionPipelineGraphJson(req.Name, req.EventType);
-        }
-
+        if (req == null || string.IsNullOrWhiteSpace(req.Name) || req.SourceText == null)
+            return new(400, new ErrorResponse("Bad request", "Name and SourceText are required."));
+        if (req.IsActive) return new(400, new ErrorResponse("Bad request", "Create a draft, then activate it."));
+        var compilation = Runtime.Compiler.Compile(req.SourceText);
+        if (!compilation.Success) return new(400, CompileResponse(compilation).Data);
+        var program = compilation.Executable!;
         GlyphDefinition definition = new()
         {
-            Id = Guid.NewGuid(),
-            Name = req.Name,
-            Description = req.Description,
-            EventType = req.EventType,
-            Category = req.Category,
-            GraphJson = graphJson,
-            IsActive = req.IsActive
+            Id = Guid.NewGuid(), Name = req.Name, Description = req.Description,
+            EventType = program.EventType.ToString(), Category = program.EventType.GetCategory().ToString(),
+            SourceText = req.SourceText, IsActive = false
         };
-
-        await Repository.CreateDefinitionAsync(definition);
+        await Mutations.WaitAsync();
+        try { await Repository.CreateDefinitionAsync(definition); }
+        finally { Mutations.Release(); }
         return new ApiResult(201, ToDto(definition));
     }
 
-    /// <summary>
-    /// PUT /api/worldengine/glyphs/{id} — Update an existing Glyph definition.
-    /// </summary>
     [HttpPut("/api/worldengine/glyphs/{id}")]
     public static async Task<ApiResult> UpdateDefinition(RouteContext ctx)
     {
-        if (Repository == null) return ServiceUnavailable();
-
-        if (!Guid.TryParse(ctx.GetRouteValue("id"), out Guid id))
-            return new ApiResult(400, new ErrorResponse("Bad request", "Invalid definition ID."));
-
-        GlyphDefinition? definition = await Repository.GetDefinitionByIdAsync(id);
-        if (definition == null)
-            return new ApiResult(404, new ErrorResponse("Not found", $"Glyph definition {id} not found."));
-
+        if (Repository == null || Runtime == null) return ServiceUnavailable();
+        if (!Guid.TryParse(ctx.GetRouteValue("id"), out Guid id)) return new(400, new ErrorResponse("Bad request", "Invalid ID."));
         UpdateGlyphRequest? req = await ctx.ReadJsonBodyAsync<UpdateGlyphRequest>();
-        if (req == null)
-            return new ApiResult(400, new ErrorResponse("Bad request", "Request body is required."));
-
-        if (req.Name != null) definition.Name = req.Name;
-        if (req.Description != null) definition.Description = req.Description;
-        if (req.EventType != null) definition.EventType = req.EventType;
-        if (req.Category != null) definition.Category = req.Category;
-        if (req.GraphJson != null) definition.GraphJson = req.GraphJson;
-        if (req.IsActive.HasValue) definition.IsActive = req.IsActive.Value;
-
-        // Ensure the EventType inside GraphJson matches the definition's authoritative EventType column.
-        // The JS editor may not carry the EventType through correctly, so we stamp it server-side.
-        if (!string.IsNullOrEmpty(definition.GraphJson) && definition.GraphJson != "{}"
-            && !string.IsNullOrEmpty(definition.EventType))
+        if (req == null || req.IsActive == true) return new(400, new ErrorResponse("Bad request", "Save drafts here; use activate to publish."));
+        await Mutations.WaitAsync();
+        try
         {
-            try
-            {
-                using JsonDocument doc = JsonDocument.Parse(definition.GraphJson);
-                JsonElement root = doc.RootElement;
-
-                // Only re-write if EventType is missing or different
-                string existingEventType = root.TryGetProperty("EventType", out JsonElement et)
-                    ? et.GetString() ?? ""
-                    : "";
-
-                if (existingEventType != definition.EventType)
-                {
-                    Dictionary<string, JsonElement>? dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(definition.GraphJson);
-                    if (dict != null)
-                    {
-                        dict["EventType"] = JsonSerializer.SerializeToElement(definition.EventType);
-                        definition.GraphJson = JsonSerializer.Serialize(dict);
-                    }
-                }
-            }
-            catch
-            {
-                // If GraphJson is malformed, save it as-is — don't block the update
-            }
+            var definition = await Repository.GetDefinitionByIdAsync(id);
+            if (definition == null) return new(404, new ErrorResponse("Not found", "Glyph definition not found."));
+            if (req.Name != null) definition.Name = req.Name;
+            if (req.Description != null) definition.Description = req.Description;
+            if (req.SourceText != null) definition.SourceText = req.SourceText;
+            if (req.IsActive == false) definition.IsActive = false;
+            await Repository.UpdateDefinitionAsync(definition);
+            if (req.IsActive == false) await Runtime.Programs.DeactivateAsync(id);
+            return new(200, ToDto(definition));
         }
+        finally { Mutations.Release(); }
+    }
 
-        await Repository.UpdateDefinitionAsync(definition);
+    [HttpPost("/api/worldengine/glyphs/compile")]
+    public static async Task<ApiResult> Compile(RouteContext ctx)
+    {
+        if (Runtime == null) return ServiceUnavailable();
+        CompileGlyphRequest? req = await ctx.ReadJsonBodyAsync<CompileGlyphRequest>();
+        if (req?.SourceText == null) return new(400, new ErrorResponse("Bad request", "SourceText is required."));
+        return CompileResponse(Runtime.Compiler.Compile(req.SourceText, new(req.SourceId ?? "source.glyph", req.LanguageVersion)));
+    }
 
-        // Refresh all hook caches — the definition's graph JSON, active flag, or event type may have changed
-        if (EncounterHooks != null) await EncounterHooks.RefreshCacheAsync();
-        if (TraitHooks != null) await TraitHooks.RefreshCacheAsync();
-        if (InteractionHooks != null) await InteractionHooks.RefreshCacheAsync();
+    private static ApiResult CompileResponse(GlyphCompilationResult result) => new(200, new
+    {
+        result.Success, result.Diagnostics, result.SourceHash,
+        EventType = result.Executable?.EventType.ToString(), LanguageVersion = GlyphLanguageVersion.Current
+    });
 
-        return new ApiResult(200, ToDto(definition));
+    [HttpPost("/api/worldengine/glyphs/{id}/activate")]
+    public static async Task<ApiResult> Activate(RouteContext ctx)
+    {
+        if (Repository == null || Runtime == null) return ServiceUnavailable();
+        if (!Guid.TryParse(ctx.GetRouteValue("id"), out Guid id)) return new(400, new ErrorResponse("Bad request", "Invalid ID."));
+        CompileGlyphRequest? req = await ctx.ReadJsonBodyAsync<CompileGlyphRequest>();
+        await Mutations.WaitAsync();
+        try
+        {
+            var definition = await Repository.GetDefinitionByIdAsync(id);
+            if (definition == null) return new(404, new ErrorResponse("Not found", "Glyph definition not found."));
+            Runtime.RestorePublished(definition);
+            var compilation = Runtime.Compiler.Compile(req?.SourceText ?? definition.SourceText,
+                new($"{id}.glyph", req?.LanguageVersion ?? definition.LanguageVersion));
+            if (!compilation.Success) return CompileResponse(compilation);
+            var candidate = compilation.Executable!;
+            if (candidate.EventType.ToString() != definition.EventType)
+                return new(409, new ErrorResponse("Event mismatch", "Create a new definition to change the event type."));
+            var version = await Runtime.Programs.ActivateAsync(id, candidate, history => PersistVersion(definition, history));
+            return new(200, new { Success = true, Version = VersionDto(version), Diagnostics = Array.Empty<object>() });
+        }
+        finally { Mutations.Release(); }
+    }
+
+    [HttpPost("/api/worldengine/glyphs/{id}/rollback")]
+    public static async Task<ApiResult> Rollback(RouteContext ctx)
+    {
+        if (Repository == null || Runtime == null) return ServiceUnavailable();
+        if (!Guid.TryParse(ctx.GetRouteValue("id"), out Guid id)) return new(400, new ErrorResponse("Bad request", "Invalid ID."));
+        await Mutations.WaitAsync();
+        try
+        {
+            var definition = await Repository.GetDefinitionByIdAsync(id);
+            if (definition == null) return new(404, new ErrorResponse("Not found", "Glyph definition not found."));
+            Runtime.RestorePublished(definition);
+            var version = await Runtime.Programs.RollbackAsync(id, history => PersistVersion(definition, history));
+            return version == null ? new(409, new ErrorResponse("No previous version", "There is no active rollback target.")) :
+                new(200, new { Success = true, Version = VersionDto(version), Diagnostics = Array.Empty<object>() });
+        }
+        finally { Mutations.Release(); }
+    }
+
+    [HttpGet("/api/worldengine/glyphs/{id}/versions")]
+    public static async Task<ApiResult> Versions(RouteContext ctx)
+    {
+        if (Repository == null || Runtime == null) return ServiceUnavailable();
+        if (!Guid.TryParse(ctx.GetRouteValue("id"), out Guid id)) return new(400, new ErrorResponse("Bad request", "Invalid ID."));
+        var definition = await Repository.GetDefinitionByIdAsync(id);
+        if (definition == null) return new(404, new ErrorResponse("Not found", "Glyph definition not found."));
+        Runtime.RestorePublished(definition);
+        return new(200, Runtime.Programs.GetVersions(id).Select(VersionDto).ToArray());
+    }
+
+    [HttpGet("/api/worldengine/glyphs/{id}/traces")]
+    public static Task<ApiResult> Traces(RouteContext ctx)
+    {
+        if (Runtime == null) return Task.FromResult(ServiceUnavailable());
+        if (!Guid.TryParse(ctx.GetRouteValue("id"), out Guid id))
+            return Task.FromResult(new ApiResult(400, new ErrorResponse("Bad request", "Invalid ID.")));
+        return Task.FromResult(new ApiResult(200, Runtime.Traces.Get(id)));
+    }
+
+    private static object VersionDto(GlyphProgramVersion version) => new
+    {
+        version.VersionId, version.DefinitionId, version.ActivatedAt, version.PreviousVersionId,
+        version.Executable.SourceHash, version.Executable.LanguageVersion,
+        IsActive = Runtime?.Programs.GetActive(version.DefinitionId)?.VersionId == version.VersionId
+    };
+
+    private static async Task PersistVersion(GlyphDefinition definition, IReadOnlyList<GlyphProgramVersion> history)
+    {
+        var active = history[^1].Executable;
+        // Repository failure occurs before the atomic publication; no active executable is modified.
+        definition.SourceText = active.SourceText;
+        definition.LanguageVersion = active.LanguageVersion;
+        definition.PublishedVersionsJson = GlyphPublishedVersion.Serialize(history);
+        definition.IsActive = true;
+        await Repository!.UpdateDefinitionAsync(definition);
     }
 
     /// <summary>
@@ -173,7 +206,13 @@ public class GlyphController
         if (!Guid.TryParse(ctx.GetRouteValue("id"), out Guid id))
             return new ApiResult(400, new ErrorResponse("Bad request", "Invalid definition ID."));
 
-        await Repository.DeleteDefinitionAsync(id);
+        await Mutations.WaitAsync();
+        try
+        {
+            await Repository.DeleteDefinitionAsync(id);
+            if (Runtime != null) await Runtime.Programs.DeactivateAsync(id);
+        }
+        finally { Mutations.Release(); }
 
         // Refresh all hook caches — cascade-deleted bindings are now stale in cache
         if (EncounterHooks != null) await EncounterHooks.RefreshCacheAsync();
@@ -181,21 +220,6 @@ public class GlyphController
         if (InteractionHooks != null) await InteractionHooks.RefreshCacheAsync();
 
         return new ApiResult(204, new { });
-    }
-
-    // ==================== Node Catalog ====================
-
-    /// <summary>
-    /// GET /api/worldengine/glyph-catalog — Return all registered node definitions for the editor palette.
-    /// </summary>
-    [HttpGet("/api/worldengine/glyph-catalog")]
-    public static Task<ApiResult> GetNodeCatalog(RouteContext ctx)
-    {
-        if (NodeRegistry == null) return Task.FromResult(ServiceUnavailable());
-
-        IReadOnlyList<GlyphNodeDefinition> definitions = NodeRegistry.GetAll();
-        List<GlyphNodeCatalogEntryDto> catalog = definitions.Select(NodeDefinitionToDto).ToList();
-        return Task.FromResult(new ApiResult(200, catalog));
     }
 
     // ==================== Bindings ====================
@@ -434,40 +458,8 @@ public class GlyphController
     private static ApiResult ServiceUnavailable()
         => new(503, new ErrorResponse("Service unavailable", "Glyph service is not initialized."));
 
-    /// <summary>
-    /// Builds a pre-populated GraphJson for interaction pipeline definitions.
-    /// Creates 4 stage nodes arranged horizontally at y=300.
-    /// </summary>
-    private static string BuildInteractionPipelineGraphJson(string name, string eventType)
-    {
-        Guid graphId = Guid.NewGuid();
-        Guid node1 = Guid.NewGuid();
-        Guid node2 = Guid.NewGuid();
-        Guid node3 = Guid.NewGuid();
-        Guid node4 = Guid.NewGuid();
-
-        var graph = new
-        {
-            Id = graphId,
-            Name = name,
-            Description = "",
-            EventType = eventType,
-            Nodes = new[]
-            {
-                new { InstanceId = node1, TypeId = "stage.interaction_attempted", PositionX = 50.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
-                new { InstanceId = node2, TypeId = "stage.interaction_started", PositionX = 500.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
-                new { InstanceId = node3, TypeId = "stage.interaction_tick", PositionX = 950.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
-                new { InstanceId = node4, TypeId = "stage.interaction_completed", PositionX = 1400.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() }
-            },
-            Edges = Array.Empty<object>(),
-            Variables = Array.Empty<object>()
-        };
-
-        return JsonSerializer.Serialize(graph, JsonOptions);
-    }
-
     private static GlyphDefinitionDto ToDto(GlyphDefinition d) => new(
-        d.Id, d.Name, d.Description, d.EventType, d.Category, d.GraphJson, d.IsActive,
+        d.Id, d.Name, d.Description, d.EventType, d.Category, d.SourceText, d.IsActive,
         d.CreatedAt, d.UpdatedAt);
 
     private static GlyphBindingDto BindingToDto(SpawnProfileGlyphBinding b) => new(
@@ -485,26 +477,11 @@ public class GlyphController
         b.GlyphDefinition?.Name ?? string.Empty, b.GlyphDefinition?.EventType ?? string.Empty,
         b.Priority);
 
-    private static GlyphNodeCatalogEntryDto NodeDefinitionToDto(GlyphNodeDefinition d) => new(
-        d.TypeId, d.DisplayName, d.Category, d.Description, d.ColorClass,
-        d.IsSingleton, d.RestrictToEventType?.ToString(), d.ScriptCategory?.ToString(),
-        d.InputPins.Select(PinToDto).ToList(),
-        d.OutputPins.Select(PinToDto).ToList(),
-        d.Properties.Select(PropertyToDto).ToList(),
-        d.ContextSourceTypeId);
-
-    private static GlyphPinDto PinToDto(GlyphPin p) => new(
-        p.Id, p.Name, p.DataType.ToString(), p.Direction.ToString(),
-        p.DefaultValue, p.AllowMultipleConnections);
-
-    private static GlyphPropertyDefinitionDto PropertyToDto(GlyphPropertyDefinition p) => new(
-        p.Id, p.DisplayName, p.DefaultValue, p.AllowedValues);
-
     // ==================== DTOs ====================
 
     public record GlyphDefinitionDto(
         Guid Id, string Name, string? Description, string EventType, string Category,
-        string GraphJson, bool IsActive, DateTime CreatedAt, DateTime UpdatedAt);
+        string SourceText, bool IsActive, DateTime CreatedAt, DateTime UpdatedAt);
 
     public record GlyphBindingDto(
         Guid Id, Guid SpawnProfileId, Guid GlyphDefinitionId,
@@ -519,27 +496,15 @@ public class GlyphController
         List<TraitGlyphBindingDto> TraitBindings,
         List<InteractionGlyphBindingDto> InteractionBindings);
 
-    public record GlyphNodeCatalogEntryDto(
-        string TypeId, string DisplayName, string Category, string Description,
-        string ColorClass, bool IsSingleton, string? RestrictToEventType, string? ScriptCategory,
-        List<GlyphPinDto> InputPins, List<GlyphPinDto> OutputPins,
-        List<GlyphPropertyDefinitionDto> Properties,
-        string? ContextSourceTypeId = null);
-
-    public record GlyphPinDto(
-        string Id, string Name, string DataType, string Direction,
-        string? DefaultValue, bool AllowMultipleConnections);
-
-    public record GlyphPropertyDefinitionDto(
-        string Id, string DisplayName, string DefaultValue, List<string> AllowedValues);
-
     public record CreateGlyphRequest(
         string Name, string EventType, string Category = "Encounter",
-        string? Description = null, string? GraphJson = null, bool IsActive = false);
+        string? Description = null, string? SourceText = null, bool IsActive = false);
 
     public record UpdateGlyphRequest(
         string? Name = null, string? Description = null, string? EventType = null,
-        string? Category = null, string? GraphJson = null, bool? IsActive = null);
+        string? Category = null, string? SourceText = null, bool? IsActive = null);
+
+    public record CompileGlyphRequest(string SourceText, string? SourceId = null, int LanguageVersion = 1);
 
     public record CreateBindingRequest(
         Guid SpawnProfileId, Guid GlyphDefinitionId, int Priority = 0);

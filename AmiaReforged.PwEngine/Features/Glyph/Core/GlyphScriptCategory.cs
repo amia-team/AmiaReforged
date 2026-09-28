@@ -45,6 +45,8 @@ public static class GlyphEventTypeExtensions
         GlyphEventType.BeforeGroupSpawn => GlyphScriptCategory.Encounter,
         GlyphEventType.AfterGroupSpawn => GlyphScriptCategory.Encounter,
         GlyphEventType.OnCreatureDeath => GlyphScriptCategory.Encounter,
+        GlyphEventType.OnCreatureSpawn => GlyphScriptCategory.Encounter,
+        GlyphEventType.OnBossSpawn => GlyphScriptCategory.Encounter,
         GlyphEventType.OnTraitGranted => GlyphScriptCategory.Trait,
         GlyphEventType.OnTraitRemoved => GlyphScriptCategory.Trait,
         GlyphEventType.InteractionPipeline => GlyphScriptCategory.Interaction,
@@ -56,7 +58,7 @@ public static class GlyphEventTypeExtensions
     /// </summary>
     public static IReadOnlyList<GlyphEventType> GetEventTypes(this GlyphScriptCategory category) => category switch
     {
-        GlyphScriptCategory.Encounter => [GlyphEventType.BeforeGroupSpawn, GlyphEventType.AfterGroupSpawn, GlyphEventType.OnCreatureDeath],
+        GlyphScriptCategory.Encounter => [GlyphEventType.BeforeGroupSpawn, GlyphEventType.AfterGroupSpawn, GlyphEventType.OnCreatureDeath, GlyphEventType.OnCreatureSpawn, GlyphEventType.OnBossSpawn],
         GlyphScriptCategory.Trait => [GlyphEventType.OnTraitGranted, GlyphEventType.OnTraitRemoved],
         GlyphScriptCategory.Environmental => [],
         GlyphScriptCategory.Narrative => [],

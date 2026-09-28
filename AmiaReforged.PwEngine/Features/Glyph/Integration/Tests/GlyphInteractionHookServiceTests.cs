@@ -27,6 +27,35 @@ public class GlyphInteractionHookServiceTests
         _bootstrap = new GlyphBootstrap(registry);
     }
 
+    [Test]
+    public async Task Source_activation_and_rollback_change_next_hook_without_refreshing_bindings()
+    {
+        GlyphDefinition definition = new()
+        {
+            Id = Guid.NewGuid(), Name = "live", EventType = "InteractionPipeline", Category = "Interaction",
+            SourceText = "glyph live : interaction {}", IsActive = false
+        };
+        _repository.AddInteractionBinding(new()
+        {
+            Id = Guid.NewGuid(), InteractionTag = "prospecting", GlyphDefinitionId = definition.Id,
+            GlyphDefinition = definition
+        });
+        CreateHookService();
+        bool IsBlocked() => _hookService.RunOnInteractionAttempted("prospecting", Guid.NewGuid().ToString(),
+            Guid.NewGuid(), "Node", null, null, null).ShouldBlock;
+        Assert.That(IsBlocked(), Is.False);
+        var allow = _bootstrap.Compiler.Compile(definition.SourceText);
+        Assert.That(allow.Success, Is.True);
+        await _bootstrap.Programs.ActivateAsync(definition.Id, allow.Executable!);
+        Assert.That(IsBlocked(), Is.False);
+        var block = _bootstrap.Compiler.Compile("glyph live : interaction { attempted { fail \"blocked\" } }");
+        Assert.That(block.Success, Is.True);
+        await _bootstrap.Programs.ActivateAsync(definition.Id, block.Executable!);
+        Assert.That(IsBlocked(), Is.True);
+        await _bootstrap.Programs.RollbackAsync(definition.Id);
+        Assert.That(IsBlocked(), Is.False);
+    }
+
     // ==================== OnInteractionAttempted ====================
 
     [Test]
@@ -620,16 +649,24 @@ public class GlyphInteractionHookServiceTests
         int priority = 0,
         bool isActive = true)
     {
-        string graphJson = GlyphGraphSerializer.Serialize(graph);
+
         GlyphDefinition definition = new()
         {
             Id = Guid.NewGuid(),
             Name = $"Test-Pipeline",
             EventType = GlyphEventType.InteractionPipeline.ToString(),
             Category = "Interaction",
-            GraphJson = graphJson,
+            SourceText = "glyph test : interaction {}",
             IsActive = isActive
         };
+
+        if (isActive)
+        {
+            new GlyphIrValidator(_bootstrap.Compiler.Catalog.Registry).Validate(graph).Should().BeEmpty();
+            // These tests deliberately construct low-level IR; production activation accepts only compiler output.
+            var executable = new Runtime.Programs.GlyphExecutable(graph, definition.SourceText, "test", new Dictionary<Guid, Language.Diagnostics.SourceSpan>(), 1);
+            _bootstrap.Programs.ActivateAsync(definition.Id, executable).GetAwaiter().GetResult();
+        }
 
         InteractionGlyphBinding binding = new()
         {

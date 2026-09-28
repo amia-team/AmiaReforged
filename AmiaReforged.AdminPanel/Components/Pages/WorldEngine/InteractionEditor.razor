@@ -1,5 +1,4 @@
 @using System.Text.Json
-@implements IAsyncDisposable
 
 @inject InteractionApiService Api
 @inject GlyphApiService GlyphApi
@@ -25,13 +24,6 @@
 
         <div style="flex:1"></div>
 
-        @* Canvas controls *@
-        <button class="btn btn-sm btn-outline-secondary" style="font-size:0.72rem;padding:2px 8px" @onclick="FitAll" title="Fit all nodes in view">Fit All</button>
-        <button class="btn btn-sm btn-outline-secondary" style="font-size:0.72rem;padding:2px 8px" @onclick="ArrangeNodes" title="Auto-arrange">Arrange</button>
-        <button class="btn btn-sm btn-outline-danger" style="font-size:0.72rem;padding:2px 8px" @onclick="ClearCurrentScript" disabled="@(!HasCurrentScript)" title="Clear script">Clear Script</button>
-
-        <div style="width:1px;height:20px;background:var(--border-subtle)"></div>
-
         @* Save / Cancel *@
         @if (!string.IsNullOrEmpty(_error))
         {
@@ -46,63 +38,21 @@
 
     @* ═══════ Workspace (split layout — no layout framework) ═══════ *@
     <div class="interaction-editor__workspace">
-    <ResizableSplit Direction="horizontal" FirstDefaultWidth="@_paletteWidth" FirstMin="180" SecondMin="500"
-                    PersistKey="interaction-palette" CollapsibleFirst="true" CollapsibleSecond="false"
-                    FirstCollapsedInitial="@_paletteCollapsed"
-                    OnFirstCollapsedChanged="OnPaletteCollapsedChanged">
-        <First>
-    @* ── Node Palette Panel ── *@
-    <div style="height:100%;min-height:0">
-        <div style="background:var(--bg-card);height:100%;display:flex;flex-direction:column">
-            <div style="padding:8px 12px;border-bottom:1px solid var(--border-subtle);flex-shrink:0">
-                <input type="text" class="form-control form-control-sm" placeholder="Search nodes..."
-                       @bind="_scriptNodeSearchFilter" @bind:event="oninput"
-                       style="font-size:0.8rem" />
-            </div>
-            <div style="flex:1;overflow-y:auto">
-                @foreach (IGrouping<string, GlyphNodeCatalogEntryDto> category in ScriptFilteredCatalog)
-                {
-                    <div style="padding:4px 12px;background:var(--bg-input);color:var(--text-secondary);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;position:sticky;top:0;z-index:1">
-                        @category.Key
-                    </div>
-                    @foreach (GlyphNodeCatalogEntryDto node in category)
-                    {
-                        <div style="padding:5px 12px;border-bottom:1px solid var(--border-subtle);cursor:pointer;font-size:0.82rem"
-                             class="glyph-node-entry" draggable="true"
-                             ondragstart="event.dataTransfer.setData('application/glyph-node', '@node.TypeId')"
-                             @onclick="() => AddScriptNode(node)" title="@node.Description">
-                            <span class="badge me-1" style="background:@GetNodeColor(node.ColorClass);font-size:0.65rem">@node.ColorClass</span>
-                            <span style="color:var(--text-primary)">@node.DisplayName</span>
-                            @if (node.RestrictToEventType != null)
-                            {
-                                <br /><small style="color:var(--text-secondary);font-size:0.65rem">@node.RestrictToEventType</small>
-                            }
-                        </div>
-                    }
-                }
-            </div>
-        </div>
-    </div>
-        </First>
-        <Second>
             <ResizableSplit Direction="horizontal" FirstDefaultWidth="@_inspectorWidth" FirstMin="260" SecondMin="400"
                             PersistKey="interaction-inspector" SwapOrder="true"
                             CollapsibleFirst="true" CollapsibleSecond="false"
                             FirstCollapsedInitial="@_inspectorCollapsed"
                             OnFirstCollapsedChanged="OnInspectorCollapsedChanged">
                 <Second>
-    @* ── Graph Canvas Panel ── *@
-    <div style="height:100%;min-height:0">
-        <div style="width:100%;height:100%;background:#12121f;position:relative">
-            <div id="interaction-glyph-canvas" style="width:100%;height:100%"></div>
-            @if (!_scriptEditorReady)
-            {
-                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--text-secondary)">
-                    <em>Initializing editor...</em>
-                </div>
-            }
-        </div>
-    </div>
+                    @if (_isCreating)
+                    {
+                        <p class="p-3">Save the interaction before creating and activating its Glyph program.</p>
+                    }
+                    else
+                    {
+                        <AmiaReforged.AdminPanel.Components.Pages.WorldEngine.Editors.GlyphSourceEditor
+                            @key="_editItem.Tag" DefinitionId="_pipelineScript?.Id" Name="@($"{_editItem.Tag}/Pipeline")" Created="BindPipeline" />
+                    }
                 </Second>
                 <First>
                     @{
@@ -327,83 +277,10 @@
             }
         </div>
 
-    @* ── Inspector Panel (selected node properties) ── *@
-        <div style="background:var(--bg-card);padding:12px;min-height:100%">
-            @if (_scriptSelectedNodeInfo != null)
-            {
-                <h6 style="margin:0 0 4px 0;font-size:0.85rem;color:var(--text-primary)">@_scriptSelectedNodeInfo.DisplayName</h6>
-                <small style="color:var(--text-secondary);font-size:0.7rem;display:block;margin-bottom:8px">@_scriptSelectedNodeInfo.TypeId</small>
-
-                @* -- Node Properties (dropdowns / free-text from definition) -- *@
-                @foreach (SelectedPropertyInfo prop in GetNodeProperties())
-                {
-                    <div style="margin-bottom:6px">
-                        <label style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:2px;display:block">@prop.DisplayName</label>
-                        @if (prop.AllowedValues is { Count: > 0 })
-                        {
-                            <select class="form-control form-control-sm" style="font-size:0.78rem"
-                                    value="@prop.CurrentValue"
-                                    @onchange="e => OnNodePropertyChanged(prop, ExtractStringValue(e))">
-                                @foreach (string opt in prop.AllowedValues)
-                                {
-                                    <option value="@opt" selected="@(opt == prop.CurrentValue)">@opt</option>
-                                }
-                            </select>
-                        }
-                        else
-                        {
-                            <input class="form-control form-control-sm" style="font-size:0.78rem"
-                                   type="text"
-                                   value="@prop.CurrentValue"
-                                   @onchange="e => OnNodePropertyChanged(prop, ExtractStringValue(e))" />
-                        }
-                    </div>
-                }
-
-                @* -- Pin Overrides (unconnected input pins) -- *@
-                @if (GetEditablePins().Count == 0 && GetNodeProperties().Count == 0)
-                {
-                    <p style="color:var(--text-secondary);font-size:0.78rem;margin:0">No editable properties.</p>
-                }
-                else
-                {
-                    @foreach (SelectedPinInfo pin in GetEditablePins())
-                    {
-                        <div style="margin-bottom:6px">
-                            <label style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:2px;display:block">@pin.Name <small>(@pin.DataType)</small></label>
-                            @if (pin.DataType == "Bool")
-                            {
-                                <select class="form-control form-control-sm" style="font-size:0.78rem"
-                                        value="@GetScriptPinValue(pin)"
-                                        @onchange="e => OnScriptPropertyChanged(pin, ExtractStringValue(e))">
-                                    <option value="">default</option>
-                                    <option value="true">true</option>
-                                    <option value="false">false</option>
-                                </select>
-                            }
-                            else
-                            {
-                                <input class="form-control form-control-sm" style="font-size:0.78rem"
-                                       type="@(pin.DataType is "Int" or "Float" ? "number" : "text")"
-                                       value="@GetScriptPinValue(pin)"
-                                       @onchange="e => OnScriptPropertyChanged(pin, ExtractStringValue(e))"
-                                       placeholder="@(pin.DefaultValue ?? string.Empty)" />
-                            }
-                        </div>
-                    }
-                }
-            }
-            else
-            {
-                <p style="color:var(--text-secondary);font-size:0.8rem;margin:0">Select a node on the canvas to view its properties.</p>
-            }
-        </div>
                         </Body>
                     </Inspector>
                 </First>
             </ResizableSplit>
-        </Second>
-    </ResizableSplit>
     </div>
 </div>
 }
@@ -488,9 +365,7 @@
     private InteractionDefinitionDto _editItem = new();
 
     // Rail presets (LayoutPresetService; splitter.js persists widths)
-    private bool _paletteCollapsed;
     private bool _inspectorCollapsed;
-    private int _paletteWidth = 240;
     private int _inspectorWidth = 320;
 
     protected override async Task OnInitializedAsync()
@@ -498,21 +373,8 @@
         try
         {
             EditorPreset preset = await Presets.GetPresetAsync(WorldEngineEntityType.Interactions);
-            _paletteCollapsed = !preset.PaletteOpen;
             _inspectorCollapsed = !preset.InspectorOpen;
-            _paletteWidth = Math.Max(180, preset.PaletteWidth);
             _inspectorWidth = Math.Max(260, preset.InspectorWidth);
-        }
-        catch { }
-    }
-
-    private async Task OnPaletteCollapsedChanged(bool collapsed)
-    {
-        _paletteCollapsed = collapsed;
-        try
-        {
-            await Presets.UpdatePresetAsync(
-                WorldEngineEntityType.Interactions, p => p with { PaletteOpen = !collapsed });
         }
         catch { }
     }
@@ -533,51 +395,11 @@
     private string _newAreaResRef = "";
     private string _newKnowledgeTag = "";
 
-    // Script editor
-    private const string PipelineEventType = "InteractionPipeline";
-    private string _pipelineGraphJson = "{}";
     private GlyphDefinitionDto? _pipelineScript;
-    private List<GlyphNodeCatalogEntryDto> _nodeCatalog = [];
-    private string _scriptNodeSearchFilter = "";
-    private bool _scriptEditorReady;
-    private SelectedNodeInfo? _scriptSelectedNodeInfo;
-    private bool _skipInitialScriptEditor;
-
-    // JS module references (glyph canvas + split resize observer)
-    private IJSObjectReference? _scriptEditorModule;
-    private DotNetObjectReference<InteractionEditor>? _dotNetRef;
-
-    // ═══════════════════════════════════════════════════════════════════
-    //  Computed
-    // ═══════════════════════════════════════════════════════════════════
-
-    private bool HasCurrentScript => GraphHasNodes(_pipelineGraphJson);
-
-    private IEnumerable<IGrouping<string, GlyphNodeCatalogEntryDto>> ScriptFilteredCatalog
-    {
-        get
-        {
-            IEnumerable<GlyphNodeCatalogEntryDto> nodes = _nodeCatalog;
-            nodes = nodes.Where(n => n.RestrictToEventType == null || n.RestrictToEventType == PipelineEventType);
-            nodes = nodes.Where(n => n.ScriptCategory == null || n.ScriptCategory.Equals("Interaction", StringComparison.OrdinalIgnoreCase));
-            if (!string.IsNullOrWhiteSpace(_scriptNodeSearchFilter))
-            {
-                string filter = _scriptNodeSearchFilter.Trim().ToLowerInvariant();
-                nodes = nodes.Where(n =>
-                    n.DisplayName.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
-                    n.Category.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
-                    n.Description.Contains(filter, StringComparison.OrdinalIgnoreCase));
-            }
-            return nodes.GroupBy(n => n.Category).OrderBy(g => g.Key);
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    //  Public API — called by parent component
-    // ═══════════════════════════════════════════════════════════════════
+    private void ResetScriptState() => _pipelineScript = null;
 
     /// <summary>Open the editor for a new interaction.</summary>
-    public async Task OpenCreate()
+    public Task OpenCreate()
     {
         Logger.LogInformation("[IE] OpenCreate called. Industries available: {Count}", AvailableIndustries.Count);
         _isCreating = true;
@@ -597,8 +419,7 @@
         _error = null;
         _isOpen = true;
         StateHasChanged();
-        Logger.LogInformation("[IE] OpenCreate: _isOpen=true, calling InitLayout()");
-        await InitLayout();
+        return Task.CompletedTask;
     }
 
     /// <summary>Open the editor for an existing interaction.</summary>
@@ -611,109 +432,12 @@
         ResetScriptState();
         _error = null;
         _isOpen = true;
-        _skipInitialScriptEditor = true;
         StateHasChanged();
-        Logger.LogInformation("[IE] OpenEdit: _isOpen=true, calling InitLayout()");
-        await InitLayout();
         await LoadInteractionScripts(item.Tag);
     }
 
     // ═══════════════════════════════════════════════════════════════════
     //  Layout Lifecycle (split-based; no layout framework)
-    // ═══════════════════════════════════════════════════════════════════
-
-    private async Task InitLayout()
-    {
-        try
-        {
-            _dotNetRef ??= DotNetObjectReference.Create(this);
-
-            // Load node catalog if needed
-            if (_nodeCatalog.Count == 0)
-            {
-                try
-                {
-                    Logger.LogInformation("[IE] InitLayout: loading node catalog...");
-                    _nodeCatalog = await GlyphApi.GetNodeCatalogAsync();
-                    Logger.LogInformation("[IE] InitLayout: node catalog loaded, {Count} entries", _nodeCatalog.Count);
-                }
-                catch (Exception ex) { Logger.LogWarning(ex, "Failed to load node catalog"); }
-            }
-
-            // The flex canvas has size by construction; one frame lets the
-            // browser settle it before the glyph editor measures.
-            await Task.Delay(100);
-            Logger.LogInformation("[IE] InitLayout: calling InitScriptEditor()");
-            if (!_skipInitialScriptEditor)
-            {
-                await InitScriptEditor();
-            }
-            _skipInitialScriptEditor = false;
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "[IE] InitLayout FAILED");
-            _error = "Layout initialization failed. Try closing and reopening.";
-        }
-    }
-
-    private async Task DestroyLayout()
-    {
-        await DisposeCanvasResizeObserver();
-        await DestroyScriptEditor();
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    //  Canvas resize (debounced via splitter.js; glyph-editor.js also
-    //  observes the container itself — this is the deterministic path)
-    // ═══════════════════════════════════════════════════════════════════
-
-    private IJSObjectReference? _splitterModule;
-    private IJSObjectReference? _canvasResizeHandle;
-
-    private async Task ObserveCanvasSize()
-    {
-        if (_canvasResizeHandle != null) return;
-        try
-        {
-            _splitterModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/splitter.js");
-            _canvasResizeHandle = await _splitterModule.InvokeAsync<IJSObjectReference?>(
-                "observeResizeById", "interaction-glyph-canvas", _dotNetRef, nameof(OnGlyphCanvasResized), 200);
-        }
-        catch
-        {
-            // Best-effort; the glyph editor observes its container internally.
-        }
-    }
-
-    private async Task DisposeCanvasResizeObserver()
-    {
-        try
-        {
-            if (_canvasResizeHandle != null)
-                await _canvasResizeHandle.InvokeVoidAsync("dispose");
-        }
-        catch { }
-        _canvasResizeHandle = null;
-    }
-
-    [JSInvokable]
-    public async Task OnGlyphCanvasResized(double width, double height)
-    {
-        if (_scriptEditorModule == null || !_scriptEditorReady) return;
-        if (width <= 0 || height <= 0) return;
-        try
-        {
-            await _scriptEditorModule.InvokeVoidAsync("resizeCanvasToSize", width, height);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogWarning(ex, "Canvas resize failed");
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    //  Save / Cancel
     // ═══════════════════════════════════════════════════════════════════
 
     private async Task Save()
@@ -722,16 +446,13 @@
         _error = null;
         try
         {
-            await CaptureCurrentScriptGraph();
 
             if (_isCreating)
                 await Api.CreateAsync(_editItem);
             else
                 await Api.UpdateAsync(_editItem.Tag, _editItem);
 
-            await SaveEventScripts(_editItem.Tag);
 
-            await DestroyLayout();
             _isOpen = false;
             StateHasChanged();
 
@@ -760,7 +481,6 @@
     /// <summary>Force-close the editor from the parent (e.g. when switching activity bar tabs).</summary>
     public async Task Close()
     {
-        await DestroyLayout();
         _isOpen = false;
         _error = null;
         StateHasChanged();
@@ -776,246 +496,23 @@
     //  Script Editor Lifecycle
     // ═══════════════════════════════════════════════════════════════════
 
-    private async Task InitScriptEditor()
+    private async Task LoadInteractionScripts(string tag)
     {
         try
         {
-            _scriptEditorReady = false;
-
-            // Flex canvas is laid out with the split; no container polling needed.
-            await Task.Delay(50);
-
-            Logger.LogInformation("[IE] InitScriptEditor: importing glyph-editor.js...");
-            _scriptEditorModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js");
-            _dotNetRef ??= DotNetObjectReference.Create(this);
-
-            string catalogJson = JsonSerializer.Serialize(_nodeCatalog);
-            string graphJson = _pipelineGraphJson;
-
-            if (string.IsNullOrEmpty(graphJson) || graphJson == "{}" || !GraphHasNodes(graphJson))
-            {
-                graphJson = BuildEmptyPipelineGraphJson();
-            }
-
-            Logger.LogInformation("[IE] InitScriptEditor: calling initGlyphEditor(container=interaction-glyph-canvas, catalogSize={Size})", _nodeCatalog.Count);
-            await _scriptEditorModule.InvokeVoidAsync("initGlyphEditor", "interaction-glyph-canvas", catalogJson, graphJson, _dotNetRef);
-            _scriptEditorReady = true;
-            Logger.LogInformation("[IE] InitScriptEditor: glyph editor initialized successfully");
-            await ObserveCanvasSize();
-            StateHasChanged();
+            var bindings = await GlyphApi.GetInteractionBindingsAsync(tag);
+            var binding = bindings.FirstOrDefault(b => b.EventType == "InteractionPipeline");
+            _pipelineScript = binding == null ? null : await GlyphApi.GetDefinitionAsync(binding.GlyphDefinitionId);
         }
-        catch (Exception ex)
-        {
-            Logger.LogWarning(ex, "[IE] InitScriptEditor FAILED");
-            _scriptEditorReady = false;
-        }
+        catch (Exception ex) { _error = ex.Message; }
     }
 
-    private async Task DestroyScriptEditor()
+    private async Task BindPipeline(GlyphDefinitionDto definition)
     {
-        if (_scriptEditorModule == null) return;
-        try { await _scriptEditorModule.InvokeVoidAsync("destroy"); }
-        catch (Exception ex) { Logger.LogWarning(ex, "Failed to destroy script editor"); }
-        _scriptEditorReady = false;
+        if (string.IsNullOrWhiteSpace(_editItem.Tag)) throw new InvalidOperationException("Set an interaction tag before creating its script.");
+        await GlyphApi.CreateInteractionBindingAsync(new(_editItem.Tag, definition.Id));
+        _pipelineScript = definition;
     }
-
-    private void ResetScriptState()
-    {
-        _pipelineGraphJson = "{}";
-        _pipelineScript = null;
-        _scriptNodeSearchFilter = "";
-        _scriptEditorReady = false;
-        _scriptSelectedNodeInfo = null;
-    }
-
-    private async Task CaptureCurrentScriptGraph()
-    {
-        if (_scriptEditorModule == null || !_scriptEditorReady) return;
-        try
-        {
-            string json = await _scriptEditorModule.InvokeAsync<string>("getGraphJson");
-            _pipelineGraphJson = json;
-        }
-        catch (Exception ex) { Logger.LogWarning(ex, "Failed to capture pipeline script graph"); }
-    }
-
-    private async Task LoadInteractionScripts(string interactionTag)
-    {
-        try
-        {
-            if (_nodeCatalog.Count == 0)
-                _nodeCatalog = await GlyphApi.GetNodeCatalogAsync();
-
-            List<InteractionGlyphBindingDto> bindings = await GlyphApi.GetInteractionBindingsAsync(interactionTag);
-            foreach (InteractionGlyphBindingDto binding in bindings)
-            {
-                GlyphDefinitionDto? def = await GlyphApi.GetDefinitionAsync(binding.GlyphDefinitionId);
-                if (def == null) continue;
-                if (def.EventType == PipelineEventType ||
-                    def.EventType.StartsWith("OnInteraction", StringComparison.OrdinalIgnoreCase))
-                {
-                    _pipelineGraphJson = def.GraphJson ?? "{}";
-                    _pipelineScript = def;
-                    break;
-                }
-            }
-
-            // Re-init the glyph editor with the loaded graph
-            await DestroyScriptEditor();
-
-            await Task.Delay(50);
-            await InitScriptEditor();
-        }
-        catch (Exception ex) { Logger.LogWarning(ex, "Failed to load interaction scripts for {Tag}", interactionTag); }
-    }
-
-    private async Task SaveEventScripts(string interactionTag)
-    {
-        string graphJson = _pipelineGraphJson;
-        bool hasGraph = GraphHasNodes(graphJson);
-        GlyphDefinitionDto? existingDef = _pipelineScript;
-
-        if (hasGraph)
-        {
-            if (existingDef != null)
-            {
-                GlyphDefinitionDto? updated = await GlyphApi.UpdateDefinitionAsync(existingDef.Id,
-                    new UpdateGlyphRequest(GraphJson: graphJson, IsActive: true));
-                if (updated != null) _pipelineScript = updated;
-            }
-            else
-            {
-                List<InteractionGlyphBindingDto> existingBindings = await GlyphApi.GetInteractionBindingsAsync(interactionTag);
-                InteractionGlyphBindingDto? matchingBinding = existingBindings.FirstOrDefault();
-
-                if (matchingBinding != null)
-                {
-                    GlyphDefinitionDto? updated = await GlyphApi.UpdateDefinitionAsync(
-                        matchingBinding.GlyphDefinitionId,
-                        new UpdateGlyphRequest(GraphJson: graphJson, IsActive: true));
-                    if (updated != null) _pipelineScript = updated;
-                }
-                else
-                {
-                    string name = $"{interactionTag}/InteractionPipeline";
-                    GlyphDefinitionDto? created = await GlyphApi.CreateDefinitionAsync(new CreateGlyphRequest(
-                        Name: name,
-                        EventType: PipelineEventType,
-                        Category: "Interaction",
-                        Description: $"Pipeline script for interaction '{interactionTag}'",
-                        GraphJson: graphJson,
-                        IsActive: true));
-
-                    if (created != null)
-                    {
-                        _pipelineScript = created;
-                        await GlyphApi.CreateInteractionBindingAsync(
-                            new CreateInteractionGlyphBindingRequest(
-                                InteractionTag: interactionTag,
-                                GlyphDefinitionId: created.Id));
-                    }
-                }
-            }
-        }
-        else if (existingDef != null)
-        {
-            await GlyphApi.UpdateDefinitionAsync(existingDef.Id, new UpdateGlyphRequest(IsActive: false));
-            _pipelineScript = null;
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    //  Script — Node Palette & Properties
-    // ═══════════════════════════════════════════════════════════════════
-
-    private async Task AddScriptNode(GlyphNodeCatalogEntryDto node)
-    {
-        if (_scriptEditorModule == null || !_scriptEditorReady) return;
-        try
-        {
-            string nodeJson = JsonSerializer.Serialize(node);
-            await _scriptEditorModule.InvokeVoidAsync("addNode", nodeJson);
-        }
-        catch (Exception ex) { Logger.LogWarning(ex, "Failed to add script node"); }
-    }
-
-    [JSInvokable]
-    public Task OnShowContextNodes(string sourceTypeId) => Task.CompletedTask;
-
-    [JSInvokable]
-    public Task OnNodeSelectionChanged(string? json)
-    {
-        if (!_scriptEditorReady) return Task.CompletedTask;
-
-        if (string.IsNullOrEmpty(json) || json == "null")
-        {
-            _scriptSelectedNodeInfo = null;
-        }
-        else
-        {
-            try
-            {
-                _scriptSelectedNodeInfo = JsonSerializer.Deserialize<SelectedNodeInfo>(json, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-            }
-            catch { _scriptSelectedNodeInfo = null; }
-        }
-        InvokeAsync(StateHasChanged);
-        return Task.CompletedTask;
-    }
-
-    private async Task OnScriptPropertyChanged(SelectedPinInfo pin, string value)
-    {
-        if (_scriptEditorModule == null || _scriptSelectedNodeInfo == null) return;
-        try
-        {
-            await _scriptEditorModule.InvokeVoidAsync("setPropertyOverride", _scriptSelectedNodeInfo.NodeId, pin.Id, value);
-            pin.OverrideValue = string.IsNullOrEmpty(value) ? null : value;
-        }
-        catch (Exception ex) { Logger.LogWarning(ex, "Failed to set script property override"); }
-    }
-
-    private async Task OnNodePropertyChanged(SelectedPropertyInfo prop, string value)
-    {
-        if (_scriptEditorModule == null || _scriptSelectedNodeInfo == null) return;
-        try
-        {
-            await _scriptEditorModule.InvokeVoidAsync("setPropertyOverride", _scriptSelectedNodeInfo.NodeId, prop.Id, value);
-            prop.CurrentValue = value;
-        }
-        catch (Exception ex) { Logger.LogWarning(ex, "Failed to set script node property"); }
-    }
-
-    private async Task FitAll()
-    {
-        if (_scriptEditorModule == null) return;
-        try { await _scriptEditorModule.InvokeVoidAsync("fitAll"); }
-        catch (Exception ex) { Logger.LogWarning(ex, "fitAll failed"); }
-    }
-
-    private async Task ArrangeNodes()
-    {
-        if (_scriptEditorModule == null) return;
-        try { await _scriptEditorModule.InvokeVoidAsync("arrangeNodes"); }
-        catch (Exception ex) { Logger.LogWarning(ex, "arrangeNodes failed"); }
-    }
-
-    private async Task ClearCurrentScript()
-    {
-        _pipelineGraphJson = "{}";
-        _scriptSelectedNodeInfo = null;
-        await DestroyScriptEditor();
-        StateHasChanged();
-
-        await Task.Delay(50);
-        await InitScriptEditor();
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    //  Validity & Context Helpers
-    // ═══════════════════════════════════════════════════════════════════
 
     private void OnIndustrySelected(ChangeEventArgs e)
     {
@@ -1113,46 +610,6 @@
         }).ToList(),
     };
 
-    private static bool GraphHasNodes(string? graphJson)
-    {
-        if (string.IsNullOrEmpty(graphJson) || graphJson == "{}") return false;
-        try
-        {
-            using JsonDocument doc = JsonDocument.Parse(graphJson);
-            return doc.RootElement.TryGetProperty("Nodes", out JsonElement nodesEl)
-                && nodesEl.ValueKind == JsonValueKind.Array
-                && nodesEl.GetArrayLength() > 0;
-        }
-        catch { return false; }
-    }
-
-    private static string BuildEmptyPipelineGraphJson()
-    {
-        Guid n1 = Guid.NewGuid(), n2 = Guid.NewGuid(), n3 = Guid.NewGuid(), n4 = Guid.NewGuid();
-        var graph = new
-        {
-            Id = Guid.NewGuid(),
-            Name = "",
-            Description = "",
-            EventType = PipelineEventType,
-            Nodes = new object[]
-            {
-                new { InstanceId = n1, TypeId = "stage.interaction_attempted", PositionX = 50.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
-                new { InstanceId = n2, TypeId = "stage.interaction_started", PositionX = 500.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
-                new { InstanceId = n3, TypeId = "stage.interaction_tick", PositionX = 950.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() },
-                new { InstanceId = n4, TypeId = "stage.interaction_completed", PositionX = 1400.0, PositionY = 300.0, PropertyOverrides = new Dictionary<string, string>() }
-            },
-            Edges = new[]
-            {
-                new { SourceNodeId = n1, SourcePinId = "exec_out", TargetNodeId = n2, TargetPinId = "exec_in" },
-                new { SourceNodeId = n2, SourcePinId = "exec_out", TargetNodeId = n3, TargetPinId = "exec_in" },
-                new { SourceNodeId = n3, SourcePinId = "exec_out", TargetNodeId = n4, TargetPinId = "exec_in" },
-            },
-            Variables = Array.Empty<object>()
-        };
-        return JsonSerializer.Serialize(graph);
-    }
-
     private static string GetEffectValueHint(string effectType) => effectType switch
     {
         "FloatingText" => "Text to display...",
@@ -1164,82 +621,4 @@
         _ => "Value..."
     };
 
-    private static string GetNodeColor(string colorClass) => colorClass.ToLowerInvariant() switch
-    {
-        "event" => "#e74c3c",
-        "flow" => "#3498db",
-        "action" => "#2ecc71",
-        "getter" => "#9b59b6",
-        "math" => "#f39c12",
-        "logic" => "#1abc9c",
-        _ => "#7f8c8d"
-    };
-
-    private static string GetScriptPinValue(SelectedPinInfo pin) => pin.OverrideValue ?? pin.DefaultValue ?? "";
-    private static string ExtractStringValue(ChangeEventArgs e) => e.Value?.ToString() ?? string.Empty;
-
-    // ═══════════════════════════════════════════════════════════════════
-    //  Inner Types
-    // ═══════════════════════════════════════════════════════════════════
-
-    private class SelectedNodeInfo
-    {
-        public string NodeId { get; set; } = "";
-        public string TypeId { get; set; } = "";
-        public string DisplayName { get; set; } = "";
-        public List<SelectedPinInfo> InputPins { get; set; } = [];
-        public List<SelectedPropertyInfo> Properties { get; set; } = [];
-    }
-
-    private class SelectedPinInfo
-    {
-        public string Id { get; set; } = "";
-        public string Name { get; set; } = "";
-        public string DataType { get; set; } = "";
-        public string? DefaultValue { get; set; }
-        public string? OverrideValue { get; set; }
-        public bool IsConnected { get; set; }
-    }
-
-    private class SelectedPropertyInfo
-    {
-        public string Id { get; set; } = "";
-        public string DisplayName { get; set; } = "";
-        public string DefaultValue { get; set; } = "";
-        public List<string> AllowedValues { get; set; } = [];
-        public string CurrentValue { get; set; } = "";
-    }
-
-    private List<SelectedPinInfo> GetEditablePins()
-    {
-        return _scriptSelectedNodeInfo?.InputPins?.Where(p => !p.IsConnected).ToList() ?? [];
-    }
-
-    private List<SelectedPropertyInfo> GetNodeProperties()
-    {
-        return _scriptSelectedNodeInfo?.Properties ?? [];
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    //  Disposal
-    // ═══════════════════════════════════════════════════════════════════
-
-    public async ValueTask DisposeAsync()
-    {
-        await DestroyLayout();
-
-        if (_scriptEditorModule != null)
-        {
-            try { await _scriptEditorModule.DisposeAsync(); }
-            catch { /* ignore during teardown */ }
-        }
-
-        if (_splitterModule != null)
-        {
-            try { await _splitterModule.DisposeAsync(); }
-            catch { /* ignore during teardown */ }
-        }
-
-        _dotNetRef?.Dispose();
-    }
 }

@@ -6,7 +6,7 @@
  * (no Blazor re-render per mousemove); the width is persisted to
  * localStorage on pointer-up and restored on init.
  *
- * Also exports observeResize for canvas editors (Cytoscape, glyph canvas):
+ * Also exports observeResize for canvas editors (Cytoscape):
  * a debounced ResizeObserver that notifies .NET only when the size settles.
  *
  * readJson/writeJson back LayoutPresetService persistence.

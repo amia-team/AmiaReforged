@@ -41,7 +41,7 @@ public class GlyphInteractionHookService
     /// Cache of active pipeline bindings keyed by InteractionTag.
     /// Each entry contains pipeline graphs paired with their optional area scope.
     /// </summary>
-    private Dictionary<string, List<CachedBinding>> _cache = new(StringComparer.OrdinalIgnoreCase);
+    private volatile Dictionary<string, List<CachedBinding>> _cache = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// Per-character buffer of stage trace reports, populated after each Glyph stage execution.
@@ -77,9 +77,9 @@ public class GlyphInteractionHookService
 
         foreach (InteractionGlyphBinding binding in bindings)
         {
-            if (binding.GlyphDefinition is not { IsActive: true })
+            if (binding.GlyphDefinition is null)
             {
-                Log.Info("[Glyph] Skipping binding {Id}: GlyphDefinition is null or inactive. " +
+                Log.Info("[Glyph] Skipping binding {Id}: GlyphDefinition is null. " +
                           "Tag='{Tag}', DefId={DefId}",
                     binding.Id, binding.InteractionTag, binding.GlyphDefinitionId);
                 continue;
@@ -93,8 +93,7 @@ public class GlyphInteractionHookService
                 continue;
             }
 
-            GlyphGraph? graph = DeserializeGraph(binding.GlyphDefinition);
-            if (graph == null) continue;
+            _bootstrap.RestorePublished(binding.GlyphDefinition);
 
             if (!newCache.TryGetValue(binding.InteractionTag, out List<CachedBinding>? list))
             {
@@ -102,13 +101,8 @@ public class GlyphInteractionHookService
                 newCache[binding.InteractionTag] = list;
             }
 
-            list.Add(new CachedBinding(graph, binding.AreaResRef, binding.Priority));
+            list.Add(new CachedBinding(binding.GlyphDefinitionId, binding.AreaResRef, binding.Priority));
 
-            Log.Info("[Glyph] Cached pipeline binding: tag='{Tag}', graph='{Name}' " +
-                     "(nodes={Nodes}, edges={Edges}), area={Area}, priority={Priority}",
-                binding.InteractionTag, graph.Name,
-                graph.Nodes.Count, graph.Edges.Count,
-                binding.AreaResRef ?? "(global)", binding.Priority);
         }
 
         // Sort each list by priority
@@ -489,7 +483,8 @@ public class GlyphInteractionHookService
             if (binding.AreaResRef == null ||
                 string.Equals(binding.AreaResRef, areaResRef, StringComparison.OrdinalIgnoreCase))
             {
-                result.Add(binding.Graph);
+                var program = _bootstrap.Programs.GetActive(binding.DefinitionId);
+                if (program != null) result.Add(program.CreateExecutionGraph());
             }
         }
 
@@ -553,10 +548,6 @@ public class GlyphInteractionHookService
         }
     }
 
-    private GlyphGraph? DeserializeGraph(GlyphDefinition definition)
-    {
-        return GlyphGraphSerializer.Deserialize(definition);
-    }
 
     /// <summary>
     /// Dumps the execution trace log to NLog Debug output for diagnosing script execution.
@@ -655,7 +646,7 @@ public class GlyphInteractionHookService
         }
     }
 
-    private sealed record CachedBinding(GlyphGraph Graph, string? AreaResRef, int Priority);
+    private sealed record CachedBinding(Guid DefinitionId, string? AreaResRef, int Priority);
 }
 
 /// <summary>

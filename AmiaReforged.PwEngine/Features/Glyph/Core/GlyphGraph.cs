@@ -1,12 +1,20 @@
 namespace AmiaReforged.PwEngine.Features.Glyph.Core;
 
 /// <summary>
-/// A complete Glyph visual script graph. Contains all nodes, edges, and variables
-/// that define a scripted behavior attached to an encounter lifecycle event.
-/// Serialized to JSON for persistence.
+/// Mutable executable IR builder used by lowering and runtime tests. Production execution
+/// obtains an isolated copy from a validated runtime program; this is not an authoring format.
 /// </summary>
 public class GlyphGraph
 {
+    [System.Text.Json.Serialization.JsonIgnore]
+    public Guid DefinitionId { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore]
+    public Guid VersionId { get; set; }
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public IReadOnlyDictionary<Guid, Language.Diagnostics.SourceSpan> SourceMap { get; set; } =
+        new Dictionary<Guid, Language.Diagnostics.SourceSpan>();
+
     /// <summary>
     /// Unique identifier for this graph.
     /// </summary>
@@ -53,6 +61,8 @@ public class GlyphGraph
             GlyphEventType.BeforeGroupSpawn => "event.before_group_spawn",
             GlyphEventType.AfterGroupSpawn => "event.after_group_spawn",
             GlyphEventType.OnCreatureDeath => "event.on_creature_death",
+            GlyphEventType.OnCreatureSpawn => "event.on_creature_spawn",
+            GlyphEventType.OnBossSpawn => "event.on_boss_spawn",
             GlyphEventType.OnTraitGranted => "event.on_trait_granted",
             GlyphEventType.OnTraitRemoved => "event.on_trait_removed",
             GlyphEventType.InteractionPipeline => "stage.interaction_attempted",

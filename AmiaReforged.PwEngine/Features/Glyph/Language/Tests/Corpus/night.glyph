@@ -1,0 +1,5 @@
+glyph night_spawns : encounter.before_group_spawn {
+    let size = party.size
+    if time.hour >= 20 || time.hour < 6 { spawn.modify_count(size * 2) }
+    if chaos.danger > 50 { spawn.modify_count(spawn.count + 1) }
+}

@@ -1,0 +1,6 @@
+glyph industry_gate : interaction {
+    attempted {
+        if !industry.is_member(context.character_id, "mining") { fail "Join a mining industry first." }
+        if !has_knowledge(context.character_id, "mining.basic") { fail "Learn mining first." }
+    }
+}

@@ -1,0 +1,132 @@
+@using AmiaReforged.AdminPanel.Models
+@using AmiaReforged.AdminPanel.Services
+@inject GlyphApiService Api
+
+<div class="glyph-source-editor" style="padding:12px;overflow:auto">
+    <label for="@_editorId">Glyph source</label>
+    <textarea id="@_editorId" aria-label="Glyph source" class="form-control" rows="18" spellcheck="false"
+              style="font-family:monospace;tab-size:4" @bind="_source" @bind:event="oninput" disabled="@_busy"></textarea>
+    <div class="d-flex gap-2 my-2">
+        <button class="btn btn-secondary" disabled="@_busy" @onclick="Validate">Compile / validate</button>
+        <button class="btn btn-secondary" disabled="@_busy" @onclick="SaveDraft">Save draft</button>
+        <button class="btn btn-primary" disabled="@(_busy || !_valid || _validatedSource != _source)" @onclick="Activate">Activate</button>
+        <button class="btn btn-warning" disabled="@(_busy || _id == null || _versions.Count < 2)" @onclick="Rollback">Rollback</button>
+    </div>
+    @if (_notice != null) { <p role="status">@_notice</p> }
+    @if (_error != null) { <p role="alert" class="text-danger">@_error</p> }
+    @if (_diagnostics.Count > 0)
+    {
+        <ul aria-label="Compiler diagnostics">
+            @foreach (var diagnostic in _diagnostics)
+            {
+                <li><strong>@diagnostic.Code</strong> — line @diagnostic.Span.Line, column @diagnostic.Span.Column: @diagnostic.Message</li>
+            }
+        </ul>
+    }
+    @if (_versions.Count > 0)
+    {
+        <details><summary>Version history</summary>
+            <table class="table"><thead><tr><th>Activated</th><th>Version</th><th>Source hash</th><th>Status</th></tr></thead><tbody>
+                @foreach (var version in _versions.AsEnumerable().Reverse())
+                {
+                    <tr><td>@version.ActivatedAt.ToString("u")</td><td>@version.VersionId</td><td>@version.SourceHash[..Math.Min(12, version.SourceHash.Length)]</td><td>@(version.IsActive ? "Active" : "Retained")</td></tr>
+                }
+            </tbody></table>
+        </details>
+    }
+    @if (_id != null)
+    {
+        <details><summary>Runtime traces</summary>
+            <button class="btn btn-sm btn-secondary" @onclick="LoadTraces" disabled="@_busy">Refresh traces</button>
+            @foreach (var trace in _traces)
+            {
+                <p>@trace.RecordedAt.ToString("u") — @trace.Stage — version @trace.VersionId — @trace.Steps steps</p>
+                <pre>@string.Join("\n", trace.Entries)</pre>
+            }
+        </details>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid? DefinitionId { get; set; }
+    [Parameter] public string Name { get; set; } = "New Glyph";
+    [Parameter] public string InitialSource { get; set; } = "glyph new_program : interaction {\n    attempted { }\n    started { }\n    tick { }\n    completed { }\n}";
+    [Parameter] public EventCallback<GlyphDefinitionDto> Created { get; set; }
+    private readonly string _editorId = "glyph-source-" + Guid.NewGuid().ToString("N");
+    private Guid? _id, _loadedParameter;
+    private bool _initialized, _busy, _valid;
+    private string _source = "", _validatedSource = "";
+    private string? _notice, _error;
+    private List<GlyphDiagnosticDto> _diagnostics = [];
+    private List<GlyphVersionDto> _versions = [];
+    private List<GlyphTraceDto> _traces = [];
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_initialized && (_loadedParameter == DefinitionId || _id == DefinitionId))
+        { _loadedParameter = DefinitionId; return; }
+        _initialized = true; _loadedParameter = DefinitionId; _id = DefinitionId;
+        _valid = false; _diagnostics = []; _versions = []; _traces = [];
+        await Run(async () =>
+        {
+            if (_id is { } id)
+            {
+                var definition = await Api.GetDefinitionAsync(id);
+                _source = definition?.SourceText ?? InitialSource;
+                _versions = await Api.GetVersionsAsync(id);
+            }
+            else _source = InitialSource;
+        });
+    }
+    private async Task Run(Func<Task> action)
+    {
+        _busy = true; _error = null;
+        try { await action(); }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+    private Task Validate() => Run(async () =>
+    {
+        string source = _source;
+        var result = await Api.CompileAsync(source);
+        _diagnostics = result?.Diagnostics ?? [];
+        _valid = result?.Success == true; _validatedSource = source;
+        _notice = _valid ? "Compilation succeeded. Ready to activate." : "Compilation failed. Active behavior is unchanged.";
+    });
+    private async Task EnsureDraft()
+    {
+        if (_id == null)
+        {
+            var check = await Api.CompileAsync(_source);
+            _diagnostics = check?.Diagnostics ?? [];
+            if (check?.Success != true) throw new InvalidOperationException("Correct compilation errors before creating the first draft.");
+            var created = await Api.CreateDefinitionAsync(new(Name, "", SourceText: _source));
+            if (created == null || created.Id == Guid.Empty) throw new InvalidOperationException("Draft was not created.");
+            _id = created.Id;
+            await Created.InvokeAsync(created);
+        }
+    }
+    private Task SaveDraft() => Run(async () =>
+    {
+        await EnsureDraft();
+        await Api.UpdateDefinitionAsync(_id!.Value, new(SourceText: _source));
+        _notice = "Draft saved. Active behavior is unchanged.";
+    });
+    private Task Activate() => Run(async () =>
+    {
+        await EnsureDraft();
+        var result = await Api.ActivateAsync(_id!.Value, _source);
+        _diagnostics = result?.Diagnostics ?? [];
+        _notice = result?.Success == true ? "Activated. New events use this version." : "Activation failed. Previous behavior remains active.";
+        _versions = await Api.GetVersionsAsync(_id.Value);
+    });
+    private Task Rollback() => Run(async () =>
+    {
+        var result = await Api.RollbackAsync(_id!.Value);
+        if (result?.Success != true) throw new InvalidOperationException("Rollback did not succeed.");
+        var definition = await Api.GetDefinitionAsync(_id.Value);
+        _source = definition!.SourceText; _valid = false;
+        _versions = await Api.GetVersionsAsync(_id.Value);
+        _notice = "Previous executable restored.";
+    });
+    private Task LoadTraces() => Run(async () => _traces = await Api.GetTracesAsync(_id!.Value));
+}

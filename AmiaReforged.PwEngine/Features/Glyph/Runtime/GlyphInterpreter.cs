@@ -1,3 +1,4 @@
+using System.Globalization;
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using NLog;
 
@@ -11,6 +12,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime;
 public class GlyphInterpreter
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
+    public event Action<GlyphExecutionContext>? ExecutionCompleted;
 
     private readonly IGlyphNodeDefinitionRegistry _registry;
     private readonly Dictionary<string, IGlyphNodeExecutor> _executors;
@@ -61,6 +64,7 @@ public class GlyphInterpreter
         }
 
         Trace(context, $"Execution completed. Steps: {context.ExecutionStepCount}");
+        ExecutionCompleted?.Invoke(context);
         return true;
     }
 
@@ -108,6 +112,7 @@ public class GlyphInterpreter
         }
 
         Trace(context, $"Stage '{stageTypeId}' completed. Steps: {context.ExecutionStepCount}");
+        ExecutionCompleted?.Invoke(context);
         return true;
     }
 
@@ -384,6 +389,8 @@ public class GlyphInterpreter
         GlyphExecutionContext context)
     {
         context.ExecutionStepCount++;
+        if (context.Graph.SourceMap.TryGetValue(node.InstanceId, out var source))
+            Trace(context, $"{source.SourceId}:{source.Line}:{source.Column}");
         Trace(context, $"Step {context.ExecutionStepCount}: Executing node '{node.TypeId}' ({node.InstanceId})");
 
         // Record this node in the innermost loop frame so its cached outputs
@@ -520,7 +527,7 @@ public class GlyphInterpreter
         {
             GlyphDataType.Bool => bool.TryParse(value, out bool b) ? b : false,
             GlyphDataType.Int => int.TryParse(value, out int i) ? i : 0,
-            GlyphDataType.Float => double.TryParse(value, out double d) ? d : 0.0,
+            GlyphDataType.Float => double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double d) ? d : 0.0,
             GlyphDataType.String => value,
             _ => value
         };
@@ -537,7 +544,7 @@ public class GlyphInterpreter
             {
                 GlyphDataType.Bool => variable.DefaultValue != null && bool.TryParse(variable.DefaultValue, out bool b) ? b : false,
                 GlyphDataType.Int => variable.DefaultValue != null && int.TryParse(variable.DefaultValue, out int i) ? i : 0,
-                GlyphDataType.Float => variable.DefaultValue != null && double.TryParse(variable.DefaultValue, out double d) ? d : 0.0,
+                GlyphDataType.Float => variable.DefaultValue != null && double.TryParse(variable.DefaultValue, NumberStyles.Float, CultureInfo.InvariantCulture, out double d) ? d : 0.0,
                 GlyphDataType.String => variable.DefaultValue ?? string.Empty,
                 _ => null
             };

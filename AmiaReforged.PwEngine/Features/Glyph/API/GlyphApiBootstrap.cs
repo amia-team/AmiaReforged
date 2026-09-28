@@ -1,4 +1,3 @@
-using AmiaReforged.PwEngine.Features.Glyph.Core;
 using AmiaReforged.PwEngine.Features.Glyph.Integration;
 using AmiaReforged.PwEngine.Features.Glyph.Persistence;
 using AmiaReforged.PwEngine.Features.WorldEngine.API.Controllers;
@@ -19,13 +18,13 @@ public class GlyphApiBootstrap
 
     public GlyphApiBootstrap(
         IGlyphRepository repository,
-        IGlyphNodeDefinitionRegistry nodeRegistry,
+        GlyphBootstrap runtime,
         GlyphEncounterHookService encounterHooks,
         GlyphTraitHookService traitHooks,
         GlyphInteractionHookService interactionHooks)
     {
         GlyphController.Repository = repository;
-        GlyphController.NodeRegistry = nodeRegistry;
+        GlyphController.Runtime = runtime;
         GlyphController.EncounterHooks = encounterHooks;
         GlyphController.TraitHooks = traitHooks;
         GlyphController.InteractionHooks = interactionHooks;

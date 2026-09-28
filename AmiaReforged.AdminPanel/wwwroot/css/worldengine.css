@@ -620,10 +620,7 @@
     background: rgba(26, 24, 19, 0.8);
 }
 
-/* Glyph node palette hover effect (shared with InteractionEditor) */
-.glyph-node-entry:hover {
-    background: rgba(255, 255, 255, 0.05);
-}
+
 
 /* ═══════════════════════════════════════════════════════════════
    Codex Editor — Full panel takeover (mirrors Interaction Editor)

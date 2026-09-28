@@ -1,0 +1,3 @@
+glyph low_health_bonus : encounter.on_creature_spawn {
+    if creature.hp < 50 { heal(creature, 10) }
+}

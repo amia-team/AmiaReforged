@@ -3,12 +3,11 @@ using AmiaReforged.AdminPanel.Models;
 namespace AmiaReforged.AdminPanel.Services;
 
 /// <summary>
-/// HTTP client wrapper for the WorldEngine Glyph visual scripting API.
+/// HTTP client wrapper for the WorldEngine Glyph source scripting API.
 /// </summary>
 public class GlyphApiService : ApiServiceBase
 {
     private const string DefinitionsBase = "/api/worldengine/glyphs";
-    private const string NodeCatalogPath = "/api/worldengine/glyph-catalog";
     private const string BindingsBase = "/api/worldengine/glyphs/bindings";
     private const string TraitBindingsBase = "/api/worldengine/glyphs/trait-bindings";
     private const string InteractionBindingsBase = "/api/worldengine/glyphs/interaction-bindings";
@@ -45,12 +44,16 @@ public class GlyphApiService : ApiServiceBase
         await DeleteRequestAsync($"{DefinitionsBase}/{id}");
     }
 
-    // ==================== Node Catalog ====================
-
-    public async Task<List<GlyphNodeCatalogEntryDto>> GetNodeCatalogAsync()
-    {
-        return await GetAsync<List<GlyphNodeCatalogEntryDto>>(NodeCatalogPath) ?? [];
-    }
+    public async Task<GlyphCompilationDto?> CompileAsync(string source) =>
+        await PostAsync<GlyphCompilationDto>($"{DefinitionsBase}/compile", new CompileGlyphRequest(source));
+    public async Task<GlyphCompilationDto?> ActivateAsync(Guid id, string source) =>
+        await PostAsync<GlyphCompilationDto>($"{DefinitionsBase}/{id}/activate", new CompileGlyphRequest(source));
+    public async Task<GlyphCompilationDto?> RollbackAsync(Guid id) =>
+        await PostAsync<GlyphCompilationDto>($"{DefinitionsBase}/{id}/rollback", new { });
+    public async Task<List<GlyphVersionDto>> GetVersionsAsync(Guid id) =>
+        await GetAsync<List<GlyphVersionDto>>($"{DefinitionsBase}/{id}/versions") ?? [];
+    public async Task<List<GlyphTraceDto>> GetTracesAsync(Guid id) =>
+        await GetAsync<List<GlyphTraceDto>>($"{DefinitionsBase}/{id}/traces") ?? [];
 
     // ==================== Bindings ====================
 

@@ -1,0 +1,3 @@
+glyph trait_gift : trait.on_granted {
+    if has_trait("hearty") { heal(creature, 5) }
+}

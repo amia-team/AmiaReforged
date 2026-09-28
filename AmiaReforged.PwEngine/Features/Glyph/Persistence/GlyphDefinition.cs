@@ -2,11 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Persistence;
 
-/// <summary>
-/// Persisted Glyph script definition. The <see cref="GraphJson"/> column stores the
-/// complete serialized <see cref="Core.GlyphGraph"/> (nodes, edges, variables, positions)
-/// as a JSON string. Graphs are always loaded and saved as a unit.
-/// </summary>
+/// <summary>Canonical source draft and persisted activation history. Executable IR is derived.</summary>
 public class GlyphDefinition
 {
     [Key]
@@ -41,11 +37,13 @@ public class GlyphDefinition
     [MaxLength(32)]
     public string Category { get; set; } = "Encounter";
 
-    /// <summary>
-    /// The complete serialized graph (nodes, edges, variables, canvas positions).
-    /// </summary>
     [Required]
-    public string GraphJson { get; set; } = "{}";
+    public string SourceText { get; set; } = string.Empty;
+
+    public int LanguageVersion { get; set; } = Language.Compilation.GlyphLanguageVersion.Current;
+
+    /// <summary>Server-owned version records; never accepted from authoring APIs.</summary>
+    public string PublishedVersionsJson { get; set; } = "[]";
 
     /// <summary>
     /// Whether this script definition is active and available for binding.

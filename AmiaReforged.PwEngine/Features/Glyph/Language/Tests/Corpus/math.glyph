@@ -1,0 +1,5 @@
+glyph arithmetic : encounter.before_group_spawn {
+    let count = (party.size + 2) * 3 % 7
+    if count != 0 && !(count < 0) { spawn.modify_count(count) }
+    else { spawn.cancel() }
+}

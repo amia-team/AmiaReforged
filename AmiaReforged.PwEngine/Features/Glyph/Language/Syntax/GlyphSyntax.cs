@@ -1,0 +1,24 @@
+using AmiaReforged.PwEngine.Features.Glyph.Language.Diagnostics;
+namespace AmiaReforged.PwEngine.Features.Glyph.Language.Syntax;
+
+public sealed record GlyphToken(string Kind, string Text, SourceSpan Span, object? Value = null);
+public abstract record GlyphSyntax(SourceSpan Span);
+public sealed record GlyphCompilationUnitSyntax(string Name, string Event, BlockStatementSyntax Body, SourceSpan Span) : GlyphSyntax(Span);
+public abstract record StatementSyntax(SourceSpan Span) : GlyphSyntax(Span);
+public sealed record BlockStatementSyntax(IReadOnlyList<StatementSyntax> Statements, SourceSpan Span) : StatementSyntax(Span);
+public sealed record StageDeclarationSyntax(string Name, BlockStatementSyntax Body, SourceSpan Span) : StatementSyntax(Span);
+public sealed record LetStatementSyntax(string Name, ExpressionSyntax Value, SourceSpan Span) : StatementSyntax(Span);
+public sealed record AssignmentStatementSyntax(ExpressionSyntax Target, string Operator, ExpressionSyntax Value, SourceSpan Span) : StatementSyntax(Span);
+public sealed record ExpressionStatementSyntax(ExpressionSyntax Expression, SourceSpan Span) : StatementSyntax(Span);
+public sealed record IfStatementSyntax(ExpressionSyntax Condition, BlockStatementSyntax Then, StatementSyntax? Else, SourceSpan Span) : StatementSyntax(Span);
+public sealed record ForeachStatementSyntax(string Name, ExpressionSyntax List, BlockStatementSyntax Body, SourceSpan Span) : StatementSyntax(Span);
+public sealed record BreakStatementSyntax(SourceSpan Span) : StatementSyntax(Span);
+public abstract record ExpressionSyntax(SourceSpan Span) : GlyphSyntax(Span);
+public sealed record LiteralExpressionSyntax(object Value, SourceSpan Span) : ExpressionSyntax(Span);
+public sealed record NameExpressionSyntax(string Name, SourceSpan Span) : ExpressionSyntax(Span);
+public sealed record MemberAccessExpressionSyntax(ExpressionSyntax Receiver, string Name, SourceSpan Span) : ExpressionSyntax(Span);
+public sealed record InvocationExpressionSyntax(ExpressionSyntax Function, IReadOnlyList<ArgumentSyntax> Arguments, SourceSpan Span) : ExpressionSyntax(Span);
+public sealed record ArgumentSyntax(string? Name, ExpressionSyntax Value, SourceSpan Span) : GlyphSyntax(Span);
+public sealed record UnaryExpressionSyntax(string Operator, ExpressionSyntax Operand, SourceSpan Span) : ExpressionSyntax(Span);
+public sealed record BinaryExpressionSyntax(ExpressionSyntax Left, string Operator, ExpressionSyntax Right, SourceSpan Span) : ExpressionSyntax(Span);
+public sealed record IndexExpressionSyntax(ExpressionSyntax Receiver, ExpressionSyntax Index, SourceSpan Span) : ExpressionSyntax(Span);

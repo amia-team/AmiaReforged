@@ -2914,10 +2914,13 @@ namespace AmiaReforged.PwEngine.Migrations
                         .HasColumnType("character varying(64)")
                         .HasColumnName("event_type");
 
-                    b.Property<string>("GraphJson")
+                    b.Property<string>("SourceText")
                         .IsRequired()
                         .HasColumnType("text")
-                        .HasColumnName("graph_json");
+                        .HasColumnName("source_text");
+
+                    b.Property<int>("LanguageVersion").ValueGeneratedOnAdd().HasColumnType("integer").HasDefaultValue(1).HasColumnName("language_version");
+                    b.Property<string>("PublishedVersionsJson").IsRequired().ValueGeneratedOnAdd().HasColumnType("text").HasDefaultValue("[]").HasColumnName("published_versions_json");
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()

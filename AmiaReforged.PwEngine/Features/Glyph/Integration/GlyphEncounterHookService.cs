@@ -22,10 +22,10 @@ public class GlyphEncounterHookService
     private readonly IGlyphRepository _repository;
 
     /// <summary>
-    /// Cache of active bindings keyed by (ProfileId, EventType).
-    /// Each entry is a list of graphs sorted by priority (ascending).
+    /// Cache of binding identities keyed by (ProfileId, EventType).
+    /// Each entry is a list of definition IDs sorted by priority (ascending).
     /// </summary>
-    private Dictionary<(Guid ProfileId, GlyphEventType EventType), List<GlyphGraph>> _bindingCache = new();
+    private volatile Dictionary<(Guid ProfileId, GlyphEventType EventType), List<Guid>> _bindingCache = new();
 
     public GlyphEncounterHookService(GlyphBootstrap bootstrap, IGlyphRepository repository)
     {
@@ -42,11 +42,11 @@ public class GlyphEncounterHookService
     public async Task RefreshCacheAsync()
     {
         List<SpawnProfileGlyphBinding> bindings = await _repository.GetAllBindingsAsync();
-        Dictionary<(Guid, GlyphEventType), List<GlyphGraph>> newCache = new();
+        Dictionary<(Guid, GlyphEventType), List<Guid>> newCache = new();
 
-        foreach (SpawnProfileGlyphBinding binding in bindings)
+        foreach (SpawnProfileGlyphBinding binding in bindings.OrderBy(b => b.Priority))
         {
-            if (binding.GlyphDefinition is not { IsActive: true }) continue;
+            if (binding.GlyphDefinition is null) continue;
 
             if (!Enum.TryParse<GlyphEventType>(binding.GlyphDefinition.EventType, out GlyphEventType eventType))
             {
@@ -55,17 +55,16 @@ public class GlyphEncounterHookService
                 continue;
             }
 
-            GlyphGraph? graph = DeserializeGraph(binding.GlyphDefinition);
-            if (graph == null) continue;
+            _bootstrap.RestorePublished(binding.GlyphDefinition);
 
             (Guid SpawnProfileId, GlyphEventType eventType) key = (binding.SpawnProfileId, eventType);
-            if (!newCache.TryGetValue(key, out List<GlyphGraph>? list))
+            if (!newCache.TryGetValue(key, out List<Guid>? list))
             {
                 list = [];
                 newCache[key] = list;
             }
 
-            list.Add(graph);
+            list.Add(binding.GlyphDefinitionId);
         }
 
         _bindingCache = newCache;
@@ -84,10 +83,13 @@ public class GlyphEncounterHookService
         ref int spawnCount)
     {
         (Guid Id, GlyphEventType BeforeGroupSpawn) key = (profile.Id, GlyphEventType.BeforeGroupSpawn);
-        if (!_bindingCache.TryGetValue(key, out List<GlyphGraph>? graphs)) return true;
+        if (!_bindingCache.TryGetValue(key, out List<Guid>? graphs)) return true;
 
-        foreach (GlyphGraph graph in graphs)
+        foreach (Guid definitionId in graphs)
         {
+            var program = _bootstrap.Programs.GetActive(definitionId);
+            if (program == null) continue;
+            GlyphGraph graph = program.CreateExecutionGraph();
             GlyphExecutionContext ctx = CreateContext(graph, profile, encounterContext, group);
             ctx.SpawnCount = spawnCount;
 
@@ -125,10 +127,13 @@ public class GlyphEncounterHookService
         List<uint> spawnedCreatures)
     {
         (Guid Id, GlyphEventType AfterGroupSpawn) key = (profile.Id, GlyphEventType.AfterGroupSpawn);
-        if (!_bindingCache.TryGetValue(key, out List<GlyphGraph>? graphs)) return;
+        if (!_bindingCache.TryGetValue(key, out List<Guid>? graphs)) return;
 
-        foreach (GlyphGraph graph in graphs)
+        foreach (Guid definitionId in graphs)
         {
+            var program = _bootstrap.Programs.GetActive(definitionId);
+            if (program == null) continue;
+            GlyphGraph graph = program.CreateExecutionGraph();
             GlyphExecutionContext ctx = CreateContext(graph, profile, encounterContext, group);
             ctx.SpawnedCreatures = spawnedCreatures.ToList();
 
@@ -153,10 +158,13 @@ public class GlyphEncounterHookService
         EncounterContext encounterContext)
     {
         (Guid Id, GlyphEventType OnCreatureDeath) key = (profile.Id, GlyphEventType.OnCreatureDeath);
-        if (!_bindingCache.TryGetValue(key, out List<GlyphGraph>? graphs)) return;
+        if (!_bindingCache.TryGetValue(key, out List<Guid>? graphs)) return;
 
-        foreach (GlyphGraph graph in graphs)
+        foreach (Guid definitionId in graphs)
         {
+            var program = _bootstrap.Programs.GetActive(definitionId);
+            if (program == null) continue;
+            GlyphGraph graph = program.CreateExecutionGraph();
             GlyphExecutionContext ctx = CreateContext(graph, profile, encounterContext);
             ctx.DeadCreature = deadCreature;
             ctx.Killer = killer;
@@ -192,10 +200,13 @@ public class GlyphEncounterHookService
         skipMutations = false;
 
         (Guid Id, GlyphEventType OnCreatureSpawn) key = (profile.Id, GlyphEventType.OnCreatureSpawn);
-        if (!_bindingCache.TryGetValue(key, out List<GlyphGraph>? graphs)) return;
+        if (!_bindingCache.TryGetValue(key, out List<Guid>? graphs)) return;
 
-        foreach (GlyphGraph graph in graphs)
+        foreach (Guid definitionId in graphs)
         {
+            var program = _bootstrap.Programs.GetActive(definitionId);
+            if (program == null) continue;
+            GlyphGraph graph = program.CreateExecutionGraph();
             GlyphExecutionContext ctx = CreateContext(graph, profile, encounterContext, group);
             ctx.SpawnedCreature = creature;
             ctx.CreatureResRef = creatureResRef;
@@ -232,10 +243,13 @@ public class GlyphEncounterHookService
         skipBonuses = false;
 
         (Guid Id, GlyphEventType OnBossSpawn) key = (profile.Id, GlyphEventType.OnBossSpawn);
-        if (!_bindingCache.TryGetValue(key, out List<GlyphGraph>? graphs)) return;
+        if (!_bindingCache.TryGetValue(key, out List<Guid>? graphs)) return;
 
-        foreach (GlyphGraph graph in graphs)
+        foreach (Guid definitionId in graphs)
         {
+            var program = _bootstrap.Programs.GetActive(definitionId);
+            if (program == null) continue;
+            GlyphGraph graph = program.CreateExecutionGraph();
             GlyphExecutionContext ctx = CreateContext(graph, profile, encounterContext);
             ctx.SpawnedCreature = boss;
             ctx.CreatureResRef = creatureResRef;
@@ -278,12 +292,7 @@ public class GlyphEncounterHookService
             TriggeringPlayer = encounterContext.TriggeringPlayer,
             CancellationToken = CancellationToken.None,
             MaxExecutionSteps = 10_000,
-            EnableTracing = false
+            EnableTracing = true
         };
-    }
-
-    private GlyphGraph? DeserializeGraph(GlyphDefinition definition)
-    {
-        return GlyphGraphSerializer.Deserialize(definition);
     }
 }

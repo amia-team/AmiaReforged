@@ -1,0 +1,14 @@
+glyph prospect : interaction {
+    attempted {
+        if !player.has_knowledge("mining.basic") { fail "You do not know how to prospect." }
+        if !player.has_item("mining_pick") { fail "You need a mining pick." }
+    }
+    started { required_rounds = 4 }
+    tick {
+        if skill_check(player, "search", dc: 15) { progress += 1 }
+    }
+    completed {
+        message(player, "You locate a mineral deposit.")
+        metadata["quality"] = "promising"
+    }
+}

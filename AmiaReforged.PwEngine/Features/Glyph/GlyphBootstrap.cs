@@ -16,7 +16,7 @@ using NLog;
 namespace AmiaReforged.PwEngine.Features.Glyph;
 
 /// <summary>
-/// Bootstraps the Glyph visual scripting system at module load.
+/// Bootstraps the Glyph source scripting system at module load.
 /// Registers all built-in node definitions and executors, then creates the
 /// <see cref="GlyphInterpreter"/> singleton used by the encounter hook service.
 /// </summary>
@@ -30,10 +30,13 @@ public class GlyphBootstrap
     /// used by the encounter hook service to execute graphs.
     /// </summary>
     public GlyphInterpreter Interpreter { get; }
+    public Runtime.Programs.GlyphTraceStore Traces { get; } = new();
+    public Language.Compilation.GlyphCompiler Compiler { get; }
+    public Runtime.Programs.GlyphRuntimeRegistry Programs { get; } = new();
 
     public GlyphBootstrap(IGlyphNodeDefinitionRegistry registry)
     {
-        Log.Info("Bootstrapping Glyph visual scripting system...");
+        Log.Info("Bootstrapping Glyph source scripting system...");
 
         // Create all built-in node executors — single authoritative list
         List<IGlyphNodeExecutor> executors = CreateExecutors();
@@ -50,13 +53,22 @@ public class GlyphBootstrap
 
         // Create the interpreter
         Interpreter = new GlyphInterpreter(registry, executors);
+        Interpreter.ExecutionCompleted += Traces.Record;
+        Compiler = new Language.Compilation.GlyphCompiler(registry);
 
         Log.Info("Glyph bootstrap complete. {DefCount} definitions registered, {ExecCount} executors loaded " +
                  "(including {CtxCount} context getters).",
             registry.GetAll().Count, executors.Count, contextGetters.Count);
     }
 
-    private static List<IGlyphNodeExecutor> CreateExecutors() =>
+    public void RestorePublished(Persistence.GlyphDefinition definition)
+    {
+        if (Programs.GetVersions(definition.Id).Count > 0) return;
+        try { Persistence.GlyphPublishedVersion.Restore(definition, Compiler, Programs); }
+        catch (Exception ex) { Log.Error(ex, "Unable to restore Glyph definition {Id}; active executable retained.", definition.Id); }
+    }
+
+    internal static List<IGlyphNodeExecutor> CreateExecutors() =>
     [
         // Events
         new BeforeGroupSpawnEventExecutor(),

@@ -31,10 +31,14 @@ public class GlyphDefinitionConfiguration : IEntityTypeConfiguration<GlyphDefini
             .HasDefaultValue("Encounter")
             .IsRequired();
 
-        builder.Property(g => g.GraphJson)
-            .HasColumnName("graph_json")
+        builder.Property(g => g.SourceText)
+            .HasColumnName("source_text")
             .HasColumnType("text")
             .IsRequired();
+
+        builder.Property(g => g.LanguageVersion).HasColumnName("language_version").HasDefaultValue(1);
+        builder.Property(g => g.PublishedVersionsJson).HasColumnName("published_versions_json")
+            .HasColumnType("text").HasDefaultValue("[]").IsRequired();
 
         builder.Property(g => g.IsActive)
             .HasColumnName("is_active")

@@ -76,4 +76,7 @@
     </ItemGroup>
 
 
+    <ItemGroup>
+        <Content Include="Features/Glyph/Language/Tests/Corpus/*.glyph" Link="GlyphCorpus/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
 </Project>
