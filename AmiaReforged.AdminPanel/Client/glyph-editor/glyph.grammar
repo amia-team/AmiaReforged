@@ -1,0 +1,71 @@
+@top Program { kw<"glyph"> ProgramName ":" EventName Block }
+
+@precedence {
+  member @left, call @left, unary @right,
+  multiply @left, add @left, compare @left, equal @left,
+  and @left, or @left, statement
+}
+
+@skip { whitespace | LineComment }
+
+ProgramName { Identifier }
+EventName { Identifier ("." Identifier)* }
+Block { "{" (statement | ";")* "}" }
+statement {
+  Block | StageDeclaration | LetStatement | IfStatement | ForeachStatement |
+  BreakStatement | FailStatement | AssignmentStatement | ExpressionStatement
+}
+StageDeclaration { StageName Block }
+StageName { kw<"attempted"> | kw<"started"> | kw<"tick"> | kw<"completed"> }
+LetStatement { kw<"let"> BindingName "=" expression }
+BindingName { Identifier }
+IfStatement { kw<"if"> expression Block (kw<"else"> (IfStatement | Block))? }
+ForeachStatement { kw<"foreach"> BindingName kw<"in"> expression Block }
+BreakStatement { kw<"break"> }
+FailStatement[@dynamicPrecedence=1] { @extend[@name=FailKeyword]<Identifier, "fail"> expression !statement }
+AssignmentStatement { expression AssignmentOperator expression !statement }
+ExpressionStatement { expression !statement }
+
+expression {
+  VariableName | Number | String | UnterminatedString | Boolean | ParenthesizedExpression |
+  UnaryExpression | BinaryExpression | MemberExpression | IndexExpression | CallExpression
+}
+VariableName { Identifier }
+Boolean { kw<"true"> | kw<"false"> }
+ParenthesizedExpression { "(" expression ")" }
+UnaryExpression { ("!" | "+" | "-") expression !unary }
+BinaryExpression {
+  expression !multiply MultiplyOperator expression |
+  expression !add ("+" | "-") expression |
+  expression !compare CompareOperator expression |
+  expression !equal EqualityOperator expression |
+  expression !and "&&" expression |
+  expression !or "||" expression
+}
+MemberExpression { expression !member "." PropertyName }
+PropertyName { Identifier }
+IndexExpression { expression !member "[" expression "]" }
+CallExpression[@dynamicPrecedence=2] { expression !call ArgumentList }
+ArgumentList { "(" (Argument ("," Argument)* ","?)? ")" }
+Argument { (ArgumentName ":")? expression }
+ArgumentName { Identifier }
+AssignmentOperator { "=" | "+=" | "-=" }
+kw<term> { @specialize[@name={term}]<Identifier, term> }
+
+@external tokens identifiers from "./glyph-tokens.js" { Identifier }
+
+@tokens {
+  "(" ")" "{" "}" "[" "]" "." "," ":" ";"
+  "+" "-" "!" "&&" "||" "=" "+=" "-="
+  whitespace { $[\u0009-\u000d\u0020\u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+ }
+  LineComment { "//" ![\n]* }
+  Number { @digit+ ("." @digit+)? }
+  UnterminatedString { '"' ("\\" _ | !["\\\n\r])* "\\"? }
+  @precedence { String, UnterminatedString }
+  String { '"' ("\\" _ | !["\\\n\r])* '"' }
+  MultiplyOperator { "*" | "/" | "%" }
+  CompareOperator { "<" | "<=" | ">" | ">=" }
+  EqualityOperator { "==" | "!=" }
+  @precedence { LineComment, MultiplyOperator }
+}
+@detectDelim

@@ -1,6 +1,6 @@
 # 19 — Glyph editor syntax highlighting and autocomplete
 
-Status: step 19.1 implemented; steps 19.2–19.5 remain planned.
+Status: steps 19.1–19.2 implemented; steps 19.3–19.5 remain planned.
 
 ## Approach
 
@@ -34,11 +34,11 @@ defines aliases and context access that autocomplete must reflect.
 
 ### 19.2 — Implement Glyph syntax highlighting
 
-- [ ] Build a small Lezer grammar matching the existing Glyph lexer and parser:
+- [x] Build a small Lezer grammar matching the existing Glyph lexer and parser:
   declarations, stages, control flow, comments, strings, numbers, operators,
   calls, and named arguments.
-- [ ] Use the syntax tree to support completion inside partially written code.
-- [ ] Verify grammar behavior against the existing `.glyph` corpus and add
+- [x] Use the syntax tree to support completion inside partially written code.
+- [x] Verify grammar behavior against the existing `.glyph` corpus and add
   incomplete-source cases to prevent browser grammar drift from the compiler.
 
 ### 19.3 — Expose compiler-owned completion metadata
@@ -123,3 +123,18 @@ coverage as autocomplete and diagnostics are added.
   current-text saving, and activation gating, plus a Chromium smoke test covering
   typing, undo/redo, Tab navigation, read-only snapshots, and DOM cleanup.
 - Glyph highlighting and autocomplete are not part of step 19.1.
+
+## Step 19.2 implementation notes
+
+- Added a Lezer grammar and CodeMirror language module with colors for declarations,
+  stage/control keywords, events, calls, named arguments, strings, comments,
+  numeric/boolean literals, operators, and punctuation.
+- The build regenerates the parser and bundles it locally. The editor import uses
+  cache version 2. No runtime CDN or server parsing round trip is required.
+- Incomplete member accesses, calls, named arguments, blocks, and strings retain
+  useful syntax nodes for future completion providers. Unterminated strings recover
+  at an unescaped newline; compiler validation remains authoritative.
+- Validation: all eight existing compiler corpus scripts parse without recovery;
+  language tests cover precedence, keyword parity, Unicode identifiers, shorthand,
+  highlighting, and incremental edits. Chromium tests check rendered colors and
+  continued editing of incomplete strings, alongside the existing editor smoke test.

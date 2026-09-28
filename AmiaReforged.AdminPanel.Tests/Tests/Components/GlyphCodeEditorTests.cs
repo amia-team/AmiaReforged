@@ -14,7 +14,7 @@ public class GlyphCodeEditorTests
     public async Task Capture_rejects_delayed_callbacks_and_disposal_destroys_editor()
     {
         using var context = new Bunit.TestContext();
-        var module = context.JSInterop.SetupModule("./js/glyph-editor.js?v=1");
+        var module = context.JSInterop.SetupModule("./js/glyph-editor.js?v=2");
         module.Mode = JSRuntimeMode.Loose;
         module.Setup<GlyphCodeEditor.EditorSnapshot>("capture", _ => true)
             .SetResult(new("latest browser text", 3));
@@ -38,7 +38,7 @@ public class GlyphCodeEditorTests
     public async Task Failed_creation_cleans_up_module_and_allows_disposal()
     {
         using var context = new Bunit.TestContext();
-        var module = context.JSInterop.SetupModule("./js/glyph-editor.js?v=1");
+        var module = context.JSInterop.SetupModule("./js/glyph-editor.js?v=2");
         module.Mode = JSRuntimeMode.Loose;
         module.SetupVoid("create", _ => true).SetException(new JSException("initialization failed"));
         var cut = context.RenderComponent<GlyphCodeEditor>(p => p.Add(c => c.InitialSource, "preserved"));

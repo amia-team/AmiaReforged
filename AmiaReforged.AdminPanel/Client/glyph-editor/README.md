@@ -20,8 +20,17 @@ Browser revisions reject delayed callbacks. `capture` freezes input and returns
 current text before Save, Validate, or Activate; the parent then restores the
 read-only state through its busy flag. Tab retains normal focus navigation.
 
-This is step 19.1 only. Glyph highlighting, language metadata, autocomplete, and
-inline compiler diagnostics are later steps in the plan.
+Steps 19.1 and 19.2 are implemented. `glyph.grammar` mirrors the server lexer and
+parser; the build regenerates `glyph-parser.js` and `glyph-parser.terms.js` before
+bundling. Commit those generated files with grammar changes. `glyph-language.js`
+exposes the CodeMirror language and its syntax tree for later autocomplete work.
+`UnterminatedString` intentionally preserves highlighting while typing; it does
+not imply valid source. The server compiler remains authoritative for validation.
+
+Language metadata, autocomplete, and inline compiler diagnostics are later steps.
+Run `npm run test:language` for corpus, highlighting, and incomplete-source tests.
+These read the compiler's existing corpus directly and check keyword parity with
+`GlyphLexer.cs`. Update the grammar and tests when changing server syntax.
 
 Run the browser smoke test with `npm test`. It uses installed Chromium at
 `/usr/bin/chromium`; set `CHROMIUM_PATH` to use another Chromium executable.

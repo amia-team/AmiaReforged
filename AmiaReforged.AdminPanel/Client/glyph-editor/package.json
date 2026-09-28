@@ -1,10 +1,14 @@
 {
   "dependencies": {
     "@codemirror/commands": "6.11.1",
+    "@codemirror/language": "6.12.4",
     "@codemirror/state": "6.7.6",
-    "@codemirror/view": "6.43.13"
+    "@codemirror/view": "6.43.13",
+    "@lezer/highlight": "1.2.5",
+    "@lezer/lr": "1.4.10"
   },
   "devDependencies": {
+    "@lezer/generator": "1.8.1",
     "esbuild": "0.28.2",
     "playwright-core": "1.63.0"
   },
@@ -13,6 +17,7 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "test": "node --test editor.test.mjs"
+    "test": "node --test *.test.mjs",
+    "test:language": "node --test glyph-language.test.mjs"
   }
 }

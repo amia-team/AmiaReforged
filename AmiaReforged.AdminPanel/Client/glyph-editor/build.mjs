@@ -1,5 +1,10 @@
 import { build } from 'esbuild';
+import { buildParserFile } from '@lezer/generator';
 import { readFile, writeFile } from 'node:fs/promises';
+
+const generated = buildParserFile(await readFile('glyph.grammar', 'utf8'), { fileName: 'glyph.grammar' });
+await writeFile('glyph-parser.js', generated.parser);
+await writeFile('glyph-parser.terms.js', generated.terms);
 
 const result = await build({
     entryPoints: ['editor.js'], bundle: true, format: 'esm', target: 'es2022',

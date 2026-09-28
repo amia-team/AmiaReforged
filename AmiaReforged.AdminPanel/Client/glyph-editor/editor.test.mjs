@@ -30,6 +30,8 @@ test('editor supports editing, history, snapshots, read-only state and DOM clean
         await page.goto(`http://127.0.0.1:${server.address().port}`);
         const content = page.getByRole('textbox', { name: 'Glyph source' });
         await content.waitFor();
+        assert.equal(await page.locator('.glyph-keyword').first().innerText(), 'glyph');
+        assert.equal(await page.locator('.glyph-keyword').first().evaluate(el => getComputedStyle(el).color), 'rgb(221, 192, 106)');
         assert.equal(await page.locator('.cm-lineNumbers').count(), 1);
         await content.click();
         await page.keyboard.press('Control+End');
@@ -56,6 +58,22 @@ test('editor supports editing, history, snapshots, read-only state and DOM clean
         }, 'replacement', false));
         assert.equal(await page.locator('.cm-editor').count(), 1);
         assert.equal(await content.innerText(), 'replacement');
+        const highlighted = 'glyph colors : interaction {\n tick { // comment\n if true { message(player, "hello", dc: 15) progress += 1 }\n }\n}';
+        await page.evaluate(source => editor.create(document.querySelector('#host'), {
+            invokeMethodAsync: async () => {}
+        }, source, false), highlighted);
+        for (const [selector, text] of [
+            ['.glyph-function', 'message'], ['.glyph-string', '"hello"'],
+            ['.glyph-property', 'dc'], ['.glyph-comment', '// comment']
+        ]) assert.equal(await page.locator(selector).first().innerText(), text);
+        await content.click();
+        await page.keyboard.press('Control+End');
+        await page.keyboard.press('Backspace');
+        await page.keyboard.type('message(player, "unfinished');
+        assert.equal(await page.locator('.glyph-string').last().innerText(), '"unfinished');
+        await page.keyboard.type('") }');
+        assert.equal(await page.locator('.glyph-string').last().innerText(), '"unfinished"');
+        if (process.env.GLYPH_SCREENSHOT) await page.screenshot({ path: process.env.GLYPH_SCREENSHOT });
         await page.evaluate(() => {
             window.detachedHost = document.querySelector('#host');
             detachedHost.remove();
