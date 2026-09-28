@@ -91,6 +91,13 @@ public static class WorldEngineEditorServiceCollectionExtensions
             entityType: WorldEngineEntityType.Items,
             requiresEndpoint: true);
 
+        services.AddWorldEngineEditorExtension<ItemListControls>(
+            "item-list-controls",
+            WorldEngineEditorExtensionSlot.SidebarBeforeList,
+            order: 50,
+            entityType: WorldEngineEntityType.Items,
+            requiresEndpoint: true);
+
         services.AddWorldEngineEditorExtension<ResourceNodesListControls>(
             "resource-nodes-list-controls",
             WorldEngineEditorExtensionSlot.SidebarBeforeList,
