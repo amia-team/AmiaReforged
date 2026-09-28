@@ -1,0 +1,111 @@
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div class="mb-1">Glyph source</div>
+<div @ref="_host"></div>
+@if (!_ready)
+{
+    <textarea aria-label="Glyph source" class="form-control" rows="18" spellcheck="false"
+              style="font-family:monospace;tab-size:4" value="@_source" @oninput="FallbackChanged"
+              disabled="@(ReadOnly || !_attempted)"></textarea>
+}
+@if (_failed)
+{
+    <p role="status">The code editor could not load. You can continue editing in the text field.</p>
+}
+
+@code {
+    // Re-key this component when loading another document or replacing its source.
+    [Parameter] public string InitialSource { get; set; } = "";
+    [Parameter] public EventCallback<string> SourceChanged { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    private ElementReference _host;
+    private IJSObjectReference? _module;
+    private DotNetObjectReference<GlyphCodeEditor>? _callback;
+    private string _source = "";
+    private long _revision;
+    private bool _attempted, _ready, _failed, _disposed;
+
+    protected override void OnInitialized() => _source = InitialSource;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_disposed) return;
+        if (!_attempted)
+        {
+            _attempted = true;
+            try
+            {
+                _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js?v=1");
+                if (_disposed) { await ReleaseAsync(); return; }
+                _callback = DotNetObjectReference.Create(this);
+                await _module.InvokeVoidAsync("create", _host, _callback, _source, ReadOnly);
+                if (_disposed) { await ReleaseAsync(); return; }
+                _ready = true;
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or TaskCanceledException)
+            {
+                _failed = true;
+                await ReleaseAsync();
+            }
+            if (!_disposed) StateHasChanged();
+        }
+        if (_ready && !_disposed)
+            await _module!.InvokeVoidAsync("setReadOnly", _host, ReadOnly);
+    }
+
+    [JSInvokable]
+    public async Task OnEditorChanged(string source, long revision)
+    {
+        if (_disposed || revision <= _revision) return;
+        _revision = revision;
+        _source = source;
+        await SourceChanged.InvokeAsync(source);
+    }
+
+    private async Task FallbackChanged(ChangeEventArgs args)
+    {
+        _source = args.Value?.ToString() ?? "";
+        await SourceChanged.InvokeAsync(_source);
+    }
+
+    public async Task<string> CaptureAsync()
+    {
+        if (_ready)
+        {
+            var snapshot = await _module!.InvokeAsync<EditorSnapshot>("capture", _host);
+            // Equal revisions are intentional: capture is also the initial source read.
+            if (snapshot.Revision >= _revision)
+            {
+                _revision = snapshot.Revision;
+                _source = snapshot.Source;
+            }
+        }
+        return _source;
+    }
+
+    public sealed record EditorSnapshot(string Source, long Revision);
+
+    private async Task ReleaseAsync()
+    {
+        var module = _module;
+        _module = null;
+        try
+        {
+            if (module != null)
+            {
+                try { await module.InvokeVoidAsync("destroy", _host); }
+                finally { await module.DisposeAsync(); }
+            }
+        }
+        catch (Exception ex) when (ex is JSException or TaskCanceledException) { }
+        finally { _callback?.Dispose(); _callback = null; }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        await ReleaseAsync();
+    }
+}

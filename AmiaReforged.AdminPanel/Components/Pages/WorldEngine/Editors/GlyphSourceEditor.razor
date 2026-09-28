@@ -3,9 +3,8 @@
 @inject GlyphApiService Api
 
 <div class="glyph-source-editor" style="padding:12px;overflow:auto">
-    <label for="@_editorId">Glyph source</label>
-    <textarea id="@_editorId" aria-label="Glyph source" class="form-control" rows="18" spellcheck="false"
-              style="font-family:monospace;tab-size:4" @bind="_source" @bind:event="oninput" disabled="@_busy"></textarea>
+    <GlyphCodeEditor @key="_documentVersion" @ref="_editor" InitialSource="@_source"
+                     SourceChanged="OnSourceChanged" ReadOnly="@_busy" />
     <div class="d-flex gap-2 my-2">
         <button class="btn btn-secondary" disabled="@_busy" @onclick="Validate">Compile / validate</button>
         <button class="btn btn-secondary" disabled="@_busy" @onclick="SaveDraft">Save draft</button>
@@ -52,7 +51,8 @@
     [Parameter] public string Name { get; set; } = "New Glyph";
     [Parameter] public string InitialSource { get; set; } = "glyph new_program : interaction {\n    attempted { }\n    started { }\n    tick { }\n    completed { }\n}";
     [Parameter] public EventCallback<GlyphDefinitionDto> Created { get; set; }
-    private readonly string _editorId = "glyph-source-" + Guid.NewGuid().ToString("N");
+    private GlyphCodeEditor? _editor;
+    private int _documentVersion;
     private Guid? _id, _loadedParameter;
     private bool _initialized, _busy, _valid;
     private string _source = "", _validatedSource = "";
@@ -75,7 +75,21 @@
                 _versions = await Api.GetVersionsAsync(id);
             }
             else _source = InitialSource;
+            _documentVersion++;
         });
+    }
+    private void OnSourceChanged(string source)
+    {
+        if (_source == source) return;
+        _source = source;
+        _valid = false;
+        _diagnostics = [];
+    }
+    private async Task<string> CaptureSource()
+    {
+        string source = _editor == null ? _source : await _editor.CaptureAsync();
+        OnSourceChanged(source);
+        return source;
     }
     private async Task Run(Func<Task> action)
     {
@@ -86,20 +100,20 @@
     }
     private Task Validate() => Run(async () =>
     {
-        string source = _source;
+        string source = await CaptureSource();
         var result = await Api.CompileAsync(source);
         _diagnostics = result?.Diagnostics ?? [];
         _valid = result?.Success == true; _validatedSource = source;
         _notice = _valid ? "Compilation succeeded. Ready to activate." : "Compilation failed. Active behavior is unchanged.";
     });
-    private async Task EnsureDraft()
+    private async Task EnsureDraft(string source)
     {
         if (_id == null)
         {
-            var check = await Api.CompileAsync(_source);
+            var check = await Api.CompileAsync(source);
             _diagnostics = check?.Diagnostics ?? [];
             if (check?.Success != true) throw new InvalidOperationException("Correct compilation errors before creating the first draft.");
-            var created = await Api.CreateDefinitionAsync(new(Name, "", SourceText: _source));
+            var created = await Api.CreateDefinitionAsync(new(Name, "", SourceText: source));
             if (created == null || created.Id == Guid.Empty) throw new InvalidOperationException("Draft was not created.");
             _id = created.Id;
             await Created.InvokeAsync(created);
@@ -107,14 +121,18 @@
     }
     private Task SaveDraft() => Run(async () =>
     {
-        await EnsureDraft();
-        await Api.UpdateDefinitionAsync(_id!.Value, new(SourceText: _source));
+        string source = await CaptureSource();
+        await EnsureDraft(source);
+        await Api.UpdateDefinitionAsync(_id!.Value, new(SourceText: source));
         _notice = "Draft saved. Active behavior is unchanged.";
     });
     private Task Activate() => Run(async () =>
     {
-        await EnsureDraft();
-        var result = await Api.ActivateAsync(_id!.Value, _source);
+        string source = await CaptureSource();
+        if (!_valid || _validatedSource != source)
+            throw new InvalidOperationException("Compile / validate the current source before activating it.");
+        await EnsureDraft(source);
+        var result = await Api.ActivateAsync(_id!.Value, source);
         _diagnostics = result?.Diagnostics ?? [];
         _notice = result?.Success == true ? "Activated. New events use this version." : "Activation failed. Previous behavior remains active.";
         _versions = await Api.GetVersionsAsync(_id.Value);
@@ -125,6 +143,7 @@
         if (result?.Success != true) throw new InvalidOperationException("Rollback did not succeed.");
         var definition = await Api.GetDefinitionAsync(_id.Value);
         _source = definition!.SourceText; _valid = false;
+        _diagnostics = []; _documentVersion++;
         _versions = await Api.GetVersionsAsync(_id.Value);
         _notice = "Previous executable restored.";
     });

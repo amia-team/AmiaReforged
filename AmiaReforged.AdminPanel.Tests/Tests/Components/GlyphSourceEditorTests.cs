@@ -7,6 +7,7 @@ using Bunit;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using NUnit.Framework;
+using Microsoft.JSInterop;
 namespace AmiaReforged.AdminPanel.Tests.Tests.Components;
 
 [TestFixture]
@@ -18,6 +19,10 @@ public class GlyphSourceEditorTests
     [SetUp] public void Setup()
     {
         _context = new(); _handler = new(_id);
+        var js = new Mock<IJSRuntime>();
+        js.Setup(m => m.InvokeAsync<IJSObjectReference>("import", It.IsAny<object?[]>()))
+            .ThrowsAsync(new JSException("Editor unavailable"));
+        _context.Services.AddSingleton(js.Object);
         var factory = new Mock<IHttpClientFactory>(); factory.Setup(f => f.CreateClient("WorldEngine")).Returns(new HttpClient(_handler));
         var endpoints = new Mock<IWorldEngineEndpointService>();
         endpoints.Setup(e => e.GetEndpointAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -47,18 +52,50 @@ public class GlyphSourceEditorTests
         cut.Find("textarea").Input("changed");
         Assert.That(cut.FindAll("button").Single(b => b.TextContent == "Activate").HasAttribute("disabled"), Is.True);
     }
+    [Test] public void Browser_snapshot_is_saved_and_unreported_edit_cannot_activate()
+    {
+        _handler.Valid = true;
+        string browserSource = "glyph a : interaction {}";
+        long revision = 0;
+        var module = new Mock<IJSObjectReference>();
+        module.Setup(m => m.InvokeAsync<GlyphCodeEditor.EditorSnapshot>("capture", It.IsAny<object?[]>()))
+            .Returns(() => ValueTask.FromResult(new GlyphCodeEditor.EditorSnapshot(browserSource, revision)));
+        var js = new Mock<IJSRuntime>();
+        js.Setup(m => m.InvokeAsync<IJSObjectReference>("import", It.IsAny<object?[]>()))
+            .ReturnsAsync(module.Object);
+        _context.Services.AddSingleton(js.Object);
+        var cut = _context.RenderComponent<GlyphSourceEditor>(p => p.Add(c => c.DefinitionId, _id));
+        cut.WaitForAssertion(() => Assert.That(cut.FindAll("textarea"), Is.Empty));
+        cut.FindAll("button").Single(b => b.TextContent == "Compile / validate").Click();
+        cut.WaitForAssertion(() => Assert.That(cut.FindAll("button").Single(b => b.TextContent == "Activate").HasAttribute("disabled"), Is.False));
+
+        browserSource = "glyph changed : interaction {}";
+        revision++;
+        cut.FindAll("button").Single(b => b.TextContent == "Activate").Click();
+        cut.WaitForAssertion(() => Assert.That(cut.Find("[role=alert]").TextContent, Does.Contain("Compile / validate")));
+        Assert.That(_handler.Paths.Any(p => p.EndsWith("/activate")), Is.False);
+        cut.FindAll("button").Single(b => b.TextContent == "Save draft").Click();
+        cut.WaitForAssertion(() => Assert.That(_handler.LastSavedSource, Is.EqualTo(browserSource)));
+    }
+
     private sealed class Handler(Guid id) : HttpMessageHandler
     {
         public bool Valid;
+        public string? LastSavedSource;
         public List<string> Paths { get; } = [];
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             string path = request.RequestUri!.AbsolutePath;
             Paths.Add($"{request.Method} {path}");
+            if (request.Method == HttpMethod.Put)
+            {
+                using var body = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(cancellationToken));
+                LastSavedSource = body.RootElement.GetProperty("SourceText").GetString();
+            }
             object response = path.EndsWith("/versions") ? Array.Empty<GlyphVersionDto>() :
                 path.EndsWith("/compile") ? new GlyphCompilationDto(Valid, Valid ? [] : [new("GLYPH2002", "Unknown function", new("test.glyph", 0, 1, 3, 4))]) :
                 new GlyphDefinitionDto(id, "test", null, "InteractionPipeline", "Interaction", "glyph a : interaction {}", false, DateTime.UtcNow, DateTime.UtcNow);
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(JsonSerializer.Serialize(response), System.Text.Encoding.UTF8, "application/json") });
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(JsonSerializer.Serialize(response), System.Text.Encoding.UTF8, "application/json") };
         }
     }
 }
