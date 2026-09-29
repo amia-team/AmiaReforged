@@ -77,12 +77,12 @@ public class GlyphApiServiceTests
 
     private static HttpResponseMessage Response() => new(HttpStatusCode.OK)
     {
-        Content = new StringContent(JsonSerializer.Serialize(new GlyphLanguageMetadataDto(1,
+            Content = new StringContent(JsonSerializer.Serialize(new GlyphLanguageMetadataDto(1,
             [new("heal", "heal", "Heal a creature", "Void", "Action",
                 [new("amount", "Amount", "Int", false, "10")], null, null, null, null, [new("interaction", "tick")])],
             [new("interaction", "InteractionPipeline", "Interaction", ["attempted", "started", "tick", "completed"])],
             [new("interaction", "tick", [new("progress", "Int", "Progress", "progress", "set_progress")])],
-            [new("metadata", "metadata", "set_metadata")])))
+            [new("metadata", "metadata", "set_metadata")], [])))
     };
     private sealed class Handler : HttpMessageHandler
     {

@@ -175,8 +175,8 @@ public class GlyphSourceEditorTests
                 using var body = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(cancellationToken));
                 LastSavedSource = body.RootElement.GetProperty("SourceText").GetString();
             }
-            object response = path.EndsWith("/language-metadata") ? new GlyphLanguageMetadataDto(1, [], [], [], []) :
-                path.EndsWith("/traces") ? Array.Empty<GlyphTraceDto>() :
+            object response = path.EndsWith("/language-metadata") ? new GlyphLanguageMetadataDto(1, [], [], [], [], []) :
+            path.EndsWith("/traces") ? Array.Empty<GlyphTraceDto>() :
                 path.EndsWith("/versions") ? Versions :
                 path.EndsWith("/compile") ? new GlyphCompilationDto(Valid, Valid ? [] : [new("GLYPH2002", "Unknown function", new("test.glyph", 0, 1, 3, 4))]) :
                 new GlyphDefinitionDto(id, "test", null, "InteractionPipeline", "Interaction", Source, false, DateTime.UtcNow, DateTime.UtcNow);

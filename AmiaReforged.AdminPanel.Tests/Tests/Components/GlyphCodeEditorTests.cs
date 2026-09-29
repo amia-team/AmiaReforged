@@ -41,7 +41,7 @@ public class GlyphCodeEditorTests
         using var context = new Bunit.TestContext();
         var module = context.JSInterop.SetupModule("./js/glyph-editor.js?v=3");
         module.Mode = JSRuntimeMode.Loose;
-        var metadata = new GlyphLanguageMetadataDto(1, [], [], [], []);
+        var metadata = new GlyphLanguageMetadataDto(1, [], [], [], [], []);
         var span = new GlyphSourceSpanDto("test.glyph", 3, 2, 1, 4);
         var cut = context.RenderComponent<GlyphCodeEditor>(p => p
             .Add(c => c.InitialSource, "source")
