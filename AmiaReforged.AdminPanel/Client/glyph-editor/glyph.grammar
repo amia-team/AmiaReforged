@@ -1,4 +1,4 @@
-@top Program { kw<"glyph"> ProgramName ":" EventName Block }
+@top Program { TypeDeclaration* kw<"glyph"> ProgramName ":" EventName Block }
 
 @precedence {
   member @left, call @left, unary @right,
@@ -8,21 +8,39 @@
 
 @skip { whitespace | LineComment }
 
+TypeDeclaration { StructDeclaration | AdtDeclaration }
+StructDeclaration { kw<"struct"> TypeName FieldBlock }
+AdtDeclaration { kw<"type"> TypeName "{" (VariantDeclaration | ";" | ",")* "}" }
+VariantDeclaration { VariantName FieldBlock }
+FieldBlock { "{" FieldDeclaration* "}" }
+FieldDeclaration { FieldName ":" TypeName ("," | ";")? }
+TypeName { Identifier }
+VariantName { Identifier }
+FieldName { Identifier }
+
 ProgramName { Identifier }
 EventName { Identifier ("." Identifier)* }
 Block { "{" (statement | ";")* "}" }
+
 statement {
   Block | StageDeclaration | LetStatement | IfStatement | ForeachStatement |
-  BreakStatement | FailStatement | AssignmentStatement | ExpressionStatement
+  MatchStatement | BreakStatement | FailStatement | AssignmentStatement | ExpressionStatement
 }
+
 StageDeclaration { StageName Block }
 StageName { kw<"attempted"> | kw<"started"> | kw<"tick"> | kw<"completed"> }
 LetStatement { kw<"let"> BindingName "=" expression }
 BindingName { Identifier }
 IfStatement { kw<"if"> expression Block (kw<"else"> (IfStatement | Block))? }
 ForeachStatement { kw<"foreach"> BindingName kw<"in"> expression Block }
+MatchStatement { kw<"match"> expression "{" (MatchArm | ";" | ",")* "}" }
+MatchArm { VariantName "{" (BindingName ("," BindingName)* ","?)? "}" Block }
 BreakStatement { kw<"break"> }
-FailStatement[@dynamicPrecedence=1] { @extend[@name=FailKeyword]<Identifier, "fail"> expression !statement }
+
+FailStatement[@dynamicPrecedence=1] {
+  @extend[@name=FailKeyword]<Identifier, "fail"> expression !statement
+}
+
 AssignmentStatement { expression AssignmentOperator expression !statement }
 ExpressionStatement { expression !statement }
 
@@ -30,10 +48,12 @@ expression {
   VariableName | Number | String | UnterminatedString | Boolean | ParenthesizedExpression |
   UnaryExpression | BinaryExpression | MemberExpression | IndexExpression | CallExpression
 }
+
 VariableName { Identifier }
 Boolean { kw<"true"> | kw<"false"> }
 ParenthesizedExpression { "(" expression ")" }
 UnaryExpression { ("!" | "+" | "-") expression !unary }
+
 BinaryExpression {
   expression !multiply MultiplyOperator expression |
   expression !add ("+" | "-") expression |
@@ -42,6 +62,7 @@ BinaryExpression {
   expression !and "&&" expression |
   expression !or "||" expression
 }
+
 MemberExpression { expression !member "." PropertyName }
 PropertyName { Identifier }
 IndexExpression { expression !member "[" expression "]" }
@@ -68,4 +89,5 @@ kw<term> { @specialize[@name={term}]<Identifier, term> }
   EqualityOperator { "==" | "!=" }
   @precedence { LineComment, MultiplyOperator }
 }
+
 @detectDelim

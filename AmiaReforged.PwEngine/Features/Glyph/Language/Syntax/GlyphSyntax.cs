@@ -1,9 +1,40 @@
 using AmiaReforged.PwEngine.Features.Glyph.Language.Diagnostics;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Language.Syntax;
 
 public sealed record GlyphToken(string Kind, string Text, SourceSpan Span, object? Value = null);
+
 public abstract record GlyphSyntax(SourceSpan Span);
-public sealed record GlyphCompilationUnitSyntax(string Name, string Event, BlockStatementSyntax Body, SourceSpan Span) : GlyphSyntax(Span);
+
+public sealed record GlyphCompilationUnitSyntax(
+    IReadOnlyList<TypeDeclarationSyntax> Declarations,
+    string Name,
+    string Event,
+    BlockStatementSyntax Body,
+    SourceSpan Span) : GlyphSyntax(Span);
+
+public abstract record TypeDeclarationSyntax(string Name, SourceSpan Span) : GlyphSyntax(Span);
+
+public sealed record StructDeclarationSyntax(
+    string Name,
+    IReadOnlyList<GlyphFieldDeclarationSyntax> Fields,
+    SourceSpan Span) : TypeDeclarationSyntax(Name, Span);
+
+public sealed record AdtDeclarationSyntax(
+    string Name,
+    IReadOnlyList<GlyphVariantDeclarationSyntax> Variants,
+    SourceSpan Span) : TypeDeclarationSyntax(Name, Span);
+
+public sealed record GlyphVariantDeclarationSyntax(
+    string Name,
+    IReadOnlyList<GlyphFieldDeclarationSyntax> Fields,
+    SourceSpan Span) : GlyphSyntax(Span);
+
+public sealed record GlyphFieldDeclarationSyntax(
+    string Name,
+    string TypeName,
+    SourceSpan Span) : GlyphSyntax(Span);
+
 public abstract record StatementSyntax(SourceSpan Span) : GlyphSyntax(Span);
 public sealed record BlockStatementSyntax(IReadOnlyList<StatementSyntax> Statements, SourceSpan Span) : StatementSyntax(Span);
 public sealed record StageDeclarationSyntax(string Name, BlockStatementSyntax Body, SourceSpan Span) : StatementSyntax(Span);
@@ -13,6 +44,18 @@ public sealed record ExpressionStatementSyntax(ExpressionSyntax Expression, Sour
 public sealed record IfStatementSyntax(ExpressionSyntax Condition, BlockStatementSyntax Then, StatementSyntax? Else, SourceSpan Span) : StatementSyntax(Span);
 public sealed record ForeachStatementSyntax(string Name, ExpressionSyntax List, BlockStatementSyntax Body, SourceSpan Span) : StatementSyntax(Span);
 public sealed record BreakStatementSyntax(SourceSpan Span) : StatementSyntax(Span);
+
+public sealed record MatchStatementSyntax(
+    ExpressionSyntax Value,
+    IReadOnlyList<MatchArmSyntax> Arms,
+    SourceSpan Span) : StatementSyntax(Span);
+
+public sealed record MatchArmSyntax(
+    string Variant,
+    IReadOnlyList<string> Bindings,
+    BlockStatementSyntax Body,
+    SourceSpan Span) : GlyphSyntax(Span);
+
 public abstract record ExpressionSyntax(SourceSpan Span) : GlyphSyntax(Span);
 public sealed record LiteralExpressionSyntax(object Value, SourceSpan Span) : ExpressionSyntax(Span);
 public sealed record NameExpressionSyntax(string Name, SourceSpan Span) : ExpressionSyntax(Span);

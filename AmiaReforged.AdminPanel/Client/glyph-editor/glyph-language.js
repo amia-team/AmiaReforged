@@ -5,13 +5,13 @@ import { parser } from './glyph-parser.js';
 export const glyphLanguage = LRLanguage.define({
     name: 'glyph',
     parser: parser.configure({ props: [styleTags({
-        'glyph let': tags.definitionKeyword,
-        'if else foreach in break': tags.controlKeyword,
+        'glyph struct type let': tags.definitionKeyword,
+        'if else foreach in match break': tags.controlKeyword,
         'StageName/...': tags.keyword,
         'ProgramName/...': tags.definition(tags.variableName),
-        'EventName/...': tags.typeName,
+        'EventName/... TypeName/... VariantName/...': tags.typeName,
         'BindingName/... VariableName/...': tags.variableName,
-        'PropertyName/... ArgumentName/...': tags.propertyName,
+        'PropertyName/... ArgumentName/... FieldName/...': tags.propertyName,
         'CallExpression/VariableName/...': tags.function(tags.variableName),
         'CallExpression/MemberExpression/PropertyName/...': tags.function(tags.propertyName),
         FailKeyword: tags.function(tags.variableName),
@@ -28,8 +28,6 @@ export const glyphLanguage = LRLanguage.define({
     languageData: { commentTokens: { line: '//' } }
 });
 
-// Explicit classes make the palette and browser regression tests independent of
-// CodeMirror's generated CSS class names.
 export const glyphHighlightStyle = HighlightStyle.define([
     { tag: [tags.keyword, tags.definitionKeyword, tags.controlKeyword], class: 'glyph-keyword' },
     { tag: tags.definition(tags.variableName), class: 'glyph-definition' },
