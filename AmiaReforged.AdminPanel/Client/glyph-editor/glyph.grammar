@@ -69,7 +69,11 @@ IndexExpression { expression !member "[" expression "]" }
 CallExpression[@dynamicPrecedence=2] { expression !call ArgumentList }
 ArgumentList { "(" (Argument ("," Argument)* ","?)? ")" }
 Argument { (ArgumentName ":")? expression }
-ArgumentName { Identifier }
+ArgumentName {
+  Identifier | kw<"glyph"> | kw<"struct"> | kw<"type"> | kw<"match"> | kw<"let"> |
+  kw<"if"> | kw<"else"> | kw<"foreach"> | kw<"in"> | kw<"break"> |
+  kw<"attempted"> | kw<"started"> | kw<"tick"> | kw<"completed">
+}
 AssignmentOperator { "=" | "+=" | "-=" }
 kw<term> { @specialize[@name={term}]<Identifier, term> }
 

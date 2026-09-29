@@ -10,6 +10,23 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
 
     private GlyphToken Current => tokens[Math.Min(_position, tokens.Count - 1)];
     private bool At(string kind) => Current.Kind == kind;
+
+    // A token is "identifier-shaped" when its text is a valid identifier spelling and it is
+    // either a bare identifier or a keyword whose kind equals its own text (e.g. `type`, `let`).
+    // Named argument labels accept identifier-shaped words even when the word is otherwise a
+    // Glyph keyword, while every other production keeps its exact token expectations.
+    private static bool IsIdentifierShape(GlyphToken token)
+    {
+        bool identifierOrKeyword = token.Kind == "identifier" || token.Kind == token.Text;
+        if (!identifierOrKeyword) return false;
+
+        string text = token.Text;
+        if (text.Length == 0) return false;
+        if (!(char.IsLetter(text[0]) || text[0] == '_')) return false;
+        for (int i = 1; i < text.Length; i++)
+            if (!(char.IsLetterOrDigit(text[i]) || text[i] == '_')) return false;
+        return true;
+    }
     private GlyphToken Take() { var token = Current; if (!At("eof")) _position++; return token; }
 
     private GlyphToken Expect(string kind)
@@ -300,7 +317,7 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
                     SourceSpan argStart = Current.Span;
                     string? name = null;
 
-                    if (At("identifier") &&
+                    if (IsIdentifierShape(Current) &&
                         tokens[Math.Min(_position + 1, tokens.Count - 1)].Kind == ":")
                     {
                         name = Take().Text;

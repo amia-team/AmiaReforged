@@ -24,6 +24,31 @@ public class GlyphCompilerTests
         EncounterContext = new() { AreaResRef = "test", PartySize = 3, GameTime = TimeSpan.FromHours(22) },
         Profile = new() { Name = "test" }, SpawnCount = 1
     };
+
+    [Test]
+    public void named_argument_label_that_is_a_keyword_is_accepted_by_the_parser()
+    {
+        // Regression: the `type` parameter name is lexed as a keyword token, yet the parser must
+        // still read it as an identifier-shaped named-argument label rather than failing with
+        // GLYPH1001 'Expected identifier'. The argument-name position is keyword-agnostic.
+        const string source = "glyph t : interaction { tick { let door = player.get_nearest_object_by_type(type: \"door\") } }";
+        var parser = new GlyphParser(new GlyphLexer(source).Lex());
+        var unit = parser.Parse();
+        Assert.That(unit, Is.Not.Null);
+        Assert.That(parser.Diagnostics.Select(d => d.Code), Does.Not.Contain("GLYPH1001"));
+    }
+
+    [Test]
+    public void excess_keyword_named_argument_reaches_the_binder_not_the_parser()
+    {
+        // `origin` is supplied by the receiver, so the explicit `origin:` label is excess. This
+        // must surface as GLYPH2003 from the binder, which requires the parser to have accepted
+        // both keyword-shaped labels without a parse error first.
+        const string source = "glyph t : interaction { tick { let x = player.get_nearest_object_by_type(origin: creature, type: \"door\") } }";
+        var parser = new GlyphParser(new GlyphLexer(source).Lex());
+        parser.Parse();
+        Assert.That(parser.Diagnostics.Select(d => d.Code), Does.Not.Contain("GLYPH1001"));
+    }
     [Test] public async Task Compiles_branches_math_and_executes_existing_runtime()
     {
         var program = Compile("""
