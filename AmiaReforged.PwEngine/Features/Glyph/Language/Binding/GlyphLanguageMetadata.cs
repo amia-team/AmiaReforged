@@ -5,7 +5,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Language.Binding;
 
 public sealed record GlyphLanguageMetadataDto(int LanguageVersion, IReadOnlyList<GlyphFunctionMetadataDto> Functions,
     IReadOnlyList<GlyphEventMetadataDto> Events, IReadOnlyList<GlyphContextMetadataDto> Contexts,
-    IReadOnlyList<GlyphIndexerMetadataDto> Indexers);
+    IReadOnlyList<GlyphIndexerMetadataDto> Indexers,
+    IReadOnlyList<GlyphReceiverMethodMetadataDto> ReceiverMethods);
 public sealed record GlyphParameterMetadataDto(string Name, string DisplayName, string Type, bool Required, string? DefaultValue);
 public sealed record GlyphAvailabilityDto(string Event, string? Stage);
 public sealed record GlyphFunctionMetadataDto(string Name, string CanonicalName, string Description, string ReturnType,
@@ -16,6 +17,10 @@ public sealed record GlyphEventMetadataDto(string Name, string EventType, string
 public sealed record GlyphContextMetadataDto(string Event, string? Stage, IReadOnlyList<GlyphFieldMetadataDto> Fields);
 public sealed record GlyphFieldMetadataDto(string Name, string Type, string Description, string CanonicalName,
     string? Setter);
+public sealed record GlyphReceiverMethodMetadataDto(string Name, string ReceiverType, string CanonicalName,
+    string Description, string ReturnType, string Kind, IReadOnlyList<GlyphParameterMetadataDto> Parameters,
+    IReadOnlyList<GlyphAvailabilityDto> AvailableIn);
+
 public sealed record GlyphIndexerMetadataDto(string Name, string Getter, string Setter);
 
 public static class GlyphLanguageMetadata
@@ -62,9 +67,23 @@ public static class GlyphLanguageMetadata
             }
             return new GlyphContextMetadataDto(scope.Name, scope.Stage, fields.OrderBy(f => f.Name, StringComparer.Ordinal).ToArray());
         }).ToArray();
+        var receiverMethods = catalog.ReceiverMethods.Select(rm =>
+        {
+            GlyphLanguageSymbol symbol = catalog.Find(rm.Target)
+                ?? throw new InvalidOperationException($"Registered receiver method '{rm.Name}' has no target '{rm.Target}'.");
+            return new GlyphReceiverMethodMetadataDto(
+                rm.Name, GlyphTypeSymbol.From(rm.ReceiverType).Name, rm.Target, symbol.Definition.Description,
+                symbol.ReturnType.Name, symbol.Strategy.ToString(),
+                symbol.Parameters.Skip(1).Select(p => new GlyphParameterMetadataDto(
+                    p.Id, p.Name, GlyphTypeSymbol.From(p.DataType).Name, p.DefaultValue == null, p.DefaultValue))
+                    .ToArray(),
+                scopes.Where(s => Available(symbol, s.Event, s.Stage, null))
+                    .Select(s => new GlyphAvailabilityDto(s.Name, s.Stage)).ToArray());
+        }).ToArray();
         return new(GlyphLanguageVersion.Current, functions,
             GlyphLanguageCatalog.Events.Select(e => new GlyphEventMetadataDto(e.Key, e.Value.ToString(), e.Value.GetCategory().ToString(),
                 e.Value == GlyphEventType.InteractionPipeline ? GlyphLanguageAliases.Stages : [])).ToArray(), contexts,
-            [new(GlyphLanguageAliases.MetadataName, GlyphLanguageAliases.MetadataGetter, GlyphLanguageAliases.MetadataSetter)]);
+            [new(GlyphLanguageAliases.MetadataName, GlyphLanguageAliases.MetadataGetter, GlyphLanguageAliases.MetadataSetter)],
+            receiverMethods);
     }
 }

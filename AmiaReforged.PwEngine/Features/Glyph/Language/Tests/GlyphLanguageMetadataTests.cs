@@ -79,4 +79,28 @@ public class GlyphLanguageMetadataTests
         }
         Assert.That(_runtime.Compiler.Compile("glyph test : interaction { tick { metadata[\"key\"] = \"value\" let x = metadata[\"key\"] } }").Success, Is.True);
     }
+
+    [Test] public void Receiver_methods_match_the_compiler_catalog()
+    {
+        var catalog = _runtime.Compiler.Catalog;
+        Assert.That(_metadata.ReceiverMethods.Count, Is.EqualTo(catalog.ReceiverMethods.Count));
+        foreach (var rm in catalog.ReceiverMethods)
+        {
+            var meta = _metadata.ReceiverMethods.Single(m => m.Name == rm.Name);
+            var target = catalog.Find(rm.Target)!;
+            Assert.That(meta.ReceiverType, Is.EqualTo(GlyphTypeSymbol.From(rm.ReceiverType).Name));
+            Assert.That(meta.CanonicalName, Is.EqualTo(rm.Target));
+            Assert.That(meta.ReturnType, Is.EqualTo(target.ReturnType.Name));
+            Assert.That(meta.Description, Is.EqualTo(target.Definition.Description));
+            Assert.That(meta.Kind, Is.EqualTo(target.Strategy.ToString()));
+            Assert.That(meta.Parameters.Select(p => p.Name), Is.EqualTo(target.Parameters.Skip(1).Select(p => p.Id)));
+            foreach (var parameter in meta.Parameters)
+            {
+                var pin = target.Parameters.Single(p => p.Id == parameter.Name);
+                Assert.That(parameter.Type, Is.EqualTo(GlyphTypeSymbol.From(pin.DataType).Name));
+                Assert.That(parameter.DefaultValue, Is.EqualTo(pin.DefaultValue));
+                Assert.That(parameter.Required, Is.EqualTo(pin.DefaultValue == null));
+            }
+        }
+    }
 }
