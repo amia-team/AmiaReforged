@@ -108,6 +108,7 @@ if Object.is_player(nearest_creature) {
 | --- | --- | --- |
 | `Object.nearest_object_by_type(origin, type)` | `Object` | The nearest object of `type` from `origin`, ordered by distance. |
 | `Object.is_player(object)` | `Bool` | Whether `object` is a player character (`NWScript.GetIsPC`). |
+| `Object.get_distance(object_a, object_b)` | `Float` | The distance in meters between `object_a` and `object_b`. |
 
 Supported object types for `Object.nearest_object_by_type` (case-insensitive; **lowercase is
 canonical**): `trigger`, `door`, `placeable`, `creature`, `waypoint`.
@@ -120,6 +121,7 @@ canonical**): `trigger`, `door`, `placeable`, `creature`, `waypoint`.
   accepted by the compiler and rejected at runtime, keeping the binder generic.
 - `Object.is_player` returns `false` for invalid or unresolvable objects. It is a read-only query
   with no side effects.
+- `Object.get_distance` returns the distance in meters between the two objects as a `Float`. Invalid-object behavior is inherited from `GetDistanceBetweenExecutor`: it returns `0.0` when either object is invalid or unresolvable.
 
 ### Receiver-style calls
 
@@ -146,6 +148,7 @@ if target.is_player() {
 | --- | --- |
 | `object.get_nearest_object_by_type(type)` | `Object.nearest_object_by_type(object, type)` |
 | `object.is_player()` | `Object.is_player(object)` |
+| `object.get_distance(object_b)` | `Object.get_distance(object, object_b)` |
 
 The receiver may be any Object-typed expression — a context pin (`context.object`), `player`,
 a `let`, a foreach element, or the result of another Object query. It is bound exactly once and
@@ -174,7 +177,7 @@ or `player.is_player(player)`). Named remaining parameters are still allowed:
 
 `receiver.method(args...)` does **not** expose arbitrary .NET, Anvil, or `NwGameObject` members.
 Only the Glyph receiver methods registered in `GlyphLanguageCatalog` exist (currently
-`get_nearest_object_by_type` and `is_player`). Reflection, CLR/Anvil member lookup, duck typing,
+`get_nearest_object_by_type`, `is_player`, and `get_distance`). Reflection, CLR/Anvil member lookup, duck typing,
 and runtime string-based dispatch are unavailable. For example `player.Destroy()`, `player.Area`,
 and `player.GetObjectVariable(...)` remain uncallable. Adding a future curated Object member is a
 matter of registering its metadata — receiver type, member name, and target intrinsic — rather

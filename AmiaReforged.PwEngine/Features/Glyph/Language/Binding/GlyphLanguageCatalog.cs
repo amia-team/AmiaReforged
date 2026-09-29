@@ -59,12 +59,18 @@ public sealed class GlyphLanguageCatalog
         Add("has_item", "getter.has_item", "has_item");
         // Curated NWN object surface (see Language/README.md). Dotted names resolve
         // through the binder's path lookup; each is backed by a registered getter.
+        Add(
+            "Object.get_distance",
+            "getter.distance_between",
+            "distance"
+        );
         Add("Object.nearest_object_by_type", "getter.nearest_object_by_type", "object");
         Add("Object.is_player", "getter.is_player", "result");
         // Curated Object receiver sugar. Each lowers to the static intrinsic above with the
-        // bound receiver injected as parameter zero. Add future curated Object members here.
+        // bound receiver injected as parameter zero (object_a). Add future curated Object members here.
         AddReceiverMethod(GlyphDataType.NwObject, "get_nearest_object_by_type", "Object.nearest_object_by_type");
         AddReceiverMethod(GlyphDataType.NwObject, "is_player", "Object.is_player");
+        AddReceiverMethod(GlyphDataType.NwObject, "get_distance", "Object.get_distance");
         Add("has_knowledge", "knowledge.has", "result");
         Add("industry.is_member", "industry.is_member", "result");
         Add("industry.level", "industry.get_level", "level_value");

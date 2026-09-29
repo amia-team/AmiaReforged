@@ -69,6 +69,33 @@ public class ObjectApiLanguageTests
             """);
     }
 
+    // ==================== Object.get_distance (getter.distance_between) ====================
+
+    [Test]
+    public void static_get_distance_compiles()
+    {
+        Compile("glyph t : interaction { tick { let d = Object.get_distance(player, creature) } }");
+    }
+
+    [Test]
+    public void receiver_get_distance_compiles()
+    {
+        Compile("glyph t : interaction { tick { let d = player.get_distance(creature) } }");
+    }
+
+    [Test]
+    public void local_object_receiver_get_distance_compiles()
+    {
+        Compile("""
+            glyph t : interaction {
+                tick {
+                    let target = player.get_nearest_object_by_type("creature")
+                    let d = target.get_distance(player)
+                }
+            }
+            """);
+    }
+
     // ==================== Result / parameter types ====================
 
     [Test]
@@ -237,6 +264,20 @@ public class ObjectApiLanguageTests
         NodeTypeIds(receiverExe).Should().Contain("getter.is_player");
     }
 
+    [Test]
+    public void get_distance_receiver_and_static_lower_to_same_intrinsic()
+    {
+        // The `let` value must be used, otherwise an unused lazy binding emits no IR node.
+        GlyphExecutable staticExe = Compile("glyph t : interaction { tick { let d = Object.get_distance(player, creature); if d > 10.0 { message(player, \"far\") } } }");
+        GlyphExecutable receiverExe = Compile("glyph t : interaction { tick { let d = player.get_distance(creature); if d > 10.0 { message(player, \"far\") } } }");
+        HashSet<string> staticNodes = NodeTypeIds(staticExe);
+        HashSet<string> receiverNodes = NodeTypeIds(receiverExe);
+        staticNodes.Should().Contain("getter.distance_between");
+        receiverNodes.Should().Contain("getter.distance_between");
+        // No duplicate executor: both spellings expand to the identical runtime node set.
+        staticNodes.Should().BeEquivalentTo(receiverNodes);
+    }
+
     [Theory]
     [TestCase("glyph t : interaction { tick { let x = 42.is_player() } }", "GLYPH2004")]
     [TestCase("glyph t : interaction { tick { let x = \"hello\".is_player() } }", "GLYPH2004")]
@@ -245,6 +286,10 @@ public class ObjectApiLanguageTests
     [TestCase("glyph t : interaction { tick { let x = player.is_player(player) } }", "GLYPH2003")]
     [TestCase("glyph t : interaction { tick { let x = player.get_nearest_object_by_type() } }", "GLYPH2003")]
     [TestCase("glyph t : interaction { tick { let x = player.get_nearest_object_by_type(origin: creature, type: \"door\") } }", "GLYPH2003")]
+    [TestCase("glyph t : interaction { tick { let x = 42.get_distance(player) } }", "GLYPH2004")]
+    [TestCase("glyph t : interaction { tick { let x = player.get_distance(42) } }", "GLYPH2004")]
+    [TestCase("glyph t : interaction { tick { let x = player.get_distance() } }", "GLYPH2003")]
+    [TestCase("glyph t : interaction { tick { let x = player.get_distance(creature, player) } }", "GLYPH2003")]
     public void receiver_method_violations_are_diagnosed(string source, string code)
     {
         GlyphCompilationResult result = _runtime.Compiler.Compile(source);

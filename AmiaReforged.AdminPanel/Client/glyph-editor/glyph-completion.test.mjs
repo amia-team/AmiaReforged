@@ -41,6 +41,7 @@ test("members and functions respect event/stage restrictions and signatures", ()
   assert.ok(playerMembers.includes("has_item"));
   assert.ok(playerMembers.includes("get_nearest_object_by_type"));
   assert.ok(playerMembers.includes("is_player"));
+  assert.ok(playerMembers.includes("get_distance"));
 
   const creatureMembers = labels(
     "glyph g : interaction { tick { creature.| } }",
@@ -49,6 +50,7 @@ test("members and functions respect event/stage restrictions and signatures", ()
   assert.ok(creatureMembers.includes("hp"));
   assert.ok(creatureMembers.includes("get_nearest_object_by_type"));
   assert.ok(creatureMembers.includes("is_player"));
+  assert.ok(creatureMembers.includes("get_distance"));
 
   // Namespace member labels are also relative.
   assert.ok(
@@ -170,6 +172,13 @@ test("typed receiver completion resolves the receiver Glyph type", () => {
   const chained = labels(
     'glyph g : interaction { attempted { player.get_nearest_object_by_type("creature").| } }',
   );
+  // Partial member on a named Object alias: get_distance appears alongside the other Object methods.
+  const playerGet = labels(
+    "glyph g : interaction { attempted { player.get_| } }",
+  );
+  assert.ok(playerGet.includes("get_distance"));
+  assert.ok(playerGet.includes("get_nearest_object_by_type"));
+
 
   assert.ok(
     chained.includes("get_nearest_object_by_type"),
@@ -218,6 +227,21 @@ test("receiver completions carry receiver-stripped signatures and named argument
 
   assert.match(isPlayer.detail, /^\(\) → Bool/);
 
+  // Object.get_distance receiver: only the second object is exposed; object_a is injected.
+  const getDistance = complete(
+    "glyph g : interaction { attempted { context.creature.get_| } }",
+  ).options.find((o) => o.label === "get_distance");
+
+  assert.match(getDistance.detail, /^\(object_b: Object\) → Float/);
+  assert.ok(!/object_a/.test(getDistance.detail));
+
+  // Named arguments omit the injected object_a.
+  const distanceNamed = labels(
+    "glyph g : interaction { attempted { context.creature.get_distance(|) } }",
+  );
+  assert.ok(distanceNamed.includes("object_b:"));
+  assert.ok(!distanceNamed.includes("object_a:"));
+
   // Named arguments omit the injected origin parameter.
   const named = labels(
     "glyph g : interaction { attempted { context.creature.get_nearest_object_by_type(|) } }",
@@ -241,6 +265,7 @@ test("static Object namespace and curated-only surface are preserved", () => {
   // Static namespace member-mode labels are relative to Object.
   assert.ok(object.includes("nearest_object_by_type"));
   assert.ok(object.includes("is_player"));
+  assert.ok(object.includes("get_distance"));
 
   assert.ok(
     !object.includes("Object.nearest_object_by_type"),
