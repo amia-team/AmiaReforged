@@ -20,14 +20,27 @@ public static class GlyphApiReference
         foreach (var evt in metadata.Events.OrderBy(e => e.Name, StringComparer.Ordinal))
             Row(evt.Name, evt.EventType, evt.Category, string.Join(", ", evt.Stages));
         text.AppendLine("\n## Functions and call aliases\n");
-        foreach (var function in metadata.Functions.OrderBy(f => f.Name, StringComparer.Ordinal))
+        string? category = null;
+        foreach (var function in metadata.Functions.OrderBy(f => f.Category, StringComparer.Ordinal).ThenBy(f => f.Name, StringComparer.Ordinal))
         {
+            if (category != function.Category) { category = function.Category; text.AppendLine("## " + category + "\n"); }
             text.AppendLine("### `" + function.Name + "`\n");
             text.AppendLine("`" + function.Name + "(" + Signature(function.Parameters) + ") → " + function.ReturnType + "`\n");
             text.AppendLine(function.Description + "\n");
+            if (function.Source != null) text.AppendLine("Source: `" + function.Source + "`. Backend: " + function.Backend + ".\n");
+            if (function.Deprecated != null) text.AppendLine("Deprecated: " + function.Deprecated + "\n");
             text.AppendLine("Kind: " + function.Kind + ". Canonical: `" + function.CanonicalName + "`." +
                 (function.ImplicitArgument == null ? "" : " Implicit parameter: `" + function.ImplicitArgument + "`.") + "\n");
-            text.AppendLine("Available in: " + Scopes(function.AvailableIn) + ".\n");
+            text.AppendLine("Available in: " + (function.AvailableIn.Count == metadata.Contexts.Count ? "all Glyph events/stages" : Scopes(function.AvailableIn)) + ".\n");
+        }
+        text.AppendLine("## Constants\n");
+        text.AppendLine("Constants are available automatically. Domains currently use Int values; OBJECT.INVALID uses Object.\n");
+        foreach (var domain in metadata.Constants.GroupBy(c => c.Namespace).OrderBy(g => g.Key, StringComparer.Ordinal))
+        {
+            text.AppendLine("<details><summary>" + domain.Key + " (" + domain.Count() + " constants)</summary>\n");
+            Row("Name", "Type", "Value", "NWScript source"); Row("---", "---", "---", "---");
+            foreach (var constant in domain) Row(constant.Name, constant.Type, Convert.ToString(constant.Value, System.Globalization.CultureInfo.InvariantCulture), constant.Source);
+            text.AppendLine("\n</details>\n");
         }
         text.AppendLine("## Receiver methods\n");
         Row("Receiver", "Method", "Parameters", "Returns", "Canonical", "Availability");

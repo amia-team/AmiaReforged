@@ -56,4 +56,27 @@ public class GlyphIrValidatorTests
                 Assert.That(symbol.ReturnType.RuntimeType, Is.EqualTo(symbol.Definition.OutputPins.Single(p => p.Id == symbol.OutputPin).DataType));
         }
     }
+    [Test] public void An_action_result_requires_its_producer_on_every_execution_path()
+    {
+        var entry = new GlyphNodeInstance { TypeId = "event.before_group_spawn" };
+        var create = new GlyphNodeInstance { TypeId = "nwn.create_area" };
+        var consume = new GlyphNodeInstance { TypeId = "nwn.set_local_int" };
+        GlyphGraph graph = new() { EventType = GlyphEventType.BeforeGroupSpawn, Nodes = [entry, create, consume] };
+        graph.Edges.Add(Edge(create, "value", consume, "object"));
+        graph.Edges.Add(Edge(entry, "exec_out", consume, "exec_in"));
+        Assert.That(_validator.Validate(graph).Select(d => d.Code), Does.Contain("GLYPH4014"));
+        graph.Edges.RemoveAt(1);
+        graph.Edges.Add(Edge(entry, "exec_out", create, "exec_in"));
+        graph.Edges.Add(Edge(create, "exec_out", consume, "exec_in"));
+        Assert.That(_validator.Validate(graph), Is.Empty);
+    }
+    [Test] public void Effect_lists_cannot_connect_to_object_iteration()
+    {
+        var graph = Ir();
+        var effects = new GlyphNodeInstance { TypeId = "nwn.effects" };
+        var loop = new GlyphNodeInstance { TypeId = "flow.for_each" };
+        graph.Nodes.AddRange([effects, loop]);
+        graph.Edges.Add(Edge(effects, "value", loop, "list"));
+        Assert.That(_validator.Validate(graph).Select(d => d.Code), Does.Contain("GLYPH4010"));
+    }
 }

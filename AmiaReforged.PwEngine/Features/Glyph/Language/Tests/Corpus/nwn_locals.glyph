@@ -1,0 +1,16 @@
+glyph haunted_door : interaction {
+    completed {
+        let door = nwn.get_nearest_object_by_type(player, OBJECT_TYPE.DOOR)
+        if door.is_valid() {
+            let uses = door.get_local_int("haunt_uses")
+            door.set_local_int("haunt_uses", uses + 1)
+            door.set_local_object("last_visitor", player)
+            door.set_local_float("last_distance", door.get_distance(player))
+            door.set_local_location("visitor_location", player.get_location())
+            if uses >= 3 {
+                door.set_local_int("exhausted", 1)
+                door.set_locked(true)
+            }
+        }
+    }
+}

@@ -62,8 +62,8 @@ new("Object.get_distance", "distance", ReceiverMethods: ["get_distance"])
 
 Parameter zero must be Object. `player.get_distance(other)` then binds to
 `Object.get_distance(player, other)`; arbitrary .NET/Anvil members stay inaccessible.
-`ReceiverType` can declare another curated Glyph type. Receiver method names are currently
-unique across the catalog, matching the existing binder's resolution rules.
+`ReceiverType` can declare another curated Glyph type. Receiver method names are unique within a receiver type. Object and Location can both
+provide `get_area` without ambiguity; binding resolves the receiver type first.
 
 Declare call/property aliases locally, including the injected expression:
 
@@ -180,7 +180,7 @@ dotnet build AmiaReforged.PwEngine -p:EmitCompilerGeneratedFiles=true -p:Compile
 ```
 
 The HTTP endpoint remains `/api/worldengine/glyphs/language-metadata`; its DTO retains existing
-fields and adds `writableState`. Ordinary capability changes require no frontend function
+fields and adds `writableState`, constants/domains, value types, and function provenance. Ordinary capability changes require no frontend function
 catalog edits. New syntax (declarations, control flow, keywords) still needs parser/binder/
 lowerer and Lezer work. Intrinsics, aliases and contexts do not.
 
@@ -204,3 +204,122 @@ Deliberately deferred: replacing persisted enums with string event IDs; cross-as
 manifests; generated typed input structs (constants already prevent ID drift); removing legacy
 flat-property/composite-API adapters; redesigning the interpreter/IR; and adding new stage syntax.
 No runtime assembly scanning, general reflection dispatch or implicit CLR exposure is introduced.
+
+
+## Adding an NWScript binding
+
+`Nwn/standard.nwnbindings` is the reviewed source of binding decisions. `NwnBindingGenerator`
+inspects Roslyn symbols from the referenced `NWN.Core.NWScript` during compilation and emits
+ordinary descriptors, direct-call executors, registry entries, constants and API coverage.
+No runtime reflection dispatch is involved. New native APIs stay unpublished until reviewed.
+
+A function row has twelve pipe-separated fields; empty fields are significant:
+
+```text
+function|NativeMember|GlyphName|mode|returnType|parameterRules|receiver|aliases|category|adapterClass|descriptionOrReason|deprecation
+```
+
+For example:
+
+```text
+function|GetLocalInt|nwn.get_local_int|pure|||get_local_int||Locals||Read an object's local integer.|
+function|SetLocalInt|nwn.set_local_int|action|||set_local_int||Locals||Write an object's local integer.|
+function|GetIsDM|nwn.get_is_dm|pure|Bool||is_dm||Creatures||Whether the creature is a DM.|
+```
+
+1. Add a row using `pure` for queries and value constructors, `action` for mutations (including
+   mutations returning values), or `command` for operations executed under an explicit actor.
+2. Override semantic types where CLR types are insufficient. `nativeName:GlyphType:pinName`
+   rules are comma-separated; the pin name may be omitted. For example `bRun:Bool` converts
+   an integer sentinel to Bool, and `lTarget:Location` maps an opaque native location.
+3. Add one receiver name if parameter zero is Object, Location or Effect. Add comma-separated
+   source aliases to preserve existing spellings. Receivers and aliases use the same executor.
+4. Run the tests and regenerate the standard artifacts with the command below.
+
+Scalar types are inferred: int -> Int, float/double -> Float, string -> String, uint -> Object.
+IntPtr requires explicit Location/Effect semantics. Ref/out, delegates, vectors, item properties,
+events, JSON and other unrepresented types require adapters rather than accidental CLR access.
+`nativeName:omit` can omit an optional native parameter; its native `default` is passed. Ordinary
+native scalar defaults are preserved. OBJECT_SELF defaults require an explicit Glyph Object
+because Glyph normalizes zero handles to OBJECT_INVALID. Receiver parameters are required.
+
+`command` adds a required `actor: Object` parameter before native parameters and runs the specific
+call under `NWScript.AssignCommand(actor, ...)`. Its receiver is the actor. This is internal
+scheduling machinery; Glyph cannot supply or obtain a delegate. Command functions return Void.
+Non-Void actions produce both exec and data outputs and execute once at their source position.
+Use unique source names, not implicit overload resolution; native overloads require an adapter.
+
+## Adding an NWScript adapter
+
+Use a `[GlyphNode]` partial executor with a static descriptor beside its implementation. Add a
+`manual` manifest row naming the fully qualified executor class. `LocationExecutor`,
+`ApplyEffectValueExecutor`, and `InventoryExecutor` show construction, reordered/defaulted
+parameters, and first/next snapshots respectively. The normal registry generator registers the
+adapter; the NWN generator emits no second executor. Startup verifies its published source name.
+The descriptor is authoritative for the adapter's pins, aliases and receiver exports.
+
+Adapters use `GlyphNwnLocation` and `GlyphNwnEffect`, never strings or integer pointer values.
+Use `GlyphNodeContext.InObject` and `GlyphNwnValue.NormalizeObject` at handle boundaries. An
+iterator adapter must finish its first/next traversal synchronously after resolving its inputs,
+then return a typed snapshot (`List<Object>` or `List<Effect>`). Do not await inside native
+iterator traversal. A list pin sets `ElementType`; legacy list pins with no element type mean
+Object, preserving persisted graphs. New element types need explicit compiler/runtime support.
+
+Preserve an existing runtime TypeId and pin IDs when adapting an existing executor. Add the
+canonical `nwn.*` spelling to its exports. The manifest's `manual` mode ensures ordinary generation
+does not create a competing implementation. Keep semantic helpers such as `heal`, `damage`, and
+legacy string-based object queries when their behavior differs from the native primitive.
+
+## Adding an NWScript constant domain
+
+Add `domain|NATIVE_PREFIX|GLYPH_NAMESPACE` to the manifest. The longest matching prefix wins:
+`OBJECT_TYPE_CREATURE` becomes `OBJECT_TYPE.CREATURE`, even when the broader `OBJECT` domain is
+also selected. Numeric suffixes receive `VALUE_` to remain valid identifiers: `DAMAGE_BONUS_1`
+becomes `DAMAGE_BONUS.VALUE_1`. Types and values come from native compile-time constant fields.
+The generator rejects collisions. Constants enter `GlyphStandardLibrary.Environment`, metadata,
+completion and documentation from the same generated table. Do not edit `global.glyph` by hand.
+
+## Excluding an NWScript method
+
+Use an `exclude` or `deferred` row and put the reason in the description field. Callback-taking
+DelayCommand/ActionDoCommand need future Glyph-native control flow. First/next methods are replaced
+by snapshot adapters. CLR/script-source execution remains outside the published boundary.
+Unselected methods remain visible in coverage: representable signatures are classified excluded
+pending review, nonrepresentable signatures unsupported, callbacks deferred. Dependency upgrades
+cannot quietly add source functions. Unsupported means a type/semantic adapter is needed, not a
+permanent game-state restriction.
+
+## Adding an Anvil-backed general NWN operation
+
+Add an adapter in `Nwn/` with an ordinary descriptor, stable `nwn.*` export, `Source` and `Backend`.
+Use a manual manifest row when replacing a native method. An Anvil-only operation needs no fake
+NWScript row; registration and metadata follow its descriptor. Inject needed dependencies through
+an `IGlyphModule`, as above. Add conversion/runtime tests separately from compiler conformance.
+Keep Amia industry, resources, knowledge and other domain logic in its World Engine module.
+
+## Regenerate the NWN standard artifacts and review upgrades
+
+From the repository root:
+
+```sh
+dotnet run --project tools/Glyph.Docs -- \
+  --output AmiaReforged.PwEngine/Features/Glyph/Language/API_REFERENCE.md \
+  --metadata /tmp/glyph-language-metadata.json \
+  --global AmiaReforged.PwEngine/Features/Glyph/Language/Standard/global.glyph \
+  --nwn-coverage AmiaReforged.PwEngine/Features/Glyph/Language/Standard/NWN_COVERAGE.md \
+  --nwn-snapshot AmiaReforged.PwEngine/Features/Glyph/Language/Standard/NWN_API_SNAPSHOT.json
+```
+
+Before regenerating the snapshot after an NWN dependency upgrade, run:
+
+```sh
+dotnet run --project tools/Glyph.Docs -- \
+  --compare-nwn AmiaReforged.PwEngine/Features/Glyph/Language/Standard/NWN_API_SNAPSHOT.json
+```
+
+Comparison returns exit code 1 when versions, signatures/defaults, binding decisions or constants
+have changed, and lists added/removed/changed functions and constants. Review the changes, update
+manifest/adapters, run conformance, then commit the regenerated artifacts together. The reviewed
+snapshot is also a regression test; the ordinary test suite fails on unreviewed API drift.
+`GLYPHNW001`–`GLYPHNW008` report duplicate source names, parameter/return mapping problems,
+object semantics, receiver/constant collisions, missing adapters and malformed manifest entries.

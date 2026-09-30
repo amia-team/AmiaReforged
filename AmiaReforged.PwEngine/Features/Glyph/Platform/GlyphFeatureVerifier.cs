@@ -98,12 +98,12 @@ public static class GlyphFeatureVerifier
                 inputs[0].DataType == setterInputs[0].DataType && output.DataType == setterInputs[1].DataType &&
                 setter.Definition.Archetype == GlyphNodeArchetype.Action, $"Indexer '{indexer.Name}' has incompatible signatures.");
         }
-        Unique(exports.SelectMany(e => e.Intrinsic.ReceiverMethods ?? []), "receiver methods");
+        Unique(exports.SelectMany(e => (e.Intrinsic.ReceiverMethods ?? []).Select(r => e.Intrinsic.ReceiverType + "." + r)), "receiver methods");
         Unique(exports.Where(e => e.Intrinsic.WritableAs != null).Select(e => e.Intrinsic.WritableAs!), "writable aliases");
         foreach (var (def, intrinsic) in exports)
         {
             string prefix = $"{intrinsic.Name} ({def.TypeId})";
-            var strategy = intrinsic.Strategy ?? (intrinsic.OutputPin == null ? GlyphLoweringStrategy.Action : GlyphLoweringStrategy.Value);
+            var strategy = intrinsic.Strategy ?? (def.Archetype == GlyphNodeArchetype.Action || intrinsic.OutputPin == null ? GlyphLoweringStrategy.Action : GlyphLoweringStrategy.Value);
             Check(intrinsic.OutputPin == null || def.OutputPins.Any(p => p.Id == intrinsic.OutputPin && p.DataType != GlyphDataType.Exec),
                 prefix + ": missing return output.");
             Check(strategy != GlyphLoweringStrategy.Value || intrinsic.OutputPin != null, prefix + ": value function needs a return output.");
@@ -143,6 +143,15 @@ public static class GlyphFeatureVerifier
                     $"Event '{evt.Name}' has invalid entry '{entry}'.");
             }
         }
+        Unique(Nwn.GlyphNwnSurface.Constants.Select(c => c.Name), "standard constants");
+        foreach (var constant in Nwn.GlyphNwnSurface.Constants)
+        {
+            var value = Nwn.GlyphStandardLibrary.Environment.GetResolvedConstant(constant.Name);
+            Check(value != null && Equals(value.Value, constant.Value), $"Unresolved constant '{constant.Name}'.");
+            Check(constant.Type is "Bool" or "Int" or "Float" or "String" or "Object", $"Unsupported constant type '{constant.Type}'.");
+        }
+        foreach (var binding in Nwn.GlyphNwnSurface.Bindings.Where(b => b.Status is "bound" or "adapted"))
+            Check(binding.Name != null && names.Contains(binding.Name), $"Unregistered NWN binding '{binding.Member}' ({binding.Name}).");
         return errors.AsReadOnly();
     }
 
@@ -153,6 +162,7 @@ public static class GlyphFeatureVerifier
         GlyphDataType.Float => double.TryParse(pin.DefaultValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) && double.IsFinite(number),
         GlyphDataType.Bool => bool.TryParse(pin.DefaultValue, out _),
         GlyphDataType.NwObject => uint.TryParse(pin.DefaultValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out _),
+        GlyphDataType.Location or GlyphDataType.Effect => pin.DefaultValue == "invalid",
         _ => false
     };
 }

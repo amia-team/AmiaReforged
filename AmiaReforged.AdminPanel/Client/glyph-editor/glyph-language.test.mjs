@@ -44,6 +44,20 @@ test('keyword specializations stay aligned with GlyphLexer', async () => {
     assert.deepEqual(errors(parse(source)), []);
 });
 
+test('typed namespaced constants and NWN value helpers parse without recovery', () => {
+    const source = `const Custom.MASK : Int = -2147483648
+        const Custom.NONE : Object = 2130706432
+        fn kind(aura: Effect): Int = nwn.get_effect_type(aura)
+        glyph test : interaction { completed {
+            player.set_local_int("mask", Custom.MASK)
+            let location = player.get_location()
+            player.jump_to_location(location)
+        } }`;
+    const tree = parse(source);
+    assert.deepEqual(errors(tree), [], tree.toString());
+    assert.equal(nodes(tree, 'ConstantDeclaration').length, 2);
+});
+
 test('expressions preserve precedence, calls, named arguments and shorthand', () => {
     const source = `glyph résumé : interaction {
         let α2 = -1 + 2 * 3

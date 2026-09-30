@@ -70,25 +70,46 @@ public class GlyphPlatformTests
                 string Arguments(IEnumerable<GlyphParameterMetadataDto> parameters) => string.Join(", ", parameters.Select(p =>
                     p.TestValue(fields)));
                 string call = function.Name + "(" + Arguments(function.Parameters) + ")";
-                string body = function.Kind == "Action" ? call : function.Kind == "PredicateBranch" ? "if " + call + " { }" : "let probe = " + call;
-                Compile(scope, body, function.Name);
+                string body = Consume(call, function.Kind, function.ReturnType, fields);
+                var program = Compile(scope, body, function.Name);
+                Assert.That(program.CreateExecutionGraph().Nodes.Any(n => n.TypeId == _compiler.Catalog.Find(function.CanonicalName)!.Definition.TypeId), Is.True, function.Name + " was not lowered");
             }
         }
         foreach (var receiver in metadata.ReceiverMethods)
             foreach (var scope in receiver.AvailableIn)
             {
                 var fields = metadata.Contexts.Single(c => c.Event == scope.Event && c.Stage == scope.Stage).Fields;
-                string first = fields.First(f => f.Type == receiver.ReceiverType && f.Name.StartsWith("context.")).Name;
+                string first = new GlyphParameterMetadataDto("receiver", "Receiver", receiver.ReceiverType, true, null).TestValue(fields);
                 string args = string.Join(", ", receiver.Parameters.Select(p => p.TestValue(fields)));
-                Compile(scope, "let probe = " + first + "." + receiver.Name + "(" + args + ")", receiver.Name);
+                string call = "(" + first + ")." + receiver.Name + "(" + args + ")";
+                Compile(scope, Consume(call, receiver.Kind, receiver.ReturnType, fields), receiver.Name);
             }
     }
 
-    private void Compile(GlyphAvailabilityDto scope, string body, string label)
+    private static string Consume(string call, string kind, string returnType, IReadOnlyList<GlyphFieldMetadataDto> fields)
+    {
+        if (kind == "Action" && returnType == "Void") return call;
+        if (kind == "PredicateBranch" || returnType == "Bool") return "if " + call + " { }";
+        string obj = fields.First(f => f.Type == "Object" && f.Name.StartsWith("context.")).Name;
+        return returnType switch
+        {
+            "Int" or "Float" => $"nwn.set_local_float({obj}, \"probe\", {call})",
+            "String" => $"nwn.set_local_string({obj}, \"probe\", {call})",
+            "Object" => $"nwn.set_local_object({obj}, \"probe\", {call})",
+            "Location" => $"nwn.set_local_location({obj}, \"probe\", {call})",
+            "Effect" => $"nwn.apply_effect({obj}, {call})",
+            "List<Object>" => $"foreach element in {call} {{ nwn.set_local_int(element, \"probe\", 1) }}",
+            "List<Effect>" => $"foreach element in {call} {{ nwn.remove_effect({obj}, element) }}",
+            _ => throw new InvalidOperationException("Add a conformance consumer for " + returnType)
+        };
+    }
+
+    private Runtime.Programs.GlyphExecutable Compile(GlyphAvailabilityDto scope, string body, string label)
     {
         if (scope.Stage != null) body = scope.Stage + " { " + body + " }";
         var result = _compiler.Compile("glyph probe : " + scope.Event + " { " + body + " }");
         Assert.That(result.Success, Is.True, label + "/" + scope + ": " + string.Join(", ", result.Diagnostics));
+        return result.Executable!;
     }
 
     [Test] public async Task Every_schema_drives_outputs_getters_and_metadata_from_typed_context()
@@ -209,7 +230,10 @@ internal static class GlyphParameterTestValues
     public static string TestValue(this GlyphParameterMetadataDto parameter, IReadOnlyList<GlyphFieldMetadataDto> fields) => parameter.Type switch
     {
         "Object" => fields.First(f => f.Type == "Object" && f.Name.StartsWith("context.")).Name,
-        "ObjectList" => "party.members()",
+        "ObjectList" or "List<Object>" => "party.members()",
+        "List<Effect>" => "nwn.effects(OBJECT.INVALID)",
+        "Location" => "nwn.get_location(OBJECT.INVALID)",
+        "Effect" => "effect.haste()",
         "String" => System.Text.Json.JsonSerializer.Serialize(parameter.DefaultValue ?? "test"),
         "Int" => "1",
         "Float" => "1.0",

@@ -1,0 +1,12 @@
+glyph collect_quest_tokens : interaction {
+    completed {
+        foreach item in player.inventory() {
+            if item.get_tag() == "amia_quest_item" {
+                player.set_local_int("collected_tokens", player.get_local_int("collected_tokens") + item.get_item_stack_size())
+                item.destroy()
+            }
+        }
+        let reward = nwn.create_item_on_object("amia_quest_reward", player)
+        reward.set_local_object("reward_owner", player)
+    }
+}

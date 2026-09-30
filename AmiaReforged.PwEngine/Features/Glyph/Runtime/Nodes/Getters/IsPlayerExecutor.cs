@@ -38,8 +38,9 @@ public partial class IsPlayerExecutor : IGlyphNodeExecutor
 
     public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
-        TypeId = NodeTypeId,
+        TypeId = NodeTypeId, Source = "NWScript.GetIsPC", Backend = "NWScript adapter",
         Exports = [
+            new("nwn.is_player", "result"), new("nwn.get_is_pc", "result"),
             new("Object.is_player", "result", null, ReceiverMethods: ["is_player"])
         ],
         DisplayName = "Is Player",

@@ -12,6 +12,7 @@ public enum GlyphConstantKind
     Int,
     Float,
     String,
+    Object,
 }
 
 /// <summary>

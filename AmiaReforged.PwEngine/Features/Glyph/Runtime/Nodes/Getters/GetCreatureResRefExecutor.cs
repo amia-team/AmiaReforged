@@ -20,17 +20,8 @@ public partial class GetCreatureResRefExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        object? creatureValue = await resolveInput("creature");
-        uint creature = Convert.ToUInt32(creatureValue);
-
-        string resref = creature != NWScript.OBJECT_INVALID
-            ? NWScript.GetResRef(creature)
-            : string.Empty;
-
-        return GlyphNodeResult.Data(new Dictionary<string, object?>
-        {
-            ["resref"] = resref
-        });
+        return await new GetObjectResRefExecutor().ExecuteAsync(node, context,
+            pin => resolveInput(pin == "object" ? "creature" : pin));
     }
 
     public GlyphNodeDefinition CreateDefinition() => new()

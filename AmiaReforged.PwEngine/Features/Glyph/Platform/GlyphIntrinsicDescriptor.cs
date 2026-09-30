@@ -19,6 +19,9 @@ public sealed record GlyphIntrinsicDescriptor
     public required string DisplayName { get; init; }
     public required string Category { get; init; }
     public string Description { get; init; } = "";
+    public string? Source { get; init; }
+    public string? Backend { get; init; }
+    public string? Deprecated { get; init; }
     public string ColorClass { get; init; } = "node-default";
     public GlyphNodeArchetype Archetype { get; init; } = GlyphNodeArchetype.PureFunction;
     public GlyphEventType? RestrictToEventType { get; init; }
@@ -36,6 +39,7 @@ public sealed record GlyphIntrinsicDescriptor
         return new()
         {
             TypeId = TypeId, DisplayName = DisplayName, Category = Category, Description = Description,
+            Source = Source, Backend = Backend, Deprecated = Deprecated,
             ColorClass = ColorClass, Archetype = Archetype, RestrictToEventType = RestrictToEventType,
             ScriptCategory = ScriptCategory, Properties = [.. Properties],
             InputPins = [.. executable ? new[] { Pins.ExecIn() } : [], .. Parameters],

@@ -11,7 +11,7 @@
 GlobalDeclaration { ConstantDeclaration | FunctionDeclaration }
 TypeDeclaration { StructDeclaration | AdtDeclaration }
 
-ConstantDeclaration { kw<"const"> ConstantName ("=" expression)? ";"? }
+ConstantDeclaration { kw<"const"> ConstantName (":" TypeName)? ("=" expression)? ";"? }
 FunctionDeclaration { kw<"fn"> FunctionName "(" Parameters ")" ":" TypeName "=" expression ";"? }
 Parameters { Parameter* }
 Parameter { ParameterName (":" TypeName)? ("," | ";")? }
@@ -21,7 +21,7 @@ AdtDeclaration { kw<"type"> TypeName "{" (VariantDeclaration | ";" | ",")* "}" }
 VariantDeclaration { VariantName FieldBlock }
 FieldBlock { "{" FieldDeclaration* "}" }
 FieldDeclaration { FieldName ":" TypeName ("," | ";")? }
-ConstantName { Identifier }
+ConstantName { Identifier ("." Identifier)* }
 FunctionName { Identifier }
 ParameterName { Identifier }
 TypeName { Identifier }

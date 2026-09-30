@@ -34,20 +34,13 @@ public partial class GetCreatureLevelExecutor : IGlyphNodeExecutor
         });
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
-        TypeId = NodeTypeId,
-        DisplayName = "Get Creature Level",
-        Category = "Getters",
-        Description = "Returns the level (hit dice) of a creature given its object ID.",
-        ColorClass = "node-getter",
-        InputPins =
-        [
-            new GlyphPin { Id = "creature", Name = "Creature", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Input }
-        ],
-        OutputPins =
-        [
-            new GlyphPin { Id = "level", Name = "Level", DataType = GlyphDataType.Int, Direction = GlyphPinDirection.Output }
-        ]
+        TypeId = NodeTypeId, DisplayName = "GetCreatureLevelExecutor", Category = "NWN / Compatibility",
+        Description = "NWScript GetHitDice with the established runtime pin contract.",
+        Source = "NWScript.GetHitDice", Backend = "NWScript adapter",
+        Archetype = GlyphNodeArchetype.PureFunction,
+        Parameters = [Pins.InObject("creature", "Creature")], Results = [Pins.Out("level", "Level", GlyphDataType.Int)],
+        Exports = [new("nwn.get_hit_dice", "level", ReceiverMethods: ["get_hit_dice"])]
     };
 }

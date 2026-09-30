@@ -21,7 +21,7 @@ public partial class GetCreatureRaceExecutor : IGlyphNodeExecutor
         Func<string, Task<object?>> resolveInput)
     {
         object? creatureValue = await resolveInput("creature");
-        uint creature = Convert.ToUInt32(creatureValue);
+        uint creature = Nwn.GlyphNwnValue.NormalizeObject(Convert.ToUInt32(creatureValue));
 
         int raceId = creature != NWScript.OBJECT_INVALID
             ? NWScript.GetRacialType(creature)
@@ -63,22 +63,13 @@ public partial class GetCreatureRaceExecutor : IGlyphNodeExecutor
         });
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
-        TypeId = NodeTypeId,
-        DisplayName = "Get Creature Race",
-        Category = "Getters",
-        Description = "Returns the racial type ID and name of a creature.",
-        ColorClass = "node-getter",
+        TypeId = NodeTypeId, DisplayName = "GetCreatureRaceExecutor", Category = "NWN / Compatibility",
+        Description = "NWScript GetRacialType with the established runtime pin contract.",
+        Source = "NWScript.GetRacialType", Backend = "NWScript adapter",
         Archetype = GlyphNodeArchetype.PureFunction,
-        InputPins =
-        [
-            new GlyphPin { Id = "creature", Name = "Creature", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Input }
-        ],
-        OutputPins =
-        [
-            new GlyphPin { Id = "race_id", Name = "Race ID", DataType = GlyphDataType.Int, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "race_name", Name = "Race Name", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output }
-        ]
+        Parameters = [Pins.InObject("creature", "Creature")], Results = [Pins.Out("race_id", "Race", GlyphDataType.Int), Pins.Out("race_name", "Race name", GlyphDataType.String)],
+        Exports = [new("nwn.get_racial_type", "race_id", ReceiverMethods: ["get_racial_type"])]
     };
 }

@@ -1,0 +1,14 @@
+const HASTE_EFFECT = EFFECT_TYPE.HASTE
+fn is_haste(aura: Effect): Bool = nwn.get_effect_type(aura) == HASTE_EFFECT
+
+glyph spectral_blessing : interaction {
+    completed {
+        foreach aura in player.effects() {
+            if is_haste(aura) { player.remove_effect(aura) }
+        }
+        player.apply_effect(effect.visual_effect(VFX.DUR_AURA_PURPLE))
+        player.apply_effect(effect.haste(), duration: 30.0)
+        player.apply_effect(effect.ac_increase(4), duration: 30.0)
+        player.apply_effect(effect.damage_resistance(DAMAGE_TYPE.FIRE, 10), duration: 30.0)
+    }
+}

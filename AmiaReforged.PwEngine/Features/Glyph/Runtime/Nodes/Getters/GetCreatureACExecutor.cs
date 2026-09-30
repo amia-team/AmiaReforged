@@ -20,7 +20,7 @@ public partial class GetCreatureACExecutor : IGlyphNodeExecutor
         Func<string, Task<object?>> resolveInput)
     {
         object? creatureValue = await resolveInput(Inputs.Creature);
-        uint creature = Convert.ToUInt32(creatureValue);
+        uint creature = Nwn.GlyphNwnValue.NormalizeObject(Convert.ToUInt32(creatureValue));
 
         int ac = creature != NWScript.OBJECT_INVALID
             ? NWScript.GetAC(creature)
@@ -34,8 +34,9 @@ public partial class GetCreatureACExecutor : IGlyphNodeExecutor
 
     public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
-        TypeId = NodeTypeId,
+        TypeId = NodeTypeId, Source = "NWScript.GetAC", Backend = "NWScript adapter",
         Exports = [
+            new("nwn.get_ac", "ac", ReceiverMethods: ["get_ac"]),
             new("creature.ac", "ac", null, PropertyAliases: [new("creature.ac", "creature.ac", "creature")])
         ],
         DisplayName = "Get Creature AC",

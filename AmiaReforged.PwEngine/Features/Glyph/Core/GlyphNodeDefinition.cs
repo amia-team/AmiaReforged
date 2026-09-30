@@ -14,6 +14,9 @@ public class GlyphNodeDefinition
     /// Convention: "category.name" (e.g., "flow.branch", "action.apply_effect", "event.before_group_spawn").
     /// </summary>
     public IReadOnlyList<GlyphIntrinsicExport> Intrinsics { get; init; } = [];
+    public string? Source { get; init; }
+    public string? Backend { get; init; }
+    public string? Deprecated { get; init; }
     public GlyphContextSchema? ContextSchema { get; init; }
 
     public required string TypeId { get; init; }

@@ -30,7 +30,7 @@ public class GlyphLanguageMetadataTests
             foreach (var parameter in function.Parameters)
             {
                 var pin = symbol.Parameters.Single(p => p.Id == parameter.Name);
-                Assert.That(parameter.Type, Is.EqualTo(GlyphTypeSymbol.From(pin.DataType).Name));
+                Assert.That(parameter.Type, Is.EqualTo(GlyphTypeSymbol.From(pin).Name));
                 Assert.That(parameter.DefaultValue, Is.EqualTo(pin.DefaultValue));
                 Assert.That(parameter.Required, Is.EqualTo(pin.DefaultValue == null));
             }
@@ -86,7 +86,7 @@ public class GlyphLanguageMetadataTests
         Assert.That(_metadata.ReceiverMethods.Count, Is.EqualTo(catalog.ReceiverMethods.Count));
         foreach (var rm in catalog.ReceiverMethods)
         {
-            var meta = _metadata.ReceiverMethods.Single(m => m.Name == rm.Name);
+            var meta = _metadata.ReceiverMethods.Single(m => m.Name == rm.Name && m.ReceiverType == GlyphTypeSymbol.From(rm.ReceiverType).Name);
             var target = catalog.Find(rm.Target)!;
             Assert.That(meta.ReceiverType, Is.EqualTo(GlyphTypeSymbol.From(rm.ReceiverType).Name));
             Assert.That(meta.CanonicalName, Is.EqualTo(rm.Target));
@@ -97,7 +97,7 @@ public class GlyphLanguageMetadataTests
             foreach (var parameter in meta.Parameters)
             {
                 var pin = target.Parameters.Single(p => p.Id == parameter.Name);
-                Assert.That(parameter.Type, Is.EqualTo(GlyphTypeSymbol.From(pin.DataType).Name));
+                Assert.That(parameter.Type, Is.EqualTo(GlyphTypeSymbol.From(pin).Name));
                 Assert.That(parameter.DefaultValue, Is.EqualTo(pin.DefaultValue));
                 Assert.That(parameter.Required, Is.EqualTo(pin.DefaultValue == null));
             }

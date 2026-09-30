@@ -1,0 +1,9 @@
+glyph return_home : interaction {
+    completed {
+        let current = player.get_location()
+        let home = nwn.location(current.get_area(), current.get_x(), current.get_y(), current.get_z(), current.get_facing())
+        player.set_local_location("last_safe_location", home)
+        player.jump_to_location(player.get_local_location("last_safe_location"))
+        player.action_move_to_location(home, run: false)
+    }
+}

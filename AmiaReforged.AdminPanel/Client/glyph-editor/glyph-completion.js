@@ -63,11 +63,13 @@ export function completionScope(state, pos, from = pos) {
   for (const block of blocks) {
     if (block.parent?.name === "ForeachStatement") {
       const name = text(state, block.parent.getChild("BindingName"));
-      // The compiler types every foreach element as Object (an Object list element).
+      // Derive the element from the compiler-owned list return type.
       if (name)
         locals.set(name, {
           label: name,
-          type: "Object",
+          type: null,
+          init: firstExprChild(block.parent),
+          elementOf: true,
           detail: "Loop variable",
           boost: 20,
         });
@@ -153,8 +155,8 @@ function contextField(metadata, scope, name) {
   );
   return ctx?.fields.find((f) => f.name === name) ?? null;
 }
-function receiverMethod(metadata, name) {
-  return (metadata?.receiverMethods || []).find((r) => r.name === name) ?? null;
+function receiverMethod(metadata, name, type) {
+  return (metadata?.receiverMethods || []).find((r) => r.name === name && r.receiverType === type) ?? null;
 }
 function functionByName(metadata, name) {
   return (
@@ -197,15 +199,18 @@ function expressionType(state, node, scope, metadata) {
       const name = text(state, node);
       const local = localType(scope, name);
       if (local != null) return local;
-      return contextField(metadata, scope, name)?.type ?? null;
+      return contextField(metadata, scope, name)?.type ?? (metadata?.constants || []).find(c => c.name === name)?.type ?? null;
     }
     case "IndexExpression":
       return null;
     case "CallExpression": {
       const callee = node.firstChild;
       if (!callee) return null;
+      const direct = functionByName(metadata, text(state, callee));
+      if (direct) return direct.returnType;
       if (callee.name === "MemberExpression") {
-        const rm = receiverMethod(metadata, memberName(state, callee));
+        const type = expressionType(state, memberReceiver(callee), scope, metadata);
+        const rm = receiverMethod(metadata, memberName(state, callee), type);
         if (rm) {
           const receiverType = expressionType(
             state,
@@ -267,7 +272,7 @@ function functionCompletion(fn, context) {
 // preserved and the popup shows the bare member name.
 function receiverCompletion(rm, context) {
   const followsParen = /^\s*\(/.test(context.state.sliceDoc(context.pos));
-  const template = `${rm.name}(${rm.parameters.map((p) => "${" + p.name + "}").join(", ")})`;
+  const template = `${rm.name}(${rm.parameters.filter(p => p.required).map((p) => "${" + p.name + "}").join(", ")})`;
 
   const completion = {
     label: rm.name,
@@ -330,6 +335,14 @@ function memberCompletions(context, word, scope, functions, fields, metadata) {
     }
   }
 
+  for (const constant of metadata?.constants || []) {
+    if (constant.name.startsWith(namespacePrefix)) {
+      const name = constant.name.slice(namespacePrefix.length);
+      if (name.startsWith(memberPrefix)) completions.push({ label: name, type: "constant",
+        detail: `${constant.type} = ${constant.value}`, info: `${constant.description} (${constant.source})`, apply: name });
+    }
+  }
+
   for (const field of fields) {
     if (field.name.startsWith(namespacePrefix)) {
       const memberName = field.name.slice(namespacePrefix.length);
@@ -357,8 +370,11 @@ function callBinding(call, state, scope, metadata) {
   if (!call) return null;
   const callee = call.firstChild;
   if (!callee) return null;
+  const direct = functionByName(metadata, text(state, callee));
+  if (direct) return { name: direct.name, signature: signature(direct), parameters: direct.parameters, description: direct.description };
   if (callee.name === "MemberExpression") {
-    const rm = receiverMethod(metadata, memberName(state, callee));
+    const type = expressionType(state, memberReceiver(callee), scope, metadata);
+    const rm = receiverMethod(metadata, memberName(state, callee), type);
     if (rm)
       return {
         name: rm.name,
@@ -478,12 +494,8 @@ export function glyphCompletions(metadata) {
 
       for (const local of scope.locals) {
         if (local.init) {
-          local.type = expressionType(
-            context.state,
-            local.init,
-            resolverScope,
-            metadata,
-          );
+          const type = expressionType(context.state, local.init, resolverScope, metadata);
+          local.type = local.elementOf ? /^List<(.+)>$/.exec(type || "")?.[1] ?? null : type;
         }
       }
 
@@ -565,6 +577,7 @@ export function glyphCompletions(metadata) {
         );
       }
 
+      for (const domain of metadata?.constantDomains || []) options.push({ label: domain.name, type: "namespace", detail: `${domain.count} constants`, apply: domain.name + "." });
       options.push(
         ...scope.locals,
         { label: "true", type: "keyword" },

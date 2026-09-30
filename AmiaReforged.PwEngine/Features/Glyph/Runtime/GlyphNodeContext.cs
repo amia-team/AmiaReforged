@@ -63,8 +63,8 @@ public sealed class GlyphNodeContext
     /// Resolves an NWN object pin. Defaults to <see cref="NWScript.OBJECT_INVALID"/>
     /// so unconnected pins fail the standard validity guard instead of resolving to 0.
     /// </summary>
-    public Task<uint> InObject(string pinId, uint? fallback = null) =>
-        In(pinId, fallback ?? NWScript.OBJECT_INVALID);
+    public async Task<uint> InObject(string pinId, uint? fallback = null) =>
+        Nwn.GlyphNwnValue.NormalizeObject(await In(pinId, fallback ?? NWScript.OBJECT_INVALID));
 
     /// <summary>
     /// Reads a static property override (editor property-panel value) for this node.

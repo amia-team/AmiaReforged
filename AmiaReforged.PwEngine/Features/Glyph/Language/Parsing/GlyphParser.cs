@@ -73,11 +73,13 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
                 if (Eat("const"))
                 {
                     string constName = Expect("identifier").Text;
+                    while (Eat(".")) constName += "." + Expect("identifier").Text;
+                    string? constType = Eat(":") ? Expect("identifier").Text : null;
                     ExpressionSyntax? initializer = null;
                     if (Eat("="))
                         initializer = Expression();
 
-                    globalDeclarations.Add(new ConstantDeclarationSyntax(constName, initializer, Through(unitStart)));
+                    globalDeclarations.Add(new ConstantDeclarationSyntax(constName, initializer, Through(unitStart), constType));
                 }
                 else if (Eat("fn"))
                 {
@@ -313,7 +315,12 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
         SourceSpan start = Current.Span;
         ExpressionSyntax left;
 
-        if (At("!") || At("-") || At("+"))
+        if (At("-") && _position + 1 < tokens.Count && tokens[_position + 1].Value is 2147483648L)
+        {
+            Take(); Take();
+            left = new LiteralExpressionSyntax(int.MinValue, Through(start));
+        }
+        else if (At("!") || At("-") || At("+"))
         {
             string op = Take().Kind;
             left = new UnaryExpressionSyntax(op, Expression(7), Through(start));
@@ -326,7 +333,9 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
         else if (Current.Value != null)
         {
             var token = Take();
-            left = new LiteralExpressionSyntax(token.Value!, token.Span);
+            if (token.Value is long)
+                Diagnostics.Add(new("GLYPH1003", "Number is out of range.", token.Span));
+            left = new LiteralExpressionSyntax(token.Value is long ? 0 : token.Value!, token.Span);
         }
         else
         {

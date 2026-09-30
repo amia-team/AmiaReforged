@@ -22,10 +22,10 @@ public partial class SetCreatureNameExecutor : IGlyphNodeExecutor
         object? creatureValue = await resolveInput(Inputs.Creature);
         object? nameValue = await resolveInput(Inputs.Name);
 
-        uint creature = Convert.ToUInt32(creatureValue);
+        uint creature = Nwn.GlyphNwnValue.NormalizeObject(Convert.ToUInt32(creatureValue));
         string name = nameValue?.ToString() ?? string.Empty;
 
-        if (creature != NWScript.OBJECT_INVALID && !string.IsNullOrEmpty(name))
+        if (creature != NWScript.OBJECT_INVALID)
         {
             NWScript.SetName(creature, name);
         }
@@ -35,8 +35,9 @@ public partial class SetCreatureNameExecutor : IGlyphNodeExecutor
 
     public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
-        TypeId = NodeTypeId,
+        TypeId = NodeTypeId, Source = "NWScript.SetName", Backend = "NWScript adapter",
         Exports = [
+            new("nwn.set_name", ReceiverMethods: ["set_name"]),
             new("set_name", null)
         ],
         DisplayName = "Set Creature Name",

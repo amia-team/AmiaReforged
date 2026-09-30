@@ -8,8 +8,13 @@ public sealed record GlyphLanguageMetadataDto(int LanguageVersion, IReadOnlyList
     IReadOnlyList<GlyphIndexerMetadataDto> Indexers,
     IReadOnlyList<GlyphReceiverMethodMetadataDto> ReceiverMethods)
 {
+    public IReadOnlyList<Nwn.GlyphNwnConstant> Constants { get; init; } = [];
+    public IReadOnlyList<GlyphConstantDomainMetadataDto> ConstantDomains { get; init; } = [];
+    public IReadOnlyList<string> Types { get; init; } = [];
+    public string? NwnApiVersion { get; init; }
     public IReadOnlyList<GlyphWritableStateMetadataDto> WritableState { get; init; } = [];
 }
+public sealed record GlyphConstantDomainMetadataDto(string Name, IReadOnlyList<string> Types, int Count);
 public sealed record GlyphWritableStateMetadataDto(string Name, string Type, string Setter,
     IReadOnlyList<GlyphAvailabilityDto> AvailableIn);
 public sealed record GlyphParameterMetadataDto(string Name, string DisplayName, string Type, bool Required, string? DefaultValue);
@@ -17,7 +22,13 @@ public sealed record GlyphAvailabilityDto(string Event, string? Stage);
 public sealed record GlyphFunctionMetadataDto(string Name, string CanonicalName, string Description, string ReturnType,
     string Kind, IReadOnlyList<GlyphParameterMetadataDto> Parameters, string? ImplicitArgument,
     string? RestrictToEventType, string? ScriptCategory, IReadOnlyList<string>? AllowedStages,
-    IReadOnlyList<GlyphAvailabilityDto> AvailableIn);
+    IReadOnlyList<GlyphAvailabilityDto> AvailableIn)
+{
+    public string? Source { get; init; }
+    public string? Backend { get; init; }
+    public string? Deprecated { get; init; }
+    public string Category { get; init; } = "";
+}
 public sealed record GlyphEventMetadataDto(string Name, string EventType, string Category, IReadOnlyList<string> Stages);
 public sealed record GlyphContextMetadataDto(string Event, string? Stage, IReadOnlyList<GlyphFieldMetadataDto> Fields);
 public sealed record GlyphFieldMetadataDto(string Name, string Type, string Description, string CanonicalName,
@@ -46,10 +57,11 @@ public static class GlyphLanguageMetadata
         GlyphFunctionMetadataDto Function(GlyphLanguageSymbol symbol, string name, string? receiver) => new(
             name, symbol.Name, symbol.Definition.Description, symbol.ReturnType.Name, symbol.Strategy.ToString(),
             symbol.Parameters.Skip(receiver == null ? 0 : 1).Select(p => new GlyphParameterMetadataDto(
-                p.Id, p.Name, GlyphTypeSymbol.From(p.DataType).Name, p.DefaultValue == null, p.DefaultValue)).ToArray(),
+                p.Id, p.Name, GlyphTypeSymbol.From(p).Name, p.DefaultValue == null, p.DefaultValue)).ToArray(),
             receiver, symbol.Definition.RestrictToEventType?.ToString(), symbol.Definition.ScriptCategory?.ToString(),
             symbol.AllowedStages, scopes.Where(s => Available(symbol, s.Event, s.Stage, receiver))
-                .Select(s => new GlyphAvailabilityDto(s.Name, s.Stage)).ToArray());
+                .Select(s => new GlyphAvailabilityDto(s.Name, s.Stage)).ToArray())
+        { Source = symbol.Definition.Source, Backend = symbol.Definition.Backend, Deprecated = symbol.Definition.Deprecated, Category = symbol.Definition.Category };
 
         var functions = catalog.Symbols.Select(s => Function(s, s.Name, null))
             .Concat(catalog.CallAliases.Select(a => Function(catalog.Find(a.Target)!, a.Name, a.ImplicitArgument)))
@@ -79,7 +91,7 @@ public static class GlyphLanguageMetadata
                 rm.Name, GlyphTypeSymbol.From(rm.ReceiverType).Name, rm.Target, symbol.Definition.Description,
                 symbol.ReturnType.Name, symbol.Strategy.ToString(),
                 symbol.Parameters.Skip(1).Select(p => new GlyphParameterMetadataDto(
-                    p.Id, p.Name, GlyphTypeSymbol.From(p.DataType).Name, p.DefaultValue == null, p.DefaultValue))
+                    p.Id, p.Name, GlyphTypeSymbol.From(p).Name, p.DefaultValue == null, p.DefaultValue))
                     .ToArray(),
                 scopes.Where(s => Available(symbol, s.Event, s.Stage, null))
                     .Select(s => new GlyphAvailabilityDto(s.Name, s.Stage)).ToArray());
@@ -90,6 +102,11 @@ public static class GlyphLanguageMetadata
             catalog.Indexers.Select(i => new GlyphIndexerMetadataDto(i.Name, i.Getter, i.Setter)).ToArray(),
             receiverMethods)
         {
+            Constants = Nwn.GlyphNwnSurface.Constants,
+            ConstantDomains = Nwn.GlyphNwnSurface.Constants.GroupBy(c => c.Namespace).OrderBy(g => g.Key, StringComparer.Ordinal)
+                .Select(g => new GlyphConstantDomainMetadataDto(g.Key, g.Select(c => c.Type).Distinct().OrderBy(t => t, StringComparer.Ordinal).ToArray(), g.Count())).ToArray(),
+            Types = ["Void", "Bool", "Int", "Float", "String", "Object", "Location", "Effect", "List<Object>", "List<Effect>"],
+            NwnApiVersion = Nwn.GlyphNwnSurface.ApiVersion,
             WritableState = catalog.Setters.Select(pair =>
             {
                 var setter = catalog.Find(pair.Value)!;

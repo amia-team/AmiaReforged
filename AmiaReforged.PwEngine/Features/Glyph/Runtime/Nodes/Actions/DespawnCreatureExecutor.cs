@@ -23,41 +23,24 @@ public partial class DespawnCreatureExecutor : IGlyphNodeExecutor
         object? creatureValue = await resolveInput("creature");
         object? delayValue = await resolveInput("delay_seconds");
 
-        uint creature = Convert.ToUInt32(creatureValue);
+        uint creature = Nwn.GlyphNwnValue.NormalizeObject(Convert.ToUInt32(creatureValue));
         float delay = Convert.ToSingle(delayValue);
 
         if (creature != NWScript.OBJECT_INVALID)
         {
-            if (delay <= 0)
-            {
-                NWScript.DestroyObject(creature);
-            }
-            else
-            {
-                NWScript.DelayCommand(delay, () => NWScript.DestroyObject(creature));
-            }
+            NWScript.DestroyObject(creature, System.Math.Max(0, delay));
         }
 
         return GlyphNodeResult.Continue("exec_out");
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
-        TypeId = NodeTypeId,
-        DisplayName = "Despawn Creature",
-        Category = "Actions",
-        Description = "Destroys a creature, optionally after a delay.",
-        ColorClass = "node-action",
+        TypeId = NodeTypeId, DisplayName = "DespawnCreatureExecutor", Category = "NWN / Compatibility",
+        Description = "NWScript DestroyObject with the established runtime pin contract.",
+        Source = "NWScript.DestroyObject", Backend = "NWScript adapter",
         Archetype = GlyphNodeArchetype.Action,
-        InputPins =
-        [
-            new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "creature", Name = "Creature", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "delay_seconds", Name = "Delay (sec)", DataType = GlyphDataType.Float, Direction = GlyphPinDirection.Input, DefaultValue = "0" }
-        ],
-        OutputPins =
-        [
-            new GlyphPin { Id = "exec_out", Name = "Then", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output }
-        ]
+        Parameters = [Pins.InObject("creature", "Creature"), Pins.InFloat("delay_seconds", "Delay", "0")], Results = [],
+        Exports = [new("nwn.destroy_object", null, ReceiverMethods: ["destroy"])]
     };
 }

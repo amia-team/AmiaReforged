@@ -28,6 +28,13 @@ internal static class GlyphBoundLimits
                     Push(loop.List);
                     Push(loop.Body);
                     break;
+                case BoundSequence sequence:
+                    foreach (var let in sequence.Prefix) Push(let);
+                    Push(sequence.Value);
+                    break;
+                case BoundLet let:
+                    Push(let.Value);
+                    break;
                 case BoundExpressionStatement action:
                     Push(action.Call);
                     break;

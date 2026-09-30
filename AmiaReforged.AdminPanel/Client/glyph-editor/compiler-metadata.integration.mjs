@@ -48,7 +48,8 @@ test("receivers, context, writable state and stage filtering consume live compil
     for (const scope of receiver.availableIn) {
       const context = metadata.contexts.find(c => c.event === scope.event && c.stage === scope.stage);
       const object = context.fields.find(f => f.name.startsWith("context.") && f.type === receiver.receiverType);
-      const option = complete(source(scope, `${object.name}.|`)).find(o => o.label === receiver.name);
+      const expression = object?.name ?? (receiver.receiverType === "Location" ? "nwn.get_location(OBJECT.INVALID)" : "effect.haste()");
+      const option = complete(source(scope, `(${expression}).|`)).find(o => o.label === receiver.name);
       assert.ok(option, receiver.name);
       assert.equal(option.info, receiver.description);
     }
@@ -60,4 +61,29 @@ test("receivers, context, writable state and stage filtering consume live compil
   assert.ok(!attempted.some(o => o.label === "set_progress" || o.label === "status"));
   assert.ok(!complete("glyph p : interaction { attempted { context.| } }").some(o => o.label === "session_id"));
   assert.ok(complete("glyph p : interaction { | }").some(o => o.label === "tick"));
+});
+
+
+test("constant domains and every constant come from compiler metadata", () => {
+  for (const domain of metadata.constantDomains) {
+    const options = complete(`glyph p : interaction { completed { let value = ${domain.name}.| } }`);
+    for (const constant of metadata.constants.filter(c => c.namespace === domain.name)) {
+      const option = options.find(o => o.label === constant.name.slice(domain.name.length + 1));
+      assert.ok(option, constant.name);
+      assert.equal(option.type, "constant");
+      assert.ok(option.detail.includes(constant.type));
+      assert.equal(option.apply, constant.name.slice(domain.name.length + 1));
+    }
+  }
+});
+
+test("Location, Effect and typed foreach receivers resolve from metadata", () => {
+  const location = complete('glyph p : interaction { completed { let loc = player.get_location() loc.| } }');
+  assert.ok(location.some(o => o.label === "get_x"));
+  assert.ok(location.some(o => o.label === "get_area"));
+  const effect = complete('glyph p : interaction { completed { foreach aura in player.effects() { aura.| } } }');
+  assert.ok(effect.some(o => o.label === "get_effect_type"));
+  assert.ok(!effect.some(o => o.label === "destroy"));
+  const object = complete('glyph p : interaction { completed { foreach item in player.inventory() { item.| } } }');
+  assert.ok(object.some(o => o.label === "destroy"));
 });

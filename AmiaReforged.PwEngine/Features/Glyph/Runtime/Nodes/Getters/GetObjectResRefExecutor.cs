@@ -23,7 +23,7 @@ public partial class GetObjectResRefExecutor : IGlyphNodeExecutor
         Func<string, Task<object?>> resolveInput)
     {
         object? objectValue = await resolveInput("object");
-        uint objectId = Convert.ToUInt32(objectValue);
+        uint objectId = Nwn.GlyphNwnValue.NormalizeObject(Convert.ToUInt32(objectValue));
 
         string resref = objectId != NWScript.OBJECT_INVALID
             ? NWScript.GetResRef(objectId)
@@ -35,21 +35,13 @@ public partial class GetObjectResRefExecutor : IGlyphNodeExecutor
         });
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
-        TypeId = NodeTypeId,
-        DisplayName = "Get ResRef",
-        Category = "Getters",
-        Description = "Returns the blueprint ResRef of a game object.",
-        ColorClass = "node-getter",
+        TypeId = NodeTypeId, DisplayName = "GetObjectResRefExecutor", Category = "NWN / Compatibility",
+        Description = "NWScript GetResRef with the established runtime pin contract.",
+        Source = "NWScript.GetResRef", Backend = "NWScript adapter",
         Archetype = GlyphNodeArchetype.PureFunction,
-        InputPins =
-        [
-            new GlyphPin { Id = "object", Name = "Object", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Input }
-        ],
-        OutputPins =
-        [
-            new GlyphPin { Id = "resref", Name = "ResRef", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output }
-        ]
+        Parameters = [Pins.InObject("object", "Object")], Results = [Pins.Out("resref", "ResRef", GlyphDataType.String)],
+        Exports = [new("nwn.get_resref", "resref", ReceiverMethods: ["get_resref"])]
     };
 }

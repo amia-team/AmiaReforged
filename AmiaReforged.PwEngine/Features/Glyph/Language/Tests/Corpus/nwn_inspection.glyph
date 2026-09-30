@@ -1,0 +1,15 @@
+// Objects can be inspected and modified without a server rebuild.
+glyph inspect_nearby : interaction {
+    completed {
+        let target = nwn.get_nearest_object_by_type(player, OBJECT_TYPE.PLACEABLE)
+        if target.is_valid() {
+            let tag = target.get_tag()
+            let resref = target.get_resref()
+            let area = target.get_area()
+            target.set_local_string("inspected_tag", tag)
+            target.set_local_string("inspected_resref", resref)
+            target.set_local_object("inspected_area", area)
+            if player.is_player() { message(player, target.get_name()) }
+        }
+    }
+}

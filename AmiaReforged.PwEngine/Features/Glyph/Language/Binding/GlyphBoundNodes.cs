@@ -16,7 +16,14 @@ public sealed record GlyphTypeSymbol(
         Float = new("Float", GlyphDataType.Float),
         String = new("String", GlyphDataType.String),
         Object = new("Object", GlyphDataType.NwObject),
-        Objects = new("List<Object>", GlyphDataType.List, Object);
+        Location = new("Location", GlyphDataType.Location),
+        Effect = new("Effect", GlyphDataType.Effect),
+        Objects = new("List<Object>", GlyphDataType.List, Object),
+        Effects = new("List<Effect>", GlyphDataType.List, Effect);
+
+    public static GlyphTypeSymbol From(GlyphPin pin) => pin.DataType == GlyphDataType.List
+        ? new($"List<{From(pin.ElementType ?? GlyphDataType.NwObject).Name}>", GlyphDataType.List, From(pin.ElementType ?? GlyphDataType.NwObject))
+        : From(pin.DataType);
 
     public static GlyphTypeSymbol From(GlyphDataType type) => type switch
     {
@@ -26,6 +33,8 @@ public sealed record GlyphTypeSymbol(
         GlyphDataType.String => String,
         GlyphDataType.NwObject => Object,
         GlyphDataType.List => Objects,
+        GlyphDataType.Location => Location,
+        GlyphDataType.Effect => Effect,
         _ => new(type.ToString(), type)
     };
 
@@ -62,7 +71,9 @@ public abstract record BoundExpression(GlyphTypeSymbol Type, SourceSpan Span);
 public sealed record BoundError(SourceSpan Span) : BoundExpression(GlyphTypeSymbol.Error, Span);
 public sealed record BoundLiteral(object Value, GlyphTypeSymbol Type, SourceSpan Span) : BoundExpression(Type, Span);
 public sealed record BoundContext(string EntryTypeId, string Pin, GlyphTypeSymbol Type, SourceSpan Span) : BoundExpression(Type, Span);
-public sealed record BoundLoopElement(int SymbolId, SourceSpan Span) : BoundExpression(GlyphTypeSymbol.Object, Span);
+public sealed record BoundLoopElement(int SymbolId, SourceSpan Span, GlyphTypeSymbol? ElementType = null) : BoundExpression(ElementType ?? GlyphTypeSymbol.Object, Span);
+public sealed record BoundStoredValue(int SymbolId, GlyphTypeSymbol ValueType, SourceSpan Span) : BoundExpression(ValueType, Span);
+public sealed record BoundLet(int SymbolId, BoundExpression Value, SourceSpan Span) : BoundStatement(Span);
 public sealed record BoundCall(GlyphLanguageSymbol Symbol, IReadOnlyDictionary<string, BoundExpression> Arguments, SourceSpan Span) : BoundExpression(Symbol.ReturnType, Span);
 public sealed record BoundUnary(string Operator, BoundExpression Operand, GlyphTypeSymbol Type, SourceSpan Span) : BoundExpression(Type, Span);
 public sealed record BoundBinary(BoundExpression Left, string Operator, BoundExpression Right, GlyphTypeSymbol Type, SourceSpan Span) : BoundExpression(Type, Span);
@@ -81,3 +92,5 @@ public sealed record BoundVariant(
 public sealed record BoundPlaceholder(
     GlyphTypeSymbol PlaceholderType,
     SourceSpan Span) : BoundExpression(PlaceholderType, Span);
+
+public sealed record BoundSequence(IReadOnlyList<BoundLet> Prefix, BoundExpression Value, SourceSpan Span) : BoundExpression(Value.Type, Span);

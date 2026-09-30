@@ -61,6 +61,7 @@ public sealed class GlyphLexer(string source, string sourceId = "source.glyph")
                 kind = floating ? "float" : "integer";
                 string number = source[start.._position];
                 if (!floating && int.TryParse(number, CultureInfo.InvariantCulture, out int i)) value = i;
+                else if (!floating && number == "2147483648" && tokens.LastOrDefault()?.Kind == "-") value = 2147483648L;
                 else if (floating && double.TryParse(number, NumberStyles.Float, CultureInfo.InvariantCulture, out double d) && double.IsFinite(d)) value = d;
                 else
                 {

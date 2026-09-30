@@ -17,14 +17,15 @@ public sealed record GlyphLanguageSymbol(string Name, GlyphNodeDefinition Defini
 {
     public IReadOnlyList<GlyphPin> Parameters => Definition.InputPins.Where(p => p.DataType != GlyphDataType.Exec).ToArray();
     public GlyphTypeSymbol ReturnType => Strategy == GlyphLoweringStrategy.PredicateBranch ? GlyphTypeSymbol.Bool :
-        OutputPin == null ? GlyphTypeSymbol.Void : GlyphTypeSymbol.From(Definition.OutputPins.Single(p => p.Id == OutputPin).DataType);
+        OutputPin == null ? GlyphTypeSymbol.Void : GlyphTypeSymbol.From(Definition.OutputPins.Single(p => p.Id == OutputPin));
 }
 
 /// <summary>Language spelling and lowering policy; runtime metadata owns all pin signatures.</summary>
 public sealed class GlyphLanguageCatalog
 {
     private readonly Dictionary<string, GlyphLanguageSymbol> _symbols = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, GlyphReceiverMethod> _receiverMethods = new(StringComparer.Ordinal);
+    private readonly Dictionary<(GlyphDataType Type, string Name), GlyphReceiverMethod> _receiverMethods = new();
+    private readonly HashSet<string> _receiverNames = new(StringComparer.Ordinal);
     public IReadOnlyCollection<GlyphLanguageSymbol> Symbols => _symbols.Values;
     public IReadOnlyCollection<GlyphReceiverMethod> ReceiverMethods => _receiverMethods.Values;
     public GlyphLanguageSymbol? Find(string name) => _symbols.GetValueOrDefault(name);
@@ -33,7 +34,13 @@ public sealed class GlyphLanguageCatalog
     /// receiver expression first, then verifies its Glyph type matches <c>receiverType</c>.
     /// </summary>
     public bool TryResolveReceiverMethod(string name, out GlyphReceiverMethod method)
-        => _receiverMethods.TryGetValue(name, out method!);
+    {
+        method = _receiverMethods.Values.FirstOrDefault(r => r.Name == name)!;
+        return method != null;
+    }
+    public bool TryResolveReceiverMethod(string name, GlyphDataType type, out GlyphReceiverMethod method)
+        => _receiverMethods.TryGetValue((type, name), out method!);
+    public bool HasReceiverMethod(string name) => _receiverNames.Contains(name);
     public IGlyphNodeDefinitionRegistry Registry { get; }
     public IReadOnlyList<GlyphCallAlias> CallAliases { get; }
     public IReadOnlyList<GlyphCallAlias> PropertyAliases { get; }
@@ -53,12 +60,15 @@ public sealed class GlyphLanguageCatalog
         foreach (GlyphNodeDefinition definition in registry.GetAll())
             foreach (var intrinsic in definition.Intrinsics)
             {
-                var strategy = intrinsic.Strategy ?? (intrinsic.OutputPin == null
+                var strategy = intrinsic.Strategy ?? (definition.Archetype == GlyphNodeArchetype.Action || intrinsic.OutputPin == null
                     ? GlyphLoweringStrategy.Action : GlyphLoweringStrategy.Value);
                 _symbols.Add(intrinsic.Name, new(intrinsic.Name, definition, intrinsic.OutputPin,
                     strategy, intrinsic.AllowedStages?.ToArray()));
                 foreach (string receiver in intrinsic.ReceiverMethods ?? [])
-                    _receiverMethods.Add(receiver, new(intrinsic.ReceiverType, receiver, intrinsic.Name));
+                {
+                    _receiverNames.Add(receiver);
+                    _receiverMethods.Add((intrinsic.ReceiverType, receiver), new(intrinsic.ReceiverType, receiver, intrinsic.Name));
+                }
             }
     }
     public static IReadOnlyDictionary<string, GlyphEventType> Events { get; } =

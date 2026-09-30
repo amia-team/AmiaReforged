@@ -103,7 +103,7 @@ public class GlyphController
 
     [HttpGet("/api/worldengine/glyphs/language-metadata")]
     public static Task<ApiResult> LanguageMetadata(RouteContext ctx) => Task.FromResult(
-        Runtime == null ? ServiceUnavailable() : new ApiResult(200, GlyphLanguageMetadata.Create(Runtime.Compiler.Catalog)));
+        Runtime == null ? ServiceUnavailable() : new ApiResult(200, Runtime.LanguageMetadata));
 
     [HttpPost("/api/worldengine/glyphs/compile")]
     public static async Task<ApiResult> Compile(RouteContext ctx)

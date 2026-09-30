@@ -23,8 +23,8 @@ public partial class GetDistanceBetweenExecutor : IGlyphNodeExecutor
         object? objectAValue = await resolveInput(Inputs.ObjectA);
         object? objectBValue = await resolveInput(Inputs.ObjectB);
 
-        uint objectA = Convert.ToUInt32(objectAValue);
-        uint objectB = Convert.ToUInt32(objectBValue);
+        uint objectA = Nwn.GlyphNwnValue.NormalizeObject(Convert.ToUInt32(objectAValue));
+        uint objectB = Nwn.GlyphNwnValue.NormalizeObject(Convert.ToUInt32(objectBValue));
 
         float distance = 0f;
         if (objectA != NWScript.OBJECT_INVALID && objectB != NWScript.OBJECT_INVALID)
@@ -40,8 +40,9 @@ public partial class GetDistanceBetweenExecutor : IGlyphNodeExecutor
 
     public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
-        TypeId = NodeTypeId,
+        TypeId = NodeTypeId, Source = "NWScript.GetDistanceBetween", Backend = "NWScript adapter",
         Exports = [
+            new("nwn.get_distance_between", "distance"),
             new("distance", "distance", null),
             new("Object.get_distance", "distance", null, ReceiverMethods: ["get_distance"])
         ],

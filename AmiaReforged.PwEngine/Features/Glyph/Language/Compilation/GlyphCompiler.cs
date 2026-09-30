@@ -17,9 +17,11 @@ public sealed record GlyphCompilationResult(IReadOnlyList<GlyphDiagnostic> Diagn
     public bool Success => Executable != null && Diagnostics.Count == 0;
     public IReadOnlyDictionary<Guid, SourceSpan>? SourceMap => Executable?.SourceMap;
 }
-public sealed class GlyphCompiler(IGlyphNodeDefinitionRegistry registry)
+public sealed class GlyphCompiler(IGlyphNodeDefinitionRegistry registry, GlyphGlobalEnvironment? globals = null)
 {
     public GlyphLanguageCatalog Catalog { get; } = new(registry);
+    public GlyphGlobalEnvironment Globals { get; } = globals == null || ReferenceEquals(globals, Nwn.GlyphStandardLibrary.Environment) ? Nwn.GlyphStandardLibrary.Environment :
+        GlyphGlobalEnvironment.FromDeclarations(globals.ByName.Values.ToArray(), out _, Nwn.GlyphStandardLibrary.Environment);
     public GlyphCompilationResult Compile(string source, GlyphCompilationOptions? options = null)
     {
         options ??= new();
@@ -33,7 +35,10 @@ public sealed class GlyphCompiler(IGlyphNodeDefinitionRegistry registry)
         List<GlyphDiagnostic> diagnostics = [..lexer.Diagnostics, ..parser.Diagnostics];
         if (diagnostics.Count > 0 || syntax == null) return new(diagnostics.AsReadOnly(), syntax, null, null, hash);
 
-        GlyphBinder binder = new(Catalog);
+        GlyphGlobalEnvironment environment = syntax.GlobalDeclarations.Count == 0 ? Globals :
+            GlyphGlobalEnvironment.FromDeclarations(syntax.GlobalDeclarations, out _, Globals);
+        diagnostics.AddRange(environment.Diagnostics);
+        GlyphBinder binder = new(Catalog, environment);
         BoundProgram? bound = binder.Bind(syntax);
         diagnostics.AddRange(binder.Diagnostics);
         if (diagnostics.Count > 0 || bound == null) return new(diagnostics.AsReadOnly(), syntax, bound, null, hash);

@@ -21,7 +21,7 @@ public partial class GetTagExecutor : IGlyphNodeExecutor
         Func<string, Task<object?>> resolveInput)
     {
         object? objectValue = await resolveInput("object");
-        uint objectId = Convert.ToUInt32(objectValue);
+        uint objectId = Nwn.GlyphNwnValue.NormalizeObject(Convert.ToUInt32(objectValue));
 
         string tag = objectId != NWScript.OBJECT_INVALID
             ? NWScript.GetTag(objectId)
@@ -33,21 +33,13 @@ public partial class GetTagExecutor : IGlyphNodeExecutor
         });
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
-        TypeId = NodeTypeId,
-        DisplayName = "Get Tag",
-        Category = "Getters",
-        Description = "Returns the tag of a game object.",
-        ColorClass = "node-getter",
+        TypeId = NodeTypeId, DisplayName = "GetTagExecutor", Category = "NWN / Compatibility",
+        Description = "NWScript GetTag with the established runtime pin contract.",
+        Source = "NWScript.GetTag", Backend = "NWScript adapter",
         Archetype = GlyphNodeArchetype.PureFunction,
-        InputPins =
-        [
-            new GlyphPin { Id = "object", Name = "Object", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Input }
-        ],
-        OutputPins =
-        [
-            new GlyphPin { Id = "tag", Name = "Tag", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output }
-        ]
+        Parameters = [Pins.InObject("object", "Object")], Results = [Pins.Out("tag", "Tag", GlyphDataType.String)],
+        Exports = [new("nwn.get_tag", "tag", ReceiverMethods: ["get_tag"])]
     };
 }

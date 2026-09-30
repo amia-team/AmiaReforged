@@ -23,6 +23,7 @@ public class GlyphBootstrap
     public GlyphInterpreter Interpreter { get; }
     public Runtime.Programs.GlyphTraceStore Traces { get; } = new();
     public Language.Compilation.GlyphCompiler Compiler { get; }
+    public Language.Binding.GlyphLanguageMetadataDto LanguageMetadata { get; }
     public Runtime.Programs.GlyphRuntimeRegistry Programs { get; } = new();
 
     public GlyphBootstrap(IGlyphNodeDefinitionRegistry registry, IEnumerable<Platform.IGlyphModule>? modules = null)
@@ -44,6 +45,7 @@ public class GlyphBootstrap
         Interpreter = new GlyphInterpreter(registry, executors);
         Interpreter.ExecutionCompleted += Traces.Record;
         Compiler = new Language.Compilation.GlyphCompiler(registry);
+        LanguageMetadata = Language.Binding.GlyphLanguageMetadata.Create(Compiler.Catalog);
 
         Log.Info("Glyph bootstrap complete. {DefCount} definitions registered, {ExecCount} executors loaded " +
                  "(including {CtxCount} context getters).",

@@ -24,7 +24,7 @@ public abstract record GlobalDeclarationSyntax(string Name, SourceSpan Span) : G
 public sealed record ConstantDeclarationSyntax(
     string Name,
     ExpressionSyntax? Initializer,
-    SourceSpan Span) : GlobalDeclarationSyntax(Name, Span);
+    SourceSpan Span, string? TypeName = null) : GlobalDeclarationSyntax(Name, Span);
 
 public sealed record FunctionDeclarationSyntax(
     string Name,

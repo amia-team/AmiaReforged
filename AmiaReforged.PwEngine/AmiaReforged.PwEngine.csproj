@@ -45,6 +45,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <AdditionalFiles Include="Features/Glyph/Nwn/*.nwnbindings" />
         <ProjectReference Include="../tools/Glyph.Generators/Glyph.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
         <ProjectReference Include="..\AmiaReforged.Core\AmiaReforged.Core.csproj" />
         <ProjectReference Include="..\AmiaReforged.Races\AmiaReforged.Races.csproj" />
@@ -79,5 +80,6 @@
 
     <ItemGroup>
         <Content Include="Features/Glyph/Language/Tests/Corpus/*.glyph" Link="GlyphCorpus/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+        <Content Include="Features/Glyph/Language/Standard/NWN_API_SNAPSHOT.json" Link="GlyphStandard/NWN_API_SNAPSHOT.json" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 </Project>

@@ -482,6 +482,10 @@ public class GlyphInterpreter
             return null;
         }
 
+        // Action results can only be produced by execution flow, never by lazy data reads.
+        if (_registry.Get(sourceNode.TypeId)?.Archetype is not (GlyphNodeArchetype.PureFunction or GlyphNodeArchetype.ContextGetter))
+            throw new InvalidOperationException($"Output of '{sourceNode.TypeId}' was read before execution.");
+
         // Execute the source node to get its output values
         GlyphNodeResult sourceResult = await ExecuteNode(sourceNode, context);
 
@@ -529,6 +533,9 @@ public class GlyphInterpreter
             GlyphDataType.Int => int.TryParse(value, out int i) ? i : 0,
             GlyphDataType.Float => double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double d) ? d : 0.0,
             GlyphDataType.String => value,
+            GlyphDataType.Location => default(Nwn.GlyphNwnLocation),
+            GlyphDataType.Effect => default(Nwn.GlyphNwnEffect),
+            GlyphDataType.NwObject => uint.TryParse(value, out uint handle) ? handle : NWN.Core.NWScript.OBJECT_INVALID,
             _ => value
         };
     }
@@ -546,6 +553,9 @@ public class GlyphInterpreter
                 GlyphDataType.Int => variable.DefaultValue != null && int.TryParse(variable.DefaultValue, out int i) ? i : 0,
                 GlyphDataType.Float => variable.DefaultValue != null && double.TryParse(variable.DefaultValue, NumberStyles.Float, CultureInfo.InvariantCulture, out double d) ? d : 0.0,
                 GlyphDataType.String => variable.DefaultValue ?? string.Empty,
+                GlyphDataType.NwObject => uint.TryParse(variable.DefaultValue, out uint handle) ? Nwn.GlyphNwnValue.NormalizeObject(handle) : NWN.Core.NWScript.OBJECT_INVALID,
+                GlyphDataType.Location => default(Nwn.GlyphNwnLocation),
+                GlyphDataType.Effect => default(Nwn.GlyphNwnEffect),
                 _ => null
             };
 

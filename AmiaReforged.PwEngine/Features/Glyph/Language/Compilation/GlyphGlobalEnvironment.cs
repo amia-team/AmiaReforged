@@ -6,7 +6,7 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Language.Compilation;
 
 // Immutable, compiler-side view of the prelude: the constants, functions, structs and ADTs that
 // a global.glyph file declares. This type intentionally holds no runtime graph, executable, event
-// or stage state and is not wired into normal Glyph binding yet — that belongs to a later task.
+// or stage state. The compiler composes this immutable prelude with program declarations.
 public sealed class GlyphGlobalEnvironment
 {
     private static readonly StringComparer Ordinal = StringComparer.Ordinal;
@@ -56,9 +56,9 @@ public sealed class GlyphGlobalEnvironment
     // place them into the right bucket and enforce one collision/lookup policy.
     public static GlyphGlobalEnvironment FromDeclarations(
         IReadOnlyList<GlyphDeclarationSyntax> declarations,
-        out List<GlyphDiagnostic> diagnostics)
+        out List<GlyphDiagnostic> diagnostics, GlyphGlobalEnvironment? parent = null)
     {
-        diagnostics = [];
+        diagnostics = parent == null ? [] : [..parent.Diagnostics];
 
         var constants = new Dictionary<string, ConstantDeclarationSyntax>(Ordinal);
         var functions = new Dictionary<string, FunctionDeclarationSyntax>(Ordinal);
@@ -90,7 +90,8 @@ public sealed class GlyphGlobalEnvironment
                     break;
             }
 
-            if (allByName.TryGetValue(decl.Name, out GlyphDeclarationSyntax? existing))
+            if (allByName.TryGetValue(decl.Name, out GlyphDeclarationSyntax? existing) ||
+                parent != null && parent.ByName.TryGetValue(decl.Name, out existing))
             {
                 // Same kind -> duplicate; different kind -> cross-kind collision.
                 string code = existing.GetType() == decl.GetType() ? "GLYPH2006" : "GLYPH2010";
@@ -107,14 +108,14 @@ public sealed class GlyphGlobalEnvironment
             }
         }
 
-        var resolvedConstants = ResolveConstants(constants, diagnostics);
+        var resolvedConstants = ResolveConstants(constants, diagnostics, parent);
 
         return new GlyphGlobalEnvironment(
-            ToImmutable(constants),
-            ToImmutable(functions),
-            ToImmutable(structs),
-            ToImmutable(adts),
-            ToImmutable(allByName),
+            parent == null ? ToImmutable(constants) : parent.Constants.SetItems(constants),
+            parent == null ? ToImmutable(functions) : parent.Functions.SetItems(functions),
+            parent == null ? ToImmutable(structs) : parent.Structs.SetItems(structs),
+            parent == null ? ToImmutable(adts) : parent.Adts.SetItems(adts),
+            parent == null ? ToImmutable(allByName) : parent.ByName.SetItems(allByName),
             ToImmutableValues(resolvedConstants),
             diagnostics);
     }
@@ -130,16 +131,16 @@ public sealed class GlyphGlobalEnvironment
             ? ImmutableDictionary<string, T>.Empty
             : ImmutableDictionary.CreateRange(Ordinal, source);
 
-    // Resolves every constant declaration to a statically typed value. Only literals (Bool, Int,
-    // Float, String) and references to other constants are permitted; anything else is rejected as
+    // Resolves every constant declaration to a statically typed value. Scalar literals (including
+    // semantic Object handles) and references to other constants are permitted; anything else is rejected as
     // a non-constant initializer. References are resolved on demand, so acyclic references resolve
     // in any order; a reference that loops back onto a constant still being resolved (self- or
     // mutual cycle) is reported as GLYPH2012 rather than silently accepted.
     private static Dictionary<string, GlyphConstantValue> ResolveConstants(
         Dictionary<string, ConstantDeclarationSyntax> constants,
-        List<GlyphDiagnostic> diagnostics)
+        List<GlyphDiagnostic> diagnostics, GlyphGlobalEnvironment? parent)
     {
-        var resolved = new Dictionary<string, GlyphConstantValue>(Ordinal);
+        var resolved = parent?.ResolvedConstants.ToDictionary(p => p.Key, p => p.Value, Ordinal) ?? new Dictionary<string, GlyphConstantValue>(Ordinal);
         var failed = new HashSet<string>(Ordinal);
         var visiting = new HashSet<string>(Ordinal);
 
@@ -184,6 +185,17 @@ public sealed class GlyphGlobalEnvironment
             return null;
         }
 
+        if (declaration.TypeName is { } declared)
+        {
+            if (declared == "Object" && value.Value is int integer && integer >= 0)
+                value = value with { Kind = GlyphConstantKind.Object, Value = (uint)integer };
+            else if (declared != value.Kind.ToString())
+            {
+                diagnostics.Add(new("GLYPH2004", $"Constant '{name}' cannot be typed as {declared}.", declaration.Span));
+                failed.Add(name);
+                return null;
+            }
+        }
         resolved[name] = value;
         return value;
     }
@@ -216,6 +228,16 @@ public sealed class GlyphGlobalEnvironment
                     $"Constant '{currentName}' has an unsupported literal type.", declarationSpan));
                 return null;
 
+            case UnaryExpressionSyntax { Operator: "-", Operand: LiteralExpressionSyntax { Value: int integer } }:
+                return new(currentName, GlyphConstantKind.Int, -integer, declarationSpan);
+            case UnaryExpressionSyntax { Operator: "-", Operand: LiteralExpressionSyntax { Value: double number } }:
+                return new(currentName, GlyphConstantKind.Float, -number, declarationSpan);
+            case MemberAccessExpressionSyntax member:
+                string qualified = QualifiedName(member);
+                if (constants.ContainsKey(qualified) || resolved.ContainsKey(qualified))
+                    return ResolveReference(qualified, currentName, constants, allNames, resolved, failed, visiting, diagnostics);
+                diagnostics.Add(new("GLYPH2009", $"Constant '{currentName}' initializer cannot read runtime members.", declarationSpan));
+                return null;
             case NameExpressionSyntax reference:
                 return ResolveReference(reference.Name, currentName,
                     constants, allNames, resolved, failed, visiting, diagnostics);
@@ -277,6 +299,9 @@ public sealed class GlyphGlobalEnvironment
     {
         switch (value)
         {
+            case uint handle:
+                kind = GlyphConstantKind.Object;
+                return true;
             case bool b:
                 kind = GlyphConstantKind.Bool;
                 return true;
@@ -294,6 +319,13 @@ public sealed class GlyphGlobalEnvironment
                 return false;
         }
     }
+
+    private static string QualifiedName(ExpressionSyntax syntax) => syntax switch
+    {
+        NameExpressionSyntax name => name.Name,
+        MemberAccessExpressionSyntax member => QualifiedName(member.Receiver) + "." + member.Name,
+        _ => ""
+    };
 
     public ConstantDeclarationSyntax? GetConstant(string name) => Constants.GetValueOrDefault(name);
     public GlyphConstantValue? GetResolvedConstant(string name) => ResolvedConstants.GetValueOrDefault(name);

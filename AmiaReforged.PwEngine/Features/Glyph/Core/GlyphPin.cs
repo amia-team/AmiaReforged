@@ -33,6 +33,9 @@ public record GlyphPin
     /// </summary>
     public string? DefaultValue { get; init; }
 
+    /// <summary>Element type for lists; absent on legacy pins means Object.</summary>
+    public GlyphDataType? ElementType { get; init; }
+
     /// <summary>
     /// When true, the pin accepts multiple connections (fan-in for inputs, fan-out for outputs).
     /// Exec output pins typically allow only one connection; data output pins may fan out.

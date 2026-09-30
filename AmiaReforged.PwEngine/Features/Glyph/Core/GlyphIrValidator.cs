@@ -57,7 +57,9 @@ public sealed class GlyphIrValidator(IGlyphNodeDefinitionRegistry registry)
             }
             if (output.Direction != GlyphPinDirection.Output || input.Direction != GlyphPinDirection.Input)
                 errors.Add(new("GLYPH4009", "Invalid pin direction.", EdgeId: edge.Id));
-            if (!CanConnect(output.DataType, input.DataType))
+            if (!CanConnect(output.DataType, input.DataType) ||
+                output.DataType == GlyphDataType.List && input.DataType == GlyphDataType.List &&
+                (output.ElementType ?? GlyphDataType.NwObject) != (input.ElementType ?? GlyphDataType.NwObject))
                 errors.Add(new("GLYPH4010", $"Cannot connect {output.DataType} to {input.DataType}.", EdgeId: edge.Id));
             if (input.DataType != GlyphDataType.Exec && !inputs.Add((edge.TargetNodeId, input.Id)))
                 errors.Add(new("GLYPH4011", "Multiple sources for a single-value input.", EdgeId: edge.Id));
@@ -82,6 +84,34 @@ public sealed class GlyphIrValidator(IGlyphNodeDefinitionRegistry registry)
             return false;
         }
         if (ids.Any(Cycle)) errors.Add(new("GLYPH4013", "Cyclic data dependency."));
+        // A data edge must never arrange for lazy evaluation of an action. Every executable
+        // consumer of an action result must be reached through the producer's exec path.
+        var executionEdges = ir.Edges.Where(e => definitions.TryGetValue(e.SourceNodeId, out var def) &&
+            def.OutputPins.Any(p => p.Id == e.SourcePinId && p.DataType == GlyphDataType.Exec)).ToArray();
+        var dataEdges = ir.Edges.Except(executionEdges).ToArray();
+        var nextExec = executionEdges.GroupBy(e => e.SourceNodeId).ToDictionary(g => g.Key, g => g.Select(e => e.TargetNodeId).ToArray());
+        var nextData = dataEdges.GroupBy(e => e.SourceNodeId).ToDictionary(g => g.Key, g => g.Select(e => e.TargetNodeId).ToArray());
+        var roots = definitions.Where(d => d.Value.Archetype is GlyphNodeArchetype.EventEntry or GlyphNodeArchetype.PipelineStage).Select(d => d.Key).ToArray();
+        foreach (var producer in definitions.Where(d => d.Value.Archetype == GlyphNodeArchetype.Action && nextData.ContainsKey(d.Key)))
+        {
+            HashSet<Guid> consumers = [], scanned = [];
+            Queue<Guid> data = new(nextData[producer.Key]);
+            while (data.TryDequeue(out Guid id))
+            {
+                if (!scanned.Add(id) || !definitions.TryGetValue(id, out var def)) continue;
+                if (def.Archetype is GlyphNodeArchetype.Action or GlyphNodeArchetype.FlowControl) consumers.Add(id);
+                else if (nextData.TryGetValue(id, out var next)) foreach (Guid target in next) data.Enqueue(target);
+            }
+            HashSet<Guid> reached = [];
+            Queue<Guid> flow = new(roots);
+            while (flow.TryDequeue(out Guid id))
+            {
+                if (id == producer.Key || !reached.Add(id)) continue;
+                if (nextExec.TryGetValue(id, out var next)) foreach (Guid target in next) flow.Enqueue(target);
+            }
+            if (consumers.Any(reached.Contains))
+                errors.Add(new("GLYPH4014", $"Action result '{producer.Value.TypeId}' is consumed on a path that does not execute its producer.", producer.Key));
+        }
         return errors.AsReadOnly();
     }
 }

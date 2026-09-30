@@ -24,7 +24,7 @@ public partial class ForEachExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "flow.for_each";
 
-    public string TypeId => NodeTypeId;
+    public virtual string TypeId => NodeTypeId;
 
     public async Task<GlyphNodeResult> ExecuteAsync(
         GlyphNodeInstance node,
@@ -99,9 +99,11 @@ public partial class ForEachExecutor : IGlyphNodeExecutor
     /// <summary>
     /// Creates the node definition for registration in the registry.
     /// </summary>
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public virtual GlyphNodeDefinition CreateDefinition() => Definition(TypeId, GlyphDataType.NwObject);
+
+    protected static GlyphNodeDefinition Definition(string typeId, GlyphDataType elementType) => new()
     {
-        TypeId = NodeTypeId,
+        TypeId = typeId,
         DisplayName = "For Each",
         Category = "Flow Control",
         Description = "Iterates over a list, executing the loop body once per element. " +
@@ -111,13 +113,13 @@ public partial class ForEachExecutor : IGlyphNodeExecutor
         InputPins =
         [
             new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "list", Name = "List", DataType = GlyphDataType.List, Direction = GlyphPinDirection.Input }
+            new GlyphPin { Id = "list", Name = "List", DataType = GlyphDataType.List, ElementType = elementType, Direction = GlyphPinDirection.Input }
         ],
         OutputPins =
         [
             new GlyphPin { Id = "loop_body", Name = "Loop Body", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output },
             new GlyphPin { Id = "completed", Name = "Completed", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "element", Name = "Element", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Output },
+            new GlyphPin { Id = "element", Name = "Element", DataType = elementType, Direction = GlyphPinDirection.Output },
             new GlyphPin { Id = "index", Name = "Index", DataType = GlyphDataType.Int, Direction = GlyphPinDirection.Output },
             new GlyphPin { Id = "count", Name = "Count", DataType = GlyphDataType.Int, Direction = GlyphPinDirection.Output }
         ]
