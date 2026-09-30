@@ -1,4 +1,4 @@
-@top Program { TypeDeclaration* kw<"glyph"> ProgramName ":" EventName Block }
+@top Program { GlobalDeclaration* TypeDeclaration* kw<"glyph"> ProgramName ":" EventName Block }
 
 @precedence {
   member @left, call @left, unary @right,
@@ -8,12 +8,24 @@
 
 @skip { whitespace | LineComment }
 
+GlobalDeclaration { ConstantDeclaration | FunctionDeclaration }
 TypeDeclaration { StructDeclaration | AdtDeclaration }
+
+ConstantDeclaration { kw<"const"> ConstantName ":" TypeName ("=" expression)? ";" }
+FunctionDeclaration { kw<"fn"> FunctionName "(" Parameters? ")" ReturnType? "=" FunctionBody? ";" }
+ReturnType { Identifier }
+FunctionBody { Identifier }
+Parameters { Parameter* }
+Parameter { ParameterName (":" TypeName)? ("," | ";")? }
+
 StructDeclaration { kw<"struct"> TypeName FieldBlock }
 AdtDeclaration { kw<"type"> TypeName "{" (VariantDeclaration | ";" | ",")* "}" }
 VariantDeclaration { VariantName FieldBlock }
 FieldBlock { "{" FieldDeclaration* "}" }
 FieldDeclaration { FieldName ":" TypeName ("," | ";")? }
+ConstantName { Identifier }
+FunctionName { Identifier }
+ParameterName { Identifier }
 TypeName { Identifier }
 VariantName { Identifier }
 FieldName { Identifier }
@@ -72,7 +84,7 @@ Argument { (ArgumentName ":")? expression }
 ArgumentName {
   Identifier | kw<"glyph"> | kw<"struct"> | kw<"type"> | kw<"match"> | kw<"let"> |
   kw<"if"> | kw<"else"> | kw<"foreach"> | kw<"in"> | kw<"break"> |
-  kw<"attempted"> | kw<"started"> | kw<"tick"> | kw<"completed">
+  kw<"attempted"> | kw<"started"> | kw<"tick"> | kw<"completed"> | kw<"fn"> | kw<"const">
 }
 AssignmentOperator { "=" | "+=" | "-=" }
 kw<term> { @specialize[@name={term}]<Identifier, term> }

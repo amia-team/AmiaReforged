@@ -62,16 +62,102 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
         try
         {
             List<TypeDeclarationSyntax> declarations = [];
+            List<GlobalDeclarationSyntax> globalDeclarations = [];
             SourceSpan unitStart = Current.Span;
 
-            while (At("struct") || At("type"))
+            while (At("const") || At("fn") || At("struct") || At("type"))
             {
-                declarations.Add(TypeDeclaration());
+                if (Eat("const"))
+                {
+                    string constName = Expect("identifier").Text;
+                    Expect(":");
+                    string typeName = Expect("identifier").Text;
+                    
+                    object? value = null;
+                    if (!Eat("="))
+                    {
+                        Diagnostics.Add(new("GLYPH1002", "Expected type or initializer after const name.", Current.Span));
+                    }
+                    else
+                    {
+                        value = Expression();
+                    }
+                    
+                    globalDeclarations.Add(new ConstantDeclarationSyntax(constName, typeName, value, Through(unitStart)));
+                }
+                else if (Eat("fn"))
+                {
+                    string fnName = Expect("identifier").Text;
+                    
+                    // Parameters
+                    Expect("(");
+                    List<ParameterSyntax> parameters = [];
+                    while (!At(")") && !At("eof"))
+                    {
+                        SourceSpan paramStart = Current.Span;
+                        string paramName = Expect("identifier").Text;
+                        string? paramTypeName = null;
+                        
+                        if (Eat(":"))
+                        {
+                            paramTypeName = Expect("identifier").Text;
+                        }
+                        
+                        parameters.Add(new(paramName, paramTypeName, Through(paramStart)));
+                        
+                        if (!Eat(",") && !Eat(";")) break;
+                    }
+                    Expect(")");
+                    
+                    // Return type
+                    if (Eat("->"))
+                    {
+                        string returnType = Expect("identifier").Text;
+                        
+                        // Body
+                        if (Eat("="))
+                        {
+                            string bodyExpr = Expect("identifier").Text;
+                            globalDeclarations.Add(new FunctionDeclarationSyntax(fnName, parameters, returnType, bodyExpr, Through(unitStart)));
+                        }
+                    }
+                    else
+                    {
+                        Diagnostics.Add(new("GLYPH1003", "Expected return type or body for function.", Current.Span));
+                        globalDeclarations.Add(new FunctionDeclarationSyntax(fnName, parameters, "void", "", Through(unitStart)));
+                    }
+                }
+                else if (Eat("struct"))
+                {
+                    string structName = Expect("identifier").Text;
+                    IReadOnlyList<GlyphFieldDeclarationSyntax> fields = FieldBlock();
+                    declarations.Add(new StructDeclarationSyntax(structName, fields, Through(unitStart)));
+                }
+                else if (Eat("type"))
+                {
+                    string adtName = Expect("identifier").Text;
+                    Expect("{");
+
+                    List<GlyphVariantDeclarationSyntax> variants = [];
+                    while (!At("}") && !At("eof"))
+                    {
+                        SourceSpan variantStart = Current.Span;
+                        string variantName = Expect("identifier").Text;
+                        IReadOnlyList<GlyphFieldDeclarationSyntax> fields = FieldBlock();
+                        variants.Add(new(variantName, fields, Through(variantStart)));
+                        Eat(",");
+                        Eat(";");
+                    }
+
+                    Expect("}");
+                    declarations.Add(new AdtDeclarationSyntax(adtName, variants, Through(unitStart)));
+                }
+                
                 Eat(";");
             }
 
             SourceSpan glyphStart = Expect("glyph").Span;
-            if (declarations.Count == 0) unitStart = glyphStart;
+            if (globalDeclarations.Count == 0 && declarations.Count == 0) unitStart = glyphStart;
 
             string name = Expect("identifier").Text;
             Expect(":");
@@ -81,13 +167,43 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
             BlockStatementSyntax body = Block();
             Expect("eof");
 
-            return new(declarations, name, evt, body, Through(unitStart));
+            return new(globalDeclarations, declarations, name, evt, body, Through(unitStart));
         }
         catch (SyntaxDepthException)
         {
             Diagnostics.Add(new("GLYPH1006", "Syntax nesting exceeds 128 levels.", Current.Span));
             return null;
         }
+    }
+
+    private TypeDeclarationSyntax? TryTypeDeclaration()
+    {
+        SourceSpan start = Current.Span;
+
+        if (Eat("struct"))
+        {
+            string name = Expect("identifier").Text;
+            IReadOnlyList<GlyphFieldDeclarationSyntax> fields = FieldBlock();
+            return new StructDeclarationSyntax(name, fields, Through(start));
+        }
+
+        Expect("type");
+        string adtName = Expect("identifier").Text;
+        Expect("{");
+
+        List<GlyphVariantDeclarationSyntax> variants = [];
+        while (!At("}") && !At("eof"))
+        {
+            SourceSpan variantStart = Current.Span;
+            string variantName = Expect("identifier").Text;
+            IReadOnlyList<GlyphFieldDeclarationSyntax> fields = FieldBlock();
+            variants.Add(new(variantName, fields, Through(variantStart)));
+            Eat(",");
+            Eat(";");
+        }
+
+        Expect("}");
+        return new AdtDeclarationSyntax(adtName, variants, Through(start));
     }
 
     private TypeDeclarationSyntax TypeDeclaration()

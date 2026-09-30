@@ -41,7 +41,7 @@ public sealed class GlyphLexer(string source, string sourceId = "source.glyph")
                 Take();
                 while (char.IsLetterOrDigit(Peek()) || Peek() == '_') Take();
                 string word = source[start.._position];
-                kind = word is "glyph" or "struct" or "type" or "match" or
+                kind = word is "glyph" or "struct" or "type" or "match" or "const" or "fn" or
                     "let" or "if" or "else" or "foreach" or "in" or "break" or
                     "true" or "false" or "attempted" or "started" or "tick" or "completed"
                     ? word
